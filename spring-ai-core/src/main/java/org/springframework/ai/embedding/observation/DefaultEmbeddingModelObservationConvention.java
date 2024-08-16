@@ -27,15 +27,14 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultEmbeddingModelObservationConvention implements EmbeddingModelObservationConvention {
 
+	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
+		.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
+
 	private static final KeyValue RESPONSE_MODEL_NONE = KeyValue
 		.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL, KeyValue.NONE_VALUE);
 
 	private static final KeyValue REQUEST_EMBEDDING_DIMENSION_NONE = KeyValue.of(
 			EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_EMBEDDING_ENCODING_FORMAT_NONE = KeyValue.of(
-			EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_ENCODING_FORMAT,
 			KeyValue.NONE_VALUE);
 
 	private static final KeyValue USAGE_INPUT_TOKENS_NONE = KeyValue
@@ -53,8 +52,11 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 
 	@Override
 	public String getContextualName(EmbeddingModelObservationContext context) {
-		return "%s %s".formatted(context.getOperationMetadata().operationType(),
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return "%s %s".formatted(context.getOperationMetadata().operationType(),
+					context.getRequestOptions().getModel());
+		}
+		return context.getOperationMetadata().operationType();
 	}
 
 	@Override
@@ -74,8 +76,11 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 	}
 
 	protected KeyValue requestModel(EmbeddingModelObservationContext context) {
-		return KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
+					context.getRequestOptions().getModel());
+		}
+		return REQUEST_MODEL_NONE;
 	}
 
 	protected KeyValue responseModel(EmbeddingModelObservationContext context) {
@@ -89,8 +94,7 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(EmbeddingModelObservationContext context) {
-		return KeyValues.of(requestEmbeddingDimension(context), requestEmbeddingFormat(context),
-				usageInputTokens(context), usageTotalTokens(context));
+		return KeyValues.of(requestEmbeddingDimension(context), usageInputTokens(context), usageTotalTokens(context));
 	}
 
 	// Request
@@ -102,15 +106,6 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 					String.valueOf(context.getRequestOptions().getDimensions()));
 		}
 		return REQUEST_EMBEDDING_DIMENSION_NONE;
-	}
-
-	protected KeyValue requestEmbeddingFormat(EmbeddingModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequestOptions().getEncodingFormat())) {
-			return KeyValue.of(
-					EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_ENCODING_FORMAT,
-					context.getRequestOptions().getEncodingFormat());
-		}
-		return REQUEST_EMBEDDING_ENCODING_FORMAT_NONE;
 	}
 
 	// Response

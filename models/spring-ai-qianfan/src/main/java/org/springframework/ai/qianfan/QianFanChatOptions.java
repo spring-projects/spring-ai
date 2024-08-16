@@ -143,6 +143,7 @@ public class QianFanChatOptions implements ChatOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -151,6 +152,7 @@ public class QianFanChatOptions implements ChatOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -159,6 +161,7 @@ public class QianFanChatOptions implements ChatOptions {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -167,6 +170,7 @@ public class QianFanChatOptions implements ChatOptions {
 		this.maxTokens = maxTokens;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
@@ -181,6 +185,17 @@ public class QianFanChatOptions implements ChatOptions {
 
 	public void setResponseFormat(QianFanApi.ChatCompletionRequest.ResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
 	}
 
 	public List<String> getStop() {
@@ -212,7 +227,7 @@ public class QianFanChatOptions implements ChatOptions {
 	@Override
 	@JsonIgnore
 	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
+		return null;
 	}
 
 	@Override

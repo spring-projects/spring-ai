@@ -104,7 +104,7 @@ public class MessageTypeContentTests {
 
 		when(openAiApi.chatCompletionStream(pomptCaptor.capture(), headersCaptor.capture())).thenReturn(fluxResponse);
 
-		chatModel.stream(new Prompt(List.of(new UserMessage("test message"))));
+		chatModel.stream(new Prompt(List.of(new UserMessage("test message")))).subscribe();
 
 		validateStringContent(pomptCaptor.getValue());
 		assertThat(headersCaptor.getValue()).isEmpty();
@@ -137,8 +137,10 @@ public class MessageTypeContentTests {
 		when(openAiApi.chatCompletionStream(pomptCaptor.capture(), headersCaptor.capture())).thenReturn(fluxResponse);
 
 		URL mediaUrl = new URL("http://test");
-		chatModel.stream(new Prompt(
-				List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))));
+		chatModel
+			.stream(new Prompt(
+					List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))))
+			.subscribe();
 
 		validateComplexContent(pomptCaptor.getValue());
 	}

@@ -25,6 +25,7 @@ import org.springframework.ai.model.ModelRequest;
  * Represents a request to embed a list of documents.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class DocumentEmbeddingRequest implements ModelRequest<List<Document>> {
@@ -34,11 +35,11 @@ public class DocumentEmbeddingRequest implements ModelRequest<List<Document>> {
 	private final EmbeddingOptions options;
 
 	public DocumentEmbeddingRequest(Document... inputs) {
-		this(Arrays.asList(inputs), EmbeddingOptions.EMPTY);
+		this(Arrays.asList(inputs), EmbeddingOptionsBuilder.builder().build());
 	}
 
 	public DocumentEmbeddingRequest(List<Document> inputs) {
-		this(inputs, EmbeddingOptions.EMPTY);
+		this(inputs, EmbeddingOptionsBuilder.builder().build());
 	}
 
 	public DocumentEmbeddingRequest(List<Document> inputs, EmbeddingOptions options) {

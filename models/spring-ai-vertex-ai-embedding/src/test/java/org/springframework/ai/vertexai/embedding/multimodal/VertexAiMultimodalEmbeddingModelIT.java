@@ -74,7 +74,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens())
 			.as("Total tokens in metadata should be 0")
-			.isEqualTo("0");
+			.isEqualTo(0L);
 
 		assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 	}

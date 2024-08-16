@@ -26,8 +26,8 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.*;
 
 import java.util.List;
@@ -70,7 +70,7 @@ class ChatModelMeterObservationHandlerTests {
 		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(3);
 		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
 			.tag(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), AiOperationType.CHAT.value())
-			.tag(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OLLAMA.value())
+			.tag(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider")
 			.tag(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "mistral")
 			.tag(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), "mistral-42")
 			.meters()).hasSize(3);
@@ -88,20 +88,13 @@ class ChatModelMeterObservationHandlerTests {
 	private ChatModelObservationContext generateObservationContext() {
 		return ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 	}
 
 	private Prompt generatePrompt() {
 		return new Prompt("hello");
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.CHAT.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 	static class TestUsage implements Usage {

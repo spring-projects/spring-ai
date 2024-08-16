@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.stabilityai.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.image.ImageOptions;
@@ -452,8 +453,14 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	@Override
+	@JsonIgnore
 	public String getStyle() {
 		return getStylePreset();
+	}
+
+	@JsonIgnore
+	public void setStyle(String style) {
+		setStylePreset(style);
 	}
 
 	public String getStylePreset() {

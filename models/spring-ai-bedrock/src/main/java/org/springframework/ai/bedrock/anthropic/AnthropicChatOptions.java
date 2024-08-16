@@ -17,6 +17,7 @@ package org.springframework.ai.bedrock.anthropic;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -26,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class AnthropicChatOptions implements ChatOptions {
@@ -122,6 +124,17 @@ public class AnthropicChatOptions implements ChatOptions {
 		this.temperature = temperature;
 	}
 
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+		return getMaxTokensToSample();
+	}
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setMaxTokensToSample(maxTokens);
+	}
+
 	public Integer getMaxTokensToSample() {
 		return this.maxTokensToSample;
 	}
@@ -148,6 +161,7 @@ public class AnthropicChatOptions implements ChatOptions {
 		this.topP = topP;
 	}
 
+	@Override
 	public List<String> getStopSequences() {
 		return this.stopSequences;
 	}
@@ -162,6 +176,24 @@ public class AnthropicChatOptions implements ChatOptions {
 
 	public void setAnthropicVersion(String anthropicVersion) {
 		this.anthropicVersion = anthropicVersion;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
 	}
 
 	@Override

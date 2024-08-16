@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.zhipuai;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.image.ImageOptions;
@@ -88,6 +89,7 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 	}
 
 	@Override
+	@JsonIgnore
 	public Integer getN() {
 		return null;
 	}
@@ -102,21 +104,25 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 	}
 
 	@Override
+	@JsonIgnore
 	public Integer getWidth() {
 		return null;
 	}
 
 	@Override
+	@JsonIgnore
 	public Integer getHeight() {
 		return null;
 	}
 
 	@Override
+	@JsonIgnore
 	public String getResponseFormat() {
 		return null;
 	}
 
 	@Override
+	@JsonIgnore
 	public String getStyle() {
 		return null;
 	}

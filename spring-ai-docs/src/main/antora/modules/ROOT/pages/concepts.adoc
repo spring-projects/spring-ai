@@ -189,7 +189,7 @@ Additionally, you can define and reference multiple functions in a single prompt
 image::function-calling-basic-flow.jpg[Function calling, width=700, align="center"]
 
 * (1) perform a chat request sending along function definition information.
-The later provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
+The latter provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
 * (2) when the Model decides to call the function, it will call the function with the input parameters and return the output to the model.
 * (3) Spring AI handles this conversation for you.
 It dispatches the function call to the appropriate function and returns the result to the model.

@@ -84,7 +84,7 @@ class PostgresMlEmbeddingModelIT {
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate);
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed("Hello World!");
+		float[] embed = embeddingModel.embed("Hello World!");
 
 		assertThat(embed).hasSize(768);
 	}
@@ -98,7 +98,7 @@ class PostgresMlEmbeddingModelIT {
 					.build());
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed(new Document("Hello World!"));
+		float[] embed = embeddingModel.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(768);
 	}
@@ -109,7 +109,7 @@ class PostgresMlEmbeddingModelIT {
 				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build());
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed(new Document("Hello World!"));
+		float[] embed = embeddingModel.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(384);
 	}
@@ -125,7 +125,7 @@ class PostgresMlEmbeddingModelIT {
 					.build());
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed(new Document("Hello World!"));
+		float[] embed = embeddingModel.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(768);
 	}

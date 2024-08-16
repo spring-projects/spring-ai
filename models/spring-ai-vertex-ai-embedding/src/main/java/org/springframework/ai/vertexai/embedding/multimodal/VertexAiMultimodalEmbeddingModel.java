@@ -198,7 +198,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		for (Value prediction : embeddingResponse.getPredictionsList()) {
 			if (prediction.getStructValue().containsFields("textEmbedding")) {
 				Value textEmbedding = prediction.getStructValue().getFieldsOrThrow("textEmbedding");
-				List<Double> textVector = VertexAiEmbeddingUtils.toVector(textEmbedding);
+				float[] textVector = VertexAiEmbeddingUtils.toVector(textEmbedding);
 
 				var docMetadata = documentMetadata.get(ModalityType.TEXT);
 				embeddingList.add(new Embedding(textVector, index++, new EmbeddingResultMetadata(docMetadata.documentId,
@@ -206,7 +206,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 			}
 			if (prediction.getStructValue().containsFields("imageEmbedding")) {
 				Value imageEmbedding = prediction.getStructValue().getFieldsOrThrow("imageEmbedding");
-				List<Double> imageVector = VertexAiEmbeddingUtils.toVector(imageEmbedding);
+				float[] imageVector = VertexAiEmbeddingUtils.toVector(imageEmbedding);
 
 				var docMetadata = documentMetadata.get(ModalityType.IMAGE);
 				embeddingList
@@ -220,7 +220,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 						.getValues(0)
 						.getStructValue()
 						.getFieldsOrThrow("embedding");
-					List<Double> videoVector = VertexAiEmbeddingUtils.toVector(embeddings);
+					float[] videoVector = VertexAiEmbeddingUtils.toVector(embeddings);
 
 					var docMetadata = documentMetadata.get(ModalityType.VIDEO);
 					embeddingList

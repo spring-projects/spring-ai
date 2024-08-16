@@ -322,14 +322,14 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	/**
 	 * Converts a list of Double values into an Oracle VECTOR object ready to be inserted.
 	 * Optionally normalize the vector beforehand (see forcedNormalization).
-	 * @param doubleList
+	 * @param floatList
 	 * @return
 	 * @throws SQLException
 	 */
-	private VECTOR toVECTOR(final List<Double> doubleList) throws SQLException {
-		final double[] doubles = new double[doubleList.size()];
+	private VECTOR toVECTOR(final float[] floatList) throws SQLException {
+		final double[] doubles = new double[floatList.length];
 		int i = 0;
-		for (double d : doubleList) {
+		for (double d : floatList) {
 			doubles[i++] = d;
 		}
 
@@ -400,8 +400,8 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 			metadata.put("distance", rs.getDouble(5));
 
 			final Document document = new Document(rs.getString(1), rs.getString(2), metadata);
-			final double[] embedding = rs.getObject(4, double[].class);
-			document.setEmbedding(toDoubleList(embedding));
+			final float[] embedding = rs.getObject(4, float[].class);
+			document.setEmbedding(embedding);
 			return document;
 		}
 
@@ -418,9 +418,9 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 			return result;
 		}
 
-		private List<Double> toDoubleList(final double[] embeddings) {
-			final List<Double> result = new ArrayList<>(embeddings.length);
-			for (double v : embeddings) {
+		private List<Float> toFloatList(final float[] embeddings) {
+			final List<Float> result = new ArrayList<>(embeddings.length);
+			for (float v : embeddings) {
 				result.add(v);
 			}
 			return result;

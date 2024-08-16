@@ -256,12 +256,12 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 			private final String key;
 
-			private List<Float> vector;
+			private float[] vector;
 
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			private Map<String, Object> metadata;
 
-			public Embedding(@JsonProperty("key") String key, @JsonProperty("vector") List<Float> vector,
+			public Embedding(@JsonProperty("key") String key, @JsonProperty("vector") float[] vector,
 					String contentName, String content, @JsonProperty("metadata") Map<String, Object> metadata) {
 				this.key = key;
 				this.vector = vector;
@@ -273,7 +273,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 				return key;
 			}
 
-			public List<Float> getVector() {
+			public float[] getVector() {
 				return vector;
 			}
 
@@ -289,7 +289,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 		@JsonProperty("vector")
 		@NonNull
-		private final List<Float> vector;
+		private final float[] vector;
 
 		@JsonProperty("top-k")
 		private final int k;
@@ -300,14 +300,14 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		@JsonProperty("include-metadata")
 		private final boolean includeMetadata;
 
-		public QueryRequest(List<Float> vector, int k, int kPerBucket, boolean includeMetadata) {
+		public QueryRequest(float[] vector, int k, int kPerBucket, boolean includeMetadata) {
 			this.vector = vector;
 			this.k = k;
 			this.kPerBucket = kPerBucket;
 			this.includeMetadata = includeMetadata;
 		}
 
-		public List<Float> getVector() {
+		public float[] getVector() {
 			return vector;
 		}
 
@@ -378,7 +378,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
 			document.setEmbedding(this.embeddingModel.embed(document));
-			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
+			float[] floatVector = document.getEmbedding();
 			return new UploadRequest.Embedding(document.getId(), floatVector, DOCUMENT_FIELD, document.getContent(),
 					document.getMetadata());
 		}).toList());
@@ -425,8 +425,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
 		}
-		List<Double> vector = this.embeddingModel.embed(request.getQuery());
-		List<Float> floatVector = vector.stream().map(Double::floatValue).toList();
+		float[] floatVector = this.embeddingModel.embed(request.getQuery());
 		return client.post()
 			.uri("/" + indexName + QUERY)
 			.contentType(MediaType.APPLICATION_JSON)

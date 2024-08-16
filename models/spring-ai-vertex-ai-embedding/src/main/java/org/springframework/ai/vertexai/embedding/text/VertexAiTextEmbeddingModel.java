@@ -66,7 +66,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent());
 	}
@@ -125,7 +125,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 				Value values = embeddings.getStructValue().getFieldsOrThrow("values");
 
-				List<Double> vectorValues = VertexAiEmbeddingUtils.toVector(values);
+				float[] vectorValues = VertexAiEmbeddingUtils.toVector(values);
 
 				embeddingList.add(new Embedding(vectorValues, index++));
 			}

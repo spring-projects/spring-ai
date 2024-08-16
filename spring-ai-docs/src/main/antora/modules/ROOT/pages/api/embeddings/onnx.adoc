@@ -24,7 +24,7 @@ source ./venv/bin/activate
 (venv) optimum-cli export onnx --model sentence-transformers/all-MiniLM-L6-v2 onnx-output-folder
 ----
 
-The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2] transformer into the `onnx-output-folder` folder. Later includes the `tokenizer.json` and `model.onnx` files used by the embedding model.
+The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2] transformer into the `onnx-output-folder` folder. The latter includes the `tokenizer.json` and `model.onnx` files used by the embedding model.
 
 In place of the all-MiniLM-L6-v2 you can pick any huggingface transformer identifier or provide direct file path.
 
@@ -77,7 +77,7 @@ The complete list of supported properties are:
 | spring.ai.embedding.transformer.cache.directory  | Directory path to cache remote resources, such as the ONNX models   | ${java.io.tmpdir}/spring-ai-onnx-model
 | spring.ai.embedding.transformer.onnx.modelUri  | Existing, pre-trained ONNX model.  | onnx/all-MiniLM-L6-v2/model.onnx
 | spring.ai.embedding.transformer.onnx.modelOutputName | The ONNX model's output node name, which we'll use for embedding calculation.  | last_hidden_state
-| spring.ai.embedding.transformer.onnx.gpuDeviceId  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise. |  -1
+| spring.ai.embedding.transformer.onnx.gpuDeviceId  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise.(Requires additional onnxruntime_gpu dependency) |  -1
 | spring.ai.embedding.transformer.metadataMode  |  Specifies what parts of the Documents content and metadata will be used for computing the embeddings.  |  NONE
 |===
 
@@ -112,6 +112,19 @@ that means that you model is larger than 2GB and is serialized in two files: `mo
 The `model.onnx_data` is called link:https://onnx.ai/onnx/repo-docs/ExternalData.html#external-data[External Data] and is expected to be under the same directory of the `model.onnx`.
 
 Currently the only workaround is to copy the large `model.onnx_data` in the folder you run your Boot applicaiton.
+====
+
+[NOTE]
+====
+If you get an error like `ai.onnxruntime.OrtException: Error code - ORT_EP_FAIL - message: Failed to find CUDA shared provider`,
+that means that you are using the GPU parameters `spring.ai.embedding.transformer.onnx.gpuDeviceId` , but the onnxruntime_gpu dependency are missing.
+----
+<dependency>
+    <groupId>com.microsoft.onnxruntime</groupId>
+    <artifactId>onnxruntime_gpu</artifactId>
+</dependency>
+----
+Please select the appropriate onnxruntime_gpu version based on the CUDA version(link:https://onnxruntime.ai/docs/get-started/with-java.html[ONNX Java Runtime]).
 ====
 
 == Manual Configuration

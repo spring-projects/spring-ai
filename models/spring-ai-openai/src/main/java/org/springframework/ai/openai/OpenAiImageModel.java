@@ -30,13 +30,12 @@ import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -131,7 +130,7 @@ public class OpenAiImageModel implements ImageModel {
 
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
-			.operationMetadata(buildOperationMetadata())
+			.provider(OpenAiApiConstants.PROVIDER_NAME)
 			.requestOptions(requestImageOptions)
 			.build();
 
@@ -181,30 +180,28 @@ public class OpenAiImageModel implements ImageModel {
 	 * Merge runtime and default {@link ImageOptions} to compute the final options to use
 	 * in the request.
 	 */
-	private OpenAiImageOptions mergeOptions(ImageOptions runtimeOptions, OpenAiImageOptions defaultOptions) {
-		if (runtimeOptions == null) {
+	private OpenAiImageOptions mergeOptions(@Nullable ImageOptions runtimeOptions, OpenAiImageOptions defaultOptions) {
+		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, ImageOptions.class,
+				OpenAiImageOptions.class);
+
+		if (runtimeOptionsForProvider == null) {
 			return defaultOptions;
 		}
 
 		return OpenAiImageOptions.builder()
 			// Handle portable image options
-			.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
-			.withN(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
-			.withResponseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withN(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getN(), defaultOptions.getN()))
+			.withResponseFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getResponseFormat(),
 					defaultOptions.getResponseFormat()))
-			.withWidth(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
-			.withHeight(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
-			.withStyle(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
+			.withWidth(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getWidth(), defaultOptions.getWidth()))
+			.withHeight(
+					ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getHeight(), defaultOptions.getHeight()))
+			.withStyle(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getStyle(), defaultOptions.getStyle()))
 			// Handle OpenAI specific image options
-			.withQuality(defaultOptions.getQuality())
-			.withUser(defaultOptions.getUser())
-			.build();
-	}
-
-	private AiOperationMetadata buildOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.IMAGE.value())
-			.provider(AiProvider.OPENAI.value())
+			.withQuality(
+					ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getQuality(), defaultOptions.getQuality()))
+			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
 			.build();
 	}
 

@@ -98,7 +98,7 @@ List <Document> documents = List.of(
     new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
 
 // Add the documents
-vectorStore.add(List.of(document));
+vectorStore.add(documents);
 
 // Retrieve documents similar to a query
 List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));

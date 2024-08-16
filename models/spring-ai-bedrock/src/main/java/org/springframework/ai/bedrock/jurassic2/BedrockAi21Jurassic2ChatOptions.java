@@ -16,14 +16,18 @@
 
 package org.springframework.ai.bedrock.jurassic2;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
+
+import java.util.List;
 
 /**
  * Request body for the /complete endpoint of the Jurassic-2 API.
  *
  * @author Ahmed Yousri
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -75,25 +79,25 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Stops decoding if any of the strings is generated.
 	 */
 	@JsonProperty("stopSequences")
-	private String[] stopSequences;
+	private List<String> stopSequences;
 
 	/**
 	 * Penalty object for frequency.
 	 */
 	@JsonProperty("frequencyPenalty")
-	private Penalty frequencyPenalty;
+	private Penalty frequencyPenaltyOptions;
 
 	/**
 	 * Penalty object for presence.
 	 */
 	@JsonProperty("presencePenalty")
-	private Penalty presencePenalty;
+	private Penalty presencePenaltyOptions;
 
 	/**
 	 * Penalty object for count.
 	 */
 	@JsonProperty("countPenalty")
-	private Penalty countPenalty;
+	private Penalty countPenaltyOptions;
 
 	// Getters and setters
 
@@ -133,6 +137,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Gets the maximum number of tokens to generate per result.
 	 * @return The maximum number of tokens.
 	 */
+	@Override
 	public Integer getMaxTokens() {
 		return maxTokens;
 	}
@@ -165,6 +170,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Gets the temperature for modifying the token sampling distribution.
 	 * @return The temperature.
 	 */
+	@Override
 	public Float getTemperature() {
 		return temperature;
 	}
@@ -182,6 +188,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * mass.
 	 * @return The topP parameter.
 	 */
+	@Override
 	public Float getTopP() {
 		return topP;
 	}
@@ -216,7 +223,8 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Gets the stop sequences for stopping decoding if any of the strings is generated.
 	 * @return The stop sequences.
 	 */
-	public String[] getStopSequences() {
+	@Override
+	public List<String> getStopSequences() {
 		return stopSequences;
 	}
 
@@ -224,56 +232,88 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Sets the stop sequences for stopping decoding if any of the strings is generated.
 	 * @param stopSequences The stop sequences.
 	 */
-	public void setStopSequences(String[] stopSequences) {
+	public void setStopSequences(List<String> stopSequences) {
 		this.stopSequences = stopSequences;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return getFrequencyPenaltyOptions() != null ? getFrequencyPenaltyOptions().scale() : null;
+	}
+
+	@JsonIgnore
+	public void setFrequencyPenalty(Float frequencyPenalty) {
+		if (frequencyPenalty != null) {
+			setFrequencyPenaltyOptions(Penalty.builder().scale(frequencyPenalty).build());
+		}
 	}
 
 	/**
 	 * Gets the frequency penalty object.
 	 * @return The frequency penalty object.
 	 */
-	public Penalty getFrequencyPenalty() {
-		return frequencyPenalty;
+	public Penalty getFrequencyPenaltyOptions() {
+		return frequencyPenaltyOptions;
 	}
 
 	/**
 	 * Sets the frequency penalty object.
-	 * @param frequencyPenalty The frequency penalty object.
+	 * @param frequencyPenaltyOptions The frequency penalty object.
 	 */
-	public void setFrequencyPenalty(Penalty frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
+	public void setFrequencyPenaltyOptions(Penalty frequencyPenaltyOptions) {
+		this.frequencyPenaltyOptions = frequencyPenaltyOptions;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return getPresencePenaltyOptions() != null ? getPresencePenaltyOptions().scale() : null;
+	}
+
+	@JsonIgnore
+	public void setPresencePenalty(Float presencePenalty) {
+		if (presencePenalty != null) {
+			setPresencePenaltyOptions(Penalty.builder().scale(presencePenalty).build());
+		}
 	}
 
 	/**
 	 * Gets the presence penalty object.
 	 * @return The presence penalty object.
 	 */
-	public Penalty getPresencePenalty() {
-		return presencePenalty;
+	public Penalty getPresencePenaltyOptions() {
+		return presencePenaltyOptions;
 	}
 
 	/**
 	 * Sets the presence penalty object.
-	 * @param presencePenalty The presence penalty object.
+	 * @param presencePenaltyOptions The presence penalty object.
 	 */
-	public void setPresencePenalty(Penalty presencePenalty) {
-		this.presencePenalty = presencePenalty;
+	public void setPresencePenaltyOptions(Penalty presencePenaltyOptions) {
+		this.presencePenaltyOptions = presencePenaltyOptions;
 	}
 
 	/**
 	 * Gets the count penalty object.
 	 * @return The count penalty object.
 	 */
-	public Penalty getCountPenalty() {
-		return countPenalty;
+	public Penalty getCountPenaltyOptions() {
+		return countPenaltyOptions;
 	}
 
 	/**
 	 * Sets the count penalty object.
-	 * @param countPenalty The count penalty object.
+	 * @param countPenaltyOptions The count penalty object.
 	 */
-	public void setCountPenalty(Penalty countPenalty) {
-		this.countPenalty = countPenalty;
+	public void setCountPenaltyOptions(Penalty countPenaltyOptions) {
+		this.countPenaltyOptions = countPenaltyOptions;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return null;
 	}
 
 	public static Builder builder() {
@@ -314,7 +354,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withStopSequences(String[] stopSequences) {
+		public Builder withStopSequences(List<String> stopSequences) {
 			request.setStopSequences(stopSequences);
 			return this;
 		}
@@ -324,18 +364,18 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(BedrockAi21Jurassic2ChatOptions.Penalty frequencyPenalty) {
-			request.setFrequencyPenalty(frequencyPenalty);
+		public Builder withFrequencyPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty frequencyPenalty) {
+			request.setFrequencyPenaltyOptions(frequencyPenalty);
 			return this;
 		}
 
-		public Builder withPresencePenalty(BedrockAi21Jurassic2ChatOptions.Penalty presencePenalty) {
-			request.setPresencePenalty(presencePenalty);
+		public Builder withPresencePenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty presencePenalty) {
+			request.setPresencePenaltyOptions(presencePenalty);
 			return this;
 		}
 
-		public Builder withCountPenalty(BedrockAi21Jurassic2ChatOptions.Penalty countPenalty) {
-			request.setCountPenalty(countPenalty);
+		public Builder withCountPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty countPenalty) {
+			request.setCountPenaltyOptions(countPenalty);
 			return this;
 		}
 
@@ -427,9 +467,9 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 			.withTopP(fromOptions.getTopP())
 			.withTopK(fromOptions.getTopK())
 			.withStopSequences(fromOptions.getStopSequences())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withCountPenalty(fromOptions.getCountPenalty())
+			.withFrequencyPenaltyOptions(fromOptions.getFrequencyPenaltyOptions())
+			.withPresencePenaltyOptions(fromOptions.getPresencePenaltyOptions())
+			.withCountPenaltyOptions(fromOptions.getCountPenaltyOptions())
 			.build();
 	}
 

@@ -125,10 +125,11 @@ public class QianFanRetryTests {
 	}
 
 	@Test
-    public void qianFanChatNonTransientError() {
-        when(qianFanApi.chatCompletionEntity(isA(ChatCompletionRequest.class))).thenThrow(new RuntimeException("Non Transient Error"));
-        assertThrows(RuntimeException.class, () -> chatClient.call(new Prompt("text")));
-    }
+	public void qianFanChatNonTransientError() {
+		when(qianFanApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.thenThrow(new RuntimeException("Non Transient Error"));
+		assertThrows(RuntimeException.class, () -> chatClient.call(new Prompt("text")));
+	}
 
 	@Test
 	public void qianFanChatStreamTransientError() {
@@ -150,14 +151,15 @@ public class QianFanRetryTests {
 	}
 
 	@Test
-    public void qianFanChatStreamNonTransientError() {
-        when(qianFanApi.chatCompletionStream(isA(ChatCompletionRequest.class))).thenThrow(new RuntimeException("Non Transient Error"));
-        assertThrows(RuntimeException.class, () -> chatClient.stream(new Prompt("text")));
-    }
+	public void qianFanChatStreamNonTransientError() {
+		when(qianFanApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.thenThrow(new RuntimeException("Non Transient Error"));
+		assertThrows(RuntimeException.class, () -> chatClient.stream(new Prompt("text")));
+	}
 
 	@Test
 	public void qianFanEmbeddingTransientError() {
-		QianFanApi.Embedding embedding = new QianFanApi.Embedding(1, List.of(9.9, 8.8));
+		QianFanApi.Embedding embedding = new QianFanApi.Embedding(1, new float[] { 9.9f, 8.8f });
 		EmbeddingList expectedEmbeddings = new EmbeddingList("embedding_list", List.of(embedding), "model", null, null,
 				new Usage(10, 10));
 
@@ -170,16 +172,17 @@ public class QianFanRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput()).isEqualTo(List.of(9.9, 8.8));
+		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
 		assertThat(retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
 	@Test
-    public void qianFanEmbeddingNonTransientError() {
-        when(qianFanApi.embeddings(isA(EmbeddingRequest.class))).thenThrow(new RuntimeException("Non Transient Error"));
-        assertThrows(RuntimeException.class, () -> embeddingClient.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
-    }
+	public void qianFanEmbeddingNonTransientError() {
+		when(qianFanApi.embeddings(isA(EmbeddingRequest.class))).thenThrow(new RuntimeException("Non Transient Error"));
+		assertThrows(RuntimeException.class, () -> embeddingClient
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
+	}
 
 	@Test
 	public void qianFanImageTransientError() {
@@ -200,11 +203,11 @@ public class QianFanRetryTests {
 	}
 
 	@Test
-    public void qianFanImageNonTransientError() {
-        when(qianFanImageApi.createImage(isA(QianFanImageRequest.class)))
-                .thenThrow(new RuntimeException("Transient Error 1"));
-        assertThrows(RuntimeException.class,
-                () -> imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
-    }
+	public void qianFanImageNonTransientError() {
+		when(qianFanImageApi.createImage(isA(QianFanImageRequest.class)))
+			.thenThrow(new RuntimeException("Transient Error 1"));
+		assertThrows(RuntimeException.class,
+				() -> imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
+	}
 
 }

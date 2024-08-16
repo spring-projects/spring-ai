@@ -17,12 +17,14 @@ package org.springframework.ai.azure.openai;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * The configuration information for the embedding requests.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
@@ -123,6 +125,17 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return getDeploymentName();
+	}
+
+	@JsonIgnore
+	public void setModel(String model) {
+		setDeploymentName(model);
+	}
+
 	public String getUser() {
 		return this.user;
 	}
@@ -147,6 +160,7 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 		this.inputType = inputType;
 	}
 
+	@Override
 	public Integer getDimensions() {
 		return this.dimensions;
 	}

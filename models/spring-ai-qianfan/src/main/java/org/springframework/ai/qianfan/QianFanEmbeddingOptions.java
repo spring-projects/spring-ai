@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.qianfan;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -24,6 +25,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * This class represents the options for QianFan embedding.
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -70,6 +72,7 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -84,6 +87,12 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getDimensions() {
+		return null;
 	}
 
 }

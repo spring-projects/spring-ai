@@ -16,9 +16,11 @@
 package org.springframework.ai.chat.observation;
 
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
+import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.util.Assert;
 
 /**
@@ -29,16 +31,16 @@ import org.springframework.util.Assert;
  */
 public class ChatModelObservationContext extends ModelObservationContext<Prompt, ChatResponse> {
 
-	private final ChatModelRequestOptions requestOptions;
+	private final ChatOptions requestOptions;
 
-	ChatModelObservationContext(Prompt prompt, AiOperationMetadata operationMetadata,
-			ChatModelRequestOptions requestOptions) {
-		super(prompt, operationMetadata);
+	ChatModelObservationContext(Prompt prompt, String provider, ChatOptions requestOptions) {
+		super(prompt,
+				AiOperationMetadata.builder().operationType(AiOperationType.CHAT.value()).provider(provider).build());
 		Assert.notNull(requestOptions, "requestOptions cannot be null");
 		this.requestOptions = requestOptions;
 	}
 
-	public ChatModelRequestOptions getRequestOptions() {
+	public ChatOptions getRequestOptions() {
 		return this.requestOptions;
 	}
 
@@ -50,9 +52,9 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 
 		private Prompt prompt;
 
-		private AiOperationMetadata operationMetadata;
+		private String provider;
 
-		private ChatModelRequestOptions requestOptions;
+		private ChatOptions requestOptions;
 
 		private Builder() {
 		}
@@ -62,18 +64,18 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 			return this;
 		}
 
-		public Builder operationMetadata(AiOperationMetadata operationMetadata) {
-			this.operationMetadata = operationMetadata;
+		public Builder provider(String provider) {
+			this.provider = provider;
 			return this;
 		}
 
-		public Builder requestOptions(ChatModelRequestOptions requestOptions) {
+		public Builder requestOptions(ChatOptions requestOptions) {
 			this.requestOptions = requestOptions;
 			return this;
 		}
 
 		public ChatModelObservationContext build() {
-			return new ChatModelObservationContext(prompt, operationMetadata, requestOptions);
+			return new ChatModelObservationContext(prompt, provider, requestOptions);
 		}
 
 	}

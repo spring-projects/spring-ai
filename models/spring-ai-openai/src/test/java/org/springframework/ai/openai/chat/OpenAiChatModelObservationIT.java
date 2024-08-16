@@ -18,6 +18,9 @@ package org.springframework.ai.openai.chat;
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import reactor.core.publisher.Flux;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -37,6 +40,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
@@ -57,8 +61,14 @@ public class OpenAiChatModelObservationIT {
 	@Autowired
 	OpenAiChatModel chatModel;
 
+	@BeforeEach
+	void beforeEach() {
+		observationRegistry.clear();
+	}
+
 	@Test
-	void observationForEmbeddingOperation() {
+	void observationForChatOperation() {
+
 		var options = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
 			.withFrequencyPenalty(0f)
@@ -77,6 +87,45 @@ public class OpenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
+		validate(responseMetadata);
+	}
+
+	@Test
+	void observationForStreamingChatOperation() {
+		var options = OpenAiChatOptions.builder()
+			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
+			.withFrequencyPenalty(0f)
+			.withMaxTokens(2048)
+			.withPresencePenalty(0f)
+			.withStop(List.of("this-is-the-end"))
+			.withTemperature(0.7f)
+			.withTopP(1f)
+			.withStreamUsage(true)
+			.build();
+
+		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
+
+		Flux<ChatResponse> chatResponseFlux = chatModel.stream(prompt);
+
+		List<ChatResponse> responses = chatResponseFlux.collectList().block();
+		assertThat(responses).isNotEmpty();
+		assertThat(responses).hasSizeGreaterThan(10);
+
+		String aggregatedResponse = responses.subList(0, responses.size() - 1)
+			.stream()
+			.map(r -> r.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+		assertThat(aggregatedResponse).isNotEmpty();
+
+		ChatResponse lastChatResponse = responses.get(responses.size() - 1);
+
+		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
+
+		validate(responseMetadata);
+	}
+
+	private void validate(ChatResponseMetadata responseMetadata) {
 		TestObservationRegistryAssert.assertThat(observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)

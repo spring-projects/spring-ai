@@ -16,9 +16,13 @@
 
 package org.springframework.ai.autoconfigure.chat.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.observation.ChatClientInputContentObservationFilter;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -28,6 +32,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link ChatClient}.
@@ -49,6 +55,8 @@ import org.springframework.context.annotation.Scope;
 		matchIfMissing = true)
 public class ChatClientAutoConfiguration {
 
+	private static final Logger logger = LoggerFactory.getLogger(ChatClientAutoConfiguration.class);
+
 	@Bean
 	@ConditionalOnMissingBean
 	ChatClientBuilderConfigurer chatClientBuilderConfigurer(ObjectProvider<ChatClientCustomizer> customizerProvider) {
@@ -59,9 +67,24 @@ public class ChatClientAutoConfiguration {
 
 	@Bean
 	@Scope("prototype")
-	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel) {
-		ChatClient.Builder builder = ChatClient.builder(chatModel);
+	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatClientObservationConvention> observationConvention) {
+
+		ChatClient.Builder builder = ChatClient.builder(chatModel,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				observationConvention.getIfUnique(() -> null));
 		return chatClientBuilderConfigurer.configure(builder);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations", name = "include-input",
+			havingValue = "true")
+	ChatClientInputContentObservationFilter chatClientInputContentObservationFilter() {
+		logger.warn(
+				"You have enabled the inclusion of the input content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+		return new ChatClientInputContentObservationFilter();
 	}
 
 }

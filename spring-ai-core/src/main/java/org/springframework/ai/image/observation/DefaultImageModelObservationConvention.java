@@ -63,7 +63,7 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 
 	protected KeyValue aiOperationType(ImageModelObservationContext context) {
 		return KeyValue.of(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE,
-				context.getOperationType());
+				context.getOperationMetadata().operationType());
 	}
 
 	protected KeyValue aiProvider(ImageModelObservationContext context) {

@@ -22,8 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 
+import java.util.List;
+
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockLlamaChatOptions implements ChatOptions {
@@ -74,6 +77,7 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 
 	}
 
+	@Override
 	public Float getTemperature() {
 		return this.temperature;
 	}
@@ -82,12 +86,24 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 		this.temperature = temperature;
 	}
 
+	@Override
 	public Float getTopP() {
 		return this.topP;
 	}
 
 	public void setTopP(Float topP) {
 		this.topP = topP;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+		return getMaxGenLen();
+	}
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setMaxGenLen(maxTokens);
 	}
 
 	public Integer getMaxGenLen() {
@@ -100,13 +116,32 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
+	public String getModel() {
+		return null;
 	}
 
+	@Override
 	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
 	}
 
 	@Override

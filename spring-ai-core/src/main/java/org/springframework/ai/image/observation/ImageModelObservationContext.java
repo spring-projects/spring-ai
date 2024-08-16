@@ -33,9 +33,9 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 
 	private final ImageOptions requestOptions;
 
-	ImageModelObservationContext(ImagePrompt imagePrompt, AiOperationMetadata operationMetadata,
-			ImageOptions requestOptions) {
-		super(imagePrompt, operationMetadata);
+	ImageModelObservationContext(ImagePrompt imagePrompt, String provider, ImageOptions requestOptions) {
+		super(imagePrompt,
+				AiOperationMetadata.builder().operationType(AiOperationType.IMAGE.value()).provider(provider).build());
 		Assert.notNull(requestOptions, "requestOptions cannot be null");
 		this.requestOptions = requestOptions;
 	}
@@ -56,7 +56,7 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 
 		private ImagePrompt imagePrompt;
 
-		private AiOperationMetadata operationMetadata;
+		private String provider;
 
 		private ImageOptions requestOptions;
 
@@ -68,8 +68,8 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 			return this;
 		}
 
-		public Builder operationMetadata(AiOperationMetadata operationMetadata) {
-			this.operationMetadata = operationMetadata;
+		public Builder provider(String provider) {
+			this.provider = provider;
 			return this;
 		}
 
@@ -79,7 +79,7 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 		}
 
 		public ImageModelObservationContext build() {
-			return new ImageModelObservationContext(imagePrompt, operationMetadata, requestOptions);
+			return new ImageModelObservationContext(imagePrompt, provider, requestOptions);
 		}
 
 	}

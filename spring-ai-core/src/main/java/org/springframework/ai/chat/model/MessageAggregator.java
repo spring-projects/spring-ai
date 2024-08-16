@@ -24,6 +24,15 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.util.StringUtils;
+
 import reactor.core.publisher.Flux;
 
 /**
@@ -40,32 +49,123 @@ public class MessageAggregator {
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
 
-		AtomicReference<StringBuilder> stringBufferRef = new AtomicReference<>(new StringBuilder());
-		AtomicReference<Map<String, Object>> mapRef = new AtomicReference<>();
+		// Assistant Message
+		AtomicReference<StringBuilder> messageTextContentRef = new AtomicReference<>(new StringBuilder());
+		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
+
+		// ChatGeneration Metadata
+		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
+				ChatGenerationMetadata.NULL);
+
+		// Usage
+		AtomicReference<Long> metadataUsagePromptTokensRef = new AtomicReference<>(0L);
+		AtomicReference<Long> metadataUsageGenerationTokensRef = new AtomicReference<>(0L);
+		AtomicReference<Long> metadataUsageTotalTokensRef = new AtomicReference<>(0L);
+
+		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
+		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
+
+		AtomicReference<String> metadataIdRef = new AtomicReference<>("");
+		AtomicReference<String> metadataModelRef = new AtomicReference<>("");
 
 		return fluxChatResponse.doOnSubscribe(subscription -> {
-			// logger.info("Aggregation Subscribe:" + subscription);
-			stringBufferRef.set(new StringBuilder());
-			mapRef.set(new HashMap<>());
+			messageTextContentRef.set(new StringBuilder());
+			messageMetadataMapRef.set(new HashMap<>());
+			metadataIdRef.set("");
+			metadataModelRef.set("");
+			metadataUsagePromptTokensRef.set(0L);
+			metadataUsageGenerationTokensRef.set(0L);
+			metadataUsageTotalTokensRef.set(0L);
+			metadataPromptMetadataRef.set(PromptMetadata.empty());
+			metadataRateLimitRef.set(new EmptyRateLimit());
+
 		}).doOnNext(chatResponse -> {
-			// logger.info("Aggregation Next:" + chatResponse);
+
 			if (chatResponse.getResult() != null) {
+				if (chatResponse.getResult().getMetadata() != null
+						&& chatResponse.getResult().getMetadata() != ChatGenerationMetadata.NULL) {
+					generationMetadataRef.set(chatResponse.getResult().getMetadata());
+				}
 				if (chatResponse.getResult().getOutput().getContent() != null) {
-					stringBufferRef.get().append(chatResponse.getResult().getOutput().getContent());
+					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getContent());
 				}
 				if (chatResponse.getResult().getOutput().getMetadata() != null) {
-					mapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
+					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
+				}
+			}
+			if (chatResponse.getMetadata() != null) {
+				if (chatResponse.getMetadata().getUsage() != null) {
+					Usage usage = chatResponse.getMetadata().getUsage();
+					metadataUsagePromptTokensRef.set(
+							usage.getPromptTokens() > 0 ? usage.getPromptTokens() : metadataUsagePromptTokensRef.get());
+					metadataUsageGenerationTokensRef.set(usage.getGenerationTokens() > 0 ? usage.getGenerationTokens()
+							: metadataUsageGenerationTokensRef.get());
+					metadataUsageTotalTokensRef
+						.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens() : metadataUsageTotalTokensRef.get());
+				}
+				if (chatResponse.getMetadata().getPromptMetadata() != null
+						&& chatResponse.getMetadata().getPromptMetadata().iterator().hasNext()) {
+					metadataPromptMetadataRef.set(chatResponse.getMetadata().getPromptMetadata());
+				}
+				if (chatResponse.getMetadata().getRateLimit() != null
+						&& !(metadataRateLimitRef.get() instanceof EmptyRateLimit)) {
+					metadataRateLimitRef.set(chatResponse.getMetadata().getRateLimit());
+				}
+				if (StringUtils.hasText(chatResponse.getMetadata().getId())) {
+					metadataIdRef.set(chatResponse.getMetadata().getId());
+				}
+				if (StringUtils.hasText(chatResponse.getMetadata().getModel())) {
+					metadataModelRef.set(chatResponse.getMetadata().getModel());
 				}
 			}
 		}).doOnComplete(() -> {
-			// logger.debug("Aggregation Complete");
-			onAggregationComplete
-				.accept(new ChatResponse(List.of(new Generation(stringBufferRef.get().toString(), mapRef.get()))));
-			stringBufferRef.set(new StringBuilder());
-			mapRef.set(new HashMap<>());
+
+			var usage = new DefaultUsage(metadataUsagePromptTokensRef.get(), metadataUsageGenerationTokensRef.get(),
+					metadataUsageTotalTokensRef.get());
+
+			var chatResponseMetadata = ChatResponseMetadata.builder()
+				.withId(metadataIdRef.get())
+				.withModel(metadataModelRef.get())
+				.withRateLimit(metadataRateLimitRef.get())
+				.withUsage(usage)
+				.withPromptMetadata(metadataPromptMetadataRef.get())
+				.build();
+
+			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(
+					new AssistantMessage(messageTextContentRef.get().toString(), messageMetadataMapRef.get()),
+					generationMetadataRef.get())), chatResponseMetadata));
+
+			messageTextContentRef.set(new StringBuilder());
+			messageMetadataMapRef.set(new HashMap<>());
+			metadataIdRef.set("");
+			metadataModelRef.set("");
+			metadataUsagePromptTokensRef.set(0L);
+			metadataUsageGenerationTokensRef.set(0L);
+			metadataUsageTotalTokensRef.set(0L);
+			metadataPromptMetadataRef.set(PromptMetadata.empty());
+			metadataRateLimitRef.set(new EmptyRateLimit());
+
 		}).doOnError(e -> {
 			logger.error("Aggregation Error", e);
 		});
+	}
+
+	public record DefaultUsage(long promptTokens, long generationTokens, long totalTokens) implements Usage {
+
+		@Override
+		public Long getPromptTokens() {
+			return promptTokens();
+		}
+
+		@Override
+		public Long getGenerationTokens() {
+			return generationTokens();
+		}
+
+		@Override
+		public Long getTotalTokens() {
+			return totalTokens();
+		}
 	}
 
 }

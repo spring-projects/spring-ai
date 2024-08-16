@@ -327,6 +327,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -335,6 +336,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -367,6 +369,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.topLogprobs = topLogprobs;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -383,6 +386,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.n = n;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
@@ -413,6 +417,17 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setSeed(Integer seed) {
 		this.seed = seed;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
 	}
 
 	public List<String> getStop() {
@@ -498,6 +513,12 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setHttpHeaders(Map<String, String> httpHeaders) {
 		this.httpHeaders = httpHeaders;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
 	}
 
 	@Override
@@ -644,17 +665,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return false;
 
 		return true;
-	}
-
-	@Override
-	@JsonIgnore
-	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
-	}
-
-	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
 	}
 
 	@Override
