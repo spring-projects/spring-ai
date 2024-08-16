@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.ollama.OllamaImage;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
@@ -51,7 +51,7 @@ public class OllamaApiIT {
 
 	private static final String MODEL = OllamaModel.ORCA_MINI.getName();
 
-	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaApiIT.class);
 
 	@Container
 	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);

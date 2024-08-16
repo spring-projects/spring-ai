@@ -106,7 +106,12 @@ public enum OllamaModel implements ChatModelDescription {
 	/**
 	 * Uncensored Llama 2 model
 	 */
-	LLAMA2_UNCENSORED("llama2-uncensored");
+	LLAMA2_UNCENSORED("llama2-uncensored"),
+
+	/**
+	 * A high-performing open embedding model with a large token context window.
+	 */
+	NOMIC_EMBED_TEXT("nomic-embed-text");
 
 	private final String id;
 

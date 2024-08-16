@@ -60,11 +60,11 @@ public class OllamaChatAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OllamaChatAutoConfigurationIT.class);
 
-	private static String MODEL_NAME = "mistral";
+	private static final String MODEL_NAME = "mistral";
 
 	private static final String OLLAMA_WITH_MODEL = "%s-%s".formatted(MODEL_NAME, OllamaImage.IMAGE);
 
-	private static final OllamaContainer ollamaContainer;
+	private static OllamaContainer ollamaContainer;
 
 	static {
 		ollamaContainer = new OllamaContainer(OllamaDockerImageName.image());
