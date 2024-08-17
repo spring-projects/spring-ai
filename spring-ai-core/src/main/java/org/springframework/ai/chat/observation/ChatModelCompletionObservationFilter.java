@@ -17,10 +17,6 @@ package org.springframework.ai.chat.observation;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationFilter;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-
-import java.util.StringJoiner;
 
 /**
  * An {@link ObservationFilter} to include the chat completion content in the observation.
@@ -36,25 +32,11 @@ public class ChatModelCompletionObservationFilter implements ObservationFilter {
 			return context;
 		}
 
-		if (chatModelObservationContext.getResponse() == null
-				|| chatModelObservationContext.getResponse().getResults() == null
-				|| CollectionUtils.isEmpty(chatModelObservationContext.getResponse().getResults())) {
-			return chatModelObservationContext;
-		}
+		var completions = ChatModelObservationContentProcessor.completion(chatModelObservationContext);
 
-		StringJoiner completionChoicesJoiner = new StringJoiner(", ", "[", "]");
-		chatModelObservationContext.getResponse()
-			.getResults()
-			.stream()
-			.filter(generation -> generation.getOutput() != null
-					&& StringUtils.hasText(generation.getOutput().getContent()))
-			.forEach(generation -> completionChoicesJoiner.add("\"" + generation.getOutput().getContent() + "\""));
-
-		if (StringUtils.hasText(chatModelObservationContext.getResponse().getResult().getOutput().getContent())) {
-			chatModelObservationContext
-				.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.COMPLETION
-					.withValue(completionChoicesJoiner.toString()));
-		}
+		chatModelObservationContext
+			.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.COMPLETION
+				.withValue(ChatModelObservationContentProcessor.concatenateStrings(completions)));
 
 		return chatModelObservationContext;
 	}

@@ -16,20 +16,25 @@
 package org.springframework.ai.autoconfigure.chat.observation;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.tracing.otel.bridge.OtelTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationFilter;
+import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationFilter;
+import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * Auto-configuration for Spring AI chat model observations.
@@ -52,24 +57,70 @@ public class ChatObservationAutoConfiguration {
 		return new ChatModelMeterObservationHandler(meterRegistry.getObject());
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-prompt",
-			havingValue = "true")
-	ChatModelPromptContentObservationFilter chatModelPromptObservationFilter() {
-		logger.warn(
-				"You have enabled the inclusion of the prompt content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
-		return new ChatModelPromptContentObservationFilter();
+	/**
+	 * The chat content is typically too big to be included in an observation as span
+	 * attributes. That's why the preferred way to store it is as span events, which are
+	 * supported by OpenTelemetry but not yet surfaced through the Micrometer APIs. This
+	 * primary/fallback configuration is a temporary solution until
+	 * https://github.com/micrometer-metrics/micrometer/issues/5238 is delivered.
+	 */
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnClass(OtelTracer.class)
+	@ConditionalOnBean(OtelTracer.class)
+	static class PrimaryChatContentObservationConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-prompt",
+				havingValue = "true")
+		ChatModelPromptContentObservationHandler chatModelPromptContentObservationHandler() {
+			logPromptContentWarning();
+			return new ChatModelPromptContentObservationHandler();
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-completion",
+				havingValue = "true")
+		ChatModelCompletionObservationHandler chatModelCompletionObservationHandler() {
+			logCompletionWarning();
+			return new ChatModelCompletionObservationHandler();
+		}
+
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-completion",
-			havingValue = "true")
-	ChatModelCompletionObservationFilter chatModelCompletionObservationFilter() {
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnMissingClass("io.micrometer.tracing.otel.bridge.OtelTracer")
+	static class FallbackChatContentObservationConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-prompt",
+				havingValue = "true")
+		ChatModelPromptContentObservationFilter chatModelPromptObservationFilter() {
+			logPromptContentWarning();
+			return new ChatModelPromptContentObservationFilter();
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-completion",
+				havingValue = "true")
+		ChatModelCompletionObservationFilter chatModelCompletionObservationFilter() {
+			logCompletionWarning();
+			return new ChatModelCompletionObservationFilter();
+		}
+
+	}
+
+	private static void logPromptContentWarning() {
+		logger.warn(
+				"You have enabled the inclusion of the prompt content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+	}
+
+	private static void logCompletionWarning() {
 		logger.warn(
 				"You have enabled the inclusion of the completion content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
-		return new ChatModelCompletionObservationFilter();
 	}
 
 }
