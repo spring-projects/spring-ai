@@ -16,10 +16,11 @@
 package org.springframework.ai.autoconfigure.chat.observation;
 
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
+import io.micrometer.tracing.otel.bridge.OtelTracer;
+import io.opentelemetry.api.OpenTelemetry;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.observation.ChatModelCompletionObservationFilter;
-import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
-import org.springframework.ai.chat.observation.ChatModelPromptContentObservationFilter;
+import org.springframework.ai.chat.observation.*;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -57,9 +58,26 @@ class ChatObservationAutoConfigurationTests {
 	}
 
 	@Test
-	void promptFilterEnabled() {
+	void promptHandlerDefault() {
+		contextRunner.run(context -> {
+			assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class);
+		});
+	}
+
+	@Test
+	void promptHandlerEnabled() {
+		contextRunner
+			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
+			.withPropertyValues("spring.ai.chat.observations.include-prompt=true")
+			.run(context -> {
+				assertThat(context).hasSingleBean(ChatModelPromptContentObservationHandler.class);
+			});
+	}
+
+	@Test
+	void promptHandlerDisabled() {
 		contextRunner.withPropertyValues("spring.ai.chat.observations.include-prompt=true").run(context -> {
-			assertThat(context).hasSingleBean(ChatModelPromptContentObservationFilter.class);
+			assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class);
 		});
 	}
 
@@ -71,9 +89,26 @@ class ChatObservationAutoConfigurationTests {
 	}
 
 	@Test
-	void completionFilterEnabled() {
+	void completionHandlerDefault() {
+		contextRunner.run(context -> {
+			assertThat(context).doesNotHaveBean(ChatModelCompletionObservationHandler.class);
+		});
+	}
+
+	@Test
+	void completionHandlerEnabled() {
+		contextRunner
+			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
+			.withPropertyValues("spring.ai.chat.observations.include-completion=true")
+			.run(context -> {
+				assertThat(context).hasSingleBean(ChatModelCompletionObservationHandler.class);
+			});
+	}
+
+	@Test
+	void completionHandlerDisabled() {
 		contextRunner.withPropertyValues("spring.ai.chat.observations.include-completion=true").run(context -> {
-			assertThat(context).hasSingleBean(ChatModelCompletionObservationFilter.class);
+			assertThat(context).doesNotHaveBean(ChatModelCompletionObservationHandler.class);
 		});
 	}
 
