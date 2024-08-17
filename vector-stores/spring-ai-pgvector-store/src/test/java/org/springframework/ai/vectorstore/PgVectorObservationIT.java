@@ -122,6 +122,7 @@ public class PgVectorObservationIT {
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "none")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "cosine")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_THRESHOLD.asString(), "none")
 
 				.hasBeenStarted()
 				.hasBeenStopped();
@@ -149,6 +150,7 @@ public class PgVectorObservationIT {
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "none")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "cosine")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "1")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_THRESHOLD.asString(), "0.0")
 
 				.hasBeenStarted()
 				.hasBeenStopped();

@@ -44,7 +44,7 @@ public class PgVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 			PgVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customSearchObservationConvention) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		var initializeSchema = properties.isInitializeSchema();
 
@@ -57,7 +57,7 @@ public class PgVectorStoreAutoConfiguration {
 			.withIndexType(properties.getIndexType())
 			.withInitializeSchema(initializeSchema)
 			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withSearchObservationConvention(customSearchObservationConvention.getIfAvailable(() -> null))
+			.withSearchObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.build();
 	}
 

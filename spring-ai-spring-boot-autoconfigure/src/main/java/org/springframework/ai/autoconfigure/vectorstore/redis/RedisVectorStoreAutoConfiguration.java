@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.vectorstore.redis;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.RedisVectorStore;
 import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -26,6 +28,8 @@ import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+
+import io.micrometer.observation.ObservationRegistry;
 import redis.clients.jedis.JedisPooled;
 
 /**
@@ -41,7 +45,8 @@ public class RedisVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
-			JedisConnectionFactory jedisConnectionFactory) {
+			JedisConnectionFactory jedisConnectionFactory, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		var config = RedisVectorStoreConfig.builder()
 			.withIndexName(properties.getIndex())
@@ -50,7 +55,8 @@ public class RedisVectorStoreAutoConfiguration {
 
 		return new RedisVectorStore(config, embeddingModel,
 				new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()),
-				properties.isInitializeSchema());
+				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 }

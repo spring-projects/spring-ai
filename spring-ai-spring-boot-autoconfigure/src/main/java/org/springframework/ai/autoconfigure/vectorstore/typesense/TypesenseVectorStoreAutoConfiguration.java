@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.vectorstore.typesense;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.TypesenseVectorStore;
 import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,6 +28,8 @@ import org.springframework.context.annotation.Bean;
 import org.typesense.api.Client;
 import org.typesense.api.Configuration;
 import org.typesense.resources.Node;
+
+import io.micrometer.observation.ObservationRegistry;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -50,14 +54,17 @@ public class TypesenseVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public TypesenseVectorStore vectorStore(Client typesenseClient, EmbeddingModel embeddingModel,
-			TypesenseVectorStoreProperties properties) {
+			TypesenseVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
 			.withCollectionName(properties.getCollectionName())
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
-		return new TypesenseVectorStore(typesenseClient, embeddingModel, config, properties.isInitializeSchema());
+		return new TypesenseVectorStore(typesenseClient, embeddingModel, config, properties.isInitializeSchema(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	@Bean

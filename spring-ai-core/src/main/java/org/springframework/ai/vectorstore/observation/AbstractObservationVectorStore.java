@@ -38,18 +38,10 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Nullable
 	private final VectorStoreObservationConvention customObservationConvention;
 
-	public AbstractObservationVectorStore() {
-		this(ObservationRegistry.NOOP, null);
-	}
-
-	public AbstractObservationVectorStore(ObservationRegistry observationRegistry) {
-		this(observationRegistry, null);
-	}
-
 	public AbstractObservationVectorStore(ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customSearchObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention) {
 		this.observationRegistry = observationRegistry;
-		this.customObservationConvention = customSearchObservationConvention;
+		this.customObservationConvention = customObservationConvention;
 	}
 
 	@Override

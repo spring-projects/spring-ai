@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Smith
  */
 @Testcontainers
-@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
+// @Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreIT {
 
 	@Container

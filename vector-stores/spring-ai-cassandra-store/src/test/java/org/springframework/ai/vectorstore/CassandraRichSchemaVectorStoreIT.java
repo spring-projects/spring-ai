@@ -195,7 +195,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 		contextRunner.run(context -> {
 
-			try (CassandraVectorStore store = CassandraVectorStore.create(
+			try (CassandraVectorStore store = new CassandraVectorStore(
 					storeBuilder(context, List.of()).withFixedThreadPoolExecutorSize(nThreads).build(),
 					context.getBean(EmbeddingModel.class))) {
 

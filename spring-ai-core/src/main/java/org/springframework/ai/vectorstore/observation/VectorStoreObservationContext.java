@@ -27,7 +27,6 @@ import io.micrometer.observation.Observation;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-
 public class VectorStoreObservationContext extends Observation.Context {
 
 	public enum Operation {
