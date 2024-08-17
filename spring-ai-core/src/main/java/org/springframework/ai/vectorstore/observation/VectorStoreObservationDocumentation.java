@@ -129,6 +129,17 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 			}
 		},
 		/**
+		 * Similarity threshold that accepts all search scores. A threshold value of 0.0
+		 * means any similarity is accepted or disable the similarity threshold filtering.
+		 * A threshold value of 1.0 means an exact match is required.
+		 */
+		SIMILARITY_THRESHOLD {
+			@Override
+			public String asString() {
+				return "db.vector.query.similarity_threshold";
+			}
+		},
+		/**
 		 * The dimension of the vector.
 		 */
 		DIMENSIONS {

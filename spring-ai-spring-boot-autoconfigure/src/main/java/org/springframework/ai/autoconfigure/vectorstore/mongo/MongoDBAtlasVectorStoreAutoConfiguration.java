@@ -17,7 +17,9 @@ package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.MongoDBAtlasVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -30,6 +32,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
+
+import io.micrometer.observation.ObservationRegistry;
 
 import java.util.Arrays;
 
@@ -46,7 +50,8 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
-			MongoDBAtlasVectorStoreProperties properties) {
+			MongoDBAtlasVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		var builder = MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder();
 
@@ -61,7 +66,9 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 		}
 		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = builder.build();
 
-		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config, properties.isInitializeSchema());
+		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config, properties.isInitializeSchema(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	@Bean

@@ -23,7 +23,23 @@ public enum VectorStoreProvider {
 
 	// @formatter:off
         PG_VECTOR("pg_vector"),
-        SIMPLE_VECTOR_STORE("simple_vector_store");
+        AZURE("azure"),
+        CASSANDRA("cassandra"),
+        CHROMA("chroma"),
+        ELASTICSEARCH("elasticsearch"),
+        MILVUS("milvus"),
+        NEO4J("neo4j"),
+        OPENSEARCH("opensearch"),
+        QDRANT("qdrant"),
+        REDIS("redis"),
+        TYPESENSE("typesense"),
+        WEAVIATE("weaviate"),
+        PINECONE("pinecone"),
+        ORACLE("oracle"),
+        MONGODB("mongodb"),
+        GEMFIRE("gemfire"),
+        HANA("hana"),
+        SIMPLE("simple");
 
         // @formatter:on
 	private final String value;

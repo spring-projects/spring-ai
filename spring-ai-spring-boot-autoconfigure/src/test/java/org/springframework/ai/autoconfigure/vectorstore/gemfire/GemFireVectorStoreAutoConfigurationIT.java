@@ -18,17 +18,12 @@ package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.PortBinding;
-import com.github.dockerjava.api.model.Ports;
-import com.vmware.gemfire.testcontainers.GemFireCluster;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -37,19 +32,30 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.GemFireVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
+import com.vmware.gemfire.testcontainers.GemFireCluster;
+
+import io.micrometer.observation.tck.TestObservationRegistry;
+
 /**
  * @author Geet Rawat
+ * @author Christian Tzolov
  */
-
 class GemFireVectorStoreAutoConfigurationIT {
 
 	private static GemFireCluster gemFireCluster;
@@ -116,6 +122,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 	void ensureGemFireVectorStoreCustomConfiguration() {
 		this.contextRunner.run(context -> {
 			GemFireVectorStore store = context.getBean(GemFireVectorStore.class);
+
 			Assertions.assertNotNull(store);
 			assertThat(store.getIndexName()).isEqualTo(INDEX_NAME);
 			assertThat(store.getBeamWidth()).isEqualTo(BEAM_WIDTH);
@@ -138,13 +145,23 @@ class GemFireVectorStoreAutoConfigurationIT {
 	public void addAndSearchTest() {
 		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
+
 			vectorStore.add(documents);
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.GEMFIRE,
+					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 			}, hasSize(1));
+			observationRegistry.clear();
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.GEMFIRE,
+					VectorStoreObservationContext.Operation.QUERY);
+			observationRegistry.clear();
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -157,9 +174,13 @@ class GemFireVectorStoreAutoConfigurationIT {
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.GEMFIRE,
+					VectorStoreObservationContext.Operation.DELETE);
+
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 			}, hasSize(0));
+			observationRegistry.clear();
 		});
 	}
 
@@ -190,6 +211,11 @@ class GemFireVectorStoreAutoConfigurationIT {
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

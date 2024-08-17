@@ -139,10 +139,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	private PgVectorStore(String schemaName, String vectorTableName, boolean vectorTableValidationsEnabled,
 			JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions, PgDistanceType distanceType,
 			boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod, boolean initializeSchema,
-			ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customSearchObservationConvention) {
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
 
-		super(observationRegistry, customSearchObservationConvention);
+		super(observationRegistry, customObservationConvention);
 
 		this.vectorTableName = (null == vectorTableName || vectorTableName.isEmpty()) ? DEFAULT_TABLE_NAME
 				: vectorTableName.trim();
@@ -554,9 +553,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return this;
 		}
 
-		public Builder withSearchObservationConvention(
-				VectorStoreObservationConvention customSearchObservationConvention) {
-			this.searchObservationConvention = customSearchObservationConvention;
+		public Builder withSearchObservationConvention(VectorStoreObservationConvention customObservationConvention) {
+			this.searchObservationConvention = customObservationConvention;
 			return this;
 		}
 

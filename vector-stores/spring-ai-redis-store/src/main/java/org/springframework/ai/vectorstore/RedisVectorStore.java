@@ -30,10 +30,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+
+import io.micrometer.observation.ObservationRegistry;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -72,7 +78,7 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
  * @see RedisVectorStoreConfig
  * @see EmbeddingModel
  */
-public class RedisVectorStore implements VectorStore, InitializingBean {
+public class RedisVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public enum Algorithm {
 
@@ -274,6 +280,15 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
 			boolean initializeSchema) {
 
+		this(config, embeddingModel, jedis, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
+			boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Assert.notNull(config, "Config must not be null");
 		Assert.notNull(embeddingModel, "Embedding model must not be null");
 		this.initializeSchema = initializeSchema;
@@ -289,7 +304,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 			for (Document document : documents) {
 				var embedding = this.embeddingModel.embed(document);
@@ -318,7 +333,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 			for (String id : idList) {
 				pipeline.jsonDel(key(id));
@@ -336,7 +351,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		Assert.isTrue(request.getTopK() > 0, "The number of documents to returned must be greater than zero");
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
@@ -457,13 +472,15 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		return JSON_PATH_PREFIX + field;
 	}
 
-	private static float[] toFloatArray(List<Float> embedding) {
-		float[] embeddingFloat = new float[embedding.size()];
-		int i = 0;
-		for (Float d : embedding) {
-			embeddingFloat[i++] = d.floatValue();
-		}
-		return embeddingFloat;
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withFieldName(this.config.embeddingFieldName)
+			.withSimilarityMetric(vectorAlgorithm().name())
+			.withIndexName(this.config.indexName);
+
 	}
 
 }

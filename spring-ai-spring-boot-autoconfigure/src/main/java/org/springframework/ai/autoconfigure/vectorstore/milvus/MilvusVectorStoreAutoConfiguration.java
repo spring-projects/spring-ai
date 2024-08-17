@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
 import java.util.concurrent.TimeUnit;
 
+import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
@@ -25,6 +26,8 @@ import io.milvus.param.MetricType;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.MilvusVectorStore;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -51,7 +54,8 @@ public class MilvusVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MilvusVectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
-			MilvusVectorStoreProperties properties) {
+			MilvusVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
 			.withCollectionName(properties.getCollectionName())
@@ -62,7 +66,9 @@ public class MilvusVectorStoreAutoConfiguration {
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
-		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema());
+		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	@Bean

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.vectorstore;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.typesense.api.Client;
@@ -42,11 +46,14 @@ import org.typesense.model.MultiSearchCollectionParameters;
 import org.typesense.model.MultiSearchResult;
 import org.typesense.model.MultiSearchSearchesParameter;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * @author Pablo Sanchidrian Herrera
  * @author Soby Chacko
+ * @author Christian Tzolov
  */
-public class TypesenseVectorStore implements VectorStore, InitializingBean {
+public class TypesenseVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(TypesenseVectorStore.class);
 
@@ -154,6 +161,16 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
 			boolean initializeSchema) {
+
+		this(client, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
+			boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Assert.notNull(client, "Typesense must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 
@@ -164,7 +181,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 
 		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
@@ -194,7 +211,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
 		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
 
@@ -217,7 +234,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
@@ -359,6 +376,16 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			return null;
 		}
 
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.TYPESENSE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.config.collectionName)
+			.withFieldName(EMBEDDING_FIELD_NAME)
+			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 }

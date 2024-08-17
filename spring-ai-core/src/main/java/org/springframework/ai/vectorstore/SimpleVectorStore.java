@@ -40,12 +40,15 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.core.io.Resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -71,6 +74,14 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	protected EmbeddingModel embeddingModel;
 
 	public SimpleVectorStore(EmbeddingModel embeddingModel) {
+		this(embeddingModel, ObservationRegistry.NOOP, null);
+	}
+
+	public SimpleVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.embeddingModel = embeddingModel;
 	}
@@ -265,7 +276,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName("in-memory-map")
 			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());

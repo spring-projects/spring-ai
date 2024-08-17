@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
+import io.micrometer.observation.ObservationRegistry;
 import io.weaviate.client.Config;
 import io.weaviate.client.WeaviateAuthClient;
 import io.weaviate.client.WeaviateClient;
@@ -23,6 +24,8 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -62,7 +65,8 @@ public class WeaviateVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient,
-			WeaviateVectorStoreProperties properties) {
+			WeaviateVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
 			.withObjectClass(properties.getObjectClass())
@@ -73,7 +77,9 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.withConsistencyLevel(properties.getConsistencyLevel());
 
-		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient);
+		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {

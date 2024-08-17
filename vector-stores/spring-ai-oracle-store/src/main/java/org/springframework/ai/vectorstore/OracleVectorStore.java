@@ -15,22 +15,8 @@
  */
 package org.springframework.ai.vectorstore;
 
-import oracle.jdbc.OracleType;
-import oracle.sql.VECTOR;
-import oracle.sql.json.OracleJsonFactory;
-import oracle.sql.json.OracleJsonGenerator;
-import oracle.sql.json.OracleJsonObject;
-import oracle.sql.json.OracleJsonValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.util.StringUtils;
+import static org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT;
+import static org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue;
 
 import java.io.ByteArrayOutputStream;
 import java.sql.PreparedStatement;
@@ -44,8 +30,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT;
-import static org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.util.StringUtils;
+
+import io.micrometer.observation.ObservationRegistry;
+import oracle.jdbc.OracleType;
+import oracle.sql.VECTOR;
+import oracle.sql.json.OracleJsonFactory;
+import oracle.sql.json.OracleJsonGenerator;
+import oracle.sql.json.OracleJsonObject;
+import oracle.sql.json.OracleJsonValue;
 
 /**
  * <p>
@@ -69,8 +77,9 @@ import static org.springframework.jdbc.core.StatementCreatorUtils.setParameterVa
  * </ul>
  *
  * @author Loïc Lefèvre
+ * @author Christian Tzolov
  */
-public class OracleVectorStore implements VectorStore, InitializingBean {
+public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(OracleVectorStore.class);
 
@@ -126,7 +135,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	public enum OracleVectorStoreDistanceType {
 
 		/**
-		 * Default metric. It calculates the cosine distane between two vectors.
+		 * Default metric. It calculates the cosine distance between two vectors.
 		 */
 		COSINE,
 
@@ -220,6 +229,18 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
 			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
 			boolean forcedNormalization) {
+		this(jdbcTemplate, embeddingModel, tableName, indexType, distanceType, dimensions, searchAccuracy,
+				initializeSchema, removeExistingVectorStoreTable, forcedNormalization, ObservationRegistry.NOOP, null);
+	}
+
+	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
+			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
+			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
+			boolean forcedNormalization, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		if (dimensions != DEFAULT_DIMENSIONS) {
 			if (dimensions <= 0) {
 				throw new RuntimeException("Number of dimensions must be strictly positive");
@@ -251,7 +272,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(final List<Document> documents) {
+	public void doAdd(final List<Document> documents) {
 		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -366,7 +387,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(final List<String> idList) {
+	public Optional<Boolean> doDelete(final List<String> idList) {
 		final String sql = String.format("delete from %s where id=?", tableName);
 		final int[] argTypes = { Types.VARCHAR };
 
@@ -429,7 +450,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		try {
 			// From the provided query, generate a vector using the embedding model
 			final VECTOR embeddingVector = toVECTOR(embeddingModel.embed(request.getQuery()));
@@ -597,6 +618,26 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 
 	public String getTableName() {
 		return tableName;
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.ORACLE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.getTableName())
+			.withFieldName(getSimilarityMetric());
+	}
+
+	private static Map<OracleVectorStoreDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+			OracleVectorStoreDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE,
+			OracleVectorStoreDistanceType.EUCLIDEAN, VectorStoreSimilarityMetric.EUCLIDEAN,
+			OracleVectorStoreDistanceType.DOT, VectorStoreSimilarityMetric.DOT);
+
+	private String getSimilarityMetric() {
+		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.distanceType)) {
+			return this.distanceType.name();
+		}
+		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 }

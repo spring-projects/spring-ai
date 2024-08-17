@@ -23,15 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -41,6 +41,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.observation.ObservationRegistry;
 import reactor.util.annotation.NonNull;
 
 /**
@@ -48,8 +56,9 @@ import reactor.util.annotation.NonNull;
  * deleting, and similarity searching of documents in a GemFire index.
  *
  * @author Geet Rawat
+ * @author Christian Tzolov
  */
-public class GemFireVectorStore implements VectorStore, InitializingBean {
+public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(GemFireVectorStore.class);
 
@@ -70,10 +79,29 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	 * configuration.
 	 * @param config the configuration for the GemFireVectorStore
 	 * @param embeddingModel the embedding client used for generating embeddings
+	 * @param initializeSchema whether to initialize the schema during initialization
 	 */
-
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
+		this(config, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	/**
+	 * Configures and initializes a GemFireVectorStore instance based on the provided
+	 * configuration.
+	 * @param config the configuration for the GemFireVectorStore
+	 * @param embeddingModel the embedding client used for generating embeddings
+	 * @param initializeSchema whether to initialize the schema during initialization
+	 * @param observationRegistry the observation registry to use for recording
+	 * observations
+	 * @param customObservationConvention the custom observation convention to use for
+	 * observing operations
+	 */
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema,
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 		this.initializeSchema = initializeSchema;
@@ -374,7 +402,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
 			document.setEmbedding(this.embeddingModel.embed(document));
@@ -404,7 +432,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		try {
 			client.method(HttpMethod.DELETE)
 				.uri("/" + indexName + EMBEDDINGS)
@@ -421,7 +449,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
 		}
@@ -505,6 +533,14 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		else {
 			throw new RuntimeException(String.format("Got an unexpected HTTP error: %s", ex));
 		}
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.GEMFIRE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withIndexName(this.indexName)
+			.withFieldName(EMBEDDINGS);
 	}
 
 }

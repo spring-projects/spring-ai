@@ -27,11 +27,18 @@ import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.Embedding;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * {@link ChromaVectorStore} is a concrete implementation of the {@link VectorStore}
@@ -40,7 +47,7 @@ import org.springframework.util.StringUtils;
  * embedding calculations. For more information about how it does this, see the official
  * <a href="https://www.trychroma.com/">Chroma website</a>.
  */
-public class ChromaVectorStore implements VectorStore, InitializingBean {
+public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String DISTANCE_FIELD_NAME = "distance";
 
@@ -68,6 +75,15 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 
 	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
 			boolean initializeSchema) {
+		this(embeddingModel, chromaApi, collectionName, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
+			boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		this.embeddingModel = embeddingModel;
 		this.chromaApi = chromaApi;
 		this.collectionName = collectionName;
@@ -81,7 +97,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 		if (CollectionUtils.isEmpty(documents)) {
 			return;
@@ -105,7 +121,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 		List<String> deletedIds = this.chromaApi.deleteEmbeddings(this.collectionId,
 				new DeleteEmbeddingsRequest(idList));
@@ -113,7 +129,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
@@ -149,6 +165,14 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 		return responseDocuments;
 	}
 
+	public String getCollectionName() {
+		return this.collectionName;
+	}
+
+	public String getCollectionId() {
+		return this.collectionId;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
@@ -160,6 +184,14 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 			collection = this.chromaApi.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
 		}
 		this.collectionId = collection.id();
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.collectionName + ":" + this.collectionId)
+			.withFieldName(this.initializeSchema ? DISTANCE_FIELD_NAME : null);
 	}
 
 }

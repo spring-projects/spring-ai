@@ -15,13 +15,22 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -30,16 +39,13 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import io.micrometer.observation.tck.TestObservationRegistry;
 
 /**
  * @author Pablo Sanchidrian Herrera
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Christian Tzolov
  */
 @Testcontainers
 public class TypesenseVectorStoreAutoConfigurationIT {
@@ -71,7 +77,13 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 					"spring.ai.vectorstore.typesense.client.port=" + typesenseContainer.getMappedPort(8108).toString())
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
+				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
+
 				vectorStore.add(documents);
+
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+						VectorStoreObservationContext.Operation.ADD);
+				observationRegistry.clear();
 
 				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
@@ -83,7 +95,15 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+						VectorStoreObservationContext.Operation.QUERY);
+				observationRegistry.clear();
+
 				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+						VectorStoreObservationContext.Operation.DELETE);
+				observationRegistry.clear();
 
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).hasSize(0);
@@ -92,6 +112,11 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

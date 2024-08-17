@@ -31,10 +31,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+
+import io.micrometer.observation.ObservationRegistry;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -46,9 +54,10 @@ import java.util.stream.Collectors;
 /**
  * @author Jemin Huh
  * @author Soby Chacko
+ * @author Christian Tzolov
  * @since 1.0.0
  */
-public class OpenSearchVectorStore implements VectorStore, InitializingBean {
+public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
@@ -94,6 +103,15 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
 	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			String mappingJson, boolean initializeSchema) {
+		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
+			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.openSearchClient = openSearchClient;
@@ -113,7 +131,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (Document document : documents) {
 			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().length == 0) {
@@ -127,7 +145,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (String id : idList)
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
@@ -144,7 +162,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest searchRequest) {
+	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
 		return similaritySearch(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest.getTopK(),
 				searchRequest.getSimilarityThreshold(), searchRequest.getFilterExpression());
@@ -238,6 +256,25 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 		if (this.initializeSchema && !exists(this.index)) {
 			createIndexMapping(this.index, this.mappingJson);
 		}
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withSimilarityMetric(getSimilarityFunction())
+			.withIndexName(this.index);
+	}
+
+	private String getSimilarityFunction() {
+		if ("cosinesimil".equalsIgnoreCase(this.similarityFunction)) {
+			return VectorStoreSimilarityMetric.COSINE.value();
+		}
+		else if ("l2".equalsIgnoreCase(this.similarityFunction)) {
+			return VectorStoreSimilarityMetric.EUCLIDEAN.value();
+		}
+
+		return this.similarityFunction;
 	}
 
 }

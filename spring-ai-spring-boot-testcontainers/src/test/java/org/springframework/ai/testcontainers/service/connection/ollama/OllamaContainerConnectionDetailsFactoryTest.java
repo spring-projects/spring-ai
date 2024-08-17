@@ -18,6 +18,7 @@ package org.springframework.ai.testcontainers.service.connection.ollama;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -42,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Eddú Meléndez
  */
 @SpringJUnitConfig
+@Disabled("requires more memory than is often available on dev machines")
 @Testcontainers
 @TestPropertySource(properties = "spring.ai.ollama.embedding.options.model="
 		+ OllamaContainerConnectionDetailsFactoryTest.MODEL_NAME)

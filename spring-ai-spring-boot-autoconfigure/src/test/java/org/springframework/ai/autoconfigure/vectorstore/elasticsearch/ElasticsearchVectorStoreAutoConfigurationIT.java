@@ -15,31 +15,38 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.ElasticsearchVectorStore;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.SimilarityFunction;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.SimilarityFunction;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import io.micrometer.observation.tck.TestObservationRegistry;
 
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -59,6 +66,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
 				ElasticsearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
+		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 				"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
 				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
@@ -70,13 +78,20 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 
 		this.contextRunner.run(context -> {
 			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
+			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 			vectorStore.add(documents);
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ELASTICSEARCH,
+					VectorStoreObservationContext.Operation.ADD);
+			observationRegistry.clear();
 
 			Awaitility.await()
 				.until(() -> vectorStore
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
 						hasSize(1));
+
+			observationRegistry.clear();
 
 			List<Document> results = vectorStore
 				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
@@ -89,8 +104,16 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ELASTICSEARCH,
+					VectorStoreObservationContext.Operation.QUERY);
+			observationRegistry.clear();
+
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(Document::getId).toList());
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ELASTICSEARCH,
+					VectorStoreObservationContext.Operation.DELETE);
+			observationRegistry.clear();
 
 			Awaitility.await()
 				.until(() -> vectorStore
@@ -133,6 +156,16 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
 	}
 
 }

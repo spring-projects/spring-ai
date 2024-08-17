@@ -44,6 +44,9 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 
 	private static final KeyValue TOP_K_NONE = KeyValue.of(HighCardinalityKeyNames.TOP_K, KeyValue.NONE_VALUE);
 
+	private static final KeyValue SIMILARITY_THRESHOLD_NONE = KeyValue.of(HighCardinalityKeyNames.SIMILARITY_THRESHOLD,
+			KeyValue.NONE_VALUE);
+
 	private static final KeyValue SIMILARITY_METRIC_NONE = KeyValue.of(HighCardinalityKeyNames.SIMILARITY_METRIC,
 			KeyValue.NONE_VALUE);
 
@@ -89,7 +92,7 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 	public KeyValues getHighCardinalityKeyValues(VectorStoreObservationContext context) {
 		return KeyValues.of(query(context), metadataFilter(context), topK(context), dimensions(context),
 				similarityMetric(context), collectionName(context), namespace(context), fieldName(context),
-				indexName(context));
+				indexName(context), similarityThreshold(context));
 	}
 
 	protected KeyValue springAiKind() {
@@ -131,6 +134,14 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 			return KeyValue.of(HighCardinalityKeyNames.TOP_K, "" + context.getQueryRequest().getTopK());
 		}
 		return TOP_K_NONE;
+	}
+
+	protected KeyValue similarityThreshold(VectorStoreObservationContext context) {
+		if (context.getQueryRequest() != null && context.getQueryRequest().getSimilarityThreshold() >= 0) {
+			return KeyValue.of(HighCardinalityKeyNames.SIMILARITY_THRESHOLD,
+					"" + context.getQueryRequest().getSimilarityThreshold());
+		}
+		return SIMILARITY_THRESHOLD_NONE;
 	}
 
 	protected KeyValue similarityMetric(VectorStoreObservationContext context) {

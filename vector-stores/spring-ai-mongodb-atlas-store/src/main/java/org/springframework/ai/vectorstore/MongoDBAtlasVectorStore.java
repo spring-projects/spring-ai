@@ -15,16 +15,21 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static org.springframework.data.mongodb.core.query.Criteria.where;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.mongodb.MongoCommandException;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -33,14 +38,17 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
+import com.mongodb.MongoCommandException;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Chris Smith
  * @author Soby Chacko
+ * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
+public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -79,6 +87,15 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBVectorStoreConfig config, boolean initializeSchema) {
+		this(mongoTemplate, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
+			MongoDBVectorStoreConfig config, boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		this.mongoTemplate = mongoTemplate;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
@@ -156,7 +173,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		for (Document document : documents) {
 			float[] embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
@@ -165,7 +182,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		Query query = new Query(where(ID_FIELD_NAME).in(idList));
 
 		var deleteRes = this.mongoTemplate.remove(query, this.config.collectionName);
@@ -180,7 +197,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
@@ -297,6 +314,16 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 		}
 
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.MONGODB.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.config.collectionName)
+			.withFieldName(this.config.pathName)
+			.withIndexName(this.config.vectorIndexName);
 	}
 
 }

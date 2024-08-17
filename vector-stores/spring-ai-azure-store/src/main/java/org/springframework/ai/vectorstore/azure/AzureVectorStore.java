@@ -15,6 +15,31 @@
  */
 package org.springframework.ai.vectorstore.azure;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
 import com.azure.core.util.Context;
@@ -34,25 +59,8 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.model.EmbeddingUtils;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * Uses Azure Cognitive Search as a backing vector store. Documents can be preloaded into
@@ -65,7 +73,7 @@ import java.util.stream.Collectors;
  * @author Christian Tzolov
  * @author Josh Long
  */
-public class AzureVectorStore implements VectorStore, InitializingBean {
+public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureVectorStore.class);
 
@@ -166,6 +174,25 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	 */
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema, List<MetadataField> filterMetadataFields) {
+		this(searchIndexClient, embeddingModel, initializeSchema, filterMetadataFields, ObservationRegistry.NOOP, null);
+	}
+
+	/**
+	 * Constructs a new AzureCognitiveSearchVectorStore.
+	 * @param searchIndexClient A pre-configured Azure {@link SearchIndexClient} that CRUD
+	 * for Azure search indexes and factory for {@link SearchClient}.
+	 * @param embeddingModel The client for embedding operations.
+	 * @param filterMetadataFields List of metadata fields (as field name and type) that
+	 * can be used in similarity search query filter expressions.
+	 * @param observationRegistry The observation registry to use.
+	 * @param customObservationConvention The optional, custom search observation
+	 * convention to use.
+	 */
+	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
+			boolean initializeSchema, List<MetadataField> filterMetadataFields, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
 
 		Assert.notNull(embeddingModel, "The embedding model can not be null.");
 		Assert.notNull(searchIndexClient, "The search index client can not be null.");
@@ -208,7 +235,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 
 		Assert.notNull(documents, "The document list should not be null.");
 		if (CollectionUtils.isEmpty(documents)) {
@@ -243,7 +270,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> documentIds) {
+	public Optional<Boolean> doDelete(List<String> documentIds) {
 
 		Assert.notNull(documentIds, "The document ID list should not be null.");
 		if (CollectionUtils.isEmpty(documentIds)) {
@@ -278,7 +305,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		Assert.notNull(request, "The search request must not be null.");
 
@@ -377,6 +404,15 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 		logger.info("Created search index: " + index.getName());
 
 		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withSimilarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null)
+			.withIndexName(this.indexName);
 	}
 
 }

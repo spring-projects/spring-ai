@@ -15,32 +15,37 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.neo4j;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ResourceUtils;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.ResourceUtils;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import io.micrometer.observation.tck.TestObservationRegistry;
 
 /**
  * @author Jingzhou Ou
  * @author Soby Chacko
+ * @author Christian Tzolov
  */
 @Testcontainers
 public class Neo4jVectorStoreAutoConfigurationIT {
@@ -48,7 +53,7 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 	// Needs to be Neo4j 5.15+, because Neo4j 5.15 deprecated the used embedding storing
 	// function.
 	@Container
-	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.15"))
+	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.18"))
 		.withRandomPassword();
 
 	List<Document> documents = List.of(
@@ -76,7 +81,13 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 				assertThat(properties.getIndexName()).isEqualTo("customIndexName");
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
+				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
+
 				vectorStore.add(documents);
+
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
+						VectorStoreObservationContext.Operation.ADD);
+				observationRegistry.clear();
 
 				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
@@ -86,8 +97,16 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
+						VectorStoreObservationContext.Operation.QUERY);
+				observationRegistry.clear();
+
 				// Remove all documents from the store
 				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
+						VectorStoreObservationContext.Operation.DELETE);
+				observationRegistry.clear();
 
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).isEmpty();
@@ -96,6 +115,11 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
