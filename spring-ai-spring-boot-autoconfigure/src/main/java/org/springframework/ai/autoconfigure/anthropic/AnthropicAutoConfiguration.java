@@ -17,11 +17,14 @@ package org.springframework.ai.autoconfigure.anthropic;
 
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -38,6 +41,7 @@ import org.springframework.web.client.RestClient;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
@@ -63,10 +67,16 @@ public class AnthropicAutoConfiguration {
 	@ConditionalOnMissingBean
 	public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
 			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
-			List<FunctionCallback> toolFunctionCallbacks) {
+			List<FunctionCallback> toolFunctionCallbacks, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		return new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate, functionCallbackContext,
-				toolFunctionCallbacks);
+		var chatModel = new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate,
+				functionCallbackContext, toolFunctionCallbacks,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+		return chatModel;
 	}
 
 	@Bean

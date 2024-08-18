@@ -157,6 +157,22 @@ class DefaultChatModelObservationConventionTests {
 				KeyValue.of(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(), KeyValue.NONE_VALUE));
 	}
 
+	@Test
+	void shouldHaveNoneKeyValuesWhenEmptyValues() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withStopSequences(List.of()).build())
+			.build();
+		observationContext.setResponse(new ChatResponse(
+				List.of(new Generation(new AssistantMessage("response"), ChatGenerationMetadata.from("", null))),
+				ChatResponseMetadata.builder().withId("").build()));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
+				KeyValue.of(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.RESPONSE_ID.asString(), KeyValue.NONE_VALUE));
+	}
+
 	private Prompt generatePrompt() {
 		return new Prompt("Who let the dogs out?");
 	}

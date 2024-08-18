@@ -23,11 +23,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -51,11 +50,12 @@ import reactor.core.publisher.Mono;
 /**
  * @author Christian Tzolov
  * @author Mariusz Bernacki
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class AnthropicApi {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
+	public static final String PROVIDER_NAME = AiProvider.ANTHROPIC.value();
 
 	private static final String HEADER_X_API_KEY = "x-api-key";
 

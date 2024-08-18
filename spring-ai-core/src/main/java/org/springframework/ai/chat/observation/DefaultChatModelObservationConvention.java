@@ -156,7 +156,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValue requestStopSequences(ChatModelObservationContext context) {
-		if (context.getRequestOptions().getStopSequences() != null) {
+		if (!CollectionUtils.isEmpty(context.getRequestOptions().getStopSequences())) {
 			StringJoiner stopSequencesJoiner = new StringJoiner(", ", "[", "]");
 			context.getRequestOptions()
 				.getStopSequences()
@@ -195,11 +195,17 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	protected KeyValue responseFinishReasons(ChatModelObservationContext context) {
 		if (context.getResponse() != null && !CollectionUtils.isEmpty(context.getResponse().getResults())) {
-			StringJoiner finishReasonsJoiner = new StringJoiner(", ", "[", "]");
-			context.getResponse()
+			var finishReasons = context.getResponse()
 				.getResults()
-				.forEach(generation -> finishReasonsJoiner
-					.add("\"" + generation.getMetadata().getFinishReason() + "\""));
+				.stream()
+				.filter(generation -> StringUtils.hasText(generation.getMetadata().getFinishReason()))
+				.map(generation -> generation.getMetadata().getFinishReason())
+				.toList();
+			if (CollectionUtils.isEmpty(finishReasons)) {
+				return RESPONSE_FINISH_REASONS_NONE;
+			}
+			StringJoiner finishReasonsJoiner = new StringJoiner(", ", "[", "]");
+			finishReasons.forEach(finishReason -> finishReasonsJoiner.add("\"" + finishReason + "\""));
 			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASONS,
 					finishReasonsJoiner.toString());
 		}
@@ -208,7 +214,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	protected KeyValue responseId(ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getId() != null) {
+				&& StringUtils.hasText(context.getResponse().getMetadata().getId())) {
 			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_ID,
 					context.getResponse().getMetadata().getId());
 		}
