@@ -56,6 +56,7 @@ public class SearchRequestTests {
 		assertThat(newRequest.getTopK()).isEqualTo(originalRequest.getTopK());
 		assertThat(newRequest.getFilterExpression()).isEqualTo(originalRequest.getFilterExpression());
 		assertThat(newRequest.getSimilarityThreshold()).isEqualTo(originalRequest.getSimilarityThreshold());
+		assertThat(newRequest.isVectorSearch() == originalRequest.isVectorSearch());
 	}
 
 	@Test
@@ -135,10 +136,20 @@ public class SearchRequestTests {
 
 	}
 
+	@Test()
+	public void withHybridSearchWithRerank() {
+
+		var request = SearchRequest.query("Test").withFullTextSearch(true).withRerank(true);
+		assertThat(request.isVectorSearch()).isTrue();
+		assertThat(request.isFullTextSearch()).isTrue();
+		assertThat(request.isReRank()).isTrue();
+	}
+
 	private void checkDefaults(SearchRequest request) {
 		assertThat(request.getFilterExpression()).isNull();
 		assertThat(request.getSimilarityThreshold()).isEqualTo(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
 		assertThat(request.getTopK()).isEqualTo(SearchRequest.DEFAULT_TOP_K);
+		assertThat(request.isVectorSearch()).isTrue();
 	}
 
 }

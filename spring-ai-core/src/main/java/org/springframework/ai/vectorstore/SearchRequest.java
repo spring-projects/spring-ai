@@ -52,6 +52,22 @@ public class SearchRequest {
 
 	private Filter.Expression filterExpression;
 
+	/**
+	 * Default value for search request is to use the vector search.
+	 */
+	private boolean vectorSearch = true;
+
+	/**
+	 * Enables the full text search mode. If combined with the vector search, the hybrid
+	 * search is done.
+	 */
+	private boolean fullTextSearch = false;
+
+	/**
+	 * Enables the reranking of the results.
+	 */
+	private boolean reRank = false;
+
 	private SearchRequest(String query) {
 		this.query = query;
 	}
@@ -230,6 +246,36 @@ public class SearchRequest {
 		return this;
 	}
 
+	/**
+	 * Set the vector search mode.
+	 * @param vectorSearch
+	 * @return this.builder
+	 */
+	public SearchRequest withVectorSearch(boolean vectorSearch) {
+		this.vectorSearch = vectorSearch;
+		return this;
+	}
+
+	/**
+	 * Set the full text search mode.
+	 * @param fullTextSearch
+	 * @return this.builder
+	 */
+	public SearchRequest withFullTextSearch(boolean fullTextSearch) {
+		this.fullTextSearch = fullTextSearch;
+		return this;
+	}
+
+	/**
+	 * Set the rerank mode.
+	 * @param rerank
+	 * @return this.builder
+	 */
+	public SearchRequest withRerank(boolean rerank) {
+		this.reRank = rerank;
+		return this;
+	}
+
 	public String getQuery() {
 		return query;
 	}
@@ -250,10 +296,23 @@ public class SearchRequest {
 		return this.filterExpression != null;
 	}
 
+	public boolean isVectorSearch() {
+		return this.vectorSearch;
+	}
+
+	public boolean isFullTextSearch() {
+		return this.fullTextSearch;
+	}
+
+	public boolean isReRank() {
+		return this.reRank;
+	}
+
 	@Override
 	public String toString() {
 		return "SearchRequest{" + "query='" + query + '\'' + ", topK=" + topK + ", similarityThreshold="
-				+ similarityThreshold + ", filterExpression=" + filterExpression + '}';
+				+ similarityThreshold + ", filterExpression=" + filterExpression + ", isVectorSearch=" + vectorSearch
+				+ ", isFullTextSearch=" + fullTextSearch + ", isRerank=" + reRank + '}';
 	}
 
 	@Override
@@ -264,12 +323,13 @@ public class SearchRequest {
 			return false;
 		SearchRequest that = (SearchRequest) o;
 		return topK == that.topK && Double.compare(that.similarityThreshold, similarityThreshold) == 0
-				&& Objects.equals(query, that.query) && Objects.equals(filterExpression, that.filterExpression);
+				&& Objects.equals(query, that.query) && Objects.equals(filterExpression, that.filterExpression)
+				&& vectorSearch == that.vectorSearch && fullTextSearch == that.fullTextSearch && reRank == that.reRank;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(query, topK, similarityThreshold, filterExpression);
+		return Objects.hash(query, topK, similarityThreshold, filterExpression, vectorSearch, fullTextSearch);
 	}
 
 }
