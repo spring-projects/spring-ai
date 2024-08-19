@@ -475,7 +475,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withFieldName(this.config.embeddingFieldName)
 			.withSimilarityMetric(vectorAlgorithm().name())

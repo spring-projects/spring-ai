@@ -76,7 +76,7 @@ class RedisVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.REDIS_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.REDIS,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -88,14 +88,14 @@ class RedisVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getContent()).contains(
 					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.REDIS_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.REDIS,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.REDIS_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.REDIS,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 

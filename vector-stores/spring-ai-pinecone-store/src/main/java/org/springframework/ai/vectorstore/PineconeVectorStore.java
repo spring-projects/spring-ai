@@ -444,10 +444,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder createObservationContextBuilder(
-			String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.PINECONE_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.PINECONE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withNamespace(this.pineconeNamespace)
 			.withFieldName(this.pineconeContentFieldName);

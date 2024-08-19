@@ -84,7 +84,7 @@ public class OracleVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ORACLE_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ORACLE,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -96,14 +96,14 @@ public class OracleVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
 			assertThat(resultDoc.getMetadata()).containsKeys("depression", "distance");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ORACLE_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ORACLE,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ORACLE_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ORACLE,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.RedisVectorStore.MetadataField;
 import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
@@ -100,9 +101,10 @@ public class RedisVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store redis_vector_store add")
+				.hasContextualNameEqualTo("vector_store redis add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "add")
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(), "redis_vector_store")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
+						VectorStoreProvider.REDIS.value())
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "none")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DIMENSIONS.asString(), "384")
@@ -128,9 +130,10 @@ public class RedisVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store redis_vector_store query")
+				.hasContextualNameEqualTo("vector_store redis query")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "query")
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(), "redis_vector_store")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
+						VectorStoreProvider.REDIS.value())
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
 
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "What is Great Depression")

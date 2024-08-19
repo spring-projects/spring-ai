@@ -23,23 +23,23 @@ public enum VectorStoreProvider {
 
 	// @formatter:off
         PG_VECTOR("pg_vector"),
-        AZURE_VECTOR_STORE("azure_vector_store"),
-        CASSANDRA_VECTOR_STORE("cassandra_vector_store"),
-        CHROMA_VECTOR_STORE("chroma_vector_store"),
-        ELASTICSEARCH_VECTOR_STORE("elasticsearch_vector_store"),
-        MILVUS_VECTOR_STORE("milvus_vector_store"),
-        NEO4J_VECTOR_STORE("neo4j_vector_store"),
-        OPENSEARCH_VECTOR_STORE("opensearch_vector_store"),
-        QDRANT_VECTOR_STORE("qdrant_vector_store"),
-        REDIS_VECTOR_STORE("redis_vector_store"),
-        TYPESENSE_VECTOR_STORE("typesense_vector_store"),
-        WEAVIATE_VECTOR_STORE("weaviate_vector_store"),
-        PINECONE_VECTOR_STORE("pinecone_vector_store"),
-        ORACLE_VECTOR_STORE("oracle_vector_store"),
-        MONGODB_VECTOR_STORE("mongodb_vector_store"),
-        GEMFIRE_VECTOR_STORE("gemfire_vector_store"),
-        HANA_VECTOR_STORE("hana_vector_store"),
-        SIMPLE_VECTOR_STORE("simple_vector_store");
+        AZURE("azure"),
+        CASSANDRA("cassandra"),
+        CHROMA("chroma"),
+        ELASTICSEARCH("elasticsearch"),
+        MILVUS("milvus"),
+        NEO4J("neo4j"),
+        OPENSEARCH("opensearch"),
+        QDRANT("qdrant"),
+        REDIS("redis"),
+        TYPESENSE("typesense"),
+        WEAVIATE("weaviate"),
+        PINECONE("pinecone"),
+        ORACLE("oracle"),
+        MONGODB("mongodb"),
+        GEMFIRE("gemfire"),
+        HANA("hana"),
+        SIMPLE("simple");
 
         // @formatter:on
 	private final String value;

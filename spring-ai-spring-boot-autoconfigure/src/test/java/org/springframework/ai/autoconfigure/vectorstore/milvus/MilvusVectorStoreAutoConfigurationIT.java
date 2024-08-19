@@ -76,7 +76,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 
 				vectorStore.add(documents);
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MILVUS_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MILVUS,
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
@@ -90,7 +90,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MILVUS_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MILVUS,
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
@@ -100,7 +100,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).hasSize(0);
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MILVUS_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MILVUS,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 

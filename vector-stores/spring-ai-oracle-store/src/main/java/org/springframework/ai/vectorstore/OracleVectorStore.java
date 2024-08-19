@@ -622,7 +622,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.ORACLE_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.ORACLE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.getTableName())
 			.withFieldName(getSimilarityMetric());

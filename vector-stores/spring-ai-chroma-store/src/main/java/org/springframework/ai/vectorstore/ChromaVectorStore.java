@@ -38,7 +38,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import io.micrometer.common.KeyValue;
 import io.micrometer.observation.ObservationRegistry;
 
 /**
@@ -189,10 +188,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.collectionName + ":" + this.collectionId)
-			.withFieldName(this.initializeSchema ? DISTANCE_FIELD_NAME : KeyValue.NONE_VALUE);
+			.withFieldName(this.initializeSchema ? DISTANCE_FIELD_NAME : null);
 	}
 
 }

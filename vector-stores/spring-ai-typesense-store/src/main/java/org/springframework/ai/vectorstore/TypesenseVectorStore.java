@@ -381,7 +381,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.TYPESENSE_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.TYPESENSE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.config.collectionName)
 			.withFieldName(EMBEDDING_FIELD_NAME)

@@ -94,7 +94,7 @@ public class PineconeVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
 					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await().until(() -> {
@@ -112,14 +112,14 @@ public class PineconeVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKeys("spring", "customDistanceField");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 

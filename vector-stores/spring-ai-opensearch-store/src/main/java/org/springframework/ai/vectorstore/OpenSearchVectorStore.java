@@ -260,7 +260,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withSimilarityMetric(getSimilarityFunction())
 			.withIndexName(this.index);
@@ -270,7 +270,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		if ("cosinesimil".equalsIgnoreCase(this.similarityFunction)) {
 			return VectorStoreSimilarityMetric.COSINE.value();
 		}
-		else if ("l1".equalsIgnoreCase(this.similarityFunction) || "l2".equalsIgnoreCase(this.similarityFunction)) {
+		else if ("l2".equalsIgnoreCase(this.similarityFunction)) {
 			return VectorStoreSimilarityMetric.EUCLIDEAN.value();
 		}
 

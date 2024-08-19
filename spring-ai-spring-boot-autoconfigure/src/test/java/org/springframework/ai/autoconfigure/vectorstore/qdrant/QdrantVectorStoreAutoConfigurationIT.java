@@ -75,7 +75,7 @@ public class QdrantVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.QDRANT_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.QDRANT,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -87,7 +87,7 @@ public class QdrantVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
 			assertThat(resultDoc.getMetadata()).containsKeys("depression", "distance");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.QDRANT_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.QDRANT,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
@@ -96,7 +96,7 @@ public class QdrantVectorStoreAutoConfigurationIT {
 			results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 			assertThat(results).hasSize(0);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.QDRANT_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.QDRANT,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 		});

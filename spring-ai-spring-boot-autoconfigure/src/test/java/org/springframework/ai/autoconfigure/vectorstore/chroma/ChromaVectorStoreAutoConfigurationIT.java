@@ -77,7 +77,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CHROMA_VECTOR_STORE,
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CHROMA,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -102,7 +102,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store chroma_vector_store query")
+				.hasContextualNameEqualTo("vector_store chroma query")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY_METADATA_FILTER.asString(),
 						"Expression[type=EQ, left=Key[key=country], right=Value[value=Netherlands]]")
 				.hasBeenStarted()
@@ -116,7 +116,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store chroma_vector_store delete")
+				.hasContextualNameEqualTo("vector_store chroma delete")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY_METADATA_FILTER.asString(), "none")
 				.hasBeenStarted()
 				.hasBeenStopped();

@@ -85,7 +85,7 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 
 				vectorStore.add(documents);
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
@@ -97,14 +97,14 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
 				// Remove all documents from the store
 				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 

@@ -432,7 +432,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.NEO4J_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.NEO4J.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withIndexName(this.config.indexName)
 			.withSimilarityMetric(getSimilarityMetric());

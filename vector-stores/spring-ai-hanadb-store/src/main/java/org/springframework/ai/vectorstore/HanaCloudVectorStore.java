@@ -167,7 +167,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.HANA_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.HANA.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.config.getTableName())
 			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());

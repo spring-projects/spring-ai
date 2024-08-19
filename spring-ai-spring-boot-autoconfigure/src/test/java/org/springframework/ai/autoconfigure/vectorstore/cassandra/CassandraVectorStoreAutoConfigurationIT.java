@@ -80,8 +80,8 @@ class CassandraVectorStoreAutoConfigurationIT {
 				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 				vectorStore.add(documents);
 
-				assertObservationRegistry(observationRegistry, "vector_store",
-						VectorStoreProvider.CASSANDRA_VECTOR_STORE, VectorStoreObservationContext.Operation.ADD);
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CASSANDRA,
+						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
 				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -92,8 +92,8 @@ class CassandraVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-				assertObservationRegistry(observationRegistry, "vector_store",
-						VectorStoreProvider.CASSANDRA_VECTOR_STORE, VectorStoreObservationContext.Operation.QUERY);
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CASSANDRA,
+						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
 				// Remove all documents from the store
@@ -102,8 +102,8 @@ class CassandraVectorStoreAutoConfigurationIT {
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).isEmpty();
 
-				assertObservationRegistry(observationRegistry, "vector_store",
-						VectorStoreProvider.CASSANDRA_VECTOR_STORE, VectorStoreObservationContext.Operation.DELETE);
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CASSANDRA,
+						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 			});
 	}

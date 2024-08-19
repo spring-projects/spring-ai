@@ -29,6 +29,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
@@ -118,9 +119,10 @@ public class QdrantVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store qdrant_vector_store add")
+				.hasContextualNameEqualTo("vector_store qdrant add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "add")
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(), "qdrant_vector_store")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
+						VectorStoreProvider.QDRANT.value())
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "none")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DIMENSIONS.asString(), "1536")
@@ -145,9 +147,10 @@ public class QdrantVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store qdrant_vector_store query")
+				.hasContextualNameEqualTo("vector_store qdrant query")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "query")
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(), "qdrant_vector_store")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
+						VectorStoreProvider.QDRANT.value())
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
 
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "What is Great Depression")

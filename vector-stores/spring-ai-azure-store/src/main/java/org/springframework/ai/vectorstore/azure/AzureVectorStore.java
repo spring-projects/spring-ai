@@ -409,9 +409,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withSimilarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : "Unknown")
+			.withSimilarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null)
 			.withIndexName(this.indexName);
 	}
 

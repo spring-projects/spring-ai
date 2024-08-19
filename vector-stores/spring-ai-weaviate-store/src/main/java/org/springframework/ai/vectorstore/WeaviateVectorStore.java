@@ -544,7 +544,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.WEAVIATE_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.WEAVIATE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.weaviateObjectClass);
 	}

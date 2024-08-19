@@ -380,7 +380,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.CASSANDRA_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.CASSANDRA.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.conf.schema.table())
 			.withNamespace(this.conf.schema.keyspace())

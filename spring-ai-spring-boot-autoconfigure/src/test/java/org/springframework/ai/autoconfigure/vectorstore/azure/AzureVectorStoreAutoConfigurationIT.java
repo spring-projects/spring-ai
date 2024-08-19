@@ -111,7 +111,7 @@ public class AzureVectorStoreAutoConfigurationIT {
 					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				}, hasSize(1));
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
@@ -125,7 +125,7 @@ public class AzureVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
@@ -136,7 +136,7 @@ public class AzureVectorStoreAutoConfigurationIT {
 					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				}, hasSize(0));
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE_VECTOR_STORE,
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 

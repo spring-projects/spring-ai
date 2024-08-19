@@ -540,7 +540,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder createObservationContextBuilder(
 			String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.MILVUS_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.MILVUS.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.config.collectionName)
 			.withIndexName(this.config.indexType.name())

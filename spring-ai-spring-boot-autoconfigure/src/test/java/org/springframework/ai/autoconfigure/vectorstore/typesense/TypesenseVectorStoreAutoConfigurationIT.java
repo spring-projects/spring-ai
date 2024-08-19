@@ -81,8 +81,8 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 
 				vectorStore.add(documents);
 
-				assertObservationRegistry(observationRegistry, "vector_store",
-						VectorStoreProvider.TYPESENSE_VECTOR_STORE, VectorStoreObservationContext.Operation.ADD);
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
 				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -95,14 +95,14 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-				assertObservationRegistry(observationRegistry, "vector_store",
-						VectorStoreProvider.TYPESENSE_VECTOR_STORE, VectorStoreObservationContext.Operation.QUERY);
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
 				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-				assertObservationRegistry(observationRegistry, "vector_store",
-						VectorStoreProvider.TYPESENSE_VECTOR_STORE, VectorStoreObservationContext.Operation.DELETE);
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));

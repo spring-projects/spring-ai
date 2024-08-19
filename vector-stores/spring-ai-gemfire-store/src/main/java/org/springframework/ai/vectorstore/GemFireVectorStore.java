@@ -537,7 +537,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.GEMFIRE_VECTOR_STORE.value(), operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.GEMFIRE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withIndexName(this.indexName)
 			.withFieldName(EMBEDDINGS);
