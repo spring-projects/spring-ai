@@ -1,47 +1,24 @@
-= Groq Chat
+= NVIDIA Chat
 
-https://groq.com/[Groq] is an extremely fast,  LPU™ based, AI Inference Engine that support various https://console.groq.com/docs/models[AI Models], 
-supports `Tool/Function Calling` and exposes a `OpenAI API` compatible endpoint.
+https://docs.api.nvidia.com/nim/reference/llm-apis[NVIDIA LLM API] is a proxy AI Inference Engine offering a wide range of models from link:https://docs.api.nvidia.com/nim/reference/llm-apis#models[various providers].
 
-Spring AI integrates with the https://groq.com/[Groq] by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. 
-For this you need to obtain a https://console.groq.com/keys[Groq Api Key], set the base-url to https://api.groq.com/openai and select one of the 
-provided https://console.groq.com/docs/models[Groq models].
+Spring AI integrates with the NVIDIA LLM API by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. 
+For this you need to set the base-url to `https://integrate.api.nvidia.com`, select one of the provided https://docs.api.nvidia.com/nim/reference/llm-apis#model[LLM models] and get an `api-key` for it.
 
-image::spring-ai-groq-integration.jpg[w=800,align="center"]
+image::spring-ai-nvidia-llm-api.jpg[w=800,align="center"]
 
-NOTE: The Groq API is not fully compatible with the OpenAI API. 
-Be aware for the following https://console.groq.com/docs/openai[compatability constrains].
-Additionally, currently Groq doesn't support multimodal messages.
+NOTE:  NVIDIA LLM API requires the `max-token` parameter to be explicitly set or server error will be thrown.
 
-Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/GroqWithOpenAiChatModelIT.java[GroqWithOpenAiChatModelIT.java] tests 
-for examples of using Groq with Spring AI.
+Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/NvidiaWithOpenAiChatModelIT.java[NvidiaWithOpenAiChatModelIT.java] tests 
+for examples of using NVIDIA LLM API with Spring AI.
 
-== Prerequisites
+== Prerequisite
 
-* Create an API Key.
-Please visit https://console.groq.com/keys[here] to create an API Key.
-The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from groq.com.
-* Set the Groq URL. 
-You have to set the `spring.ai.openai.base-url` property to `https://api.groq.com/openai`.
-* Select a https://console.groq.com/docs/models[Groq Model].
-Use the `spring.ai.openai.chat.model=<model name>` property to set the Model.
+* Create link:https://build.nvidia.com/explore/discover[NVIDIA] account with sufficient credits.
+* Select a LLM Model to use. For example the `meta/llama-3.1-70b-instruct` in the screenshot below.
+* From the selected model's page, you can get the `api-key` for accessing this model.
 
-Exporting an environment variable is one way to set that configuration property:
-
-[source,shell]
-----
-export SPRING_AI_OPENAI_API_KEY=<INSERT GROQ API KEY HERE>
-export SPRING_AI_OPENAI_BASE_URL=https://api.groq.com/openai
-export SPRING_AI_OPENAI_CHAT_MODEL=llama3-70b-8192
-----
-
-=== Add Repositories and BOM
-
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
-
-To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
-
+image::spring-ai-nvidia-registration.jpg[w=800,align="center"]
 
 == Auto-configuration
 
@@ -94,10 +71,9 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://api.groq.com/openai` | -
-| spring.ai.openai.api-key    | The Groq API Key           |  -
+| spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://integrate.api.nvidia.com` | -
+| spring.ai.openai.api-key    | The NVIDIA API Key           |  -
 |====
-
 
 ==== Configuration Properties
 
@@ -108,9 +84,9 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | Property | Description | Default
 
 | spring.ai.openai.chat.enabled | Enable OpenAI chat model.  | true
-| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://api.groq.com/openai` |  -
+| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://integrate.api.nvidia.com` |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
-| spring.ai.openai.chat.options.model | The avalable https://console.groq.com/docs/models[model] names are `llama3-8b-8192`, `llama3-70b-8192`, `mixtral-8x7b-32768`, `gemma-7b-it`. | -
+| spring.ai.openai.chat.options.model | The link:https://docs.api.nvidia.com/nim/reference/llm-apis#models[NVIDIA LLM model] to use | -
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.openai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
@@ -154,26 +130,32 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 == Function Calling
 
-Groq API endpoints support https://console.groq.com/docs/tool-use[tool/function calling] when selecting one of the Tool/Function supporting models.
+NVIDIA LLM API supports Tool/Function calling when selecting a model that supports it.
 
-TIP: Check the Tool https://console.groq.com/docs/tool-use[Supported Models].
+image::spring-ai-nvidia-function-calling.jpg[w=800,align="center"]
 
-image::spring-ai-groq-functions-2.jpg[w=800,align="center"]
-
-You can register custom Java functions with your ChatModel and have the provided Groq model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions. 
+You can register custom Java functions with your ChatModel and have the provided model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions. 
 This is a powerful technique to connect the LLM capabilities with external tools and APIs. 
 
 === Tool Example
 
-Here's a simple example of how to use Groq function calling with Spring AI:
+Here's a simple example of how to use NVIDIA LLM API function calling with Spring AI:
+
+[source,application.properties]
+----
+spring.ai.openai.api-key=${NVIDIA_API_KEY}
+spring.ai.openai.base-url=https://integrate.api.nvidia.com
+spring.ai.openai.chat.options.model=meta/llama-3.1-70b-instruct
+spring.ai.openai.chat.options.max-tokens=2048
+----
 
 [source,java]
 ----    
 @SpringBootApplication
-public class GroqApplication {
+public class NvidiaLlmApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(GroqApplication.class, args);
+        SpringApplication.run(NvidiaLlmApplication.class, args);
     }
 
     @Bean
@@ -217,11 +199,6 @@ The expected response looks like this: "The weather in Amsterdam is currently 20
 Read more about OpenAI link:https://docs.spring.io/spring-ai/reference/api/chat/functions/openai-chat-functions.html[Function Calling].
 
 
-
-== Multimodal
-
-NOTE: Currently the Groq API doesn't support media content.
-
 == Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-openai-spring-boot-starter` to your pom (or gradle) dependencies.
@@ -230,15 +207,22 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 
 [source,application.properties]
 ----
-spring.ai.openai.api-key=<GROQ_API_KEY>
-spring.ai.openai.base-url=https://api.groq.com/openai
-spring.ai.openai.chat.options.model=llama3-70b-8192
-spring.ai.openai.chat.options.temperature=0.7
+spring.ai.openai.api-key=${NVIDIA_API_KEY}
+spring.ai.openai.base-url=https://integrate.api.nvidia.com
+spring.ai.openai.chat.options.model=meta/llama-3.1-70b-instruct
+
+# The NVIDIA LLM API doesn't support embeddings, so we need to disable it.
+spring.ai.openai.embedding.enabled=false
+
+# The NVIDIA LLM API requires this parameter to be set explicitly or server internal error will be thrown.
+spring.ai.openai.chat.options.max-tokens=2048
 ----
 
-TIP: replace the `api-key` with your OpenAI credentials.
+TIP: replace the `api-key` with your NVIDIA credentials.
 
-This will create a `OpenAiChatModel` implementation that you can inject into your class.
+NOTE:  NVIDIA LLM API requires the `max-token` parameter to be explicitly set or server error will be thrown.
+
+
 Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
@@ -265,52 +249,3 @@ public class ChatController {
     }
 }
 ----
-
-== Manual Configuration
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatModel.java[OpenAiChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the OpenAI service.
-
-Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
-
-[source, xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai'
-}
-----
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-Next, create a `OpenAiChatModel` and use it for text generations:
-
-[source,java]
-----
-var openAiApi = new OpenAiApi("https://api.groq.com/openai", System.getenv("GROQ_API_KEY"));
-var openAiChatOptions = OpenAiChatOptions.builder()
-            .withModel("llama3-70b-8192")
-            .withTemperature(0.4)
-            .withMaxTokens(200)
-        .build();
-var chatModel = new OpenAiChatModel(openAiApi, openAiChatOptions);
-
-
-ChatResponse response = chatModel.call(
-    new Prompt("Generate the names of 5 famous pirates."));
-
-// Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
-    new Prompt("Generate the names of 5 famous pirates."));
-----
-
-The `OpenAiChatOptions` provides the configuration information for the chat requests.
-The `OpenAiChatOptions.Builder` is fluent options builder.
