@@ -15,9 +15,9 @@
  */
 package org.springframework.ai.ollama.api;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -15,20 +15,13 @@
 */
 package org.springframework.ai.ollama;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
@@ -36,6 +29,13 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaOptions;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -55,9 +55,9 @@ public class OllamaEmbeddingModelTests {
 
 		when(ollamaApi.embed(embeddingsRequestCaptor.capture()))
 			.thenReturn(
-					new EmbeddingsResponse("RESPONSE_MODEL_NAME", List.of(List.of(1d, 2d, 3d), List.of(4d, 5d, 6d))))
+					new EmbeddingsResponse("RESPONSE_MODEL_NAME", List.of(new float[]{1f, 2f, 3f}, new float[]{4f, 5f, 6f})))
 			.thenReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME2",
-					List.of(List.of(7d, 8d, 9d), List.of(10d, 11d, 12d))));
+					List.of(new float[]{7f, 8f, 9f}, new float[]{10f, 11f, 12f})));
 
 		// Tests default options
 		var defaultOptions = OllamaOptions.builder().withModel("DEFAULT_MODEL").build();
@@ -65,14 +65,14 @@ public class OllamaEmbeddingModelTests {
 		var embeddingModel = new OllamaEmbeddingModel(ollamaApi, defaultOptions);
 
 		EmbeddingResponse response = embeddingModel
-			.call(new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptions.EMPTY));
+			.call(new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptionsBuilder.builder().build()));
 
 		assertThat(response.getResults()).hasSize(2);
 		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
-		assertThat(response.getResults().get(0).getOutput()).isEqualTo(List.of(1d, 2d, 3d));
+		assertThat(response.getResults().get(0).getOutput()).isEqualTo(new float[]{1f, 2f, 3f});
 		assertThat(response.getResults().get(0).getMetadata()).isEqualTo(EmbeddingResultMetadata.EMPTY);
 		assertThat(response.getResults().get(1).getIndex()).isEqualTo(1);
-		assertThat(response.getResults().get(1).getOutput()).isEqualTo(List.of(4d, 5d, 6d));
+		assertThat(response.getResults().get(1).getOutput()).isEqualTo(new float[]{4f, 5f, 6f});
 		assertThat(response.getResults().get(1).getMetadata()).isEqualTo(EmbeddingResultMetadata.EMPTY);
 		assertThat(response.getMetadata().getModel()).isEqualTo("RESPONSE_MODEL_NAME");
 
@@ -94,10 +94,10 @@ public class OllamaEmbeddingModelTests {
 
 		assertThat(response.getResults()).hasSize(2);
 		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
-		assertThat(response.getResults().get(0).getOutput()).isEqualTo(List.of(7d, 8d, 9d));
+		assertThat(response.getResults().get(0).getOutput()).isEqualTo(new float[]{7f, 8f, 9f});
 		assertThat(response.getResults().get(0).getMetadata()).isEqualTo(EmbeddingResultMetadata.EMPTY);
 		assertThat(response.getResults().get(1).getIndex()).isEqualTo(1);
-		assertThat(response.getResults().get(1).getOutput()).isEqualTo(List.of(10d, 11d, 12d));
+		assertThat(response.getResults().get(1).getOutput()).isEqualTo(new float[]{10f, 11f, 12f});
 		assertThat(response.getResults().get(1).getMetadata()).isEqualTo(EmbeddingResultMetadata.EMPTY);
 		assertThat(response.getMetadata().getModel()).isEqualTo("RESPONSE_MODEL_NAME2");
 

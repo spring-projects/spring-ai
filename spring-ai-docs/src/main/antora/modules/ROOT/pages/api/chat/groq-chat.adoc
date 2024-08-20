@@ -1,6 +1,6 @@
 = Groq Chat
 
-https://groq.com/[Groq] is an extreally fast,  LPU™ based, AI Inference Engine that support various https://console.groq.com/docs/models[AI Models], 
+https://groq.com/[Groq] is an extremely fast,  LPU™ based, AI Inference Engine that support various https://console.groq.com/docs/models[AI Models], 
 supports `Tool/Function Calling` and exposes a `OpenAI API` compatible endpoint.
 
 Spring AI integrates with the https://groq.com/[Groq] by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. 

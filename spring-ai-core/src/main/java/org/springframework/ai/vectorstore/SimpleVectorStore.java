@@ -15,16 +15,6 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.core.io.Resource;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -32,6 +22,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +31,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.core.io.Resource;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -55,7 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Mark Pollack
  * @author Christian Tzolov
  */
-public class SimpleVectorStore implements VectorStore {
+public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
 
@@ -64,22 +74,30 @@ public class SimpleVectorStore implements VectorStore {
 	protected EmbeddingModel embeddingModel;
 
 	public SimpleVectorStore(EmbeddingModel embeddingModel) {
+		this(embeddingModel, ObservationRegistry.NOOP, null);
+	}
+
+	public SimpleVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.embeddingModel = embeddingModel;
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
-			List<Double> embedding = this.embeddingModel.embed(document);
+			float[] embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			this.store.put(document.getId(), document);
 		}
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		for (String id : idList) {
 			this.store.remove(id);
 		}
@@ -87,13 +105,13 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.getFilterExpression() != null) {
 			throw new UnsupportedOperationException(
 					"The [" + this.getClass() + "] doesn't support metadata filtering!");
 		}
 
-		List<Double> userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
+		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
 			.map(entry -> new Similarity(entry.getId(),
@@ -114,7 +132,15 @@ public class SimpleVectorStore implements VectorStore {
 		try {
 			if (!file.exists()) {
 				logger.info("Creating new vector store file: {}", file);
-				file.createNewFile();
+				try {
+					Files.createFile(file.toPath());
+				}
+				catch (FileAlreadyExistsException e) {
+					throw new RuntimeException("File already exists: " + file, e);
+				}
+				catch (IOException e) {
+					throw new RuntimeException("Failed to create new file: " + file + ". Reason: " + e.getMessage(), e);
+				}
 			}
 			else {
 				logger.info("Overwriting existing vector store file: {}", file);
@@ -186,7 +212,7 @@ public class SimpleVectorStore implements VectorStore {
 		return json;
 	}
 
-	private List<Double> getUserQueryEmbedding(String query) {
+	private float[] getUserQueryEmbedding(String query) {
 		return this.embeddingModel.embed(query);
 	}
 
@@ -209,17 +235,17 @@ public class SimpleVectorStore implements VectorStore {
 			throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
 		}
 
-		public static double cosineSimilarity(List<Double> vectorX, List<Double> vectorY) {
+		public static double cosineSimilarity(float[] vectorX, float[] vectorY) {
 			if (vectorX == null || vectorY == null) {
 				throw new RuntimeException("Vectors must not be null");
 			}
-			if (vectorX.size() != vectorY.size()) {
+			if (vectorX.length != vectorY.length) {
 				throw new IllegalArgumentException("Vectors lengths must be equal");
 			}
 
-			double dotProduct = dotProduct(vectorX, vectorY);
-			double normX = norm(vectorX);
-			double normY = norm(vectorY);
+			float dotProduct = dotProduct(vectorX, vectorY);
+			float normX = norm(vectorX);
+			float normY = norm(vectorY);
 
 			if (normX == 0 || normY == 0) {
 				throw new IllegalArgumentException("Vectors cannot have zero norm");
@@ -228,23 +254,32 @@ public class SimpleVectorStore implements VectorStore {
 			return dotProduct / (Math.sqrt(normX) * Math.sqrt(normY));
 		}
 
-		public static double dotProduct(List<Double> vectorX, List<Double> vectorY) {
-			if (vectorX.size() != vectorY.size()) {
+		public static float dotProduct(float[] vectorX, float[] vectorY) {
+			if (vectorX.length != vectorY.length) {
 				throw new IllegalArgumentException("Vectors lengths must be equal");
 			}
 
-			double result = 0;
-			for (int i = 0; i < vectorX.size(); ++i) {
-				result += vectorX.get(i) * vectorY.get(i);
+			float result = 0;
+			for (int i = 0; i < vectorX.length; ++i) {
+				result += vectorX[i] * vectorY[i];
 			}
 
 			return result;
 		}
 
-		public static double norm(List<Double> vector) {
+		public static float norm(float[] vector) {
 			return dotProduct(vector, vector);
 		}
 
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName("in-memory-map")
+			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 }

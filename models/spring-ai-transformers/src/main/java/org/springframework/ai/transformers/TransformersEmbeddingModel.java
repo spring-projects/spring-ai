@@ -210,19 +210,19 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	@Override
-	public List<Double> embed(String text) {
+	public float[] embed(String text) {
 		return embed(List.of(text)).get(0);
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
 	@Override
 	public EmbeddingResponse embedForResponse(List<String> texts) {
 		List<Embedding> data = new ArrayList<>();
-		List<List<Double>> embed = this.embed(texts);
+		List<float[]> embed = this.embed(texts);
 		for (int i = 0; i < embed.size(); i++) {
 			data.add(new Embedding(embed.get(i), i));
 		}
@@ -230,7 +230,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	@Override
-	public List<List<Double>> embed(List<String> texts) {
+	public List<float[]> embed(List<String> texts) {
 		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
 			.getResults()
 			.stream()
@@ -241,7 +241,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
-		List<List<Double>> resultEmbeddings = new ArrayList<>();
+		List<float[]> resultEmbeddings = new ArrayList<>();
 
 		try {
 
@@ -286,7 +286,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 					NDArray embedding = meanPooling(ndTokenEmbeddings, ndAttentionMask);
 
 					for (int i = 0; i < embedding.size(0); i++) {
-						resultEmbeddings.add(toDoubleList(embedding.get(i).toFloatArray()));
+						resultEmbeddings.add(embedding.get(i).toFloatArray());
 					}
 				}
 			}
@@ -341,16 +341,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 		// Divide sum embeddings by sum mask
 		return sumEmbeddings.div(sumMask);
-	}
-
-	private List<Double> toDoubleList(float[] floats) {
-		List<Double> result = new ArrayList<>();
-		if (floats != null && floats.length > 0) {
-			for (int i = 0; i < floats.length; i++) {
-				result.add((double) floats[i]);
-			}
-		}
-		return result;
 	}
 
 	private static Resource toResource(String uri) {

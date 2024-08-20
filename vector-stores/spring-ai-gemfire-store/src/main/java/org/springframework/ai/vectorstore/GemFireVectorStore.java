@@ -23,15 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -41,6 +41,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.observation.ObservationRegistry;
 import reactor.util.annotation.NonNull;
 
 /**
@@ -48,8 +56,9 @@ import reactor.util.annotation.NonNull;
  * deleting, and similarity searching of documents in a GemFire index.
  *
  * @author Geet Rawat
+ * @author Christian Tzolov
  */
-public class GemFireVectorStore implements VectorStore, InitializingBean {
+public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(GemFireVectorStore.class);
 
@@ -70,10 +79,29 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	 * configuration.
 	 * @param config the configuration for the GemFireVectorStore
 	 * @param embeddingModel the embedding client used for generating embeddings
+	 * @param initializeSchema whether to initialize the schema during initialization
 	 */
-
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
+		this(config, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	/**
+	 * Configures and initializes a GemFireVectorStore instance based on the provided
+	 * configuration.
+	 * @param config the configuration for the GemFireVectorStore
+	 * @param embeddingModel the embedding client used for generating embeddings
+	 * @param initializeSchema whether to initialize the schema during initialization
+	 * @param observationRegistry the observation registry to use for recording
+	 * observations
+	 * @param customObservationConvention the custom observation convention to use for
+	 * observing operations
+	 */
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema,
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 		this.initializeSchema = initializeSchema;
@@ -256,12 +284,12 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 			private final String key;
 
-			private List<Float> vector;
+			private float[] vector;
 
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			private Map<String, Object> metadata;
 
-			public Embedding(@JsonProperty("key") String key, @JsonProperty("vector") List<Float> vector,
+			public Embedding(@JsonProperty("key") String key, @JsonProperty("vector") float[] vector,
 					String contentName, String content, @JsonProperty("metadata") Map<String, Object> metadata) {
 				this.key = key;
 				this.vector = vector;
@@ -273,7 +301,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 				return key;
 			}
 
-			public List<Float> getVector() {
+			public float[] getVector() {
 				return vector;
 			}
 
@@ -289,7 +317,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 		@JsonProperty("vector")
 		@NonNull
-		private final List<Float> vector;
+		private final float[] vector;
 
 		@JsonProperty("top-k")
 		private final int k;
@@ -300,14 +328,14 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		@JsonProperty("include-metadata")
 		private final boolean includeMetadata;
 
-		public QueryRequest(List<Float> vector, int k, int kPerBucket, boolean includeMetadata) {
+		public QueryRequest(float[] vector, int k, int kPerBucket, boolean includeMetadata) {
 			this.vector = vector;
 			this.k = k;
 			this.kPerBucket = kPerBucket;
 			this.includeMetadata = includeMetadata;
 		}
 
-		public List<Float> getVector() {
+		public float[] getVector() {
 			return vector;
 		}
 
@@ -374,11 +402,11 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
 			document.setEmbedding(this.embeddingModel.embed(document));
-			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
+			float[] floatVector = document.getEmbedding();
 			return new UploadRequest.Embedding(document.getId(), floatVector, DOCUMENT_FIELD, document.getContent(),
 					document.getMetadata());
 		}).toList());
@@ -404,7 +432,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		try {
 			client.method(HttpMethod.DELETE)
 				.uri("/" + indexName + EMBEDDINGS)
@@ -421,12 +449,11 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
 		}
-		List<Double> vector = this.embeddingModel.embed(request.getQuery());
-		List<Float> floatVector = vector.stream().map(Double::floatValue).toList();
+		float[] floatVector = this.embeddingModel.embed(request.getQuery());
 		return client.post()
 			.uri("/" + indexName + QUERY)
 			.contentType(MediaType.APPLICATION_JSON)
@@ -506,6 +533,14 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		else {
 			throw new RuntimeException(String.format("Got an unexpected HTTP error: %s", ex));
 		}
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.GEMFIRE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withIndexName(this.indexName)
+			.withFieldName(EMBEDDINGS);
 	}
 
 }

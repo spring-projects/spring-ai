@@ -66,33 +66,8 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 		this.defaultOptions = options;
 	}
 
-	// /**
-	// * Cohere Embedding API input types.
-	// * @param inputType the input type to use.
-	// * @return this client.
-	// */
-	// public BedrockCohereEmbeddingModel withInputType(CohereEmbeddingRequest.InputType
-	// inputType) {
-	// this.inputType = inputType;
-	// return this;
-	// }
-
-	// /**
-	// * Specifies how the API handles inputs longer than the maximum token length. If you
-	// specify LEFT or RIGHT, the
-	// * model discards the input until the remaining input is exactly the maximum input
-	// token length for the model.
-	// * @param truncate the truncate option to use.
-	// * @return this client.
-	// */
-	// public BedrockCohereEmbeddingModel withTruncate(CohereEmbeddingRequest.Truncate
-	// truncate) {
-	// this.truncate = truncate;
-	// return this;
-	// }
-
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		return embed(document.getContent());
 	}
 

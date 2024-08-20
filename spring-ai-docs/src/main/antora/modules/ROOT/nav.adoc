@@ -27,6 +27,7 @@
 **** xref:api/chat/functions/minimax-chat-functions.adoc[Function Calling]
 *** xref:api/chat/moonshot-chat.adoc[Moonshot AI]
 //// **** xref:api/chat/functions/moonshot-chat-functions.adoc[Function Calling]
+*** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 *** xref:api/chat/ollama-chat.adoc[Ollama]
 **** xref:api/chat/functions/ollama-chat-functions.adoc[Function Calling]
 *** xref:api/chat/openai-chat.adoc[OpenAI]

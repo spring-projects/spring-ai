@@ -15,19 +15,11 @@
  */
 package org.springframework.ai.ollama;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -49,21 +41,24 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.ollama.OllamaContainer;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Testcontainers
-@Disabled("For manual smoke testing only.")
-class OllamaChatModelIT {
+@DisabledIf("isDisabled")
+class OllamaChatModelIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.MISTRAL.getName();
 
 	private static final Log logger = LogFactory.getLog(OllamaChatModelIT.class);
-
-	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	static String baseUrl = "http://localhost:11434";
 

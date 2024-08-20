@@ -24,17 +24,22 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.testcontainers.weaviate.WeaviateContainer;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -73,12 +78,18 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
+			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
+
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "Bulgaria", "price", 3.14, "active", true, "year", 2020));
 			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "Netherlands", "price", 1.57, "active", false, "year", 2023));
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.WEAVIATE,
+					VectorStoreObservationContext.Operation.ADD);
+			observationRegistry.clear();
 
 			var request = SearchRequest.query("The World").withTopK(5);
 
@@ -89,6 +100,9 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.WEAVIATE,
+					VectorStoreObservationContext.Operation.QUERY);
 
 			results = vectorStore.similaritySearch(
 					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
@@ -109,13 +123,23 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
+			observationRegistry.clear();
+
 			// Remove all documents from the store
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.WEAVIATE,
+					VectorStoreObservationContext.Operation.DELETE);
 		});
 	}
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

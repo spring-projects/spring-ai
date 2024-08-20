@@ -15,15 +15,26 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -33,16 +44,10 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+
+import io.micrometer.observation.tck.TestObservationRegistry;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 
 @Testcontainers
 class OpenSearchVectorStoreAutoConfigurationIT {
@@ -82,16 +87,27 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 
 		this.contextRunner.run(context -> {
 			OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
+			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 			vectorStore.add(documents);
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.OPENSEARCH,
+					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await()
 				.until(() -> vectorStore
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
 						hasSize(1));
 
+			observationRegistry.clear();
+
 			List<Document> results = vectorStore
 				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.OPENSEARCH,
+					VectorStoreObservationContext.Operation.QUERY);
+
+			observationRegistry.clear();
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -103,6 +119,10 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(Document::getId).toList());
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.OPENSEARCH,
+					VectorStoreObservationContext.Operation.DELETE);
+			observationRegistry.clear();
 
 			Awaitility.await()
 				.until(() -> vectorStore
@@ -123,6 +143,11 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

@@ -19,6 +19,8 @@ import javax.sql.DataSource;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.OracleVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -27,9 +29,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * @author Loïc Lefèvre
  * @author Eddú Meléndez
+ * @author Christian Tzolov
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ OracleVectorStore.class, DataSource.class, JdbcTemplate.class })
@@ -39,11 +44,13 @@ public class OracleVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OracleVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
-			OracleVectorStoreProperties properties) {
+			OracleVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 		return new OracleVectorStore(jdbcTemplate, embeddingModel, properties.getTableName(), properties.getIndexType(),
 				properties.getDistanceType(), properties.getDimensions(), properties.getSearchAccuracy(),
 				properties.isInitializeSchema(), properties.isRemoveExistingVectorStoreTable(),
-				properties.isForcedNormalization());
+				properties.isForcedNormalization(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 }

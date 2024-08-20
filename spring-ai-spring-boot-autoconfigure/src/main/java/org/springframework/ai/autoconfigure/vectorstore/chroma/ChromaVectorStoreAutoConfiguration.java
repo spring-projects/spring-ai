@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.vectorstore.chroma;
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -28,6 +30,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -72,9 +76,11 @@ public class ChromaVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ChromaVectorStore vectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi,
-			ChromaVectorStoreProperties storeProperties) {
+			ChromaVectorStoreProperties storeProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 		return new ChromaVectorStore(embeddingModel, chromaApi, storeProperties.getCollectionName(),
-				storeProperties.isInitializeSchema());
+				storeProperties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {

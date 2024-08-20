@@ -71,7 +71,7 @@ To insert data into the vector database, encapsulate it within a `Document` obje
 The `Document` class encapsulates content from a data source, such as a PDF or Word document, and includes text represented as a string.
 It also contains metadata in the form of key-value pairs, including details such as the filename.
 
-Upon insertion into the vector database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an embedding model. Embedding models, such as https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002`, are used to convert words, sentences, or paragraphs into these vector embeddings.
+Upon insertion into the vector database, the text content is transformed into a numerical array, or a `float[]`, known as vector embeddings, using an embedding model. Embedding models, such as https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002`, are used to convert words, sentences, or paragraphs into these vector embeddings.
 
 The vector database's role is to store and facilitate similarity searches for these embeddings. It does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingModel` should be utilized.
 

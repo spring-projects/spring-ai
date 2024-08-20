@@ -168,8 +168,25 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public T convert(@NonNull String text) {
 		try {
-			if (text.startsWith("```json") && text.endsWith("```")) {
-				text = text.substring(7, text.length() - 3);
+			// Remove leading and trailing whitespace
+			text = text.trim();
+
+			// Check for and remove triple backticks and "json" identifier
+			if (text.startsWith("```") && text.endsWith("```")) {
+				// Remove the first line if it contains "```json"
+				String[] lines = text.split("\n", 2);
+				if (lines[0].trim().equalsIgnoreCase("```json")) {
+					text = lines.length > 1 ? lines[1] : "";
+				}
+				else {
+					text = text.substring(3); // Remove leading ```
+				}
+
+				// Remove trailing ```
+				text = text.substring(0, text.length() - 3);
+
+				// Trim again to remove any potential whitespace
+				text = text.trim();
 			}
 			return (T) this.objectMapper.readValue(text, this.typeRef);
 		}

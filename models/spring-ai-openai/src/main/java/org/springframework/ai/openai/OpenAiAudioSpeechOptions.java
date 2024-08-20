@@ -60,8 +60,8 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 	private AudioResponseFormat responseFormat;
 
 	/**
-	 * The speed of the voice synthesis. The acceptable range is from 0.0 (slowest) to 1.0
-	 * (fastest). Defaults to 1
+	 * The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to
+	 * 4.0 (fastest). Defaults to 1 (normal)
 	 */
 	@JsonProperty("speed")
 	private Float speed;

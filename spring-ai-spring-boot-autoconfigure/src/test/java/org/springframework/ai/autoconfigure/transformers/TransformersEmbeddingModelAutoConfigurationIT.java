@@ -50,10 +50,10 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
 			assertThat(embeddingModel).isInstanceOf(TransformersEmbeddingModel.class);
 
-			List<List<Double>> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
+			List<float[]> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
 
 			assertThat(embeddings.size()).isEqualTo(2); // batch size
-			assertThat(embeddings.get(0).size()).isEqualTo(embeddingModel.dimensions()); // dimensions
+			assertThat(embeddings.get(0).length).isEqualTo(embeddingModel.dimensions()); // dimensions
 																							// size
 		});
 	}
@@ -80,10 +80,10 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 
 				assertThat(embeddingModel.dimensions()).isEqualTo(384);
 
-				List<List<Double>> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
+				List<float[]> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
 
 				assertThat(embeddings.size()).isEqualTo(2); // batch size
-				assertThat(embeddings.get(0).size()).isEqualTo(embeddingModel.dimensions()); // dimensions
+				assertThat(embeddings.get(0).length).isEqualTo(embeddingModel.dimensions()); // dimensions
 																								// size
 			});
 	}

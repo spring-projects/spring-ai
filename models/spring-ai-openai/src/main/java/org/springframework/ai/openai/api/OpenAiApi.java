@@ -974,7 +974,7 @@ public class OpenAiApi {
 			MultiValueMap<String, String> additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
 		return this.restClient.post()
@@ -1009,7 +1009,7 @@ public class OpenAiApi {
 			MultiValueMap<String, String> additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -1102,7 +1102,7 @@ public class OpenAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Embedding(// @formatter:off
 			@JsonProperty("index") Integer index,
-			@JsonProperty("embedding") List<Double> embedding,
+			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("object") String object) {// @formatter:on
 
 		/**
@@ -1112,7 +1112,7 @@ public class OpenAiApi {
 		 * @param embedding The embedding vector, which is a list of floats. The length of
 		 * vector depends on the model.
 		 */
-		public Embedding(Integer index, List<Double> embedding) {
+		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
 	}

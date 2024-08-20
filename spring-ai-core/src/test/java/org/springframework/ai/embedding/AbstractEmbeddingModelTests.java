@@ -48,17 +48,17 @@ public class AbstractEmbeddingModelTests {
 		EmbeddingModel dummy = new EmbeddingModel() {
 
 			@Override
-			public List<Double> embed(String text) {
-				return List.of(0.1, 0.1, 0.1);
+			public float[] embed(String text) {
+				return new float[] { 0.1f, 0.1f, 0.1f };
 			}
 
 			@Override
-			public List<Double> embed(Document document) {
+			public float[] embed(Document document) {
 				throw new UnsupportedOperationException("Unimplemented method 'embed'");
 			}
 
 			@Override
-			public List<List<Double>> embed(List<String> texts) {
+			public List<float[]> embed(List<String> texts) {
 				throw new UnsupportedOperationException("Unimplemented method 'embed'");
 			}
 
@@ -87,7 +87,7 @@ public class AbstractEmbeddingModelTests {
 
 	@Test
 	public void testUnknownModelDimension() {
-		when(embeddingModel.embed(eq("Hello world!"))).thenReturn(List.of(0.1, 0.1, 0.1));
+		when(embeddingModel.embed(eq("Hello world!"))).thenReturn(new float[]{0.1f, 0.1f, 0.1f});
 		assertThat(AbstractEmbeddingModel.dimensions(embeddingModel, "unknown_model", "Hello world!")).isEqualTo(3);
 	}
 

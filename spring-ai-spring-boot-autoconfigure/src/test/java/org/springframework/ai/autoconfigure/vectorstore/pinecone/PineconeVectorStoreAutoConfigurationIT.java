@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,14 +32,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.PineconeVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
+
+import io.micrometer.observation.tck.TestObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -85,12 +90,17 @@ public class PineconeVectorStoreAutoConfigurationIT {
 		contextRunner.run(context -> {
 
 			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 			vectorStore.add(documents);
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
+					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 			}, hasSize(1));
+			observationRegistry.clear();
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
@@ -102,8 +112,16 @@ public class PineconeVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKeys("spring", "customDistanceField");
 
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
+					VectorStoreObservationContext.Operation.QUERY);
+			observationRegistry.clear();
+
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+
+			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
+					VectorStoreObservationContext.Operation.DELETE);
+			observationRegistry.clear();
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -113,6 +131,11 @@ public class PineconeVectorStoreAutoConfigurationIT {
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

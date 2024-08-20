@@ -15,6 +15,10 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.azure;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -26,21 +30,21 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.azure.AzureVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import io.micrometer.observation.tck.TestObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -97,6 +101,7 @@ public class AzureVectorStoreAutoConfigurationIT {
 				assertThat(properties.getIndexName()).isEqualTo("my_test_index");
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
+				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 				assertThat(vectorStore).isInstanceOf(AzureVectorStore.class);
 
@@ -105,6 +110,10 @@ public class AzureVectorStoreAutoConfigurationIT {
 				Awaitility.await().until(() -> {
 					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				}, hasSize(1));
+
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
+						VectorStoreObservationContext.Operation.ADD);
+				observationRegistry.clear();
 
 				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
@@ -116,17 +125,31 @@ public class AzureVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
+						VectorStoreObservationContext.Operation.QUERY);
+				observationRegistry.clear();
+
 				// Remove all documents from the store
 				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
 				Awaitility.await().until(() -> {
 					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				}, hasSize(0));
+
+				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
+						VectorStoreObservationContext.Operation.DELETE);
+				observationRegistry.clear();
+
 			});
 	}
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

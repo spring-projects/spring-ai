@@ -16,45 +16,40 @@
 
 package org.springframework.ai.ollama.api.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.ollama.OllamaImage;
+import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.ollama.OllamaContainer;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  */
-@Disabled("For manual smoke testing only.")
 @Testcontainers
-public class OllamaApiToolFunctionCallIT {
+@DisabledIf("isDisabled")
+public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.MISTRAL.getName();
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
-
-	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	static String baseUrl = "http://localhost:11434";
 

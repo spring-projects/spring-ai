@@ -47,7 +47,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.hasSize;
 
 @Testcontainers
-class a {
+class AwsOpenSearchVectorStoreAutoConfigurationIT {
 
 	@Container
 	private static final LocalStackContainer localstack = new LocalStackContainer(

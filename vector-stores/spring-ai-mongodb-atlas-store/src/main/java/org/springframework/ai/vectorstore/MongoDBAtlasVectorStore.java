@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,21 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static org.springframework.data.mongodb.core.query.Criteria.where;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.mongodb.MongoCommandException;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -32,13 +38,17 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
+import com.mongodb.MongoCommandException;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Chris Smith
+ * @author Soby Chacko
+ * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
+public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -77,6 +87,15 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBVectorStoreConfig config, boolean initializeSchema) {
+		this(mongoTemplate, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
+			MongoDBVectorStoreConfig config, boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		this.mongoTemplate = mongoTemplate;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
@@ -142,29 +161,28 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	 * @param mongoDocument the mongoDocument to map to a Spring AI Document
 	 * @return the Spring AI Document
 	 */
-	private Document mapMongoDocument(org.bson.Document mongoDocument) {
+	private Document mapMongoDocument(org.bson.Document mongoDocument, float[] queryEmbedding) {
 		String id = mongoDocument.getString(ID_FIELD_NAME);
 		String content = mongoDocument.getString(CONTENT_FIELD_NAME);
 		Map<String, Object> metadata = mongoDocument.get(METADATA_FIELD_NAME, org.bson.Document.class);
-		List<Double> embedding = mongoDocument.getList(this.config.pathName, Double.class);
 
 		Document document = new Document(id, content, metadata);
-		document.setEmbedding(embedding);
+		document.setEmbedding(queryEmbedding);
 
 		return document;
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		for (Document document : documents) {
-			List<Double> embedding = this.embeddingModel.embed(document);
+			float[] embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			this.mongoTemplate.save(document, this.config.collectionName);
 		}
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		Query query = new Query(where(ID_FIELD_NAME).in(idList));
 
 		var deleteRes = this.mongoTemplate.remove(query, this.config.collectionName);
@@ -179,14 +197,14 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-		List<Double> queryEmbedding = this.embeddingModel.embed(request.getQuery());
-		var vectorSearch = new VectorSearchAggregation(queryEmbedding, this.config.pathName, this.config.numCandidates,
-				this.config.vectorIndexName, request.getTopK(), nativeFilterExpressions);
+		float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
+		var vectorSearch = new VectorSearchAggregation(EmbeddingUtils.toList(queryEmbedding), this.config.pathName,
+				this.config.numCandidates, this.config.vectorIndexName, request.getTopK(), nativeFilterExpressions);
 
 		Aggregation aggregation = Aggregation.newAggregation(vectorSearch,
 				Aggregation.addFields()
@@ -198,7 +216,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		return this.mongoTemplate.aggregate(aggregation, this.config.collectionName, org.bson.Document.class)
 			.getMappedResults()
 			.stream()
-			.map(this::mapMongoDocument)
+			.map(d -> mapMongoDocument(d, queryEmbedding))
 			.toList();
 	}
 
@@ -296,6 +314,16 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 		}
 
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.MONGODB.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.config.collectionName)
+			.withFieldName(this.config.pathName)
+			.withIndexName(this.config.vectorIndexName);
 	}
 
 }

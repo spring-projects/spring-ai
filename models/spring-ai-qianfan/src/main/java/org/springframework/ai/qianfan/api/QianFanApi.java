@@ -353,7 +353,7 @@ public class QianFanApi extends AuthApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 
 		return this.restClient.post()
 				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
@@ -370,7 +370,7 @@ public class QianFanApi extends AuthApi {
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		return this.webClient.post()
 				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
@@ -484,7 +484,7 @@ public class QianFanApi extends AuthApi {
 	public record Embedding(
 			// @formatter:off
 			@JsonProperty("index") Integer index,
-			@JsonProperty("embedding") List<Double> embedding,
+			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("object") String object) {
 		// @formatter:on
 
@@ -495,7 +495,7 @@ public class QianFanApi extends AuthApi {
 		 * @param embedding The embedding vector, which is a list of floats. The length of
 		 * vector depends on the model.
 		 */
-		public Embedding(Integer index, List<Double> embedding) {
+		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
 	}

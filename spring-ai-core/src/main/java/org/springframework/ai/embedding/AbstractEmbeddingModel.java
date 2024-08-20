@@ -53,7 +53,7 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 		else {
 			// Determine the dimensions empirically.
 			// Generate an embedding and count the dimension size;
-			return embeddingModel.embed(dummyContent).size();
+			return embeddingModel.embed(dummyContent).length;
 		}
 	}
 

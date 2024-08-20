@@ -678,7 +678,7 @@ public class MiniMaxApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 
 		return this.restClient.post()
 				.uri("/v1/text/chatcompletion_v2")
@@ -698,7 +698,7 @@ public class MiniMaxApi {
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -865,7 +865,7 @@ public class MiniMaxApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingList(
-			@JsonProperty("vectors") List<List<Double>> vectors,
+			@JsonProperty("vectors") List<float[]> vectors,
 			@JsonProperty("model") String model,
 			@JsonProperty("total_tokens") Integer totalTokens) {
 	}

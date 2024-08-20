@@ -73,7 +73,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(ChatClientObservationContext context) {
-		return KeyValues.of(springAiKind(context), aiOperationType(context), aiProvider(context), stream(context));
+		return KeyValues.of(springAiKind(), aiOperationType(context), aiProvider(context), stream(context));
 	}
 
 	@Override
@@ -82,7 +82,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 				chatClientAvisorParam(context));
 	}
 
-	protected KeyValue springAiKind(ChatClientObservationContext context) {
+	protected KeyValue springAiKind() {
 		return KeyValue.of(ChatClientObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
 				CHAT_CLIENT_SPRING_AI_KIND);
 	}

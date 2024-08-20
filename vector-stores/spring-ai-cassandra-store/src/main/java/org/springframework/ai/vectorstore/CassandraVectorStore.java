@@ -29,13 +29,22 @@ import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 
+import io.micrometer.observation.ObservationRegistry;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -85,12 +94,13 @@ import java.util.concurrent.ConcurrentMap;
  * also serve as a protecting throttle against your embedding model.
  *
  * @author Mick Semb Wever
+ * @author Christian Tzolov
  * @see VectorStore
  * @see org.springframework.ai.vectorstore.CassandraVectorStoreConfig
  * @see EmbeddingModel
  * @since 1.0.0
  */
-public class CassandraVectorStore implements VectorStore, AutoCloseable {
+public class CassandraVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
 
 	/**
 	 * Indexes are automatically created with COSINE. This can be changed manually via
@@ -126,11 +136,14 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 
 	private final Similarity similarity;
 
-	public static CassandraVectorStore create(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
-		return new CassandraVectorStore(conf, embeddingModel);
+	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
+		this(conf, embeddingModel, ObservationRegistry.NOOP, null);
 	}
 
-	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
+	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel,
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
 
 		Preconditions.checkArgument(null != conf, "Config must not be null");
 		Preconditions.checkArgument(null != embeddingModel, "Embedding model must not be null");
@@ -155,7 +168,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		var futures = new CompletableFuture[documents.size()];
 
 		int i = 0;
@@ -163,7 +176,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 			futures[i++] = CompletableFuture.runAsync(() -> {
 				List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
 
-				if (null == d.getEmbedding() || d.getEmbedding().isEmpty()) {
+				if (null == d.getEmbedding() || d.getEmbedding().length == 0) {
 					d.setEmbedding(this.embeddingModel.embed(d));
 				}
 
@@ -175,8 +188,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 
 				builder = builder.setString(this.conf.schema.content(), d.getContent())
 					.setVector(this.conf.schema.embedding(),
-							CqlVector.newInstance(d.getEmbedding().stream().map(Double::floatValue).toList()),
-							Float.class);
+							CqlVector.newInstance(EmbeddingUtils.toList(d.getEmbedding())), Float.class);
 
 				for (var metadataColumn : this.conf.schema.metadataColumns()
 					.stream()
@@ -194,7 +206,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		CompletableFuture[] futures = new CompletableFuture[idList.size()];
 		int i = 0;
 		for (String id : idList) {
@@ -207,7 +219,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		Preconditions.checkArgument(request.getTopK() <= 1000);
 		var embedding = toFloatArray(this.embeddingModel.embed(request.getQuery()));
 		CqlVector<Float> cqlVector = CqlVector.newInstance(embedding);
@@ -241,10 +253,8 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 			Document doc = new Document(getDocumentId(row), row.getString(this.conf.schema.content()), docFields);
 
 			if (this.conf.returnEmbeddings) {
-				doc.setEmbedding(row.getVector(this.conf.schema.embedding(), Float.class)
-					.stream()
-					.map(Float::doubleValue)
-					.toList());
+				doc.setEmbedding(EmbeddingUtils
+					.toPrimitive(row.getVector(this.conf.schema.embedding(), Float.class).stream().toList()));
 			}
 			documents.add(doc);
 		}
@@ -359,13 +369,34 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 		return this.conf.primaryKeyTranslator.apply(primaryKeyValues);
 	}
 
-	private static Float[] toFloatArray(List<Double> embeddingDouble) {
-		Float[] embeddingFloat = new Float[embeddingDouble.size()];
+	private static Float[] toFloatArray(float[] embedding) {
+		Float[] embeddingFloat = new Float[embedding.length];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.CASSANDRA.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.conf.schema.table())
+			.withNamespace(this.conf.schema.keyspace())
+			.withSimilarityMetric(getSimilarityMetric())
+			.withIndexName(this.conf.schema.index());
+	}
+
+	private static Map<Similarity, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(Similarity.COSINE,
+			VectorStoreSimilarityMetric.COSINE, Similarity.EUCLIDEAN, VectorStoreSimilarityMetric.EUCLIDEAN,
+			Similarity.DOT_PRODUCT, VectorStoreSimilarityMetric.DOT);
+
+	private String getSimilarityMetric() {
+		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.similarity)) {
+			return this.similarity.name();
+		}
+		return SIMILARITY_TYPE_MAPPING.get(this.similarity).value();
 	}
 
 }

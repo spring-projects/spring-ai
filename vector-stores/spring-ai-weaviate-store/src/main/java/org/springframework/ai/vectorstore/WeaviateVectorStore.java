@@ -23,8 +23,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
+import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.observation.ObservationRegistry;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.base.WeaviateErrorMessage;
@@ -42,15 +57,6 @@ import io.weaviate.client.v1.graphql.query.builder.GetBuilder.GetBuilderBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
 
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-
 /**
  * A VectorStore implementation backed by Weaviate vector database.
  *
@@ -64,7 +70,7 @@ import org.springframework.util.StringUtils;
  * @author Josh Long
  * @author Soby Chacko
  */
-public class WeaviateVectorStore implements VectorStore {
+public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	public static final String DOCUMENT_METADATA_DISTANCE_KEY_NAME = "distance";
 
@@ -280,9 +286,27 @@ public class WeaviateVectorStore implements VectorStore {
 	 * Constructs a new WeaviateVectorStore.
 	 * @param vectorStoreConfig The configuration for the store.
 	 * @param embeddingModel The client for embedding operations.
+	 * @param weaviateClient The client for Weaviate operations.
 	 */
 	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
 			WeaviateClient weaviateClient) {
+		this(vectorStoreConfig, embeddingModel, weaviateClient, ObservationRegistry.NOOP, null);
+	}
+
+	/**
+	 * Constructs a new WeaviateVectorStore.
+	 * @param vectorStoreConfig The configuration for the store.
+	 * @param embeddingModel The client for embedding operations.
+	 * @param weaviateClient The client for Weaviate operations.
+	 * @param observationRegistry The registry for observations.
+	 * @param customObservationConvention The custom observation convention.
+	 */
+	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
+			WeaviateClient weaviateClient, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Assert.notNull(vectorStoreConfig, "WeaviateVectorStoreConfig must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 
@@ -317,7 +341,7 @@ public class WeaviateVectorStore implements VectorStore {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 
 		if (CollectionUtils.isEmpty(documents)) {
 			return;
@@ -361,8 +385,8 @@ public class WeaviateVectorStore implements VectorStore {
 
 	private WeaviateObject toWeaviateObject(Document document) {
 
-		if (CollectionUtils.isEmpty(document.getEmbedding())) {
-			List<Double> embedding = this.embeddingModel.embed(document);
+		if (document.getEmbedding() == null || document.getEmbedding().length == 0) {
+			float[] embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 		}
 
@@ -388,13 +412,13 @@ public class WeaviateVectorStore implements VectorStore {
 		return WeaviateObject.builder()
 			.className(this.weaviateObjectClass)
 			.id(document.getId())
-			.vector(toFloatArray(document.getEmbedding()))
+			.vector(EmbeddingUtils.toFloatArray(document.getEmbedding()))
 			.properties(fields)
 			.build();
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> documentIds) {
+	public Optional<Boolean> doDelete(List<String> documentIds) {
 
 		Result<BatchDeleteResponse> result = this.weaviateClient.batch()
 			.objectsBatchDeleter()
@@ -420,15 +444,15 @@ public class WeaviateVectorStore implements VectorStore {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
-		Float[] embedding = toFloatArray(this.embeddingModel.embed(request.getQuery()));
+		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		GetBuilder.GetBuilderBuilder builder = GetBuilder.builder();
 
 		GetBuilderBuilder queryBuilder = builder.className(this.weaviateObjectClass)
 			.withNearVectorFilter(NearVectorArgument.builder()
-				.vector(embedding)
+				.vector(EmbeddingUtils.toFloatArray(embedding))
 				.certainty((float) request.getSimilarityThreshold())
 				.build())
 			.limit(request.getTopK())
@@ -512,18 +536,17 @@ public class WeaviateVectorStore implements VectorStore {
 		String content = (String) item.get(CONTENT_FIELD_NAME);
 
 		var document = new Document(id, content, metadata);
-		document.setEmbedding(embedding);
+		document.setEmbedding(EmbeddingUtils.toPrimitive(EmbeddingUtils.doubleToFloat(embedding)));
 
 		return document;
 	}
 
-	/**
-	 * Converts a list of doubles to an array of floats.
-	 * @param doubleList The list of doubles.
-	 * @return The converted array of floats.
-	 */
-	private Float[] toFloatArray(List<Double> doubleList) {
-		return doubleList.stream().map(Number::floatValue).toList().toArray(new Float[0]);
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.WEAVIATE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.weaviateObjectClass);
 	}
 
 }
