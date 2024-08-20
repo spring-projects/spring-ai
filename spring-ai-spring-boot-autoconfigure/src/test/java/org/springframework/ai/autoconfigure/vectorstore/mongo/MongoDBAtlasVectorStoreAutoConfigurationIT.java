@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
@@ -52,6 +53,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Container

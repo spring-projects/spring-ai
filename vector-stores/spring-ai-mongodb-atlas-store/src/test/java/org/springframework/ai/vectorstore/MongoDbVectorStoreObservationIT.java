@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
@@ -54,6 +55,7 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 public class MongoDbVectorStoreObservationIT {
 
 	@Container
