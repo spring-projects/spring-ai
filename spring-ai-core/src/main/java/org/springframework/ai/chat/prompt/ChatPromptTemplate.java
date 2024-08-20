@@ -76,9 +76,21 @@ public class ChatPromptTemplate implements PromptTemplateActions, PromptTemplate
 	}
 
 	@Override
+	public Prompt create(ChatOptions modelOptions) {
+		List<Message> messages = createMessages();
+		return new Prompt(messages, modelOptions);
+	}
+
+	@Override
 	public Prompt create(Map<String, Object> model) {
 		List<Message> messages = createMessages(model);
 		return new Prompt(messages);
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model, ChatOptions modelOptions) {
+		List<Message> messages = createMessages(model);
+		return new Prompt(messages, modelOptions);
 	}
 
 }
