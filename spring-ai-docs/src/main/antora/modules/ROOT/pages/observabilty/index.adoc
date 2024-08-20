@@ -1,0 +1,9 @@
+[[introduction]]
+= Observability
+
+Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations.  Spring AI provides metrics and tracing capabilities for its core components: ChatClient (including Advisors), ChatModel, EmbeddingModel, ImageModel and VectorStore.
+
+NOTE: Observability features are currently supported only for ChatModel and EmbeddingModel implementations from the following AI model providers: OpenAI, Ollama, Anthropic, and Mistral.  Additional AI model providers will be supported in a future release.
+
+
+NOTE: Low cardinality keys will be added to metrics and traces, while high cardinality keys will only be added to traces.
