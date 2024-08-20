@@ -72,6 +72,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-oci-genai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-ollama</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -105,7 +111,7 @@
                 <artifactId>spring-ai-vertex-ai-palm2</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-vertex-ai-embedding</artifactId>
@@ -304,6 +310,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-oci-genai-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
