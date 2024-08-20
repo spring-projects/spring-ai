@@ -19,12 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
@@ -39,8 +38,14 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
+import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
+import org.springframework.util.MimeType;
+
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -52,10 +57,10 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 public class MongoDbVectorStoreObservationIT {
 
 	@Container
@@ -99,6 +104,8 @@ public class MongoDbVectorStoreObservationIT {
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 			vectorStore.add(documents);
+
+			Thread.sleep(5000);
 
 			TestObservationRegistryAssert.assertThat(observationRegistry)
 				.doesNotHaveAnyRemainingCurrentObservation()
@@ -175,13 +182,44 @@ public class MongoDbVectorStoreObservationIT {
 		}
 
 		@Bean
-		public MongoTemplate mongoTemplate(MongoClient mongoClient) {
-			return new MongoTemplate(mongoClient, "springaisample");
+		public MongoTemplate mongoTemplate(MongoClient mongoClient, MongoCustomConversions mongoCustomConversions) {
+			MongoTemplate mongoTemplate = new MongoTemplate(mongoClient, "springaisample");
+			MappingMongoConverter converter = (MappingMongoConverter) mongoTemplate.getConverter();
+			converter.setCustomConversions(mongoCustomConversions);
+			((MongoMappingContext) converter.getMappingContext())
+				.setSimpleTypeHolder(mongoCustomConversions.getSimpleTypeHolder());
+			converter.afterPropertiesSet();
+			return mongoTemplate;
 		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		}
+
+		@Bean
+		public Converter<MimeType, String> mimeTypeToStringConverter() {
+			return new Converter<MimeType, String>() {
+				@Override
+				public String convert(MimeType source) {
+					return source.toString();
+				}
+			};
+		}
+
+		@Bean
+		public Converter<String, MimeType> stringToMimeTypeConverter() {
+			return new Converter<String, MimeType>() {
+				@Override
+				public MimeType convert(String source) {
+					return MimeType.valueOf(source);
+				}
+			};
+		}
+
+		@Bean
+		public MongoCustomConversions mongoCustomConversions() {
+			return new MongoCustomConversions(Arrays.asList(mimeTypeToStringConverter(), stringToMimeTypeConverter()));
 		}
 
 	}
