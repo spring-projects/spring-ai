@@ -15,6 +15,8 @@
 */
 package org.springframework.ai.chat.client.advisor.observation;
 
+import org.springframework.ai.chat.client.AdvisedRequest;
+
 import io.micrometer.observation.Observation;
 
 /**
@@ -40,6 +42,8 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	private Type type;
 
+	private AdvisedRequest avisorRequest;
+
 	public void setModelClassName(String chatModelName) {
 		this.modelClassName = chatModelName;
 	}
@@ -56,4 +60,11 @@ public class AdvisorObservationContext extends Observation.Context {
 		this.type = type;
 	}
 
+	public AdvisedRequest getAdvisedRequest() {
+		return this.avisorRequest;
+	}
+
+	public void setAdvisedRequest(AdvisedRequest advisedRequest) {
+		this.avisorRequest = advisedRequest;
+	}
 }
