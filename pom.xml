@@ -67,6 +67,7 @@
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
+		<module>models/spring-ai-oci-genai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
@@ -86,6 +87,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-oci-genai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
@@ -157,8 +159,10 @@
 		<awssdk.version>2.26.7</awssdk.version>
 
 		<jackson.version>2.16.1</jackson.version>
+
 		<djl.version>0.30.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
+		<oci-sdk-version>3.46.1</oci-sdk-version>
 		<com.google.cloud.version>26.41.0</com.google.cloud.version>
 		<qdrant.version>1.9.1</qdrant.version>
 		<spring-retry.version>2.0.5</spring-retry.version>

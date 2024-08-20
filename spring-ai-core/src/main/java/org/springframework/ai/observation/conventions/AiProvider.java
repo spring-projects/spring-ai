@@ -34,7 +34,8 @@ public enum AiProvider {
 	OLLAMA("ollama"),
 	OPENAI("openai"),
 	SPRING_AI("spring_ai"),
-	VERTEX_AI("vertex_ai");
+	VERTEX_AI("vertex_ai"),
+	OCI_GENAI("oci_genai");
 
 	private final String value;
 
