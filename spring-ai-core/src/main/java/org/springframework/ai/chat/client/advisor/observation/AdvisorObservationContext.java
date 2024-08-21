@@ -45,7 +45,7 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * The {@link AdvisedRequest} data to be advised. Represents the row
 	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
 	 */
-	private AdvisedRequest avisorRequest;
+	private AdvisedRequest advisorRequest;
 
 	/**
 	 * The shared data between the advisors in the chain. It is shared between all request
@@ -76,11 +76,11 @@ public class AdvisorObservationContext extends Observation.Context {
 	}
 
 	public AdvisedRequest getAdvisedRequest() {
-		return this.avisorRequest;
+		return this.advisorRequest;
 	}
 
 	public void setAdvisedRequest(AdvisedRequest advisedRequest) {
-		this.avisorRequest = advisedRequest;
+		this.advisorRequest = advisedRequest;
 	}
 
 	public Map<String, Object> getAdvisorRequestContext() {

@@ -94,8 +94,15 @@
 ** xref:api/testing.adoc[]
 ** xref:api/generic-model.adoc[]
 
-* xref:contribution-guidelines.adoc[Contribution Guidelines]
-* Appendices
-** xref:upgrade-notes.adoc[]
+* xref:observabilty/index.adoc[]
+
+* Service Connections
 ** xref:api/docker-compose.adoc[Docker Compose]
 ** xref:api/testcontainers.adoc[Testcontainers]
+
+
+* xref:contribution-guidelines.adoc[Contribution Guidelines]
+
+* Appendices
+** xref:upgrade-notes.adoc[]
+
