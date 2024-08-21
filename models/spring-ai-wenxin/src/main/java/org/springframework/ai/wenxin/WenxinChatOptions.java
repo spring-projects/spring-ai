@@ -90,6 +90,26 @@ public class WenxinChatOptions implements FunctionCallingOptions, ChatOptions {
 		return model;
 	}
 
+	@Override
+	public Float getFrequencyPenalty() {
+		return 0f;
+	}
+
+	@Override
+	public Integer getMaxTokens() {
+		return 0;
+	}
+
+	@Override
+	public Float getPresencePenalty() {
+		return 0f;
+	}
+
+	@Override
+	public List<String> getStopSequences() {
+		return List.of();
+	}
+
 	public void setModel(String model) {
 		this.model = model;
 	}

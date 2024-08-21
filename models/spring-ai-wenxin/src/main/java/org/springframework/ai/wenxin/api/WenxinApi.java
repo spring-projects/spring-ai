@@ -418,10 +418,10 @@ public class WenxinApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Embedding(
 			@JsonProperty("index") Integer index,
-			@JsonProperty("embedding") List<Double> embedding,
+			@JsonProperty("embedding")float[] embedding,
 			@JsonProperty("object") String object) {
 
-		public Embedding(Integer index, List<Double> embedding) {
+		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
 	}

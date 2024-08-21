@@ -21,6 +21,11 @@ public class WenxinEmbeddingOptions implements EmbeddingOptions {
 		return this.model;
 	}
 
+	@Override
+	public Integer getDimensions() {
+		return 0;
+	}
+
 	public void setModel(String model) {
 		this.model = model;
 	}
