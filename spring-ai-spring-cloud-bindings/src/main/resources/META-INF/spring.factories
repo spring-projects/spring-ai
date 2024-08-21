@@ -3,4 +3,5 @@ org.springframework.cloud.bindings.boot.BindingsPropertiesProcessor=\
 org.springframework.ai.bindings.ChromaBindingsPropertiesProcessor,\
 org.springframework.ai.bindings.OllamaBindingsPropertiesProcessor,\
 org.springframework.ai.bindings.OpenAiBindingsPropertiesProcessor,\
+org.springframework.ai.bindings.TanzuBindingsPropertiesProcessor,\
 org.springframework.ai.bindings.WeaviateBindingsPropertiesProcessor
