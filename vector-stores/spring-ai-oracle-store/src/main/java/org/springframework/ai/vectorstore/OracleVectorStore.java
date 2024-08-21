@@ -625,7 +625,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		return VectorStoreObservationContext.builder(VectorStoreProvider.ORACLE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.getTableName())
-			.withFieldName(getSimilarityMetric());
+			.withSimilarityMetric(getSimilarityMetric());
 	}
 
 	private static Map<OracleVectorStoreDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(

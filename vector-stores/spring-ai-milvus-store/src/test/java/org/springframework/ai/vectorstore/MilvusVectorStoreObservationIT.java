@@ -25,6 +25,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -158,7 +159,8 @@ public class MilvusVectorStoreObservationIT {
 				.withIndexType(IndexType.IVF_FLAT)
 				.withMetricType(MetricType.COSINE)
 				.build();
-			return new MilvusVectorStore(milvusClient, embeddingModel, config, true, observationRegistry, null);
+			return new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy(),
+					observationRegistry, null);
 		}
 
 		@Bean
