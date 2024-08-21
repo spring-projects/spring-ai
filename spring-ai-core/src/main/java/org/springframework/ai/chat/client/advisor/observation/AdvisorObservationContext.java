@@ -15,7 +15,12 @@
 */
 package org.springframework.ai.chat.client.advisor.observation;
 
+import java.util.Map;
+
 import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.util.Assert;
 
 import io.micrometer.observation.Observation;
 
@@ -28,36 +33,46 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	public enum Type {
 
-		BEFORE(".before"), AFTER(".after"), AROUND(".around");
-
-		public final String suffix;
-
-		Type(String string) {
-			this.suffix = string;
-		}
+		BEFORE, AFTER, AROUND;
 
 	};
 
-	private String modelClassName;
+	private String advisorName;
 
-	private Type type;
+	private Type advisorType;
 
+	/**
+	 * The {@link AdvisedRequest} data to be advised. Represents the row
+	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
+	 */
 	private AdvisedRequest avisorRequest;
 
-	public void setModelClassName(String chatModelName) {
-		this.modelClassName = chatModelName;
+	/**
+	 * The shared data between the advisors in the chain. It is shared between all request
+	 * and response advising points of all advisors in the chain.
+	 */
+	private Map<String, Object> advisorRequestContext;
+
+	/**
+	 * the shared data between the advisors in the chain. It is shared between all request
+	 * and response advising points of all advisors in the chain.
+	 */
+	private Map<String, Object> advisorResponseContext;
+
+	public void setAdvisorName(String advisorName) {
+		this.advisorName = advisorName;
 	}
 
-	public String getModelClassName() {
-		return this.modelClassName;
+	public String getAdvisorName() {
+		return this.advisorName;
 	}
 
-	public Type getType() {
-		return this.type;
+	public Type getAdvisorType() {
+		return this.advisorType;
 	}
 
-	public void setType(Type type) {
-		this.type = type;
+	public void setAdvisorType(Type type) {
+		this.advisorType = type;
 	}
 
 	public AdvisedRequest getAdvisedRequest() {
@@ -67,4 +82,62 @@ public class AdvisorObservationContext extends Observation.Context {
 	public void setAdvisedRequest(AdvisedRequest advisedRequest) {
 		this.avisorRequest = advisedRequest;
 	}
+
+	public Map<String, Object> getAdvisorRequestContext() {
+		return this.advisorRequestContext;
+	}
+
+	public void setAdvisorRequestContext(Map<String, Object> advisorRequestContext) {
+		this.advisorRequestContext = advisorRequestContext;
+	}
+
+	public Map<String, Object> getAdvisorResponseContext() {
+		return this.advisorResponseContext;
+	}
+
+	public void setAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
+		this.advisorResponseContext = advisorResponseContext;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private final AdvisorObservationContext context = new AdvisorObservationContext();
+
+		public Builder withAdvisorName(String advisorName) {
+			this.context.setAdvisorName(advisorName);
+			return this;
+		}
+
+		public Builder withAdvisorType(Type advisorType) {
+			this.context.setAdvisorType(advisorType);
+			return this;
+		}
+
+		public Builder withAdvisedRequest(AdvisedRequest advisedRequest) {
+			this.context.setAdvisedRequest(advisedRequest);
+			return this;
+		}
+
+		public Builder withAdvisorRequestContext(Map<String, Object> advisorRequestContext) {
+			this.context.setAdvisorRequestContext(advisorRequestContext);
+			return this;
+		}
+
+		public Builder withAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
+			this.context.setAdvisorResponseContext(advisorResponseContext);
+			return this;
+		}
+
+		public AdvisorObservationContext build() {
+			Assert.hasText(this.context.advisorName, "The advisorName must not be empty!");
+			Assert.notNull(this.context.advisorType, "The advisorType must not be null!");
+			return this.context;
+		}
+
+	}
+
 }

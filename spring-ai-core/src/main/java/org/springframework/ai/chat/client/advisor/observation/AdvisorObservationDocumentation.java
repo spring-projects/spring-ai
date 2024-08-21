@@ -42,7 +42,7 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 
 		@Override
 		public KeyName[] getHighCardinalityKeyNames() {
-			return new KeyName[] {};
+			return HighCardinalityKeyNames.values();
 		}
 
 	};
@@ -65,41 +65,23 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 		ADVISOR_TYPE {
 			@Override
 			public String asString() {
-				return "type";
+				return "spring.ai.chat.client.advisor.type";
 			}
-		},
-
-		/**
-		 * Client name derived from the request URI host.
-		 */
-		CLIENT_NAME {
-			@Override
-			public String asString() {
-				return "client.name";
-			}
-		},
-
-		/**
-		 * Name of the exception thrown during the chat model request, or
-		 * {@value KeyValue#NONE_VALUE} if no exception happened.
-		 */
-		EXCEPTION {
-			@Override
-			public String asString() {
-				return "exception";
-			}
-		},
+		};
 
 	}
 
 	public enum HighCardinalityKeyNames implements KeyName {
 
-		;
-
-		@Override
-		public String asString() {
-			throw new UnsupportedOperationException("Unimplemented method 'asString'");
-		}
+		/**
+		 * Chat Model name.
+		 */
+		ADVISOR_NAME {
+			@Override
+			public String asString() {
+				return "spring.ai.chat.client.advisor.name";
+			}
+		};
 
 	}
 

@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.advisor.observation.ObservableRequestResponseAdvisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
@@ -654,20 +656,33 @@ public class DefaultChatClient implements ChatClient {
 			var as = new DefaultAdvisorSpec();
 			consumer.accept(as);
 			this.advisorParams.putAll(as.getParams());
-			this.advisors.addAll(as.getAdvisors());
+			this.advisors.addAll(toObservableAdvisors(as.getAdvisors(), this.observationRegistry, null));
 			return this;
 		}
 
 		public ChatClientRequestSpec advisors(RequestResponseAdvisor... advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
-			this.advisors.addAll(List.of(advisors));
+			this.advisors.addAll(toObservableAdvisors(List.of(advisors), this.observationRegistry, null));
 			return this;
 		}
 
 		public ChatClientRequestSpec advisors(List<RequestResponseAdvisor> advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
-			this.advisors.addAll(advisors);
+			this.advisors.addAll(toObservableAdvisors(advisors, this.observationRegistry, null));
 			return this;
+		}
+
+		private List<RequestResponseAdvisor> toObservableAdvisors(List<RequestResponseAdvisor> advisors,
+				ObservationRegistry observationRegistry, AdvisorObservationConvention customObservationConvention) {
+			if (CollectionUtils.isEmpty(advisors)) {
+				return advisors;
+			}
+			List<RequestResponseAdvisor> observableAdvisors = new ArrayList<>();
+			for (RequestResponseAdvisor advisor : advisors) {
+				observableAdvisors.add(new ObservableRequestResponseAdvisor(advisor, observationRegistry,
+						customObservationConvention));
+			}
+			return observableAdvisors;
 		}
 
 		public ChatClientRequestSpec messages(Message... messages) {

@@ -15,7 +15,9 @@
 */
 package org.springframework.ai.chat.client.advisor.observation;
 
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.util.ParsingUtils;
 import org.springframework.lang.Nullable;
 
 import io.micrometer.common.KeyValue;
@@ -28,11 +30,15 @@ import io.micrometer.common.KeyValues;
 
 public class DefaultAdvisorObservationConvention implements AdvisorObservationConvention {
 
-	private static final String DEFAULT_NAME = "spring.ai.chat.client.advisor";
+	public static final String DEFAULT_NAME = "spring.ai.chat.client.advisor";
 
-    private static final String CHAT_CLIENT_ADVISOR_SPRING_AI_KIND = "chat_client_advisor";
+	private static final String CHAT_CLIENT_ADVISOR_SPRING_AI_KIND = "chat_client_advisor";
 
-	private static final KeyValue ADVISOR_TYPE_NONE = KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, KeyValue.NONE_VALUE);
+	private static final KeyValue ADVISOR_TYPE_NONE = KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE,
+			KeyValue.NONE_VALUE);
+
+	private static final KeyValue ADVISOR_NAME_NONE = KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME,
+			KeyValue.NONE_VALUE);
 
 	private final String name;
 
@@ -52,8 +58,14 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	@Override
 	@Nullable
 	public String getContextualName(AdvisorObservationContext context) {
-		return "%s %s".formatted(CHAT_CLIENT_ADVISOR_SPRING_AI_KIND, context.getModelClassName());
+		return "%s %s_%s".formatted(CHAT_CLIENT_ADVISOR_SPRING_AI_KIND,
+				ParsingUtils.reconcatenateCamelCase(context.getAdvisorName(), "_"),
+				context.getAdvisorType().name().toLowerCase());
 	}
+
+	// ------------------------
+	// Low cardinality keys
+	// ------------------------
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(AdvisorObservationContext context) {
@@ -61,15 +73,31 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	}
 
 	protected KeyValue advisorType(AdvisorObservationContext context) {
-		if (context.getType() != null) {
-			return KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, context.getType().name());
+		if (context.getAdvisorType() != null) {
+			return KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, context.getAdvisorType().name());
 		}
 		return ADVISOR_TYPE_NONE;
 	}
 
-    protected KeyValue springAiKind() {
+	protected KeyValue springAiKind() {
 		return KeyValue.of(AdvisorObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
 				CHAT_CLIENT_ADVISOR_SPRING_AI_KIND);
+	}
+
+	// ------------------------
+	// High Cardinality keys
+	// ------------------------
+
+	@Override
+	public KeyValues getHighCardinalityKeyValues(AdvisorObservationContext context) {
+		return KeyValues.of(advisorName(context));
+	}
+
+	protected KeyValue advisorName(AdvisorObservationContext context) {
+		if (context.getAdvisorType() != null) {
+			return KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
+		}
+		return ADVISOR_NAME_NONE;
 	}
 
 }
