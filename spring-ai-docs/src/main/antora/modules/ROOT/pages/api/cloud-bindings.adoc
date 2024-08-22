@@ -1,0 +1,53 @@
+[[cloud-bindings]]
+= Cloud Bindings
+
+Spring AI provides support for cloud bindings based on the foundations in https://github.com/spring-cloud/spring-cloud-bindings[spring-cloud-bindings].
+This allows applications to specify a binding type for a provider and then express properties using a generic format.
+The spring-ai cloud bindings will process these properties and bind them to spring-ai native properties.
+
+For example, when using `OpenAi`, the binding type is `openai`.
+Using the property `spring.ai.cloud.bindings.openai.enabled`, the binding processor can be enabled or disabled.
+By default, when specifying a binding type, this property will be enabled.
+Configuration for `api-key`, `uri`, `username`, `password`, etc. can be specified and spring-ai will map them to the corresponding properties in the supported system.
+
+To enable cloud binding support, include the following dependency in the application.
+
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-spring-cloud-bindings</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-spring-cloud-bindings'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Available Cloud Bindings
+
+The following are the components for which the cloud binding support is currently available in the  `spring-ai-spring-clou-bindings` module:
+
+[cols="|,|"]
+|====
+| Service Type	 | Binding Type | Source Properties | Target Properties
+| `Chroma Vecor Store`
+| `chroma` | `uri`, `username`, `passwor` | `spring.ai.vectorstore.chroma.client.host`, `spring.ai.vectorstore.chroma.client.port`, `spring.ai.vectorstore.chroma.client.username`, `spring.ai.vectorstore.chroma.client.host.password`
+
+| `Ollama`
+| `ollama` | `uri` | `spring.ai.ollama.base-url`
+
+| `OpenAi`
+| `openai` | `api-key`, `uri` | `spring.ai.openai.api-key`, `spring.ai.openai.base-url`
+
+| `Weaviate`
+| `weaviate` | `uri`, `api-key` | `spring.ai.vectorstore.weaviate.scheme`, `spring.ai.vectorstore.weaviate.host`, `spring.ai.vectorstore.weaviate.api-key`
+|====

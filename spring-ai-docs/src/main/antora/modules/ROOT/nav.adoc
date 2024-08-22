@@ -99,7 +99,7 @@
 * Service Connections
 ** xref:api/docker-compose.adoc[Docker Compose]
 ** xref:api/testcontainers.adoc[Testcontainers]
-
+** xref:api/cloud-bindings.adoc[Cloud Bindings]
 
 * xref:contribution-guidelines.adoc[Contribution Guidelines]
 
