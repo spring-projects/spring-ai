@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.cloud.vertexai.api.GoogleSearchRetrieval;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -315,8 +316,19 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
+		List<Tool> tools = new ArrayList<>();
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
-			List<Tool> tools = this.getFunctionTools(functionsForThisRequest);
+			tools.addAll(this.getFunctionTools(functionsForThisRequest));
+		}
+
+		if (prompt.getOptions() instanceof VertexAiGeminiChatOptions options && options.getGoogleSearchRetrieval()) {
+			final var googleSearchRetrieval = GoogleSearchRetrieval.newBuilder().getDefaultInstanceForType();
+			final var googleSearchRetrievalTool = Tool.newBuilder()
+				.setGoogleSearchRetrieval(googleSearchRetrieval)
+				.build();
+			tools.add(googleSearchRetrievalTool);
+		}
+		if (!CollectionUtils.isEmpty(tools)) {
 			generativeModelBuilder.setTools(tools);
 		}
 
