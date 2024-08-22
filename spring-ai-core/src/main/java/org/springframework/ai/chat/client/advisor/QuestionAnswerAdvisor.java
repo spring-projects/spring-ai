@@ -103,6 +103,8 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 			.withQuery(request.userText())
 			.withFilterExpression(doGetFilterExpression(context));
 
+		searchRequestToUse = customizeSearchRequest(searchRequestToUse, request, context);
+
 		// 2. Search for similar documents in the vector store.
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
 
@@ -117,12 +119,7 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
 		advisedUserParams.put("question_answer_context", documentContext);
 
-		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
-			.withUserText(advisedUserText)
-			.withUserParams(advisedUserParams)
-			.build();
-
-		return advisedRequest;
+		return AdvisedRequest.from(request).withUserText(advisedUserText).withUserParams(advisedUserParams).build();
 	}
 
 	@Override
@@ -149,6 +146,20 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		}
 		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
 
+	}
+
+	/**
+	 * Customize {@link SearchRequest} for each request. The returned
+	 * {@link SearchRequest} will be used in
+	 * {@link VectorStore#similaritySearch(SearchRequest)} to find similar documents.
+	 * @param searchRequest the original {@link SearchRequest}
+	 * @param request the {@link AdvisedRequest} representing the current request
+	 * @param context the shared data between advisors in the chain
+	 * @return the customized {@link SearchRequest}
+	 */
+	protected SearchRequest customizeSearchRequest(SearchRequest searchRequest, AdvisedRequest request,
+			Map<String, Object> context) {
+		return searchRequest;
 	}
 
 }

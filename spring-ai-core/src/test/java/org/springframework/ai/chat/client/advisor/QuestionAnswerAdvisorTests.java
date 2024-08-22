@@ -20,14 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-
+import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.model.ChatModel;
@@ -61,7 +64,9 @@ public class QuestionAnswerAdvisorTests {
 	public void qaAdvisorWithDynamicFilterExpressions() {
 
 		when(chatModel.call(promptCaptor.capture()))
-			.thenReturn(new ChatResponse(List.of(new Generation("Your answer is ZXY"))));
+				.thenReturn(new ChatResponse(
+						List.of(new Generation(new AssistantMessage(
+								"Your answer is ZXY")))));
 
 		when(vectorStore.similaritySearch(vectorSearchCaptor.capture()))
 			.thenReturn(List.of(new Document("doc1"), new Document("doc2")));
@@ -74,19 +79,15 @@ public class QuestionAnswerAdvisorTests {
 			.defaultAdvisors(qaAdvisor)
 			.build();
 
-		// @formatter:off
 		var content = chatClient.prompt()
 			.user("Please answer my question XYZ")
 			.advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
 			.call()
 			.content();
-		//formatter:on
 
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
 		Message systemMessage = promptCaptor.getValue().getInstructions().get(0);
-
-		System.out.println(systemMessage.getContent());
 
 		assertThat(systemMessage.getContent()).isEqualToIgnoringWhitespace("""
 				Default system text.
@@ -111,4 +112,44 @@ public class QuestionAnswerAdvisorTests {
 		assertThat(vectorSearchCaptor.getValue().getSimilarityThreshold()).isEqualTo(0.99d);
 		assertThat(vectorSearchCaptor.getValue().getTopK()).isEqualTo(6);
 	}
+
+	@Test
+	public void qaAdvisorWithCustomizedSearchRequest() {
+		when(chatModel.call(promptCaptor.capture()))
+				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage(
+						"Your answer is XYZ")))));
+
+		when(vectorStore.similaritySearch(vectorSearchCaptor.capture()))
+				.thenReturn(List.of(new Document("doc1"), new Document("doc2")));
+
+		var qaAdvisor = new RewriteQueryQuestionAnswerAdvisor(vectorStore);
+		var chatClient = ChatClient.builder(chatModel)
+				.defaultAdvisors(qaAdvisor)
+				.build();
+		var updatedUserQuery = "Please answer my question 123";
+		var content = chatClient.prompt()
+				.user("Please answer my question XYZ")
+				.advisors(a -> a.param("qa_updated_user_query", updatedUserQuery))
+				.call()
+				.content();
+
+		assertThat(content).isEqualTo("Your answer is XYZ");
+		assertThat(vectorSearchCaptor.getValue().getQuery()).isEqualTo(updatedUserQuery);
+	}
+
+	private static class RewriteQueryQuestionAnswerAdvisor extends QuestionAnswerAdvisor {
+
+		public RewriteQueryQuestionAnswerAdvisor(VectorStore vectorStore) {
+			super(vectorStore);
+		}
+
+		@Override
+		protected SearchRequest customizeSearchRequest(SearchRequest searchRequest, AdvisedRequest request,
+				Map<String, Object> context) {
+			return SearchRequest.from(searchRequest)
+				.withQuery(Objects.toString(context.getOrDefault("qa_updated_user_query", "")));
+		}
+
+	}
+
 }
