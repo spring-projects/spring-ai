@@ -42,6 +42,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Gerrit Meier
  * @author Michael Simons
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -433,8 +434,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.NEO4J.value(), operationName)
+			.withCollectionName(this.config.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withIndexName(this.config.indexName)
 			.withSimilarityMetric(getSimilarityMetric());
 	}
 

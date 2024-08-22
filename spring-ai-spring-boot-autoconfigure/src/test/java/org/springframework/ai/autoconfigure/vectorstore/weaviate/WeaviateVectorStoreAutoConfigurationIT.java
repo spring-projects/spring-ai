@@ -46,6 +46,7 @@ import static org.springframework.ai.autoconfigure.vectorstore.observation.Obser
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class WeaviateVectorStoreAutoConfigurationIT {
@@ -89,7 +90,7 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.WEAVIATE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.WEAVIATE,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -103,7 +104,7 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.WEAVIATE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.WEAVIATE,
 					VectorStoreObservationContext.Operation.QUERY);
 
 			results = vectorStore.similaritySearch(
@@ -130,7 +131,7 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 			// Remove all documents from the store
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.WEAVIATE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.WEAVIATE,
 					VectorStoreObservationContext.Operation.DELETE);
 		});
 	}

@@ -56,6 +56,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Muthukumaran Navaneethakrishnan
+ * @author Thomas Vitale
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -570,11 +571,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
-			.withDimensions(this.embeddingDimensions())
 			.withCollectionName(this.vectorTableName)
+			.withDimensions(this.embeddingDimensions())
 			.withNamespace(this.schemaName)
-			.withSimilarityMetric(getSimilarityMetric())
-			.withIndexName(this.createIndexMethod.name());
+			.withSimilarityMetric(getSimilarityMetric());
 	}
 
 	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(

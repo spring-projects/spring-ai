@@ -50,6 +50,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 /**
  * @author Eddú Meléndez
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -94,7 +95,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 			vectorStore.add(documents);
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MONGODB,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.MONGODB,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -109,14 +110,14 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MONGODB,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.MONGODB,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MONGODB,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.MONGODB,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 

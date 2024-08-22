@@ -29,13 +29,13 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 
 public class ObservationTestUtil {
 
-	public static void assertObservationRegistry(TestObservationRegistry observationRegistry, String kind,
+	public static void assertObservationRegistry(TestObservationRegistry observationRegistry,
 			VectorStoreProvider vectorStoreProvider, VectorStoreObservationContext.Operation operation) {
 		TestObservationRegistryAssert.assertThat(observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo(kind + " " + vectorStoreProvider.value() + " " + operation.value())
+			.hasContextualNameEqualTo(vectorStoreProvider.value() + " " + operation.value())
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}

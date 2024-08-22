@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -32,6 +33,7 @@ import io.micrometer.observation.Observation;
  * Unit tests for {@link DefaultVectorStoreObservationConvention}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 class DefaultVectorStoreObservationConventionTests {
 
@@ -48,8 +50,7 @@ class DefaultVectorStoreObservationConventionTests {
 		VectorStoreObservationContext observationContext = VectorStoreObservationContext
 			.builder("my-database", VectorStoreObservationContext.Operation.QUERY)
 			.build();
-		assertThat(this.observationConvention.getContextualName(observationContext))
-			.isEqualTo("vector_store my-database query");
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("my-database query");
 	}
 
 	@Test
@@ -79,7 +80,6 @@ class DefaultVectorStoreObservationConventionTests {
 			.withCollectionName("COLLECTION_NAME")
 			.withDimensions(696)
 			.withFieldName("FIELD_NAME")
-			.withIndexName("INDEX_NAME")
 			.withNamespace("NAMESPACE")
 			.withSimilarityMetric("SIMILARITY_METRIC")
 			.withQueryRequest(SearchRequest.query("VDB QUERY").withFilterExpression("country == 'UK' && year >= 2020"))
@@ -95,17 +95,16 @@ class DefaultVectorStoreObservationConventionTests {
 
 		// Optional, filter only added content
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
-			.doesNotContain(KeyValue.of(HighCardinalityKeyNames.QUERY_RESPONSE, "[doc1,doc2]"));
+			.doesNotContain(KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_RESPONSE_DOCUMENTS, "[doc1,doc2]"));
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "COLLECTION_NAME"),
-				KeyValue.of(HighCardinalityKeyNames.DIMENSIONS.asString(), "696"),
-				KeyValue.of(HighCardinalityKeyNames.FIELD_NAME.asString(), "FIELD_NAME"),
-				KeyValue.of(HighCardinalityKeyNames.INDEX_NAME.asString(), "INDEX_NAME"),
-				KeyValue.of(HighCardinalityKeyNames.NAMESPACE.asString(), "NAMESPACE"),
-				KeyValue.of(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "SIMILARITY_METRIC"),
-				KeyValue.of(HighCardinalityKeyNames.QUERY.asString(), "VDB QUERY"),
-				KeyValue.of(HighCardinalityKeyNames.QUERY_METADATA_FILTER.asString(),
+				KeyValue.of(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), "COLLECTION_NAME"),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "696"),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "FIELD_NAME"),
+				KeyValue.of(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "NAMESPACE"),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), "SIMILARITY_METRIC"),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(), "VDB QUERY"),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER.asString(),
 						"Expression[type=AND, left=Expression[type=EQ, left=Key[key=country], right=Value[value=UK]], right=Expression[type=GTE, left=Key[key=year], right=Value[value=2020]]]"));
 	}
 
@@ -116,14 +115,13 @@ class DefaultVectorStoreObservationConventionTests {
 			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(HighCardinalityKeyNames.COLLECTION_NAME.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.DIMENSIONS.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.FIELD_NAME.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.INDEX_NAME.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.NAMESPACE.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.QUERY.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.QUERY_METADATA_FILTER.asString(), KeyValue.NONE_VALUE));
+				KeyValue.of(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.DB_NAMESPACE.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER.asString(), KeyValue.NONE_VALUE));
 	}
 
 }

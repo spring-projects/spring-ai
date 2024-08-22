@@ -17,6 +17,7 @@ package org.springframework.ai.chat.observation;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationFilter;
+import org.springframework.ai.observation.tracing.TracingHelper;
 
 /**
  * An {@link ObservationFilter} to include the chat completion content in the observation.
@@ -36,7 +37,7 @@ public class ChatModelCompletionObservationFilter implements ObservationFilter {
 
 		chatModelObservationContext
 			.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.COMPLETION
-				.withValue(ChatModelObservationContentProcessor.concatenateStrings(completions)));
+				.withValue(TracingHelper.concatenateStrings(completions)));
 
 		return chatModelObservationContext;
 	}

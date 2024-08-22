@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.chat.observation;
+package org.springframework.ai.vectorstore.observation;
 
 import io.micrometer.tracing.handler.TracingObservationHandler;
 import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
@@ -22,27 +22,27 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.conventions.AiObservationAttributes;
-import org.springframework.ai.observation.conventions.AiObservationEventNames;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.observation.conventions.VectorStoreObservationAttributes;
+import org.springframework.ai.observation.conventions.VectorStoreObservationEventNames;
 import org.springframework.ai.observation.tracing.TracingHelper;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {@link ChatModelPromptContentObservationHandler}.
+ * Unit tests for {@link VectorStoreQueryResponseObservationHandler}.
  *
  * @author Thomas Vitale
  */
-class ChatModelPromptContentObservationHandlerTests {
+class VectorStoreQueryResponseObservationHandlerTests {
 
 	@Test
-	void whenPromptWithTextThenSpanEvent() {
-		var observationContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt("supercalifragilisticexpialidocious"))
-			.provider("mary-poppins")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("spoonful-of-sugar").build())
+	void whenCompletionWithTextThenSpanEvent() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.ADD)
+			.withQueryResponse(List.of(new Document("hello"), new Document("other-side")))
 			.build();
 		var sdkTracer = SdkTracerProvider.builder().build().get("test");
 		var otelTracer = new OtelTracer(sdkTracer, new OtelCurrentTraceContext(), null);
@@ -51,18 +51,19 @@ class ChatModelPromptContentObservationHandlerTests {
 		tracingContext.setSpan(span);
 		observationContext.put(TracingObservationHandler.TracingContext.class, tracingContext);
 
-		new ChatModelPromptContentObservationHandler().onStop(observationContext);
+		new VectorStoreQueryResponseObservationHandler().onStop(observationContext);
 
 		var otelSpan = TracingHelper.extractOtelSpan(tracingContext);
 		assertThat(otelSpan).isNotNull();
 		var spanData = ((ReadableSpan) otelSpan).toSpanData();
 		assertThat(spanData.getEvents().size()).isEqualTo(1);
-		assertThat(spanData.getEvents().get(0).getName()).isEqualTo(AiObservationEventNames.CONTENT_PROMPT.value());
+		assertThat(spanData.getEvents().get(0).getName())
+			.isEqualTo(VectorStoreObservationEventNames.CONTENT_QUERY_RESPONSE.value());
 		assertThat(spanData.getEvents()
 			.get(0)
 			.getAttributes()
-			.get(AttributeKey.stringArrayKey(AiObservationAttributes.PROMPT.value())))
-			.containsOnly("supercalifragilisticexpialidocious");
+			.get(AttributeKey.stringArrayKey(VectorStoreObservationAttributes.DB_VECTOR_QUERY_CONTENT.value())))
+			.containsOnly("hello", "other-side");
 	}
 
 }

@@ -15,19 +15,11 @@
  */
 package org.springframework.ai.chat.observation;
 
-import io.micrometer.tracing.handler.TracingObservationHandler;
-import io.opentelemetry.api.trace.Span;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.Content;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
-import java.util.StringJoiner;
 
 /**
  * Utilities to process the prompt and completion content in observations for chat models.
@@ -35,8 +27,6 @@ import java.util.StringJoiner;
  * @author Thomas Vitale
  */
 public final class ChatModelObservationContentProcessor {
-
-	private static final Logger logger = LoggerFactory.getLogger(ChatModelObservationContentProcessor.class);
 
 	public static List<String> prompt(ChatModelObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getInstructions())) {
@@ -63,37 +53,6 @@ public final class ChatModelObservationContentProcessor {
 					&& StringUtils.hasText(generation.getOutput().getContent()))
 			.map(generation -> generation.getOutput().getContent())
 			.toList();
-	}
-
-	public static String concatenateStrings(List<String> strings) {
-		var promptMessagesJoiner = new StringJoiner(", ", "[", "]");
-		strings.forEach(string -> promptMessagesJoiner.add("\"" + string + "\""));
-		return promptMessagesJoiner.toString();
-	}
-
-	@Nullable
-	public static Span extractOtelSpan(@Nullable TracingObservationHandler.TracingContext tracingContext) {
-		if (tracingContext == null) {
-			return null;
-		}
-
-		io.micrometer.tracing.Span micrometerSpan = tracingContext.getSpan();
-		try {
-			Method toOtelMethod = tracingContext.getSpan()
-				.getClass()
-				.getDeclaredMethod("toOtel", io.micrometer.tracing.Span.class);
-			toOtelMethod.setAccessible(true);
-			Object otelSpanObject = toOtelMethod.invoke(null, micrometerSpan);
-			if (otelSpanObject instanceof Span otelSpan) {
-				return otelSpan;
-			}
-		}
-		catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
-			logger.warn("It wasn't possible to extract the OpenTelemetry Span object from Micrometer", ex);
-			return null;
-		}
-
-		return null;
 	}
 
 }

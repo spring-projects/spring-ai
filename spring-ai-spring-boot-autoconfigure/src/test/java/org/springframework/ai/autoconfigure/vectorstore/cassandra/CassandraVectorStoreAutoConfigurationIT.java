@@ -45,6 +45,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 /**
  * @author Mick Semb Wever
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @Testcontainers
@@ -80,7 +81,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 				vectorStore.add(documents);
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CASSANDRA,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
@@ -92,7 +93,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CASSANDRA,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
@@ -102,7 +103,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).isEmpty();
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CASSANDRA,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 			});

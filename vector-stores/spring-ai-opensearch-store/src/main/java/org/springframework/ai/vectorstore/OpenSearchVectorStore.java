@@ -55,6 +55,7 @@ import java.util.stream.Collectors;
  * @author Jemin Huh
  * @author Soby Chacko
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -261,9 +262,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
+			.withCollectionName(this.index)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withSimilarityMetric(getSimilarityFunction())
-			.withIndexName(this.index);
+			.withSimilarityMetric(getSimilarityFunction());
 	}
 
 	private String getSimilarityFunction() {

@@ -49,6 +49,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_ENDPOINT", matches = ".+")
@@ -111,7 +112,7 @@ public class AzureVectorStoreAutoConfigurationIT {
 					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				}, hasSize(1));
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
@@ -125,7 +126,7 @@ public class AzureVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
@@ -136,7 +137,7 @@ public class AzureVectorStoreAutoConfigurationIT {
 					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				}, hasSize(0));
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.AZURE,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 

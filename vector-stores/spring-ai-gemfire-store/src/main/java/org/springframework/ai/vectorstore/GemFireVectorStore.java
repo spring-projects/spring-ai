@@ -57,6 +57,7 @@ import reactor.util.annotation.NonNull;
  *
  * @author Geet Rawat
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -538,8 +539,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.GEMFIRE.value(), operationName)
+			.withCollectionName(this.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withIndexName(this.indexName)
 			.withFieldName(EMBEDDINGS);
 	}
 

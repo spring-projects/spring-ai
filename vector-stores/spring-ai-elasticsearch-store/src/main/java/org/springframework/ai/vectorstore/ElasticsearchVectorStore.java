@@ -68,6 +68,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Laura Trotta
  * @author Soby Chacko
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -252,10 +253,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
+			.withCollectionName(this.options.getIndexName())
 			.withDimensions(this.embeddingModel.dimensions())
-			.withIndexName(this.options.getIndexName())
 			.withSimilarityMetric(getSimilarityMetric());
-
 	}
 
 	private static Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
