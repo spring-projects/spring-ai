@@ -33,6 +33,17 @@ NOTE: Low cardinality keys will be added to metrics and traces, while high cardi
 |`spring.ai.chat.client.user.text` |Chat client user text.
 |===
 
+=== ChatClient input data
+
+The ChatClient input data is typically too big to be included in an observation as span attributes.
+The preferred way to store large data it is as span events, which are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
+Spring AI supports storing these fields as events in OpenTelemetry and will provide a more general event based solution once the issue https://github.com/micrometer-metrics/micrometer/issues/5238 is resolved.
+
+[cols="6,3,1"]
+|====
+| Property | Description | Default
+| `spring.ai.chat.client.observations.include-input` |  Enables the inclusion of the input content in the observations. This brings the risk of exposing sensitive or private information. Please, be careful! | `false`
+|====
 
 
 === ChatClient Advisors
