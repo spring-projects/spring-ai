@@ -95,6 +95,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author Mick Semb Wever
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @see VectorStore
  * @see org.springframework.ai.vectorstore.CassandraVectorStoreConfig
  * @see EmbeddingModel
@@ -381,11 +382,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CASSANDRA.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.conf.schema.table())
+			.withDimensions(this.embeddingModel.dimensions())
 			.withNamespace(this.conf.schema.keyspace())
-			.withSimilarityMetric(getSimilarityMetric())
-			.withIndexName(this.conf.schema.index());
+			.withSimilarityMetric(getSimilarityMetric());
 	}
 
 	private static Map<Similarity, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(Similarity.COSINE,

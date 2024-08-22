@@ -48,6 +48,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
 public class PineconeVectorStoreAutoConfigurationIT {
@@ -94,7 +95,7 @@ public class PineconeVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PINECONE,
 					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await().until(() -> {
@@ -112,14 +113,14 @@ public class PineconeVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKeys("spring", "customDistanceField");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PINECONE,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PINECONE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PINECONE,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 

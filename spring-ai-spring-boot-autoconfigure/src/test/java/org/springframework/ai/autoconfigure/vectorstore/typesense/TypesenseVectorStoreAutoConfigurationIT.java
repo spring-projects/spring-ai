@@ -46,6 +46,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class TypesenseVectorStoreAutoConfigurationIT {
@@ -81,7 +82,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 
 				vectorStore.add(documents);
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.TYPESENSE,
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
@@ -95,13 +96,13 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.TYPESENSE,
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
 				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.TYPESENSE,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.TYPESENSE,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 

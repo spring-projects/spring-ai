@@ -47,6 +47,7 @@ import static org.springframework.ai.autoconfigure.vectorstore.observation.Obser
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class ChromaVectorStoreAutoConfigurationIT {
@@ -77,7 +78,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.CHROMA,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.CHROMA,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -102,8 +103,8 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store chroma query")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY_METADATA_FILTER.asString(),
+				.hasContextualNameEqualTo("chroma query")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER.asString(),
 						"Expression[type=EQ, left=Key[key=country], right=Value[value=Netherlands]]")
 				.hasBeenStarted()
 				.hasBeenStopped();
@@ -116,8 +117,8 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store chroma delete")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY_METADATA_FILTER.asString(), "none")
+				.hasContextualNameEqualTo("chroma delete")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER.asString(), "none")
 				.hasBeenStarted()
 				.hasBeenStopped();
 			observationRegistry.clear();

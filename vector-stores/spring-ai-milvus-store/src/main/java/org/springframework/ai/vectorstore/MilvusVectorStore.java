@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 public class MilvusVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -551,9 +552,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.MILVUS.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.config.collectionName)
-			.withIndexName(this.config.indexType.name())
+			.withDimensions(this.embeddingModel.dimensions())
 			.withSimilarityMetric(getSimilarityMetric())
 			.withNamespace(this.config.databaseName);
 	}

@@ -55,6 +55,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 /**
  * @author Geet Rawat
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 class GemFireVectorStoreAutoConfigurationIT {
 
@@ -149,7 +150,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.GEMFIRE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.GEMFIRE,
 					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await().until(() -> {
@@ -159,7 +160,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.GEMFIRE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.GEMFIRE,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
@@ -174,7 +175,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.GEMFIRE,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.GEMFIRE,
 					VectorStoreObservationContext.Operation.DELETE);
 
 			Awaitility.await().until(() -> {

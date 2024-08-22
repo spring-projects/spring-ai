@@ -21,9 +21,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Collections.Distance;
@@ -31,11 +28,12 @@ import io.qdrant.client.grpc.Collections.VectorParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
 
-import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -50,16 +48,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Anush Shetty
  * @author Josh Long
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class QdrantVectorStoreIT {
 
 	private static final String COLLECTION_NAME = "test_collection";
 
-	private static final int EMBEDDING_DIMENSION = 1536;
+	private static final int EMBEDDING_DIMENSION = 1024;
 
 	@Container
 	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
@@ -255,15 +253,8 @@ public class QdrantVectorStoreIT {
 		}
 
 		@Bean
-		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
-		}
-
-		@Bean
-		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiEmbeddingModel(openAIClient);
+		public EmbeddingModel embeddingModel() {
+			return new MistralAiEmbeddingModel(new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY")));
 		}
 
 	}

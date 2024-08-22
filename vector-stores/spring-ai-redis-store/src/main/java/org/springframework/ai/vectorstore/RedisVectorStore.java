@@ -74,6 +74,7 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
  * @author Julien Ruaux
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  * @see VectorStore
  * @see RedisVectorStoreConfig
  * @see EmbeddingModel
@@ -476,10 +477,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
+			.withCollectionName(this.config.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withFieldName(this.config.embeddingFieldName)
-			.withSimilarityMetric(vectorAlgorithm().name())
-			.withIndexName(this.config.indexName);
+			.withSimilarityMetric(vectorAlgorithm().name());
 
 	}
 

@@ -16,31 +16,40 @@
 package org.springframework.ai.observation.conventions;
 
 /**
+ * Types of similarity metrics used in vector store operations. Based on the OpenTelemetry
+ * Semantic Conventions for Vector Databases.
+ *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
+ * @see <a href=
+ * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/database">DB
+ * Semantic Conventions</a>.
  */
 public enum VectorStoreSimilarityMetric {
 
 	// @formatter:off
 
-        /**
-         *  The cosine metric.
-         */
-        COSINE("cosine"),
-        /**
-         * The euclidean distance metric.
-         */
-        EUCLIDEAN("euclidean"),
-        /**
-         * The manhattan distance metric.
-         */
-        MANHATTAN("manhattan"),
-        /**
-         * The dot product metric.
-         */
-        DOT("dot");
+	/**
+	 *  The cosine metric.
+	 */
+	COSINE("cosine"),
 
-        // @formatter:on
+	/**
+	 * The dot product metric.
+	 */
+	DOT("dot"),
+
+	/**
+	 * The euclidean distance metric.
+	 */
+	EUCLIDEAN("euclidean"),
+
+	/**
+	 * The manhattan distance metric.
+	 */
+	MANHATTAN("manhattan");
+
 	private final String value;
 
 	VectorStoreSimilarityMetric(String value) {
@@ -50,5 +59,7 @@ public enum VectorStoreSimilarityMetric {
 	public String value() {
 		return this.value;
 	}
+
+	// @formatter:on
 
 }

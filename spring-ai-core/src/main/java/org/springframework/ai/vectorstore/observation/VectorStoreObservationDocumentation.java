@@ -15,7 +15,7 @@
 */
 package org.springframework.ai.vectorstore.observation;
 
-import org.springframework.ai.observation.conventions.AiObservationAttributes;
+import org.springframework.ai.observation.conventions.VectorStoreObservationAttributes;
 
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation;
@@ -23,7 +23,10 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
+ * Documented conventions for vector store observations.
+ *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public enum VectorStoreObservationDocumentation implements ObservationDocumentation {
@@ -48,6 +51,9 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		}
 	};
 
+	/**
+	 * Low-cardinality observation key names for vector store operations.
+	 */
 	public enum LowCardinalityKeyNames implements KeyName {
 
 		/**
@@ -59,15 +65,17 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 				return "spring.ai.kind";
 			}
 		},
+
 		/**
 		 * The name of the operation or command being executed.
 		 */
 		DB_OPERATION_NAME {
 			@Override
 			public String asString() {
-				return AiObservationAttributes.DB_OPERATION_NAME.value();
+				return VectorStoreObservationAttributes.DB_OPERATION_NAME.value();
 			}
 		},
+
 		/**
 		 * The database management system (DBMS) product as identified by the client
 		 * instrumentation.
@@ -75,115 +83,122 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		DB_SYSTEM {
 			@Override
 			public String asString() {
-				return "db.system";
+				return VectorStoreObservationAttributes.DB_SYSTEM.value();
 			}
 		};
 
 	}
 
+	/**
+	 * High-cardinality observation key names for vector store operations.
+	 */
 	public enum HighCardinalityKeyNames implements KeyName {
 
+		// DB General
+
 		/**
-		 * Similarity search response content.
+		 * The name of a collection (table, container) within the database.
 		 */
-		QUERY_RESPONSE {
+		DB_COLLECTION_NAME {
 			@Override
 			public String asString() {
-				return "db.vector.query.response.documents";
+				return VectorStoreObservationAttributes.DB_COLLECTION_NAME.value();
 			}
 		},
+
 		/**
-		 * The database query being executed.
+		 * The namespace of the database.
 		 */
-		QUERY {
+		DB_NAMESPACE {
 			@Override
 			public String asString() {
-				return "db.vector.query.content";
+				return VectorStoreObservationAttributes.DB_NAMESPACE.value();
 			}
 		},
+
+		// DB Vector
+
 		/**
-		 * The metadata filters used in the query.
+		 * The dimension of the vector.
 		 */
-		QUERY_METADATA_FILTER {
+		DB_VECTOR_DIMENSION_COUNT {
+			@Override
+			public String asString() {
+				return VectorStoreObservationAttributes.DB_VECTOR_DIMENSION_COUNT.value();
+			}
+		},
+
+		/**
+		 * The name field as of the vector (e.g. a field name).
+		 */
+		DB_VECTOR_FIELD_NAME {
+			@Override
+			public String asString() {
+				return VectorStoreObservationAttributes.DB_VECTOR_FIELD_NAME.value();
+			}
+		},
+
+		/**
+		 * The content of the search query being executed.
+		 */
+		DB_VECTOR_QUERY_CONTENT {
+			@Override
+			public String asString() {
+				return VectorStoreObservationAttributes.DB_VECTOR_QUERY_CONTENT.value();
+			}
+		},
+
+		/**
+		 * The metadata filters used in the search query.
+		 */
+		DB_VECTOR_QUERY_FILTER {
 			@Override
 			public String asString() {
 				return "db.vector.query.filter";
 			}
 		},
+
 		/**
-		 * The metric used in similarity search.
+		 * Returned documents from a similarity search query.
 		 */
-		SIMILARITY_METRIC {
+		DB_VECTOR_QUERY_RESPONSE_DOCUMENTS {
 			@Override
 			public String asString() {
-				return "db.vector.similarity_metric";
+				return "db.vector.query.response.documents";
 			}
 		},
-		/**
-		 * The top-k most similar vectors returned by a query.
-		 */
-		TOP_K {
-			@Override
-			public String asString() {
-				return "db.vector.query.top_k";
-			}
-		},
+
 		/**
 		 * Similarity threshold that accepts all search scores. A threshold value of 0.0
 		 * means any similarity is accepted or disable the similarity threshold filtering.
 		 * A threshold value of 1.0 means an exact match is required.
 		 */
-		SIMILARITY_THRESHOLD {
+		DB_VECTOR_QUERY_SIMILARITY_THRESHOLD {
 			@Override
 			public String asString() {
-				return "db.vector.query.similarity_threshold";
+				return VectorStoreObservationAttributes.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.value();
 			}
 		},
+
 		/**
-		 * The dimension of the vector.
+		 * The top-k most similar vectors returned by a query.
 		 */
-		DIMENSIONS {
+		DB_VECTOR_QUERY_TOP_K {
 			@Override
 			public String asString() {
-				return "db.vector.dimension_count";
+				return VectorStoreObservationAttributes.DB_VECTOR_QUERY_TOP_K.value();
 			}
 		},
+
 		/**
-		 * The name field as of the vector (e.g. a field name).
+		 * The metric used in similarity search.
 		 */
-		FIELD_NAME {
+		DB_VECTOR_SIMILARITY_METRIC {
 			@Override
 			public String asString() {
-				return "db.vector.name";
+				return VectorStoreObservationAttributes.DB_VECTOR_SIMILARITY_METRIC.value();
 			}
-		},
-		/**
-		 * The name of a collection (table, container) within the database.
-		 */
-		COLLECTION_NAME {
-			@Override
-			public String asString() {
-				return "db.collection.name";
-			}
-		},
-		/**
-		 * The namespace of the database.
-		 */
-		NAMESPACE {
-			@Override
-			public String asString() {
-				return "db.namespace";
-			}
-		},
-		/**
-		 * The index name used in the query.
-		 */
-		INDEX_NAME {
-			@Override
-			public String asString() {
-				return "db.index.name";
-			}
-		}
+		};
 
 	}
 

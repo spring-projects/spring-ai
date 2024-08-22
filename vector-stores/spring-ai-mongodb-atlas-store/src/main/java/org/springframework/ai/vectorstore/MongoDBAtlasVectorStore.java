@@ -46,6 +46,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Chris Smith
  * @author Soby Chacko
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -58,7 +59,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	public static final String SCORE_FIELD_NAME = "score";
 
-	private static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
+	public static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
 
 	private static final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
 
@@ -320,10 +321,9 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.MONGODB.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.config.collectionName)
-			.withFieldName(this.config.pathName)
-			.withIndexName(this.config.vectorIndexName);
+			.withDimensions(this.embeddingModel.dimensions())
+			.withFieldName(this.config.pathName);
 	}
 
 }

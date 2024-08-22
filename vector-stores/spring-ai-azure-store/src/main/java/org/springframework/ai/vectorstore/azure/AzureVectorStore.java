@@ -72,6 +72,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Xiangyang Yu
  * @author Christian Tzolov
  * @author Josh Long
+ * @author Thomas Vitale
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -410,9 +411,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	public Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE.value(), operationName)
+			.withCollectionName(this.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withSimilarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null)
-			.withIndexName(this.indexName);
+			.withSimilarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null);
 	}
 
 }

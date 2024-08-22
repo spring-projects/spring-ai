@@ -46,6 +46,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
  * @author Jingzhou Ou
  * @author Soby Chacko
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class Neo4jVectorStoreAutoConfigurationIT {
@@ -85,7 +86,7 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 
 				vectorStore.add(documents);
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.NEO4J,
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
@@ -97,14 +98,14 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.NEO4J,
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
 				// Remove all documents from the store
 				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-				assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.NEO4J,
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.NEO4J,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 

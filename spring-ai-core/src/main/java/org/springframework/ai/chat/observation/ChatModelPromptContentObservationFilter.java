@@ -17,6 +17,7 @@ package org.springframework.ai.chat.observation;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationFilter;
+import org.springframework.ai.observation.tracing.TracingHelper;
 
 /**
  * An {@link ObservationFilter} to include the chat prompt content in the observation.
@@ -36,7 +37,7 @@ public class ChatModelPromptContentObservationFilter implements ObservationFilte
 
 		chatModelObservationContext
 			.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.PROMPT
-				.withValue(ChatModelObservationContentProcessor.concatenateStrings(prompts)));
+				.withValue(TracingHelper.concatenateStrings(prompts)));
 
 		return chatModelObservationContext;
 	}

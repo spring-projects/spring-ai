@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -58,6 +59,7 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -111,20 +113,22 @@ public class MongoDbVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store mongodb add")
+				.hasContextualNameEqualTo("mongodb add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
 						VectorStoreProvider.MONGODB.value())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DIMENSIONS.asString(), "1536")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "vector_store")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.NAMESPACE.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "embedding")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.INDEX_NAME.asString(), "vector_index")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_THRESHOLD.asString(), "none")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(),
+						SpringAiKind.VECTOR_STORE.value())
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "1536")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
+						MongoDBAtlasVectorStore.DEFAULT_VECTOR_COLLECTION_NAME)
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "embedding")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString(),
+						"none")
 
 				.hasBeenStarted()
 				.hasBeenStopped();
@@ -140,21 +144,24 @@ public class MongoDbVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store mongodb query")
+				.hasContextualNameEqualTo("mongodb query")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "query")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
 						VectorStoreProvider.MONGODB.value())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(),
+						SpringAiKind.VECTOR_STORE.value())
 
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "What is Great Depression")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DIMENSIONS.asString(), "1536")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "vector_store")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.NAMESPACE.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "embedding")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.INDEX_NAME.asString(), "vector_index")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "1")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_THRESHOLD.asString(), "0.0")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(),
+						"What is Great Depression")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "1536")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
+						MongoDBAtlasVectorStore.DEFAULT_VECTOR_COLLECTION_NAME)
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "embedding")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString(), "1")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString(),
+						"0.0")
 
 				.hasBeenStarted()
 				.hasBeenStopped();

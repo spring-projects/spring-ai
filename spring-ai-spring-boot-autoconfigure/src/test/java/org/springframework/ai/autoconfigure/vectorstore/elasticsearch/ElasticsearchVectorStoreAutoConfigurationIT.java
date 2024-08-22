@@ -82,7 +82,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ELASTICSEARCH,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.ELASTICSEARCH,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -104,14 +104,14 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ELASTICSEARCH,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.ELASTICSEARCH,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(Document::getId).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.ELASTICSEARCH,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.ELASTICSEARCH,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 
