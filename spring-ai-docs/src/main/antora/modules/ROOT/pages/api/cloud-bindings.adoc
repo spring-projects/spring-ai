@@ -50,4 +50,7 @@ The following are the components for which the cloud binding support is currentl
 
 | `Weaviate`
 | `weaviate` | `uri`, `api-key` | `spring.ai.vectorstore.weaviate.scheme`, `spring.ai.vectorstore.weaviate.host`, `spring.ai.vectorstore.weaviate.api-key`
+
+| `Tanzu GenAI`
+| `genai` | `uri`, `api-key`, `model-capabilities` (`chat` and `embedding`), `model-name` | `spring.ai.openai.chat.base-url`, , spring.ai.openai.chat.api-key`, `spring.ai.openai.chat.options.model`, `spring.ai.openai.embedding.base-url`, , spring.ai.openai.embedding.api-key`, `spring.ai.openai.embedding.options.model`
 |====
