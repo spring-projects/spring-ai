@@ -176,4 +176,43 @@ Spring AI supports storing these fields as events in OpenTelemetry and will prov
 
 == Vector Stores
 
-TBD
+All vector store implementations in Spring AI are instrumented to provide metrics and distributed tracing data through Micrometer.
+
+.Low Cardinality Keys
+[cols="a,a"]
+|===
+|Name | Description
+|`spring.ai.kind` |Spring AI kind - `vector_store`
+|`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `hana`, `simple`
+|`db.operation.name` |The name of the operation or command being executed.  One of `add`, `delete`, or `query`.
+|===
+
+.High Cardinality Keys
+[cols="a,a"]
+|===
+|Name | Description
+|`db.collection.name` | The name of a collection (table, container) within the database.
+|`db.vector.dimension_count` | The dimension of the vector.
+|`db.vector.field_name` | The name field as of the vector (e.g. a field name).
+|`db.vector.query.filter` | The metadata filters used in the search query.
+|`db.namespace` | The namespace of the database.
+|`db.vector.query.content` | The content of the search query being executed.
+|`db.vector.query.response.documents` | Returned documents from a similarity search query.  Needs to be enabled with auto-configuration and use of OpenTelemetry events.
+|`db.vector.similarity_metric` | The metric used in similarity search.
+|`db.vector.query.similarity_threshold` | Similarity threshold that accepts all search scores. A threshold value of 0.0 means any similarity is accepted or disable the similarity threshold filtering. A threshold value of 1.0 means an exact match is required.
+|`db.vector.query.top_k` | The top-k most similar vectors returned by a query.
+|===
+
+
+
+=== Vector Store response data
+
+The Vector Store response data are typically too big to be included in an observation as span attributes.
+The preferred way to store large data it is as span events, which are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
+Spring AI supports storing these fields as events in OpenTelemetry and will provide a more general event based solution once the issue https://github.com/micrometer-metrics/micrometer/issues/5238 is resolved.
+
+[cols="6,3,1"]
+|===
+| Property | Description | Default
+| `spring.ai.vectorstore.observations.include-query-response` | `true` or `false` | `false`
+|===
