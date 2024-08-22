@@ -55,6 +55,7 @@ import static org.hamcrest.Matchers.hasSize;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
  */
 public class GemFireVectorStoreObservationIT {
 
@@ -193,16 +194,12 @@ public class GemFireVectorStoreObservationIT {
 		}
 
 		@Bean
-		public GemFireVectorStoreConfig gemfireVectorStoreConfig() {
-			return new GemFireVectorStoreConfig().setHost("localhost")
+		public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
+			return new GemFireVectorStore(GemFireVectorStore.GemFireVectorStoreConfig.builder()
+				.setHost("localhost")
 				.setPort(HTTP_SERVICE_PORT)
-				.setIndexName(TEST_INDEX_NAME);
-		}
-
-		@Bean
-		public GemFireVectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
-				ObservationRegistry observationRegistry) {
-			return new GemFireVectorStore(config, embeddingModel, true, observationRegistry, null);
+				.setIndexName(TEST_INDEX_NAME)
+				.build(), embeddingModel, true, observationRegistry, null);
 		}
 
 		@Bean
