@@ -17,6 +17,7 @@ package org.springframework.ai.minimax;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -302,7 +303,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			if (delta == null) {
 				delta = new ChatCompletionMessage("", Role.ASSISTANT);
 			}
-			return new ChatCompletion.Choice(cc.finishReason(), cc.index(), delta, cc.logprobs());
+			return new ChatCompletion.Choice(cc.finishReason(), cc.index(), delta, null, cc.logprobs());
 		}).toList();
 
 		return new ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.systemFingerprint(),

@@ -160,6 +160,10 @@ public class MiniMaxApi {
 			this(Type.FUNCTION, function);
 		}
 
+		public static FunctionTool webSearchFunctionTool() {
+			return new FunctionTool(Type.WEB_SEARCH, null);
+		}
+
 		/**
 		 * Create a tool of type 'function' and the given function definition.
 		 */
@@ -167,7 +171,8 @@ public class MiniMaxApi {
 			/**
 			 * Function tool type.
 			 */
-			@JsonProperty("function") FUNCTION
+			@JsonProperty("function") FUNCTION,
+			@JsonProperty("web_search") WEB_SEARCH
 		}
 
 		/**
@@ -561,6 +566,7 @@ public class MiniMaxApi {
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("message") ChatCompletionMessage message,
+				@JsonProperty("messages") List<ChatCompletionMessage> messages,
 				@JsonProperty("logprobs") LogProbs logprobs) {
 		}
 

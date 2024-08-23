@@ -102,7 +102,7 @@ public class MiniMaxRetryTests {
 	public void miniMaxChatTransientError() {
 
 		var choice = new ChatCompletion.Choice(ChatCompletionFinishReason.STOP, 0,
-				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
+				new ChatCompletionMessage("Response", Role.ASSISTANT), null, null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", List.of(choice), 666l, "model", null, null,
 				null, new MiniMaxApi.Usage(10, 10, 10));
 
