@@ -24,8 +24,6 @@ import org.springframework.ai.model.Model;
  * a single method, call, which takes a ModerationPrompt as input and returns a
  * ModerationResponse.
  *
- * @param <ModerationPrompt> the type of the moderation prompt
- * @param <ModerationResponse> the type of the moderation response
  * @author Ahmed Yousri
  * @since 1.0.0
  */

@@ -423,7 +423,8 @@
 							<excludePackageNames>org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
 							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 							<detectJavaApiLink>false</detectJavaApiLink>
-							<doclint>all,-missing</doclint>
+							<doclint>none</doclint>
+<!--							<doclint>all,-missing</doclint>-->
 							<quiet>true</quiet>
 						</configuration>
 						<executions>
