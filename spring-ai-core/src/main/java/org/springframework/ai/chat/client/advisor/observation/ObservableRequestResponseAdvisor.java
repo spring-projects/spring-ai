@@ -23,9 +23,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
-import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 
 /**
@@ -84,24 +82,8 @@ public class ObservableRequestResponseAdvisor implements RequestResponseAdvisor 
 	@Override
 	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
 
-		return Flux.deferContextual(contextView -> {
-			var observationContext = this.doCreateObservationContextBuilder(AdvisorObservationContext.Type.AFTER)
-				.withAdvisorResponseContext(context)
-				.build();
-
-			Observation observation = AdvisorObservationDocumentation.AI_ADVISOR.observation(
-					this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry);
-
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
-
-			// @formatter:off
-			return this.targetAdvisor.adviseResponse(fluxResponse, context)
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-			// @formatter:on
-		});
+		// NOTE: The reactive observation support is not available yet.
+		return this.targetAdvisor.adviseResponse(fluxResponse, context);
 	}
 
 	/**

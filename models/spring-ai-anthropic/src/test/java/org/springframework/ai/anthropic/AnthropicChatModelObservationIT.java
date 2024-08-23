@@ -15,15 +15,19 @@
  */
 package org.springframework.ai.anthropic;
 
-import io.micrometer.common.KeyValue;
-import io.micrometer.observation.tck.TestObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -34,14 +38,11 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
+
+import io.micrometer.common.KeyValue;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link AnthropicChatModel}.
@@ -67,7 +68,7 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.withMaxTokens(2048)
 			.withStopSequences(List.of("this-is-the-end"))
 			.withTemperature(0.7f)
@@ -89,7 +90,7 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.withMaxTokens(2048)
 			.withStopSequences(List.of("this-is-the-end"))
 			.withTemperature(0.7f)
@@ -125,12 +126,12 @@ public class AnthropicChatModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
+			.hasContextualNameEqualTo("chat " + AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.ANTHROPIC.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
+					AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
 					KeyValue.NONE_VALUE)
