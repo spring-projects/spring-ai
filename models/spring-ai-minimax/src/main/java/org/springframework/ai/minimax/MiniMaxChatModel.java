@@ -17,11 +17,11 @@ package org.springframework.ai.minimax;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
@@ -223,7 +223,7 @@ public class MiniMaxChatModel extends
 			if (delta == null) {
 				delta = new ChatCompletionMessage("", Role.ASSISTANT);
 			}
-			return new ChatCompletion.Choice(cc.finishReason(), cc.index(), delta, cc.logprobs());
+			return new ChatCompletion.Choice(cc.finishReason(), cc.index(), delta, null, cc.logprobs());
 		}).toList();
 
 		return new ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.systemFingerprint(),

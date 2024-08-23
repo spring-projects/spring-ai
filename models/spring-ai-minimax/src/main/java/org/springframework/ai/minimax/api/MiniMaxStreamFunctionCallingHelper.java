@@ -192,7 +192,7 @@ public class MiniMaxStreamFunctionCallingHelper {
 		List<MiniMaxApi.ChatCompletion.Choice> choices = chunk.choices()
 			.stream()
 			.map(chunkChoice -> new MiniMaxApi.ChatCompletion.Choice(chunkChoice.finishReason(), chunkChoice.index(),
-					chunkChoice.delta(), chunkChoice.logprobs()))
+					chunkChoice.delta(), null, chunkChoice.logprobs()))
 			.toList();
 
 		return new MiniMaxApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
