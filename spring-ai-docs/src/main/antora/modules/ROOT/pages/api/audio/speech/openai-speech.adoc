@@ -77,7 +77,7 @@ NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai
 The `spring.ai.openai.audio.speech.base-url`, `spring.ai.openai.audio.speech.api-key`, `spring.ai.openai.audio.speech.organization-id` and `spring.ai.openai.audio.speech.project-id` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.image.options` can be overridden at runtime.
+TIP: All properties prefixed with `spring.ai.openai.audio.options` can be overridden at runtime.
 
 == Runtime Options [[speech-options]]
 
