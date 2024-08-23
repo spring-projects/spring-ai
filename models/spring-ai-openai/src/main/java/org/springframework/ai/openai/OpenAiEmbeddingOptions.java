@@ -85,6 +85,7 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -101,6 +102,7 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 		this.encodingFormat = encodingFormat;
 	}
 
+	@Override
 	public Integer getDimensions() {
 		return this.dimensions;
 	}

@@ -53,8 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiPaymentTransactionIT {
 
 	private final static Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);
@@ -198,7 +197,7 @@ public class OpenAiPaymentTransactionIT {
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackContext functionCallbackContext) {
 			return new OpenAiChatModel(openAiApi,
 					OpenAiChatOptions.builder()
-						.withModel(ChatModel.GPT_4_TURBO.getName())
+						.withModel(ChatModel.GPT_4_O_MINI.getName())
 						.withTemperature(0.1f)
 						.build(),
 					functionCallbackContext, RetryUtils.DEFAULT_RETRY_TEMPLATE);

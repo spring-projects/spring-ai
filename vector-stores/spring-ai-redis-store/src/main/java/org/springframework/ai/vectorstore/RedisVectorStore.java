@@ -30,10 +30,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+
+import io.micrometer.observation.ObservationRegistry;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -67,11 +73,13 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
  *
  * @author Julien Ruaux
  * @author Christian Tzolov
+ * @author Eddú Meléndez
+ * @author Thomas Vitale
  * @see VectorStore
  * @see RedisVectorStoreConfig
  * @see EmbeddingModel
  */
-public class RedisVectorStore implements VectorStore, InitializingBean {
+public class RedisVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public enum Algorithm {
 
@@ -100,8 +108,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	 */
 	public static final class RedisVectorStoreConfig {
 
-		private final String uri;
-
 		private final String indexName;
 
 		private final String prefix;
@@ -119,7 +125,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		}
 
 		private RedisVectorStoreConfig(Builder builder) {
-			this.uri = builder.uri;
 			this.indexName = builder.indexName;
 			this.prefix = builder.prefix;
 			this.contentFieldName = builder.contentFieldName;
@@ -147,8 +152,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 		public static class Builder {
 
-			private String uri = DEFAULT_URI;
-
 			private String indexName = DEFAULT_INDEX_NAME;
 
 			private String prefix = DEFAULT_PREFIX;
@@ -162,16 +165,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 			private List<MetadataField> metadataFields = new ArrayList<>();
 
 			private Builder() {
-			}
-
-			/**
-			 * Configures the Redis URI to use.
-			 * @param uri the Redis URI to use
-			 * @return this builder
-			 */
-			public Builder withURI(String uri) {
-				this.uri = uri;
-				return this;
 			}
 
 			/**
@@ -247,8 +240,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	private final boolean initializeSchema;
 
-	public static final String DEFAULT_URI = "redis://localhost:6379";
-
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-index";
 
 	public static final String DEFAULT_CONTENT_FIELD_NAME = "content";
@@ -287,13 +278,23 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	private FilterExpressionConverter filterExpressionConverter;
 
-	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema) {
+	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
+			boolean initializeSchema) {
+
+		this(config, embeddingModel, jedis, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
+			boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
 
 		Assert.notNull(config, "Config must not be null");
 		Assert.notNull(embeddingModel, "Embedding model must not be null");
 		this.initializeSchema = initializeSchema;
 
-		this.jedis = new JedisPooled(config.uri);
+		this.jedis = jedis;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
 		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.config.metadataFields);
@@ -304,7 +305,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 			for (Document document : documents) {
 				var embedding = this.embeddingModel.embed(document);
@@ -333,7 +334,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 			for (String id : idList) {
 				pipeline.jsonDel(key(id));
@@ -351,7 +352,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		Assert.isTrue(request.getTopK() > 0, "The number of documents to returned must be greater than zero");
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
@@ -367,7 +368,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		returnFields.add(this.config.embeddingFieldName);
 		returnFields.add(this.config.contentFieldName);
 		returnFields.add(DISTANCE_FIELD_NAME);
-		var embedding = toFloatArray(this.embeddingModel.embed(request.getQuery()));
+		var embedding = this.embeddingModel.embed(request.getQuery());
 		Query query = new Query(queryString).addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
 			.returnFields(returnFields.toArray(new String[0]))
 			.setSortBy(DISTANCE_FIELD_NAME, true)
@@ -472,13 +473,15 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		return JSON_PATH_PREFIX + field;
 	}
 
-	private static float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
-		int i = 0;
-		for (Double d : embeddingDouble) {
-			embeddingFloat[i++] = d.floatValue();
-		}
-		return embeddingFloat;
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
+			.withCollectionName(this.config.indexName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withFieldName(this.config.embeddingFieldName)
+			.withSimilarityMetric(vectorAlgorithm().name());
+
 	}
 
 }

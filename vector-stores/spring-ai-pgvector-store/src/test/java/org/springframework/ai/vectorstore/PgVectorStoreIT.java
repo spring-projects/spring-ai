@@ -24,12 +24,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -57,6 +60,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import com.zaxxer.hikari.HikariDataSource;
 
 /**
+ * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  */
 @Testcontainers
@@ -124,6 +128,46 @@ public class PgVectorStoreIT {
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 				assertThat(results2).hasSize(0);
 
+				dropTable(context);
+			});
+	}
+
+	static Stream<Arguments> provideFilters() {
+		return Stream.of(Arguments.of("country in ['BG','NL']", 3), // String Filters In
+				Arguments.of("year in [2020]", 1), // Numeric Filters In
+				Arguments.of("country not in ['BG']", 1), // String Filter Not In
+				Arguments.of("year not in [2020]", 2) // Numeric Filter Not In
+		);
+	}
+
+	@ParameterizedTest(name = "Filter expression {0} should return {1} records ")
+	@MethodSource("provideFilters")
+	public void searchWithInFilter(String expression, Integer expectedRecords) {
+
+		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020, "foo bar 1", "bar.foo"));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
+
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				SearchRequest searchRequest = SearchRequest.query("The World")
+					.withFilterExpression(expression)
+					.withTopK(5)
+					.withSimilarityThresholdAll();
+
+				List<Document> results = vectorStore.similaritySearch(searchRequest);
+
+				assertThat(results).hasSize(expectedRecords);
+
+				// Remove all documents from the store
 				dropTable(context);
 			});
 	}

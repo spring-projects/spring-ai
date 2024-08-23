@@ -60,11 +60,11 @@ public class OllamaChatAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OllamaChatAutoConfigurationIT.class);
 
-	private static String MODEL_NAME = "mistral";
+	private static final String MODEL_NAME = "mistral";
 
 	private static final String OLLAMA_WITH_MODEL = "%s-%s".formatted(MODEL_NAME, OllamaImage.IMAGE);
 
-	private static final OllamaContainer ollamaContainer;
+	private static OllamaContainer ollamaContainer;
 
 	static {
 		ollamaContainer = new OllamaContainer(OllamaDockerImageName.image());
@@ -72,7 +72,7 @@ public class OllamaChatAutoConfigurationIT {
 		createImage(ollamaContainer, OLLAMA_WITH_MODEL);
 	}
 
-	static String baseUrl;
+	static String baseUrl = "http://localhost:11434";
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
@@ -176,7 +176,7 @@ public class OllamaChatAutoConfigurationIT {
 
 	}
 
-	static void createImage(GenericContainer<?> container, String localImageName) {
+	public static void createImage(GenericContainer<?> container, String localImageName) {
 		DockerImageName dockerImageName = DockerImageName.parse(container.getDockerImageName());
 		if (!dockerImageName.equals(DockerImageName.parse(localImageName))) {
 			DockerClient dockerClient = DockerClientFactory.instance().client();
@@ -192,7 +192,7 @@ public class OllamaChatAutoConfigurationIT {
 		}
 	}
 
-	static class OllamaDockerImageName {
+	public static class OllamaDockerImageName {
 
 		private final String baseImage;
 
@@ -203,7 +203,7 @@ public class OllamaChatAutoConfigurationIT {
 			this.localImageName = localImageName;
 		}
 
-		static DockerImageName image() {
+		public static DockerImageName image() {
 			return new OllamaDockerImageName(OllamaImage.IMAGE, OLLAMA_WITH_MODEL).resolve();
 		}
 

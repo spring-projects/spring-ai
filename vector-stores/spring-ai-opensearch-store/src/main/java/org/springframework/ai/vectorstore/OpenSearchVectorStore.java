@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+
+import io.micrometer.observation.ObservationRegistry;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -45,9 +53,12 @@ import java.util.stream.Collectors;
 
 /**
  * @author Jemin Huh
+ * @author Soby Chacko
+ * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public class OpenSearchVectorStore implements VectorStore, InitializingBean {
+public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
@@ -78,16 +89,30 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
 	private String similarityFunction;
 
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
-		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536);
+	private final boolean initializeSchema;
+
+	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
+		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536,
+				initializeSchema);
 	}
 
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson) {
-		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson);
+	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson,
+			boolean initializeSchema) {
+		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson, initializeSchema);
 	}
 
 	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson) {
+			String mappingJson, boolean initializeSchema) {
+		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
+			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.openSearchClient = openSearchClient;
@@ -98,6 +123,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 		// the potential functions for vector fields at
 		// https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
 		this.similarityFunction = COSINE_SIMILARITY_FUNCTION;
+		this.initializeSchema = initializeSchema;
 	}
 
 	public OpenSearchVectorStore withSimilarityFunction(String similarityFunction) {
@@ -106,10 +132,10 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (Document document : documents) {
-			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
+			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().length == 0) {
 				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
@@ -120,7 +146,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (String id : idList)
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
@@ -137,13 +163,13 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest searchRequest) {
+	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
 		return similaritySearch(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest.getTopK(),
 				searchRequest.getSimilarityThreshold(), searchRequest.getFilterExpression());
 	}
 
-	public List<Document> similaritySearch(List<Double> embedding, int topK, double similarityThreshold,
+	public List<Document> similaritySearch(float[] embedding, int topK, double similarityThreshold,
 			Filter.Expression filterExpression) {
 		return similaritySearch(new org.opensearch.client.opensearch.core.SearchRequest.Builder()
 			.query(getOpenSearchSimilarityQuery(embedding, filterExpression))
@@ -154,7 +180,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 			.build());
 	}
 
-	private Query getOpenSearchSimilarityQuery(List<Double> embedding, Filter.Expression filterExpression) {
+	private Query getOpenSearchSimilarityQuery(float[] embedding, Filter.Expression filterExpression) {
 		return Query.of(queryBuilder -> queryBuilder.scriptScore(scriptScoreQueryBuilder -> {
 			scriptScoreQueryBuilder
 				.query(queryBuilder2 -> queryBuilder2.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
@@ -228,9 +254,28 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
-		if (!exists(this.index)) {
-			createIndexMapping(this.index, mappingJson);
+		if (this.initializeSchema && !exists(this.index)) {
+			createIndexMapping(this.index, this.mappingJson);
 		}
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
+			.withCollectionName(this.index)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withSimilarityMetric(getSimilarityFunction());
+	}
+
+	private String getSimilarityFunction() {
+		if ("cosinesimil".equalsIgnoreCase(this.similarityFunction)) {
+			return VectorStoreSimilarityMetric.COSINE.value();
+		}
+		else if ("l2".equalsIgnoreCase(this.similarityFunction)) {
+			return VectorStoreSimilarityMetric.EUCLIDEAN.value();
+		}
+
+		return this.similarityFunction;
 	}
 
 }

@@ -102,7 +102,7 @@ public class MiniMaxRetryTests {
 	public void miniMaxChatTransientError() {
 
 		var choice = new ChatCompletion.Choice(ChatCompletionFinishReason.STOP, 0,
-				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
+				new ChatCompletionMessage("Response", Role.ASSISTANT), null, null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", List.of(choice), 666l, "model", null, null,
 				null, new MiniMaxApi.Usage(10, 10, 10));
 
@@ -157,7 +157,7 @@ public class MiniMaxRetryTests {
 	@Test
 	public void miniMaxEmbeddingTransientError() {
 
-		EmbeddingList expectedEmbeddings = new EmbeddingList(List.of(List.of(9.9, 8.8)), "model", 10);
+		EmbeddingList expectedEmbeddings = new EmbeddingList(List.of(new float[] { 9.9f, 8.8f }), "model", 10);
 
 		when(miniMaxApi.embeddings(isA(EmbeddingRequest.class)))
 			.thenThrow(new TransientAiException("Transient Error 1"))
@@ -168,7 +168,7 @@ public class MiniMaxRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput()).isEqualTo(List.of(9.9, 8.8));
+		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
 		assertThat(retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(retryListener.onErrorRetryCount).isEqualTo(2);
 	}

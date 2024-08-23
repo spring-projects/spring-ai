@@ -23,15 +23,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -41,6 +40,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.observation.ObservationRegistry;
 import reactor.util.annotation.NonNull;
 
 /**
@@ -48,8 +55,11 @@ import reactor.util.annotation.NonNull;
  * deleting, and similarity searching of documents in a GemFire index.
  *
  * @author Geet Rawat
+ * @author Christian Tzolov
+ * @author Thomas Vitale
+ * @author Soby Chacko
  */
-public class GemFireVectorStore implements VectorStore, InitializingBean {
+public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(GemFireVectorStore.class);
 
@@ -62,6 +72,53 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	private final EmbeddingModel embeddingModel;
 
 	private static final String DOCUMENT_FIELD = "document";
+
+	private final boolean initializeSchema;
+
+	/**
+	 * Configures and initializes a GemFireVectorStore instance based on the provided
+	 * configuration.
+	 * @param config the configuration for the GemFireVectorStore
+	 * @param embeddingModel the embedding client used for generating embeddings
+	 * @param initializeSchema whether to initialize the schema during initialization
+	 */
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
+		this(config, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	/**
+	 * Configures and initializes a GemFireVectorStore instance based on the provided
+	 * configuration.
+	 * @param config the configuration for the GemFireVectorStore
+	 * @param embeddingModel the embedding client used for generating embeddings
+	 * @param initializeSchema whether to initialize the schema during initialization
+	 * @param observationRegistry the observation registry to use for recording
+	 * observations
+	 * @param customObservationConvention the custom observation convention to use for
+	 * observing operations
+	 */
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema,
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
+		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
+		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+		this.initializeSchema = initializeSchema;
+		this.indexName = config.indexName;
+		this.embeddingModel = embeddingModel;
+		this.beamWidth = config.beamWidth;
+		this.maxConnections = config.maxConnections;
+		this.buckets = config.buckets;
+		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
+		this.fields = config.fields;
+
+		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
+			.build(config.sslEnabled ? "s" : "", config.host, config.port)
+			.toString();
+		this.client = WebClient.create(base);
+	}
 
 	// Create Index Parameters
 
@@ -113,11 +170,12 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	 */
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		if (indexExists()) {
-			deleteIndex();
+		if (!this.initializeSchema) {
+			return;
 		}
-		createIndex();
-
+		if (!indexExists()) {
+			createIndex();
+		}
 	}
 
 	/**
@@ -131,30 +189,6 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 	public String getIndex() {
 		return client.get().uri("/" + indexName).retrieve().bodyToMono(String.class).onErrorReturn("").block();
-	}
-
-	/**
-	 * Configures and initializes a GemFireVectorStore instance based on the provided
-	 * configuration.
-	 * @param config the configuration for the GemFireVectorStore
-	 * @param embeddingModel the embedding client used for generating embeddings
-	 */
-
-	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel) {
-		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
-		this.indexName = config.indexName;
-		this.embeddingModel = embeddingModel;
-		this.beamWidth = config.beamWidth;
-		this.maxConnections = config.maxConnections;
-		this.buckets = config.buckets;
-		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
-		this.fields = config.fields;
-
-		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
-			.build(config.sslEnabled ? "s" : "", config.host, config.port)
-			.toString();
-		this.client = WebClient.create(base);
 	}
 
 	public static class CreateRequest {
@@ -251,12 +285,12 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 			private final String key;
 
-			private List<Float> vector;
+			private float[] vector;
 
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			private Map<String, Object> metadata;
 
-			public Embedding(@JsonProperty("key") String key, @JsonProperty("vector") List<Float> vector,
+			public Embedding(@JsonProperty("key") String key, @JsonProperty("vector") float[] vector,
 					String contentName, String content, @JsonProperty("metadata") Map<String, Object> metadata) {
 				this.key = key;
 				this.vector = vector;
@@ -268,7 +302,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 				return key;
 			}
 
-			public List<Float> getVector() {
+			public float[] getVector() {
 				return vector;
 			}
 
@@ -284,7 +318,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 		@JsonProperty("vector")
 		@NonNull
-		private final List<Float> vector;
+		private final float[] vector;
 
 		@JsonProperty("top-k")
 		private final int k;
@@ -295,14 +329,14 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		@JsonProperty("include-metadata")
 		private final boolean includeMetadata;
 
-		public QueryRequest(List<Float> vector, int k, int kPerBucket, boolean includeMetadata) {
+		public QueryRequest(float[] vector, int k, int kPerBucket, boolean includeMetadata) {
 			this.vector = vector;
 			this.k = k;
 			this.kPerBucket = kPerBucket;
 			this.includeMetadata = includeMetadata;
 		}
 
-		public List<Float> getVector() {
+		public float[] getVector() {
 			return vector;
 		}
 
@@ -369,11 +403,11 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
 			document.setEmbedding(this.embeddingModel.embed(document));
-			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
+			float[] floatVector = document.getEmbedding();
 			return new UploadRequest.Embedding(document.getId(), floatVector, DOCUMENT_FIELD, document.getContent(),
 					document.getMetadata());
 		}).toList());
@@ -399,7 +433,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		try {
 			client.method(HttpMethod.DELETE)
 				.uri("/" + indexName + EMBEDDINGS)
@@ -416,12 +450,11 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
 		}
-		List<Double> vector = this.embeddingModel.embed(request.getQuery());
-		List<Float> floatVector = vector.stream().map(Double::floatValue).toList();
+		float[] floatVector = this.embeddingModel.embed(request.getQuery());
 		return client.post()
 			.uri("/" + indexName + QUERY)
 			.contentType(MediaType.APPLICATION_JSON)
@@ -501,6 +534,163 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		else {
 			throw new RuntimeException(String.format("Got an unexpected HTTP error: %s", ex));
 		}
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.GEMFIRE.value(), operationName)
+			.withCollectionName(this.indexName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withFieldName(EMBEDDINGS);
+	}
+
+	public static class GemFireVectorStoreConfig {
+
+		// Create Index DEFAULT Values
+		public static final String DEFAULT_HOST = "localhost";
+
+		public static final int DEFAULT_PORT = 8080;
+
+		public static final String DEFAULT_INDEX_NAME = "spring-ai-gemfire-index";
+
+		public static final int UPPER_BOUND_BEAM_WIDTH = 3200;
+
+		public static final int DEFAULT_BEAM_WIDTH = 100;
+
+		private static final int UPPER_BOUND_MAX_CONNECTIONS = 512;
+
+		public static final int DEFAULT_MAX_CONNECTIONS = 16;
+
+		public static final String DEFAULT_SIMILARITY_FUNCTION = "COSINE";
+
+		public static final String[] DEFAULT_FIELDS = new String[] {};
+
+		public static final int DEFAULT_BUCKETS = 0;
+
+		public static final boolean DEFAULT_SSL_ENABLED = false;
+
+		String host;
+
+		int port;
+
+		String indexName;
+
+		int beamWidth;
+
+		int maxConnections;
+
+		String vectorSimilarityFunction;
+
+		String[] fields;
+
+		int buckets;
+
+		boolean sslEnabled;
+
+		private GemFireVectorStoreConfig(Builder builder) {
+			this.host = builder.host;
+			this.port = builder.port;
+			this.sslEnabled = builder.sslEnabled;
+			this.indexName = builder.indexName;
+			this.beamWidth = builder.beamWidth;
+			this.maxConnections = builder.maxConnections;
+			this.buckets = builder.buckets;
+			this.vectorSimilarityFunction = builder.vectorSimilarityFunction;
+			this.fields = builder.fields;
+		}
+
+		/**
+		 * Start building a new configuration.
+		 * @return The entry point for creating a new configuration.
+		 */
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			// Create Index DEFAULT Values
+			String host = GemFireVectorStoreConfig.DEFAULT_HOST;
+
+			int port = GemFireVectorStoreConfig.DEFAULT_PORT;
+
+			String indexName = GemFireVectorStoreConfig.DEFAULT_INDEX_NAME;
+
+			int beamWidth = GemFireVectorStoreConfig.DEFAULT_BEAM_WIDTH;
+
+			int maxConnections = GemFireVectorStoreConfig.DEFAULT_MAX_CONNECTIONS;
+
+			String vectorSimilarityFunction = GemFireVectorStoreConfig.DEFAULT_SIMILARITY_FUNCTION;
+
+			String[] fields = GemFireVectorStoreConfig.DEFAULT_FIELDS;
+
+			int buckets = GemFireVectorStoreConfig.DEFAULT_BUCKETS;
+
+			boolean sslEnabled = GemFireVectorStoreConfig.DEFAULT_SSL_ENABLED;
+
+			public Builder setHost(String host) {
+				Assert.hasText(host, "host must have a value");
+				this.host = host;
+				return this;
+			}
+
+			public Builder setPort(int port) {
+				Assert.isTrue(port > 0, "port must be positive");
+				this.port = port;
+				return this;
+			}
+
+			public Builder setSslEnabled(boolean sslEnabled) {
+				this.sslEnabled = sslEnabled;
+				return this;
+			}
+
+			public Builder setIndexName(String indexName) {
+				Assert.hasText(indexName, "indexName must have a value");
+				this.indexName = indexName;
+				return this;
+			}
+
+			public Builder setBeamWidth(int beamWidth) {
+				Assert.isTrue(beamWidth > 0, "beamWidth must be positive");
+				Assert.isTrue(beamWidth <= GemFireVectorStoreConfig.UPPER_BOUND_BEAM_WIDTH,
+						"beamWidth must be less than or equal to " + GemFireVectorStoreConfig.UPPER_BOUND_BEAM_WIDTH);
+				this.beamWidth = beamWidth;
+				return this;
+			}
+
+			public Builder setMaxConnections(int maxConnections) {
+				Assert.isTrue(maxConnections > 0, "maxConnections must be positive");
+				Assert.isTrue(maxConnections <= GemFireVectorStoreConfig.UPPER_BOUND_MAX_CONNECTIONS,
+						"maxConnections must be less than or equal to "
+								+ GemFireVectorStoreConfig.UPPER_BOUND_MAX_CONNECTIONS);
+				this.maxConnections = maxConnections;
+				return this;
+			}
+
+			public Builder setBuckets(int buckets) {
+				Assert.isTrue(buckets >= 0, "bucket must be 1 or more");
+				this.buckets = buckets;
+				return this;
+			}
+
+			public Builder setVectorSimilarityFunction(String vectorSimilarityFunction) {
+				Assert.hasText(vectorSimilarityFunction, "vectorSimilarityFunction must have a value");
+				this.vectorSimilarityFunction = vectorSimilarityFunction;
+				return this;
+			}
+
+			public Builder setFields(String[] fields) {
+				this.fields = fields;
+				return this;
+			}
+
+			public GemFireVectorStoreConfig build() {
+				return new GemFireVectorStoreConfig(this);
+			}
+
+		}
+
 	}
 
 }

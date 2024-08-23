@@ -18,54 +18,45 @@ package org.springframework.ai.autoconfigure.vectorstore.redis;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.RedisVectorStore;
 import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+
+import io.micrometer.observation.ObservationRegistry;
+import redis.clients.jedis.JedisPooled;
 
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
  */
-@AutoConfiguration
-@ConditionalOnClass({ RedisVectorStore.class, EmbeddingModel.class })
+@AutoConfiguration(after = RedisAutoConfiguration.class)
+@ConditionalOnClass({ JedisPooled.class, JedisConnectionFactory.class, RedisVectorStore.class, EmbeddingModel.class })
+@ConditionalOnBean(JedisConnectionFactory.class)
 @EnableConfigurationProperties(RedisVectorStoreProperties.class)
 public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(RedisConnectionDetails.class)
-	public PropertiesRedisConnectionDetails redisConnectionDetails(RedisVectorStoreProperties properties) {
-		return new PropertiesRedisConnectionDetails(properties);
-	}
-
-	@Bean
 	@ConditionalOnMissingBean
 	public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
-			RedisConnectionDetails redisConnectionDetails) {
+			JedisConnectionFactory jedisConnectionFactory, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		var config = RedisVectorStoreConfig.builder()
-			.withURI(redisConnectionDetails.getUri())
 			.withIndexName(properties.getIndex())
 			.withPrefix(properties.getPrefix())
 			.build();
 
-		return new RedisVectorStore(config, embeddingModel, properties.isInitializeSchema());
-	}
-
-	static class PropertiesRedisConnectionDetails implements RedisConnectionDetails {
-
-		private final RedisVectorStoreProperties properties;
-
-		public PropertiesRedisConnectionDetails(RedisVectorStoreProperties properties) {
-			this.properties = properties;
-		}
-
-		@Override
-		public String getUri() {
-			return this.properties.getUri();
-		}
-
+		return new RedisVectorStore(config, embeddingModel,
+				new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()),
+				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 }

@@ -160,6 +160,10 @@ public class MiniMaxApi {
 			this(Type.FUNCTION, function);
 		}
 
+		public static FunctionTool webSearchFunctionTool() {
+			return new FunctionTool(Type.WEB_SEARCH, null);
+		}
+
 		/**
 		 * Create a tool of type 'function' and the given function definition.
 		 */
@@ -167,7 +171,8 @@ public class MiniMaxApi {
 			/**
 			 * Function tool type.
 			 */
-			@JsonProperty("function") FUNCTION
+			@JsonProperty("function") FUNCTION,
+			@JsonProperty("web_search") WEB_SEARCH
 		}
 
 		/**
@@ -227,6 +232,9 @@ public class MiniMaxApi {
 	 * @param topP An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
+     * @param maskSensitiveInfo Mask the text information in the output that is easy to involve privacy issues,
+	 * including but not limited to email, domain name, link, ID number, home address, etc. The default is true,
+     * which means enabling masking.
 	 * @param tools A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 * @param toolChoice Controls which (if any) function is called by the model. none means the model will not call a
@@ -249,6 +257,7 @@ public class MiniMaxApi {
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
+			@JsonProperty("mask_sensitive_info") Boolean maskSensitiveInfo,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice) {
 
@@ -261,7 +270,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, false, temperature, null,
+					null, null, null, false, temperature, null,null,
 					null, null);
 		}
 
@@ -276,7 +285,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, stream, temperature, null,
+					null, null, null, stream, temperature, null,null,
 					null, null);
 		}
 
@@ -292,7 +301,7 @@ public class MiniMaxApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null,
-					null, null, null, false, 0.8f, null,
+					null, null, null, false, 0.8f, null,null,
 					tools, toolChoice);
 		}
 
@@ -306,7 +315,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null,  null, null, null,
-					null, null, null, stream, null, null,
+					null, null, null, stream, null, null,null,
 					null, null);
 		}
 
@@ -557,6 +566,7 @@ public class MiniMaxApi {
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("message") ChatCompletionMessage message,
+				@JsonProperty("messages") List<ChatCompletionMessage> messages,
 				@JsonProperty("logprobs") LogProbs logprobs) {
 		}
 
@@ -678,7 +688,7 @@ public class MiniMaxApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 
 		return this.restClient.post()
 				.uri("/v1/text/chatcompletion_v2")
@@ -698,7 +708,7 @@ public class MiniMaxApi {
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -710,7 +720,7 @@ public class MiniMaxApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
- 				.map(chunk -> {
+				.map(chunk -> {
 					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 						isInsideTool.set(true);
 					}
@@ -726,7 +736,7 @@ public class MiniMaxApi {
 				.concatMapIterable(window -> {
 					Mono<ChatCompletionChunk> monoChunk = window.reduce(
 							new ChatCompletionChunk(null, null, null, null, null, null),
-							this.chunkMerger::merge);
+							(previous, current) -> this.chunkMerger.merge(previous, current));
 					return List.of(monoChunk);
 				})
 				.flatMap(mono -> mono);
@@ -865,7 +875,7 @@ public class MiniMaxApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingList(
-			@JsonProperty("vectors") List<List<Double>> vectors,
+			@JsonProperty("vectors") List<float[]> vectors,
 			@JsonProperty("model") String model,
 			@JsonProperty("total_tokens") Integer totalTokens) {
 	}

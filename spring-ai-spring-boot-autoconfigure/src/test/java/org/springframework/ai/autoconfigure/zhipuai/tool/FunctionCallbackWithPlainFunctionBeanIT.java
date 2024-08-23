@@ -21,10 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.autoconfigure.zhipuai.ZhiPuAiAutoConfiguration;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
@@ -65,7 +65,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunction").build()));
@@ -92,7 +93,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
 				.withFunction("weatherFunction")
@@ -111,7 +113,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunction").build()));

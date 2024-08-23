@@ -15,11 +15,6 @@
  */
 package org.springframework.ai.minimax;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -31,6 +26,11 @@ import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * MiniMaxChatOptions represents the options for performing chat completion using the
  * MiniMax API. It provides methods to set and retrieve various options like model,
@@ -39,6 +39,7 @@ import org.springframework.util.Assert;
  * @see FunctionCallingOptions
  * @see ChatOptions
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -98,6 +99,12 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
 	private @JsonProperty("top_p") Float topP;
+	/**
+	 * Mask the text information in the output that is easy to involve privacy issues,
+	 * including but not limited to email, domain name, link, ID number, home address, etc.
+	 * The default is true, which means enabling masking.
+	 */
+	private @JsonProperty("mask_sensitive_info") Boolean maskSensitiveInfo;
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
@@ -203,6 +210,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
+		public Builder withMaskSensitiveInfo(Boolean maskSensitiveInfo) {
+			this.options.maskSensitiveInfo = maskSensitiveInfo;
+			return this;
+		}
+
 		public Builder withTools(List<MiniMaxApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
@@ -236,6 +248,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -244,6 +257,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -252,6 +266,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -268,6 +283,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.n = n;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
@@ -290,6 +306,17 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setSeed(Integer seed) {
 		this.seed = seed;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
 	}
 
 	public List<String> getStop() {
@@ -316,6 +343,14 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setTopP(Float topP) {
 		this.topP = topP;
+	}
+
+	public Boolean getMaskSensitiveInfo() {
+		return maskSensitiveInfo;
+	}
+
+	public void setMaskSensitiveInfo(Boolean maskSensitiveInfo) {
+		this.maskSensitiveInfo = maskSensitiveInfo;
 	}
 
 	public List<MiniMaxApi.FunctionTool> getTools() {
@@ -356,12 +391,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	@Override
 	@JsonIgnore
 	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
-	}
-
-	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
+		return null;
 	}
 
 	@Override
@@ -378,6 +408,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
 		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
 		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
+		result = prime * result + ((maskSensitiveInfo == null) ? 0 : maskSensitiveInfo.hashCode());
 		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
 		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
 		return result;
@@ -452,6 +483,12 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!topP.equals(other.topP))
 			return false;
+		if (this.maskSensitiveInfo == null) {
+			if (other.maskSensitiveInfo != null)
+				return false;
+		}
+		else if (!maskSensitiveInfo.equals(other.maskSensitiveInfo))
+			return false;
 		if (this.tools == null) {
 			if (other.tools != null)
 				return false;
@@ -467,6 +504,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		return true;
 	}
 
+	@Override
+	public MiniMaxChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static MiniMaxChatOptions fromOptions(MiniMaxChatOptions fromOptions) {
 		return builder().withModel(fromOptions.getModel())
 			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
@@ -478,6 +520,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withStop(fromOptions.getStop())
 			.withTemperature(fromOptions.getTemperature())
 			.withTopP(fromOptions.getTopP())
+			.withMaskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
 			.withTools(fromOptions.getTools())
 			.withToolChoice(fromOptions.getToolChoice())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())

@@ -33,8 +33,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -652,7 +654,7 @@ public class ZhiPuAiApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 
 		return this.restClient.post()
 				.uri("/v4/chat/completions")
@@ -672,7 +674,7 @@ public class ZhiPuAiApi {
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -684,7 +686,7 @@ public class ZhiPuAiApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
- 				.map(chunk -> {
+				.map(chunk -> {
 					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 						isInsideTool.set(true);
 					}
@@ -738,7 +740,7 @@ public class ZhiPuAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Embedding(
 			@JsonProperty("index") Integer index,
-			@JsonProperty("embedding") List<Double> embedding,
+			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("object") String object) {
 
 		/**
@@ -747,8 +749,27 @@ public class ZhiPuAiApi {
 		 * @param index The index of the embedding in the list of embeddings.
 		 * @param embedding The embedding vector, which is a list of floats. The length of vector depends on the model.
 		 */
-		public Embedding(Integer index, List<Double> embedding) {
+		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
+		}
+		@Override public boolean equals(Object o) {
+    		if (this == o) return true;
+    		if (!(o instanceof Embedding embedding1)) return false;
+    		return Objects.equals(index, embedding1.index) && Arrays.equals(embedding, embedding1.embedding) && Objects.equals(object, embedding1.object);
+		}
+		@Override
+		public int hashCode() {
+			int result = Objects.hash(index, object);
+			result = 31 * result + Arrays.hashCode(embedding);
+			return result;
+		}
+
+		@Override public String toString() {
+			return "Embedding{" +
+					"index=" + index +
+					", embedding=" + Arrays.toString(embedding) +
+					", object='" + object + '\'' +
+					'}';
 		}
 	}
 

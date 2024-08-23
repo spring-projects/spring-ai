@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
@@ -31,9 +32,10 @@ import java.util.Set;
 
 /**
  * @author Geng Rong
+ * @author Thomas Vitale
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MoonshotChatOptions implements ChatOptions {
+public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	/**
 	 * ID of the model to use
@@ -135,6 +137,25 @@ public class MoonshotChatOptions implements ChatOptions {
 	 */
 	private @JsonProperty("user") String user;
 
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return functions;
+	}
+
+	public void setFunctions(Set<String> functionNames) {
+		this.functions = functionNames;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -229,6 +250,7 @@ public class MoonshotChatOptions implements ChatOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -237,6 +259,7 @@ public class MoonshotChatOptions implements ChatOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -245,6 +268,7 @@ public class MoonshotChatOptions implements ChatOptions {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -261,12 +285,24 @@ public class MoonshotChatOptions implements ChatOptions {
 		this.n = n;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
 	public void setPresencePenalty(Float presencePenalty) {
 		this.presencePenalty = presencePenalty;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
 	}
 
 	public List<String> getStop() {
@@ -301,6 +337,30 @@ public class MoonshotChatOptions implements ChatOptions {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
+	}
+
+	@Override
+	public MoonshotChatOptions copy() {
+		return builder().withModel(this.model)
+			.withMaxTokens(this.maxTokens)
+			.withTemperature(this.temperature)
+			.withTopP(this.topP)
+			.withN(this.n)
+			.withPresencePenalty(this.presencePenalty)
+			.withFrequencyPenalty(this.frequencyPenalty)
+			.withStop(this.stop)
+			.withUser(this.user)
+			.withTools(this.tools)
+			.withToolChoice(this.toolChoice)
+			.withFunctionCallbacks(this.functionCallbacks)
+			.withFunctions(this.functions)
+			.build();
 	}
 
 	@Override
@@ -382,17 +442,6 @@ public class MoonshotChatOptions implements ChatOptions {
 		else if (!this.user.equals(other.user))
 			return false;
 		return true;
-	}
-
-	@Override
-	@JsonIgnore
-	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
-	}
-
-	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
 	}
 
 }

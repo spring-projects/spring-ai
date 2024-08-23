@@ -44,6 +44,7 @@ You can use the following properties in your Spring Boot configuration to furthe
 
 |`spring.ai.vectorstore.gemfire.host`|localhost
 |`spring.ai.vectorstore.gemfire.port`|8080
+|`spring.ai.vectorstore.gemfire.initialize-schema`| `false`
 |`spring.ai.vectorstore.gemfire.index-name`|spring-ai-gemfire-store
 |`spring.ai.vectorstore.gemfire.beam-width`|100
 |`spring.ai.vectorstore.gemfire.max-connections`|16

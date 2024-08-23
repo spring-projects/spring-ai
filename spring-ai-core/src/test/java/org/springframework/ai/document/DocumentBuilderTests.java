@@ -17,7 +17,7 @@ package org.springframework.ai.document;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.util.MimeTypeUtils;
 

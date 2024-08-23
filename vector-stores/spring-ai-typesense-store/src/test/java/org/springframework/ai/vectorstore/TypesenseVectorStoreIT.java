@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.vectorstore;
 
 import org.junit.jupiter.api.Test;
@@ -32,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Pablo Sanchidrian Herrera
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @Testcontainers
 public class TypesenseVectorStoreIT {
@@ -59,22 +76,12 @@ public class TypesenseVectorStoreIT {
 		}
 	}
 
-	private void resetCollection(VectorStore vectorStore) {
-		((TypesenseVectorStore) vectorStore).dropCollection();
-		((TypesenseVectorStore) vectorStore).createCollection();
-	}
-
 	@Test
 	void documentUpdate() {
 		contextRunner.run(context -> {
-
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			resetCollection(vectorStore);
-
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
 					Collections.singletonMap("meta1", "meta1"));
-
 			vectorStore.add(List.of(document));
 
 			Map<String, Object> info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
@@ -112,16 +119,15 @@ public class TypesenseVectorStoreIT {
 			info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
 			assertThat(info.get("num_documents")).isEqualTo(0L);
 
+			((TypesenseVectorStore) vectorStore).dropCollection();
+
 		});
 	}
 
 	@Test
 	void addAndSearch() {
-
 		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			resetCollection(vectorStore);
 
 			vectorStore.add(documents);
 
@@ -132,16 +138,15 @@ public class TypesenseVectorStoreIT {
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring"));
 
 			assertThat(results).hasSize(3);
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
 		});
 	}
 
 	@Test
 	void searchWithFilters() {
-
 		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			resetCollection(vectorStore);
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "BG", "year", 2020));
@@ -188,17 +193,16 @@ public class TypesenseVectorStoreIT {
 			assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
 			assertThat(results.get(1).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
 
+			((TypesenseVectorStore) vectorStore).dropCollection();
+
 		});
 	}
 
 	@Test
 	void searchWithThreshold() {
-
 		contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			resetCollection(vectorStore);
 
 			vectorStore.add(documents);
 
@@ -221,6 +225,8 @@ public class TypesenseVectorStoreIT {
 					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
+			((TypesenseVectorStore) vectorStore).dropCollection();
+
 		});
 	}
 
@@ -236,7 +242,7 @@ public class TypesenseVectorStoreIT {
 				.withEmbeddingDimension(embeddingModel.dimensions())
 				.build();
 
-			return new TypesenseVectorStore(client, embeddingModel, config);
+			return new TypesenseVectorStore(client, embeddingModel, config, true);
 		}
 
 		@Bean

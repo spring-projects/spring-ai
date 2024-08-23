@@ -25,6 +25,8 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -45,7 +47,7 @@ public class AnthropicAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(AnthropicAutoConfiguration.class));
 
 	@Test
-	void generate() {
+	void call() {
 		contextRunner.run(context -> {
 			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 			String response = chatModel.call("Hello");
@@ -55,7 +57,21 @@ public class AnthropicAutoConfigurationIT {
 	}
 
 	@Test
-	void generateStreaming() {
+	void callWith8KResponseContext() {
+		contextRunner
+			.withPropertyValues("spring.ai.anthropic.beta-version=" + AnthropicApi.BETA_MAX_TOKENS,
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
+			.run(context -> {
+				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+				var optoins = AnthropicChatOptions.builder().withMaxTokens(8192).build();
+				var response = chatModel.call(new Prompt("Tell me a joke", optoins));
+				assertThat(response.getResult().getOutput().getContent()).isNotEmpty();
+				logger.info("Response: " + response);
+			});
+	}
+
+	@Test
+	void stream() {
 		contextRunner.run(context -> {
 			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));

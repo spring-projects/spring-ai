@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.converter;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -58,6 +59,13 @@ class BeanOutputConverterTest {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			var testClass = converter.convert("{ \"someString\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		public void convertClassWithDateType() {
+			var converter = new BeanOutputConverter<>(TestClassWithDateProperty.class);
+			var testClass = converter.convert("{ \"someString\": \"2020-01-01\" }");
+			assertThat(testClass.getSomeString()).isEqualTo(LocalDate.of(2020, 1, 1));
 		}
 
 		@Test
@@ -125,7 +133,8 @@ class BeanOutputConverterTest {
 							    "someString" : {
 							      "type" : "string"
 							    }
-							  }
+							  },
+							  "additionalProperties" : false
 							}```
 							""");
 		}
@@ -148,7 +157,8 @@ class BeanOutputConverterTest {
 							    "someString" : {
 							      "type" : "string"
 							    }
-							  }
+							  },
+							  "additionalProperties" : false
 							}```
 							""");
 		}
@@ -173,7 +183,8 @@ class BeanOutputConverterTest {
 							      "someString" : {
 							        "type" : "string"
 							      }
-							    }
+							    },
+							    "additionalProperties" : false
 							  }
 							}```
 							""");
@@ -191,7 +202,8 @@ class BeanOutputConverterTest {
 					      "type" : "string",
 					      "description" : "string_property_description"
 					    }
-					  }
+					  },
+					  "additionalProperties" : false
 					}```
 					""");
 		}
@@ -209,7 +221,8 @@ class BeanOutputConverterTest {
 					      "type" : "string",
 					      "description" : "string_property_description"
 					    }
-					  }
+					  },
+					  "additionalProperties" : false
 					}```
 					""");
 		}
@@ -250,6 +263,24 @@ class BeanOutputConverterTest {
 		}
 
 		public String getSomeString() {
+			return someString;
+		}
+
+	}
+
+	public static class TestClassWithDateProperty {
+
+		private LocalDate someString;
+
+		@SuppressWarnings("unused")
+		public TestClassWithDateProperty() {
+		}
+
+		public TestClassWithDateProperty(LocalDate someString) {
+			this.someString = someString;
+		}
+
+		public LocalDate getSomeString() {
 			return someString;
 		}
 

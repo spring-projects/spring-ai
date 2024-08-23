@@ -15,53 +15,67 @@
  */
 package org.springframework.ai.mistralai;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.observation.ChatModelObservationContext;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion.Choice;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
-import org.springframework.ai.mistralai.metadata.MistralAiChatResponseMetadata;
+import org.springframework.ai.mistralai.metadata.MistralAiUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import reactor.core.publisher.Flux;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
+ * Represents a Mistral AI Chat Model.
+ *
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Grogdunn
  * @author Thomas Vitale
  * @author luocongqiu
- * @since 0.8.1
+ * @since 1.0.0
  */
-public class MistralAiChatModel extends
-		AbstractFunctionCallSupport<MistralAiApi.ChatCompletionMessage, MistralAiApi.ChatCompletionRequest, ResponseEntity<MistralAiApi.ChatCompletion>>
-		implements ChatModel {
+public class MistralAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	private final Logger log = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -74,6 +88,16 @@ public class MistralAiChatModel extends
 	private final MistralAiApi mistralAiApi;
 
 	private final RetryTemplate retryTemplate;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public MistralAiChatModel(MistralAiApi mistralAiApi) {
 		this(mistralAiApi,
@@ -91,89 +115,192 @@ public class MistralAiChatModel extends
 
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		super(functionCallbackContext);
-		Assert.notNull(mistralAiApi, "MistralAiApi must not be null");
-		Assert.notNull(options, "Options must not be null");
-		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		this(mistralAiApi, options, functionCallbackContext, List.of(), retryTemplate);
+	}
+
+	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate) {
+		this(mistralAiApi, options, functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+				ObservationRegistry.NOOP);
+	}
+
+	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+		super(functionCallbackContext, options, toolFunctionCallbacks);
+		Assert.notNull(mistralAiApi, "mistralAiApi must not be null");
+		Assert.notNull(options, "options must not be null");
+		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		this.mistralAiApi = mistralAiApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		var request = createRequest(prompt, false);
 
-		return retryTemplate.execute(ctx -> {
+		MistralAiApi.ChatCompletionRequest request = createRequest(prompt, false);
 
-			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(prompt)
+			.provider(MistralAiApi.PROVIDER_NAME)
+			.requestOptions(buildRequestOptions(request))
+			.build();
 
-			var chatCompletion = completionEntity.getBody();
-			if (chatCompletion == null) {
-				log.warn("No chat completion returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
+		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
 
-			List<Generation> generations = chatCompletion.choices()
-				.stream()
-				.map(choice -> new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
-					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
-				.toList();
+				ResponseEntity<ChatCompletion> completionEntity = retryTemplate
+					.execute(ctx -> this.mistralAiApi.chatCompletionEntity(request));
 
-			return new ChatResponse(generations, MistralAiChatResponseMetadata.from(chatCompletion));
-		});
-	}
+				ChatCompletion chatCompletion = completionEntity.getBody();
 
-	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
-		Map<String, Object> map = new HashMap<>();
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-		var message = choice.message();
-		if (message.role() != null) {
-			map.put("role", message.role().name());
+				List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+			// @formatter:off
+					Map<String, Object> metadata = Map.of(
+							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
+							"index", choice.index(),
+							"role", choice.message().role() != null ? choice.message().role().name() : "",
+							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+					// @formatter:on
+					return buildGeneration(choice, metadata);
+				}).toList();
+
+				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+
+				observationContext.setResponse(chatResponse);
+
+				return chatResponse;
+			});
+
+		if (response != null && isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+				MistralAiApi.ChatCompletionFinishReason.STOP.name()))) {
+			var toolCallConversation = handleToolCalls(prompt, response);
+			// Recursively call the call method with the tool call message
+			// conversation that contains the call responses.
+			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
 		}
-		if (choice.finishReason() != null) {
-			map.put("finishReason", choice.finishReason().name());
-		}
-		map.put("id", id);
-		return map;
+
+		return response;
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		var request = createRequest(prompt, true);
+		return Flux.deferContextual(contextView -> {
+			var request = createRequest(prompt, true);
 
-		return retryTemplate.execute(ctx -> {
+			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+				.prompt(prompt)
+				.provider(MistralAiApi.PROVIDER_NAME)
+				.requestOptions(buildRequestOptions(request))
+				.build();
 
-			var completionChunks = this.mistralAiApi.chatCompletionStream(request);
+			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry);
+
+			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
+			Flux<ChatCompletionChunk> completionChunks = retryTemplate
+				.execute(ctx -> this.mistralAiApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			return completionChunks.map(chunk -> toChatCompletion(chunk))
-				.switchMap(
-						cc -> handleFunctionCallOrReturnStream(request, Flux.just(ResponseEntity.of(Optional.of(cc)))))
-				.map(ResponseEntity::getBody)
-				.map(chatCompletion -> {
-					@SuppressWarnings("null")
-					String id = chatCompletion.id();
+			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
+			// the function call handling logic.
+			Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion)
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+					try {
+						@SuppressWarnings("null")
+						String id = chatCompletion2.id();
 
-					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-						if (choice.message().role() != null) {
-							roleMap.putIfAbsent(id, choice.message().role().name());
+				// @formatter:off
+							List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
+								if (choice.message().role() != null) {
+									roleMap.putIfAbsent(id, choice.message().role().name());
+								}
+								Map<String, Object> metadata = Map.of(
+										"id", chatCompletion2.id(),
+										"role", roleMap.getOrDefault(id, ""),
+										"index", choice.index(),
+										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+								return buildGeneration(choice, metadata);
+							}).toList();
+							// @formatter:on
+
+						if (chatCompletion2.usage() != null) {
+							return new ChatResponse(generations, from(chatCompletion2));
 						}
-						String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
-						var generation = new Generation(choice.message().content(),
-								Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
-						if (choice.finishReason() != null) {
-							generation = generation.withGenerationMetadata(
-									ChatGenerationMetadata.from(choice.finishReason().name(), null));
+						else {
+							return new ChatResponse(generations);
 						}
-						return generation;
-					}).toList();
-					return new ChatResponse(generations);
-				});
+					}
+					catch (Exception e) {
+						logger.error("Error processing chat completion", e);
+						return new ChatResponse(List.of());
+					}
+				}));
+
+			// @formatter:off
+			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
+				if (isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name()))) {
+					var toolCallConversation = handleToolCalls(prompt, response);
+					// Recursively call the stream method with the tool call message
+					// conversation that contains the call responses.
+					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+				}
+				else {
+					return Flux.just(response);
+				}
+			})
+			.doOnError(observation::error)
+			.doFinally(s -> {
+				observation.stop();
+			})
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			// @formatter:on;
+
+			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
 		});
+
+	}
+
+	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
+				: choice.message()
+					.toolCalls()
+					.stream()
+					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+							toolCall.function().name(), toolCall.function().arguments()))
+					.toList();
+
+		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		return new Generation(assistantMessage, generationMetadata);
+	}
+
+	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result) {
+		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
+		MistralAiUsage usage = MistralAiUsage.from(result.usage());
+		return ChatResponseMetadata.builder()
+			.withId(result.id())
+			.withModel(result.model())
+			.withUsage(usage)
+			.withKeyValue("created", result.created())
+			.build();
 	}
 
 	private ChatCompletion toChatCompletion(ChatCompletionChunk chunk) {
@@ -192,30 +319,58 @@ public class MistralAiChatModel extends
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 
-		var chatCompletionMessages = prompt.getInstructions()
-			.stream()
-			.map(m -> new MistralAiApi.ChatCompletionMessage(m.getContent(),
-					MistralAiApi.ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-			.toList();
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
+			if (message instanceof UserMessage userMessage) {
+				return List.of(new MistralAiApi.ChatCompletionMessage(userMessage.getContent(),
+						MistralAiApi.ChatCompletionMessage.Role.USER));
+			}
+			else if (message instanceof SystemMessage systemMessage) {
+				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getContent(),
+						MistralAiApi.ChatCompletionMessage.Role.SYSTEM));
+			}
+			else if (message instanceof AssistantMessage assistantMessage) {
+				List<ToolCall> toolCalls = null;
+				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
+						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
+						return new ToolCall(toolCall.id(), toolCall.type(), function);
+					}).toList();
+				}
+
+				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getContent(),
+						MistralAiApi.ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null));
+			}
+			else if (message instanceof ToolResponseMessage toolResponseMessage) {
+
+				toolResponseMessage.getResponses().forEach(response -> {
+					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
+					Assert.isTrue(response.name() != null, "ToolResponseMessage must have a name");
+				});
+
+				return toolResponseMessage.getResponses()
+					.stream()
+					.map(toolResponse -> new MistralAiApi.ChatCompletionMessage(toolResponse.responseData(),
+							MistralAiApi.ChatCompletionMessage.Role.TOOL, toolResponse.name(), null, toolResponse.id()))
+					.toList();
+			}
+			else {
+				throw new IllegalStateException("Unexpected message type: " + message);
+			}
+		}).flatMap(List::stream).toList();
 
 		var request = new MistralAiApi.ChatCompletionRequest(chatCompletionMessages, stream);
 
-		if (this.defaultOptions != null) {
-			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
-					!IS_RUNTIME_CALL);
-
-			functionsForThisRequest.addAll(defaultEnabledFunctions);
-
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, MistralAiApi.ChatCompletionRequest.class);
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
+			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
 		}
+
+		request = ModelOptionsUtils.merge(request, this.defaultOptions, MistralAiApi.ChatCompletionRequest.class);
 
 		if (prompt.getOptions() != null) {
 			var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 					MistralAiChatOptions.class);
 
-			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-					IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(promptEnabledFunctions);
+			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
 			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, MistralAiApi.ChatCompletionRequest.class);
 		}
@@ -239,89 +394,28 @@ public class MistralAiChatModel extends
 		}).toList();
 	}
 
-	//
-	// Function Calling Support
-	//
-	@Override
-	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
-			ChatCompletionMessage responseMessage, List<ChatCompletionMessage> conversationHistory) {
-
-		// Every tool-call item requires a separate function call and a response (TOOL)
-		// message.
-		for (ToolCall toolCall : responseMessage.toolCalls()) {
-
-			String id = toolCall.id();
-			String functionName = toolCall.function().name();
-			String functionArguments = toolCall.function().arguments();
-
-			if (!this.functionCallbackRegister.containsKey(functionName)) {
-				throw new IllegalStateException("No function callback found for function name: " + functionName);
-			}
-
-			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
-
-			// Add the function response to the conversation.
-			conversationHistory.add(new ChatCompletionMessage(functionResponse, ChatCompletionMessage.Role.TOOL,
-					functionName, null, id));
-		}
-
-		// Recursively call chatCompletionWithTools until the model doesn't call a
-		// functions anymore.
-		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, previousRequest.stream());
-		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
-
-		return newRequest;
-	}
-
-	@Override
-	protected List<ChatCompletionMessage> doGetUserMessages(ChatCompletionRequest request) {
-		return request.messages();
-	}
-
-	@SuppressWarnings("null")
-	@Override
-	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
-		ChatCompletionMessage msg = chatCompletion.getBody().choices().iterator().next().message();
-		if (msg.role() == null) {
-			// add missing role
-			msg = new ChatCompletionMessage(msg.content(), ChatCompletionMessage.Role.ASSISTANT, msg.name(),
-					msg.toolCalls());
-		}
-		return msg;
-	}
-
-	@Override
-	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
-		return this.mistralAiApi.chatCompletionEntity(request);
-	}
-
-	@Override
-	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
-		return this.mistralAiApi.chatCompletionStream(request)
-			.map(this::toChatCompletion)
-			.map(Optional::ofNullable)
-			.map(ResponseEntity::of);
-	}
-
-	@Override
-	protected boolean isToolFunctionCall(ResponseEntity<ChatCompletion> chatCompletion) {
-
-		var body = chatCompletion.getBody();
-		if (body == null) {
-			return false;
-		}
-
-		var choices = body.choices();
-		if (CollectionUtils.isEmpty(choices)) {
-			return false;
-		}
-
-		return !CollectionUtils.isEmpty(choices.get(0).message().toolCalls());
+	private ChatOptions buildRequestOptions(MistralAiApi.ChatCompletionRequest request) {
+		return ChatOptionsBuilder.builder()
+			.withModel(request.model())
+			.withMaxTokens(request.maxTokens())
+			.withStopSequences(request.stop())
+			.withTemperature(request.temperature())
+			.withTopP(request.topP())
+			.build();
 	}
 
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return MistralAiChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }

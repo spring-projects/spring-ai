@@ -65,6 +65,7 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
+		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true")
 		.withPropertyValues(
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.host="
 						+ String.format("testcontainers-domain.%s.opensearch.localhost.localstack.cloud:%s",

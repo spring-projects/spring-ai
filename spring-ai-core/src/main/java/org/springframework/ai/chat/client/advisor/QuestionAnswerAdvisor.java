@@ -127,15 +127,17 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	@Override
 	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-		response.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-		return response;
+		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(response);
+		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+		return chatResponseBuilder.build();
 	}
 
 	@Override
 	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
 		return fluxResponse.map(cr -> {
-			cr.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-			return cr;
+			ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(cr);
+			chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+			return chatResponseBuilder.build();
 		});
 	}
 

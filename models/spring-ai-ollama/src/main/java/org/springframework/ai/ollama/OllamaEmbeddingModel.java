@@ -15,22 +15,23 @@
  */
 package org.springframework.ai.ollama;
 
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.AbstractEmbeddingModel;
-import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.*;
+import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaApi.EmbeddingRequest;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -49,92 +50,100 @@ import org.springframework.util.StringUtils;
  * most up-to-date information on available models.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
 	private final OllamaApi ollamaApi;
 
 	/**
 	 * Default options to be used for all chat requests.
 	 */
-	private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
+	private final OllamaOptions defaultOptions;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public OllamaEmbeddingModel(OllamaApi ollamaApi) {
-		this.ollamaApi = ollamaApi;
+		this(ollamaApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
 	}
 
 	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions) {
+		this(ollamaApi, defaultOptions, ObservationRegistry.NOOP);
+	}
+
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
+			ObservationRegistry observationRegistry) {
+		Assert.notNull(ollamaApi, "openAiApi must not be null");
+		Assert.notNull(defaultOptions, "options must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+
 		this.ollamaApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
-	}
-
-	/**
-	 * @deprecated Use {@link OllamaOptions#setModel} instead.
-	 */
-	@Deprecated
-	public OllamaEmbeddingModel withModel(String model) {
-		this.defaultOptions.setModel(model);
-		return this;
-	}
-
-	/**
-	 * @deprecated Use {@link OllamaOptions} constructor instead.
-	 */
-	@Deprecated
-	public OllamaEmbeddingModel withDefaultOptions(OllamaOptions options) {
-		this.defaultOptions = options;
-		return this;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		return embed(document.getContent());
 	}
 
 	@Override
-	public EmbeddingResponse call(org.springframework.ai.embedding.EmbeddingRequest request) {
+	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
-		if (request.getInstructions().size() != 1) {
-			logger.warn(
-					"Ollama Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
-		}
 
-		List<List<Double>> embeddingList = new ArrayList<>();
-		for (String inputContent : request.getInstructions()) {
+		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(request.getInstructions(),
+				request.getOptions());
 
-			EmbeddingRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(inputContent, request.getOptions());
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(request)
+			.provider(OllamaApi.PROVIDER_NAME)
+			.requestOptions(buildRequestOptions(ollamaEmbeddingRequest))
+			.build();
 
-			OllamaApi.EmbeddingResponse response = this.ollamaApi.embeddings(ollamaEmbeddingRequest);
+		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				EmbeddingsResponse response = this.ollamaApi.embed(ollamaEmbeddingRequest);
 
-			embeddingList.add(response.embedding());
-		}
-		AtomicInteger indexCounter = new AtomicInteger(0);
+				AtomicInteger indexCounter = new AtomicInteger(0);
 
-		List<Embedding> embeddings = embeddingList.stream()
-			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
-			.toList();
-		return new EmbeddingResponse(embeddings);
+				List<Embedding> embeddings = response.embeddings()
+					.stream()
+					.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
+					.toList();
+
+				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
+						new EmptyUsage());
+
+				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
+
+				observationContext.setResponse(embeddingResponse);
+
+				return embeddingResponse;
+			});
 	}
 
 	/**
 	 * Package access for testing.
 	 */
-	OllamaApi.EmbeddingRequest ollamaEmbeddingRequest(String inputContent, EmbeddingOptions options) {
+	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(List<String> inputContent, EmbeddingOptions options) {
 
 		// runtime options
 		OllamaOptions runtimeOptions = null;
-		if (options != null) {
-			if (options instanceof OllamaOptions ollamaOptions) {
-				runtimeOptions = ollamaOptions;
-			}
-			else {
-				// currently EmbeddingOptions does not have any portable options to be
-				// merged.
-				runtimeOptions = null;
-			}
+		if (options != null && options instanceof OllamaOptions ollamaOptions) {
+			runtimeOptions = ollamaOptions;
 		}
 
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
@@ -144,8 +153,53 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			throw new IllegalArgumentException("Model is not set!");
 		}
 		String model = mergedOptions.getModel();
-		return new EmbeddingRequest(model, inputContent, null,
-				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()));
+
+		return new OllamaApi.EmbeddingsRequest(model, inputContent, DurationParser.parse(mergedOptions.getKeepAlive()),
+				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());
+	}
+
+	private EmbeddingOptions buildRequestOptions(OllamaApi.EmbeddingsRequest request) {
+		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
+	}
+
+	public static class DurationParser {
+
+		private static final Pattern PATTERN = Pattern.compile("(\\d+)(ms|s|m|h)");
+
+		public static Duration parse(String input) {
+
+			if (!StringUtils.hasText(input)) {
+				return null;
+			}
+
+			Matcher matcher = PATTERN.matcher(input);
+
+			if (matcher.matches()) {
+				long value = Long.parseLong(matcher.group(1));
+				String unit = matcher.group(2);
+
+				return switch (unit) {
+					case "ms" -> Duration.ofMillis(value);
+					case "s" -> Duration.ofSeconds(value);
+					case "m" -> Duration.ofMinutes(value);
+					case "h" -> Duration.ofHours(value);
+					default -> throw new IllegalArgumentException("Unsupported time unit: " + unit);
+				};
+			}
+			else {
+				throw new IllegalArgumentException("Invalid duration format: " + input);
+			}
+		}
+
 	}
 
 }

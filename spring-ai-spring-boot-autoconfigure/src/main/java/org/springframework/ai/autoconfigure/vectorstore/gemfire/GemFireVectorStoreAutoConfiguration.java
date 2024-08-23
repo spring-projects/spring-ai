@@ -18,7 +18,8 @@ package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.GemFireVectorStore;
-import org.springframework.ai.vectorstore.GemFireVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,8 +27,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * @author Geet Rawat
+ * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @AutoConfiguration
 @ConditionalOnClass({ GemFireVectorStore.class, EmbeddingModel.class })
@@ -45,10 +50,11 @@ public class GemFireVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public GemFireVectorStore gemfireVectorStore(EmbeddingModel embeddingModel, GemFireVectorStoreProperties properties,
-			GemFireConnectionDetails gemFireConnectionDetails) {
-		var config = new GemFireVectorStoreConfig();
+			GemFireConnectionDetails gemFireConnectionDetails, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+		var builder = new GemFireVectorStore.GemFireVectorStoreConfig.Builder();
 
-		config.setHost(gemFireConnectionDetails.getHost())
+		builder.setHost(gemFireConnectionDetails.getHost())
 			.setPort(gemFireConnectionDetails.getPort())
 			.setIndexName(properties.getIndexName())
 			.setBeamWidth(properties.getBeamWidth())
@@ -57,7 +63,9 @@ public class GemFireVectorStoreAutoConfiguration {
 			.setVectorSimilarityFunction(properties.getVectorSimilarityFunction())
 			.setFields(properties.getFields())
 			.setSslEnabled(properties.isSslEnabled());
-		return new GemFireVectorStore(config, embeddingModel);
+		return new GemFireVectorStore(builder.build(), embeddingModel, properties.isInitializeSchema(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	private static class PropertiesGemFireConnectionDetails implements GemFireConnectionDetails {

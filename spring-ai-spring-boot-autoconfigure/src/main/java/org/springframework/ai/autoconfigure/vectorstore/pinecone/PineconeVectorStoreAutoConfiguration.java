@@ -18,11 +18,15 @@ package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.PineconeVectorStore;
 import org.springframework.ai.vectorstore.PineconeVectorStore.PineconeVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -34,7 +38,9 @@ public class PineconeVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PineconeVectorStore vectorStore(EmbeddingModel embeddingModel, PineconeVectorStoreProperties properties) {
+	public PineconeVectorStore vectorStore(EmbeddingModel embeddingModel, PineconeVectorStoreProperties properties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		var config = PineconeVectorStoreConfig.builder()
 			.withApiKey(properties.getApiKey())
@@ -47,7 +53,9 @@ public class PineconeVectorStoreAutoConfiguration {
 			.withServerSideTimeout(properties.getServerSideTimeout())
 			.build();
 
-		return new PineconeVectorStore(config, embeddingModel);
+		return new PineconeVectorStore(config, embeddingModel,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 }

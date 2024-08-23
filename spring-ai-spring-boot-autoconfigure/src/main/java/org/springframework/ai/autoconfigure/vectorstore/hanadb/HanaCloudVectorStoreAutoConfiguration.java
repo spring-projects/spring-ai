@@ -22,6 +22,8 @@ import org.springframework.ai.vectorstore.HanaCloudVectorStore;
 import org.springframework.ai.vectorstore.HanaCloudVectorStoreConfig;
 import org.springframework.ai.vectorstore.HanaVectorEntity;
 import org.springframework.ai.vectorstore.HanaVectorRepository;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -29,8 +31,11 @@ import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfig
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * @author Rahul Mittal
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 @AutoConfiguration(after = { JpaRepositoriesAutoConfiguration.class })
@@ -41,13 +46,17 @@ public class HanaCloudVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public HanaCloudVectorStore vectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
-			EmbeddingModel embeddingModel, HanaCloudVectorStoreProperties properties) {
+			EmbeddingModel embeddingModel, HanaCloudVectorStoreProperties properties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		return new HanaCloudVectorStore(repository, embeddingModel,
 				HanaCloudVectorStoreConfig.builder()
 					.tableName(properties.getTableName())
 					.topK(properties.getTopK())
-					.build());
+					.build(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 }

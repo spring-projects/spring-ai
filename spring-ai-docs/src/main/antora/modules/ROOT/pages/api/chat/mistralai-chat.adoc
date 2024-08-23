@@ -2,6 +2,9 @@
 
 Spring AI supports the various AI language models from Mistral AI. You can interact with Mistral AI language models and create a multilingual conversational assistant based on Mistral models.
 
+TIP: Mistral AI offers an OpenAI API compatible endpoint as well. 
+Check the xref:_openai_api_compatibility[OpenAI API compatibility] section to learn how to use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] to talk to a Mistral endponit.
+
 == Prerequisites
 
 You will need to create an API with MistralAI to access Mistral AI language models.
@@ -94,7 +97,7 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.mistralai.chat.options.safePrompt | Indicates whether to inject a security prompt before all conversations. | false
 | spring.ai.mistralai.chat.options.randomSeed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
-| spring.ai.mistralai.chat.options.stop | Up to 4 sequences where the API will stop generating further tokens. | -
+| spring.ai.mistralai.chat.options.stop | Stop generation if this token is detected. Or if one of these tokens is detected when providing an array. | -
 | spring.ai.mistralai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | -
 | spring.ai.mistralai.chat.options.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.| -
 | spring.ai.mistralai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
@@ -137,6 +140,15 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 You can register custom Java functions with the MistralAiChatModel and have the Mistral AI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI Function Calling].
+
+
+== OpenAI API Compatibility
+
+Mistral is OpenAI API compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Mistrial. 
+For this you need to set the OpenAI base-url: `spring.ai.openai.chat.base-url=https://api.mistral.ai`, select a Mistral models: `spring.ai.openai.chat.options.model=mistral-small-latest` and set the Api key: `spring.ai.openai.chat.api-key=<YOUR MISTRAL API KEY` .
+
+Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/MistralWithOpenAiChatModelIT.java[MistralWithOpenAiChatModelIT.java] tests for examples of using Mistral over Spring AI OpenAI.
+
 
 == Sample Controller (Auto-configuration)
 

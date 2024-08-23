@@ -20,9 +20,13 @@ import java.time.Duration;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 
+import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStore;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
 import org.springframework.boot.autoconfigure.cassandra.DriverConfigLoaderBuilderCustomizer;
@@ -33,6 +37,7 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * @author Mick Semb Wever
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 @AutoConfiguration(after = CassandraAutoConfiguration.class)
@@ -43,7 +48,8 @@ public class CassandraVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public CassandraVectorStore vectorStore(EmbeddingModel embeddingModel, CassandraVectorStoreProperties properties,
-			CqlSession cqlSession) {
+			CqlSession cqlSession, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		var builder = CassandraVectorStoreConfig.builder().withCqlSession(cqlSession);
 
@@ -54,14 +60,16 @@ public class CassandraVectorStoreAutoConfiguration {
 			.withIndexName(properties.getIndexName())
 			.withFixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize());
 
-		if (properties.getDisallowSchemaCreation()) {
+		if (!properties.isInitializeSchema()) {
 			builder = builder.disallowSchemaChanges();
 		}
 		if (properties.getReturnEmbeddings()) {
 			builder = builder.returnEmbeddings();
 		}
 
-		return new CassandraVectorStore(builder.build(), embeddingModel);
+		return new CassandraVectorStore(builder.build(), embeddingModel,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	@Bean

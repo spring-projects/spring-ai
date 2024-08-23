@@ -13,6 +13,9 @@ org.springframework.ai.autoconfigure.bedrock.anthropic.BedrockAnthropicChatAutoC
 org.springframework.ai.autoconfigure.bedrock.anthropic3.BedrockAnthropic3ChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanEmbeddingAutoConfiguration
+org.springframework.ai.autoconfigure.chat.observation.ChatObservationAutoConfiguration
+org.springframework.ai.autoconfigure.embedding.observation.EmbeddingObservationAutoConfiguration
+org.springframework.ai.autoconfigure.image.observation.ImageObservationAutoConfiguration
 org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.oracle.OracleVectorStoreAutoConfiguration
@@ -42,3 +45,5 @@ org.springframework.ai.autoconfigure.moonshot.MoonshotAutoConfiguration
 org.springframework.ai.autoconfigure.qianfan.QianFanAutoConfiguration
 org.springframework.ai.autoconfigure.minimax.MiniMaxAutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.embedding.VertexAiEmbeddingAutoConfiguration
+org.springframework.ai.autoconfigure.chat.memory.cassandra.CassandraChatMemoryAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.observation.VectorStoreObservationAutoConfiguration

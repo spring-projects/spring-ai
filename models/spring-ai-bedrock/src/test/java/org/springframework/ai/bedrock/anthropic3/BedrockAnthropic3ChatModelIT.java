@@ -35,7 +35,7 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -215,6 +215,17 @@ class BedrockAnthropic3ChatModelIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
+	}
+
+	@Test
+	void stopSequencesWithEmptyContents() {
+		Anthropic3ChatOptions chatOptions = new Anthropic3ChatOptions();
+		chatOptions.setStopSequences(List.of("Hello"));
+
+		var response = chatModel.call(new Prompt("hi", chatOptions));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isEmpty();
 	}
 
 	@SpringBootConfiguration

@@ -19,10 +19,18 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Model;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * EmbeddingModel is a generic interface for embedding models.
+ *
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ * @author Josh Long
+ * @author Soby Chacko
+ * @since 1.0.0
+ *
  */
 public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingResponse> {
 
@@ -34,9 +42,10 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param text the text to embed.
 	 * @return the embedded vector.
 	 */
-	default List<Double> embed(String text) {
+	default float[] embed(String text) {
 		Assert.notNull(text, "Text must not be null");
-		return this.embed(List.of(text)).iterator().next();
+		List<float[]> response = this.embed(List.of(text));
+		return response.iterator().next();
 	}
 
 	/**
@@ -44,20 +53,49 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param document the document to embed.
 	 * @return the embedded vector.
 	 */
-	List<Double> embed(Document document);
+	float[] embed(Document document);
 
 	/**
 	 * Embeds a batch of texts into vectors.
 	 * @param texts list of texts to embed.
 	 * @return list of list of embedded vectors.
 	 */
-	default List<List<Double>> embed(List<String> texts) {
+	default List<float[]> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()))
 			.getResults()
 			.stream()
 			.map(Embedding::getOutput)
 			.toList();
+	}
+
+	/**
+	 * Embeds a batch of {@link Document}s into vectors based on a
+	 * {@link BatchingStrategy}.
+	 * @param documents list of {@link Document}s.
+	 * @param options {@link EmbeddingOptions}.
+	 * @param batchingStrategy {@link BatchingStrategy}.
+	 * @return a list of float[] that represents the vectors for the incoming
+	 * {@link Document}s.
+	 */
+	default List<float[]> embed(List<Document> documents, EmbeddingOptions options, BatchingStrategy batchingStrategy) {
+		Assert.notNull(documents, "Documents must not be null");
+		List<float[]> embeddings = new ArrayList<>();
+
+		List<List<Document>> batch = batchingStrategy.batch(documents);
+
+		for (List<Document> subBatch : batch) {
+			List<String> texts = subBatch.stream().map(Document::getContent).toList();
+			EmbeddingRequest request = new EmbeddingRequest(texts, options);
+			EmbeddingResponse response = this.call(request);
+			for (int i = 0; i < subBatch.size(); i++) {
+				Document document = subBatch.get(i);
+				float[] output = response.getResults().get(i).getOutput();
+				embeddings.add(output);
+				document.setEmbedding(output);
+			}
+		}
+		return embeddings;
 	}
 
 	/**
@@ -67,7 +105,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 */
 	default EmbeddingResponse embedForResponse(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY));
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()));
 	}
 
 	/**
@@ -75,7 +113,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * specific.
 	 */
 	default int dimensions() {
-		return embed("Test String").size();
+		return embed("Test String").length;
 	}
 
 }

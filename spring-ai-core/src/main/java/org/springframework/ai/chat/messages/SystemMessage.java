@@ -15,6 +15,9 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.util.Map;
+import java.util.Objects;
+
 import org.springframework.core.io.Resource;
 
 /**
@@ -26,18 +29,39 @@ import org.springframework.core.io.Resource;
  */
 public class SystemMessage extends AbstractMessage {
 
-	public SystemMessage(String content) {
-		super(MessageType.SYSTEM, content);
+	public SystemMessage(String textContent) {
+		super(MessageType.SYSTEM, textContent, Map.of());
 	}
 
 	public SystemMessage(Resource resource) {
-		super(MessageType.SYSTEM, resource);
+		super(MessageType.SYSTEM, resource, Map.of());
+	}
+
+	@Override
+	public String getContent() {
+		return this.textContent;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof SystemMessage that))
+			return false;
+		if (!super.equals(o))
+			return false;
+		return Objects.equals(textContent, that.textContent);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), textContent);
 	}
 
 	@Override
 	public String toString() {
-		return "SystemMessage{" + "content='" + getContent() + '\'' + ", properties=" + metadata + ", messageType="
-				+ messageType + '}';
+		return "SystemMessage{" + "textContent='" + textContent + '\'' + ", messageType=" + messageType + ", metadata="
+				+ metadata + '}';
 	}
 
 }

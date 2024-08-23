@@ -35,7 +35,7 @@ class CassandraVectorStorePropertiesTests {
 		assertThat(props.getContentColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME);
 		assertThat(props.getEmbeddingColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_EMBEDDING_COLUMN_NAME);
 		assertThat(props.getIndexName()).isNull();
-		assertThat(props.getDisallowSchemaCreation()).isFalse();
+		assertThat(props.getDisallowSchemaCreation()).isTrue();
 		assertThat(props.getFixedThreadPoolExecutorSize())
 			.isEqualTo(CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY);
 	}

@@ -18,9 +18,11 @@ package org.springframework.ai.bedrock.anthropic3;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.messages.UserMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
@@ -48,6 +50,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel {
@@ -78,7 +81,12 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
+		List<Generation> generations = response.content().stream().map(content -> {
+			return new Generation(content.text(), Map.of())
+				.withGenerationMetadata(ChatGenerationMetadata.from(response.stopReason(), null));
+		}).toList();
+
+		return new ChatResponse(generations);
 	}
 
 	@Override
@@ -156,13 +164,15 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(message -> {
 				List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(message.getContent())));
-				if (!CollectionUtils.isEmpty(message.getMedia())) {
-					List<MediaContent> mediaContent = message.getMedia()
-						.stream()
-						.map(media -> new MediaContent(media.getMimeType().toString(),
-								this.fromMediaData(media.getData())))
-						.toList();
-					contents.addAll(mediaContent);
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						List<MediaContent> mediaContent = userMessage.getMedia()
+							.stream()
+							.map(media -> new MediaContent(media.getMimeType().toString(),
+									this.fromMediaData(media.getData())))
+							.toList();
+						contents.addAll(mediaContent);
+					}
 				}
 				return new ChatCompletionMessage(contents, Role.valueOf(message.getMessageType().name()));
 			})

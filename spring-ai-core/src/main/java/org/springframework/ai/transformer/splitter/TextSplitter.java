@@ -15,18 +15,16 @@
  */
 package org.springframework.ai.transformer.splitter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.ai.document.ContentFormatter;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentTransformer;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.ContentFormatter;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentTransformer;
 
 public abstract class TextSplitter implements DocumentTransformer {
 

@@ -30,7 +30,7 @@ import org.antlr.runtime.TokenStream;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.core.io.Resource;
@@ -173,8 +173,18 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	@Override
+	public Prompt create(ChatOptions modelOptions) {
+		return new Prompt(render(new HashMap<>()), modelOptions);
+	}
+
+	@Override
 	public Prompt create(Map<String, Object> model) {
 		return new Prompt(render(model));
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model, ChatOptions modelOptions) {
+		return new Prompt(render(model), modelOptions);
 	}
 
 	public Set<String> getInputVariables() {

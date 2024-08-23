@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -83,7 +84,7 @@ class PostgresMlEmbeddingModelIT {
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate);
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed("Hello World!");
+		float[] embed = embeddingModel.embed("Hello World!");
 
 		assertThat(embed).hasSize(768);
 	}
@@ -97,7 +98,7 @@ class PostgresMlEmbeddingModelIT {
 					.build());
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed(new Document("Hello World!"));
+		float[] embed = embeddingModel.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(768);
 	}
@@ -108,7 +109,7 @@ class PostgresMlEmbeddingModelIT {
 				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build());
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed(new Document("Hello World!"));
+		float[] embed = embeddingModel.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(384);
 	}
@@ -124,7 +125,7 @@ class PostgresMlEmbeddingModelIT {
 					.build());
 		embeddingModel.afterPropertiesSet();
 
-		List<Double> embed = embeddingModel.embed(new Document("Hello World!"));
+		float[] embed = embeddingModel.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(768);
 	}
@@ -144,8 +145,21 @@ class PostgresMlEmbeddingModelIT {
 
 		assertThat(embeddingResponse).isNotNull();
 		assertThat(embeddingResponse.getResults()).hasSize(3);
-		assertThat(embeddingResponse.getMetadata()).containsExactlyInAnyOrderEntriesOf(
-				Map.of("transformer", "distilbert-base-uncased", "vector-type", vectorType, "kwargs", "{}"));
+
+		EmbeddingResponseMetadata metadata = embeddingResponse.getMetadata();
+		assertThat(metadata.keySet()).as("Metadata should contain exactly the expected keys")
+			.containsExactlyInAnyOrder("transformer", "vector-type", "kwargs");
+
+		assertThat(metadata.get("transformer").toString())
+			.as("Transformer in metadata should be 'distilbert-base-uncased'")
+			.isEqualTo("distilbert-base-uncased");
+
+		assertThat(metadata.get("vector-type").toString())
+			.as("Vector type in metadata should match expected vector type")
+			.isEqualTo(vectorType);
+
+		assertThat(metadata.get("kwargs").toString()).as("kwargs in metadata should be '{}'").isEqualTo("{}");
+
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(768);
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
@@ -170,8 +184,22 @@ class PostgresMlEmbeddingModelIT {
 
 		assertThat(embeddingResponse).isNotNull();
 		assertThat(embeddingResponse.getResults()).hasSize(3);
-		assertThat(embeddingResponse.getMetadata()).containsExactlyInAnyOrderEntriesOf(Map.of("transformer",
-				"distilbert-base-uncased", "vector-type", VectorType.PG_VECTOR.name(), "kwargs", "{}"));
+
+		EmbeddingResponseMetadata metadata = embeddingResponse.getMetadata();
+
+		assertThat(metadata.keySet()).as("Metadata should contain exactly the expected keys")
+			.containsExactlyInAnyOrder("transformer", "vector-type", "kwargs");
+
+		assertThat(metadata.get("transformer").toString())
+			.as("Transformer in metadata should be 'distilbert-base-uncased'")
+			.isEqualTo("distilbert-base-uncased");
+
+		assertThat(metadata.get("vector-type").toString())
+			.as("Vector type in metadata should match expected vector type")
+			.isEqualTo(VectorType.PG_VECTOR.name());
+
+		assertThat(metadata.get("kwargs").toString()).as("kwargs in metadata should be '{}'").isEqualTo("{}");
+
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(768);
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
@@ -192,8 +220,20 @@ class PostgresMlEmbeddingModelIT {
 
 		assertThat(embeddingResponse).isNotNull();
 		assertThat(embeddingResponse.getResults()).hasSize(3);
-		assertThat(embeddingResponse.getMetadata()).containsExactlyInAnyOrderEntriesOf(Map.of("transformer",
-				"intfloat/e5-small", "vector-type", VectorType.PG_ARRAY.name(), "kwargs", "{\"device\":\"cpu\"}"));
+
+		metadata = embeddingResponse.getMetadata();
+
+		assertThat(metadata.keySet()).as("Metadata should contain exactly the expected keys")
+			.containsExactlyInAnyOrder("transformer", "vector-type", "kwargs");
+
+		assertThat(metadata.get("transformer").toString()).as("Transformer in metadata should be 'intfloat/e5-small'")
+			.isEqualTo("intfloat/e5-small");
+
+		assertThat(metadata.get("vector-type").toString()).as("Vector type in metadata should be PG_ARRAY")
+			.isEqualTo(VectorType.PG_ARRAY.name());
+
+		assertThat(metadata.get("kwargs").toString()).as("kwargs in metadata should be '{\"device\":\"cpu\"}'")
+			.isEqualTo("{\"device\":\"cpu\"}");
 
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(384);

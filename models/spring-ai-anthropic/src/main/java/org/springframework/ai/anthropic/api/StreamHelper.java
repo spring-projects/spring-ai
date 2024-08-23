@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
-import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.ContentBlockType;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent;
@@ -55,15 +55,15 @@ public class StreamHelper {
 		if (event == null || event.type() == null || event.type() != EventType.CONTENT_BLOCK_START) {
 			return false;
 		}
-		return "tool_use".equals(((ContentBlockStartEvent) event).contentBlock().type());
+		return ContentBlock.Type.TOOL_USE.getValue().equals(((ContentBlockStartEvent) event).contentBlock().type());
 	}
 
 	public boolean isToolUseFinish(StreamEvent event) {
 
-		if (event == null || event.type() == null || event.type() != EventType.MESSAGE_DELTA) {
+		if (event == null || event.type() == null || event.type() != EventType.CONTENT_BLOCK_STOP) {
 			return false;
 		}
-		return "tool_use".equals(((MessageDeltaEvent) event).delta().stopReason());
+		return true;
 	}
 
 	public StreamEvent mergeToolUseEvents(StreamEvent previousEvent, StreamEvent event) {
@@ -73,7 +73,7 @@ public class StreamHelper {
 		if (event.type() == EventType.CONTENT_BLOCK_START) {
 			ContentBlockStartEvent contentBlockStart = (ContentBlockStartEvent) event;
 
-			if ("tool_use".equals(contentBlockStart.contentBlock().type())) {
+			if (ContentBlock.Type.TOOL_USE.getValue().equals(contentBlockStart.contentBlock().type())) {
 				ContentBlockStartEvent.ContentBlockToolUse cbToolUse = (ContentBlockToolUse) contentBlockStart
 					.contentBlock();
 
@@ -85,7 +85,7 @@ public class StreamHelper {
 		}
 		else if (event.type() == EventType.CONTENT_BLOCK_DELTA) {
 			ContentBlockDeltaEvent contentBolckDelta = (ContentBlockDeltaEvent) event;
-			if ("input_json_delta".equals(contentBolckDelta.delta().type())) {
+			if (ContentBlock.Type.INPUT_JSON_DELTA.getValue().equals(contentBolckDelta.delta().type())) {
 				return eventAggregator
 					.appendPartialJson(((ContentBlockDeltaJson) contentBolckDelta.delta()).partialJson());
 			}
@@ -95,9 +95,6 @@ public class StreamHelper {
 				eventAggregator.squashIntoContentBlock();
 				return eventAggregator;
 			}
-		}
-		else if (isToolUseFinish(event)) {
-			return eventAggregator;
 		}
 
 		return event;
@@ -128,8 +125,7 @@ public class StreamHelper {
 
 				List<ContentBlock> content = eventToolUseBuilder.getToolContentBlocks()
 					.stream()
-					.map(tooToUse -> new ContentBlock(ContentBlockType.TOOL_USE, tooToUse.id(), tooToUse.name(),
-							tooToUse.input()))
+					.map(tooToUse -> new ContentBlock(Type.TOOL_USE, tooToUse.id(), tooToUse.name(), tooToUse.input()))
 					.toList();
 				contentBlockReference.get().withContent(content);
 			}
@@ -142,7 +138,7 @@ public class StreamHelper {
 							+ contentBlockStartEvent.contentBlock().type());
 
 			ContentBlockText contentBlockText = (ContentBlockText) contentBlockStartEvent.contentBlock();
-			ContentBlock contentBlock = new ContentBlock(ContentBlockType.TEXT, null, contentBlockText.text(),
+			ContentBlock contentBlock = new ContentBlock(Type.TEXT, null, contentBlockText.text(),
 					contentBlockStartEvent.index());
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of(contentBlock));
 		}
@@ -156,8 +152,7 @@ public class StreamHelper {
 
 			ContentBlockDeltaText deltaTxt = (ContentBlockDeltaText) contentBlockDeltaEvent.delta();
 
-			var contentBlock = new ContentBlock(ContentBlockType.TEXT_DELTA, null, deltaTxt.text(),
-					contentBlockDeltaEvent.index());
+			var contentBlock = new ContentBlock(Type.TEXT_DELTA, null, deltaTxt.text(), contentBlockDeltaEvent.index());
 
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of(contentBlock));
 		}
@@ -182,7 +177,6 @@ public class StreamHelper {
 			}
 		}
 		else if (event.type().equals(EventType.MESSAGE_STOP)) {
-
 		}
 		else {
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of());

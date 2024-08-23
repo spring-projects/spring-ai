@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,35 +15,44 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static java.lang.Math.sqrt;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.CreateIndexResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.client.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static java.lang.Math.sqrt;
-import static org.springframework.ai.vectorstore.SimilarityFunction.l2_norm;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * The ElasticsearchVectorStore class implements the VectorStore interface and provides
@@ -57,9 +66,12 @@ import static org.springframework.ai.vectorstore.SimilarityFunction.l2_norm;
  * @author Jemin Huh
  * @author Wei Jiang
  * @author Laura Trotta
+ * @author Soby Chacko
+ * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
+public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchVectorStore.class);
 
@@ -79,6 +91,15 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
 			EmbeddingModel embeddingModel, boolean initializeSchema) {
+		this(options, restClient, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null);
+	}
+
+	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
+			EmbeddingModel embeddingModel, boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention) {
+
+		super(observationRegistry, customObservationConvention);
+
 		this.initializeSchema = initializeSchema;
 		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
@@ -90,20 +111,23 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 		for (Document document : documents) {
-			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
+			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().length == 0) {
 				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
-			bulkRequestBuilder.operations(op -> op
-				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
+			// We call operations on BulkRequest.Builder only if the index exists.
+			// For the index to be present, either it must be pre-created or set the
+			// initializeSchema to true.
+			if (indexExists()) {
+				bulkRequestBuilder.operations(op -> op
+					.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
+			}
 		}
-
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
-
 		if (bulkRequest.errors()) {
 			List<BulkResponseItem> bulkResponseItems = bulkRequest.items();
 			for (BulkResponseItem bulkResponseItem : bulkResponseItems) {
@@ -115,10 +139,16 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		for (String id : idList)
-			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
+		// We call operations on BulkRequest.Builder only if the index exists.
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (indexExists()) {
+			for (String id : idList) {
+				bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
+			}
+		}
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
 
@@ -132,23 +162,20 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest searchRequest) {
+	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
 		try {
 			float threshold = (float) searchRequest.getSimilarityThreshold();
 			// reverting l2_norm distance to its original value
-			if (options.getSimilarity().equals(l2_norm)) {
+			if (options.getSimilarity().equals(SimilarityFunction.l2_norm)) {
 				threshold = 1 - threshold;
 			}
 			final float finalThreshold = threshold;
-			List<Float> vectors = this.embeddingModel.embed(searchRequest.getQuery())
-				.stream()
-				.map(Double::floatValue)
-				.toList();
+			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
 			SearchResponse<Document> res = elasticsearchClient.search(
 					sr -> sr.index(options.getIndexName())
-						.knn(knn -> knn.queryVector(vectors)
+						.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 							.similarity(finalThreshold)
 							.k((long) searchRequest.getTopK())
 							.field("embedding")
@@ -201,9 +228,9 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 		}
 	}
 
-	private CreateIndexResponse createIndexMapping() {
+	private void createIndexMapping() {
 		try {
-			return this.elasticsearchClient.indices()
+			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(options.getIndexName())
 					.mappings(map -> map.properties("embedding", p -> p.denseVector(
 							dv -> dv.similarity(options.getSimilarity().toString()).dims(options.getDimensions())))));
@@ -215,14 +242,31 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
-
 		if (!this.initializeSchema) {
 			return;
 		}
-
 		if (!indexExists()) {
 			createIndexMapping();
 		}
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
+			.withCollectionName(this.options.getIndexName())
+			.withDimensions(this.embeddingModel.dimensions())
+			.withSimilarityMetric(getSimilarityMetric());
+	}
+
+	private static Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
+			VectorStoreSimilarityMetric.EUCLIDEAN, SimilarityFunction.dot_product, VectorStoreSimilarityMetric.DOT);
+
+	private String getSimilarityMetric() {
+		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.options.getSimilarity())) {
+			return this.options.getSimilarity().name();
+		}
+		return SIMILARITY_TYPE_MAPPING.get(this.options.getSimilarity()).value();
 	}
 
 }

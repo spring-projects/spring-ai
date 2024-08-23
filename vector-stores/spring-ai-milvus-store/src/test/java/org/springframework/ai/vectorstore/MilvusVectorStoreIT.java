@@ -34,6 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
@@ -265,7 +266,7 @@ public class MilvusVectorStoreIT {
 				.withIndexType(IndexType.IVF_FLAT)
 				.withMetricType(metricType)
 				.build();
-			return new MilvusVectorStore(milvusClient, embeddingModel, config, true);
+			return new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy());
 		}
 
 		@Bean

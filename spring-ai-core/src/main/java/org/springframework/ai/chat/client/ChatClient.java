@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,24 @@ package org.springframework.ai.chat.client;
 
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.model.Media;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
+
+import io.micrometer.observation.ObservationRegistry;
+import reactor.core.publisher.Flux;
 
 /**
  * Client to perform stateless requests to an AI Model, using a fluent API.
@@ -50,11 +50,25 @@ import org.springframework.util.MimeType;
 public interface ChatClient {
 
 	static ChatClient create(ChatModel chatModel) {
-		return builder(chatModel).build();
+		return create(chatModel, ObservationRegistry.NOOP);
+	}
+
+	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry) {
+		return create(chatModel, observationRegistry, null);
+	}
+
+	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
+			ChatClientObservationConvention observationConvention) {
+		return builder(chatModel, observationRegistry, observationConvention).build();
 	}
 
 	static Builder builder(ChatModel chatModel) {
-		return new DefaultChatClientBuilder(chatModel);
+		return builder(chatModel, ObservationRegistry.NOOP, null);
+	}
+
+	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			ChatClientObservationConvention customObservationConvention) {
+		return new DefaultChatClientBuilder(chatModel, observationRegistry, customObservationConvention);
 	}
 
 	ChatClientRequestSpec prompt();
@@ -164,7 +178,7 @@ public interface ChatClient {
 
 		Flux<ChatResponse> chatResponse();
 
-		public Flux<String> content();
+		Flux<String> content();
 
 	}
 
@@ -189,6 +203,9 @@ public interface ChatClient {
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
 		<I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.Function<I, O> function);
+
+		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);

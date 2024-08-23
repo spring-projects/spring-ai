@@ -205,13 +205,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.base-url=TEST_BASE_URL",
 
 				"spring.ai.zhipuai.chat.options.model=MODEL_XYZ",
-				"spring.ai.zhipuai.chat.options.frequencyPenalty=-1.5",
-				"spring.ai.zhipuai.chat.options.logitBias.myTokenId=-5",
 				"spring.ai.zhipuai.chat.options.maxTokens=123",
-				"spring.ai.zhipuai.chat.options.n=10",
-				"spring.ai.zhipuai.chat.options.presencePenalty=0",
-				"spring.ai.zhipuai.chat.options.responseFormat.type=json",
-				"spring.ai.zhipuai.chat.options.seed=66",
 				"spring.ai.zhipuai.chat.options.stop=boza,koza",
 				"spring.ai.zhipuai.chat.options.temperature=0.55",
 				"spring.ai.zhipuai.chat.options.topP=0.56",
