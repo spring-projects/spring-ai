@@ -5,6 +5,8 @@ This section offers jumping off points for how to get started using Spring AI.
 
 You should follow the steps in each of the following section according to your needs.
 
+NOTE: Spring AI supports Spring Boot 3.2.x and 3.3.x
+
 == Spring Initializr
 
 Head on over to https://start.spring.io/[start.spring.io] and select the AI Models and Vector Stores that you want to use in your new applications.
