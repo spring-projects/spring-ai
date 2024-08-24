@@ -48,7 +48,7 @@ public class WatsonxAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		return embed(document.getContent());
 	}
 

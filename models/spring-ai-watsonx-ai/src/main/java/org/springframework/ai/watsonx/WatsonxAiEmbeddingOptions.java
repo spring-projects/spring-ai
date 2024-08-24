@@ -1,5 +1,6 @@
 package org.springframework.ai.watsonx;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -32,6 +33,12 @@ public class WatsonxAiEmbeddingOptions implements EmbeddingOptions {
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getDimensions() {
+		return null;
 	}
 
 	/**

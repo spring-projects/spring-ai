@@ -67,7 +67,7 @@ public class WatsonxAiEmbeddingModelTest {
 
 		String modelId = "mockId";
 		Integer inputTokenCount = 2;
-		List<Double> vector = List.of(0.0D, 0.1D);
+		float[] vector = new float[] { 1.0f, 2.0f };
 		List<WatsonxAiEmbeddingResults> mockResults = List.of(new WatsonxAiEmbeddingResults(vector));
 		WatsonxAiEmbeddingResponse mockResponse = new WatsonxAiEmbeddingResponse(modelId, new Date(), mockResults,
 				inputTokenCount);

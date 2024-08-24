@@ -12,5 +12,5 @@ import java.util.List;
  * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record WatsonxAiEmbeddingResults(@JsonProperty("embedding") List<Double> embedding) {
+public record WatsonxAiEmbeddingResults(@JsonProperty("embedding") float[] embedding) {
 }
