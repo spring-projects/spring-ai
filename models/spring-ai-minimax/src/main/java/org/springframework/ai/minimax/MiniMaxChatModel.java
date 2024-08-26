@@ -17,13 +17,11 @@ package org.springframework.ai.minimax;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -54,6 +52,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -256,17 +255,6 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 		});
 	}
 
-	private ChatResponseMetadata from(ChatCompletion result, RateLimit rateLimit) {
-		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
-		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withUsage(MiniMaxUsage.from(result.usage()))
-			.withModel(result.model())
-			.withRateLimit(rateLimit)
-			.withKeyValue("created", result.created())
-			.build();
-	}
-
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
@@ -282,10 +270,29 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 				: choice.message()
 					.toolCalls()
 					.stream()
-					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-							toolCall.function().name(), toolCall.function().arguments()))
-					.toList();
-
+					// the MiniMax's stream function calls response are really odd
+					// occasionally, tool call might get split.
+					// for example, id empty means the previous tool call is not finished,
+					// the toolCalls:
+					// [{id:'1',function:{name:'a'}},{id:'',function:{arguments:'[1]'}}]
+					// these need to be merged into [{id:'1', name:'a', arguments:'[1]'}]
+					// it worked before, maybe the model provider made some adjustments
+					.reduce(new ArrayList<>(), (acc, current) -> {
+						if (!acc.isEmpty() && current.id().isEmpty()) {
+							AssistantMessage.ToolCall prev = acc.get(acc.size() - 1);
+							acc.set(acc.size() - 1, new AssistantMessage.ToolCall(prev.id(), prev.type(), prev.name(),
+									current.function().arguments()));
+						}
+						else {
+							AssistantMessage.ToolCall currentToolCall = new AssistantMessage.ToolCall(current.id(),
+									current.type(), current.function().name(), current.function().arguments());
+							acc.add(currentToolCall);
+						}
+						return acc;
+					}, (acc1, acc2) -> {
+						acc1.addAll(acc2);
+						return acc1;
+					});
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
