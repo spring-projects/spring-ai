@@ -3,6 +3,7 @@ org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.stabilityai.StabilityAiImageAutoConfiguration
 org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingModelAutoConfiguration
 org.springframework.ai.autoconfigure.huggingface.HuggingfaceChatAutoConfiguration
+org.springframework.ai.autoconfigure.vertexai.anthropic.VertexAiAnthropicAutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.palm2.VertexAiPalm2AutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockAi21Jurassic2ChatAutoConfiguration

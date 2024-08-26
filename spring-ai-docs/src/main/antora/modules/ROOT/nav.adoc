@@ -16,6 +16,7 @@
 *** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Function Calling]
 *** xref:api/chat/google-vertexai.adoc[Google VertexAI]
+**** xref:api/chat/vertexai-anthropic-chat.adoc[VertexAI Anthropic]
 **** xref:api/chat/vertexai-palm2-chat.adoc[VertexAI PaLM2 ]
 **** xref:api/chat/vertexai-gemini-chat.adoc[VertexAI Gemini]
 ***** xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Function Calling]
