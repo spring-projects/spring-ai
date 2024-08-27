@@ -242,98 +242,23 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 
 	}
 
-	/**
-	 * @param language The language of the transcribed text.
-	 * @param duration The duration of the audio in seconds.
-	 * @param text The transcribed text.
-	 * @param words The extracted words and their timestamps.
-	 * @param segments The segments of the transcribed text and their corresponding
-	 * details.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record StructuredResponse(
-	// @formatter:off
-		@JsonProperty("language") String language,
-		@JsonProperty("duration") Float duration,
-		@JsonProperty("text") String text,
-		@JsonProperty("words") List<Word> words,
-		@JsonProperty("segments") List<Segment> segments) {
-		// @formatter:on
-
-		/**
-		 * Extracted word and it's corresponding timestamps.
-		 *
-		 * @param word The text content of the word.
-		 * @param start The start time of the word in seconds.
-		 * @param end The end time of the word in seconds.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record Word(
-		// @formatter:off
-			@JsonProperty("word") String word,
-			@JsonProperty("start") Float start,
-			@JsonProperty("end") Float end) {
-			// @formatter:on
-		}
-
-		/**
-		 * Segment of the transcribed text and its corresponding details.
-		 *
-		 * @param id Unique identifier of the segment.
-		 * @param seek Seek offset of the segment.
-		 * @param start Start time of the segment in seconds.
-		 * @param end End time of the segment in seconds.
-		 * @param text The text content of the segment.
-		 * @param tokens Array of token IDs for the text content.
-		 * @param temperature Temperature parameter used for generating the segment.
-		 * @param avgLogprob Average logprob of the segment. If the value is lower than
-		 * -1, consider the logprobs failed.
-		 * @param compressionRatio Compression ratio of the segment. If the value is
-		 * greater than 2.4, consider the compression failed.
-		 * @param noSpeechProb Probability of no speech in the segment. If the value is
-		 * higher than 1.0 and the avg_logprob is below -1, consider this segment silent.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record Segment(
-		// @formatter:off
-				@JsonProperty("id") Integer id,
-				@JsonProperty("seek") Integer seek,
-				@JsonProperty("start") Float start,
-				@JsonProperty("end") Float end,
-				@JsonProperty("text") String text,
-				@JsonProperty("tokens") List<Integer> tokens,
-				@JsonProperty("temperature") Float temperature,
-				@JsonProperty("avg_logprob") Float avgLogprob,
-				@JsonProperty("compression_ratio") Float compressionRatio,
-				@JsonProperty("no_speech_prob") Float noSpeechProb) {
-			// @formatter:on
-		}
-	}
-
 	public enum TranscriptResponseFormat {
 
 		// @formatter:off
-		@JsonProperty("json") JSON(AudioTranscriptionFormat.JSON, StructuredResponse.class),
-		@JsonProperty("text") TEXT(AudioTranscriptionFormat.TEXT, String.class),
-		@JsonProperty("srt") SRT(AudioTranscriptionFormat.SRT, String.class),
-		@JsonProperty("verbose_json") VERBOSE_JSON(AudioTranscriptionFormat.VERBOSE_JSON, StructuredResponse.class),
-		@JsonProperty("vtt") VTT(AudioTranscriptionFormat.VTT, String.class);
+		@JsonProperty("json") JSON(AudioTranscriptionFormat.JSON),
+		@JsonProperty("text") TEXT(AudioTranscriptionFormat.TEXT),
+		@JsonProperty("srt") SRT(AudioTranscriptionFormat.SRT),
+		@JsonProperty("verbose_json") VERBOSE_JSON(AudioTranscriptionFormat.VERBOSE_JSON),
+		@JsonProperty("vtt") VTT(AudioTranscriptionFormat.VTT);
 
 		public final AudioTranscriptionFormat value;
 
-		public final Class<?> responseType;
-
-		TranscriptResponseFormat(AudioTranscriptionFormat value, Class<?> responseType) {
+		TranscriptResponseFormat(AudioTranscriptionFormat value) {
 			this.value = value;
-			this.responseType = responseType;
 		}
 
 		public AudioTranscriptionFormat getValue() {
 			return this.value;
-		}
-
-		public Class<?> getResponseType() {
-			return this.responseType;
 		}
 	}
 
