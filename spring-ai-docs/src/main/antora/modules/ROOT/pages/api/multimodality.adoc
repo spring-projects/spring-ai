@@ -27,28 +27,27 @@ The Spring AI Message API provides all necessary abstractions to support multimo
 
 image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
 
-The UserMessage’s `content` field is used as primarily text inputs, while the, optional, `media` field allows adding one or more additional content of different modalities such as images, audio and video.
+The UserMessage’s `content` field is used primarily for text inputs, while the optional `media` field allows adding one or more additional content of different modalities such as images, audio and video.
 The `MimeType` specifies the modality type.
-Depending on the used LLMs the Media's data field can be either encoded raw media content or an URI to the content.
+Depending on the used LLMs, the `Media` data field can be either the raw media content as a `Resource` object or a `URI` to the content.
 
-NOTE: The media field is currently applicable only for user input messages (e.g., `UserMessage`). It does not hold significance for system messages. The `AssistantMessage`, which includes the LLM response, provides text content only. To generate non-text media outputs, you should utilize one of dedicated, single modality models.*
+NOTE: The media field is currently applicable only for user input messages (e.g., `UserMessage`). It does not hold significance for system messages. The `AssistantMessage`, which includes the LLM response, provides text content only. To generate non-text media outputs, you should utilize one of the dedicated, single-modality models.*
 
-
-For example we can take the following picture (*multimodal.test.png*) as an input and ask the LLM to explain what it sees in the picture.
+For example, we can take the following picture (`multimodal.test.png`) as an input and ask the LLM to explain what it sees.
 
 image::multimodal.test.png[Multimodal Test Image, 200, 200, align="left"]
 
-From most of the multimodal LLMs, the Spring AI code would  look something like this:
+For most of the multimodal LLMs, the Spring AI code would look something like this:
 
 [source,java]
 ----
-byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByteArray();
+var imageResource = new ClassPathResource("/multimodal.test.png");
 
 var userMessage = new UserMessage(
 	"Explain what do you see in this picture?", // content
-	List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData))); // media
+	new Media(MimeTypeUtils.IMAGE_PNG, imageResource)); // media
 
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+ChatResponse response = chatModel.call(new Prompt(userMessage));
 ----
 
 or with the fluent xref::api/chatclient.adoc[ChatClient] API:
@@ -57,21 +56,20 @@ or with the fluent xref::api/chatclient.adoc[ChatClient] API:
 ----
 String response = ChatClient.create(chatModel).prompt()
 		.user(u -> u.text("Explain what do you see on this picture?")
-				.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/multimodal.test.png")))
+				    .media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/multimodal.test.png")))
 		.call()
 		.content();
 ----
-
 
 and produce a response like:
 
 > This is an image of a fruit bowl with a simple design. The bowl is made of metal with curved wire edges that create an open structure, allowing the fruit to be visible from all angles. Inside the bowl, there are two yellow bananas resting on top of what appears to be a red apple. The bananas are slightly overripe, as indicated by the brown spots on their peels. The bowl has a metal ring at the top, likely to serve as a handle for carrying. The bowl is placed on a flat surface with a neutral-colored background that provides a clear view of the fruit inside.
 
-Latest version of Spring AI provides multimodal support for the following Chat Clients:
+Spring AI provides multimodal support for the following chat models:
 
-* xref:api/chat/openai-chat.adoc#_multimodal[Open AI - (GPT-4-Vision and GPT-4o models)]
-* xref:api/chat/ollama-chat.adoc#_multimodal[Ollama - (LlaVa and Baklava models)]
-* xref:api/chat/vertexai-gemini-chat.adoc#_multimodal[Vertex AI Gemini - (gemini-1.5-pro-001, gemini-1.5-flash-001 models)]
+* xref:api/chat/openai-chat.adoc#_multimodal[OpenAI (e.g. GPT-4 and GPT-4o models)]
+* xref:api/chat/ollama-chat.adoc#_multimodal[Ollama (e.g. LlaVa and Baklava models)]
+* xref:api/chat/vertexai-gemini-chat.adoc#_multimodal[Vertex AI Gemini (e.g. gemini-1.5-pro-001, gemini-1.5-flash-001 models)]
 * xref:api/chat/anthropic-chat.adoc#_multimodal[Anthropic Claude 3]
 * xref:api/chat/bedrock/bedrock-anthropic3.adoc#_multimodal[AWS Bedrock Anthropic Claude 3]
-* xref:api/chat/azure-openai-chat.adoc#_multimodal[Azure Open AI - (GPT-4o models)]
+* xref:api/chat/azure-openai-chat.adoc#_multimodal[Azure Open AI (e.g. GPT-4o models)]

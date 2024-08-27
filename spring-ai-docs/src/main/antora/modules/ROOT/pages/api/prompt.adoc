@@ -12,7 +12,8 @@ Another analogy is a SQL statement that contain placeholders for certain express
 As Spring AI evolves, it will introduce higher levels of abstraction for interacting with AI models.
 The foundational classes described in this section can be likened to JDBC in terms of their role and functionality.
 The `ChatModel` class, for instance, is analogous to the core JDBC library in the JDK.
-Building upon this, Spring AI can provide helper classes similar to `JdbcTemplate`, Spring Data Repositories, and eventually, more advanced constructs like ChatEngines and Agents that consider past interactions with the model.
+The `ChatClient` class can be likened to the `JdbcClient`, built on top of `ChatModel` and providing more advanced constructs via `Advisor`
+to consider past interactions with the model, augment the prompt with additional contextual documents, and introduce agentic behavior.
 
 The structure of prompts has evolved over time within the AI field.
 Initially, prompts were simple strings.
@@ -24,11 +25,11 @@ OpenAI have introduced even more structure to prompts by categorizing multiple m
 
 === Prompt
 
-It is common to use the `call` method of `ChatModel` that takes a `Prompt` instance and returns an `ChatResponse`.
+It is common to use the `call()` method of `ChatModel` that takes a `Prompt` instance and returns a `ChatResponse`.
 
-The Prompt class functions as a container for an organized series of `Message` objects and a request `ChatOptions`.
-Every Message embodies a unique role within the prompt, differing in its content and intent.
-These roles can encompass a variety of elements, from user inquiries to AI-generated responses or relevant background information.
+The `Prompt` class functions as a container for an organized series of `Message` objects and a request `ChatOptions`.
+Every `Message` embodies a unique role within the prompt, differing in its content and intent.
+These roles can encompass a variety of elements, from user inquiries to AI-generated responses to relevant background information.
 This arrangement enables intricate and detailed interactions with AI models, as the prompt is constructed from multiple messages, each assigned a specific role to play in the dialogue.
 
 Below is a truncated version of the Prompt class, with constructors and utility methods omitted for brevity:
@@ -44,7 +45,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 === Message
 
-The `Message` interface encapsulates a Prompt textual content and a collection of metadata attributes and a categorization known as `MessageType`.
+The `Message` interface encapsulates a `Prompt` textual content, a collection of metadata attributes, and a categorization known as `MessageType`.
 
 The interface is defined as follows:
 
@@ -94,7 +95,7 @@ More than just an answer or reaction, it's crucial for maintaining the flow of t
 By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
 The Assistant message may contain Function Tool Call request information as well.
 It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking.
-* Tool/Function Role: The Too/Function Role focuses on returning additional information in response to Tool Call Aisstnat Messages.
+* Tool/Function Role: The Too/Function Role focuses on returning additional information in response to Tool Call Assistant Messages.
 
 Roles are represented as an enumeration in Spring AI as shown below
 
@@ -113,7 +114,6 @@ public enum MessageType {
 }
 ```
 
-
 === PromptTemplate
 
 A key component for prompt templating in Spring AI is the `PromptTemplate` class.
@@ -131,9 +131,9 @@ The interfaces implemented by this class support different aspects of prompt cre
 
 `PromptTemplateStringActions` focuses on creating and rendering prompt strings, representing the most basic form of prompt generation.
 
-`PromptTemplateMessageActions` is tailored for prompt creation through the generation and manipulation of Message objects.
+`PromptTemplateMessageActions` is tailored for prompt creation through the generation and manipulation of `Message` objects.
 
-`PromptTemplateActions` is designed to return the Prompt object, which can be passed to ChatModel for generating a response.
+`PromptTemplateActions` is designed to return the `Prompt` object, which can be passed to `ChatModel` for generating a response.
 
 While these interfaces might not be used extensively in many projects, they show the different approaches to prompt creation.
 
@@ -151,21 +151,25 @@ public interface PromptTemplateStringActions {
 
 The method `String render()`: Renders a prompt template into a final string format without external input, suitable for templates without placeholders or dynamic content.
 
-The method `String render(Map<String, Object> model)`: Enhances rendering functionality to include dynamic content. It uses a Map<String, Object> where map keys are placeholder names in the prompt template, and values are the dynamic content to be inserted.
+The method `String render(Map<String, Object> model)`: Enhances rendering functionality to include dynamic content. It uses a `Map<String, Object>` where map keys are placeholder names in the prompt template, and values are the dynamic content to be inserted.
 
 ```java
 public interface PromptTemplateMessageActions {
 
 	Message createMessage();
 
+    Message createMessage(List<Media> mediaList);
+
 	Message createMessage(Map<String, Object> model);
 
 }
 ```
 
-The method `Message createMessage()`: Creates a Message object without additional data, used for static or predefined message content.
+The method `Message createMessage()`: Creates a `Message` object without additional data, used for static or predefined message content.
 
-The method `Message createMessage(Map<String, Object> model)`: Extends message creation to integrate dynamic content, accepting a Map<String, Object> where each entry represents a placeholder in the message template and its corresponding dynamic value.
+The method `Message createMessage(List<Media> mediaList)`: Creates a `Message` object with static textual and media content.
+
+The method `Message createMessage(Map<String, Object> model)`: Extends message creation to integrate dynamic content, accepting a `Map<String, Object>` where each entry represents a placeholder in the message template and its corresponding dynamic value.
 
 
 ```java
@@ -173,20 +177,26 @@ public interface PromptTemplateActions extends PromptTemplateStringActions {
 
 	Prompt create();
 
+	Prompt create(ChatOptions modelOptions);
+
 	Prompt create(Map<String, Object> model);
+
+	Prompt create(Map<String, Object> model, ChatOptions modelOptions);
 
 }
 ```
 
-The method `Prompt create()`: Generates a Prompt object without external data inputs, ideal for static or predefined prompts.
+The method `Prompt create()`: Generates a `Prompt` object without external data inputs, ideal for static or predefined prompts.
 
-The method `Prompt create(Map<String, Object> model)`: Expands prompt creation capabilities to include dynamic content, taking a Map<String, Object> where each map entry is a placeholder in the prompt template and its associated dynamic value.
+The method `Prompt create(ChatOptions modelOptions)`: Generates a `Prompt` object without external data inputs and with specific options for the chat request.
 
+The method `Prompt create(Map<String, Object> model)`: Expands prompt creation capabilities to include dynamic content, taking a `Map<String, Object>` where each map entry is a placeholder in the prompt template and its associated dynamic value.
+
+The method `Prompt create(Map<String, Object> model, ChatOptions modelOptions)`: Expands prompt creation capabilities to include dynamic content, taking a `Map<String, Object>` where each map entry is a placeholder in the prompt template and its associated dynamic value, and specific options for the chat request.
 
 == Example Usage
 
 A simple example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/2-README-prompt-templating.md[AI Workshop on PromptTemplates] is shown below.
-
 
 ```java
 
@@ -226,11 +236,10 @@ This shows how you can build up the `Prompt` instance by using the `SystemPrompt
 The message with the role `user` is then combined with the message of the role `system` to form the prompt.
 The prompt is then passed to the ChatModel to get a generative response.
 
-
 === Using resources instead of raw Strings
 
-Spring AI supports the `org.springframework.core.io.Resource` abstraction so you can put prompt data in a file that can directly be used in PromptTemplates.
-For example, you can define a field in your Spring managed component to retrieve the Resource.
+Spring AI supports the `org.springframework.core.io.Resource` abstraction, so you can put prompt data in a file that can directly be used in a `PromptTemplate`.
+For example, you can define a field in your Spring managed component to retrieve the `Resource`.
 
 ```java
 @Value("classpath:/prompts/system-message.st")
@@ -239,13 +248,9 @@ private Resource systemResource;
 
 and then pass that resource to the `SystemPromptTemplate` directly.
 
-
 ```java
 SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 ```
-
-
-
 
 == Prompt Engineering
 
@@ -267,21 +272,21 @@ You should recognize the importance of prompt engineering and consider using ins
 
 When developing prompts, it's important to integrate several key components to ensure clarity and effectiveness:
 
-* *Instructions*: Offer clear and direct instructions to the AI, similar to how you would communicate with a person. This clarity is essential for helping the AI 'understand' what is expected.
+* *Instructions*: Offer clear and direct instructions to the AI, similar to how you would communicate with a person. This clarity is essential for helping the AI "understand" what is expected.
 
-* *External Context*: Include relevant background information or specific guidance for the AI's response when necessary. This 'external context' frames the prompt and aids the AI in grasping the overall scenario.
+* *External Context*: Include relevant background information or specific guidance for the AI's response when necessary. This "external context" frames the prompt and aids the AI in grasping the overall scenario.
 
 * *User Input*: This is the straightforward part - the user's direct request or question forming the core of the prompt.
 
 * *Output Indicator*: This aspect can be tricky. It involves specifying the desired format for the AI's response, such as JSON. However, be aware that the AI might not always adhere strictly to this format. For instance, it might prepend a phrase like "here is your JSON" before the actual JSON data, or sometimes generate a JSON-like structure that is not accurate.
 
 Providing the AI with examples of the anticipated question and answer format can be highly beneficial when crafting prompts.
-This practice helps the AI 'understand' the structure and intent of your query, leading to more precise and relevant responses.
+This practice helps the AI "understand" the structure and intent of your query, leading to more precise and relevant responses.
 While this documentation does not delve deeply into these techniques, they provide a starting point for further exploration in AI prompt engineering.
 
 Following is a list of resources for further investigation.
 
-== Simple Techniques
+==== Simple Techniques
 
 * *https://www.promptingguide.ai/introduction/examples.en#text-summarization[Text Summarization]*: +
 Reduces extensive text into concise summaries, capturing key points and main ideas while omitting less critical details.
@@ -298,7 +303,7 @@ Creates interactive dialogues where the AI can engage in back-and-forth communic
 * *https://www.promptingguide.ai/introduction/examples.en#code-generation[Code Generation]*: +
 Generates functional code snippets based on specific user requirements or descriptions, translating natural language instructions into executable code.
 
-== Advanced Techniques
+==== Advanced Techniques
 
 * *https://www.promptingguide.ai/techniques/zeroshot[Zero-shot], https://www.promptingguide.ai/techniques/fewshot[Few-shot Learning]*: +
 Enables the model to make accurate predictions or responses with minimal to no prior examples of the specific problem type, understanding and acting on new tasks using learned generalizations.
@@ -309,12 +314,10 @@ Links multiple AI responses to create a coherent and contextually aware conversa
 * *https://www.promptingguide.ai/techniques/react[ReAct (Reason + Act)]*: +
 In this method, the AI first analyzes (reasons about) the input, then determines the most appropriate course of action or response. It combines understanding with decision-making.
 
-== Microsoft Guidance
+==== Microsoft Guidance
 
 * *https://github.com/microsoft/guidance[Framework for Prompt Creation and Optimization]*: +
 Microsoft offers a structured approach to developing and refining prompts. This framework guides users in creating effective prompts that elicit the desired responses from AI models, optimizing the interaction for clarity and efficiency.
-
-
 
 == Tokens
 
@@ -337,5 +340,3 @@ Tokens have practical implications beyond their technical role in AI processing,
 * Context Window: A model's token limit determines its context window. Inputs exceeding this limit are not processed by the model. It's crucial to send only the minimal effective set of information for processing. For example, when inquiring about "Hamlet," there's no need to include tokens from all of Shakespeare's other works.
 
 * Response Metadata: The metadata of a response from an AI model includes the number of tokens used, a vital piece of information for managing usage and costs.
-
-
