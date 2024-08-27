@@ -97,8 +97,8 @@ dependencies {
 
 Each of the following sections in the documentation shows which dependencies you need to add to your project build system.
 
-* xref:api/embeddings.adoc[Embeddings Models]
 * xref:api/chatmodel.adoc[Chat Models]
+* xref:api/embeddings.adoc[Embeddings Models]
 * xref:api/imageclient.adoc[Image Generation Models]
 * xref:api/audio/transcriptions.adoc[Transcription Models]
 * xref:api/audio/speech.adoc[Text-To-Speech (TTS) Models]

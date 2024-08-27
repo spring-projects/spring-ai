@@ -18,7 +18,7 @@ image::spring-ai-concepts-model-types.jpg[Model types, width=600, align="center"
 
 Spring AI currently supports models that process input and output as language, image, and audio.
 The last row in the previous table, which accepts text as input and outputs numbers, is more commonly known as embedding text and represents the internal data structures used in an AI model.
-Spring AI has support for embeddings to support more advanced use cases.
+Spring AI has support for embeddings to enable more advanced use cases.
 
 What sets models like GPT apart is their pre-trained nature, as indicated by the "P" in GPT—Chat Generative Pre-trained Transformer.
 This pre-training feature transforms AI into a general developer tool that does not require an extensive machine learning or model training background.
@@ -36,7 +36,7 @@ There is also the user role, which is typically the input from the user.
 
 Crafting effective prompts is both an art and a science.
 ChatGPT was designed for human conversations.
-This is quite a departure from using something like SQL to "'ask a question.'"
+This is quite a departure from using something like SQL to "ask a question".
 One must communicate with the AI model akin to conversing with another person.
 
 Such is the importance of this interaction style that the term "Prompt Engineering" has emerged as its own discipline.
@@ -61,9 +61,9 @@ For instance, consider the simple prompt template:
 Tell me a {adjective} joke about {content}.
 ```
 
-In Spring AI, prompt templates can be likened to the "'View'" in Spring MVC architecture.
+In Spring AI, prompt templates can be likened to the "View" in Spring MVC architecture.
 A model object, typically a `java.util.Map`, is provided to populate placeholders within the template.
-The "'rendered'" string becomes the content of the prompt supplied to the AI model.
+The "rendered" string becomes the content of the prompt supplied to the AI model.
 
 There is considerable variability in the specific data format of the prompt sent to the model.
 Initially starting as simple strings, prompts have evolved to include multiple messages, where each string in each message represents a distinct role for the model.
@@ -87,7 +87,7 @@ Embeddings are particularly relevant in practical applications like the Retrieva
 They enable the representation of data as points in a semantic space, which is akin to the 2-D space of Euclidean geometry, but in higher dimensions.
 This means just like how points on a plane in Euclidean geometry can be close or far based on their coordinates, in a semantic space, the proximity of points reflects the similarity in meaning.
 Sentences about similar topics are positioned closer in this multi-dimensional space, much like points lying close to each other on a graph.
-This proximity aids in tasks like text classification, semantic search, and even product recommendations, as it allows the AI to discern and group related concepts based on their 'location' in this expanded semantic landscape.
+This proximity aids in tasks like text classification, semantic search, and even product recommendations, as it allows the AI to discern and group related concepts based on their "location" in this expanded semantic landscape.
 
 You can think of this semantic space as a vector.
 
@@ -104,7 +104,7 @@ Perhaps more important is that Tokens = Money.
 In the context of hosted AI models, your charges are determined by the number of tokens used. Both input and output contribute to the overall token count.
 
 Also, models are subject to token limits, which restrict the amount of text processed in a single API call.
-This threshold is often referred to as the 'context window'. The model does not process any text that exceeds this limit.
+This threshold is often referred to as the "context window". The model does not process any text that exceeds this limit.
 
 For instance, ChatGPT3 has a 4K token limit, while GPT4 offers varying options, such as 8K, 16K, and 32K.
 Anthropic's Claude AI model features a 100K token limit, and Meta's recent research yielded a 1M token limit model.
@@ -134,16 +134,16 @@ An interesting bit of trivia is that this dataset is around 650GB.
 
 Three techniques exist for customizing the AI model to incorporate your data:
 
-* `Fine Tuning`: This traditional machine learning technique involves tailoring the model and changing its internal weighting.
+* **Fine Tuning**: This traditional machine learning technique involves tailoring the model and changing its internal weighting.
 However, it is a challenging process for machine learning experts and extremely resource-intensive for models like GPT due to their size. Additionally, some models might not offer this option.
 
-* `Prompt Stuffing`: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
+* **Prompt Stuffing**: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
 This approach is colloquially referred to as "`stuffing the prompt.`"
 The Spring AI library helps you implement solutions based on the "`stuffing the prompt`" technique otherwise known as xref::concepts.adoc#concept-rag[Retrieval Augmented Generation (RAG)].
 
 image::spring-ai-prompt-stuffing.jpg[Prompt stuffing, width=700, align="center"]
 
-* xref::concepts.adoc#concept-fc[Function Calling]: This technique allows registering custom, user functions that connect the large language models to the APIs of external systems.
+* **xref::concepts.adoc#concept-fc[Function Calling]**: This technique allows registering custom, user functions that connect the large language models to the APIs of external systems.
 Spring AI greatly simplifies code you need to write to support xref:api/functions.adoc[function calling].
 
 [[concept-rag]]
@@ -169,8 +169,8 @@ This is the reason to use a vector database. It is very good at finding similar 
 
 image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 
-* The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from data sources and storing it in a structured vector store, ensuring data is in the optimal format for retrieval when passing it to the AI model.
-* The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` advisor to enable the RAG capability in your application.
+* The xref::api/etl-pipeline.adoc[ETL Pipeline] provides further information about orchestrating the flow of extracting data from data sources and storing it in a structured vector store, ensuring data is in the optimal format for retrieval when passing it to the AI model.
+* The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` to enable the RAG capability in your application.
 
 [[concept-fc]]
 === Function Calling
@@ -188,13 +188,13 @@ Additionally, you can define and reference multiple functions in a single prompt
 
 image::function-calling-basic-flow.jpg[Function calling, width=700, align="center"]
 
-* (1) perform a chat request sending along function definition information.
+1. Perform a chat request sending along function definition information.
 The latter provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
-* (2) when the Model decides to call the function, it will call the function with the input parameters and return the output to the model.
-* (3) Spring AI handles this conversation for you.
+2. When the Model decides to call the function, it will call the function with the input parameters and return the output to the model.
+3. Spring AI handles this conversation for you.
 It dispatches the function call to the appropriate function and returns the result to the model.
-* (4) Model can perform multiple function calls to retrieve all the information it needs.
-* (5) once all information needed is acquired, the Model will generate a response.
+4. The Model can perform multiple function calls to retrieve all the information it needs.
+5. Once all information needed is acquired, the Model will generate a response.
 
 Follow the xref::api/functions.adoc[Function Calling] documentation for further information on how to use this feature with different AI models.
 
@@ -210,4 +210,5 @@ One approach involves presenting both the user's request and the AI model's resp
 
 Furthermore, leveraging the information stored in the vector database as supplementary data can enhance the evaluation process, aiding in the determination of response relevance.
 
-The Spring AI project currently provides some very basic examples of how you can evaluate the responses in the form of prompts to include in a JUnit test.
+The Spring AI project provides an `Evaluator` API which currently gives access to basic strategies to evaluate model responses.
+Follow the xref::api/testing.adoc[Evaluation Testing] documentation for further information.

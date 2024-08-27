@@ -23,8 +23,7 @@ Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-a
 ----
 public interface ChatModel extends Model<Prompt, ChatResponse> {
 
-	default String call(String message) {// implementation omitted
-	}
+	default String call(String message) {...}
 
     @Override
 	ChatResponse call(Prompt prompt);
@@ -32,8 +31,8 @@ public interface ChatModel extends Model<Prompt, ChatResponse> {
 
 ----
 
-The `call` method with a `String` parameter simplifies initial use, avoiding the complexities of the more sophisticated `Prompt` and `ChatResponse` classes.
-In real-world applications, it is more common to use the `call` method that takes a `Prompt` instance and returns an `ChatResponse`.
+The `call()` method with a `String` parameter simplifies initial use, avoiding the complexities of the more sophisticated `Prompt` and `ChatResponse` classes.
+In real-world applications, it is more common to use the `call()` method that takes a `Prompt` instance and returns a `ChatResponse`.
 
 === StreamingChatModel
 
@@ -42,17 +41,20 @@ Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-a
 [source,java]
 ----
 public interface StreamingChatModel extends StreamingModel<Prompt, ChatResponse> {
+
+    default Flux<String> stream(String message) {...}
+
     @Override
 	Flux<ChatResponse> stream(Prompt prompt);
 }
 ----
 
-The `stream` method takes a `Prompt` request similar to `ChatModel` but it streams the responses using the reactive Flux API.
+The `stream()` method takes a `String` or `Prompt` parameter similar to `ChatModel` but it streams the responses using the reactive Flux API.
 
 === Prompt
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/Prompt.java[Prompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] objects and optional model request options.
-The following listing shows a truncated version of the Prompt class, excluding constructors and other utility methods:
+The following listing shows a truncated version of the `Prompt` class, excluding constructors and other utility methods:
 
 [source,java]
 ----
@@ -63,7 +65,7 @@ public class Prompt implements ModelRequest<List<Message>> {
     private ChatOptions modelOptions;
 
 	@Override
-	public ChatOptions getOptions() {..}
+	public ChatOptions getOptions() {...}
 
 	@Override
 	public List<Message> getInstructions() {...}
@@ -74,7 +76,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 ==== Message
 
-The `Message` interface encapsulates a Prompt textual content and a collection of metadata attributes and a categorization known as `MessageType`.
+The `Message` interface encapsulates a `Prompt` textual content, a collection of metadata attributes, and a categorization known as `MessageType`.
 
 The interface is defined as follows:
 
@@ -108,7 +110,7 @@ image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center
 
 The chat completion endpoint, distinguish between message categories based on conversational roles, effectively mapped by the `MessageType`.
 
-For instance, OpenAI recognizes message categories for distinct conversational roles such as `system`,`user`, `function` or `assistant`.
+For instance, OpenAI recognizes message categories for distinct conversational roles such as `system`, `user`, `function`, or `assistant`.
 
 While the term `MessageType` might imply a specific message format, in this context it effectively designates the role a message plays in the dialogue.
 
@@ -120,23 +122,26 @@ To understand the practical application and the relationship between `Prompt` an
 Represents the options that can be passed to the AI model. The `ChatOptions` class is a subclass of `ModelOptions` and is used to define few portable options that can be passed to the AI model.
 The `ChatOptions` class is defined as follows:
 
-
 [source,java]
 ----
 public interface ChatOptions extends ModelOptions {
 
+	String getModel();
+	Float getFrequencyPenalty();
+	Integer getMaxTokens();
+	Float getPresencePenalty();
+	List<String> getStopSequences();
 	Float getTemperature();
-	void setTemperature(Float temperature);
-	Float getTopP();
-	void setTopP(Float topP);
 	Integer getTopK();
-	void setTopK(Integer topK);
+	Float getTopP();
+	ChatOptions copy();
+
 }
 ----
 
-Additionally, every model specific ChatModel/StreamingChatModel implementation can have its own options that can be passed to the AI model. For example, the OpenAI Chat Completion model has its own options like `presencePenalty`, `frequencyPenalty`, `bestOf` etc.
+Additionally, every model specific ChatModel/StreamingChatModel implementation can have its own options that can be passed to the AI model. For example, the OpenAI Chat Completion model has its own options like `logitBias`, `seed`, and `user`.
 
-This is a powerful feature that allows developers to use model specific options when starting the application and then override them with at runtime using the Prompt request:
+This is a powerful feature that allows developers to use model-specific options when starting the application and then override them at runtime using the `Prompt` request:
 
 image::chat-options-flow.jpg[align="center", width="800px"]
 
@@ -169,13 +174,13 @@ The `ChatResponse` class also carries a `ChatResponseMetadata` metadata about th
 [[Generation]]
 === Generation
 
-Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/Generation.java[Generation] class extends from the `ModelResult` to represent the output assistant message response and related metadata about this result:
+Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/Generation.java[Generation] class extends from the `ModelResult` to represent the model output (assistant message) and related metadata:
 
 [source,java]
 ----
 public class Generation implements ModelResult<AssistantMessage> {
 
-	private AssistantMessage assistantMessage;
+	private final AssistantMessage assistantMessage;
 	private ChatGenerationMetadata chatGenerationMetadata;
 
 	@Override
@@ -194,9 +199,9 @@ The `ChatModel` and `StreamingChatModel` implementations are provided for the fo
 
 image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 
-* xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming & function-calling support)
+* xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming & function-calling support)
-* xref:api/chat/ollama-chat.adoc[Ollama Chat Completion]
+* xref:api/chat/ollama-chat.adoc[Ollama Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/chat/huggingface.adoc[Hugging Face Chat Completion] (no streaming support)
 * xref:api/chat/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
 * xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
@@ -207,11 +212,11 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 ** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
 ** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2 Chat Completion]
 * xref:api/chat/mistralai-chat.adoc[Mistral AI Chat Completion] (streaming & function-calling support)
-* xref:api/chat/anthropic-chat.adoc[Anthropic Chat Completion] (streaming)
+* xref:api/chat/anthropic-chat.adoc[Anthropic Chat Completion] (streaming & function-calling support)
 
 == Chat Model API
 
-The Spring AI Chat Model API is build on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations. Following class diagram illustrates the main classes and interfaces of the Spring AI Chat Model API.
+The Spring AI Chat Model API is built on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations. The following class diagram illustrates the main classes and interfaces of the Spring AI Chat Model API.
 
 image::spring-ai-chat-api.jpg[align="center", width="900px"]
 
