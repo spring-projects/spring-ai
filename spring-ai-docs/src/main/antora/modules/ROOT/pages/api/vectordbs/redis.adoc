@@ -69,7 +69,10 @@ A simple configuration can either be provided via Spring Boot's _application.pro
 
 [source,properties]
 ----
-spring.ai.vectorstore.redis.uri=<your redis instance uri>
+# Redis Config
+spring.data.redis.url=<your redis instance url>
+
+# Redis Vector Store Config
 spring.ai.vectorstore.redis.index=<your index name>
 spring.ai.vectorstore.redis.prefix=<your prefix>
 
