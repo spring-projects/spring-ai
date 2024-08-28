@@ -436,6 +436,19 @@ public class ChatClientTest {
 	}
 
 	@Test
+	public void simpleUserPromptAsString() {
+		when(chatModel.call(promptCaptor.capture()))
+				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		assertThat(ChatClient.builder(chatModel).build().prompt("User prompt").call().content())
+				.isEqualTo("response");
+
+		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
+		assertThat(userMessage.getContent()).isEqualTo("User prompt");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+	}
+
+	@Test
 	public void simpleUserPrompt() {
 		when(chatModel.call(promptCaptor.capture()))
 			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));

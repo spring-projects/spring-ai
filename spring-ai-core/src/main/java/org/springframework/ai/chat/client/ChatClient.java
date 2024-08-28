@@ -73,6 +73,8 @@ public interface ChatClient {
 
 	ChatClientRequestSpec prompt();
 
+	ChatClientPromptRequestSpec prompt(String content);
+
 	ChatClientPromptRequestSpec prompt(Prompt prompt);
 
 	/**
