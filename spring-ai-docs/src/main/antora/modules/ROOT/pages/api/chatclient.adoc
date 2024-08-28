@@ -2,7 +2,7 @@
 = Chat Client API
 
 The `ChatClient` offers a fluent API for communicating with an AI Model.
-It supports both a synchronous and reactive programming model.
+It supports both a synchronous and streaming programming model.
 
 The fluent API has methods for building up the constituent parts of a xref:api/prompt.adoc#_prompt[Prompt] that is passed to the AI model as input.
 The `Prompt` contains the instructional text to guide the AI model's output and behavior. From the API point of view, prompts consist of a collection of messages.
@@ -21,7 +21,7 @@ You can obtain an autoconfigured `ChatClient.Builder` instance for any xref:api/
 === Using an autoconfigured ChatClient.Builder
 
 In the most simple use case, Spring AI provides Spring Boot autoconfiguration, creating a prototype `ChatClient.Builder` bean for you to inject into your class.
-Here is a simple example of retrieving a String response to a simple user request.
+Here is a simple example of retrieving a `String` response to a simple user request.
 
 [source,java]
 ----
@@ -45,13 +45,13 @@ class MyController {
 ----
 
 In this simple example, the user input sets the contents of the user message.
-The call method sends a request to the AI model, and the content method returns the AI model's response as a String.
+The `call()` method sends a request to the AI model, and the `content()` method returns the AI model's response as a `String`.
 
 === Create a ChatClient programmatically
 
 You can disable the `ChatClient.Builder` autoconfiguration by setting the property `spring.ai.chat.client.enabled=false`.
 This is useful if multiple chat models are used together.
-Then create a `ChatClient.Builder` instance for for every `ChatModel` programmatically:
+Then, create a `ChatClient.Builder` instance programmatically for every `ChatModel` you need:
 
 [source,java]
 ----
@@ -66,11 +66,11 @@ ChatClient chatClient = ChatClient.create(myChatModel);
 
 == ChatClient Responses
 
-The ChatClient API offers several ways to format the response from the AI Model.
+The `ChatClient` API offers several ways to format the response from the AI Model.
 
 === Returning a ChatResponse
 
-The response from the AI model is a rich structure defined by the type xref:api/chatmodel.adoc#ChatResponse[ChatResponse].
+The response from the AI model is a rich structure defined by the type `xref:api/chatmodel.adoc#ChatResponse[ChatResponse]`.
 It includes metadata about how the response was generated and can also contain multiple responses, known as xref:api/chatmodel.adoc#Generation[Generation]s, each with its own metadata.
 The metadata includes the number of tokens (each token is approximately 3/4 of a word) used to create the response.
 This information is important because hosted AI models charge based on the number of tokens used per request.
@@ -88,17 +88,16 @@ ChatResponse chatResponse = chatClient.prompt()
 === Returning an Entity
 
 You often want to return an entity class that is mapped from the returned `String`.
-The `entity` method provides this functionality.
+The `entity()` method provides this functionality.
 
 For example, given the Java record:
 
 [source,java]
 ----
-record ActorFilms(String actor, List<String> movies) {
-}
+record ActorFilms(String actor, List<String> movies) {}
 ----
 
-You can easily map the AI model's output to this record using the `entity` method, as shown below:
+You can easily map the AI model's output to this record using the `entity()` method, as shown below:
 
 [source,java]
 ----
@@ -115,13 +114,12 @@ There is also an overloaded `entity` method with the signature `entity(Parameter
 List<ActorFilms> actorFilms = chatClient.prompt()
     .user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
     .call()
-    .entity(new ParameterizedTypeReference<List<ActorFilms>>() {
-    });
+    .entity(new ParameterizedTypeReference<List<ActorFilms>>() {});
 ----
 
 === Streaming Responses
 
-The `stream` lets you get an asynchronous response as shown below
+The `stream()` method lets you get an asynchronous response as shown below:
 
 [source,java]
 ----
@@ -134,59 +132,58 @@ Flux<String> output = chatClient.prompt()
 
 You can also stream the `ChatResponse` using the method `Flux<ChatResponse> chatResponse()`.
 
-In the 1.0.0 M2 we will offer a convenience method that will let you return an Java entity with the reactive `stream()` method.
+In the future, we will offer a convenience method that will let you return a Java entity with the reactive `stream()` method.
 In the meantime, you should use the xref:api/structured-output-converter.adoc#StructuredOutputConverter[Structured Output Converter] to convert the aggregated response explicity as shown below.
 This also demonstrates the use of parameters in the fluent API that will be discussed in more detail in a later section of the documentation.
 
 [source,java]
 ----
-    var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<ActorsFilms>>() {
-    });
+var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<ActorsFilms>>() {});
 
-    Flux<String> flux = this.chatClient.prompt()
-        .user(u -> u.text("""
-                            Generate the filmography for a random actor.
-                            {format}
-                          """)
-                .param("format", converter.getFormat()))
-        .stream()
-        .content();
+Flux<String> flux = this.chatClient.prompt()
+    .user(u -> u.text("""
+                        Generate the filmography for a random actor.
+                        {format}
+                      """)
+            .param("format", converter.getFormat()))
+    .stream()
+    .content();
 
-    String content = flux.collectList().block().stream().collect(Collectors.joining());
+String content = flux.collectList().block().stream().collect(Collectors.joining());
 
-    List<ActorFilms> actorFilms = converter.convert(content);
+List<ActorFilms> actorFilms = converter.convert(content);
 ----
 
 == call() return values
 
-After specifying the `call` method on `ChatClient` there are a few different options for the response type.
+After specifying the `call()` method on `ChatClient`, there are a few different options for the response type.
 
 * `String content()`: returns the String content of the response
 * `ChatResponse chatResponse()`: returns the `ChatResponse` object that contains multiple generations and also metadata about the response, for example how many token were used to create the response.
-* `entity` to return a Java type
-** entity(ParameterizedTypeReference<T> type): used to return a Collection of entity types.
-** entity(Class<T> type):  used to return a specific entity type.
-** entity(StructuredOutputConverter<T> structuredOutputConverter): used to specify an instance of a `StructuredOutputConverter` to convert a `String` to an entity type.
+* `entity()` to return a Java type
+** `entity(ParameterizedTypeReference<T> type)`: used to return a `Collection` of entity types.
+** `entity(Class<T> type)`:  used to return a specific entity type.
+** `entity(StructuredOutputConverter<T> structuredOutputConverter)`: used to specify an instance of a `StructuredOutputConverter` to convert a `String` to an entity type.
 
-You can also invoke the `stream` method instead of `call` and
-
+You can also invoke the `stream()` method instead of `call()`.
 
 == stream() return values
 
-After specifying the `stream` method on `ChatClient`, there are a few options for the response type:
+After specifying the `stream()` method on `ChatClient`, there are a few options for the response type:
 
-* `Flux<String> content()`: Returns a Flux of the string being generated by the AI model.
-* `Flux<ChatResponse> chatResponse()`: Returns a Flux of the `ChatResponse` object, which contains additional metadata about the response.
+* `Flux<String> content()`: Returns a `Flux` of the string being generated by the AI model.
+* `Flux<ChatResponse> chatResponse()`: Returns a `Flux` of the `ChatResponse` object, which contains additional metadata about the response.
 
 == Using Defaults
 
-Creating a ChatClient with default system text in an `@Configuration` class simplifies runtime code.
-By setting defaults, you only need to specify user text when calling `ChatClient`, eliminating the need to set system text for each request in your runtime code path.
+Creating a `ChatClient` with a default system text in an `@Configuration` class simplifies runtime code.
+By setting defaults, you only need to specify the user text when calling `ChatClient`, eliminating the need to set a system text for each request in your runtime code path.
 
 === Default System Text
 
 In the following example, we will configure the system text to always reply in a pirate's voice.
-To avoid repeating the system text in runtime code, we will create a `ChatClient` instance in an `@Configuration` class.
+To avoid repeating the system text in runtime code, we will create a `ChatClient` instance in a `@Configuration` class.
+
 [source,java]
 ----
 @Configuration
@@ -201,7 +198,7 @@ class Config {
 }
 ----
 
-and an `@RestController` to invoke it
+and a `@RestController` to invoke it:
 
 [source,java]
 ----
@@ -221,7 +218,7 @@ class AIController {
 }
 ----
 
-invoking it via curl gives
+When calling the application endpoint via curl, the result is:
 
 [source,bash]
 ----
@@ -251,24 +248,26 @@ class Config {
 ----
 @RestController
 class AIController {
-	private final ChatClient chatClient
+	private final ChatClient chatClient;
+
 	AIController(ChatClient chatClient) {
 		this.chatClient = chatClient;
 	}
+
 	@GetMapping("/ai")
 	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message, String voice) {
-		return Map.of(
-				"completion",
+		return Map.of("completion",
 				chatClient.prompt()
 						.system(sp -> sp.param("voice", voice))
 						.user(message)
 						.call()
 						.content());
 	}
+
 }
 ----
 
-The response is
+When calling the application endpoint via httpie, the result is:
 
 [source.bash]
 ----
@@ -280,7 +279,7 @@ http localhost:8080/ai voice=='Robert DeNiro'
 
 === Other defaults
 
-At the `ChatClient.Builder` level, you can specify the default prompt.
+At the `ChatClient.Builder` level, you can specify the default prompt configuration.
 
 * `defaultOptions(ChatOptions chatOptions)`: Pass in either portable options defined in the `ChatOptions` class or model-specific options such as those in `OpenAiChatOptions`. For more information on model-specific `ChatOptions` implementations, refer to the JavaDocs.
 
@@ -289,7 +288,6 @@ At the `ChatClient.Builder` level, you can specify the default prompt.
 * `defaultFunctions(String... functionNames)`: The bean names of `java.util.Function`s defined in the application context.
 
 * `defaultUser(String text)`, `defaultUser(Resource text)`, `defaultUser(Consumer<UserSpec> userSpecConsumer)`: These methods let you define the user text. The `Consumer<UserSpec>` allows you to use a lambda to specify the user text and any default parameters.
-
 
 * `defaultAdvisors(RequestResponseAdvisor... advisor)`: Advisors allow modification of the data used to create the `Prompt`. The `QuestionAnswerAdvisor` implementation enables the pattern of `Retrieval Augmented Generation` by appending the prompt with context information related to the user text.
 
@@ -302,14 +300,13 @@ You can override these defaults at runtime using the corresponding methods witho
 * `function(String name, String description,
 java.util.function.Function<I, O> function)`
 
-* `functions(String... functionNames)
+* `functions(String... functionNames)`
 
-* `user(String text)` , `user(Resource text)`, `user(Consumer<UserSpec> userSpecConsumer)`
+* `user(String text)`, `user(Resource text)`, `user(Consumer<UserSpec> userSpecConsumer)`
 
 * `advisors(RequestResponseAdvisor... advisor)`
 
 * `advisors(Consumer<AdvisorSpec> advisorSpecConsumer)`
-
 
 == Advisors
 
@@ -330,7 +327,6 @@ The response from the vector database is appended to the user text to provide co
 
 Assuming you have already loaded data into a `VectorStore`, you can perform Retrieval Augmented Generation (RAG) by providing an instance of `QuestionAnswerAdvisor` to the `ChatClient`.
 
-
 [source,java]
 ----
 ChatResponse response = ChatClient.builder(chatModel)
@@ -342,7 +338,7 @@ ChatResponse response = ChatClient.builder(chatModel)
 ----
 
 In this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
-To restrict the types of documents that are searched, the `SearchRequest` takes a SQL like filter expression that is portable across all `VectorStores`.
+To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
 
 ==== Dynamic Filter Expressions
 
@@ -368,9 +364,10 @@ The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search re
 
 The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 
-There are two implementations `InMemoryChatMemory` and `CassandraChatMemory` that provides storage for chat conversation history, in-memory and persisted with `time-to-live` correspondingly.
+There are currently two implementations, `InMemoryChatMemory` and `CassandraChatMemory`, that provide storage for chat conversation history, in-memory and persisted with `time-to-live`, correspondingly.
 
-To create a `CassandraChatMemory` with `time-to-live`
+To create a `CassandraChatMemory` with `time-to-live`:
+
 [source,java]
 ----
 CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
@@ -382,11 +379,10 @@ The following advisor implementations use the `ChatMemory` interface to advice t
 * `PromptChatMemoryAdvisor` :  Memory is retrieved and added into the prompt's system text.
 * `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize)` lets you specify the VectorStore to retrieve the chat history from, the unique conversation ID, the size of the chat history to be retrieved in token size.
 
-A sample `@Service` implementation that uses several advisors is shown below
+A sample `@Service` implementation that uses several advisors is shown below.
 
 [source,java]
 ----
-
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
@@ -397,7 +393,7 @@ public class CustomerSupportAssistant {
 
     public CustomerSupportAssistant(ChatClient.Builder builder, VectorStore vectorStore, ChatMemory chatMemory) {
 
-    this.chatClient = builder
+        this.chatClient = builder
             .defaultSystem("""
                     You are a customer chat support agent of an airline named "Funnair".", Respond in a friendly,
                     helpful, and joyful manner.
@@ -412,30 +408,33 @@ public class CustomerSupportAssistant {
             .defaultAdvisors(
                     new PromptChatMemoryAdvisor(chatMemory),
                     // new MessageChatMemoryAdvisor(chatMemory), // CHAT MEMORY
-                    new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()),
-                    new LoggingAdvisor()) // RAG
+                    new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()), // RAG
+                    new LoggingAdvisor())
             .defaultFunctions("getBookingDetails", "changeBooking", "cancelBooking") // FUNCTION CALLING
             .build();
-}
-
-public Flux<String> chat(String chatId, String userMessageContent) {
-
-    return this.chatClient.prompt()
-            .user(userMessageContent)
-            .advisors(a -> a
-                    .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
-                    .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-            .stream().content();
     }
+
+    public Flux<String> chat(String chatId, String userMessageContent) {
+
+        return this.chatClient.prompt()
+                .user(userMessageContent)
+                .advisors(a -> a
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+                .stream().content();
+    }
+
 }
 ----
 
 === Logging
 
-The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the ChatClient. 
+The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the `ChatClient`.
 This can be useful for debugging and monitoring your AI interactions.
 
-To enable logging, add the `SimpleLoggerAdvisor` to the advisor chain when creating your ChatClient. 
+TIP: Spring AI supports observability for LLM and vector store interactions. Refer to the xref:observabilty/index.adoc[Observability] guide for more information.
+
+To enable logging, add the `SimpleLoggerAdvisor` to the advisor chain when creating your ChatClient.
 It's recommended to add it toward the end of the chain:
 
 [source,java]
@@ -455,8 +454,7 @@ logging.level.org.springframework.ai.chat.client.advisor=DEBUG
 
 Add this to your `application.properties` or `application.yaml` file.
 
-
-You can customize what data from AdvisedRequest and ChatResponse is logged by using the following constructor:
+You can customize what data from `AdvisedRequest` and `ChatResponse` is logged by using the following constructor:
 
 [source,java]
 ----
