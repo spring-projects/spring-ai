@@ -64,9 +64,20 @@ ChatClient.Builder builder = ChatClient.builder(myChatModel);
 ChatClient chatClient = ChatClient.create(myChatModel);
 ----
 
+== ChatClient Fluent API
+
+The `ChatClient` fluent API allows you to create a prompt in three distinct ways using an overloaded `prompt` method to initiate the fluent API.
+
+* `prompt()`: This method with no arguments is the most flexible, allowing you to build up user, system, and other parts of the prompt using the fluent API.
+
+* `prompt(Prompt prompt)`: This method accepts a `Prompt` argument, letting you pass in a `Prompt` instance that you have created using the Prompt's non-fluent APIs. The prompt passed to the model is 'sealed', meaning you can't modify it using fluent API methods.
+
+* `prompt(String content)`: This is a convenience method similar to the previous overload. It takes the user's text content and creates a `Prompt` instance internally via `new Prompt(content)`.
+
+
 == ChatClient Responses
 
-The `ChatClient` API offers several ways to format the response from the AI Model.
+The `ChatClient` API offers several ways to format the response from the AI Model using the fluent API.
 
 === Returning a ChatResponse
 
@@ -84,6 +95,7 @@ ChatResponse chatResponse = chatClient.prompt()
     .call()
     .chatResponse();
 ----
+
 
 === Returning an Entity
 
@@ -318,6 +330,39 @@ This contextual data can be of different types. Common types include:
 
 * **Conversational history**: The chat model's API is stateless. If you tell the AI model your name, it won't remember it in subsequent interactions. Conversational history must be sent with each request to ensure previous interactions are considered when generating a response.
 
+
+=== Advisor Configuration in ChatClient
+
+The ChatClient fluent API provides an `AdvisorSpec` interface for configuring advisors. This interface offers methods to add parameters, set multiple parameters at once, and add one or more advisors to the chain.
+
+[source,java]
+----
+interface AdvisorSpec {
+    AdvisorSpec param(String k, Object v);
+    AdvisorSpec params(Map<String, Object> p);
+    AdvisorSpec advisors(Advisor... advisors);
+    AdvisorSpec advisors(List<Advisor> advisors);
+}
+----
+
+IMPORTANT: The order in which advisors are added to the chain is crucial, as it determines the sequence of their execution. Each advisor modifies the prompt or the context in some way, and the changes made by one advisor are passed on to the next in the chain.
+
+[source,java]
+----
+ChatClient.builder(chatModel)
+    .build()
+    .prompt()
+    .advisors(
+        new ChatMemoryAdvisor(chatMemory),
+        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
+    )
+    .user(userText)
+    .call();
+----
+
+In this configuration, the `ChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
+
+
 === Retrieval Augmented Generation
 
 A vector database stores data that the AI model is unaware of.
@@ -426,6 +471,8 @@ public class CustomerSupportAssistant {
 
 }
 ----
+
+
 
 === Logging
 

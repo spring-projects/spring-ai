@@ -100,6 +100,11 @@ public class DefaultChatClient implements ChatClient {
 	}
 
 	@Override
+	public ChatClientPromptRequestSpec prompt(String content) {
+		return new DefaultChatClientPromptRequestSpec(this.chatModel, new Prompt(content));
+	}
+
+	@Override
 	public ChatClientPromptRequestSpec prompt(Prompt prompt) {
 		return new DefaultChatClientPromptRequestSpec(this.chatModel, prompt);
 	}
