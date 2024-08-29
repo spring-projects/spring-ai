@@ -59,6 +59,11 @@ public abstract class AbstractChatMemoryAdvisor<T> implements RequestResponseAdv
 		this.defaultChatMemoryRetrieveSize = defaultChatMemoryRetrieveSize;
 	}
 
+	@Override
+	public StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.AGGREGATE;
+	}
+
 	protected T getChatMemoryStore() {
 		return this.chatMemoryStore;
 	}

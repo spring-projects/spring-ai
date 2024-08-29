@@ -33,8 +33,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import reactor.core.publisher.Flux;
-
 /**
  * Context for the question is retrieved from a Vector Store and added to the prompt's
  * user text.
@@ -132,15 +130,6 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		return chatResponseBuilder.build();
 	}
 
-	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
-		return fluxResponse.map(cr -> {
-			ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(cr);
-			chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-			return chatResponseBuilder.build();
-		});
-	}
-
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
 
 		if (!context.containsKey(FILTER_EXPRESSION)
@@ -149,6 +138,11 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		}
 		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
 
+	}
+
+	@Override
+	public StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.ON_FINISH_REASON;
 	}
 
 }

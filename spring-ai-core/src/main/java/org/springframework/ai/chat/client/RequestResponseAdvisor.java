@@ -18,11 +18,13 @@ package org.springframework.ai.chat.client;
 
 import java.util.Map;
 
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.util.StringUtils;
+
+import reactor.core.publisher.Flux;
 
 /**
  * Advisor called before and after the {@link ChatModel#call(Prompt)} and
@@ -33,6 +35,35 @@ import org.springframework.ai.chat.prompt.Prompt;
  * @since 1.0.0
  */
 public interface RequestResponseAdvisor {
+
+	public enum StreamResponseMode {
+
+		/**
+		 * The sync advisor will be called for each response chunk (e.g. on each Flux
+		 * item).
+		 */
+		PER_CHUNK,
+		/**
+		 * The sync advisor is called only on chunks that contain a finish reason. Usually
+		 * the last chunk in the stream.
+		 */
+		ON_FINISH_REASON,
+		/**
+		 * The sync advisor is called only once after the stream is completed and an
+		 * aggregated response is computed. Note that at that stage the advisor can not
+		 * modify the response, but only observe it and react on the aggregated response.
+		 */
+		AGGREGATE,
+		/**
+		 * Delegates to the stream advisor implementation.
+		 */
+		CUSTOM;
+
+	}
+
+	default StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.CUSTOM;
+	}
 
 	/**
 	 * @return the advisor name.
@@ -73,6 +104,31 @@ public interface RequestResponseAdvisor {
 	 * @return the advised {@link ChatResponse} flux.
 	 */
 	default Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
+
+		if (this.getStreamResponseMode() == StreamResponseMode.PER_CHUNK) {
+			return fluxResponse.map(chatResponse -> this.adviseResponse(chatResponse, context));
+		}
+		else if (this.getStreamResponseMode() == StreamResponseMode.AGGREGATE) {
+			return new MessageAggregator().aggregate(fluxResponse, chatResponse -> {
+				this.adviseResponse(chatResponse, context);
+			});
+		}
+		else if (this.getStreamResponseMode() == StreamResponseMode.ON_FINISH_REASON) {
+			return fluxResponse.map(chatResponse -> {
+				boolean withFinishReason = chatResponse.getResults()
+					.stream()
+					.filter(result -> result != null && result.getMetadata() != null
+							&& StringUtils.hasText(result.getMetadata().getFinishReason()))
+					.findFirst()
+					.isPresent();
+
+				if (withFinishReason) {
+					return this.adviseResponse(chatResponse, context);
+				}
+				return chatResponse;
+			});
+		}
+
 		return fluxResponse;
 	}
 
