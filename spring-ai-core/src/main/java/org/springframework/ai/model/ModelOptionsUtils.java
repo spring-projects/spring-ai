@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,6 +50,7 @@ import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -299,7 +302,7 @@ public abstract class ModelOptionsUtils {
 		BeanWrapper sourceBeanWrap = new BeanWrapperImpl(source);
 		BeanWrapper targetBeanWrap = new BeanWrapperImpl(target);
 
-		List<String> interfaceNames = Arrays.stream(sourceInterfaceClazz.getMethods()).map(m -> m.getName()).toList();
+		List<String> interfaceNames = Arrays.stream(sourceInterfaceClazz.getMethods()).map(Method::getName).toList();
 
 		for (PropertyDescriptor descriptor : sourceBeanWrap.getPropertyDescriptors()) {
 
@@ -361,7 +364,7 @@ public abstract class ModelOptionsUtils {
 		return node.toPrettyString();
 	}
 
-	public static void toUpperCaseTypeValues(ObjectNode node) {
+	public static void toUpperCaseTypeValues(@Nullable ObjectNode node) {
 		if (node == null) {
 			return;
 		}
@@ -379,8 +382,8 @@ public abstract class ModelOptionsUtils {
 					});
 				}
 				else if (value.isTextual() && entry.getKey().equals("type")) {
-					String oldValue = ((ObjectNode) node).get("type").asText();
-					((ObjectNode) node).put("type", oldValue.toUpperCase());
+					String oldValue = node.get("type").asText();
+					node.put("type", oldValue.toUpperCase());
 				}
 			});
 		}

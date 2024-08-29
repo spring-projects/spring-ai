@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
@@ -37,13 +38,9 @@ public class SimpleLoggerAdvisor implements RequestResponseAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
-	public static final Function<AdvisedRequest, String> DEFAULT_REQUEST_TO_STRING = (request) -> {
-		return request.toString();
-	};
+	public static final Function<AdvisedRequest, String> DEFAULT_REQUEST_TO_STRING = Record::toString;
 
-	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = (response) -> {
-		return ModelOptionsUtils.toJsonString(response);
-	};
+	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = ModelOptionsUtils::toJsonString;
 
 	private final Function<AdvisedRequest, String> requestToString;
 

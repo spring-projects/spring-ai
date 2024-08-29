@@ -29,7 +29,6 @@ import org.springframework.aot.hint.ExecutableMode;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ReflectionUtils;
 
@@ -39,7 +38,7 @@ import java.util.Set;
 public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 
 		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ToolResponseMessage.class, Message.class,
 				MessageType.class, UserMessage.class, SystemMessage.class, FunctionCallbackContext.class,

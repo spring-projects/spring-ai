@@ -1,5 +1,5 @@
 /*
-* Copyright 2024 - 2024 the original author or authors.
+* Copyright 2024 the original author or authors.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.springframework.ai.chat.client.advisor.observation;
 
 import java.util.Map;
@@ -20,12 +21,14 @@ import java.util.Map;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import io.micrometer.observation.Observation;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 1.0.0
  */
 
@@ -37,36 +40,43 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	}
 
+	@Nullable
 	private String advisorName;
 
+	@Nullable
 	private Type advisorType;
 
 	/**
 	 * The {@link AdvisedRequest} data to be advised. Represents the row
 	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
 	 */
+	@Nullable
 	private AdvisedRequest advisorRequest;
 
 	/**
 	 * The shared data between the advisors in the chain. It is shared between all request
 	 * and response advising points of all advisors in the chain.
 	 */
+	@Nullable
 	private Map<String, Object> advisorRequestContext;
 
 	/**
 	 * the shared data between the advisors in the chain. It is shared between all request
 	 * and response advising points of all advisors in the chain.
 	 */
+	@Nullable
 	private Map<String, Object> advisorResponseContext;
 
 	public void setAdvisorName(String advisorName) {
 		this.advisorName = advisorName;
 	}
 
+	@Nullable
 	public String getAdvisorName() {
 		return this.advisorName;
 	}
 
+	@Nullable
 	public Type getAdvisorType() {
 		return this.advisorType;
 	}
@@ -75,6 +85,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		this.advisorType = type;
 	}
 
+	@Nullable
 	public AdvisedRequest getAdvisedRequest() {
 		return this.advisorRequest;
 	}
@@ -83,6 +94,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		this.advisorRequest = advisedRequest;
 	}
 
+	@Nullable
 	public Map<String, Object> getAdvisorRequestContext() {
 		return this.advisorRequestContext;
 	}
@@ -91,6 +103,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		this.advisorRequestContext = advisorRequestContext;
 	}
 
+	@Nullable
 	public Map<String, Object> getAdvisorResponseContext() {
 		return this.advisorResponseContext;
 	}

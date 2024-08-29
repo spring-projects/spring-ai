@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model;
 
-import io.micrometer.common.lang.NonNull;
 import io.micrometer.common.lang.Nullable;
 
 import java.util.Map;
@@ -46,7 +46,6 @@ public interface ResponseMetadata {
 	 * @throws IllegalArgumentException if not present
 	 * @return entry
 	 */
-	@NonNull
 	<T> T getRequired(Object key);
 
 	/**
@@ -80,7 +79,7 @@ public interface ResponseMetadata {
 
 	Set<Map.Entry<String, Object>> entrySet();
 
-	public Set<String> keySet();
+	Set<String> keySet();
 
 	/**
 	 * Returns {@code true} if this map contains no key-value mappings.

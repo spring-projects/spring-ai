@@ -1,9 +1,9 @@
 /**
- * Package for core observation components.
+ * Package for function calling components.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.model.observation;
+package org.springframework.ai.model.function;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

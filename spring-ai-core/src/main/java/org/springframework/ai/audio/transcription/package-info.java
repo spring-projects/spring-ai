@@ -1,9 +1,9 @@
 /**
- * Package for core observation components.
+ * Package for audio transcription components.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.model.observation;
+package org.springframework.ai.audio.transcription;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

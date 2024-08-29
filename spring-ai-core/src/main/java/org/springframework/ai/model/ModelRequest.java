@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model;
+
+import org.springframework.lang.Nullable;
 
 /**
  * Interface representing a request to an AI model. This interface encapsulates the
@@ -38,6 +41,7 @@ public interface ModelRequest<T> {
 	 * Retrieves the customizable options for AI model interactions.
 	 * @return the customizable options for AI model interactions
 	 */
+	@Nullable
 	ModelOptions getOptions();
 
 }

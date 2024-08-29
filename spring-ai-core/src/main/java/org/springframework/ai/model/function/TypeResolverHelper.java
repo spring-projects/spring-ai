@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.function;
 
 import java.lang.reflect.GenericArrayType;
@@ -23,6 +24,7 @@ import java.util.function.Function;
 import net.jodah.typetools.TypeResolver;
 
 import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
+import org.springframework.lang.Nullable;
 
 /**
  * A utility class that provides methods for resolving types and classes related to
@@ -107,10 +109,8 @@ public abstract class TypeResolverHelper {
 			functionType = FunctionTypeUtils.discoverFunctionTypeFromClass(FunctionTypeUtils.getRawType(functionType));
 		}
 
-		var argumentType = functionType instanceof ParameterizedType
+		return functionType instanceof ParameterizedType
 				? ((ParameterizedType) functionType).getActualTypeArguments()[argumentIndex] : Object.class;
-
-		return argumentType;
 	}
 
 	/**
@@ -120,7 +120,8 @@ public abstract class TypeResolverHelper {
 	 * @return instance of {@link Class} as raw representation of the provided
 	 * {@link Type}
 	 */
-	public static Class<?> toRawClass(Type type) {
+	@Nullable
+	public static Class<?> toRawClass(@Nullable Type type) {
 		return type != null
 				? TypeResolver.resolveRawClass(type instanceof GenericArrayType ? type : TypeResolver.reify(type), null)
 				: null;

@@ -1,9 +1,9 @@
 /**
- * Package for core observation components.
+ * Package for moderation components.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.model.observation;
+package org.springframework.ai.moderation;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

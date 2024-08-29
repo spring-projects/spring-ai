@@ -93,8 +93,8 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 		return KeyValues.of(advisorName(context));
 	}
 
-	protected KeyValue advisorName(AdvisorObservationContext context) {
-		if (context.getAdvisorType() != null) {
+	protected KeyValue advisorName(@Nullable AdvisorObservationContext context) {
+		if (context != null && context.getAdvisorType() != null) {
 			return KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
 		}
 		return ADVISOR_NAME_NONE;

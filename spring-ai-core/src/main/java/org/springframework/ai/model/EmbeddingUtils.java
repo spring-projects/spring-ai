@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.springframework.ai.model;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import io.micrometer.context.Nullable;
 
 /**
  * @author Christian Tzolov
@@ -31,11 +34,13 @@ public class EmbeddingUtils {
 		return doubles.stream().map(f -> f.floatValue()).toList();
 	}
 
+	@Nullable
 	public static float[] toPrimitive(List<Float> floats) {
 		return toPrimitive(floats.toArray(new Float[floats.size()]));
 	}
 
-	public static float[] toPrimitive(final Float[] array) {
+	@Nullable
+	public static float[] toPrimitive(@Nullable final Float[] array) {
 		if (array == null) {
 			return null;
 		}
@@ -44,12 +49,13 @@ public class EmbeddingUtils {
 		}
 		final float[] result = new float[array.length];
 		for (int i = 0; i < array.length; i++) {
-			result[i] = array[i].floatValue();
+			result[i] = array[i];
 		}
 		return result;
 	}
 
-	public static Float[] toFloatArray(final float[] array) {
+	@Nullable
+	public static Float[] toFloatArray(@Nullable final float[] array) {
 		if (array == null) {
 			return null;
 		}

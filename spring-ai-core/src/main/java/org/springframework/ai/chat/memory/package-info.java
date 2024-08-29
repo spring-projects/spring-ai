@@ -1,9 +1,9 @@
 /**
- * Package for core observation components.
+ * Package for chat memory components.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.model.observation;
+package org.springframework.ai.chat.memory;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

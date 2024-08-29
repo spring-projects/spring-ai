@@ -1,9 +1,9 @@
 /**
- * Package for core observation components.
+ * Package for AOT runtime hints.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.model.observation;
+package org.springframework.ai.aot;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

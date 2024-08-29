@@ -1,9 +1,9 @@
 /**
- * Package for core observation components.
+ * Package containing chat client components.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.model.observation;
+package org.springframework.ai.chat.client;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

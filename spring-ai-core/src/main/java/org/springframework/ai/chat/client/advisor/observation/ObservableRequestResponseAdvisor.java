@@ -38,6 +38,7 @@ public class ObservableRequestResponseAdvisor implements RequestResponseAdvisor 
 
 	private final ObservationRegistry observationRegistry;
 
+	@Nullable
 	private final AdvisorObservationConvention customObservationConvention;
 
 	public ObservableRequestResponseAdvisor(RequestResponseAdvisor targetAdvisor,

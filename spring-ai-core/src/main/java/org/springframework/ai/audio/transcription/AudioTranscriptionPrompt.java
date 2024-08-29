@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.audio.transcription;
 
 import org.springframework.ai.model.ModelRequest;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 
 /**
  * Represents an audio transcription prompt for an AI model. It implements the
@@ -25,12 +27,14 @@ import org.springframework.core.io.Resource;
  *
  * @author Michael Lavelle
  * @author Piotr Olaszewski
+ * @author Soby Chacko
  * @since 0.8.1
  */
 public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 
 	private final Resource audioResource;
 
+	@Nullable
 	private AudioTranscriptionOptions modelOptions;
 
 	/**
@@ -50,7 +54,7 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 	 * @param audioResource resource of the audio file.
 	 * @param modelOptions
 	 */
-	public AudioTranscriptionPrompt(Resource audioResource, AudioTranscriptionOptions modelOptions) {
+	public AudioTranscriptionPrompt(Resource audioResource, @Nullable AudioTranscriptionOptions modelOptions) {
 		this.audioResource = audioResource;
 		this.modelOptions = modelOptions;
 	}
@@ -61,8 +65,9 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 	}
 
 	@Override
+	@Nullable
 	public AudioTranscriptionOptions getOptions() {
-		return modelOptions;
+		return this.modelOptions;
 	}
 
 }
