@@ -21,6 +21,7 @@ import java.util.Map;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
@@ -33,6 +34,16 @@ import org.springframework.ai.chat.prompt.Prompt;
  * @since 1.0.0
  */
 public interface RequestResponseAdvisor {
+
+	public enum StreamResponseMode {
+
+		CHUNK, AGGREGATE, CUSTOM;
+
+	}
+
+	default StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.CUSTOM;
+	}
 
 	/**
 	 * @return the advisor name.
@@ -73,6 +84,16 @@ public interface RequestResponseAdvisor {
 	 * @return the advised {@link ChatResponse} flux.
 	 */
 	default Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
+
+		if (this.getStreamResponseMode() == StreamResponseMode.CHUNK) {
+			return fluxResponse.map(chatResponse -> this.adviseResponse(chatResponse, context));
+		}
+		else if (this.getStreamResponseMode() == StreamResponseMode.AGGREGATE) {
+			return new MessageAggregator().aggregate(fluxResponse, chatResponse -> {
+				this.adviseResponse(chatResponse, context);
+			});
+		}
+
 		return fluxResponse;
 	}
 

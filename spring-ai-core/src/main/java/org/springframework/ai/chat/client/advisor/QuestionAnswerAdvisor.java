@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -133,11 +134,10 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
-		return fluxResponse.map(cr -> {
-			ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(cr);
-			chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-			return chatResponseBuilder.build();
+	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse, Map<String, Object> context) {
+		// return fluxResponse.map(cr -> adviseResponse(cr, context));
+		return new MessageAggregator().aggregate(fluxChatResponse, chatResponse -> {
+			this.adviseResponse(chatResponse, context);
 		});
 	}
 
@@ -149,6 +149,12 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		}
 		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
 
+	}
+
+	@Override
+	public StreamResponseMode getStreamResponseMode() {
+		// return StreamResponseMode.CHUNK;
+		return StreamResponseMode.AGGREGATE;
 	}
 
 }

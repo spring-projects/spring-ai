@@ -20,6 +20,7 @@ import java.util.Map;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -53,37 +54,50 @@ public class ObservableRequestResponseAdvisor implements RequestResponseAdvisor 
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> advisorRequestContext) {
+	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> advisorContext) {
 
 		var observationContext = this.doCreateObservationContextBuilder(AdvisorObservationContext.Type.BEFORE)
 			.withAdvisedRequest(request)
-			.withAdvisorRequestContext(advisorRequestContext)
+			.withAdvisorRequestContext(advisorContext)
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
-			.observe(() -> this.targetAdvisor.adviseRequest(request, advisorRequestContext));
+			.observe(() -> this.targetAdvisor.adviseRequest(request, advisorContext));
 	}
 
 	@Override
-	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> advisorResponseContext) {
+	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> advisorContext) {
 
 		var observationContext = this.doCreateObservationContextBuilder(AdvisorObservationContext.Type.AFTER)
-			.withAdvisorRequestContext(advisorResponseContext)
+			.withAdvisorRequestContext(advisorContext)
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
-			.observe(() -> this.targetAdvisor.adviseResponse(response, advisorResponseContext));
+			.observe(() -> this.targetAdvisor.adviseResponse(response, advisorContext));
 	}
 
 	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
+	public StreamResponseMode getStreamResponseMode() {
+		return this.targetAdvisor.getStreamResponseMode();
+	}
 
-		// NOTE: The reactive observation support is not available yet.
-		return this.targetAdvisor.adviseResponse(fluxResponse, context);
+	@Override
+	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> advisorContext) {
+
+		if (this.getStreamResponseMode() == StreamResponseMode.CHUNK) {
+			return fluxResponse.map(chatResponse -> this.adviseResponse(chatResponse, advisorContext));
+		}
+		else if (this.getStreamResponseMode() == StreamResponseMode.AGGREGATE) {
+			return new MessageAggregator().aggregate(fluxResponse, chatResponse -> {
+				this.adviseResponse(chatResponse, advisorContext);
+			});
+		}
+
+		return this.targetAdvisor.adviseResponse(fluxResponse, advisorContext);
 	}
 
 	/**

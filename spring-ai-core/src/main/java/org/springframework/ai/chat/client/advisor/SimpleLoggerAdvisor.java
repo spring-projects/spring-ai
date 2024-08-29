@@ -23,10 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.model.ModelOptionsUtils;
-
-import reactor.core.publisher.Flux;
 
 /**
  * A simple logger advisor that logs the request and response messages.
@@ -66,12 +63,6 @@ public class SimpleLoggerAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse, Map<String, Object> context) {
-		return new MessageAggregator().aggregate(fluxChatResponse,
-				chatResponse -> logger.debug("stream response: {}", this.responseToString.apply(chatResponse)));
-	}
-
-	@Override
 	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
 		logger.debug("response: {}", this.responseToString.apply(response));
 		return response;
@@ -80,6 +71,11 @@ public class SimpleLoggerAdvisor implements RequestResponseAdvisor {
 	@Override
 	public String toString() {
 		return SimpleLoggerAdvisor.class.getSimpleName();
+	}
+
+	@Override
+	public StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.AGGREGATE;
 	}
 
 }
