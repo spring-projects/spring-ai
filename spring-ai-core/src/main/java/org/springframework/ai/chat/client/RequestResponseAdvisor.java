@@ -16,120 +16,41 @@
 
 package org.springframework.ai.chat.client;
 
+import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
+
 import java.util.Map;
 
+import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.util.StringUtils;
-
-import reactor.core.publisher.Flux;
 
 /**
  * Advisor called before and after the {@link ChatModel#call(Prompt)} and
  * {@link ChatModel#stream(Prompt)} methods calls. The {@link ChatClient} maintains a
- * chain of advisors with chared execution context.
+ * chain of advisors with shared advise context.
  *
+ * @deprecated since 1.0.0 please use {@link RequestAdvisor}, {@link ResponseAdvisor}
+ * instead.
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public interface RequestResponseAdvisor {
+@Deprecated
+public interface RequestResponseAdvisor extends RequestAdvisor, ResponseAdvisor {
 
-	public enum StreamResponseMode {
-
-		/**
-		 * The sync advisor will be called for each response chunk (e.g. on each Flux
-		 * item).
-		 */
-		PER_CHUNK,
-		/**
-		 * The sync advisor is called only on chunks that contain a finish reason. Usually
-		 * the last chunk in the stream.
-		 */
-		ON_FINISH_REASON,
-		/**
-		 * The sync advisor is called only once after the stream is completed and an
-		 * aggregated response is computed. Note that at that stage the advisor can not
-		 * modify the response, but only observe it and react on the aggregated response.
-		 */
-		AGGREGATE,
-		/**
-		 * Delegates to the stream advisor implementation.
-		 */
-		CUSTOM;
-
-	}
-
-	default StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.CUSTOM;
-	}
-
-	/**
-	 * @return the advisor name.
-	 */
+	@Override
 	default String getName() {
 		return this.getClass().getSimpleName();
 	}
 
-	/**
-	 * @param request the {@link AdvisedRequest} data to be advised. Represents the row
-	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
-	 * @param context the shared data between the advisors in the chain. It is shared
-	 * between all request and response advising points of all advisors in the chain.
-	 * @return the advised {@link AdvisedRequest}.
-	 */
-	default AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+	@Override
+	default AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> adviseContext) {
 		return request;
 	}
 
-	/**
-	 * @param response the {@link ChatResponse} data to be advised. Represents the row
-	 * {@link ChatResponse} data after the {@link ChatModel#call(Prompt)} method is
-	 * called.
-	 * @param context the shared data between the advisors in the chain. It is shared
-	 * between all request and response advising points of all advisors in the chain.
-	 * @return the advised {@link ChatResponse}.
-	 */
-	default ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
+	@Override
+	default ChatResponse adviseResponse(ChatResponse response, Map<String, Object> adviseContext) {
 		return response;
-	}
-
-	/**
-	 * @param fluxResponse the streaming {@link ChatResponse} data to be advised.
-	 * Represents the row {@link ChatResponse} stream data after the
-	 * {@link ChatModel#stream(Prompt)} method is called.
-	 * @param context the shared data between the advisors in the chain. It is shared
-	 * between all request and response advising points of all advisors in the chain.
-	 * @return the advised {@link ChatResponse} flux.
-	 */
-	default Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
-
-		if (this.getStreamResponseMode() == StreamResponseMode.PER_CHUNK) {
-			return fluxResponse.map(chatResponse -> this.adviseResponse(chatResponse, context));
-		}
-		else if (this.getStreamResponseMode() == StreamResponseMode.AGGREGATE) {
-			return new MessageAggregator().aggregate(fluxResponse, chatResponse -> {
-				this.adviseResponse(chatResponse, context);
-			});
-		}
-		else if (this.getStreamResponseMode() == StreamResponseMode.ON_FINISH_REASON) {
-			return fluxResponse.map(chatResponse -> {
-				boolean withFinishReason = chatResponse.getResults()
-					.stream()
-					.filter(result -> result != null && result.getMetadata() != null
-							&& StringUtils.hasText(result.getMetadata().getFinishReason()))
-					.findFirst()
-					.isPresent();
-
-				if (withFinishReason) {
-					return this.adviseResponse(chatResponse, context);
-				}
-				return chatResponse;
-			});
-		}
-
-		return fluxResponse;
 	}
 
 }

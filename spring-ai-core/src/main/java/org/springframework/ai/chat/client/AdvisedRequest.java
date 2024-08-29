@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.model.Media;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -46,7 +47,7 @@ import org.springframework.ai.model.function.FunctionCallback;
  */
 public record AdvisedRequest(ChatModel chatModel, String userText, String systemText, ChatOptions chatOptions,
 		List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages,
-		Map<String, Object> userParams, Map<String, Object> systemParams, List<RequestResponseAdvisor> advisors,
+		Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors,
 		Map<String, Object> advisorParams) {
 
 	public static Builder from(AdvisedRequest from) {
@@ -92,7 +93,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 
 		private Map<String, Object> systemParams = Map.of();
 
-		private List<RequestResponseAdvisor> advisors = List.of();
+		private List<Advisor> advisors = List.of();
 
 		private Map<String, Object> advisorParams = Map.of();
 
@@ -146,7 +147,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 			return this;
 		}
 
-		public Builder withAdvisors(List<RequestResponseAdvisor> advisors) {
+		public Builder withAdvisors(List<Advisor> advisors) {
 			this.advisors = advisors;
 			return this;
 		}

@@ -22,7 +22,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
@@ -40,7 +41,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
+public class QuestionAnswerAdvisor implements RequestAdvisor, ResponseAdvisor {
 
 	private static final String DEFAULT_USER_TEXT_ADVISE = """
 			Context information is below.
@@ -92,6 +93,11 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
+	public String getName() {
+		return this.getClass().getSimpleName();
+	}
+
+	@Override
 	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 
 		// 1. Advise the system text.
@@ -138,11 +144,6 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		}
 		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
 
-	}
-
-	@Override
-	public StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.ON_FINISH_REASON;
 	}
 
 }

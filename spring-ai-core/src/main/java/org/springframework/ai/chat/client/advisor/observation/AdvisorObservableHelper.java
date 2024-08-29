@@ -15,17 +15,19 @@
 */
 package org.springframework.ai.chat.client.advisor.observation;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
-import org.springframework.ai.chat.client.RequestResponseAdvisor.StreamResponseMode;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.util.StringUtils;
+import org.springframework.util.CollectionUtils;
 
 import io.micrometer.observation.Observation;
-import reactor.core.publisher.Flux;
 
 /**
  * @author Christian Tzolov
@@ -33,9 +35,9 @@ import reactor.core.publisher.Flux;
  */
 public abstract class AdvisorObservableHelper {
 
-	private static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
+	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
-	public static AdvisedRequest adviseRequest(Observation parentObservation, RequestResponseAdvisor advisor,
+	public static AdvisedRequest adviseRequest(Observation parentObservation, RequestAdvisor advisor,
 			AdvisedRequest advisedRequest, Map<String, Object> advisorContext) {
 
 		var observationContext = AdvisorObservationContext.builder()
@@ -52,7 +54,7 @@ public abstract class AdvisorObservableHelper {
 			.observe(() -> advisor.adviseRequest(advisedRequest, advisorContext));
 	}
 
-	public static ChatResponse adviseResponse(Observation parentObservation, RequestResponseAdvisor advisor,
+	public static ChatResponse adviseResponse(Observation parentObservation, ResponseAdvisor advisor,
 			ChatResponse response, Map<String, Object> advisorContext) {
 
 		var observationContext = AdvisorObservationContext.builder()
@@ -68,35 +70,34 @@ public abstract class AdvisorObservableHelper {
 			.observe(() -> advisor.adviseResponse(response, advisorContext));
 	}
 
-	public static Flux<ChatResponse> adviseResponse(Observation parentObservation, RequestResponseAdvisor advisor,
-			Flux<ChatResponse> fluxResponse, Map<String, Object> advisorContext) {
+	public static List<RequestAdvisor> extractRequestAdvisors(List<Advisor> advisors) {
+		return advisors.stream()
+			.filter(advisor -> advisor instanceof RequestAdvisor)
+			.map(a -> (RequestAdvisor) a)
+			.toList();
+	}
 
-		if (advisor.getStreamResponseMode() == StreamResponseMode.PER_CHUNK) {
-			return fluxResponse
-				.map(chatResponse -> adviseResponse(parentObservation, advisor, chatResponse, advisorContext));
-		}
-		else if (advisor.getStreamResponseMode() == StreamResponseMode.AGGREGATE) {
-			return new MessageAggregator().aggregate(fluxResponse, chatResponse -> {
-				adviseResponse(parentObservation, advisor, chatResponse, advisorContext);
-			});
-		}
-		else if (advisor.getStreamResponseMode() == StreamResponseMode.ON_FINISH_REASON) {
-			return fluxResponse.map(chatResponse -> {
-				boolean withFinishReason = chatResponse.getResults()
-					.stream()
-					.filter(result -> result != null && result.getMetadata() != null
-							&& StringUtils.hasText(result.getMetadata().getFinishReason()))
-					.findFirst()
-					.isPresent();
+	/**
+	 * Extracts the {@link ResponseAdvisor} instances from the given list of advisors and
+	 * returns them in reverse order.
+	 * @param advisors list of all registered advisor types.
+	 * @return the list of {@link ResponseAdvisor} instances in reverse order.
+	 */
+	public static List<ResponseAdvisor> extractResponseAdvisors(List<Advisor> advisors) {
 
-				if (withFinishReason) {
-					return adviseResponse(parentObservation, advisor, chatResponse, advisorContext);
-				}
-				return chatResponse;
-			});
+		var list = advisors.stream()
+			.filter(advisor -> advisor instanceof ResponseAdvisor)
+			.map(a -> (ResponseAdvisor) a)
+			.toList();
+
+		// reverse the list
+		if (CollectionUtils.isEmpty(list)) {
+			return list;
 		}
 
-		return advisor.adviseResponse(fluxResponse, advisorContext);
+		var reversedList = new ArrayList<>(list);
+		Collections.reverse(reversedList);
+		return Collections.unmodifiableList(reversedList);
 	}
 
 }

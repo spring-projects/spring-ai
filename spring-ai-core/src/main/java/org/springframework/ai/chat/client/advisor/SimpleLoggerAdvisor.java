@@ -21,7 +21,8 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
 
@@ -30,7 +31,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
  *
  * @author Christian Tzolov
  */
-public class SimpleLoggerAdvisor implements RequestResponseAdvisor {
+public class SimpleLoggerAdvisor implements RequestAdvisor, ResponseAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
@@ -57,6 +58,11 @@ public class SimpleLoggerAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
+	public String getName() {
+		return this.getClass().getSimpleName();
+	}
+
+	@Override
 	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 		logger.debug("request: {}", this.requestToString.apply(request));
 		return request;
@@ -71,11 +77,6 @@ public class SimpleLoggerAdvisor implements RequestResponseAdvisor {
 	@Override
 	public String toString() {
 		return SimpleLoggerAdvisor.class.getSimpleName();
-	}
-
-	@Override
-	public StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.AGGREGATE;
 	}
 
 }
