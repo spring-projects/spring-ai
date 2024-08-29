@@ -18,7 +18,8 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
 
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.util.Assert;
 
 /**
@@ -28,7 +29,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 1.0.0 M1
  */
-public abstract class AbstractChatMemoryAdvisor<T> implements RequestResponseAdvisor {
+public abstract class AbstractChatMemoryAdvisor<T> implements RequestAdvisor, ResponseAdvisor {
 
 	public static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
@@ -60,8 +61,8 @@ public abstract class AbstractChatMemoryAdvisor<T> implements RequestResponseAdv
 	}
 
 	@Override
-	public StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.AGGREGATE;
+	public String getName() {
+		return this.getClass().getSimpleName();
 	}
 
 	protected T getChatMemoryStore() {
