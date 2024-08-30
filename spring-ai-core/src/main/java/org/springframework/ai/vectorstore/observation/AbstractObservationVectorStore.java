@@ -58,6 +58,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	@Nullable
 	public Optional<Boolean> delete(List<String> deleteDocIds) {
 
 		VectorStoreObservationContext observationContext = this
@@ -71,6 +72,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	@Nullable
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		VectorStoreObservationContext searchObservationContext = this

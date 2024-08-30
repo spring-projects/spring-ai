@@ -42,6 +42,7 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -174,8 +175,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		};
 		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			Map<String, Document> deserializedMap = objectMapper.readValue(file, typeRef);
-			this.store = deserializedMap;
+			this.store = objectMapper.readValue(file, typeRef);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -191,8 +191,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		};
 		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			Map<String, Document> deserializedMap = objectMapper.readValue(resource.getInputStream(), typeRef);
-			this.store = deserializedMap;
+			this.store = objectMapper.readValue(resource.getInputStream(), typeRef);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -218,9 +217,9 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	public static class Similarity {
 
-		private String key;
+		private final String key;
 
-		private double score;
+		private final double score;
 
 		public Similarity(String key, double score) {
 			this.key = key;
@@ -229,13 +228,13 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	}
 
-	public class EmbeddingMath {
+	public static class EmbeddingMath {
 
 		private EmbeddingMath() {
 			throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
 		}
 
-		public static double cosineSimilarity(float[] vectorX, float[] vectorY) {
+		public static double cosineSimilarity(@Nullable float[] vectorX, @Nullable float[] vectorY) {
 			if (vectorX == null || vectorY == null) {
 				throw new RuntimeException("Vectors must not be null");
 			}

@@ -35,16 +35,16 @@ import org.springframework.util.StringUtils;
 public class ExtractedTextFormatter {
 
 	/** Flag indicating if the text should be left-aligned */
-	private boolean leftAlignment;
+	private final boolean leftAlignment;
 
 	/** Number of top pages to skip before performing delete operations */
-	private int numberOfTopPagesToSkipBeforeDelete;
+	private final int numberOfTopPagesToSkipBeforeDelete;
 
 	/** Number of top text lines to delete from a page */
-	private int numberOfTopTextLinesToDelete;
+	private final int numberOfTopTextLinesToDelete;
 
 	/** Number of bottom text lines to delete from a page */
-	private int numberOfBottomTextLinesToDelete;
+	private final int numberOfBottomTextLinesToDelete;
 
 	/**
 	 * Private constructor to initialize the formatter from the builder.

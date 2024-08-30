@@ -12,27 +12,27 @@ import java.util.Objects;
  */
 public class CategoryScores {
 
-	private double sexual;
+	private final double sexual;
 
-	private double hate;
+	private final double hate;
 
-	private double harassment;
+	private final double harassment;
 
-	private double selfHarm;
+	private final double selfHarm;
 
-	private double sexualMinors;
+	private final double sexualMinors;
 
-	private double hateThreatening;
+	private final double hateThreatening;
 
-	private double violenceGraphic;
+	private final double violenceGraphic;
 
-	private double selfHarmIntent;
+	private final double selfHarmIntent;
 
-	private double selfHarmInstructions;
+	private final double selfHarmInstructions;
 
-	private double harassmentThreatening;
+	private final double harassmentThreatening;
 
-	private double violence;
+	private final double violence;
 
 	private CategoryScores(Builder builder) {
 		this.sexual = builder.sexual;

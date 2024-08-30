@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
+import org.springframework.lang.Nullable;
 
 /**
  * The {@code VectorStore} interface defines the operations for managing and querying
@@ -52,6 +53,7 @@ public interface VectorStore extends DocumentWriter {
 	 * @param idList list of document ids for which documents will be removed.
 	 * @return
 	 */
+	@Nullable
 	Optional<Boolean> delete(List<String> idList);
 
 	/**
@@ -61,6 +63,7 @@ public interface VectorStore extends DocumentWriter {
 	 * topK, similarity threshold and metadata filter expressions.
 	 * @return Returns documents th match the query request conditions.
 	 */
+	@Nullable
 	List<Document> similaritySearch(SearchRequest request);
 
 	/**
@@ -70,6 +73,7 @@ public interface VectorStore extends DocumentWriter {
 	 * @return Returns a list of documents that have embeddings similar to the query text
 	 * embedding.
 	 */
+	@Nullable
 	default List<Document> similaritySearch(String query) {
 		return this.similaritySearch(SearchRequest.query(query));
 	}

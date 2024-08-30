@@ -49,7 +49,7 @@ public class TextReader implements DocumentReader {
 	 */
 	private Charset charset = StandardCharsets.UTF_8;
 
-	private Map<String, Object> customMetadata = new HashMap<>();
+	private final Map<String, Object> customMetadata = new HashMap<>();
 
 	public TextReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));

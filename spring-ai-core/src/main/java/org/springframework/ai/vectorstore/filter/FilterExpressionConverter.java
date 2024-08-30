@@ -24,6 +24,6 @@ package org.springframework.ai.vectorstore.filter;
  */
 public interface FilterExpressionConverter {
 
-	public String convertExpression(Filter.Expression expression);
+	String convertExpression(Filter.Expression expression);
 
 }

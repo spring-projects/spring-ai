@@ -28,8 +28,10 @@ import org.springframework.lang.Nullable;
  */
 public class Generation implements ModelResult<Moderation> {
 
+	@Nullable
 	private ModerationGenerationMetadata moderationGenerationMetadata;
 
+	@Nullable
 	private Moderation moderation;
 
 	public Generation() {
@@ -51,11 +53,13 @@ public class Generation implements ModelResult<Moderation> {
 	}
 
 	@Override
+	@Nullable
 	public Moderation getOutput() {
 		return moderation;
 	}
 
 	@Override
+	@Nullable
 	public ModerationGenerationMetadata getMetadata() {
 		return moderationGenerationMetadata;
 	}

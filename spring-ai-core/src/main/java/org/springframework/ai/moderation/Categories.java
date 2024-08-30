@@ -12,27 +12,27 @@ import java.util.Objects;
  */
 public class Categories {
 
-	private boolean sexual;
+	private final boolean sexual;
 
-	private boolean hate;
+	private final boolean hate;
 
-	private boolean harassment;
+	private final boolean harassment;
 
-	private boolean selfHarm;
+	private final boolean selfHarm;
 
-	private boolean sexualMinors;
+	private final boolean sexualMinors;
 
-	private boolean hateThreatening;
+	private final boolean hateThreatening;
 
-	private boolean violenceGraphic;
+	private final boolean violenceGraphic;
 
-	private boolean selfHarmIntent;
+	private final boolean selfHarmIntent;
 
-	private boolean selfHarmInstructions;
+	private final boolean selfHarmInstructions;
 
-	private boolean harassmentThreatening;
+	private final boolean harassmentThreatening;
 
-	private boolean violence;
+	private final boolean violence;
 
 	private Categories(Builder builder) {
 		this.sexual = builder.sexual;

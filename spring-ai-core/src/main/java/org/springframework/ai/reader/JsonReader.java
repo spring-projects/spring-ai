@@ -42,16 +42,16 @@ import org.springframework.core.io.Resource;
  */
 public class JsonReader implements DocumentReader {
 
-	private Resource resource;
+	private final Resource resource;
 
-	private JsonMetadataGenerator jsonMetadataGenerator;
+	private final JsonMetadataGenerator jsonMetadataGenerator;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * The key from the JSON that we will use as the text to parse into the Document text
 	 */
-	private List<String> jsonKeysToUse;
+	private final List<String> jsonKeysToUse;
 
 	public JsonReader(Resource resource) {
 		this(resource, new ArrayList<>().toArray(new String[0]));
