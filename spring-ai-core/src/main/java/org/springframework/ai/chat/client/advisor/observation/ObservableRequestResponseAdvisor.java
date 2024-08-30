@@ -54,6 +54,11 @@ public class ObservableRequestResponseAdvisor implements RequestResponseAdvisor 
 	}
 
 	@Override
+	public String getName() {
+		return this.targetAdvisor.getName();
+	}
+
+	@Override
 	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> advisorContext) {
 
 		var observationContext = this.doCreateObservationContextBuilder(AdvisorObservationContext.Type.BEFORE)
