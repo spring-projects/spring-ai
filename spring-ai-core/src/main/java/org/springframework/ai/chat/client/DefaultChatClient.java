@@ -347,46 +347,7 @@ public class DefaultChatClient implements ChatClient {
 			DefaultChatClientRequestSpec advisedRequest = DefaultChatClientRequestSpec.adviseOnRequest(inputRequest,
 					context);
 
-			var processedUserText = StringUtils.hasText(formatParam)
-					? advisedRequest.getUserText() + System.lineSeparator() + "{spring_ai_soc_format}"
-					: advisedRequest.getUserText();
-
-			Map<String, Object> userParams = new HashMap<>(advisedRequest.getUserParams());
-			if (StringUtils.hasText(formatParam)) {
-				userParams.put("spring_ai_soc_format", formatParam);
-			}
-
-			var messages = new ArrayList<Message>(advisedRequest.getMessages());
-			var textsAreValid = (StringUtils.hasText(processedUserText)
-					|| StringUtils.hasText(advisedRequest.getSystemText()));
-			if (textsAreValid) {
-				if (StringUtils.hasText(advisedRequest.getSystemText())
-						|| !advisedRequest.getSystemParams().isEmpty()) {
-					var systemMessage = new SystemMessage(
-							new PromptTemplate(advisedRequest.getSystemText(), advisedRequest.getSystemParams())
-								.render());
-					messages.add(systemMessage);
-				}
-				UserMessage userMessage = null;
-				if (!CollectionUtils.isEmpty(userParams)) {
-					userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
-							advisedRequest.getMedia());
-				}
-				else {
-					userMessage = new UserMessage(processedUserText, advisedRequest.getMedia());
-				}
-				messages.add(userMessage);
-			}
-
-			if (advisedRequest.getChatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				if (!advisedRequest.getFunctionNames().isEmpty()) {
-					functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.getFunctionNames()));
-				}
-				if (!advisedRequest.getFunctionCallbacks().isEmpty()) {
-					functionCallingOptions.setFunctionCallbacks(advisedRequest.getFunctionCallbacks());
-				}
-			}
-			var prompt = new Prompt(messages, advisedRequest.getChatOptions());
+			var prompt = toPrompt(advisedRequest, formatParam);
 
 			var chatResponse = this.chatModel.call(prompt);
 
@@ -410,6 +371,47 @@ public class DefaultChatClient implements ChatClient {
 			return doGetChatResponse().getResult().getOutput().getContent();
 		}
 
+	}
+
+	private static Prompt toPrompt(DefaultChatClientRequestSpec advisedRequest, String formatParam) {
+
+		var messages = new ArrayList<Message>(advisedRequest.getMessages());
+
+		String processedSystemText = advisedRequest.getSystemText();
+		if (StringUtils.hasText(processedSystemText)) {
+			if (!CollectionUtils.isEmpty(advisedRequest.getSystemParams())) {
+				processedSystemText = new PromptTemplate(processedSystemText, advisedRequest.getSystemParams())
+					.render();
+			}
+			messages.add(new SystemMessage(processedSystemText));
+		}
+
+		var processedUserText = StringUtils.hasText(formatParam)
+				? advisedRequest.getUserText() + System.lineSeparator() + "{spring_ai_soc_format}"
+				: advisedRequest.getUserText();
+
+		if (StringUtils.hasText(processedUserText)) {
+
+			Map<String, Object> userParams = new HashMap<>(advisedRequest.getUserParams());
+			if (StringUtils.hasText(formatParam)) {
+				userParams.put("spring_ai_soc_format", formatParam);
+			}
+			if (!CollectionUtils.isEmpty(userParams)) {
+				processedUserText = new PromptTemplate(processedUserText, userParams).render();
+			}
+			messages.add(new UserMessage(processedUserText, advisedRequest.getMedia()));
+		}
+
+		if (advisedRequest.getChatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+			if (!advisedRequest.getFunctionNames().isEmpty()) {
+				functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.getFunctionNames()));
+			}
+			if (!advisedRequest.getFunctionCallbacks().isEmpty()) {
+				functionCallingOptions.setFunctionCallbacks(advisedRequest.getFunctionCallbacks());
+			}
+		}
+
+		return new Prompt(messages, advisedRequest.getChatOptions());
 	}
 
 	public static class DefaultStreamResponseSpec implements StreamResponseSpec {
@@ -465,41 +467,11 @@ public class DefaultChatClient implements ChatClient {
 								rwc.advisorContext);
 					}))
 				.single()
-				// .doOnNext(r -> System.out.println("Request: " + r))
 				.flatMapMany(r -> {
 					DefaultChatClientRequestSpec advisedRequest = toDefaultChatClientRequestSpec(r.request,
 							inputRequest.getObservationRegistry(), inputRequest.getCustomObservationConvention());
-					var messages = new ArrayList<Message>(advisedRequest.getMessages());
 
-					String processedSystemText = advisedRequest.getSystemText();
-					if (StringUtils.hasText(processedSystemText)) {
-						if (!CollectionUtils.isEmpty(advisedRequest.getSystemParams())) {
-							processedSystemText = new PromptTemplate(processedSystemText,
-									advisedRequest.getSystemParams())
-								.render();
-						}
-						messages.add(new SystemMessage(processedSystemText));
-					}
-
-					String processedUserText = advisedRequest.getUserText();
-					if (StringUtils.hasText(processedUserText)) {
-
-						Map<String, Object> userParams = new HashMap<>(advisedRequest.getUserParams());
-						if (!CollectionUtils.isEmpty(userParams)) {
-							processedUserText = new PromptTemplate(processedUserText, userParams).render();
-						}
-						messages.add(new UserMessage(processedUserText, advisedRequest.getMedia()));
-					}
-
-					if (advisedRequest.getChatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-						if (!advisedRequest.getFunctionNames().isEmpty()) {
-							functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.getFunctionNames()));
-						}
-						if (!advisedRequest.getFunctionCallbacks().isEmpty()) {
-							functionCallingOptions.setFunctionCallbacks(advisedRequest.getFunctionCallbacks());
-						}
-					}
-					var prompt = new Prompt(messages, advisedRequest.getChatOptions());
+					var prompt = toPrompt(advisedRequest, null);
 
 					Flux<ChatResponse> fluxChatResponse = this.chatModel.stream(prompt);
 
