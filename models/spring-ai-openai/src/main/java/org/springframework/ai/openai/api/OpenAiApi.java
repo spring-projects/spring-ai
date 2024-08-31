@@ -174,12 +174,17 @@ public class OpenAiApi {
 	}
 
 	/**
-	 * OpenAI Chat Completion Models: -
-	 * <a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a> -
-	 * <a href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o mini</a> -
-	 * <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and
-	 * GPT-4 Turbo</a> -
-	 * <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
+	 * OpenAI Chat Completion Models:
+	 *
+	 * <ul>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o
+	 * mini</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4
+	 * and GPT-4 Turbo</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5
+	 * Turbo</a></li>
+	 * </ul>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
