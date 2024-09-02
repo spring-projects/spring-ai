@@ -467,8 +467,8 @@ public class DefaultChatClient implements ChatClient {
 								rwc.advisorContext);
 					}))
 				.single()
-				.flatMapMany(r -> {
-					DefaultChatClientRequestSpec advisedRequest = toDefaultChatClientRequestSpec(r.request,
+				.flatMapMany(rwc -> {
+					DefaultChatClientRequestSpec advisedRequest = toDefaultChatClientRequestSpec(rwc.request,
 							inputRequest.getObservationRegistry(), inputRequest.getCustomObservationConvention());
 
 					var prompt = toPrompt(advisedRequest, null);
@@ -483,8 +483,8 @@ public class DefaultChatClient implements ChatClient {
 							advisedResponse = advisor.adviseResponse(advisedResponse, advisorContext);
 						}
 					}
-
 					return advisedResponse;
+
 				});
 		}
 

@@ -23,6 +23,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import io.micrometer.observation.ObservationRegistry;
 import reactor.core.publisher.Flux;
@@ -93,12 +94,27 @@ public class ObservableRequestResponseAdvisor implements RequestResponseAdvisor 
 	@Override
 	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> advisorContext) {
 
-		if (this.getStreamResponseMode() == StreamResponseMode.CHUNK) {
+		if (this.getStreamResponseMode() == StreamResponseMode.PER_CHUNK) {
 			return fluxResponse.map(chatResponse -> this.adviseResponse(chatResponse, advisorContext));
 		}
 		else if (this.getStreamResponseMode() == StreamResponseMode.AGGREGATE) {
 			return new MessageAggregator().aggregate(fluxResponse, chatResponse -> {
 				this.adviseResponse(chatResponse, advisorContext);
+			});
+		}
+		else if (this.getStreamResponseMode() == StreamResponseMode.ON_FINISH_REASON) {
+			return fluxResponse.map(chatResponse -> {
+				boolean withFinishReason = chatResponse.getResults()
+					.stream()
+					.filter(result -> result != null && result.getMetadata() != null
+							&& StringUtils.hasText(result.getMetadata().getFinishReason()))
+					.findFirst()
+					.isPresent();
+
+				if (withFinishReason) {
+					return this.adviseResponse(chatResponse, advisorContext);
+				}
+				return chatResponse;
 			});
 		}
 

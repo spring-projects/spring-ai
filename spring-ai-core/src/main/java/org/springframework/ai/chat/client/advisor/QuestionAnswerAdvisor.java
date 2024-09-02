@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -33,8 +32,6 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import reactor.core.publisher.Flux;
 
 /**
  * Context for the question is retrieved from a Vector Store and added to the prompt's
@@ -133,14 +130,6 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		return chatResponseBuilder.build();
 	}
 
-	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse, Map<String, Object> context) {
-		// return fluxResponse.map(cr -> adviseResponse(cr, context));
-		return new MessageAggregator().aggregate(fluxChatResponse, chatResponse -> {
-			this.adviseResponse(chatResponse, context);
-		});
-	}
-
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
 
 		if (!context.containsKey(FILTER_EXPRESSION)
@@ -153,8 +142,7 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	@Override
 	public StreamResponseMode getStreamResponseMode() {
-		// return StreamResponseMode.CHUNK;
-		return StreamResponseMode.AGGREGATE;
+		return StreamResponseMode.ON_FINISH_REASON;
 	}
 
 }
