@@ -340,21 +340,33 @@ public class DefaultChatClient implements ChatClient {
 
 		}
 
-		private ChatResponse doGetChatResponse(DefaultChatClientRequestSpec inputRequest, String formatParam) {
+		private ChatResponse doGetChatResponse(DefaultChatClientRequestSpec inputRequestSpec, String formatParam) {
 
 			Map<String, Object> context = new ConcurrentHashMap<>();
-			context.putAll(inputRequest.getAdvisorParams());
-			DefaultChatClientRequestSpec advisedRequest = DefaultChatClientRequestSpec.adviseOnRequest(inputRequest,
-					context);
+			context.putAll(inputRequestSpec.getAdvisorParams());
 
-			var prompt = toPrompt(advisedRequest, formatParam);
+			DefaultChatClientRequestSpec advisedRequestSpec = inputRequestSpec;
+			if (!CollectionUtils.isEmpty(inputRequestSpec.advisors)) {
+
+				AdvisedRequest advisedRequest = toAdvisedRequest(inputRequestSpec);
+
+				// apply the advisors onRequest
+				var currentAdvisors = new ArrayList<>(inputRequestSpec.advisors);
+				for (RequestResponseAdvisor advisor : currentAdvisors) {
+					advisedRequest = advisor.adviseRequest(advisedRequest, context);
+				}
+				advisedRequestSpec = toDefaultChatClientRequestSpec(advisedRequest,
+						inputRequestSpec.getObservationRegistry(), inputRequestSpec.getCustomObservationConvention());
+			}
+
+			var prompt = toPrompt(advisedRequestSpec, formatParam);
 
 			var chatResponse = this.chatModel.call(prompt);
 
 			ChatResponse advisedResponse = chatResponse;
 			// apply the advisors on response
-			if (!CollectionUtils.isEmpty(inputRequest.getAdvisors())) {
-				var currentAdvisors = new ArrayList<>(inputRequest.getAdvisors());
+			if (!CollectionUtils.isEmpty(inputRequestSpec.getAdvisors())) {
+				var currentAdvisors = new ArrayList<>(inputRequestSpec.getAdvisors());
 				for (RequestResponseAdvisor advisor : currentAdvisors) {
 					advisedResponse = advisor.adviseResponse(advisedResponse, context);
 				}
@@ -373,7 +385,7 @@ public class DefaultChatClient implements ChatClient {
 
 	}
 
-	private static Prompt toPrompt(DefaultChatClientRequestSpec advisedRequest, String formatParam) {
+	public static Prompt toPrompt(DefaultChatClientRequestSpec advisedRequest, String formatParam) {
 
 		var messages = new ArrayList<Message>(advisedRequest.getMessages());
 
@@ -800,24 +812,6 @@ public class DefaultChatClient implements ChatClient {
 			return new DefaultStreamResponseSpec(chatModel, this);
 		}
 
-		public static DefaultChatClientRequestSpec adviseOnRequest(DefaultChatClientRequestSpec inputRequest,
-				Map<String, Object> context) {
-
-			if (CollectionUtils.isEmpty(inputRequest.advisors)) {
-				return inputRequest;
-			}
-
-			AdvisedRequest advisedRequest = toAdvisedRequest(inputRequest);
-
-			// apply the advisors onRequest
-			var currentAdvisors = new ArrayList<>(inputRequest.advisors);
-			for (RequestResponseAdvisor advisor : currentAdvisors) {
-				advisedRequest = advisor.adviseRequest(advisedRequest, context);
-			}
-			return toDefaultChatClientRequestSpec(advisedRequest, inputRequest.getObservationRegistry(),
-					inputRequest.getCustomObservationConvention());
-		}
-
 	}
 
 	private static AdvisedRequest toAdvisedRequest(DefaultChatClientRequestSpec inputRequest) {
@@ -827,7 +821,7 @@ public class DefaultChatClient implements ChatClient {
 				inputRequest.systemParams, inputRequest.advisors, inputRequest.advisorParams);
 	}
 
-	private static DefaultChatClientRequestSpec toDefaultChatClientRequestSpec(AdvisedRequest advisedRequest,
+	public static DefaultChatClientRequestSpec toDefaultChatClientRequestSpec(AdvisedRequest advisedRequest,
 			ObservationRegistry observationRegistry, ChatClientObservationConvention customObservationConvention) {
 
 		return new DefaultChatClientRequestSpec(advisedRequest.chatModel(), advisedRequest.userText(),
