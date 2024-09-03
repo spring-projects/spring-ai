@@ -26,39 +26,39 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralAiEmbeddingIT {
 
 	@Autowired
-	private MistralAiEmbeddingClient mistralAiEmbeddingClient;
+	private MistralAiEmbeddingModel mistralAiEmbeddingModel;
 
 	@Test
 	void defaultEmbedding() {
-		assertThat(mistralAiEmbeddingClient).isNotNull();
-		var embeddingResponse = mistralAiEmbeddingClient.embedForResponse(List.of("Hello World"));
+		assertThat(mistralAiEmbeddingModel).isNotNull();
+		var embeddingResponse = mistralAiEmbeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1024);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "mistral-embed");
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 4);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 4);
-		assertThat(mistralAiEmbeddingClient.dimensions()).isEqualTo(1024);
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("mistral-embed");
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
+		assertThat(mistralAiEmbeddingModel.dimensions()).isEqualTo(1024);
 	}
 
 	@Test
 	void embeddingTest() {
-		assertThat(mistralAiEmbeddingClient).isNotNull();
-		var embeddingResponse = mistralAiEmbeddingClient.call(new EmbeddingRequest(
+		assertThat(mistralAiEmbeddingModel).isNotNull();
+		var embeddingResponse = mistralAiEmbeddingModel.call(new EmbeddingRequest(
 				List.of("Hello World", "World is big"),
 				MistralAiEmbeddingOptions.builder().withModel("mistral-embed").withEncodingFormat("float").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1024);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "mistral-embed");
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 9);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 9);
-		assertThat(mistralAiEmbeddingClient.dimensions()).isEqualTo(1024);
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("mistral-embed");
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(9);
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(9);
+		assertThat(mistralAiEmbeddingModel.dimensions()).isEqualTo(1024);
 	}
 
 }

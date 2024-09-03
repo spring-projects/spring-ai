@@ -1,0 +1,119 @@
+= QianFan Image Generation
+
+
+Spring AI supports CogView, the Image generation model from QianFan.
+
+== Prerequisites
+
+You will need to create an API with QianFan to access QianFan language models.
+
+Create an account at https://login.bce.baidu.com/new-reg[QianFan registration page] and generate the token on the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+The Spring AI project defines a configuration property named `spring.ai.qianfan.api-key` and `spring.ai.qianfan.secret-key`.
+you should set to the value of the `API Key` and `Secret Key` obtained from https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_QIANFAN_API_KEY=<INSERT KEY HERE>
+----
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the QianFan Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-qianfan-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-qianfan-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Image Generation Properties
+
+The prefix `spring.ai.qianfan.image` is the property prefix that lets you configure the `ImageModel` implementation for QianFan.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.qianfan.image.enabled           | Enable QianFan image model.  | true
+| spring.ai.qianfan.image.base-url          | Optional overrides the spring.ai.qianfan.base-url to provide chat specific url |  -
+| spring.ai.qianfan.image.api-key           | Optional overrides the spring.ai.qianfan.api-key to provide chat specific api-key |  -
+| spring.ai.qianfan.image.secret-key        | Optional overrides the spring.ai.qianfan.secret-key to provide chat specific secret-key |  -
+| spring.ai.qianfan.image.options.model     | The model to use for image generation.  | sd_xl
+| spring.ai.qianfan.image.options.user      | A unique identifier representing your end-user, which can help QianFan to monitor and detect abuse. | -
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.qianfan` is used as the property prefix that lets you connect to QianFan.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.qianfan.base-url        | The URL to connect to |  https://aip.baidubce.com/rpc/2.0/ai_custom
+| spring.ai.qianfan.api-key         | The API Key           |  -
+| spring.ai.qianfan.secret-key      | The Secret Key        |  -
+|====
+
+==== Configuration Properties
+
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the QianFan Image client.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+
+== Runtime Options [[image-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-qianfan/src/main/java/org/springframework/ai/qianfan/QianFanImageOptions.java[QianFanImageOptions.java] provides model configurations, such as the model to use, the quality, the size, etc.
+
+On start-up, the default options can be configured with the `QianFanImageModel(QianFanImageApi qianFanImageApi)` constructor and the `withDefaultOptions(QianFanImageOptions defaultOptions)` method.  Alternatively, use the `spring.ai.qianfan.image.options.*` properties described previously.
+
+At runtime you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
+For example to override the QianFan specific options such as quality and the number of images to create, use the following code example:
+
+[source,java]
+----
+ImageResponse response = qianFanImageModel.call(
+        new ImagePrompt("A light cream colored mini golden doodle",
+        QianFanImageOptions.builder()
+                .withN(4)
+                .withHeight(1024)
+                .withWidth(1024).build())
+
+);
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-qianfan/src/main/java/org/springframework/ai/qianfan/QianFanImageOptions.java[QianFanImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].

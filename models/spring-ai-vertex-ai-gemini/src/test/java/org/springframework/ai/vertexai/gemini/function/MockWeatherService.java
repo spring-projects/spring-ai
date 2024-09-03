@@ -70,8 +70,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 	/**
 	 * Weather Function response.
 	 */
-	public record Response(double temp, double feels_like, double temp_min, double temp_max, int pressure, int humidity,
-			Unit unit) {
+	public record Response(double temp, Unit unit) {
 	}
 
 	@Override
@@ -89,7 +88,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		}
 
 		logger.info("Request is {}, response temperature is {}", request, temperature);
-		return new Response(temperature, 15, 20, 2, 53, 45, Unit.C);
+		return new Response(temperature, Unit.C);
 	}
 
 }

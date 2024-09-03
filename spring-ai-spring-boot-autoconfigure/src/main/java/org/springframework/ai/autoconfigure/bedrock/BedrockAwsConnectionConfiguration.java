@@ -19,6 +19,9 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,6 +31,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
 @Configuration
 @EnableConfigurationProperties({ BedrockAwsConnectionProperties.class })
@@ -43,6 +47,40 @@ public class BedrockAwsConnectionConfiguration {
 		}
 
 		return DefaultCredentialsProvider.create();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public AwsRegionProvider regionProvider(BedrockAwsConnectionProperties properties) {
+
+		if (StringUtils.hasText(properties.getRegion())) {
+			return new StaticRegionProvider(properties.getRegion());
+		}
+
+		return DefaultAwsRegionProviderChain.builder().build();
+	}
+
+	/**
+	 * @author Wei Jiang
+	 */
+	static class StaticRegionProvider implements AwsRegionProvider {
+
+		private final Region region;
+
+		public StaticRegionProvider(String region) {
+			try {
+				this.region = Region.of(region);
+			}
+			catch (IllegalArgumentException e) {
+				throw new IllegalArgumentException("The region '" + region + "' is not a valid region!", e);
+			}
+		}
+
+		@Override
+		public Region getRegion() {
+			return this.region;
+		}
+
 	}
 
 }

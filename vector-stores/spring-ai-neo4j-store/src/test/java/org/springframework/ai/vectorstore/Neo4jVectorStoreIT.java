@@ -34,9 +34,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -58,7 +58,7 @@ class Neo4jVectorStoreIT {
 	// creation
 	// function.
 	@Container
-	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.15"))
+	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.18"))
 		.withRandomPassword();
 
 	List<Document> documents = List.of(
@@ -293,10 +293,10 @@ class Neo4jVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public VectorStore vectorStore(Driver driver, EmbeddingClient embeddingClient) {
+		public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
 
-			return new Neo4jVectorStore(driver, embeddingClient,
-					Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig());
+			return new Neo4jVectorStore(driver, embeddingModel, Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig(),
+					true);
 		}
 
 		@Bean
@@ -306,8 +306,8 @@ class Neo4jVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

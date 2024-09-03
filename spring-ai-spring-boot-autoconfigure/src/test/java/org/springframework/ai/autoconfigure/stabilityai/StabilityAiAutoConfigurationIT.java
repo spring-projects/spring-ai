@@ -17,7 +17,11 @@ package org.springframework.ai.autoconfigure.stabilityai;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.image.*;
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.stabilityai.StyleEnum;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -35,7 +39,7 @@ public class StabilityAiAutoConfigurationIT {
 	@Test
 	void generate() {
 		contextRunner.run(context -> {
-			ImageClient imageClient = context.getBean(ImageClient.class);
+			ImageModel imageModel = context.getBean(ImageModel.class);
 			StabilityAiImageOptions imageOptions = StabilityAiImageOptions.builder()
 				.withStylePreset(StyleEnum.PHOTOGRAPHIC)
 				.build();
@@ -45,7 +49,7 @@ public class StabilityAiAutoConfigurationIT {
 					""";
 
 			ImagePrompt imagePrompt = new ImagePrompt(instructions, imageOptions);
-			ImageResponse imageResponse = imageClient.call(imagePrompt);
+			ImageResponse imageResponse = imageModel.call(imagePrompt);
 
 			ImageGeneration imageGeneration = imageResponse.getResult();
 			Image image = imageGeneration.getOutput();

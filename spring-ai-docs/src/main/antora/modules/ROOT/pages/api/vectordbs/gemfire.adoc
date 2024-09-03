@@ -1,0 +1,136 @@
+= GemFire Vector Store
+
+This section walks you through setting up the `GemFireVectorStore` to store document embeddings and perform similarity searches.
+
+link:https://tanzu.vmware.com/gemfire[GemFire] is a distributed, in-memory, key-value store performing read and write operations at blazingly fast speeds. It offers highly available parallel message queues, continuous availability, and an event-driven architecture you can scale dynamically without downtime. As your data size requirements increase to support high-performance, real-time apps, GemFire can easily scale linearly.
+
+link:https://docs.vmware.com/en/VMware-GemFire-VectorDB/1.0/gemfire-vectordb/overview.html[GemFire VectorDB] extends GemFire's capabilities, serving as a versatile vector database that efficiently stores, retrieves, and performs vector similarity searches.
+
+== Prerequisites
+
+1. A GemFire cluster with the GemFire VectorDB extension enabled
+- link:https://docs.vmware.com/en/VMware-GemFire-VectorDB/1.0/gemfire-vectordb/install.html[Install GemFire VectorDB extension]
+
+2. An `EmbeddingModel` bean to compute the document embeddings. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+An option that runs locally on your machine is xref:api/embeddings/onnx.adoc[ONNX] and the all-MiniLM-L6-v2 Sentence Transformers.
+
+== Auto-configuration
+
+Add the GemFire VectorStore Spring Boot starter to you project's Maven build file `pom.xml`:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-gemfire-store-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` file
+
+[source, xml]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-gemfire-store-spring-boot-starter'
+}
+----
+
+=== Configuration properties
+
+You can use the following properties in your Spring Boot configuration to further configure the `GemFireVectorStore`.
+
+|===
+|Property|Default value
+
+|`spring.ai.vectorstore.gemfire.host`|localhost
+|`spring.ai.vectorstore.gemfire.port`|8080
+|`spring.ai.vectorstore.gemfire.initialize-schema`| `false`
+|`spring.ai.vectorstore.gemfire.index-name`|spring-ai-gemfire-store
+|`spring.ai.vectorstore.gemfire.beam-width`|100
+|`spring.ai.vectorstore.gemfire.max-connections`|16
+|`spring.ai.vectorstore.gemfire.vector-similarity-function`|COSINE
+|`spring.ai.vectorstore.gemfire.fields`|[]
+|`spring.ai.vectorstore.gemfire.buckets`|0
+|===
+
+
+== Manual Configuration
+
+To use just the `GemFireVectorStore`, without Spring Boot's Auto-configuration add the following dependency to your project’s Maven `pom.xml`:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-gemfire-store</artifactId>
+</dependency>
+----
+
+For Gradle users, add the following to your `build.gradle` file under the dependencies block to use just the `GemFireVectorStore`:
+
+[souce, xml]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-gemfire-store'
+}
+----
+
+== Usage
+
+Here is a sample that creates an instance of the `GemfireVectorStore` instead of using AutoConfiguration
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(EmbeddingModel embeddingModel) {
+    return new GemFireVectorStore(new GemFireVectorStoreConfig()
+                                    .setIndexName("my-vector-index")
+                                    .setPort(7071), embeddingClient);
+}
+----
+
+[NOTE]
+====
+The GemFire VectorStore does not yet support xref:api/vectordbs.adoc#metadata-filters[metadata filters].
+====
+
+[NOTE]
+====
+The default configuration connects to a GemFire cluster at `localhost:8080`
+====
+
+- In your application, create a few documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "year", 2020)),
+   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
+   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
+----
+
+- Add the documents to the vector store:
+
+[source,java]
+----
+vectorStore.add(documents);
+----
+
+- And to retrieve documents using similarity search:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest.query("Spring").withTopK(5));
+----
+
+You should retrieve the document containing the text "Spring AI rocks!!".
+
+You can also limit the number of results using a similarity threshold:
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest.query("Spring").withTopK(5)
+      .withSimilarityThreshold(0.5d));
+----
+

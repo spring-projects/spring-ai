@@ -36,8 +36,11 @@ public class AzureEmbeddingsOptionsTests {
 	public void createRequestWithChatOptions() {
 
 		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
-		var client = new AzureOpenAiEmbeddingClient(mockClient, MetadataMode.EMBED,
-				AzureOpenAiEmbeddingOptions.builder().withModel("DEFAULT_MODEL").withUser("USER_TEST").build());
+		var client = new AzureOpenAiEmbeddingModel(mockClient, MetadataMode.EMBED,
+				AzureOpenAiEmbeddingOptions.builder()
+					.withDeploymentName("DEFAULT_MODEL")
+					.withUser("USER_TEST")
+					.build());
 
 		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test message content"), null));
 
@@ -47,7 +50,10 @@ public class AzureEmbeddingsOptionsTests {
 		assertThat(requestOptions.getUser()).isEqualTo("USER_TEST");
 
 		requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test message content"),
-				AzureOpenAiEmbeddingOptions.builder().withModel("PROMPT_MODEL").withUser("PROMPT_USER").build()));
+				AzureOpenAiEmbeddingOptions.builder()
+					.withDeploymentName("PROMPT_MODEL")
+					.withUser("PROMPT_USER")
+					.build()));
 
 		assertThat(requestOptions.getInput()).hasSize(1);
 

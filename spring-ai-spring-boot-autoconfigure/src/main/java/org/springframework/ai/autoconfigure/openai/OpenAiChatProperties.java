@@ -24,14 +24,18 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
+	public static final String DEFAULT_CHAT_MODEL = "gpt-4o";
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
+	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
+
 	/**
-	 * Enable OpenAI chat client.
+	 * Enable OpenAI chat model.
 	 */
 	private boolean enabled = true;
+
+	private String completionsPath = DEFAULT_COMPLETIONS_PATH;
 
 	@NestedConfigurationProperty
 	private OpenAiChatOptions options = OpenAiChatOptions.builder()
@@ -53,6 +57,14 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public String getCompletionsPath() {
+		return completionsPath;
+	}
+
+	public void setCompletionsPath(String completionsPath) {
+		this.completionsPath = completionsPath;
 	}
 
 }

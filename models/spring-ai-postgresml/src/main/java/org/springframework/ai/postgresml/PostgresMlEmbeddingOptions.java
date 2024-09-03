@@ -17,6 +17,7 @@ package org.springframework.ai.postgresml;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -24,10 +25,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.postgresml.PostgresMlEmbeddingClient.VectorType;
+import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
@@ -36,7 +38,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	/**
 	 * The Huggingface transformer model to use for the embedding.
 	 */
-	private @JsonProperty("transformer") String transformer = PostgresMlEmbeddingClient.DEFAULT_TRANSFORMER_MODEL;
+	private @JsonProperty("transformer") String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
 
 	/**
 	 * PostgresML vector type to use for the embedding.
@@ -128,6 +130,18 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getDimensions() {
+		return null;
 	}
 
 }

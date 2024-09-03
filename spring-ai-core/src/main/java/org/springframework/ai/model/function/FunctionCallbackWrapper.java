@@ -19,6 +19,8 @@ import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
@@ -35,9 +37,8 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 	private final Function<I, O> function;
 
 	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, Function<I, O> function) {
-		super(name, description, inputTypeSchema, inputType, responseConverter,
-				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
+			Function<O, String> responseConverter, ObjectMapper objectMapper, Function<I, O> function) {
+		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
 		this.function = function;
 	}
@@ -80,12 +81,14 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 		}
 
 		// By default the response is converted to a JSON string.
-		private Function<O, String> responseConverter = (response) -> ModelOptionsUtils.toJsonString(response);
+		private Function<O, String> responseConverter = ModelOptionsUtils::toJsonString;
 
 		private String inputTypeSchema;
 
 		private ObjectMapper objectMapper = new ObjectMapper()
-			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.registerModule(new JavaTimeModule());
 
 		public Builder<I, O> withName(String name) {
 			Assert.hasText(name, "Name must not be empty");
@@ -133,7 +136,6 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 			Assert.hasText(this.name, "Name must not be empty");
 			Assert.hasText(this.description, "Description must not be empty");
-			// Assert.notNull(this.inputType, "InputType must not be null");
 			Assert.notNull(this.function, "Function must not be null");
 			Assert.notNull(this.responseConverter, "ResponseConverter must not be null");
 			Assert.notNull(this.objectMapper, "ObjectMapper must not be null");
@@ -148,7 +150,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			}
 
 			return new FunctionCallbackWrapper<>(this.name, this.description, this.inputTypeSchema, this.inputType,
-					this.responseConverter, this.function);
+					this.responseConverter, this.objectMapper, this.function);
 		}
 
 	}

@@ -15,16 +15,18 @@
  */
 package org.springframework.ai.chat.messages;
 
-import java.util.List;
-import java.util.Map;
+import org.springframework.ai.model.Content;
+import org.springframework.ai.model.Media;
 
-public interface Message {
-
-	String getContent();
-
-	List<MediaData> getMediaData();
-
-	Map<String, Object> getProperties();
+/**
+ * The Message interface represents a message that can be sent or received in a chat
+ * application. Messages can have content, media attachments, properties, and message
+ * types.
+ *
+ * @see Media
+ * @see MessageType
+ */
+public interface Message extends Content {
 
 	MessageType getMessageType();
 

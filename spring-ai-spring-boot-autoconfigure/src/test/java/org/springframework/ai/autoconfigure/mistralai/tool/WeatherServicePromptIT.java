@@ -15,34 +15,32 @@
  */
 package org.springframework.ai.autoconfigure.mistralai.tool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration;
 import org.springframework.ai.autoconfigure.mistralai.tool.WeatherServicePromptIT.MyWeatherService.Request;
 import org.springframework.ai.autoconfigure.mistralai.tool.WeatherServicePromptIT.MyWeatherService.Response;
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.mistralai.MistralAiChatClient;
+import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Christian Tzolov
@@ -55,8 +53,7 @@ public class WeatherServicePromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MistralAiAutoConfiguration.class));
 
 	@Test
 	void promptFunctionCall() {
@@ -64,7 +61,7 @@ public class WeatherServicePromptIT {
 			.withPropertyValues("spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.LARGE.getValue())
 			.run(context -> {
 
-				MistralAiChatClient chatClient = context.getBean(MistralAiChatClient.class);
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 				// UserMessage userMessage = new UserMessage("What's the weather like in
@@ -79,7 +76,7 @@ public class WeatherServicePromptIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
 				logger.info("Response: {}", response);
 

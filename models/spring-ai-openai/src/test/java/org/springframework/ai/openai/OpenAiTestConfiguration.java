@@ -15,10 +15,11 @@
  */
 package org.springframework.ai.openai;
 
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
+import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -41,6 +42,11 @@ public class OpenAiTestConfiguration {
 		return new OpenAiAudioApi(getApiKey());
 	}
 
+	@Bean
+	public OpenAiModerationApi openAiModerationApi() {
+		return new OpenAiModerationApi(getApiKey());
+	}
+
 	private String getApiKey() {
 		String apiKey = System.getenv("OPENAI_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
@@ -51,27 +57,40 @@ public class OpenAiTestConfiguration {
 	}
 
 	@Bean
-	public OpenAiChatClient openAiChatClient(OpenAiApi api) {
-		OpenAiChatClient openAiChatClient = new OpenAiChatClient(api);
-		return openAiChatClient;
+	public OpenAiChatModel openAiChatModel(OpenAiApi api) {
+		OpenAiChatModel openAiChatModel = new OpenAiChatModel(api,
+				OpenAiChatOptions.builder().withModel(ChatModel.GPT_4_O_MINI).build());
+		return openAiChatModel;
 	}
 
 	@Bean
-	public OpenAiAudioTranscriptionClient openAiTranscriptionClient(OpenAiAudioApi api) {
-		OpenAiAudioTranscriptionClient openAiTranscriptionClient = new OpenAiAudioTranscriptionClient(api);
-		return openAiTranscriptionClient;
+	public OpenAiAudioTranscriptionModel openAiTranscriptionModel(OpenAiAudioApi api) {
+		OpenAiAudioTranscriptionModel openAiTranscriptionModel = new OpenAiAudioTranscriptionModel(api);
+		return openAiTranscriptionModel;
 	}
 
 	@Bean
-	public OpenAiImageClient openAiImageClient(OpenAiImageApi imageApi) {
-		OpenAiImageClient openAiImageClient = new OpenAiImageClient(imageApi);
-		// openAiImageClient.setModel("foobar");
-		return openAiImageClient;
+	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiAudioApi api) {
+		OpenAiAudioSpeechModel openAiAudioSpeechModel = new OpenAiAudioSpeechModel(api);
+		return openAiAudioSpeechModel;
 	}
 
 	@Bean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiApi api) {
-		return new OpenAiEmbeddingClient(api);
+	public OpenAiImageModel openAiImageModel(OpenAiImageApi imageApi) {
+		OpenAiImageModel openAiImageModel = new OpenAiImageModel(imageApi);
+		// openAiImageModel.setModel("foobar");
+		return openAiImageModel;
+	}
+
+	@Bean
+	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiApi api) {
+		return new OpenAiEmbeddingModel(api);
+	}
+
+	@Bean
+	public OpenAiModerationModel openAiModerationClient(OpenAiModerationApi openAiModerationApi) {
+		OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(openAiModerationApi);
+		return openAiModerationModel;
 	}
 
 }

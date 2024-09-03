@@ -1,37 +1,45 @@
-[[EmbeddingClient]]
-= Embeddings API
+[[EmbeddingModel]]
+= Embeddings Model API
 
-The `EmbeddingClient` interface is designed for straightforward integration with embedding models in AI and machine learning.
+Embeddings are numerical representations of text, images, or videos that capture relationships between inputs. 
+
+Embeddings work by converting text, image, and video into arrays of floating point numbers, called vectors. 
+These vectors are designed to capture the meaning of the text, images, and videos. 
+The length of the embedding array is called the vector's dimensionality. 
+
+By calculating the numerical distance between the vector representations of two pieces of text, an application can determine the similarity between the objects used to generate the embedding vectors.
+
+The `EmbeddingModel` interface is designed for straightforward integration with embedding models in AI and machine learning.
 Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.
 These embeddings are crucial for various tasks such as semantic analysis and text classification.
 
-The design of the EmbeddingClient interface centers around two primary goals:
+The design of the EmbeddingModel interface centers around two primary goals:
 
 * *Portability*: This interface ensures easy adaptability across various embedding models.
 It allows developers to switch between different embedding techniques or models with minimal code changes.
 This design aligns with Spring's philosophy of modularity and interchangeability.
 
-* *Simplicity*: EmbeddingClient simplifies the process of converting text to embeddings.
+* *Simplicity*: EmbeddingModel simplifies the process of converting text to embeddings.
 By providing straightforward methods like `embed(String text)` and `embed(Document document)`, it takes the complexity out of dealing with raw text data and embedding algorithms. This design choice makes it easier for developers, especially those new to AI, to utilize embeddings in their applications without delving deep into the underlying mechanics.
 
 == API Overview
 
-The Embedding API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
-As such, the EmbeddingClient interface extends the `ModelClient` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
+The Embedding Model API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
+As such, the EmbeddingModel interface extends the `Model` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
 
-The Embedding API in turn is used by higher-level components to implement Embedding Clients for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
+The Embedding API in turn is used by higher-level components to implement Embedding Models for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
 
-Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Clients:
+Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Models:
 
 image:embeddings-api.jpg[title=Embeddings API,align=center,width=900]
 
-=== EmbeddingClient
+=== EmbeddingModel
 
-This section provides a guide to the `EmbeddingClient` interface and associated classes.
+This section provides a guide to the `EmbeddingModel` interface and associated classes.
 
 [source,java]
 ----
-public interface EmbeddingClient extends ModelClient<EmbeddingRequest, EmbeddingResponse> {
+public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingResponse> {
 
 	@Override
 	EmbeddingResponse call(EmbeddingRequest request);
@@ -42,14 +50,14 @@ public interface EmbeddingClient extends ModelClient<EmbeddingRequest, Embedding
 	 * @param document the document to embed.
 	 * @return the embedded vector.
 	 */
-	List<Double> embed(Document document);
+	float[] embed(Document document);
 
 	/**
 	 * Embeds the given text into a vector.
 	 * @param text the text to embed.
 	 * @return the embedded vector.
 	 */
-	default List<Double> embed(String text) {
+	default float[] embed(String text) {
 		Assert.notNull(text, "Text must not be null");
 		return this.embed(List.of(text)).iterator().next();
 	}
@@ -59,7 +67,7 @@ public interface EmbeddingClient extends ModelClient<EmbeddingRequest, Embedding
 	 * @param texts list of texts to embed.
 	 * @return list of list of embedded vectors.
 	 */
-	default List<List<Double>> embed(List<String> texts) {
+	default List<float[]> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
 		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
 			.getResults()
@@ -94,7 +102,7 @@ The embed methods offer various options for converting text into embeddings, acc
 Multiple shortcut methods are provided for embedding text, including the `embed(String text)` method, which takes a single string and returns the corresponding embedding vector.
 All shortcuts are implemented around the `call` method, which is the primary method for invoking the embedding model.
 
-Typically the embedding returns a lists of doubles, representing the embeddings in a numerical vector format.
+Typically the embedding returns a lists of floats, representing the embeddings in a numerical vector format.
 
 The `embedForResponse` method provides a more comprehensive output, potentially including additional information about the embeddings.
 
@@ -138,8 +146,8 @@ The `Embedding` represents a single embedding vector.
 
 [source,java]
 ----
-public class Embedding implements ModelResult<List<Double>> {
-	private List<Double> embedding;
+public class Embedding implements ModelResult<float[]> {
+	private float[] embedding;
 	private Integer index;
 	private EmbeddingResultMetadata metadata;
 	// other methods omitted
@@ -148,7 +156,7 @@ public class Embedding implements ModelResult<List<Double>> {
 
 == Available Implementations [[available-implementations]]
 
-Internally the various `EmbeddingClient` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingClient` implementations:
+Internally the various `EmbeddingModel` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingModel` implementations:
 
 * xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
 * xref:api/embeddings/azure-openai-embeddings.adoc[Spring AI Azure OpenAI Embeddings]
@@ -157,5 +165,6 @@ Internally the various `EmbeddingClient` implementations use different low-level
 * xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
-* xref:api/embeddings/vertexai-embeddings.adoc[Spring AI VertexAI PaLM2 Embeddings]
+* xref:api/embeddings/vertexai-embeddings-text.adoc[Spring AI VertexAI Embeddings]
+* xref:api/embeddings/vertexai-embeddings-palm2.adoc[Spring AI VertexAI PaLM2 Embeddings]
 * xref:api/embeddings/mistralai-embeddings.adoc[Spring AI Mistral AI Embeddings]

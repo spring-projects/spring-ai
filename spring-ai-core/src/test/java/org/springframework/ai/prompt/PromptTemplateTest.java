@@ -17,6 +17,10 @@ package org.springframework.ai.prompt;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -24,21 +28,89 @@ import org.springframework.core.io.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PromptTemplateTest {
 
 	@Test
-	public void testRender() {
-		// Create a map with string keys and object values to serve as a generative for
-		// testing
+	public void testCreateWithEmptyModelAndChatOptions() {
+		String template = "This is a test prompt with no variables";
+		PromptTemplate promptTemplate = new PromptTemplate(template);
+		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.7f).withTopK(3).build();
+
+		Prompt prompt = promptTemplate.create(chatOptions);
+
+		assertThat(prompt).isNotNull();
+		assertThat(prompt.getContents()).isEqualTo(template);
+		assertThat(prompt.getOptions()).isEqualTo(chatOptions);
+	}
+
+	@Test
+	public void testCreateWithModelAndChatOptions() {
+		String template = "Hello, {name}! Your age is {age}.";
 		Map<String, Object> model = new HashMap<>();
-		model.put("key1", "value1");
-		model.put("key2", true);
+		model.put("name", "Alice");
+		model.put("age", 30);
+		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.5f).withMaxTokens(100).build();
+
+		Prompt prompt = promptTemplate.create(model, chatOptions);
+
+		assertThat(prompt).isNotNull();
+		assertThat(prompt.getContents()).isEqualTo("Hello, Alice! Your age is 30.");
+		assertThat(prompt.getOptions()).isEqualTo(chatOptions);
+	}
+
+	@Test
+	public void testCreateWithOverriddenModelAndChatOptions() {
+		String template = "Hello, {name}! Your favorite color is {color}.";
+		Map<String, Object> initialModel = new HashMap<>();
+		initialModel.put("name", "Bob");
+		initialModel.put("color", "blue");
+		PromptTemplate promptTemplate = new PromptTemplate(template, initialModel);
+
+		Map<String, Object> overriddenModel = new HashMap<>();
+		overriddenModel.put("color", "red");
+		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.8f).build();
+
+		Prompt prompt = promptTemplate.create(overriddenModel, chatOptions);
+
+		assertThat(prompt).isNotNull();
+		assertThat(prompt.getContents()).isEqualTo("Hello, Bob! Your favorite color is red.");
+		assertThat(prompt.getOptions()).isEqualTo(chatOptions);
+	}
+
+	@Test
+	public void testRenderWithList() {
+		String templateString = "The items are:\n{items:{item | - {item}\n}}";
+		List<String> itemList = Arrays.asList("apple", "banana", "cherry");
+		PromptTemplate promptTemplate = new PromptTemplate(templateString);
+		Message message = promptTemplate.createMessage(Map.of("items", itemList));
+
+		String expected = "The items are:\n- apple\n- banana\n- cherry\n";
+
+		// After upgrading StringTemplate4 to 4.3.4, this test will fail on windows if we
+		// don't normalize EOLs.
+		// It should be fine on Unix systems. In addition, Git will replace CRLF by LF by
+		// default.
+		assertEqualsWithNormalizedEOLs(expected, message.getContent());
+
+		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
+		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)
+			.withMessage("Not all template variables were replaced. Missing variable names are [items]");
+	}
+
+	@Test
+	public void testRender() {
+		Map<String, Object> model = createTestMap();
 		model.put("key3", 100);
 
 		// Create a simple template with placeholders for keys in the generative
@@ -58,14 +130,41 @@ public class PromptTemplateTest {
 		assertEquals(expected, result);
 	}
 
-	@Disabled("Need to improve PromptTemplate to better handle Resource toString and tracking with 'dynamicModel' for underlying StringTemplate")
 	@Test
-	public void testRenderResource() throws Exception {
-		// Create a map with string keys and object values to serve as a generative for
-		// testing
+	public void testRenderWithHyphen() {
+		Map<String, Object> model = Map.of("key-1", "value1");
+		String template = "This is a {key-1}";
+		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+
+		String expected = "This is a value1";
+		String result = promptTemplate.render();
+
+		assertEquals(expected, result);
+	}
+
+	@Test
+	public void testRenderResource() {
+		Map<String, Object> model = createTestMap();
+		InputStream inputStream = new ByteArrayInputStream(
+				"key1's value is {key1} and key2's value is {key2}".getBytes(Charset.defaultCharset()));
+		Resource resource = new InputStreamResource(inputStream);
+		PromptTemplate promptTemplate = new PromptTemplate(resource, model);
+		String expected = "key1's value is value1 and key2's value is true";
+		String result = promptTemplate.render();
+		assertEquals(expected, result);
+	}
+
+	private static Map<String, Object> createTestMap() {
 		Map<String, Object> model = new HashMap<>();
 		model.put("key1", "value1");
 		model.put("key2", true);
+		return model;
+	}
+
+	@Disabled("Need to improve PromptTemplate to better handle Resource toString and tracking with 'dynamicModel' for underlying StringTemplate")
+	@Test
+	public void testRenderResourceAsValue() throws Exception {
+		Map<String, Object> model = createTestMap();
 
 		// Create an input stream for the resource
 		InputStream inputStream = new ByteArrayInputStream("it costs 100".getBytes(Charset.defaultCharset()));
@@ -98,6 +197,11 @@ public class PromptTemplateTest {
 
 		// Rendering the template with a missing key should throw an exception
 		assertThrows(IllegalStateException.class, promptTemplate::render);
+	}
+
+	private static void assertEqualsWithNormalizedEOLs(String expected, String actual) {
+		assertEquals(expected.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()),
+				actual.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()));
 	}
 
 }

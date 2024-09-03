@@ -16,10 +16,10 @@ jobs:
         run: echo RELEASE_VERSION=${{ github.event.inputs.releaseVersion }} >> $GITHUB_ENV
 
       - name: Checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -28,9 +28,9 @@ jobs:
       - name: Generate Java docs
         run: mvn javadoc:aggregate
 
-      - name: Generate Reference docs
+      - name: Generate assembly
         working-directory: spring-ai-docs
-        run: mvn site
+        run: mvn assembly:single
 
       - name: Setup SSH key
         env:
@@ -50,7 +50,6 @@ jobs:
         working-directory: spring-ai-docs/target
         run: |
           unzip spring-ai-$RELEASE_VERSION-docs.zip
-          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST cd $DOCS_PATH && mkdir $RELEASE_VERSION
-          scp -i $HOME/.ssh/key -r api reference $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$RELEASE_VERSION
-          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST rm current && ln -s $RELEASE_VERSION current
-          
+          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $RELEASE_VERSION/api"
+          scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$RELEASE_VERSION
+

@@ -50,29 +50,27 @@ import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Utility class for manipulating {@link ModelOptions} objects.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
-public final class ModelOptionsUtils {
+public abstract class ModelOptionsUtils {
 
-	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 		.registerModule(new JavaTimeModule());
 
-	private final static List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
+	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
-	private static ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
+	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
 
-	private static AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
-
-	private ModelOptionsUtils() {
-
-	}
+	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
 	/**
 	 * Converts the given JSON string to a Map of String and Object.
@@ -393,6 +391,13 @@ public final class ModelOptionsUtils {
 				}
 			});
 		}
+	}
+
+	/**
+	 * Return the runtime value if not empty, or else the default value.
+	 */
+	public static <T> T mergeOption(T runtimeValue, T defaultValue) {
+		return ObjectUtils.isEmpty(runtimeValue) ? defaultValue : runtimeValue;
 	}
 
 }

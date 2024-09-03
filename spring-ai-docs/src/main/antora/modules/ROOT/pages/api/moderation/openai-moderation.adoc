@@ -1,0 +1,172 @@
+= Moderation
+
+== Introduction
+
+Spring AI supports OpenAI's Moderation model, which allows you to detect potentially harmful or sensitive content in text.
+Follow this https://platform.openai.com/docs/guides/moderation[guide] to for more information on OpenAI's moderation model.
+
+== Prerequisites
+
+. Create an OpenAI account and obtain an API key. You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
+. Add the `spring-ai-openai` dependency to your project's build file. For more information, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the OpenAI Text-to-Speech Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Moderation Properties
+
+=== Connection Properties
+The prefix spring.ai.openai is used as the property prefix that lets you connect to OpenAI.
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.api-key    | The API Key           |  -
+| spring.ai.openai.organization-id | Optionally you can specify which organization is used for an API request. |  -
+| spring.ai.openai.project-id      | Optionally, you can specify which project is used for an API request. |  -
+|====
+
+TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), optionally, you can specify which organization and project is used for an API request.
+Usage from these API requests will count as usage for the specified organization and project.
+
+=== Configuration Properties
+The prefix spring.ai.openai.moderation is used as the property prefix for configuring the OpenAI moderation model.
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+| spring.ai.openai.moderation.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.moderation.api-key    | The API Key           |  -
+| spring.ai.openai.moderation.organization-id | Optionally you can specify which organization is used for an API request. |  -
+| spring.ai.openai.moderation.project-id      | Optionally, you can specify which project is used for an API request. |  -
+| spring.ai.openai.moderation.options.model  | ID of the model to use for moderation. | text-moderation-latest
+|====
+
+NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
+The `spring.ai.openai.moderation.base-url`, `spring.ai.openai.moderation.api-key`, `spring.ai.openai.moderation.organization-id` and `spring.ai.openai.moderation.project-id` properties, if set, take precedence over the common properties.
+This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.openai.moderation.options` can be overridden at runtime.
+
+== Runtime Options
+The OpenAiModerationOptions class provides the options to use when making a moderation request.
+On start-up, the options specified by spring.ai.openai.moderation are used, but you can override these at runtime.
+
+For example:
+
+[source,java]
+----
+OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
+    .withModel("text-moderation-latest")
+    .build();
+
+ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", moderationOptions);
+ModerationResponse response = openAiModerationModel.call(moderationPrompt);
+
+// Access the moderation results
+Moderation moderation = moderationResponse.getResult().getOutput();
+
+// Print general information
+System.out.println("Moderation ID: " + moderation.getId());
+System.out.println("Model used: " + moderation.getModel());
+
+// Access the moderation results (there's usually only one, but it's a list)
+for (ModerationResult result : moderation.getResults()) {
+    System.out.println("\nModeration Result:");
+    System.out.println("Flagged: " + result.isFlagged());
+
+    // Access categories
+    Categories categories = result.getCategories();
+    System.out.println("\nCategories:");
+    System.out.println("Sexual: " + categories.isSexual());
+    System.out.println("Hate: " + categories.isHate());
+    System.out.println("Harassment: " + categories.isHarassment());
+    System.out.println("Self-Harm: " + categories.isSelfHarm());
+    System.out.println("Sexual/Minors: " + categories.isSexualMinors());
+    System.out.println("Hate/Threatening: " + categories.isHateThreatening());
+    System.out.println("Violence/Graphic: " + categories.isViolenceGraphic());
+    System.out.println("Self-Harm/Intent: " + categories.isSelfHarmIntent());
+    System.out.println("Self-Harm/Instructions: " + categories.isSelfHarmInstructions());
+    System.out.println("Harassment/Threatening: " + categories.isHarassmentThreatening());
+    System.out.println("Violence: " + categories.isViolence());
+
+    // Access category scores
+    CategoryScores scores = result.getCategoryScores();
+    System.out.println("\nCategory Scores:");
+    System.out.println("Sexual: " + scores.getSexual());
+    System.out.println("Hate: " + scores.getHate());
+    System.out.println("Harassment: " + scores.getHarassment());
+    System.out.println("Self-Harm: " + scores.getSelfHarm());
+    System.out.println("Sexual/Minors: " + scores.getSexualMinors());
+    System.out.println("Hate/Threatening: " + scores.getHateThreatening());
+    System.out.println("Violence/Graphic: " + scores.getViolenceGraphic());
+    System.out.println("Self-Harm/Intent: " + scores.getSelfHarmIntent());
+    System.out.println("Self-Harm/Instructions: " + scores.getSelfHarmInstructions());
+    System.out.println("Harassment/Threatening: " + scores.getHarassmentThreatening());
+    System.out.println("Violence: " + scores.getViolence());
+}
+
+----
+
+== Manual Configuration
+
+Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create an OpenAiModerationModel:
+
+[source,java]
+----
+OpenAiModerationApi openAiModerationApi = new OpenAiModerationApi(System.getenv("OPENAI_API_KEY"));
+
+OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(openAiModerationApi);
+
+OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
+    .withModel("text-moderation-latest")
+    .build();
+
+ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", moderationOptions);
+ModerationResponse response = openAiModerationModel.call(moderationPrompt);
+----
+
+== Example Code
+The `OpenAiModerationModelIT` test provides some general examples of how to use the library. You can refer to this test for more detailed usage examples.

@@ -15,39 +15,53 @@
  */
 package org.springframework.ai.ollama.api;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  * @see <a href=
- * "https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
+ * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
- * @see <a href="https://github.com/jmorganca/ollama/blob/main/api/types.go">Ollama
- * Types</a>
+ * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions implements ChatOptions, EmbeddingOptions {
+public class OllamaOptions implements FunctionCallingOptions, ChatOptions, EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
 
+	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
+
+	// Following fields are options which must be set when the model is loaded into
+	// memory.
+	// See: https://github.com/ggerganov/llama.cpp/blob/master/examples/main/README.md
+
 	// @formatter:off
+
 	/**
-	 * useNUMA Whether to use NUMA.
+	 * Whether to use NUMA. (Default: false)
 	 */
 	@JsonProperty("numa") private Boolean useNUMA;
 
@@ -57,89 +71,85 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("num_ctx") private Integer numCtx;
 
 	/**
-	 * ???
+	 * Prompt processing maximum batch size. (Default: 512)
 	 */
 	@JsonProperty("num_batch") private Integer numBatch;
 
 	/**
-	 * The number of GQA groups in the transformer layer. Required for some models,
-	 * for example it is 8 for llama2:70b.
-	 */
-	@JsonProperty("num_gqa") private Integer numGQA;
-
-	/**
-	 * The number of layers to send to the GPU(s). On macOS it defaults to 1
+	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
-		*/
+	 * (Default: -1, which indicates that numGPU should be set dynamically)
+	*/
 	@JsonProperty("num_gpu") private Integer numGPU;
 
 	/**
-	 * ???
+	 * When using multiple GPUs this option controls which GPU is used
+	 * for small tensors for which the overhead of splitting the computation
+	 * across all GPUs is not worthwhile. The GPU in question will use slightly
+	 * more VRAM to store a scratch buffer for temporary results.
+	 * By default, GPU 0 is used.
 	 */
 	@JsonProperty("main_gpu")private Integer mainGPU;
 
 	/**
-	 * ???
+	 * (Default: false)
 	 */
 	@JsonProperty("low_vram") private Boolean lowVRAM;
 
 	/**
-	 * ???
+	 * (Default: true)
 	 */
 	@JsonProperty("f16_kv") private Boolean f16KV;
 
 	/**
-	 * ???
+	 * Return logits for all the tokens, not just the last one.
+	 * To enable completions to return logprobs, this must be true.
 	 */
 	@JsonProperty("logits_all") private Boolean logitsAll;
 
 	/**
-	 * ???
+	 * Load only the vocabulary, not the weights.
 	 */
 	@JsonProperty("vocab_only") private Boolean vocabOnly;
 
 	/**
-	 * ???
+	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
+	 * of the model as needed. However, if the model is larger than your total amount of RAM or if your system is low
+	 * on available memory, using mmap might increase the risk of pageouts, negatively impacting performance.
+	 * Disabling mmap results in slower load times but may reduce pageouts if you're not using mlock.
+	 * Note that if the model is larger than the total amount of RAM, turning off mmap would prevent
+	 * the model from loading at all.
+	 * (Default: null)
 	 */
 	@JsonProperty("use_mmap") private Boolean useMMap;
 
 	/**
-	 * ???
+	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
+	 * This can improve performance but trades away some of the advantages of memory-mapping
+	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
+	 * (Default: false)
 	 */
 	@JsonProperty("use_mlock") private Boolean useMLock;
 
 	/**
-	 * ???
-	 */
-	@JsonProperty("embedding_only") private Boolean embeddingOnly;
-
-	/**
-	 * ???
-	 */
-	@JsonProperty("rope_frequency_base") private Float ropeFrequencyBase;
-
-	/**
-	 * ???
-	 */
-	@JsonProperty("rope_frequency_scale") private Float ropeFrequencyScale;
-
-	/**
-	 * Sets the number of threads to use during computation. By default,
-	 * Ollama will detect this for optimal performance. It is recommended to set this
-	 * value to the number of physical CPU cores your system has (as opposed to the
-	 * logical number of cores).
+	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
+	 * to the number of physical CPU cores your system has (as opposed to the logical number of cores).
+	 * Using the correct number of threads can greatly improve performance.
+	 * By default, Ollama will detect this value for optimal performance.
 	 */
 	@JsonProperty("num_thread") private Integer numThread;
 
+	// Following fields are predict options used at runtime.
+
 	/**
-	 * ???
+	 * (Default: 4)
 	 */
 	@JsonProperty("num_keep") private Integer numKeep;
 
 	/**
 	 * Sets the random number seed to use for generation. Setting this to a
 	 * specific number will make the model generate the same text for the same prompt.
-	 * (Default: 0)
+	 * (Default: -1)
 	 */
 	@JsonProperty("seed") private Integer seed;
 
@@ -159,8 +169,8 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	/**
 	 * Works together with top-k. A higher value (e.g., 0.95) will lead to
 	 * more diverse text, while a lower value (e.g., 0.5) will generate more focused and
-		* conservative text. (Default: 0.9)
-		*/
+	 * conservative text. (Default: 0.9)
+	 */
 	@JsonProperty("top_p") private Float topP;
 
 	/**
@@ -171,7 +181,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("tfs_z") private Float tfsZ;
 
 	/**
-	 * ???
+	 * (Default: 1.0)
 	 */
 	@JsonProperty("typical_p") private Float typicalP;
 
@@ -195,12 +205,12 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("repeat_penalty") private Float repeatPenalty;
 
 	/**
-	 * ???
+	 * (Default: 0.0)
 	 */
 	@JsonProperty("presence_penalty") private Float presencePenalty;
 
 	/**
-	 * ???
+	 * (Default: 0.0)
 	 */
 	@JsonProperty("frequency_penalty") private Float frequencyPenalty;
 
@@ -211,21 +221,20 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("mirostat") private Integer mirostat;
 
 	/**
-	 * Influences how quickly the algorithm responds to feedback from
-	 * the generated text. A lower learning rate will result in slower adjustments, while
-	 * a higher learning rate will make the algorithm more responsive. (Default: 0.1).
+	 * Controls the balance between coherence and diversity of the output.
+	 * A lower value will result in more focused and coherent text. (Default: 5.0)
 	 */
 	@JsonProperty("mirostat_tau") private Float mirostatTau;
 
 	/**
-	 * Controls the balance between coherence and diversity of the
-	 * output. A lower value will result in more focused and coherent text. (Default:
-	 * 5.0).
+	 * Influences how quickly the algorithm responds to feedback from the generated text.
+	 * A lower learning rate will result in slower adjustments, while a higher learning rate
+	 * will make the algorithm more responsive. (Default: 0.1)
 	 */
 	@JsonProperty("mirostat_eta") private Float mirostatEta;
 
 	/**
-	 * ???
+	 * (Default: true)
 	 */
 	@JsonProperty("penalize_newline") private Boolean penalizeNewline;
 
@@ -237,12 +246,66 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("stop") private List<String> stop;
 
 
+	// Following fields are not part of the Ollama Options API but part of the Request.
+
 	/**
 	 * NOTE: Synthetic field not part of the official Ollama API.
 	 * Used to allow overriding the model name with prompt options.
+	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
 	@JsonProperty("model") private String model;
 
+	/**
+	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
+	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
+	 */
+	@JsonProperty("format") private String format;
+
+	/**
+	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
+	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
+	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
+	 */
+	@JsonProperty("keep_alive") private String keepAlive;
+	
+	
+	/**
+	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded. 
+	 * Defaults to true.
+	 */
+	@JsonProperty("truncate") private Boolean truncate;
+
+	/**
+	 * Tool Function Callbacks to register with the ChatModel.
+	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
+	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
+	 * from the registry to be used by the ChatModel chat completion requests.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+
+	/**
+	 * List of functions, identified by their names, to configure for function calling in
+	 * the chat completion requests.
+	 * Functions with those names must exist in the functionCallbacks registry.
+	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
+	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Set<String> functions = new HashSet<>();
+
+
+	public static OllamaOptions builder() {
+		return new OllamaOptions();
+	}
+
+	public OllamaOptions build() {
+		return this;
+	}
+	
 	/**
 	 * @param model The ollama model names to use. See the {@link OllamaModel} for the common models.
 	 */
@@ -251,12 +314,24 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 		return this;
 	}
 
-	public String getModel() {
-		return model;
+	public OllamaOptions withModel(OllamaModel model) {
+		this.model = model.getName();
+		return this;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	public OllamaOptions withFormat(String format) {
+		this.format = format;
+		return this;
+	}
+
+	public OllamaOptions withKeepAlive(String keepAlive) {
+		this.keepAlive = keepAlive;
+		return this;
+	}
+
+	public OllamaOptions withTruncate(Boolean truncate) {
+		this.truncate = truncate;
+		return this;
 	}
 
 	public OllamaOptions withUseNUMA(Boolean useNUMA) {
@@ -271,11 +346,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public OllamaOptions withNumBatch(Integer numBatch) {
 		this.numBatch = numBatch;
-		return this;
-	}
-
-	public OllamaOptions withNumGQA(Integer numGQA) {
-		this.numGQA = numGQA;
 		return this;
 	}
 
@@ -316,21 +386,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public OllamaOptions withUseMLock(Boolean useMLock) {
 		this.useMLock = useMLock;
-		return this;
-	}
-
-	public OllamaOptions withEmbeddingOnly(Boolean embeddingOnly) {
-		this.embeddingOnly = embeddingOnly;
-		return this;
-	}
-
-	public OllamaOptions withRopeFrequencyBase(Float ropeFrequencyBase) {
-		this.ropeFrequencyBase = ropeFrequencyBase;
-		return this;
-	}
-
-	public OllamaOptions withRopeFrequencyScale(Float ropeFrequencyScale) {
-		this.ropeFrequencyScale = ropeFrequencyScale;
 		return this;
 	}
 
@@ -424,8 +479,52 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 		return this;
 	}
 
+	public OllamaOptions withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+		return this;
+	}
+
+	public OllamaOptions withFunctions(Set<String> functions) {
+		this.functions = functions;
+		return this;
+	}
+
+	public OllamaOptions withFunction(String functionName) {
+		Assert.hasText(functionName, "Function name must not be empty");
+		this.functions.add(functionName);
+		return this;
+	}
+
+	// -------------------
+	// Getters and Setters
+	// -------------------
+	@Override
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public String getFormat() {
+		return this.format;
+	}
+
+	public void setFormat(String format) {
+		this.format = format;
+	}
+
+	public String getKeepAlive() {
+		return this.keepAlive;
+	}
+
+	public void setKeepAlive(String keepAlive) {
+		this.keepAlive = keepAlive;
+	}
+
 	public Boolean getUseNUMA() {
-		return useNUMA;
+		return this.useNUMA;
 	}
 
 	public void setUseNUMA(Boolean useNUMA) {
@@ -433,7 +532,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Integer getNumCtx() {
-		return numCtx;
+		return this.numCtx;
 	}
 
 	public void setNumCtx(Integer numCtx) {
@@ -441,23 +540,15 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Integer getNumBatch() {
-		return numBatch;
+		return this.numBatch;
 	}
 
 	public void setNumBatch(Integer numBatch) {
 		this.numBatch = numBatch;
 	}
 
-	public Integer getNumGQA() {
-		return numGQA;
-	}
-
-	public void setNumGQA(Integer numGQA) {
-		this.numGQA = numGQA;
-	}
-
 	public Integer getNumGPU() {
-		return numGPU;
+		return this.numGPU;
 	}
 
 	public void setNumGPU(Integer numGPU) {
@@ -465,7 +556,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Integer getMainGPU() {
-		return mainGPU;
+		return this.mainGPU;
 	}
 
 	public void setMainGPU(Integer mainGPU) {
@@ -473,7 +564,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Boolean getLowVRAM() {
-		return lowVRAM;
+		return this.lowVRAM;
 	}
 
 	public void setLowVRAM(Boolean lowVRAM) {
@@ -481,15 +572,15 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Boolean getF16KV() {
-		return f16KV;
+		return this.f16KV;
 	}
 
 	public void setF16KV(Boolean f16kv) {
-		f16KV = f16kv;
+		this.f16KV = f16kv;
 	}
 
 	public Boolean getLogitsAll() {
-		return logitsAll;
+		return this.logitsAll;
 	}
 
 	public void setLogitsAll(Boolean logitsAll) {
@@ -497,7 +588,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Boolean getVocabOnly() {
-		return vocabOnly;
+		return this.vocabOnly;
 	}
 
 	public void setVocabOnly(Boolean vocabOnly) {
@@ -505,7 +596,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Boolean getUseMMap() {
-		return useMMap;
+		return this.useMMap;
 	}
 
 	public void setUseMMap(Boolean useMMap) {
@@ -513,39 +604,15 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Boolean getUseMLock() {
-		return useMLock;
+		return this.useMLock;
 	}
 
 	public void setUseMLock(Boolean useMLock) {
 		this.useMLock = useMLock;
 	}
 
-	public Boolean getEmbeddingOnly() {
-		return embeddingOnly;
-	}
-
-	public void setEmbeddingOnly(Boolean embeddingOnly) {
-		this.embeddingOnly = embeddingOnly;
-	}
-
-	public Float getRopeFrequencyBase() {
-		return ropeFrequencyBase;
-	}
-
-	public void setRopeFrequencyBase(Float ropeFrequencyBase) {
-		this.ropeFrequencyBase = ropeFrequencyBase;
-	}
-
-	public Float getRopeFrequencyScale() {
-		return ropeFrequencyScale;
-	}
-
-	public void setRopeFrequencyScale(Float ropeFrequencyScale) {
-		this.ropeFrequencyScale = ropeFrequencyScale;
-	}
-
 	public Integer getNumThread() {
-		return numThread;
+		return this.numThread;
 	}
 
 	public void setNumThread(Integer numThread) {
@@ -553,7 +620,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Integer getNumKeep() {
-		return numKeep;
+		return this.numKeep;
 	}
 
 	public void setNumKeep(Integer numKeep) {
@@ -561,31 +628,44 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Integer getSeed() {
-		return seed;
+		return this.seed;
 	}
 
 	public void setSeed(Integer seed) {
 		this.seed = seed;
 	}
 
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+    	return getNumPredict();
+    }
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setNumPredict(maxTokens);
+	}
+
 	public Integer getNumPredict() {
-		return numPredict;
+		return this.numPredict;
 	}
 
 	public void setNumPredict(Integer numPredict) {
 		this.numPredict = numPredict;
 	}
 
+	@Override
 	public Integer getTopK() {
-		return topK;
+		return this.topK;
 	}
 
 	public void setTopK(Integer topK) {
 		this.topK = topK;
 	}
 
+	@Override
 	public Float getTopP() {
-		return topP;
+		return this.topP;
 	}
 
 	public void setTopP(Float topP) {
@@ -593,7 +673,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Float getTfsZ() {
-		return tfsZ;
+		return this.tfsZ;
 	}
 
 	public void setTfsZ(Float tfsZ) {
@@ -601,7 +681,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Float getTypicalP() {
-		return typicalP;
+		return this.typicalP;
 	}
 
 	public void setTypicalP(Float typicalP) {
@@ -609,15 +689,16 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Integer getRepeatLastN() {
-		return repeatLastN;
+		return this.repeatLastN;
 	}
 
 	public void setRepeatLastN(Integer repeatLastN) {
 		this.repeatLastN = repeatLastN;
 	}
 
+	@Override
 	public Float getTemperature() {
-		return temperature;
+		return this.temperature;
 	}
 
 	public void setTemperature(Float temperature) {
@@ -625,23 +706,25 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Float getRepeatPenalty() {
-		return repeatPenalty;
+		return this.repeatPenalty;
 	}
 
 	public void setRepeatPenalty(Float repeatPenalty) {
 		this.repeatPenalty = repeatPenalty;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
-		return presencePenalty;
+		return this.presencePenalty;
 	}
 
 	public void setPresencePenalty(Float presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
-		return frequencyPenalty;
+		return this.frequencyPenalty;
 	}
 
 	public void setFrequencyPenalty(Float frequencyPenalty) {
@@ -649,7 +732,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Integer getMirostat() {
-		return mirostat;
+		return this.mirostat;
 	}
 
 	public void setMirostat(Integer mirostat) {
@@ -657,7 +740,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Float getMirostatTau() {
-		return mirostatTau;
+		return this.mirostatTau;
 	}
 
 	public void setMirostatTau(Float mirostatTau) {
@@ -665,7 +748,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Float getMirostatEta() {
-		return mirostatEta;
+		return this.mirostatEta;
 	}
 
 	public void setMirostatEta(Float mirostatEta) {
@@ -673,19 +756,64 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	public Boolean getPenalizeNewline() {
-		return penalizeNewline;
+		return this.penalizeNewline;
 	}
 
 	public void setPenalizeNewline(Boolean penalizeNewline) {
 		this.penalizeNewline = penalizeNewline;
 	}
 
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
+	}
+
 	public List<String> getStop() {
-		return stop;
+		return this.stop;
 	}
 
 	public void setStop(List<String> stop) {
 		this.stop = stop;
+	}
+
+	public Boolean getTruncate() {
+		return this.truncate;
+	}
+
+	public void setTruncate(Boolean truncate) {
+		this.truncate = truncate;
+	}
+
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;	
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return this.functions;
+	}
+
+	@Override
+	public void setFunctions(Set<String> functions) {
+		this.functions = functions;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getDimensions() {
+		return null;
 	}
 
 	/**
@@ -693,14 +821,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
-		try {
-			var json = new ObjectMapper().writeValueAsString(this);
-			return new ObjectMapper().readValue(json, new TypeReference<Map<String, Object>>() {
-			});
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return ModelOptionsUtils.objectToMap(this);
 	}
 
 	/**
@@ -712,17 +833,97 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	/**
-	 * Filter out the non supported fields from the options.
+	 * Filter out the non-supported fields from the options.
 	 * @param options The options to filter.
 	 * @return The filtered options.
 	 */
 	public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
 		return options.entrySet().stream()
-			.filter(e -> !e.getKey().equals("model"))
+			.filter(e -> !NON_SUPPORTED_FIELDS.contains(e.getKey()))
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
+	@Override
+	public OllamaOptions copy() {
+		return fromOptions(this);
+	}
 
+	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
+		return new OllamaOptions()
+			.withModel(fromOptions.getModel())
+			.withFormat(fromOptions.getFormat())
+			.withKeepAlive(fromOptions.getKeepAlive())
+			.withTruncate(fromOptions.getTruncate())
+			.withUseNUMA(fromOptions.getUseNUMA())
+			.withNumCtx(fromOptions.getNumCtx())
+			.withNumBatch(fromOptions.getNumBatch())
+			.withNumGPU(fromOptions.getNumGPU())
+			.withMainGPU(fromOptions.getMainGPU())
+			.withLowVRAM(fromOptions.getLowVRAM())
+			.withF16KV(fromOptions.getF16KV())
+			.withLogitsAll(fromOptions.getLogitsAll())
+			.withVocabOnly(fromOptions.getVocabOnly())
+			.withUseMMap(fromOptions.getUseMMap())
+			.withUseMLock(fromOptions.getUseMLock())
+			.withNumThread(fromOptions.getNumThread())
+			.withNumKeep(fromOptions.getNumKeep())
+			.withSeed(fromOptions.getSeed())
+			.withNumPredict(fromOptions.getNumPredict())
+			.withTopK(fromOptions.getTopK())
+			.withTopP(fromOptions.getTopP())
+			.withTfsZ(fromOptions.getTfsZ())
+			.withTypicalP(fromOptions.getTypicalP())
+			.withRepeatLastN(fromOptions.getRepeatLastN())
+			.withTemperature(fromOptions.getTemperature())
+			.withRepeatPenalty(fromOptions.getRepeatPenalty())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withMirostat(fromOptions.getMirostat())
+			.withMirostatTau(fromOptions.getMirostatTau())
+			.withMirostatEta(fromOptions.getMirostatEta())
+			.withPenalizeNewline(fromOptions.getPenalizeNewline())
+			.withStop(fromOptions.getStop())
+			.withFunctions(fromOptions.getFunctions())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks());
+	}
 	// @formatter:on
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		OllamaOptions that = (OllamaOptions) o;
+		return Objects.equals(model, that.model) && Objects.equals(format, that.format)
+				&& Objects.equals(keepAlive, that.keepAlive) && Objects.equals(truncate, that.truncate)
+				&& Objects.equals(useNUMA, that.useNUMA) && Objects.equals(numCtx, that.numCtx)
+				&& Objects.equals(numBatch, that.numBatch) && Objects.equals(numGPU, that.numGPU)
+				&& Objects.equals(mainGPU, that.mainGPU) && Objects.equals(lowVRAM, that.lowVRAM)
+				&& Objects.equals(f16KV, that.f16KV) && Objects.equals(logitsAll, that.logitsAll)
+				&& Objects.equals(vocabOnly, that.vocabOnly) && Objects.equals(useMMap, that.useMMap)
+				&& Objects.equals(useMLock, that.useMLock) && Objects.equals(numThread, that.numThread)
+				&& Objects.equals(numKeep, that.numKeep) && Objects.equals(seed, that.seed)
+				&& Objects.equals(numPredict, that.numPredict) && Objects.equals(topK, that.topK)
+				&& Objects.equals(topP, that.topP) && Objects.equals(tfsZ, that.tfsZ)
+				&& Objects.equals(typicalP, that.typicalP) && Objects.equals(repeatLastN, that.repeatLastN)
+				&& Objects.equals(temperature, that.temperature) && Objects.equals(repeatPenalty, that.repeatPenalty)
+				&& Objects.equals(presencePenalty, that.presencePenalty)
+				&& Objects.equals(frequencyPenalty, that.frequencyPenalty) && Objects.equals(mirostat, that.mirostat)
+				&& Objects.equals(mirostatTau, that.mirostatTau) && Objects.equals(mirostatEta, that.mirostatEta)
+				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
+				&& Objects.equals(functionCallbacks, that.functionCallbacks)
+				&& Objects.equals(functions, that.functions);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
+				this.numBatch, this.numGPU, this.mainGPU, lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
+				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
+				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
+				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
+				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions);
+	}
 
 }

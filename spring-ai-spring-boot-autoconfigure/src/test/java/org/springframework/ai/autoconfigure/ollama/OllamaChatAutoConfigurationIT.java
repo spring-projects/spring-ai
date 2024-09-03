@@ -15,30 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.ollama;
 
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.model.Image;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.ollama.OllamaChatClient;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -46,7 +23,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.model.Image;
+
+import reactor.core.publisher.Flux;
 
 /**
  * @author Christian Tzolov
@@ -59,11 +60,11 @@ public class OllamaChatAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OllamaChatAutoConfigurationIT.class);
 
-	private static String MODEL_NAME = "mistral";
+	private static final String MODEL_NAME = "mistral";
 
 	private static final String OLLAMA_WITH_MODEL = "%s-%s".formatted(MODEL_NAME, OllamaImage.IMAGE);
 
-	private static final OllamaContainer ollamaContainer;
+	private static OllamaContainer ollamaContainer;
 
 	static {
 		ollamaContainer = new OllamaContainer(OllamaDockerImageName.image());
@@ -71,7 +72,7 @@ public class OllamaChatAutoConfigurationIT {
 		createImage(ollamaContainer, OLLAMA_WITH_MODEL);
 	}
 
-	static String baseUrl;
+	static String baseUrl = "http://localhost:11434";
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
@@ -89,7 +90,7 @@ public class OllamaChatAutoConfigurationIT {
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
 				// @formatter:on
-		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
@@ -104,8 +105,8 @@ public class OllamaChatAutoConfigurationIT {
 	@Test
 	public void chatCompletion() {
 		contextRunner.run(context -> {
-			OllamaChatClient chatClient = context.getBean(OllamaChatClient.class);
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage, systemMessage)));
 			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
@@ -114,9 +115,9 @@ public class OllamaChatAutoConfigurationIT {
 	public void chatCompletionStreaming() {
 		contextRunner.run(context -> {
 
-			OllamaChatClient chatClient = context.getBean(OllamaChatClient.class);
+			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(1);
@@ -136,17 +137,17 @@ public class OllamaChatAutoConfigurationIT {
 	void chatActivation() {
 		contextRunner.withPropertyValues("spring.ai.ollama.chat.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaChatClient.class)).isEmpty();
+			assertThat(context.getBeansOfType(OllamaChatModel.class)).isEmpty();
 		});
 
 		contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaChatClient.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaChatModel.class)).isNotEmpty();
 		});
 
 		contextRunner.withPropertyValues("spring.ai.ollama.chat.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaChatClient.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaChatModel.class)).isNotEmpty();
 		});
 	}
 
@@ -175,7 +176,7 @@ public class OllamaChatAutoConfigurationIT {
 
 	}
 
-	static void createImage(GenericContainer<?> container, String localImageName) {
+	public static void createImage(GenericContainer<?> container, String localImageName) {
 		DockerImageName dockerImageName = DockerImageName.parse(container.getDockerImageName());
 		if (!dockerImageName.equals(DockerImageName.parse(localImageName))) {
 			DockerClient dockerClient = DockerClientFactory.instance().client();
@@ -191,7 +192,7 @@ public class OllamaChatAutoConfigurationIT {
 		}
 	}
 
-	static class OllamaDockerImageName {
+	public static class OllamaDockerImageName {
 
 		private final String baseImage;
 
@@ -202,7 +203,7 @@ public class OllamaChatAutoConfigurationIT {
 			this.localImageName = localImageName;
 		}
 
-		static DockerImageName image() {
+		public static DockerImageName image() {
 			return new OllamaDockerImageName(OllamaImage.IMAGE, OLLAMA_WITH_MODEL).resolve();
 		}
 

@@ -15,26 +15,32 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.PineconeVectorStore;
 import org.springframework.ai.vectorstore.PineconeVectorStore.PineconeVectorStoreConfig;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnClass({ PineconeVectorStore.class, EmbeddingClient.class })
+@ConditionalOnClass({ PineconeVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties(PineconeVectorStoreProperties.class)
 public class PineconeVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PineconeVectorStore vectorStore(EmbeddingClient embeddingClient, PineconeVectorStoreProperties properties) {
+	public PineconeVectorStore vectorStore(EmbeddingModel embeddingModel, PineconeVectorStoreProperties properties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		var config = PineconeVectorStoreConfig.builder()
 			.withApiKey(properties.getApiKey())
@@ -42,10 +48,14 @@ public class PineconeVectorStoreAutoConfiguration {
 			.withProjectId(properties.getProjectId())
 			.withIndexName(properties.getIndexName())
 			.withNamespace(properties.getNamespace())
+			.withContentFieldName(properties.getContentFieldName())
+			.withDistanceMetadataFieldName(properties.getDistanceMetadataFieldName())
 			.withServerSideTimeout(properties.getServerSideTimeout())
 			.build();
 
-		return new PineconeVectorStore(config, embeddingClient);
+		return new PineconeVectorStore(config, embeddingModel,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 }

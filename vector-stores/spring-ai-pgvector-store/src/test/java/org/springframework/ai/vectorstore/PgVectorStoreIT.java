@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -22,22 +24,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
-import com.zaxxer.hikari.HikariDataSource;
 import org.junit.Assert;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,10 +53,14 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.zaxxer.hikari.HikariDataSource;
 
 /**
+ * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  */
 @Testcontainers
@@ -64,10 +68,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PgVectorStoreIT {
 
 	@Container
-	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector:v0.5.1")
-		.withEnv("POSTGRES_USER", "postgres")
-		.withEnv("POSTGRES_PASSWORD", "postgres")
-		.withExposedPorts(5432);
+	@SuppressWarnings("resource")
+	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+		.withUsername("postgres")
+		.withPassword("postgres");
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -124,6 +128,46 @@ public class PgVectorStoreIT {
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 				assertThat(results2).hasSize(0);
 
+				dropTable(context);
+			});
+	}
+
+	static Stream<Arguments> provideFilters() {
+		return Stream.of(Arguments.of("country in ['BG','NL']", 3), // String Filters In
+				Arguments.of("year in [2020]", 1), // Numeric Filters In
+				Arguments.of("country not in ['BG']", 1), // String Filter Not In
+				Arguments.of("year not in [2020]", 2) // Numeric Filter Not In
+		);
+	}
+
+	@ParameterizedTest(name = "Filter expression {0} should return {1} records ")
+	@MethodSource("provideFilters")
+	public void searchWithInFilter(String expression, Integer expectedRecords) {
+
+		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020, "foo bar 1", "bar.foo"));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
+
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				SearchRequest searchRequest = SearchRequest.query("The World")
+					.withFilterExpression(expression)
+					.withTopK(5)
+					.withSimilarityThresholdAll();
+
+				List<Document> results = vectorStore.similaritySearch(searchRequest);
+
+				assertThat(results).hasSize(expectedRecords);
+
+				// Remove all documents from the store
 				dropTable(context);
 			});
 	}
@@ -306,9 +350,9 @@ public class PgVectorStoreIT {
 		PgVectorStore.PgDistanceType distanceType;
 
 		@Bean
-		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-			return new PgVectorStore(jdbcTemplate, embeddingClient, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
-					distanceType, true, PgIndexType.HNSW);
+		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+			return new PgVectorStore(jdbcTemplate, embeddingModel, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
+					distanceType, true, PgIndexType.HNSW, true);
 		}
 
 		@Bean
@@ -329,8 +373,8 @@ public class PgVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

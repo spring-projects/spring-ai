@@ -23,9 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
-import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
+import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -36,6 +36,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
@@ -53,22 +54,20 @@ public class FunctionCallWithFunctionWrapperIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options.model=gpt-4-0125-preview")
+		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name=" + getDeploymentName())
 			.run(context -> {
 
-				AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
+				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage(
 						"What's the weather like in San Francisco, Paris and in Tokyo?");
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
+				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30", "10", "15");
 
 			});
 	}

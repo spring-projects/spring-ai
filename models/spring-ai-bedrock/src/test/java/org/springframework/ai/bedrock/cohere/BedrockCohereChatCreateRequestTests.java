@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.cohere;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,12 +39,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockCohereChatCreateRequestTests {
 
 	private CohereChatBedrockApi chatApi = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+			Duration.ofMinutes(2));
 
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new BedrockCohereChatClient(chatApi,
+		var client = new BedrockCohereChatModel(chatApi,
 				BedrockCohereChatOptions.builder()
 					.withTemperature(66.6f)
 					.withTopK(66)

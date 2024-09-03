@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.postgresml;
 
-import org.springframework.ai.postgresml.PostgresMlEmbeddingClient;
+import org.springframework.ai.postgresml.PostgresMlEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,13 +26,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Auto-configuration class for PostgresMlEmbeddingClient.
+ * Auto-configuration class for PostgresMlEmbeddingModel.
  *
  * @author Utkarsh Srivastava
  * @author Christian Tzolov
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
-@ConditionalOnClass(PostgresMlEmbeddingClient.class)
+@ConditionalOnClass(PostgresMlEmbeddingModel.class)
 @EnableConfigurationProperties(PostgresMlEmbeddingProperties.class)
 public class PostgresMlAutoConfiguration {
 
@@ -40,10 +40,10 @@ public class PostgresMlAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = PostgresMlEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public PostgresMlEmbeddingClient postgresMlEmbeddingClient(JdbcTemplate jdbcTemplate,
+	public PostgresMlEmbeddingModel postgresMlEmbeddingModel(JdbcTemplate jdbcTemplate,
 			PostgresMlEmbeddingProperties embeddingProperties) {
 
-		return new PostgresMlEmbeddingClient(jdbcTemplate, embeddingProperties.getOptions());
+		return new PostgresMlEmbeddingModel(jdbcTemplate, embeddingProperties.getOptions());
 	}
 
 }

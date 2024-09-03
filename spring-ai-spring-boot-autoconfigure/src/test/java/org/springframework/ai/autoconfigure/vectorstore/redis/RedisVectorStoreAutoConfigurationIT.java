@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.redis;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 import java.util.List;
 import java.util.Map;
@@ -23,11 +24,14 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,8 +40,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.redis.testcontainers.RedisStackContainer;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
+
 /**
  * @author Julien Ruaux
+ * @author Eddú Meléndez
+ * @author Soby Chacko
+ * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
@@ -52,40 +62,60 @@ class RedisVectorStoreAutoConfigurationIT {
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(RedisVectorStoreAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(RedisAutoConfiguration.class, RedisVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
+		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI())
+		.withPropertyValues("spring.ai.vectorstore.redis.initialize-schema=true")
 		.withPropertyValues("spring.ai.vectorstore.redis.index=myIdx")
 		.withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:");
 
 	@Test
 	void addAndSearch() {
-		contextRunner.withPropertyValues("spring.ai.vectorstore.redis.uri=" + redisContainer.getRedisURI())
-			.run(context -> {
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-				vectorStore.add(documents);
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+			vectorStore.add(documents);
 
-				assertThat(results).hasSize(1);
-				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
-						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.REDIS,
+					VectorStoreObservationContext.Operation.ADD);
+			observationRegistry.clear();
 
-				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-				assertThat(results).isEmpty();
-			});
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+			assertThat(resultDoc.getContent()).contains(
+					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.REDIS,
+					VectorStoreObservationContext.Operation.QUERY);
+			observationRegistry.clear();
+
+			// Remove all documents from the store
+			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.REDIS,
+					VectorStoreObservationContext.Operation.DELETE);
+			observationRegistry.clear();
+
+			results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+			assertThat(results).isEmpty();
+		});
 	}
 
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

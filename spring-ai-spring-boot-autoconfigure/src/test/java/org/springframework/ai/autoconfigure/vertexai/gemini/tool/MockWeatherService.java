@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
  *
  * @author Christian Tzolov
  */
+@JsonClassDescription("Get the weather in location")
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 
 	/**

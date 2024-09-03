@@ -26,6 +26,12 @@ import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
 
 /**
+ * AbstractFilterExpressionConverter is an abstract class that implements the
+ * FilterExpressionConverter interface. It provides default implementations for converting
+ * a Filter.Expression into a string representation. All specific filter expression
+ * converters should extend this abstract class and implement the remaining abstract
+ * methods. Note: The class cannot be directly instantiated as it is abstract.
+ *
  * @author Christian Tzolov
  */
 public abstract class AbstractFilterExpressionConverter implements FilterExpressionConverter {

@@ -20,9 +20,11 @@ import java.util.List;
 import org.springframework.core.convert.support.DefaultConversionService;
 
 /**
+ * @deprecated Use the {@link org.springframework.ai.converter.ListOutputConverter}
+ * instead.
+ *
  * {@link OutputParser} implementation that uses a {@link DefaultConversionService} to
  * convert the LLM output into a {@link java.util.List} instance.
- *
  * @author Mark Pollack
  * @author Christian Tzolov
  */

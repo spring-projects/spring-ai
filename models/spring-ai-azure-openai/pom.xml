@@ -4,13 +4,13 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.8.1-SNAPSHOT</version>
+		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-azure-openai</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Azure OpenAI</name>
-	<description>OpenAI support</description>
+	<name>Spring AI Model - Azure OpenAI</name>
+	<description>Azure OpenAI models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

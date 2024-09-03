@@ -19,8 +19,14 @@ import com.azure.core.credential.AzureKeyCredential;
 import com.azure.search.documents.indexes.SearchIndexClient;
 import com.azure.search.documents.indexes.SearchIndexClientBuilder;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import io.micrometer.observation.ObservationRegistry;
+
+import java.util.List;
+
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -32,7 +38,7 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingClient.class, SearchIndexClient.class })
+@ConditionalOnClass({ EmbeddingModel.class, SearchIndexClient.class, AzureVectorStore.class })
 @EnableConfigurationProperties({ AzureVectorStoreProperties.class })
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.azure", value = { "url", "api-key", "index-name" })
 public class AzureVectorStoreAutoConfiguration {
@@ -47,10 +53,13 @@ public class AzureVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AzureVectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient,
-			AzureVectorStoreProperties properties) {
+	public AzureVectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
+			AzureVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		var vectorStore = new AzureVectorStore(searchIndexClient, embeddingClient);
+		var vectorStore = new AzureVectorStore(searchIndexClient, embeddingModel, properties.isInitializeSchema(),
+				List.of(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
 
 		vectorStore.setIndexName(properties.getIndexName());
 

@@ -15,14 +15,16 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.neo4j;
 
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.Neo4jVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Jingzhou Ou
+ * @author Josh Long
  */
 @ConfigurationProperties(Neo4jVectorStoreProperties.CONFIG_PREFIX)
-public class Neo4jVectorStoreProperties {
+public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.neo4j";
 
@@ -37,6 +39,10 @@ public class Neo4jVectorStoreProperties {
 	private String embeddingProperty = Neo4jVectorStore.DEFAULT_EMBEDDING_PROPERTY;
 
 	private String indexName = Neo4jVectorStore.DEFAULT_INDEX_NAME;
+
+	private String idProperty = Neo4jVectorStore.DEFAULT_ID_PROPERTY;
+
+	private String constraintName = Neo4jVectorStore.DEFAULT_CONSTRAINT_NAME;
 
 	public String getDatabaseName() {
 		return this.databaseName;
@@ -84,6 +90,22 @@ public class Neo4jVectorStoreProperties {
 
 	public void setIndexName(String indexName) {
 		this.indexName = indexName;
+	}
+
+	public String getIdProperty() {
+		return this.idProperty;
+	}
+
+	public void setIdProperty(String idProperty) {
+		this.idProperty = idProperty;
+	}
+
+	public String getConstraintName() {
+		return this.constraintName;
+	}
+
+	public void setConstraintName(String constraintName) {
+		this.constraintName = constraintName;
 	}
 
 }

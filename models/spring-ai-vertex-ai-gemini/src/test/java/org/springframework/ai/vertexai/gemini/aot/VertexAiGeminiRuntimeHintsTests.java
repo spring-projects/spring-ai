@@ -19,7 +19,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
@@ -38,7 +38,7 @@ class VertexAiGeminiRuntimeHintsTests {
 		RuntimeHints runtimeHints = new RuntimeHints();
 		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
 		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(VertexAiGeminiChatClient.class);
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(VertexAiGeminiChatModel.class);
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
 		}

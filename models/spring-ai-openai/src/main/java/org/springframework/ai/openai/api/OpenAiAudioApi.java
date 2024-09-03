@@ -16,19 +16,28 @@
 package org.springframework.ai.openai.api;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Turn audio into text or text into audio. Based on
@@ -41,12 +50,15 @@ public class OpenAiAudioApi {
 
 	private final RestClient restClient;
 
+	private final WebClient webClient;
+
 	/**
-	 * Create an new audio api.
+	 * Create a new audio api.
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiAudioApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
+				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -62,6 +74,57 @@ public class OpenAiAudioApi {
 		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(headers -> {
 			headers.setBearerAuth(openAiToken);
 		}).defaultStatusHandler(responseErrorHandler).build();
+
+		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(headers -> {
+			headers.setBearerAuth(openAiToken);
+		}).defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken)).build();
+	}
+
+	/**
+	 * Create an new chat completion api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiAudioApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), restClientBuilder, webClientBuilder,
+				responseErrorHandler);
+	}
+
+	/**
+	 * Create an new chat completion api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiAudioApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+
+		// @formatter:off
+		this.restClient = restClientBuilder
+			.baseUrl(baseUrl)
+			.defaultHeaders(h -> {
+				h.setBearerAuth(apiKey);
+				h.addAll(headers);
+			})
+			.defaultStatusHandler(responseErrorHandler).build();
+
+		this.webClient = webClientBuilder
+			.baseUrl(baseUrl)
+			.defaultHeaders(h -> {
+				h.setBearerAuth(apiKey);
+				h.addAll(headers);
+			})
+			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey)).build();
+		// @formatter:on
 	}
 
 	/**
@@ -108,8 +171,8 @@ public class OpenAiAudioApi {
 	 * chosen model: 'alloy', 'echo', 'fable', 'onyx', 'nova', and 'shimmer'.
 	 * @param responseFormat The format to audio in. Supported formats are mp3, opus, aac,
 	 * and flac. Defaults to mp3.
-	 * @param speed The speed of the voice synthesis. The acceptable range is from 0.0
-	 * (slowest) to 1.0 (fastest).
+	 * @param speed The speed of the voice synthesis. The acceptable range is from 0.25
+	 * (slowest) to 4.0 (fastest).
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record SpeechRequest(
@@ -568,6 +631,30 @@ public class OpenAiAudioApi {
 	 */
 	public ResponseEntity<byte[]> createSpeech(SpeechRequest requestBody) {
 		return this.restClient.post().uri("/v1/audio/speech").body(requestBody).retrieve().toEntity(byte[].class);
+	}
+
+	/**
+	 * Streams audio generated from the input text.
+	 *
+	 * This method sends a POST request to the OpenAI API to generate audio from the
+	 * provided text. The audio is streamed back as a Flux of ResponseEntity objects, each
+	 * containing a byte array of the audio data.
+	 * @param requestBody The request body containing the details for the audio
+	 * generation, such as the input text, model, voice, and response format.
+	 * @return A Flux of ResponseEntity objects, each containing a byte array of the audio
+	 * data.
+	 */
+	public Flux<ResponseEntity<byte[]>> stream(SpeechRequest requestBody) {
+
+		return webClient.post()
+			.uri("/v1/audio/speech")
+			.body(Mono.just(requestBody), SpeechRequest.class)
+			.accept(MediaType.APPLICATION_OCTET_STREAM)
+			.exchangeToFlux(clientResponse -> {
+				HttpHeaders headers = clientResponse.headers().asHttpHeaders();
+				return clientResponse.bodyToFlux(byte[].class)
+					.map(bytes -> ResponseEntity.ok().headers(headers).body(bytes));
+			});
 	}
 
 	/**

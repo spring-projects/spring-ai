@@ -5,12 +5,12 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.8.1-SNAPSHOT</version>
+		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-pgvector-store</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Vector Store - pgvector</name>
+	<name>Spring AI Vector Store - PGVector</name>
 	<description>Spring AI PGVector Vector Store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
@@ -20,11 +20,6 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-		<!-- testing -->
-		<hikari-cp.version>4.0.3</hikari-cp.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -33,8 +28,13 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
 		</dependency>
 
 		<dependency>
@@ -74,24 +74,26 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
-			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-			<version>${hikari-cp.version}</version>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
+		
 	</dependencies>
 
 </project>

@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vertexai.gemini;
 
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -29,12 +30,15 @@ public class VertexAiGeminiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.gemini.chat";
 
+	public static final String DEFAULT_MODEL = VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue();
+
 	/**
 	 * Vertex AI Gemini API generative options.
 	 */
 	private VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
 		.withTemperature(0.7f)
 		.withCandidateCount(1)
+		.withModel(DEFAULT_MODEL)
 		.build();
 
 	public VertexAiGeminiChatOptions getOptions() {

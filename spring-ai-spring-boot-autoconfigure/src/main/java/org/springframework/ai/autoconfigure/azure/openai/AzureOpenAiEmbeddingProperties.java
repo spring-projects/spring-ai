@@ -27,13 +27,13 @@ public class AzureOpenAiEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.embedding";
 
 	/**
-	 * Enable Azure OpenAI embedding client.
+	 * Enable Azure OpenAI embedding model.
 	 */
 	private boolean enabled = true;
 
 	@NestedConfigurationProperty
 	private AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
-		.withModel("text-embedding-ada-002")
+		.withDeploymentName("text-embedding-ada-002")
 		.build();
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;

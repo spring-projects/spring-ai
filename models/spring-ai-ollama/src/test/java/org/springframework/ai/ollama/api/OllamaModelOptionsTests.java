@@ -15,9 +15,9 @@
  */
 package org.springframework.ai.ollama.api;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,16 +28,11 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testOptions() {
-		var options = OllamaOptions.create()
-			.withTemperature(3.14f)
-			.withEmbeddingOnly(false)
-			.withTopK(30)
-			.withStop(List.of("a", "b", "c"));
+		var options = OllamaOptions.create().withTemperature(3.14f).withTopK(30).withStop(List.of("a", "b", "c"));
 
 		var optionsMap = options.toMap();
 		System.out.println(optionsMap);
 		assertThat(optionsMap).containsEntry("temperature", 3.14);
-		assertThat(optionsMap).containsEntry("embedding_only", false);
 		assertThat(optionsMap).containsEntry("top_k", 30);
 		assertThat(optionsMap).containsEntry("stop", List.of("a", "b", "c"));
 	}

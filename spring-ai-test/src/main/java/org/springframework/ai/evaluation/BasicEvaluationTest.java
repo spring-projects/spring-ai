@@ -15,30 +15,29 @@
  */
 package org.springframework.ai.evaluation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 
 public class BasicEvaluationTest {
 
 	private static final Logger logger = LoggerFactory.getLogger(BasicEvaluationTest.class);
 
 	@Autowired
-	protected ChatClient openAiChatClient;
+	protected ChatModel openAiChatModel;
 
 	@Value("classpath:/prompts/spring/test/evaluation/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
@@ -52,9 +51,9 @@ public class BasicEvaluationTest {
 	@Value("classpath:/prompts/spring/test/evaluation/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
 
-	protected void evaluateQuestionAndAnswer(String question, ChatResponse response, boolean factBased) {
-		assertThat(response).isNotNull();
-		String answer = response.getResult().getOutput().getContent();
+	protected void evaluateQuestionAndAnswer(String question, String answer, boolean factBased) {
+		assertThat(question).isNotNull();
+		assertThat(answer).isNotNull();
 		logger.info("Question: " + question);
 		logger.info("Answer:" + answer);
 		PromptTemplate userPromptTemplate = new PromptTemplate(userEvaluatorResource,
@@ -68,12 +67,12 @@ public class BasicEvaluationTest {
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = openAiChatClient.call(prompt).getResult().getOutput().getContent();
+		String yesOrNo = openAiChatModel.call(prompt).getResult().getOutput().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = openAiChatClient.call(prompt).getResult().getOutput().getContent();
+			String reasonForFailure = openAiChatModel.call(prompt).getResult().getOutput().getContent();
 			fail(reasonForFailure);
 		}
 		else {

@@ -12,7 +12,12 @@ link:https://azure.microsoft.com/en-us/products/ai-services/ai-search/[Azure AI 
 
 == Configuration
 
-On startup, the AzureVectorStore will attempt to create a new index within your AI Search service instance. Alternatively, you can create the index manually.
+On startup, the `AzureVectorStore` can  attempt to create a new index within your AI Search service instance if you've opted in by setting the relevant `initialize-schema` `boolean` property to `true` in the constructor or, if using Spring Boot, setting `...initialize-schema=true`  in your `application.properties` file.
+
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+Alternatively, you can create the index manually.
 
 To set up an AzureVectorStore, you will need the settings retrieved from the prerequisites above along with your index name:
 
@@ -77,11 +82,29 @@ Add these dependencies to your project:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-azure-vector-store</artifactId>
+    <artifactId>spring-ai-azure-store</artifactId>
 </dependency>
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Configuration Properties
+
+You can use the following properties in your Spring Boot configuration to customize the Azure vector store.
+
+|===
+|Property|Default value
+
+|`spring.ai.vectorstore.azure.url`|
+|`spring.ai.vectorstore.azure.api-key`|
+|`spring.ai.vectorstore.azure.initialze-schema`|false
+|`spring.ai.vectorstore.azure.index-name`|spring_ai_azure_vector_store
+|`spring.ai.vectorstore.azure.default-top-k`|4
+|`spring.ai.vectorstore.azure.default-similarity-threshold`|0.0
+|`spring.ai.vectorstore.azure.embedding-property`|embedding
+|`spring.ai.vectorstore.azure.index-name`|spring-ai-document-index
+|===
+
 
 == Sample Code
 
@@ -97,13 +120,13 @@ public SearchIndexClient searchIndexClient() {
 }
 ----
 
-To create a vector store, you can use the following code by injecting the `SearchIndexClient` bean created in the above sample along with an `EmbeddingClient` provided by the Spring AI library that implements the desired Embeddings interface.
+To create a vector store, you can use the following code by injecting the `SearchIndexClient` bean created in the above sample along with an `EmbeddingModel` provided by the Spring AI library that implements the desired Embeddings interface.
 
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
-  return new AzureVectorStore(searchIndexClient, embeddingClient,
+public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+  return new AzureVectorStore(searchIndexClient, embeddingModel,
     // Define the metadata fields to be used
     // in the similarity search filters.
     List.of(MetadataField.text("country"),
@@ -133,7 +156,7 @@ Add the documents to your vector store:
 
 [source,java]
 ----
-vectorStore.add(List.of(document));
+vectorStore.add(documents);
 ----
 
 And finally, retrieve documents similar to a query:

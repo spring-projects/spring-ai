@@ -16,6 +16,7 @@
 package org.springframework.ai.image;
 
 import org.springframework.ai.model.ModelOptions;
+import org.springframework.lang.Nullable;
 
 /**
  * ImageOptions represent the common options, portable across different image generation
@@ -23,14 +24,22 @@ import org.springframework.ai.model.ModelOptions;
  */
 public interface ImageOptions extends ModelOptions {
 
+	@Nullable
 	Integer getN();
 
+	@Nullable
 	String getModel();
 
+	@Nullable
 	Integer getWidth();
 
+	@Nullable
 	Integer getHeight();
 
-	String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+	@Nullable
+	String getResponseFormat();
+
+	@Nullable
+	String getStyle();
 
 }

@@ -15,6 +15,10 @@
  */
 package org.springframework.ai.model.function;
 
+import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,11 +26,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.util.CollectionUtils;
-
 /**
  * @author Christian Tzolov
+ * @author Grogdunn
+ * @deprecated since 1.0.0-M1 in favor of
+ * {@link org.springframework.ai.chat.model.AbstractToolCallSupport}
  */
+@Deprecated(since = "1.0.0-M2", forRemoval = true)
 public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 	protected final static boolean IS_RUNTIME_CALL = true;
@@ -43,7 +49,7 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 	 */
 	protected final FunctionCallbackContext functionCallbackContext;
 
-	public AbstractFunctionCallSupport(FunctionCallbackContext functionCallbackContext) {
+	protected AbstractFunctionCallSupport(FunctionCallbackContext functionCallbackContext) {
 		this.functionCallbackContext = functionCallbackContext;
 	}
 
@@ -133,9 +139,7 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 		// The chat completion tool call requires the complete conversation
 		// history. Including the initial user message.
-		List<Msg> conversationHistory = new ArrayList<>();
-
-		conversationHistory.addAll(this.doGetUserMessages(request));
+		List<Msg> conversationHistory = new ArrayList<>(this.doGetUserMessages(request));
 
 		Msg responseMessage = this.doGetToolResponseMessage(response);
 
@@ -147,6 +151,34 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 		return this.callWithFunctionSupport(newRequest);
 	}
 
+	protected Flux<Resp> callWithFunctionSupportStream(Req request) {
+		final Flux<Resp> response = this.doChatCompletionStream(request);
+		return this.handleFunctionCallOrReturnStream(request, response);
+	}
+
+	protected Flux<Resp> handleFunctionCallOrReturnStream(Req request, Flux<Resp> response) {
+
+		return response.switchMap(resp -> {
+			if (!this.isToolFunctionCall(resp)) {
+				return Mono.just(resp);
+			}
+
+			// The chat completion tool call requires the complete conversation
+			// history. Including the initial user message.
+			List<Msg> conversationHistory = new ArrayList<>(this.doGetUserMessages(request));
+
+			Msg responseMessage = this.doGetToolResponseMessage(resp);
+
+			// Add the assistant response to the message conversation history.
+			conversationHistory.add(responseMessage);
+
+			Req newRequest = this.doCreateToolResponseRequest(request, responseMessage, conversationHistory);
+
+			return this.callWithFunctionSupportStream(newRequest);
+		});
+
+	}
+
 	abstract protected Req doCreateToolResponseRequest(Req previousRequest, Msg responseMessage,
 			List<Msg> conversationHistory);
 
@@ -155,6 +187,8 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 	abstract protected Msg doGetToolResponseMessage(Resp response);
 
 	abstract protected Resp doChatCompletion(Req request);
+
+	abstract protected Flux<Resp> doChatCompletionStream(Req request);
 
 	abstract protected boolean isToolFunctionCall(Resp response);
 

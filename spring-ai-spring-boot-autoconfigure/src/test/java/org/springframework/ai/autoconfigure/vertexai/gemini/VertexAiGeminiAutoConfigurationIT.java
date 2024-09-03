@@ -21,12 +21,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -40,16 +40,14 @@ public class VertexAiGeminiAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
-				"spring.ai.vertex.ai.gemini.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"),
-				"spring.ai.vertex.ai.gemini.chat.options.model="
-						+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_VISION.getValue())
+				"spring.ai.vertex.ai.gemini.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 		.withConfiguration(AutoConfigurations.of(VertexAiGeminiAutoConfiguration.class));
 
 	@Test
 	void generate() {
 		contextRunner.run(context -> {
-			VertexAiGeminiChatClient client = context.getBean(VertexAiGeminiChatClient.class);
-			String response = client.call("Hello");
+			VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
+			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
@@ -58,8 +56,8 @@ public class VertexAiGeminiAutoConfigurationIT {
 	@Test
 	void generateStreaming() {
 		contextRunner.run(context -> {
-			VertexAiGeminiChatClient client = context.getBean(VertexAiGeminiChatClient.class);
-			Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
+			VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
+			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
 				return chatResponse.getResults().get(0).getOutput().getContent();
 			}).collect(Collectors.joining());

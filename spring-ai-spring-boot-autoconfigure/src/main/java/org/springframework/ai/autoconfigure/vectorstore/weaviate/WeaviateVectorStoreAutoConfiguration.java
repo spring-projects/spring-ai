@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,17 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import io.micrometer.observation.ObservationRegistry;
+import io.weaviate.client.Config;
+import io.weaviate.client.WeaviateAuthClient;
+import io.weaviate.client.WeaviateClient;
+import io.weaviate.client.v1.auth.exception.AuthException;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -27,21 +34,41 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingClient.class, WeaviateVectorStore.class })
+@ConditionalOnClass({ EmbeddingModel.class, WeaviateVectorStore.class })
 @EnableConfigurationProperties({ WeaviateVectorStoreProperties.class })
 public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(WeaviateConnectionDetails.class)
+	public PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
+		return new PropertiesWeaviateConnectionDetails(properties);
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
-	public WeaviateVectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateVectorStoreProperties properties) {
+	public WeaviateClient weaviateClient(WeaviateVectorStoreProperties properties,
+			WeaviateConnectionDetails connectionDetails) {
+		try {
+			return WeaviateAuthClient.apiKey(
+					new Config(properties.getScheme(), connectionDetails.getHost(), properties.getHeaders()),
+					properties.getApiKey());
+		}
+		catch (AuthException e) {
+			throw new IllegalArgumentException("WeaviateClient could not be created.", e);
+		}
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient,
+			WeaviateVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
 		WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
-			.withScheme(properties.getScheme())
-			.withApiKey(properties.getApiKey())
-			.withHost(properties.getHost())
-			.withHeaders(properties.getHeaders())
 			.withObjectClass(properties.getObjectClass())
 			.withFilterableMetadataFields(properties.getFilterField()
 				.entrySet()
@@ -50,7 +77,24 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.withConsistencyLevel(properties.getConsistencyLevel());
 
-		return new WeaviateVectorStore(configBuilder.build(), embeddingClient);
+		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				customObservationConvention.getIfAvailable(() -> null));
+	}
+
+	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {
+
+		private final WeaviateVectorStoreProperties properties;
+
+		PropertiesWeaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getHost() {
+			return this.properties.getHost();
+		}
+
 	}
 
 }

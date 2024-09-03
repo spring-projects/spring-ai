@@ -20,7 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 public class PgVectorEmbeddingDimensionsTests {
 
 	@Mock
-	private EmbeddingClient embeddingClient;
+	private EmbeddingModel embeddingModel;
 
 	@Mock
 	private JdbcTemplate jdbcTemplate;
@@ -46,32 +46,32 @@ public class PgVectorEmbeddingDimensionsTests {
 
 		final int explicitDimensions = 696;
 
-		var dim = new PgVectorStore(jdbcTemplate, embeddingClient, explicitDimensions).embeddingDimensions();
+		var dim = new PgVectorStore(jdbcTemplate, embeddingModel, explicitDimensions).embeddingDimensions();
 
 		assertThat(dim).isEqualTo(explicitDimensions);
-		verify(embeddingClient, never()).dimensions();
+		verify(embeddingModel, never()).dimensions();
 	}
 
 	@Test
-	public void embeddingClientDimensions() {
-		when(embeddingClient.dimensions()).thenReturn(969);
+	public void embeddingModelDimensions() {
+		when(embeddingModel.dimensions()).thenReturn(969);
 
-		var dim = new PgVectorStore(jdbcTemplate, embeddingClient).embeddingDimensions();
+		var dim = new PgVectorStore(jdbcTemplate, embeddingModel).embeddingDimensions();
 
 		assertThat(dim).isEqualTo(969);
 
-		verify(embeddingClient, only()).dimensions();
+		verify(embeddingModel, only()).dimensions();
 	}
 
 	@Test
 	public void fallBackToDefaultDimensions() {
 
-		when(embeddingClient.dimensions()).thenThrow(new RuntimeException());
+		when(embeddingModel.dimensions()).thenThrow(new RuntimeException());
 
-		var dim = new PgVectorStore(jdbcTemplate, embeddingClient).embeddingDimensions();
+		var dim = new PgVectorStore(jdbcTemplate, embeddingModel).embeddingDimensions();
 
 		assertThat(dim).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
-		verify(embeddingClient, only()).dimensions();
+		verify(embeddingModel, only()).dimensions();
 	}
 
 }

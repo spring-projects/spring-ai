@@ -27,7 +27,6 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranslationRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
-import org.springframework.lang.NonNull;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TtsModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi.WhisperModel;
 import org.springframework.util.FileCopyUtils;
@@ -79,7 +78,8 @@ public class OpenAiAudioApiIT {
 					StructuredResponse.class)
 			.getBody();
 
-		assertThat(transcriptionDutch.text()).isEqualTo("Hallo, mijn naam is Chris en ik hou van Spring AI.");
+		assertThat(transcriptionDutch.text()).containsAnyOf("Hallo, mijn naam is Chris en ik hou van Spring AI.",
+				"Hallo, mijn naam is Chris en ik houd van Spring AI.");
 	}
 
 }

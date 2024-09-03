@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai</artifactId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-qdrant-store-spring-boot-starter</artifactId>
@@ -34,7 +34,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-qdrant</artifactId>
+            <artifactId>spring-ai-qdrant-store</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>

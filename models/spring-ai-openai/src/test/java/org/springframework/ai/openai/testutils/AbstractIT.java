@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.testutils;
 
 import java.util.List;
@@ -21,15 +22,20 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.image.ImageClient;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
+
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.openai.OpenAiAudioSpeechModel;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiModerationModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -42,16 +48,28 @@ public abstract class AbstractIT {
 	private static final Logger logger = LoggerFactory.getLogger(AbstractIT.class);
 
 	@Autowired
-	protected ChatClient openAiChatClient;
+	protected ChatModel chatModel;
 
 	@Autowired
-	protected OpenAiAudioTranscriptionClient openAiTranscriptionClient;
+	protected StreamingChatModel streamingChatModel;
 
 	@Autowired
-	protected ImageClient openaiImageClient;
+	protected OpenAiChatModel openAiChatModel;
 
 	@Autowired
-	protected StreamingChatClient openStreamingChatClient;
+	protected OpenAiAudioTranscriptionModel transcriptionModel;
+
+	@Autowired
+	protected OpenAiAudioSpeechModel speechModel;
+
+	@Autowired
+	protected ImageModel imageModel;
+
+	@Autowired
+	protected EmbeddingModel embeddingModel;
+
+	@Autowired
+	protected OpenAiModerationModel openAiModerationModel;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
@@ -60,7 +78,7 @@ public abstract class AbstractIT {
 	protected Resource qaEvaluatorNotRelatedResource;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-fact-based-answer.st")
-	protected Resource qaEvalutaorFactBasedAnswerResource;
+	protected Resource qaEvaluatorFactBasedAnswerResource;
 
 	@Value("classpath:/prompts/eval/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
@@ -74,19 +92,19 @@ public abstract class AbstractIT {
 				Map.of("question", question, "answer", answer));
 		SystemMessage systemMessage;
 		if (factBased) {
-			systemMessage = new SystemMessage(qaEvalutaorFactBasedAnswerResource);
+			systemMessage = new SystemMessage(qaEvaluatorFactBasedAnswerResource);
 		}
 		else {
 			systemMessage = new SystemMessage(qaEvaluatorAccurateAnswerResource);
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = openAiChatClient.call(prompt).getResult().getOutput().getContent();
+		String yesOrNo = chatModel.call(prompt).getResult().getOutput().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = openAiChatClient.call(prompt).getResult().getOutput().getContent();
+			String reasonForFailure = chatModel.call(prompt).getResult().getOutput().getContent();
 			fail(reasonForFailure);
 		}
 		else {

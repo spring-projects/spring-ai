@@ -5,14 +5,14 @@
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai</artifactId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>spring-ai-ollama</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Ollama</name>
-    <description>Ollama support</description>
+    <name>Spring AI Model - Ollama</name>
+    <description>Ollama models support</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -32,6 +32,12 @@
             <artifactId>spring-ai-core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
+        <dependency>
+    			<groupId>org.springframework.ai</groupId>
+    			<artifactId>spring-ai-retry</artifactId>
+    			<version>${project.parent.version}</version>
+    		</dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
@@ -68,9 +74,21 @@
             <scope>test</scope>
         </dependency>
 
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>ollama</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

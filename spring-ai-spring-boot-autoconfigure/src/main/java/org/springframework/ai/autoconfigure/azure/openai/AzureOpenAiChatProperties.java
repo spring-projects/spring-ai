@@ -24,18 +24,18 @@ public class AzureOpenAiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = "gpt-35-turbo";
+	public static final String DEFAULT_DEPLOYMENT_NAME = "gpt-4o";
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	/**
-	 * Enable Azure OpenAI chat client.
+	 * Enable Azure OpenAI chat model.
 	 */
 	private boolean enabled = true;
 
 	@NestedConfigurationProperty
 	private AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
-		.withModel(DEFAULT_CHAT_MODEL)
+		.withDeploymentName(DEFAULT_DEPLOYMENT_NAME)
 		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
 		.build();
 

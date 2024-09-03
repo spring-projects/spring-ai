@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai</artifactId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-mistral-ai</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Mistral AI</name>
-    <description>Mistral AI support</description>
+    <name>Spring AI Model - Mistral AI</name>
+    <description>Mistral AI models support</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>
@@ -53,6 +53,12 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 
     </dependencies>
 

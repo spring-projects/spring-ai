@@ -15,34 +15,40 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.PineconeVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import io.micrometer.observation.tck.TestObservationRegistry;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
 public class PineconeVectorStoreAutoConfigurationIT {
@@ -68,7 +74,9 @@ public class PineconeVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.pinecone.apiKey=" + System.getenv("PINECONE_API_KEY"),
 				"spring.ai.vectorstore.pinecone.environment=gcp-starter",
 				"spring.ai.vectorstore.pinecone.projectId=814621f",
-				"spring.ai.vectorstore.pinecone.indexName=spring-ai-test-index");
+				"spring.ai.vectorstore.pinecone.indexName=spring-ai-test-index",
+				"spring.ai.vectorstore.pinecone.contentFieldName=customContentField",
+				"spring.ai.vectorstore.pinecone.distanceMetadataFieldName=customDistanceField");
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -82,13 +90,18 @@ public class PineconeVectorStoreAutoConfigurationIT {
 
 		contextRunner.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 			vectorStore.add(documents);
+
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PINECONE,
+					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 			}, hasSize(1));
+			observationRegistry.clear();
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
@@ -98,10 +111,18 @@ public class PineconeVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getContent()).contains(
 					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
-			assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
+			assertThat(resultDoc.getMetadata()).containsKeys("spring", "customDistanceField");
+
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PINECONE,
+					VectorStoreObservationContext.Operation.QUERY);
+			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PINECONE,
+					VectorStoreObservationContext.Operation.DELETE);
+			observationRegistry.clear();
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -113,8 +134,13 @@ public class PineconeVectorStoreAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

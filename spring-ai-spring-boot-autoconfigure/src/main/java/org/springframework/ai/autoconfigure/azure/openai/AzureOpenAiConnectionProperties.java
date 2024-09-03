@@ -29,13 +29,19 @@ public class AzureOpenAiConnectionProperties {
 	private String apiKey;
 
 	/**
+	 * (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead
+	 * of Azure OpenAI. This automatically sets the endpoint to https://api.openai.com/v1.
+	 */
+	private String openAiApiKey;
+
+	/**
 	 * Azure OpenAI API endpoint. From the Azure AI OpenAI `Keys and Endpoint` section
 	 * under `Resource Management`.
 	 */
 	private String endpoint;
 
 	public String getEndpoint() {
-		return endpoint;
+		return this.endpoint;
 	}
 
 	public void setEndpoint(String endpoint) {
@@ -47,7 +53,15 @@ public class AzureOpenAiConnectionProperties {
 	}
 
 	public String getApiKey() {
-		return apiKey;
+		return this.apiKey;
+	}
+
+	public String getOpenAiApiKey() {
+		return this.openAiApiKey;
+	}
+
+	public void setOpenAiApiKey(String openAiApiKey) {
+		this.openAiApiKey = openAiApiKey;
 	}
 
 }

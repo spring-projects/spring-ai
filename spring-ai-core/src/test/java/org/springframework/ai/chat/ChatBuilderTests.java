@@ -29,7 +29,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 
 /**
  * Unit Tests for {@link Prompt}.
@@ -98,12 +97,12 @@ public class ChatBuilderTests {
 		// Callback Functions
 		assertThat(options.getFunctionCallbacks()).isNotNull();
 		assertThat(options.getFunctionCallbacks().size()).isEqualTo(1);
-		assertThat(options.getFunctionCallbacks().contains(cb));
+		assertThat(options.getFunctionCallbacks()).contains(cb);
 
 		// Functions
 		assertThat(options.getFunctions()).isNotNull();
 		assertThat(options.getFunctions().size()).isEqualTo(1);
-		assertThat(options.getFunctions().contains(func));
+		assertThat(options.getFunctions()).contains(func);
 
 	}
 

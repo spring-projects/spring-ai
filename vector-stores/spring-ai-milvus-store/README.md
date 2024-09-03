@@ -1,1 +1,1 @@
-[Milvus Vector Store Documentation](https://docs.spring.io/spring-ai/reference/api/vectordbs/milvus.html)
+[Milvus Vector Store Documentation](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/vectordbs/milvus.html)

@@ -16,7 +16,7 @@ jobs:
     steps:
 
       # to get spec file in .github
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       # Setup jfrog cli
       - uses: jfrog/setup-jfrog-cli@v1

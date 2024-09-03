@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,24 @@
 package org.springframework.ai.embedding;
 
 import org.springframework.ai.model.ModelOptions;
+import org.springframework.lang.Nullable;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public interface EmbeddingOptions extends ModelOptions {
 
-	public static class EmptyEmbeddingOptions implements EmbeddingOptions {
+	/**
+	 * Use the {@link EmbeddingOptionsBuilder} instead.
+	 */
+	@Deprecated(since = "1.0.0", forRemoval = true)
+	EmbeddingOptions EMPTY = EmbeddingOptionsBuilder.builder().build();
 
-	}
+	@Nullable
+	String getModel();
 
-	public static EmbeddingOptions EMPTY = new EmptyEmbeddingOptions();
+	@Nullable
+	Integer getDimensions();
 
 }

@@ -37,3 +37,7 @@ package.json
 .antlr
 
 shell.log
+
+.profiler
+/spring-ai-spring-boot-autoconfigure/nbproject/
+/vector-stores/spring-ai-cassandra-store/nbproject/

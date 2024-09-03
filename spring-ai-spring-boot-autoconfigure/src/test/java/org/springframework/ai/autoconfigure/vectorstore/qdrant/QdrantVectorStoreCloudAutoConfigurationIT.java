@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Test using a free tier Qdrant Cloud instance: https://cloud.qdrant.io
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 0.8.1
  */
 // NOTE: The free Qdrant Cluster and the QDRANT_API_KEY expire after 4 weeks of
@@ -98,7 +99,7 @@ public class QdrantVectorStoreCloudAutoConfigurationIT {
 				"spring.ai.vectorstore.qdrant.host=" + CLOUD_HOST,
 				"spring.ai.vectorstore.qdrant.api-key=" + CLOUD_API_KEY,
 				"spring.ai.vectorstore.qdrant.collection-name=" + COLLECTION_NAME,
-				"spring.ai.vectorstore.qdrant.use-tls=true");
+				"spring.ai.vectorstore.qdrant.initializeSchema=true", "spring.ai.vectorstore.qdrant.use-tls=true");
 
 	@Test
 	public void addAndSearch() {
@@ -137,8 +138,8 @@ public class QdrantVectorStoreCloudAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

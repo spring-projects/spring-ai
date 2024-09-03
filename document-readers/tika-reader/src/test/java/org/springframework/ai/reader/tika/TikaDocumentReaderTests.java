@@ -32,7 +32,7 @@ public class TikaDocumentReaderTests {
 			"classpath:/sample2.pdf,sample2.pdf,Consult doc/pdftex/manual.pdf from your tetex distribution for more",
 			"classpath:/sample.ppt,sample.ppt,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
 			"classpath:/sample.pptx,sample.pptx,Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-			"https://docs.spring.io/spring-ai/reference/,https://docs.spring.io/spring-ai/reference/,project aims to streamline the development of applications" })
+			"https://github.com/spring-projects/spring-ai/,https://github.com/spring-projects/spring-ai/,An Application Framework for AI Engineering" })
 	public void testDocx(String resourceUri, String resourceName, String contentSnipped) {
 
 		var docs = new TikaDocumentReader(resourceUri).get();

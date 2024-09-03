@@ -31,6 +31,10 @@ import org.springframework.ai.document.DocumentWriter;
  */
 public interface VectorStore extends DocumentWriter {
 
+	default String getName() {
+		return this.getClass().getSimpleName();
+	}
+
 	/**
 	 * Adds list of {@link Document}s to the vector store.
 	 * @param documents the list of documents to store. Throws an exception if the

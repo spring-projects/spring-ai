@@ -32,6 +32,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
@@ -62,9 +63,8 @@ public class OpenAiApiToolFunctionCallIT {
 				Role.USER);
 
 		var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION,
-				new OpenAiApi.FunctionTool.Function(
-						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
-						ModelOptionsUtils.jsonToMap("""
+				new OpenAiApi.FunctionTool.Function("Get the weather in location. Return temperature in Celsius.",
+						"getCurrentWeather", ModelOptionsUtils.jsonToMap("""
 								{
 									"type": "object",
 									"properties": {
@@ -89,19 +89,11 @@ public class OpenAiApiToolFunctionCallIT {
 								}
 								""")));
 
-		// Or you can use the
-		// ModelOptionsUtils.getJsonSchema(FakeWeatherService.Request.class))) to
-		// auto-generate the JSON schema like:
-		// var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION, new
-		// OpenAiApi.FunctionTool.Function(
-		// "Get the weather in location. Return temperature in 30°F or 30°C format.",
-		// "getCurrentWeather",
-		// ModelOptionsUtils.getJsonSchema(FakeWeatherService.Request.class)));
-
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
-		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview",
-				List.of(functionTool), null);
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4o",
+				List.of(functionTool), ToolChoiceBuilder.AUTO);
+		// List.of(functionTool), ToolChoiceBuilder.FUNCTION("getCurrentWeather"));
 
 		ResponseEntity<ChatCompletion> chatCompletion = completionApi.chatCompletionEntity(chatCompletionRequest);
 
@@ -110,49 +102,45 @@ public class OpenAiApiToolFunctionCallIT {
 
 		ChatCompletionMessage responseMessage = chatCompletion.getBody().choices().get(0).message();
 
+		// Check if the model wanted to call a function
 		assertThat(responseMessage.role()).isEqualTo(Role.ASSISTANT);
 		assertThat(responseMessage.toolCalls()).isNotNull();
 
-		// Check if the model wanted to call a function
-		if (responseMessage.toolCalls() != null) {
+		// extend conversation with assistant's reply.
+		messages.add(responseMessage);
 
-			// extend conversation with assistant's reply.
-			messages.add(responseMessage);
+		// Send the info for each function call and function response to the model.
+		for (ToolCall toolCall : responseMessage.toolCalls()) {
+			var functionName = toolCall.function().name();
+			if ("getCurrentWeather".equals(functionName)) {
+				MockWeatherService.Request weatherRequest = fromJson(toolCall.function().arguments(),
+						MockWeatherService.Request.class);
 
-			// Send the info for each function call and function response to the model.
-			for (ToolCall toolCall : responseMessage.toolCalls()) {
-				var functionName = toolCall.function().name();
-				if ("getCurrentWeather".equals(functionName)) {
-					MockWeatherService.Request weatherRequest = fromJson(toolCall.function().arguments(),
-							MockWeatherService.Request.class);
+				MockWeatherService.Response weatherResponse = weatherService.apply(weatherRequest);
 
-					MockWeatherService.Response weatherResponse = weatherService.apply(weatherRequest);
-
-					// extend conversation with function response.
-					messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(),
-							Role.TOOL, functionName, toolCall.id(), null));
-				}
+				// extend conversation with function response.
+				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
+						functionName, toolCall.id(), null, null));
 			}
-
-			var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview", 0.8f);
-
-			ResponseEntity<ChatCompletion> chatCompletion2 = completionApi
-				.chatCompletionEntity(functionResponseRequest);
-
-			logger.info("Final response: " + chatCompletion2.getBody());
-
-			assertThat(chatCompletion2.getBody().choices()).isNotEmpty();
-
-			assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
-				.containsAnyOf("30.0°C", "30°C");
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
-				.containsAnyOf("10.0°C", "10°C");
-			;
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
-				.containsAnyOf("15.0°C", "15°C");
-			;
 		}
+
+		var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4o", 0.5f);
+
+		ResponseEntity<ChatCompletion> chatCompletion2 = completionApi.chatCompletionEntity(functionResponseRequest);
+
+		logger.info("Final response: " + chatCompletion2.getBody());
+
+		assertThat(chatCompletion2.getBody().choices()).isNotEmpty();
+
+		assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
+		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
+			.containsAnyOf("30.0°C", "30°C");
+		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
+			.containsAnyOf("10.0°C", "10°C");
+		;
+		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
+			.containsAnyOf("15.0°C", "15°C");
+		;
 
 	}
 

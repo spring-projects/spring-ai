@@ -18,6 +18,7 @@ package org.springframework.ai.vertexai.gemini;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,12 +29,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
- * @since 0.8.1
+ * @author Thomas Vitale
+ * @author Grogdunn
+ * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
 public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOptions {
@@ -75,12 +79,18 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	 * Gemini model name.
 	 */
 	private @JsonProperty("modelName") String model;
+	/**
+	 * Optional. Output response mimetype of the generated candidate text.
+	 * - text/plain: (default) Text output.
+	 * - application/json: JSON response in the candidates.
+	 */
+	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
-	 * Tool Function Callbacks to register with the ChatClient.
+	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
-	 * from the registry to be used by the ChatClient chat completion requests.
+	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
 	@NestedConfigurationProperty
 	@JsonIgnore
@@ -100,9 +110,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	private Set<String> functions = new HashSet<>();
 
 	/**
-	 * The transport type to use for the Gemini Chat Client.
+	 * Use Google search Grounding feature
 	 */
-	private TransportType transportType = TransportType.GRPC;
+	@JsonIgnore
+	private boolean googleSearchRetrieval = false;
+
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -148,6 +161,17 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 			return this;
 		}
 
+		public Builder withModel(ChatModel model) {
+			this.options.setModel(model.getValue());
+			return this;
+		}
+
+		public Builder withResponseMimeType(String mimeType) {
+			Assert.notNull(mimeType, "mimeType must not be null");
+			this.options.setResponseMimeType(mimeType);
+			return this;
+		}
+
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
@@ -165,8 +189,8 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 			return this;
 		}
 
-		public Builder withTransportType(TransportType transportType) {
-			this.options.setTransportType(transportType);
+		public Builder withGoogleSearchRetrieval(boolean googleSearch) {
+			this.options.googleSearchRetrieval = googleSearch;
 			return this;
 		}
 
@@ -176,6 +200,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 	}
 
+	@Override
 	public List<String> getStopSequences() {
 		return this.stopSequences;
 	}
@@ -203,7 +228,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getTopK() {
 		return (this.topK != null) ? this.topK.intValue() : null;
 	}
@@ -225,6 +249,17 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.candidateCount = candidateCount;
 	}
 
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+		return getMaxOutputTokens();
+	}
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setMaxOutputTokens(maxTokens);
+	}
+
 	public Integer getMaxOutputTokens() {
 		return this.maxOutputTokens;
 	}
@@ -233,12 +268,21 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.maxOutputTokens = maxOutputTokens;
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
 
 	public void setModel(String modelName) {
 		this.model = modelName;
+	}
+
+	public String getResponseMimeType() {
+		return this.responseMimeType;
+	}
+
+	public String setResponseMimeType(String mimeType) {
+		return this.responseMimeType = mimeType;
 	}
 
 	public List<FunctionCallback> getFunctionCallbacks() {
@@ -257,97 +301,76 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.functions = functions;
 	}
 
-	public TransportType getTransportType() {
-		return this.transportType;
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
 	}
 
-	public void setTransportType(TransportType transportType) {
-		this.transportType = transportType;
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
+	}
+
+	public boolean getGoogleSearchRetrieval() {
+		return this.googleSearchRetrieval;
+	}
+
+	public void setGoogleSearchRetrieval(boolean googleSearchRetrieval) {
+		this.googleSearchRetrieval = googleSearchRetrieval;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof VertexAiGeminiChatOptions that))
+			return false;
+		return googleSearchRetrieval == that.googleSearchRetrieval && Objects.equals(stopSequences, that.stopSequences)
+				&& Objects.equals(temperature, that.temperature) && Objects.equals(topP, that.topP)
+				&& Objects.equals(topK, that.topK) && Objects.equals(candidateCount, that.candidateCount)
+				&& Objects.equals(maxOutputTokens, that.maxOutputTokens) && Objects.equals(model, that.model)
+				&& Objects.equals(responseMimeType, that.responseMimeType)
+				&& Objects.equals(functionCallbacks, that.functionCallbacks)
+				&& Objects.equals(functions, that.functions);
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((stopSequences == null) ? 0 : stopSequences.hashCode());
-		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
-		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
-		result = prime * result + ((topK == null) ? 0 : topK.hashCode());
-		result = prime * result + ((candidateCount == null) ? 0 : candidateCount.hashCode());
-		result = prime * result + ((maxOutputTokens == null) ? 0 : maxOutputTokens.hashCode());
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((functionCallbacks == null) ? 0 : functionCallbacks.hashCode());
-		result = prime * result + ((functions == null) ? 0 : functions.hashCode());
-		result = prime * result + ((transportType == null) ? 0 : transportType.hashCode());
-		return result;
+		return Objects.hash(stopSequences, temperature, topP, topK, candidateCount, maxOutputTokens, model,
+				responseMimeType, functionCallbacks, functions, googleSearchRetrieval);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		VertexAiGeminiChatOptions other = (VertexAiGeminiChatOptions) obj;
-		if (stopSequences == null) {
-			if (other.stopSequences != null)
-				return false;
-		}
-		else if (!stopSequences.equals(other.stopSequences))
-			return false;
-		if (temperature == null) {
-			if (other.temperature != null)
-				return false;
-		}
-		else if (!temperature.equals(other.temperature))
-			return false;
-		if (topP == null) {
-			if (other.topP != null)
-				return false;
-		}
-		else if (!topP.equals(other.topP))
-			return false;
-		if (topK == null) {
-			if (other.topK != null)
-				return false;
-		}
-		else if (!topK.equals(other.topK))
-			return false;
-		if (candidateCount == null) {
-			if (other.candidateCount != null)
-				return false;
-		}
-		else if (!candidateCount.equals(other.candidateCount))
-			return false;
-		if (maxOutputTokens == null) {
-			if (other.maxOutputTokens != null)
-				return false;
-		}
-		else if (!maxOutputTokens.equals(other.maxOutputTokens))
-			return false;
-		if (model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (functionCallbacks == null) {
-			if (other.functionCallbacks != null)
-				return false;
-		}
-		else if (!functionCallbacks.equals(other.functionCallbacks))
-			return false;
-		if (functions == null) {
-			if (other.functions != null)
-				return false;
-		}
-		else if (!functions.equals(other.functions))
-			return false;
-		if (transportType != other.transportType)
-			return false;
-		return true;
+	public String toString() {
+		return "VertexAiGeminiChatOptions{" + "stopSequences=" + stopSequences + ", temperature=" + temperature
+				+ ", topP=" + topP + ", topK=" + topK + ", candidateCount=" + candidateCount + ", maxOutputTokens="
+				+ maxOutputTokens + ", model='" + model + '\'' + ", responseMimeType='" + responseMimeType + '\''
+				+ ", functionCallbacks=" + functionCallbacks + ", functions=" + functions + ", googleSearchRetrieval="
+				+ googleSearchRetrieval + '}';
+	}
+
+	@Override
+	public VertexAiGeminiChatOptions copy() {
+		return fromOptions(this);
+	}
+
+	public static VertexAiGeminiChatOptions fromOptions(VertexAiGeminiChatOptions fromOptions) {
+		VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
+		options.setStopSequences(fromOptions.getStopSequences());
+		options.setTemperature(fromOptions.getTemperature());
+		options.setTopP(fromOptions.getTopP());
+		options.setTopK(fromOptions.getTopK());
+		options.setCandidateCount(fromOptions.getCandidateCount());
+		options.setMaxOutputTokens(fromOptions.getMaxOutputTokens());
+		options.setModel(fromOptions.getModel());
+		options.setFunctionCallbacks(fromOptions.getFunctionCallbacks());
+		options.setResponseMimeType(fromOptions.getResponseMimeType());
+		options.setFunctions(fromOptions.getFunctions());
+		options.setResponseMimeType(fromOptions.getResponseMimeType());
+		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
+		return options;
 	}
 
 }

@@ -31,7 +31,7 @@ public class OllamaChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
 	/**
-	 * Enable Ollama chat client.
+	 * Enable Ollama chat model.
 	 */
 	private boolean enabled = true;
 

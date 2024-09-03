@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.cohere;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,6 +26,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
@@ -32,7 +34,7 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	// @formatter:off
 	/**
 	 * Prepends special tokens to differentiate each type from one another. You should not mix
-	 * different types together, except when mixing types for for search and retrieval.
+	 * different types together, except when mixing types for search and retrieval.
 	 * In this case, embed your corpus with the search_document type and embedded queries with
 	 * type search_query type.
 	 */
@@ -84,6 +86,18 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 
 	public void setTruncate(Truncate truncate) {
 		this.truncate = truncate;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getDimensions() {
+		return null;
 	}
 
 }

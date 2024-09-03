@@ -18,18 +18,18 @@ package org.springframework.ai.openai;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.springframework.ai.model.ModelOptions;
+import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.GranularityType;
 
 /**
  * @author Michael Lavelle
  * @author Christian Tzolov
+ * @author Piotr Olaszewski
  * @since 0.8.1
  */
 @JsonInclude(Include.NON_NULL)
-public class OpenAiAudioTranscriptionOptions implements ModelOptions {
+public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOptions {
 
 	// @formatter:off
 	/**
@@ -38,8 +38,7 @@ public class OpenAiAudioTranscriptionOptions implements ModelOptions {
 	private @JsonProperty("model") String model;
 
 	/**
-	 * An object specifying the format that the model must output. Setting to { "type":
-	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
+	 * The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt.
 	 */
 	private @JsonProperty("response_format") TranscriptResponseFormat responseFormat;
 
@@ -107,6 +106,7 @@ public class OpenAiAudioTranscriptionOptions implements ModelOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}

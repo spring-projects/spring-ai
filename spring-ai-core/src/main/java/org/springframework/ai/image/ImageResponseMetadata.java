@@ -15,15 +15,34 @@
  */
 package org.springframework.ai.image;
 
+import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
-public interface ImageResponseMetadata extends ResponseMetadata {
+import java.util.HashMap;
 
-	ImageResponseMetadata NULL = new ImageResponseMetadata() {
-	};
+/**
+ * Represents metadata associated with an image response. It provides additional
+ * information about the generative response from an AI model, including the creation
+ * timestamp of the generated image.
+ *
+ * @author Mark Pollack
+ * @author Thomas Vitale
+ * @since 1.0.0
+ */
+public class ImageResponseMetadata extends MutableResponseMetadata {
 
-	default Long created() {
-		return System.currentTimeMillis();
+	private Long created;
+
+	public ImageResponseMetadata() {
+		this.created = System.currentTimeMillis();
+	}
+
+	public ImageResponseMetadata(Long created) {
+		this.created = created;
+	}
+
+	public Long getCreated() {
+		return this.created;
 	}
 
 }

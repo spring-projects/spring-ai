@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingClient;
+import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,9 +33,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Client.
+ * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Model.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -45,18 +48,21 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public CohereEmbeddingBedrockApi cohereEmbeddingApi(AwsCredentialsProvider credentialsProvider,
-			BedrockCohereEmbeddingProperties properties, BedrockAwsConnectionProperties awsProperties) {
-		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper());
+			AwsRegionProvider regionProvider, BedrockCohereEmbeddingProperties properties,
+			BedrockAwsConnectionProperties awsProperties) {
+		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public BedrockCohereEmbeddingClient cohereEmbeddingClient(CohereEmbeddingBedrockApi cohereEmbeddingApi,
+	@ConditionalOnBean(CohereEmbeddingBedrockApi.class)
+	public BedrockCohereEmbeddingModel cohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingApi,
 			BedrockCohereEmbeddingProperties properties) {
 
-		return new BedrockCohereEmbeddingClient(cohereEmbeddingApi, properties.getOptions());
+		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions());
 	}
 
 }
