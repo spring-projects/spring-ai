@@ -84,8 +84,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 		var searchRequest = SearchRequest.query(request.userText())
 			.withTopK(this.doGetChatMemoryRetrieveSize(context))
-			.withFilterExpression(
-					"'" + DOCUMENT_METADATA_CONVERSATION_ID + "'=='" + this.doGetConversationId(context) + "'");
+			.withFilterExpression(DOCUMENT_METADATA_CONVERSATION_ID + "=='" + this.doGetConversationId(context) + "'");
 
 		List<Document> documents = this.getChatMemoryStore().similaritySearch(searchRequest);
 
