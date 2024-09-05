@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +21,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.VectorStoreChatMemoryAdvisor;
@@ -44,6 +49,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * @author Fabian Krüger
+ * @author Soby Chacko
  */
 @Testcontainers
 class PgVectorStoreWithChatMemoryAdvisorIT {
@@ -117,9 +123,16 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		return new JdbcTemplate(ds);
 	}
 
+	@SuppressWarnings("unchecked")
 	private @NotNull EmbeddingModel embeddingNModelShouldAlwaysReturnFakedEmbed() {
 		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
-		when(embeddingModel.embed(any(Document.class))).thenReturn(embed);
+
+		Mockito.doAnswer(invocationOnMock -> {
+			Object[] arguments = invocationOnMock.getArguments();
+			List<Document> documents = (List<Document>) arguments[0];
+			documents.forEach(d -> d.setEmbedding(embed));
+			return List.of(embed, embed);
+		}).when(embeddingModel).embed(ArgumentMatchers.any(), any(), any());
 		when(embeddingModel.embed(any(String.class))).thenReturn(embed);
 		return embeddingModel;
 	}
