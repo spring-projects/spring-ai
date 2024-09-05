@@ -15,10 +15,7 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
-import java.util.Map;
-
 import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.model.ChatResponse;
 
 import reactor.core.publisher.Flux;
 
@@ -31,11 +28,9 @@ public interface StreamAroundAdvisor extends Advisor {
 	/**
 	 * Around advice that wraps the invocation of the advised request.
 	 * @param advisedRequest
-	 * @param adviceContext
 	 * @param chain the chain of advisors to execute
 	 * @return the result of the advised request
 	 */
-	Flux<ChatResponse> aroundStream(AdvisedRequest advisedRequest, Map<String, Object> adviceContext,
-			AroundAdvisorChain chain);
+	Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain);
 
 }

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -98,7 +99,9 @@ public class QuestionAnswerAdvisor implements RequestAdvisor, ResponseAdvisor {
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+	public AdvisedRequest adviseRequest(AdvisedRequest request) {
+
+		var context = new HashMap<>(request.adviseContext());
 
 		// 1. Advise the system text.
 		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
@@ -124,16 +127,17 @@ public class QuestionAnswerAdvisor implements RequestAdvisor, ResponseAdvisor {
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
 			.withUserText(advisedUserText)
 			.withUserParams(advisedUserParams)
+			.withAdviseContext(context)
 			.build();
 
 		return advisedRequest;
 	}
 
 	@Override
-	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(response);
-		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-		return chatResponseBuilder.build();
+	public AdvisedResponse adviseResponse(AdvisedResponse advisedResponse) {
+		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
+		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
 	}
 
 	@Override

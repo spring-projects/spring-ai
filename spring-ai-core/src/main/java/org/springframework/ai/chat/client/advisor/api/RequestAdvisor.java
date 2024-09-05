@@ -36,11 +36,8 @@ public interface RequestAdvisor extends Advisor {
 	/**
 	 * @param request the {@link AdvisedRequest} data to be advised. Represents the row
 	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
-	 * @param adviseContext the shared data between the advisors in the chain. It is
-	 * shared between all request and response advising points of all advisors in the
-	 * chain.
 	 * @return the advised {@link AdvisedRequest}.
 	 */
-	AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> adviseContext);
+	AdvisedRequest adviseRequest(AdvisedRequest request);
 
 }

@@ -18,12 +18,17 @@ package org.springframework.ai.chat.client;
 
 import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import reactor.core.publisher.Flux;
 
 /**
  * Advisor called before and after the {@link ChatModel#call(Prompt)} and
@@ -43,14 +48,42 @@ public interface RequestResponseAdvisor extends RequestAdvisor, ResponseAdvisor 
 		return this.getClass().getSimpleName();
 	}
 
-	@Override
 	default AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> adviseContext) {
 		return request;
 	}
 
 	@Override
+	default AdvisedRequest adviseRequest(AdvisedRequest request) {
+		var context = new HashMap<>(request.adviseContext());
+		var requestPrim = adviseRequest(request, context);
+		return AdvisedRequest.from(requestPrim).withAdviseContext(Collections.unmodifiableMap(context)).build();
+	}
+
 	default ChatResponse adviseResponse(ChatResponse response, Map<String, Object> adviseContext) {
 		return response;
+	}
+
+	@Override
+	default AdvisedResponse adviseResponse(AdvisedResponse advisedResponse) {
+		var context = new HashMap<>(advisedResponse.adviseContext());
+		var chatResponse = adviseResponse(advisedResponse.response(), context);
+		return new AdvisedResponse(chatResponse, Collections.unmodifiableMap(context));
+	}
+
+	default Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
+		return fluxResponse;
+	}
+
+	@Override
+	default Flux<AdvisedResponse> adviseResponse(Flux<AdvisedResponse> advisedResponseStream) {
+
+		// TODO: this allows to modify the context for each chat response element in the
+		// stream.
+		return advisedResponseStream.map(advisedResponse -> {
+			var context = new HashMap<>(advisedResponse.adviseContext());
+			var chatResponse = adviseResponse(advisedResponse.response(), context);
+			return new AdvisedResponse(chatResponse, Collections.unmodifiableMap(context));
+		});
 	}
 
 }

@@ -1,9 +1,9 @@
 package org.springframework.ai.chat.client.advisor.around;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
@@ -15,7 +15,7 @@ import reactor.core.publisher.Flux;
 /**
  * A {@link CallAroundAdvisor} and {@link StreamAroundAdvisor} that filters out the
  * response if the user input contains any of the sensitive words.
- * 
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -32,27 +32,26 @@ public class SafeGuardAroundAdvisor implements CallAroundAdvisor, StreamAroundAd
 	}
 
 	@Override
-	public ChatResponse aroundCall(AdvisedRequest advisedRequest, Map<String, Object> adviceContext,
-			AroundAdvisorChain chain) {
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
 
 		if (!CollectionUtils.isEmpty(this.sensitiveWords)
 				&& sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {
-			return ChatResponse.builder().withGenerations(List.of()).build();
+			return new AdvisedResponse(ChatResponse.builder().withGenerations(List.of()).build(),
+					advisedRequest.adviseContext());
 		}
 
-		return chain.nextAroundCall(advisedRequest, adviceContext);
+		return chain.nextAroundCall(advisedRequest);
 	}
 
 	@Override
-	public Flux<ChatResponse> aroundStream(AdvisedRequest advisedRequest, Map<String, Object> adviceContext,
-			AroundAdvisorChain chain) {
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
 
 		if (!CollectionUtils.isEmpty(this.sensitiveWords)
 				&& sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {
 			return Flux.empty();
 		}
 
-		return chain.nextAroundStream(advisedRequest, adviceContext);
+		return chain.nextAroundStream(advisedRequest);
 
 	}
 

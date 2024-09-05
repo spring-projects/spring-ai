@@ -18,13 +18,12 @@ package org.springframework.ai.chat.client.advisor.observation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.util.CollectionUtils;
 
 import io.micrometer.observation.Observation;
@@ -38,39 +37,42 @@ public abstract class AdvisorObservableHelper {
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
 	public static AdvisedRequest adviseRequest(Observation parentObservation, RequestAdvisor advisor,
-			AdvisedRequest advisedRequest, Map<String, Object> advisorContext) {
+			AdvisedRequest advisedRequest) {
 
 		var observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName(advisor.getName())
 			.withAdvisorType(AdvisorObservationContext.Type.BEFORE)
 			.withAdvisedRequest(advisedRequest)
-			.withAdvisorRequestContext(advisorContext)
+			.withAdvisorRequestContext(advisedRequest.adviseContext())
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
 			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					parentObservation.getObservationRegistry())
 			.parentObservation(parentObservation)
-			.observe(() -> advisor.adviseRequest(advisedRequest, advisorContext));
+			.observe(() -> advisor.adviseRequest(advisedRequest));
 	}
 
-	public static ChatResponse adviseResponse(Observation parentObservation, ResponseAdvisor advisor,
-			ChatResponse response, Map<String, Object> advisorContext) {
+	public static AdvisedResponse adviseResponse(Observation parentObservation, ResponseAdvisor advisor,
+			AdvisedResponse advisedResponse) {
 
 		var observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName(advisor.getName())
 			.withAdvisorType(AdvisorObservationContext.Type.AFTER)
-			.withAdvisorRequestContext(advisorContext)
+			.withAdvisorRequestContext(advisedResponse.adviseContext())
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
 			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					parentObservation.getObservationRegistry())
 			.parentObservation(parentObservation)
-			.observe(() -> advisor.adviseResponse(response, advisorContext));
+			.observe(() -> advisor.adviseResponse(advisedResponse));
 	}
 
-	public static List<RequestAdvisor> extractRequestAdvisors(List<Advisor> advisors) {
+	public static List<RequestAdvisor> requestAdvisors(List<Advisor> advisors) {
+		if (CollectionUtils.isEmpty(advisors)) {
+			return Collections.emptyList();
+		}
 		return advisors.stream()
 			.filter(advisor -> advisor instanceof RequestAdvisor)
 			.map(a -> (RequestAdvisor) a)
@@ -83,8 +85,10 @@ public abstract class AdvisorObservableHelper {
 	 * @param advisors list of all registered advisor types.
 	 * @return the list of {@link ResponseAdvisor} instances in reverse order.
 	 */
-	public static List<ResponseAdvisor> extractResponseAdvisors(List<Advisor> advisors) {
-
+	public static List<ResponseAdvisor> responseAdvisors(List<Advisor> advisors) {
+		if (CollectionUtils.isEmpty(advisors)) {
+			return Collections.emptyList();
+		}
 		var list = advisors.stream()
 			.filter(advisor -> advisor instanceof ResponseAdvisor)
 			.map(a -> (ResponseAdvisor) a)

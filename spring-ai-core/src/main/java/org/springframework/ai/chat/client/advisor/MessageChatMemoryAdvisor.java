@@ -18,13 +18,12 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
 
 /**
  * Memory is retrieved added as a collection of messages to the prompt
@@ -43,11 +42,11 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+	public AdvisedRequest adviseRequest(AdvisedRequest request) {
 
-		String conversationId = this.doGetConversationId(context);
+		String conversationId = this.doGetConversationId(request.adviseContext());
 
-		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(context);
+		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(request.adviseContext());
 
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
@@ -61,19 +60,23 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 
 		// 4. Add the new user input to the conversation memory.
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());
-		this.getChatMemoryStore().add(this.doGetConversationId(context), userMessage);
+		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
 
 		return advisedRequest;
 	}
 
 	@Override
-	public ChatResponse adviseResponse(ChatResponse chatResponse, Map<String, Object> context) {
+	public AdvisedResponse adviseResponse(AdvisedResponse advisedResponse) {
 
-		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
+		List<Message> assistantMessages = advisedResponse.response()
+			.getResults()
+			.stream()
+			.map(g -> (Message) g.getOutput())
+			.toList();
 
-		this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
+		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
 
-		return chatResponse;
+		return advisedResponse;
 	}
 
 }

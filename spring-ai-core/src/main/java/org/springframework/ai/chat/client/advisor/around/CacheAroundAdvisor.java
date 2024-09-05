@@ -15,12 +15,14 @@
 */
 package org.springframework.ai.chat.client.advisor.around;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
@@ -59,33 +61,32 @@ public class CacheAroundAdvisor implements CallAroundAdvisor, StreamAroundAdviso
 	}
 
 	@Override
-	public ChatResponse aroundCall(AdvisedRequest advisedRequest, Map<String, Object> adviceContext,
-			AroundAdvisorChain chain) {
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
 
-		var cachedResponseOption = getCacheEntry(advisedRequest, adviceContext);
+		var cachedResponseOption = getCacheEntry(advisedRequest);
 		if (cachedResponseOption.isPresent()) {
-			return cachedResponseOption.get();
+			return new AdvisedResponse(cachedResponseOption.get(), advisedRequest.adviseContext());
 		}
 
-		ChatResponse chatResponse = chain.nextAroundCall(advisedRequest, adviceContext);
+		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
 
-		saveCacheEntry(advisedRequest.userText(), chatResponse);
+		saveCacheEntry(advisedRequest.userText(), advisedResponse.response());
 
-		return chatResponse;
+		return advisedResponse;
 	}
 
 	@Override
-	public Flux<ChatResponse> aroundStream(AdvisedRequest advisedRequest, Map<String, Object> adviceContext,
-			AroundAdvisorChain chain) {
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
 
-		var cachedResponseOption = getCacheEntry(advisedRequest, adviceContext);
+		var cachedResponseOption = getCacheEntry(advisedRequest);
 		if (cachedResponseOption.isPresent()) {
-			return Flux.just(cachedResponseOption.get());
+			return Flux.just(new AdvisedResponse(cachedResponseOption.get(),
+					Collections.unmodifiableMap(advisedRequest.adviseContext())));
 		}
 
-		Flux<ChatResponse> fluxChatResponse = chain.nextAroundStream(advisedRequest, adviceContext);
+		Flux<AdvisedResponse> advisedResponseFlux = chain.nextAroundStream(advisedRequest);
 
-		return new MessageAggregator().aggregate(fluxChatResponse, chatResponse -> {
+		return new MessageAggregator().aggregateAdvisedResponse(advisedResponseFlux, chatResponse -> {
 			saveCacheEntry(advisedRequest.userText(), chatResponse);
 		});
 	}
@@ -97,7 +98,7 @@ public class CacheAroundAdvisor implements CallAroundAdvisor, StreamAroundAdviso
 		}
 	}
 
-	private Optional<ChatResponse> getCacheEntry(AdvisedRequest advisedRequest, Map<String, Object> adviceContext) {
+	private Optional<ChatResponse> getCacheEntry(AdvisedRequest advisedRequest) {
 
 		// TODO: convert into pompty first or at least materialize the user params.
 		String userText = advisedRequest.userText();
