@@ -31,6 +31,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -174,7 +175,7 @@ public class Neo4jVectorStoreObservationIT {
 				ObservationRegistry observationRegistry) {
 
 			return new Neo4jVectorStore(driver, embeddingModel, Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig(),
-					true, observationRegistry, null);
+					true, observationRegistry, null, new TokenCountBatchingStrategy());
 		}
 
 		@Bean
