@@ -28,11 +28,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -65,7 +65,7 @@ public class OpenAiPaymentTransactionIT {
 	record TransactionStatusResponse(String id, String status) {
 	}
 
-	private static class LoggingAdvisor implements RequestAdvisor, ResponseAdvisor {
+	private static class LoggingAdvisor implements CallAroundAdvisor {
 
 		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
 
@@ -74,7 +74,23 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		@Override
-		public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
+		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+
+			advisedRequest = this.before(advisedRequest);
+
+			AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+
+			this.observeAfter(advisedResponse);
+
+			return advisedResponse;
+		}
+
+		private AdvisedRequest before(AdvisedRequest request) {
 			logger.info("System text: \n" + request.systemText());
 			logger.info("System params: " + request.systemParams());
 			logger.info("User text: \n" + request.userText());
@@ -86,10 +102,8 @@ public class OpenAiPaymentTransactionIT {
 			return request;
 		}
 
-		@Override
-		public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-			logger.info("Response: " + response);
-			return response;
+		private void observeAfter(AdvisedResponse advisedResponse) {
+			logger.info("Response: " + advisedResponse.response());
 		}
 
 	}

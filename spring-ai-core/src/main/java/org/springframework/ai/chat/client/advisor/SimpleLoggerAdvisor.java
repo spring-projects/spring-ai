@@ -15,23 +15,28 @@
  */
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.Map;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.model.ModelOptionsUtils;
+
+import reactor.core.publisher.Flux;
 
 /**
  * A simple logger advisor that logs the request and response messages.
  *
  * @author Christian Tzolov
  */
-public class SimpleLoggerAdvisor implements RequestAdvisor, ResponseAdvisor {
+public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
@@ -63,15 +68,17 @@ public class SimpleLoggerAdvisor implements RequestAdvisor, ResponseAdvisor {
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+	public int getOrder() {
+		return 0;
+	}
+
+	private AdvisedRequest before(AdvisedRequest request) {
 		logger.debug("request: {}", this.requestToString.apply(request));
 		return request;
 	}
 
-	@Override
-	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-		logger.debug("response: {}", this.responseToString.apply(response));
-		return response;
+	private void observeAfter(AdvisedResponse advisedResponse) {
+		logger.debug("response: {}", this.responseToString.apply(advisedResponse.response()));
 	}
 
 	@Override
@@ -80,8 +87,25 @@ public class SimpleLoggerAdvisor implements RequestAdvisor, ResponseAdvisor {
 	}
 
 	@Override
-	public StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.AGGREGATE;
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+
+		advisedRequest = before(advisedRequest);
+
+		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+
+		observeAfter(advisedResponse);
+
+		return advisedResponse;
+	}
+
+	@Override
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+
+		advisedRequest = before(advisedRequest);
+
+		Flux<AdvisedResponse> advisedResponses = chain.nextAroundStream(advisedRequest);
+
+		return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
 	}
 
 }

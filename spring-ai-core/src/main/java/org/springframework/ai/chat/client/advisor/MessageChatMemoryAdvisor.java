@@ -18,19 +18,23 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
+
+import reactor.core.publisher.Flux;
 
 /**
  * Memory is retrieved added as a collection of messages to the prompt
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
@@ -39,15 +43,35 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 	}
 
 	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
-		super(chatMemory, defaultConversationId, chatHistoryWindowSize);
+		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true);
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 
-		String conversationId = this.doGetConversationId(context);
+		advisedRequest = this.before(advisedRequest);
 
-		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(context);
+		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+
+		this.observeAfter(advisedResponse);
+
+		return advisedResponse;
+	}
+
+	@Override
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+
+		Flux<AdvisedResponse> advisedResponses = this.doNextWithProtectFromBlockingBefore(advisedRequest, chain,
+				this::before);
+
+		return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
+	}
+
+	private AdvisedRequest before(AdvisedRequest request) {
+
+		String conversationId = this.doGetConversationId(request.adviseContext());
+
+		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(request.adviseContext());
 
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
@@ -61,19 +85,20 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 
 		// 4. Add the new user input to the conversation memory.
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());
-		this.getChatMemoryStore().add(this.doGetConversationId(context), userMessage);
+		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
 
 		return advisedRequest;
 	}
 
-	@Override
-	public ChatResponse adviseResponse(ChatResponse chatResponse, Map<String, Object> context) {
+	private void observeAfter(AdvisedResponse advisedResponse) {
 
-		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
+		List<Message> assistantMessages = advisedResponse.response()
+			.getResults()
+			.stream()
+			.map(g -> (Message) g.getOutput())
+			.toList();
 
-		this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
-
-		return chatResponse;
+		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
 	}
 
 }

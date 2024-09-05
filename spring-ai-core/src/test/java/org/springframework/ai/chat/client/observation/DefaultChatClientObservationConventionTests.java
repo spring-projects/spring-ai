@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
@@ -97,6 +97,11 @@ class DefaultChatClientObservationConventionTests {
 			}
 
 			@Override
+			public int getOrder() {
+				return 0;
+			}
+
+			@Override
 			public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 				return request;
 			}
@@ -148,7 +153,8 @@ class DefaultChatClientObservationConventionTests {
 		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "json", true);
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(), "[\"advisor1\",\"advisor2\"]"),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(),
+						"[\"advisor1\",\"advisor2\",\"CallAroundAdvisor\",\"StreamAroundAdvisor\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),
 						"[\"advParam1\":\"advisorParam1Value\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(),

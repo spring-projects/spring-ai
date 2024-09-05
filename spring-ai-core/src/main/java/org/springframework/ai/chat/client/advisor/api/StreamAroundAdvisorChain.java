@@ -15,20 +15,25 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
+import reactor.core.publisher.Flux;
+
 /**
+ * The StreamAroundAdvisorChain is used to delegate the call to the next
+ * StreamAroundAdvisor in the chain. Used for streaming responses.
+ *
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @since 1.0.0
  */
-
-public interface CallAroundAdvisor extends Advisor {
+public interface StreamAroundAdvisorChain {
 
 	/**
-	 * Around advice that wraps the ChatModel#call(Prompt) method.
-	 * @param advisedRequest the advised request
-	 * @param chain the advisor chain
-	 * @return the response
+	 * This method delegates the call to the next StreamAroundAdvisor in the chain and is
+	 * used for streaming responses.
+	 * @param advisedRequest the request containing data of the chat client that can be
+	 * modified before execution
+	 * @return a Flux stream of AdvisedResponse objects
 	 */
-	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain);
+	Flux<AdvisedResponse> nextAroundStream(AdvisedRequest advisedRequest);
 
 }

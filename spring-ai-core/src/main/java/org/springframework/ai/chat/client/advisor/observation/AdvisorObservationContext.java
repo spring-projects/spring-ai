@@ -17,8 +17,8 @@ package org.springframework.ai.chat.client.advisor.observation;
 
 import java.util.Map;
 
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.util.Assert;
 
@@ -33,7 +33,7 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	public enum Type {
 
-		BEFORE, AFTER, AROUND;
+		BEFORE, AFTER, AROUND
 
 	}
 
@@ -58,6 +58,11 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * and response advising points of all advisors in the chain.
 	 */
 	private Map<String, Object> advisorResponseContext;
+
+	/**
+	 * The order of the advisor in the advisor chain.
+	 */
+	private int order;
 
 	public void setAdvisorName(String advisorName) {
 		this.advisorName = advisorName;
@@ -99,6 +104,14 @@ public class AdvisorObservationContext extends Observation.Context {
 		this.advisorResponseContext = advisorResponseContext;
 	}
 
+	public int getOrder() {
+		return this.order;
+	}
+
+	public void setOrder(int order) {
+		this.order = order;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -129,6 +142,11 @@ public class AdvisorObservationContext extends Observation.Context {
 
 		public Builder withAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
 			this.context.setAdvisorResponseContext(advisorResponseContext);
+			return this;
+		}
+
+		public Builder withOrder(int order) {
+			this.context.setOrder(order);
 			return this;
 		}
 

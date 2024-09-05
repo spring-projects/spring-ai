@@ -300,7 +300,7 @@ At the `ChatClient.Builder` level, you can specify the default prompt configurat
 
 * `defaultUser(String text)`, `defaultUser(Resource text)`, `defaultUser(Consumer<UserSpec> userSpecConsumer)`: These methods let you define the user text. The `Consumer<UserSpec>` allows you to use a lambda to specify the user text and any default parameters.
 
-* `defaultAdvisors(RequestResponseAdvisor... advisor)`: Advisors allow modification of the data used to create the `Prompt`. The `QuestionAnswerAdvisor` implementation enables the pattern of `Retrieval Augmented Generation` by appending the prompt with context information related to the user text.
+* `defaultAdvisors(Advisor... advisor)`: Advisors allow modification of the data used to create the `Prompt`. The `QuestionAnswerAdvisor` implementation enables the pattern of `Retrieval Augmented Generation` by appending the prompt with context information related to the user text.
 
 * `defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer)`: This method allows you to define a `Consumer` to configure multiple advisors using the `AdvisorSpec`. Advisors can modify the data used to create the final `Prompt`. The `Consumer<AdvisorSpec>` lets you specify a lambda to add advisors, such as `QuestionAnswerAdvisor`, which supports `Retrieval Augmented Generation` by appending the prompt with relevant context information based on the user text.
 
@@ -315,11 +315,13 @@ java.util.function.Function<I, O> function)`
 
 * `user(String text)`, `user(Resource text)`, `user(Consumer<UserSpec> userSpecConsumer)`
 
-* `advisors(RequestResponseAdvisor... advisor)`
+* `advisors(Advisor... advisor)`
 
 * `advisors(Consumer<AdvisorSpec> advisorSpecConsumer)`
 
 == Advisors
+
+The xref:api/advisors.adoc[Advisors API] provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications. 
 
 A common pattern when calling an AI model with user text is to append or augment the prompt with contextual data.
 
@@ -352,15 +354,15 @@ ChatClient.builder(chatModel)
     .build()
     .prompt()
     .advisors(
-        new ChatMemoryAdvisor(chatMemory),
+        new MessageChatMemoryAdvisor(chatMemory),
         new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
     )
     .user(userText)
-    .call();
+    .call()
+    .content();
 ----
 
-In this configuration, the `ChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
-
+In this configuration, the `MessageChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
 
 === Retrieval Augmented Generation
 

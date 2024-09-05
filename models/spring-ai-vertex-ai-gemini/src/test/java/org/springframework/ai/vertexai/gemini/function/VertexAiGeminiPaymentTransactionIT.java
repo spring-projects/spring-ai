@@ -28,11 +28,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
@@ -65,7 +65,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 	record TransactionStatusResponse(String id, String status) {
 	}
 
-	private static class LoggingAdvisor implements RequestAdvisor, ResponseAdvisor {
+	private static class LoggingAdvisor implements CallAroundAdvisor {
 
 		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
 
@@ -75,7 +75,18 @@ public class VertexAiGeminiPaymentTransactionIT {
 		}
 
 		@Override
-		public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
+		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+			var response = chain.nextAroundCall(before(advisedRequest));
+			observeAfter(response);
+			return response;
+		}
+
+		private AdvisedRequest before(AdvisedRequest request) {
 			logger.info("System text: \n" + request.systemText());
 			logger.info("System params: " + request.systemParams());
 			logger.info("User text: \n" + request.userText());
@@ -87,10 +98,8 @@ public class VertexAiGeminiPaymentTransactionIT {
 			return request;
 		}
 
-		@Override
-		public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-			logger.info("Response: " + response);
-			return response;
+		private void observeAfter(AdvisedResponse advisedResponse) {
+			logger.info("Response: " + advisedResponse.response());
 		}
 
 	}

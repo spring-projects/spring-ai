@@ -26,7 +26,6 @@ import java.util.List;
 /**
  * Returns a new list of content (e.g list of messages of list of documents) that is a
  * subset of the input list of contents and complies with the max token size constraint.
- *
  * The token estimator is used to estimate the token count of the datum.
  *
  * @author Christian Tzolov
