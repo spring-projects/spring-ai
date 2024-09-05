@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
@@ -94,6 +94,11 @@ class DefaultChatClientObservationConventionTests {
 			@Override
 			public String getName() {
 				return name;
+			}
+
+			@Override
+			public int getOrder() {
+				return 0;
 			}
 
 			@Override

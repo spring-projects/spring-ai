@@ -15,25 +15,21 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
-import java.util.Map;
-
-import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.core.Ordered;
 
 /**
  * @author Christian Tzolov
  * @since 1.0.0
  */
 
-public interface CallAroundAdvisor extends Advisor {
+public interface CallAroundAdvisor extends Advisor, Ordered {
 
 	/**
 	 * Around advice that wraps the ChatModel#call(Prompt) method.
 	 * @param advisedRequest the advised request
-	 * @param adviceContext the advice context
 	 * @param chain the advisor chain
 	 * @return the response
 	 */
-	ChatResponse aroundCall(AdvisedRequest advisedRequest, Map<String, Object> adviceContext, AroundAdvisorChain chain);
+	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain);
 
 }

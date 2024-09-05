@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -35,35 +34,29 @@ import reactor.core.publisher.Flux;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
+public class MessageChatMemoryAdvisor2 extends AbstractChatMemoryAdvisor2<ChatMemory> {
 
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory) {
+	public MessageChatMemoryAdvisor2(ChatMemory chatMemory) {
 		super(chatMemory);
 	}
 
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
+	public MessageChatMemoryAdvisor2(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize);
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+	public AdvisedRequest doBefore(AdvisedRequest advisedRequest) {
+		return this.before(advisedRequest);
+	}
 
-		advisedRequest = this.before(advisedRequest);
-
-		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
-
+	@Override
+	public AdvisedResponse doAfter(AdvisedResponse advisedResponse) {
 		this.observeAfter(advisedResponse);
-
 		return advisedResponse;
 	}
 
 	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
-
-		advisedRequest = this.before(advisedRequest);
-
-		Flux<AdvisedResponse> advisedResponses = chain.nextAroundStream(advisedRequest);
-
+	public Flux<AdvisedResponse> doAfterStream(Flux<AdvisedResponse> advisedResponses) {
 		return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
 	}
 

@@ -18,8 +18,7 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
 
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AbstractBlaCallAroundAdvisor;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
@@ -30,7 +29,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor, StreamAroundAdvisor {
+public abstract class AbstractChatMemoryAdvisor2<T> extends AbstractBlaCallAroundAdvisor {
 
 	public static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
@@ -46,11 +45,11 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 
 	protected final int defaultChatMemoryRetrieveSize;
 
-	public AbstractChatMemoryAdvisor(T chatMemory) {
+	public AbstractChatMemoryAdvisor2(T chatMemory) {
 		this(chatMemory, DEFAULT_CHAT_MEMORY_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE);
 	}
 
-	public AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize) {
+	public AbstractChatMemoryAdvisor2(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize) {
 
 		Assert.notNull(chatMemory, "The chatMemory must not be null!");
 		Assert.hasText(defaultConversationId, "The conversationId must not be empty!");
