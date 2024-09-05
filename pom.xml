@@ -424,7 +424,7 @@
 							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 							<detectJavaApiLink>false</detectJavaApiLink>
 							<doclint>none</doclint>
-<!--							<doclint>all,-missing</doclint>-->
+							<doclint>all,-missing</doclint>
 							<quiet>true</quiet>
 						</configuration>
 						<executions>

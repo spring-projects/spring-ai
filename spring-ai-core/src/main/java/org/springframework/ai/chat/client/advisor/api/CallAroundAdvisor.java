@@ -28,7 +28,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 public interface CallAroundAdvisor extends Advisor {
 
 	/**
-	 * Around advice that wraps the {@link ChatModel#call(Prompt)} method.
+	 * Around advice that wraps the ChatModel#call(Prompt) method.
 	 * @param advisedRequest the advised request
 	 * @param adviceContext the advice context
 	 * @param chain the advisor chain

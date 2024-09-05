@@ -15,15 +15,16 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
-import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
-
 /**
  * Parent advisor interface for all advisors.
  *
  * @author Christian Tzolov
  * @since 1.0.0
- * @see {@link RequestAdvisor}, {@link ResponseAdvisor}, {@link CallAroundAdvisor},
- * {@link StreamAroundAdvisor}, {@link DefaultAroundAdvisorChain}
+ * @see RequestAdvisor
+ * @see ResponseAdvisor
+ * @see CallAroundAdvisor
+ * @see StreamAroundAdvisor
+ * @see AroundAdvisorChain
  */
 public interface Advisor {
 
