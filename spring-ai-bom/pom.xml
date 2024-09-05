@@ -267,7 +267,7 @@
             <!-- Spring Boot Starters -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-apache-cassandra-store-spring-boot-starter</artifactId>
+                <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
