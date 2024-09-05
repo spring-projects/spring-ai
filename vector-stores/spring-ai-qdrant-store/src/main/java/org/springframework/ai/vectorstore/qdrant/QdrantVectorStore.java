@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.qdrant;
 
 import static io.qdrant.client.PointIdFactory.id;
@@ -27,7 +28,10 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -58,6 +62,7 @@ import io.qdrant.client.grpc.Points.UpdateStatus;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Josh Long
+ * @author Soby Chacko
  * @since 0.8.1
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -77,6 +82,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private final QdrantFilterExpressionConverter filterExpressionConverter = new QdrantFilterExpressionConverter();
 
 	private final boolean initializeSchema;
+
+	private final BatchingStrategy batchingStrategy;
 
 	/**
 	 * Configuration class for the QdrantVectorStore.
@@ -161,7 +168,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 */
 	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
-		this(qdrantClient, collectionName, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null);
+		this(qdrantClient, collectionName, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	/**
@@ -175,7 +183,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 */
 	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -187,6 +195,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		this.embeddingModel = embeddingModel;
 		this.collectionName = collectionName;
 		this.qdrantClient = qdrantClient;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	/**
@@ -196,16 +205,17 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public void doAdd(List<Document> documents) {
 		try {
-			List<PointStruct> points = documents.stream().map(document -> {
-				// Compute and assign an embedding to the document.
-				document.setEmbedding(this.embeddingModel.embed(document));
 
-				return PointStruct.newBuilder()
+			// Compute and assign an embedding to the document.
+			this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
+			List<PointStruct> points = documents.stream()
+				.map(document -> PointStruct.newBuilder()
 					.setId(id(UUID.fromString(document.getId())))
 					.setVectors(vectors(document.getEmbedding()))
 					.putAllPayload(toPayload(document))
-					.build();
-			}).toList();
+					.build())
+				.toList();
 
 			this.qdrantClient.upsertAsync(this.collectionName, points).get();
 		}
