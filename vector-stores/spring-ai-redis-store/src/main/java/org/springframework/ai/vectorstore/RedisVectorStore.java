@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.text.MessageFormat;
@@ -29,7 +30,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -75,6 +79,7 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Thomas Vitale
+ * @author Soby Chacko
  * @see VectorStore
  * @see RedisVectorStoreConfig
  * @see EmbeddingModel
@@ -278,15 +283,18 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private FilterExpressionConverter filterExpressionConverter;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
 			boolean initializeSchema) {
 
-		this(config, embeddingModel, jedis, initializeSchema, ObservationRegistry.NOOP, null);
+		this(config, embeddingModel, jedis, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -298,6 +306,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		this.embeddingModel = embeddingModel;
 		this.config = config;
 		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.config.metadataFields);
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	public JedisPooled getJedis() {
@@ -307,12 +316,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public void doAdd(List<Document> documents) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
-			for (Document document : documents) {
-				var embedding = this.embeddingModel.embed(document);
-				document.setEmbedding(embedding);
 
+			this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
+			for (Document document : documents) {
+				document.setEmbedding(document.getEmbedding());
 				var fields = new HashMap<String, Object>();
-				fields.put(this.config.embeddingFieldName, embedding);
+				fields.put(this.config.embeddingFieldName, document.getEmbedding());
 				fields.put(this.config.contentFieldName, document.getContent());
 				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.redis;
 
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.RedisVectorStore;
 import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -35,6 +38,7 @@ import redis.clients.jedis.JedisPooled;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @AutoConfiguration(after = RedisAutoConfiguration.class)
 @ConditionalOnClass({ JedisPooled.class, JedisConnectionFactory.class, RedisVectorStore.class, EmbeddingModel.class })
@@ -43,10 +47,17 @@ import redis.clients.jedis.JedisPooled;
 public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy batchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
 			JedisConnectionFactory jedisConnectionFactory, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
 		var config = RedisVectorStoreConfig.builder()
 			.withIndexName(properties.getIndex())
@@ -56,7 +67,7 @@ public class RedisVectorStoreAutoConfiguration {
 		return new RedisVectorStore(config, embeddingModel,
 				new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()),
 				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
+				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
 	}
 
 }
