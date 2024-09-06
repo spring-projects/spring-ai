@@ -18,9 +18,12 @@ package org.springframework.ai.autoconfigure.vectorstore.mongo;
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.List;
+
 /**
  * @author Eddú Meléndez
  * @author Christian Tzolov
+ * @author Ignacio López
  * @since 1.0.0
  */
 @ConfigurationProperties(MongoDBAtlasVectorStoreProperties.CONFIG_PREFIX)
@@ -42,6 +45,11 @@ public class MongoDBAtlasVectorStoreProperties extends CommonVectorStoreProperti
 	 * The name of the index to store the vectors. Defaults to "vector_index".
 	 */
 	private String indexName;
+
+	/**
+	 * Name of the metadata fields to use as filters.
+	 */
+	private List<String> metadataFieldsToFilter = List.of();
 
 	public String getCollectionName() {
 		return this.collectionName;
@@ -65,6 +73,14 @@ public class MongoDBAtlasVectorStoreProperties extends CommonVectorStoreProperti
 
 	public void setIndexName(String indexName) {
 		this.indexName = indexName;
+	}
+
+	public List<String> getMetadataFieldsToFilter() {
+		return this.metadataFieldsToFilter;
+	}
+
+	public void setMetadataFieldsToFilter(List<String> metadataFieldsToFilter) {
+		this.metadataFieldsToFilter = metadataFieldsToFilter;
 	}
 
 }
