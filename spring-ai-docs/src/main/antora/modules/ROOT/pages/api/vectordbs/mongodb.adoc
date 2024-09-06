@@ -120,6 +120,7 @@ spring.ai.vectorstore.mongodb.collection-name=vector_store
 spring.ai.vectorstore.mongodb.initialize-schema=true
 spring.ai.vectorstore.mongodb.path-name=embedding
 spring.ai.vectorstore.mongodb.indexName=vector_index
+spring.ai.vectorstore.mongodb.metadata-fields-to-filter=foo
 ----
 
 
@@ -131,6 +132,7 @@ spring.ai.vectorstore.mongodb.indexName=vector_index
 |`spring.ai.vectorstore.mongodb.initialize-schema`| whether to initialize the backend schema for you | `false`
 |`spring.ai.vectorstore.mongodb.path-name`| The name of the path to store the vectors. | `embedding`
 |`spring.ai.vectorstore.mongodb.indexName`| The name of the index to store the vectors. | `vector_index`
+|`spring.ai.vectorstore.mongodb.metadata-fields-to-filter` | comma separated values that specifies which metadata fields can be used for filtering when querying the vector store.  Needed so that metadata indexes are created if they already don't exist | empty list
 |===
 
 

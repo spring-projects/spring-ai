@@ -41,6 +41,7 @@ import java.util.Arrays;
  * @author Eddú Meléndez
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Ignacio López
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -71,6 +72,9 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 		}
 		if (StringUtils.hasText(properties.getIndexName())) {
 			builder.withVectorIndexName(properties.getIndexName());
+		}
+		if (!properties.getMetadataFieldsToFilter().isEmpty()) {
+			builder.withMetadataFieldsToFilter(properties.getMetadataFieldsToFilter());
 		}
 		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = builder.build();
 
