@@ -112,6 +112,12 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		// Elasticsearch can automatically create an index if it does not exist, but it
+		// will always use the default similarity function 'cosine'
+		if (!indexExists() && !options.getSimilarity().equals(SimilarityFunction.cosine)) {
+			throw new IllegalArgumentException(
+					"Index not found, cannot use similarity functions other than 'cosine' if the index has not been previously configured");
+		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 		for (Document document : documents) {
@@ -119,13 +125,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
-			// We call operations on BulkRequest.Builder only if the index exists.
-			// For the index to be present, either it must be pre-created or set the
-			// initializeSchema to true.
-			if (indexExists()) {
-				bulkRequestBuilder.operations(op -> op
-					.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
-			}
+			bulkRequestBuilder.operations(op -> op
+				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
