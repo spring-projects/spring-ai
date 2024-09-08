@@ -48,14 +48,14 @@ public class WatsonxAiChatOptions implements ChatOptions {
      * The temperature of the model. Increasing the temperature will
      * make the model answer more creatively. (Default: 0.7)
      */
-    @JsonProperty("temperature") private Float temperature;
+    @JsonProperty("temperature") private Double temperature;
 
     /**
      * Works together with top-k. A higher value (e.g., 0.95) will lead to
      * more diverse text, while a lower value (e.g., 0.2) will generate more focused and
      * conservative text. (Default: 1.0)
      */
-    @JsonProperty("top_p") private Float topP;
+    @JsonProperty("top_p") private Double topP;
 
     /**
      * Reduces the probability of generating nonsense. A higher value (e.g.
@@ -104,7 +104,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
      * (e.g., 1.8) will penalize repetitions more strongly, while a lower value (e.g.,
      * 1.1) will be more lenient. (Default: 1.0)
      */
-    @JsonProperty("repetition_penalty") private Float repetitionPenalty;
+    @JsonProperty("repetition_penalty") private Double repetitionPenalty;
 
     /**
      * Produce repeatable results, set the same random seed value every time. (Default: randomly generated)
@@ -126,20 +126,20 @@ public class WatsonxAiChatOptions implements ChatOptions {
     private ObjectMapper mapper = new ObjectMapper();
 
 	@Override
-    public Float getTemperature() {
+    public Double getTemperature() {
         return temperature;
     }
 
-    public void setTemperature(Float temperature) {
+    public void setTemperature(Double temperature) {
         this.temperature = temperature;
     }
 
 	@Override
-    public Float getTopP() {
+    public Double getTopP() {
         return topP;
     }
 
-    public void setTopP(Float topP) {
+    public void setTopP(Double topP) {
         this.topP = topP;
     }
 
@@ -198,20 +198,20 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
     	return getRepetitionPenalty();
     }
 
 	@JsonIgnore
-	public void setPresencePenalty(Float presencePenalty) {
+	public void setPresencePenalty(Double presencePenalty) {
 		setRepetitionPenalty(presencePenalty);
 	}
 
-	public Float getRepetitionPenalty() {
+	public Double getRepetitionPenalty() {
         return repetitionPenalty;
     }
 
-    public void setRepetitionPenalty(Float repetitionPenalty) {
+    public void setRepetitionPenalty(Double repetitionPenalty) {
         this.repetitionPenalty = repetitionPenalty;
     }
 
@@ -248,7 +248,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
     	return null;
     }
 
@@ -260,12 +260,12 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
         WatsonxAiChatOptions options = new WatsonxAiChatOptions();
 
-        public Builder withTemperature(Float temperature) {
+        public Builder withTemperature(Double temperature) {
             this.options.temperature = temperature;
             return this;
         }
 
-        public Builder withTopP(Float topP) {
+        public Builder withTopP(Double topP) {
             this.options.topP = topP;
             return this;
         }
@@ -295,7 +295,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
             return this;
         }
 
-        public Builder withRepetitionPenalty(Float repetitionPenalty) {
+        public Builder withRepetitionPenalty(Double repetitionPenalty) {
             this.options.repetitionPenalty = repetitionPenalty;
             return this;
         }

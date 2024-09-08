@@ -40,7 +40,7 @@ public class MoonshotChatProperties extends MoonshotParentProperties {
 	@NestedConfigurationProperty
 	private MoonshotChatOptions options = MoonshotChatOptions.builder()
 		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.withTemperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public MoonshotChatOptions getOptions() {

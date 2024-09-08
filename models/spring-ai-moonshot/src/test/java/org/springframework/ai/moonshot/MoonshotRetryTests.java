@@ -85,8 +85,8 @@ public class MoonshotRetryTests {
 
 		chatModel = new MoonshotChatModel(moonshotApi,
 				MoonshotChatOptions.builder()
-					.withTemperature(0.7f)
-					.withTopP(1f)
+					.withTemperature(0.7)
+					.withTopP(1.0)
 					.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_32K.getValue())
 					.build(),
 				null, retryTemplate);

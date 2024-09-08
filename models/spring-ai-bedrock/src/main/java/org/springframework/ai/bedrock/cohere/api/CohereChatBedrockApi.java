@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere.html
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @author Wei Jiang
  * @since 0.8.0
  */
@@ -130,8 +131,8 @@ public class CohereChatBedrockApi extends
 	@JsonInclude(Include.NON_NULL)
 	public record CohereChatRequest(
 			@JsonProperty("prompt") String prompt,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("p") Float topP,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("p") Double topP,
 			@JsonProperty("k") Integer topK,
 			@JsonProperty("max_tokens") Integer maxTokens,
 			@JsonProperty("stop_sequences") List<String> stopSequences,
@@ -204,8 +205,8 @@ public class CohereChatBedrockApi extends
 		 */
 		public static class Builder {
 			private final String prompt;
-			private Float temperature;
-			private Float topP;
+			private Double temperature;
+			private Double topP;
 			private Integer topK;
 			private Integer maxTokens;
 			private List<String> stopSequences;
@@ -219,12 +220,12 @@ public class CohereChatBedrockApi extends
 				this.prompt = prompt;
 			}
 
-			public Builder withTemperature(Float temperature) {
+			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
-			public Builder withTopP(Float topP) {
+			public Builder withTopP(Double topP) {
 				this.topP = topP;
 				return this;
 			}

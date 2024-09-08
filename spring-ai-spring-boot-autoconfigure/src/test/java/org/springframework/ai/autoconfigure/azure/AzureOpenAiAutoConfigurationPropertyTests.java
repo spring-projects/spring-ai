@@ -83,14 +83,14 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				assertThat(embeddingProperties.getOptions().getDeploymentName()).isEqualTo("text-embedding-ada-002");
 
 				assertThat(chatProperties.getOptions().getDeploymentName()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
+				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5);
 				assertThat(chatProperties.getOptions().getLogitBias().get("myTokenId")).isEqualTo(-5);
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 				assertThat(chatProperties.getOptions().getN()).isEqualTo(10);
 				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 
 				assertThat(chatProperties.getOptions().getUser()).isEqualTo("userXYZ");
 			});

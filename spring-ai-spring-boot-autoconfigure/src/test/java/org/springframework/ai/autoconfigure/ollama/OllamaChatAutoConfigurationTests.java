@@ -49,8 +49,8 @@ public class OllamaChatAutoConfigurationTests {
 
 				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 
 				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(123);
 			});

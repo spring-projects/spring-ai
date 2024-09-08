@@ -40,7 +40,7 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 	@NestedConfigurationProperty
 	private MiniMaxChatOptions options = MiniMaxChatOptions.builder()
 		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.withTemperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public MiniMaxChatOptions getOptions() {

@@ -49,13 +49,13 @@ public class CohereChatBedrockApiIT {
 	public void requestBuilder() {
 
 		CohereChatRequest request1 = new CohereChatRequest(
-				"What is the capital of Bulgaria and what is the size? What it the national anthem?", 0.5f, 0.9f, 15,
-				40, List.of("END"), CohereChatRequest.ReturnLikelihoods.ALL, false, 1, null, Truncate.NONE);
+				"What is the capital of Bulgaria and what is the size? What it the national anthem?", 0.5, 0.9, 15, 40,
+				List.of("END"), CohereChatRequest.ReturnLikelihoods.ALL, false, 1, null, Truncate.NONE);
 
 		var request2 = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withTemperature(0.5f)
-			.withTopP(0.9f)
+			.withTemperature(0.5)
+			.withTopP(0.9)
 			.withTopK(15)
 			.withMaxTokens(40)
 			.withStopSequences(List.of("END"))
@@ -75,8 +75,8 @@ public class CohereChatBedrockApiIT {
 		var request = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
 			.withStream(false)
-			.withTemperature(0.5f)
-			.withTopP(0.8f)
+			.withTemperature(0.5)
+			.withTopP(0.8)
 			.withTopK(15)
 			.withMaxTokens(100)
 			.withStopSequences(List.of("END"))
@@ -100,8 +100,8 @@ public class CohereChatBedrockApiIT {
 		var request = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
 			.withStream(true)
-			.withTemperature(0.5f)
-			.withTopP(0.8f)
+			.withTemperature(0.5)
+			.withTopP(0.8)
 			.withTopK(15)
 			.withMaxTokens(100)
 			.withStopSequences(List.of("END"))

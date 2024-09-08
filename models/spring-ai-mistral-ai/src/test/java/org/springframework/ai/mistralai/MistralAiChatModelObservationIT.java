@@ -70,8 +70,8 @@ public class MistralAiChatModelObservationIT {
 			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 			.withMaxTokens(2048)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -91,8 +91,8 @@ public class MistralAiChatModelObservationIT {
 			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 			.withMaxTokens(2048)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

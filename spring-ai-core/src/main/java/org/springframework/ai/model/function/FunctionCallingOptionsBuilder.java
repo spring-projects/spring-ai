@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
  * function-calling.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 public class FunctionCallingOptionsBuilder {
@@ -66,7 +67,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFrequencyPenalty(Float frequencyPenalty) {
+	public FunctionCallingOptionsBuilder withFrequencyPenalty(Double frequencyPenalty) {
 		this.options.setFrequencyPenalty(frequencyPenalty);
 		return this;
 	}
@@ -76,7 +77,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withPresencePenalty(Float presencePenalty) {
+	public FunctionCallingOptionsBuilder withPresencePenalty(Double presencePenalty) {
 		this.options.setPresencePenalty(presencePenalty);
 		return this;
 	}
@@ -86,7 +87,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withTemperature(Float temperature) {
+	public FunctionCallingOptionsBuilder withTemperature(Double temperature) {
 		this.options.setTemperature(temperature);
 		return this;
 	}
@@ -96,7 +97,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withTopP(Float topP) {
+	public FunctionCallingOptionsBuilder withTopP(Double topP) {
 		this.options.setTopP(topP);
 		return this;
 	}
@@ -113,19 +114,19 @@ public class FunctionCallingOptionsBuilder {
 
 		private String model;
 
-		private Float frequencyPenalty;
+		private Double frequencyPenalty;
 
 		private Integer maxTokens;
 
-		private Float presencePenalty;
+		private Double presencePenalty;
 
 		private List<String> stopSequences;
 
-		private Float temperature;
+		private Double temperature;
 
 		private Integer topK;
 
-		private Float topP;
+		private Double topP;
 
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
@@ -157,11 +158,11 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getFrequencyPenalty() {
+		public Double getFrequencyPenalty() {
 			return frequencyPenalty;
 		}
 
-		public void setFrequencyPenalty(Float frequencyPenalty) {
+		public void setFrequencyPenalty(Double frequencyPenalty) {
 			this.frequencyPenalty = frequencyPenalty;
 		}
 
@@ -175,11 +176,11 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getPresencePenalty() {
+		public Double getPresencePenalty() {
 			return presencePenalty;
 		}
 
-		public void setPresencePenalty(Float presencePenalty) {
+		public void setPresencePenalty(Double presencePenalty) {
 			this.presencePenalty = presencePenalty;
 		}
 
@@ -193,11 +194,11 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getTemperature() {
+		public Double getTemperature() {
 			return temperature;
 		}
 
-		public void setTemperature(Float temperature) {
+		public void setTemperature(Double temperature) {
 			this.temperature = temperature;
 		}
 
@@ -211,11 +212,11 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getTopP() {
+		public Double getTopP() {
 			return topP;
 		}
 
-		public void setTopP(Float topP) {
+		public void setTopP(Double topP) {
 			this.topP = topP;
 		}
 

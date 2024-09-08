@@ -1,6 +1,10 @@
 [[upgrade-notes]]
 = Upgrading Notes
 
+== Upgrading to 1.0.0.RC1
+
+* The type of the portable chat options (`frequencyPenalty`, `presencePenalty`, `temperature`, `topP`) has been changed from `Float` to `Double`.
+
 == Upgrading to 1.0.0.M2
 
 * The configuration prefix for the Chroma Vector Store has been changes from `spring.ai.vectorstore.chroma.store` to `spring.ai.vectorstore.chroma` in order to align with the naming conventions of other vector stores.

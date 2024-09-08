@@ -42,7 +42,7 @@ public class BedrockTitanChatProperties {
 	private String model = TitanChatModel.TITAN_TEXT_EXPRESS_V1.id();
 
 	@NestedConfigurationProperty
-	private BedrockTitanChatOptions options = BedrockTitanChatOptions.builder().withTemperature(0.7f).build();
+	private BedrockTitanChatOptions options = BedrockTitanChatOptions.builder().withTemperature(0.7).build();
 
 	public boolean isEnabled() {
 		return enabled;

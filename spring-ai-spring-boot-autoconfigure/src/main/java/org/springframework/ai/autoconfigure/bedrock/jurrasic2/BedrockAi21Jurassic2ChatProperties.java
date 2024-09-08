@@ -45,7 +45,7 @@ public class BedrockAi21Jurassic2ChatProperties {
 
 	@NestedConfigurationProperty
 	private BedrockAi21Jurassic2ChatOptions options = BedrockAi21Jurassic2ChatOptions.builder()
-		.withTemperature(0.7f)
+		.withTemperature(0.7)
 		.withMaxTokens(500)
 		.build();
 

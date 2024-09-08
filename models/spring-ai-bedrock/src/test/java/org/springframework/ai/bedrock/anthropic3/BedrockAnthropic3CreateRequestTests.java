@@ -39,9 +39,9 @@ public class BedrockAnthropic3CreateRequestTests {
 
 		var client = new BedrockAnthropic3ChatModel(anthropicChatApi,
 				Anthropic3ChatOptions.builder()
-					.withTemperature(66.6f)
+					.withTemperature(66.6)
 					.withTopK(66)
-					.withTopP(0.66f)
+					.withTopP(0.66)
 					.withMaxTokens(666)
 					.withAnthropicVersion("X.Y.Z")
 					.withStopSequences(List.of("stop1", "stop2"))
@@ -50,17 +50,17 @@ public class BedrockAnthropic3CreateRequestTests {
 		var request = client.createRequest(new Prompt("Test message content"));
 
 		assertThat(request.messages()).isNotEmpty();
-		assertThat(request.temperature()).isEqualTo(66.6f);
+		assertThat(request.temperature()).isEqualTo(66.6);
 		assertThat(request.topK()).isEqualTo(66);
-		assertThat(request.topP()).isEqualTo(0.66f);
+		assertThat(request.topP()).isEqualTo(0.66);
 		assertThat(request.maxTokens()).isEqualTo(666);
 		assertThat(request.anthropicVersion()).isEqualTo("X.Y.Z");
 		assertThat(request.stopSequences()).containsExactly("stop1", "stop2");
 
 		request = client.createRequest(new Prompt("Test message content",
 				Anthropic3ChatOptions.builder()
-					.withTemperature(99.9f)
-					.withTopP(0.99f)
+					.withTemperature(99.9)
+					.withTopP(0.99)
 					.withMaxTokens(999)
 					.withAnthropicVersion("zzz")
 					.withStopSequences(List.of("stop3", "stop4"))
@@ -69,9 +69,9 @@ public class BedrockAnthropic3CreateRequestTests {
 		));
 
 		assertThat(request.messages()).isNotEmpty();
-		assertThat(request.temperature()).isEqualTo(99.9f);
+		assertThat(request.temperature()).isEqualTo(99.9);
 		assertThat(request.topK()).as("unchanged from the default options").isEqualTo(66);
-		assertThat(request.topP()).isEqualTo(0.99f);
+		assertThat(request.topP()).isEqualTo(0.99);
 		assertThat(request.maxTokens()).isEqualTo(999);
 		assertThat(request.anthropicVersion()).isEqualTo("zzz");
 		assertThat(request.stopSequences()).containsExactly("stop3", "stop4");

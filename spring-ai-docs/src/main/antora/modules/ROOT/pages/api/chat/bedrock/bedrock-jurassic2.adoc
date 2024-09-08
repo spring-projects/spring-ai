@@ -183,9 +183,9 @@ Ai21Jurassic2ChatBedrockApi api = new Ai21Jurassic2ChatBedrockApi(Ai21Jurassic2C
 
 BedrockAi21Jurassic2ChatModel chatModel = new BedrockAi21Jurassic2ChatModel(api,
     BedrockAi21Jurassic2ChatOptions.builder()
-        .withTemperature(0.5f)
+        .withTemperature(0.5)
         .withMaxTokens(100)
-        .withTopP(0.9f).build());
+        .withTopP(0.9).build());
 
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -209,8 +209,8 @@ Ai21Jurassic2ChatBedrockApi jurassic2ChatApi = new Ai21Jurassic2ChatBedrockApi(
         Duration.ofMillis(1000L));
 
 Ai21Jurassic2ChatRequest request = Ai21Jurassic2ChatRequest.builder("Hello, my name is")
-        .withTemperature(0.9f)
-        .withTopP(0.9f)
+        .withTemperature(0.9)
+        .withTopP(0.9)
         .withMaxTokens(20)
         .build();
 

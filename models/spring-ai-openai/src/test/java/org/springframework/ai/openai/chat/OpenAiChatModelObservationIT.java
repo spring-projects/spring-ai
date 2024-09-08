@@ -71,12 +71,12 @@ public class OpenAiChatModelObservationIT {
 
 		var options = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withMaxTokens(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -94,12 +94,12 @@ public class OpenAiChatModelObservationIT {
 	void observationForStreamingChatOperation() {
 		var options = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withMaxTokens(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.withStreamUsage(true)
 			.build();
 

@@ -241,19 +241,19 @@ public class AnthropicApi {
 		@JsonProperty("metadata") Metadata metadata,
 		@JsonProperty("stop_sequences") List<String> stopSequences,
 		@JsonProperty("stream") Boolean stream,
-		@JsonProperty("temperature") Float temperature,
-		@JsonProperty("top_p") Float topP,
+		@JsonProperty("temperature") Double temperature,
+		@JsonProperty("top_p") Double topP,
 		@JsonProperty("top_k") Integer topK,
 		@JsonProperty("tools") List<Tool> tools) {
 		// @formatter:on
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
-				Float temperature, Boolean stream) {
+				Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null);
 		}
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
-				List<String> stopSequences, Float temperature, Boolean stream) {
+				List<String> stopSequences, Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null);
 		}
 
@@ -292,9 +292,9 @@ public class AnthropicApi {
 
 		private Boolean stream = false;
 
-		private Float temperature;
+		private Double temperature;
 
-		private Float topP;
+		private Double topP;
 
 		private Integer topK;
 
@@ -357,12 +357,12 @@ public class AnthropicApi {
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withTemperature(Float temperature) {
+		public ChatCompletionRequestBuilder withTemperature(Double temperature) {
 			this.temperature = temperature;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withTopP(Float topP) {
+		public ChatCompletionRequestBuilder withTopP(Double topP) {
 			this.topP = topP;
 			return this;
 		}

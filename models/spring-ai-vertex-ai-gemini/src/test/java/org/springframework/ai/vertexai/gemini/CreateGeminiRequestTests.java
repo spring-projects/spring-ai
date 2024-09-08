@@ -51,7 +51,7 @@ public class CreateGeminiRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = new VertexAiGeminiChatModel(vertexAI,
-				VertexAiGeminiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
+				VertexAiGeminiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6).build());
 
 		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content"));
 
@@ -62,7 +62,7 @@ public class CreateGeminiRequestTests {
 		assertThat(request.model().getGenerationConfig().getTemperature()).isEqualTo(66.6f);
 
 		request = client.createGeminiRequest(new Prompt("Test message content",
-				VertexAiGeminiChatOptions.builder().withModel("PROMPT_MODEL").withTemperature(99.9f).build()));
+				VertexAiGeminiChatOptions.builder().withModel("PROMPT_MODEL").withTemperature(99.9).build()));
 
 		assertThat(request.contents()).hasSize(1);
 
@@ -80,7 +80,7 @@ public class CreateGeminiRequestTests {
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, new URL("http://example.com"))));
 
 		var client = new VertexAiGeminiChatModel(vertexAI,
-				VertexAiGeminiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
+				VertexAiGeminiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6).build());
 
 		GeminiRequest request = client.createGeminiRequest(new Prompt(List.of(systemMessage, userMessage)));
 
@@ -197,10 +197,10 @@ public class CreateGeminiRequestTests {
 		var client = new VertexAiGeminiChatModel(vertexAI,
 				VertexAiGeminiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
-					.withTemperature(66.6f)
+					.withTemperature(66.6)
 					.withMaxOutputTokens(100)
 					.withTopK(10.0f)
-					.withTopP(5.0f)
+					.withTopP(5.0)
 					.withStopSequences(List.of("stop1", "stop2"))
 					.withCandidateCount(1)
 					.withResponseMimeType("application/json")

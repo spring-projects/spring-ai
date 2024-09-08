@@ -36,6 +36,7 @@ import java.time.Duration;
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @author Wei Jiang
  * @since 0.8.0
  */
@@ -119,8 +120,8 @@ public class LlamaChatBedrockApi extends
 	@JsonInclude(Include.NON_NULL)
 	public record LlamaChatRequest(
 			@JsonProperty("prompt") String prompt,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("top_p") Float topP,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
 			@JsonProperty("max_gen_len") Integer maxGenLen) {
 
 			/**
@@ -134,20 +135,20 @@ public class LlamaChatBedrockApi extends
 
 			public static class Builder {
 				private String prompt;
-				private Float temperature;
-				private Float topP;
+				private Double temperature;
+				private Double topP;
 				private Integer maxGenLen;
 
 				public Builder(String prompt) {
 					this.prompt = prompt;
 				}
 
-				public Builder withTemperature(Float temperature) {
+				public Builder withTemperature(Double temperature) {
 					this.temperature = temperature;
 					return this;
 				}
 
-				public Builder withTopP(Float topP) {
+				public Builder withTopP(Double topP) {
 					this.topP = topP;
 					return this;
 				}

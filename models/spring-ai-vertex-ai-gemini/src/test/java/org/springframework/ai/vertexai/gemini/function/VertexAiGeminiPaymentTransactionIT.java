@@ -202,7 +202,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
 							.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-							.withTemperature(0.1f)
+							.withTemperature(0.1)
 							.build(),
 					functionCallbackContext);
 		}

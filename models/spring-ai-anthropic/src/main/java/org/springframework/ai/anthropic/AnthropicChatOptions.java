@@ -48,8 +48,8 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	private @JsonProperty("metadata") ChatCompletionRequest.Metadata metadata;
 	private @JsonProperty("stop_sequences") List<String> stopSequences;
-	private @JsonProperty("temperature") Float temperature;
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("temperature") Double temperature;
+	private @JsonProperty("top_p") Double topP;
 	private @JsonProperty("top_k") Integer topK;
 
 	/**
@@ -112,12 +112,12 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -186,20 +186,20 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -236,13 +236,13 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 

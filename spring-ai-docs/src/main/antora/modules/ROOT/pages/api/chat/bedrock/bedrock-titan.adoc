@@ -192,8 +192,8 @@ TitanChatBedrockApi titanApi = new TitanChatBedrockApi(
 
 BedrockTitanChatModel chatModel = new BedrockTitanChatModel(titanApi,
     BedrockTitanChatOptions.builder()
-        .withTemperature(0.6f)
-        .withTopP(0.8f)
+        .withTemperature(0.6)
+        .withTopP(0.8)
         .withMaxTokenCount(100)
     .build());
 
@@ -223,8 +223,8 @@ TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatCompletio
 		Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
 
 TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
-	.withTemperature(0.5f)
-	.withTopP(0.9f)
+	.withTemperature(0.5)
+	.withTopP(0.9)
 	.withMaxTokenCount(100)
 	.withStopSequences(List.of("|"))
 	.build();

@@ -108,7 +108,7 @@ public class AnthropicApiToolIT {
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
 			.withMessages(messageConversation)
 			.withMaxTokens(1500)
-			.withTemperature(0.8f)
+			.withTemperature(0.8)
 			.withTools(tools)
 			.build();
 

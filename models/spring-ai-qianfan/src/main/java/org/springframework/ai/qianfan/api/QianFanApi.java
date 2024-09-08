@@ -39,6 +39,7 @@ import java.util.function.Predicate;
  * <a href="https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html">QianFan Docs</a>
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0
  */
 public class QianFanApi extends AuthApi {
@@ -187,14 +188,14 @@ public class QianFanApi extends AuthApi {
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("system") String system,
 			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Float frequencyPenalty,
+			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("max_output_tokens") Integer maxTokens,
-			@JsonProperty("presence_penalty") Float presencePenalty,
+			@JsonProperty("presence_penalty") Double presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("top_p") Float topP) {
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and model.
@@ -203,7 +204,7 @@ public class QianFanApi extends AuthApi {
 		 * @param model ID of the model to use.
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Float temperature) {
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature) {
 			this(messages, system, model, null,null,
 					null, null, null, false, temperature, null);
 		}
@@ -217,7 +218,7 @@ public class QianFanApi extends AuthApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Float temperature, boolean stream) {
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature, boolean stream) {
 			this(messages, system, model, null,null,
 					null, null, null, stream, temperature, null);
 		}
@@ -233,7 +234,7 @@ public class QianFanApi extends AuthApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, Boolean stream) {
 			this(messages, system, DEFAULT_CHAT_MODEL, null,null,
-					null, null, null, stream, 0.8F, null);
+					null, null, null, stream, 0.8, null);
 		}
 
 		/**

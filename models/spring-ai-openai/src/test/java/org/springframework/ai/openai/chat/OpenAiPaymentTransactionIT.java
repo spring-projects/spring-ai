@@ -203,7 +203,7 @@ public class OpenAiPaymentTransactionIT {
 			return new OpenAiChatModel(openAiApi,
 					OpenAiChatOptions.builder()
 						.withModel(ChatModel.GPT_4_O_MINI.getName())
-						.withTemperature(0.1f)
+						.withTemperature(0.1)
 						.build(),
 					functionCallbackContext, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 		}

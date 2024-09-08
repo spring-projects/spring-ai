@@ -38,8 +38,6 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-;
-
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
@@ -97,7 +95,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 						.withContent("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.withOptions(OllamaOptions.create().withTemperature(0.9f))
+			.withOptions(OllamaOptions.create().withTemperature(0.9))
 			.build();
 
 		ChatResponse response = ollamaApi.chat(request);
@@ -119,7 +117,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.withMessages(List.of(Message.builder(Role.USER)
 				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.withOptions(OllamaOptions.create().withTemperature(0.9f).toMap())
+			.withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
 			.build();
 
 		Flux<ChatResponse> response = ollamaApi.streamingChat(request);

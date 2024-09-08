@@ -57,7 +57,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * two settings is difficult to predict.
 	 */
 	@JsonProperty(value = "temperature")
-	private Float temperature;
+	private Double temperature;
 
 	/**
 	 * An alternative to sampling with temperature called nucleus sampling. This value
@@ -68,7 +68,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * two settings is difficult to predict.
 	 */
 	@JsonProperty(value = "top_p")
-	private Float topP;
+	private Double topP;
 
 	/**
 	 * A map between GPT token IDs and bias scores that influences the probability of
@@ -109,7 +109,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * output new topics.
 	 */
 	@JsonProperty(value = "presence_penalty")
-	private Float presencePenalty;
+	private Double presencePenalty;
 
 	/**
 	 * A value that influences the probability of generated tokens appearing based on
@@ -118,7 +118,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * model repeating the same statements verbatim.
 	 */
 	@JsonProperty(value = "frequency_penalty")
-	private Float frequencyPenalty;
+	private Double frequencyPenalty;
 
 	/**
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
@@ -182,7 +182,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Float frequencyPenalty) {
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
@@ -202,7 +202,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 			return this;
 		}
 
-		public Builder withPresencePenalty(Float presencePenalty) {
+		public Builder withPresencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
@@ -212,12 +212,12 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -309,20 +309,20 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	}
 
 	@Override
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Float presencePenalty) {
+	public void setPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
 	@Override
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Float frequencyPenalty) {
+	public void setFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
@@ -346,20 +346,20 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 

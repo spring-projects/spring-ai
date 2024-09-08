@@ -204,9 +204,9 @@ AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
 
 BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(anthropicApi,
     AnthropicChatOptions.builder()
-        .withTemperature(0.6f)
+        .withTemperature(0.6)
         .withTopK(10)
-        .withTopP(0.8f)
+        .withTopP(0.8)
         .withMaxTokensToSample(100)
         .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
         .build());
@@ -238,7 +238,7 @@ AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-  .withTemperature(0.8f)
+  .withTemperature(0.8)
   .withMaxTokensToSample(300)
   .withTopK(10)
   .build();

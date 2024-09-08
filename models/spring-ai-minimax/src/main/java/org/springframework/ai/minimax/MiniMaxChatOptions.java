@@ -54,7 +54,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @JsonProperty("frequency_penalty") Float frequencyPenalty;
+	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
@@ -69,7 +69,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @JsonProperty("presence_penalty") Float presencePenalty;
+	private @JsonProperty("presence_penalty") Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
@@ -92,13 +92,13 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Double topP;
 	/**
 	 * Mask the text information in the output that is easy to involve privacy issues,
 	 * including but not limited to email, domain name, link, ID number, home address, etc.
@@ -165,7 +165,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Float frequencyPenalty) {
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
@@ -180,7 +180,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withPresencePenalty(Float presencePenalty) {
+		public Builder withPresencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
@@ -200,12 +200,12 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -258,11 +258,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Float frequencyPenalty) {
+	public void setFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
@@ -284,11 +284,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Float presencePenalty) {
+	public void setPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
@@ -328,20 +328,20 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 

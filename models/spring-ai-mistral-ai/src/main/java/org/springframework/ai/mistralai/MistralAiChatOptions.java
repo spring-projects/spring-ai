@@ -52,7 +52,7 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * make the output more random, while lower values like 0.2 will make it more focused
 	 * and deterministic. We generally recommend altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 
 	/**
 	 * Nucleus sampling, where the model considers the results of the tokens with top_p
@@ -60,7 +60,7 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * mass are considered. We generally recommend altering this or temperature but not
 	 * both.
 	 */
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Double topP;
 
 	/**
 	 * The maximum number of tokens to generate in the completion. The token count of your
@@ -173,12 +173,12 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
@@ -299,20 +299,20 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -340,13 +340,13 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 

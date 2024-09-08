@@ -296,12 +296,12 @@ AnthropicMessage chatCompletionMessage = new AnthropicMessage(
 // Sync request
 ResponseEntity<ChatCompletionResponse> response = anthropicApi
     .chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-            List.of(chatCompletionMessage), null, 100, 0.8f, false));
+            List.of(chatCompletionMessage), null, 100, 0.8, false));
 
 // Streaming request
 Flux<StreamResponse> response = anthropicApi
     .chatCompletionStream(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-            List.of(chatCompletionMessage), null, 100, 0.8f, true));
+            List.of(chatCompletionMessage), null, 100, 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/api/AnthropicApi.java[AnthropicApi.java]'s JavaDoc for further information.

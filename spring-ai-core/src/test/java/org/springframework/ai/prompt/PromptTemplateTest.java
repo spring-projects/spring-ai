@@ -44,7 +44,7 @@ public class PromptTemplateTest {
 	public void testCreateWithEmptyModelAndChatOptions() {
 		String template = "This is a test prompt with no variables";
 		PromptTemplate promptTemplate = new PromptTemplate(template);
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.7f).withTopK(3).build();
+		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.7).withTopK(3).build();
 
 		Prompt prompt = promptTemplate.create(chatOptions);
 
@@ -60,7 +60,7 @@ public class PromptTemplateTest {
 		model.put("name", "Alice");
 		model.put("age", 30);
 		PromptTemplate promptTemplate = new PromptTemplate(template, model);
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.5f).withMaxTokens(100).build();
+		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.5).withMaxTokens(100).build();
 
 		Prompt prompt = promptTemplate.create(model, chatOptions);
 
@@ -79,7 +79,7 @@ public class PromptTemplateTest {
 
 		Map<String, Object> overriddenModel = new HashMap<>();
 		overriddenModel.put("color", "red");
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.8f).build();
+		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.8).build();
 
 		Prompt prompt = promptTemplate.create(overriddenModel, chatOptions);
 

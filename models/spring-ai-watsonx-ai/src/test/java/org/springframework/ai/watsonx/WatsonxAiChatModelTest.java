@@ -52,7 +52,7 @@ public class WatsonxAiChatModelTest {
 
 	@Test
 	public void testCreateRequestWithNoModelId() {
-		var options = ChatOptionsBuilder.builder().withTemperature(0.9f).withTopK(100).withTopP(0.6f).build();
+		var options = ChatOptionsBuilder.builder().withTemperature(0.9).withTopK(100).withTopP(0.6).build();
 
 		Prompt prompt = new Prompt("Test message", options);
 
@@ -93,12 +93,12 @@ public class WatsonxAiChatModelTest {
 		WatsonxAiChatOptions modelOptions = WatsonxAiChatOptions.builder()
 			.withModel("meta-llama/llama-2-70b-chat")
 			.withDecodingMethod("sample")
-			.withTemperature(0.1f)
-			.withTopP(0.2f)
+			.withTemperature(0.1)
+			.withTopP(0.2)
 			.withTopK(10)
 			.withMaxNewTokens(30)
 			.withMinNewTokens(10)
-			.withRepetitionPenalty(1.4f)
+			.withRepetitionPenalty(1.4)
 			.withStopSequences(List.of("\n\n\n"))
 			.withRandomSeed(4)
 			.build();
@@ -127,12 +127,12 @@ public class WatsonxAiChatModelTest {
 		WatsonxAiChatOptions modelOptions = WatsonxAiChatOptions.builder()
 			.withModel("meta-llama/llama-2-70b-chat")
 			.withDecodingMethod("sample")
-			.withTemperature(0.1f)
-			.withTopP(0.2f)
+			.withTemperature(0.1)
+			.withTopP(0.2)
 			.withTopK(10)
 			.withMaxNewTokens(30)
 			.withMinNewTokens(10)
-			.withRepetitionPenalty(1.4f)
+			.withRepetitionPenalty(1.4)
 			.withStopSequences(List.of("\n\n\n"))
 			.withRandomSeed(4)
 			.build();

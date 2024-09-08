@@ -125,7 +125,7 @@ public class MoonshotApiToolFunctionCallIT {
 		}
 
 		var functionResponseRequest = new ChatCompletionRequest(messages,
-				MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.5F);
+				MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.5);
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = moonshotApi.chatCompletionEntity(functionResponseRequest);
 

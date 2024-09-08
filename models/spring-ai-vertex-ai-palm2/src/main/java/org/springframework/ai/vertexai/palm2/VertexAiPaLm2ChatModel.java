@@ -43,7 +43,7 @@ public class VertexAiPaLm2ChatModel implements ChatModel {
 
 	public VertexAiPaLm2ChatModel(VertexAiPaLm2Api vertexAiApi) {
 		this(vertexAiApi,
-				VertexAiPaLm2ChatOptions.builder().withTemperature(0.7f).withCandidateCount(1).withTopK(20).build());
+				VertexAiPaLm2ChatOptions.builder().withTemperature(0.7).withCandidateCount(1).withTopK(20).build());
 	}
 
 	public VertexAiPaLm2ChatModel(VertexAiPaLm2Api vertexAiApi, VertexAiPaLm2ChatOptions defaultOptions) {

@@ -38,7 +38,7 @@ public class VertexAiPlam2ChatProperties {
 	 * Vertex AI PaLM API generative options.
 	 */
 	private VertexAiPaLm2ChatOptions options = VertexAiPaLm2ChatOptions.builder()
-		.withTemperature(0.7f)
+		.withTemperature(0.7)
 		.withTopP(null)
 		.withCandidateCount(1)
 		.withTopK(20)

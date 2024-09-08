@@ -124,7 +124,7 @@ public class OpenAiApiToolFunctionCallIT {
 			}
 		}
 
-		var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4o", 0.5f);
+		var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4o", 0.5);
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = completionApi.chatCompletionEntity(functionResponseRequest);
 

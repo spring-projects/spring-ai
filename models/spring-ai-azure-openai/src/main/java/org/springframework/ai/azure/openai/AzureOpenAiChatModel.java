@@ -89,6 +89,7 @@ import reactor.core.publisher.Mono;
  * @author Christian Tzolov
  * @author Grogdunn
  * @author Benoit Moussaud
+ * @author Thomas Vitale
  * @author luocongqiu
  * @author timostark
  * @see ChatModel
@@ -98,7 +99,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-4o";
 
-	private static final Float DEFAULT_TEMPERATURE = 0.7f;
+	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	/**
 	 * The {@link OpenAIClient} used to interact with the Azure OpenAI service.
@@ -422,22 +423,22 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		mergedAzureOptions.setTemperature(fromAzureOptions.getTemperature());
 		if (mergedAzureOptions.getTemperature() == null && toSpringAiOptions.getTemperature() != null) {
-			mergedAzureOptions.setTemperature(toSpringAiOptions.getTemperature().doubleValue());
+			mergedAzureOptions.setTemperature(toSpringAiOptions.getTemperature());
 		}
 
 		mergedAzureOptions.setTopP(fromAzureOptions.getTopP());
 		if (mergedAzureOptions.getTopP() == null && toSpringAiOptions.getTopP() != null) {
-			mergedAzureOptions.setTopP(toSpringAiOptions.getTopP().doubleValue());
+			mergedAzureOptions.setTopP(toSpringAiOptions.getTopP());
 		}
 
 		mergedAzureOptions.setFrequencyPenalty(fromAzureOptions.getFrequencyPenalty());
 		if (mergedAzureOptions.getFrequencyPenalty() == null && toSpringAiOptions.getFrequencyPenalty() != null) {
-			mergedAzureOptions.setFrequencyPenalty(toSpringAiOptions.getFrequencyPenalty().doubleValue());
+			mergedAzureOptions.setFrequencyPenalty(toSpringAiOptions.getFrequencyPenalty());
 		}
 
 		mergedAzureOptions.setPresencePenalty(fromAzureOptions.getPresencePenalty());
 		if (mergedAzureOptions.getPresencePenalty() == null && toSpringAiOptions.getPresencePenalty() != null) {
-			mergedAzureOptions.setPresencePenalty(toSpringAiOptions.getPresencePenalty().doubleValue());
+			mergedAzureOptions.setPresencePenalty(toSpringAiOptions.getPresencePenalty());
 		}
 
 		mergedAzureOptions.setResponseFormat(fromAzureOptions.getResponseFormat());
@@ -486,19 +487,19 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		}
 
 		if (fromSpringAiOptions.getTemperature() != null) {
-			mergedAzureOptions.setTemperature(fromSpringAiOptions.getTemperature().doubleValue());
+			mergedAzureOptions.setTemperature(fromSpringAiOptions.getTemperature());
 		}
 
 		if (fromSpringAiOptions.getTopP() != null) {
-			mergedAzureOptions.setTopP(fromSpringAiOptions.getTopP().doubleValue());
+			mergedAzureOptions.setTopP(fromSpringAiOptions.getTopP());
 		}
 
 		if (fromSpringAiOptions.getFrequencyPenalty() != null) {
-			mergedAzureOptions.setFrequencyPenalty(fromSpringAiOptions.getFrequencyPenalty().doubleValue());
+			mergedAzureOptions.setFrequencyPenalty(fromSpringAiOptions.getFrequencyPenalty());
 		}
 
 		if (fromSpringAiOptions.getPresencePenalty() != null) {
-			mergedAzureOptions.setPresencePenalty(fromSpringAiOptions.getPresencePenalty().doubleValue());
+			mergedAzureOptions.setPresencePenalty(fromSpringAiOptions.getPresencePenalty());
 		}
 
 		if (fromSpringAiOptions.getN() != null) {

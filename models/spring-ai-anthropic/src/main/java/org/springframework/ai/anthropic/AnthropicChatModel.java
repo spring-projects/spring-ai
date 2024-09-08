@@ -82,7 +82,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	public static final Integer DEFAULT_MAX_TOKENS = 500;
 
-	public static final Float DEFAULT_TEMPERATURE = 0.8f;
+	public static final Double DEFAULT_TEMPERATURE = 0.8;
 
 	/**
 	 * The lower-level API for the Anthropic service.

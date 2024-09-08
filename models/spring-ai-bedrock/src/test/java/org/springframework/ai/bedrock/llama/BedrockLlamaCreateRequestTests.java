@@ -46,7 +46,7 @@ public class BedrockLlamaCreateRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = new BedrockLlamaChatModel(api,
-				BedrockLlamaChatOptions.builder().withTemperature(66.6f).withMaxGenLen(666).withTopP(0.66f).build());
+				BedrockLlamaChatOptions.builder().withTemperature(66.6).withMaxGenLen(666).withTopP(0.66).build());
 
 		var request = client.createRequest(new Prompt("Test message content"));
 
@@ -56,7 +56,7 @@ public class BedrockLlamaCreateRequestTests {
 		assertThat(request.maxGenLen()).isEqualTo(666);
 
 		request = client.createRequest(new Prompt("Test message content",
-				BedrockLlamaChatOptions.builder().withTemperature(99.9f).withMaxGenLen(999).withTopP(0.99f).build()));
+				BedrockLlamaChatOptions.builder().withTemperature(99.9).withMaxGenLen(999).withTopP(0.99).build()));
 
 		assertThat(request.prompt()).isNotEmpty();
 		assertThat(request.temperature()).isEqualTo(99.9f);

@@ -44,8 +44,8 @@ public class Ai21Jurassic2ChatBedrockApiIT {
 
 	@Test
 	public void chatCompletion() {
-		Ai21Jurassic2ChatRequest request = new Ai21Jurassic2ChatRequest("Give me the names of 3 famous pirates?", 0.9f,
-				0.9f, 100, null, // List.of("END"),
+		Ai21Jurassic2ChatRequest request = new Ai21Jurassic2ChatRequest("Give me the names of 3 famous pirates?", 0.9,
+				0.9, 100, null, // List.of("END"),
 				new Ai21Jurassic2ChatRequest.IntegerScalePenalty(1, true, true, true, true, true),
 				new Ai21Jurassic2ChatRequest.FloatScalePenalty(0.5f, true, true, true, true, true),
 				new Ai21Jurassic2ChatRequest.IntegerScalePenalty(1, true, true, true, true, true));

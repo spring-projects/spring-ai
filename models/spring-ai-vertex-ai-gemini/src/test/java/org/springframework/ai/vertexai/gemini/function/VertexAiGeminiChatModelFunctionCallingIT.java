@@ -242,7 +242,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
 						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
-						.withTemperature(0.9f)
+						.withTemperature(0.9)
 						.build());
 		}
 

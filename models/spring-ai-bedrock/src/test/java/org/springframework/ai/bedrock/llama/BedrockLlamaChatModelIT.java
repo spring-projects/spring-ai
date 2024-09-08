@@ -208,7 +208,7 @@ class BedrockLlamaChatModelIT {
 		@Bean
 		public BedrockLlamaChatModel llamaChatModel(LlamaChatBedrockApi llamaApi) {
 			return new BedrockLlamaChatModel(llamaApi,
-					BedrockLlamaChatOptions.builder().withTemperature(0.5f).withMaxGenLen(100).withTopP(0.9f).build());
+					BedrockLlamaChatOptions.builder().withTemperature(0.5).withMaxGenLen(100).withTopP(0.9).build());
 		}
 
 	}

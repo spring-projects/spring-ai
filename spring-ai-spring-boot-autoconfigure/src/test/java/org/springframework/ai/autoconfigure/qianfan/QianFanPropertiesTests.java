@@ -63,7 +63,7 @@ public class QianFanPropertiesTests {
 				assertThat(chatProperties.getBaseUrl()).isNull();
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -96,7 +96,7 @@ public class QianFanPropertiesTests {
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -192,14 +192,14 @@ public class QianFanPropertiesTests {
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("bge_large_zh");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
+				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5);
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
 				assertThat(chatProperties.getOptions().getResponseFormat())
 					.isEqualTo(new QianFanApi.ChatCompletionRequest.ResponseFormat("json"));
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 			});
 	}
 

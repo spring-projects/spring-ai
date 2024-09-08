@@ -65,7 +65,7 @@ public class OpenAiPropertiesTests {
 				assertThat(chatProperties.getBaseUrl()).isNull();
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -119,7 +119,7 @@ public class OpenAiPropertiesTests {
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -408,15 +408,15 @@ public class OpenAiPropertiesTests {
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("text-embedding-ada-002");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
+				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5);
 				assertThat(chatProperties.getOptions().getLogitBias().get("myTokenId")).isEqualTo(-5);
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 				assertThat(chatProperties.getOptions().getN()).isEqualTo(10);
 				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
 				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(66);
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
 						chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);
