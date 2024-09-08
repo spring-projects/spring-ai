@@ -312,7 +312,7 @@ var openAIClient = new OpenAIClientBuilder()
 
 var openAIChatOptions = AzureOpenAiChatOptions.builder()
   .withDeploymentName("gpt-4o")
-  .withTemperature(0.4f)
+  .withTemperature(0.4)
   .withMaxTokens(200)
   .build();
 

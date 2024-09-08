@@ -278,7 +278,7 @@ var ollamaApi = new OllamaApi();
 var chatModel = new OllamaChatModel(ollamaApi,
             OllamaOptions.create()
                 .withModel(OllamaOptions.DEFAULT_MODEL)
-                .withTemperature(0.9f));
+                .withTemperature(0.9));
 
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -318,7 +318,7 @@ var request = ChatRequest.builder("orca-mini")
                 .withContent("What is the capital of Bulgaria and what is the size? "
                         + "What is the national anthem?")
                 .build()))
-    .withOptions(OllamaOptions.create().withTemperature(0.9f))
+    .withOptions(OllamaOptions.create().withTemperature(0.9))
     .build();
 
 ChatResponse response = ollamaApi.chat(request);
@@ -329,7 +329,7 @@ var request2 = ChatRequest.builder("orca-mini")
     .withMessages(List.of(Message.builder(Role.USER)
         .withContent("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
-    .withOptions(OllamaOptions.create().withTemperature(0.9f).toMap())
+    .withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
     .build();
 
 Flux<ChatResponse> streamingResponse = ollamaApi.streamingChat(request2);

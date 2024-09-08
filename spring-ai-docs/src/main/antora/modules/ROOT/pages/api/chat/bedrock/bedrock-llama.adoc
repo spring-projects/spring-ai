@@ -193,9 +193,9 @@ LlamaChatBedrockApi api = new LlamaChatBedrockApi(LlamaChatModel.LLAMA2_70B_CHAT
 
 BedrockLlamaChatModel chatModel = new BedrockLlamaChatModel(api,
     BedrockLlamaChatOptions.builder()
-        .withTemperature(0.5f)
+        .withTemperature(0.5)
         .withMaxGenLen(100)
-        .withTopP(0.9f).build());
+        .withTopP(0.9).build());
 
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -225,8 +225,8 @@ LlamaChatBedrockApi llamaChatApi = new LlamaChatBedrockApi(
         Duration.ofMillis(1000L));
 
 LlamaChatRequest request = LlamaChatRequest.builder("Hello, my name is")
-		.withTemperature(0.9f)
-		.withTopP(0.9f)
+		.withTemperature(0.9)
+		.withTopP(0.9)
 		.withMaxGenLen(20)
 		.build();
 

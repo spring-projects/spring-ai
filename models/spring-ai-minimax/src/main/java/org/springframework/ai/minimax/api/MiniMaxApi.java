@@ -45,6 +45,7 @@ import java.util.function.Predicate;
  * <a href="https://www.minimaxi.com/document/guides/Embeddings">MiniMax Embedding API</a>.
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0.0 M1
  */
 public class MiniMaxApi {
@@ -247,16 +248,16 @@ public class MiniMaxApi {
 	public record ChatCompletionRequest (
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Float frequencyPenalty,
+			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("max_tokens") Integer maxTokens,
 			@JsonProperty("n") Integer n,
-			@JsonProperty("presence_penalty") Float presencePenalty,
+			@JsonProperty("presence_penalty") Double presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
 			@JsonProperty("seed") Integer seed,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("top_p") Float topP,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
 			@JsonProperty("mask_sensitive_info") Boolean maskSensitiveInfo,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice) {
@@ -268,7 +269,7 @@ public class MiniMaxApi {
 		 * @param model ID of the model to use.
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null,  null, null, null,
 					null, null, null, false, temperature, null,null,
 					null, null);
@@ -283,7 +284,7 @@ public class MiniMaxApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null,  null, null, null,
 					null, null, null, stream, temperature, null,null,
 					null, null);
@@ -301,7 +302,7 @@ public class MiniMaxApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null,
-					null, null, null, false, 0.8f, null,null,
+					null, null, null, false, 0.8, null,null,
 					tools, toolChoice);
 		}
 

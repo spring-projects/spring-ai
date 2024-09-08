@@ -44,14 +44,14 @@ public class AzureChatCompletionsOptionsTests {
 
 		var defaultOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName("DEFAULT_MODEL")
-			.withTemperature(66.6f)
-			.withFrequencyPenalty(696.9f)
-			.withPresencePenalty(969.6f)
+			.withTemperature(66.6)
+			.withFrequencyPenalty(696.9)
+			.withPresencePenalty(969.6)
 			.withLogitBias(Map.of("foo", 1))
 			.withMaxTokens(969)
 			.withN(69)
 			.withStop(List.of("foo", "bar"))
-			.withTopP(0.69f)
+			.withTopP(0.69)
 			.withUser("user")
 			.withResponseFormat(AzureOpenAiResponseFormat.TEXT)
 			.build();
@@ -63,27 +63,27 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getMessages()).hasSize(1);
 
 		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
-		assertThat(requestOptions.getTemperature()).isEqualTo(66.6f);
-		assertThat(requestOptions.getFrequencyPenalty()).isEqualTo(696.9f);
-		assertThat(requestOptions.getPresencePenalty()).isEqualTo(969.6f);
+		assertThat(requestOptions.getTemperature()).isEqualTo(66.6);
+		assertThat(requestOptions.getFrequencyPenalty()).isEqualTo(696.9);
+		assertThat(requestOptions.getPresencePenalty()).isEqualTo(969.6);
 		assertThat(requestOptions.getLogitBias()).isEqualTo(Map.of("foo", 1));
 		assertThat(requestOptions.getMaxTokens()).isEqualTo(969);
 		assertThat(requestOptions.getN()).isEqualTo(69);
 		assertThat(requestOptions.getStop()).isEqualTo(List.of("foo", "bar"));
-		assertThat(requestOptions.getTopP()).isEqualTo(0.69f);
+		assertThat(requestOptions.getTopP()).isEqualTo(0.69);
 		assertThat(requestOptions.getUser()).isEqualTo("user");
 		assertThat(requestOptions.getResponseFormat()).isInstanceOf(ChatCompletionsTextResponseFormat.class);
 
 		var runtimeOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName("PROMPT_MODEL")
-			.withTemperature(99.9f)
-			.withFrequencyPenalty(100f)
-			.withPresencePenalty(100f)
+			.withTemperature(99.9)
+			.withFrequencyPenalty(100.0)
+			.withPresencePenalty(100.0)
 			.withLogitBias(Map.of("foo", 2))
 			.withMaxTokens(100)
 			.withN(100)
 			.withStop(List.of("foo", "bar"))
-			.withTopP(0.111f)
+			.withTopP(0.111)
 			.withUser("user2")
 			.withResponseFormat(AzureOpenAiResponseFormat.JSON)
 			.build();
@@ -93,30 +93,31 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getMessages()).hasSize(1);
 
 		assertThat(requestOptions.getModel()).isEqualTo("PROMPT_MODEL");
-		assertThat(requestOptions.getTemperature()).isEqualTo(99.9f);
-		assertThat(requestOptions.getFrequencyPenalty()).isEqualTo(100f);
-		assertThat(requestOptions.getPresencePenalty()).isEqualTo(100f);
+		assertThat(requestOptions.getTemperature()).isEqualTo(99.9);
+		assertThat(requestOptions.getFrequencyPenalty()).isEqualTo(100.0);
+		assertThat(requestOptions.getPresencePenalty()).isEqualTo(100.0);
 		assertThat(requestOptions.getLogitBias()).isEqualTo(Map.of("foo", 2));
 		assertThat(requestOptions.getMaxTokens()).isEqualTo(100);
 		assertThat(requestOptions.getN()).isEqualTo(100);
 		assertThat(requestOptions.getStop()).isEqualTo(List.of("foo", "bar"));
-		assertThat(requestOptions.getTopP()).isEqualTo(0.111f);
+		assertThat(requestOptions.getTopP()).isEqualTo(0.111);
 		assertThat(requestOptions.getUser()).isEqualTo("user2");
 		assertThat(requestOptions.getResponseFormat()).isInstanceOf(ChatCompletionsJsonResponseFormat.class);
 	}
 
 	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
-		return Stream.of(Arguments.of(0.0f, 0.0f), Arguments.of(0.0f, 1.0f), Arguments.of(1.0f, 0.0f),
-				Arguments.of(1.0f, 1.0f), Arguments.of(1.0f, null), Arguments.of(null, 1.0f), Arguments.of(null, null));
+		return Stream.of(Arguments.of(0.0, 0.0), Arguments.of(0.0, 1.0), Arguments.of(1.0, 0.0), Arguments.of(1.0, 1.0),
+				Arguments.of(1.0, null), Arguments.of(null, 1.0), Arguments.of(null, null));
 	}
 
 	@ParameterizedTest
 	@MethodSource("providePresencePenaltyAndFrequencyPenaltyTest")
-	public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Float presencePenalty, Float frequencyPenalty) {
+	public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Double presencePenalty,
+			Double frequencyPenalty) {
 		var options = AzureOpenAiChatOptions.builder()
 			.withMaxTokens(800)
-			.withTemperature(0.7F)
-			.withTopP(0.95F)
+			.withTemperature(0.7)
+			.withTopP(0.95)
 			.withPresencePenalty(presencePenalty)
 			.withFrequencyPenalty(frequencyPenalty)
 			.build();
@@ -125,14 +126,14 @@ public class AzureChatCompletionsOptionsTests {
 			assertThat(options.getPresencePenalty()).isEqualTo(null);
 		}
 		else {
-			assertThat(options.getPresencePenalty().floatValue()).isEqualTo(presencePenalty);
+			assertThat(options.getPresencePenalty()).isEqualTo(presencePenalty);
 		}
 
 		if (frequencyPenalty == null) {
 			assertThat(options.getFrequencyPenalty()).isEqualTo(null);
 		}
 		else {
-			assertThat(options.getFrequencyPenalty().floatValue()).isEqualTo(frequencyPenalty);
+			assertThat(options.getFrequencyPenalty()).isEqualTo(frequencyPenalty);
 		}
 	}
 

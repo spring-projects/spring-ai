@@ -134,7 +134,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi) {
 		this(openAiApi,
-				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
+				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
 	}
 
 	/**

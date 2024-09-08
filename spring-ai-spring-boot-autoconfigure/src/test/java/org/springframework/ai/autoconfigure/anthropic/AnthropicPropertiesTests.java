@@ -54,7 +54,7 @@ public class AnthropicPropertiesTests {
 				assertThat(connectionProperties.getBetaVersion()).isEqualTo("7777");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 				// enabled is true by default
 				assertThat(chatProperties.isEnabled()).isTrue();
 			});
@@ -89,8 +89,8 @@ public class AnthropicPropertiesTests {
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 				assertThat(chatProperties.getOptions().getStopSequences()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(100);
 
 				assertThat(chatProperties.getOptions().getMetadata().userId()).isEqualTo("MyUserId");

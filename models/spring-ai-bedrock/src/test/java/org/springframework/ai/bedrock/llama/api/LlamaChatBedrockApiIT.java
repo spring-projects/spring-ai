@@ -48,8 +48,8 @@ public class LlamaChatBedrockApiIT {
 	public void chatCompletion() {
 
 		LlamaChatRequest request = LlamaChatRequest.builder("Hello, my name is")
-			.withTemperature(0.9f)
-			.withTopP(0.9f)
+			.withTemperature(0.9)
+			.withTopP(0.9)
 			.withMaxGenLen(20)
 			.build();
 
@@ -67,7 +67,7 @@ public class LlamaChatBedrockApiIT {
 	@Test
 	public void chatCompletionStream() {
 
-		LlamaChatRequest request = new LlamaChatRequest("Hello, my name is", 0.9f, 0.9f, 20);
+		LlamaChatRequest request = new LlamaChatRequest("Hello, my name is", 0.9, 0.9, 20);
 		Flux<LlamaChatResponse> responseStream = llamaChatApi.chatCompletionStream(request);
 		List<LlamaChatResponse> responses = responseStream.collectList().block();
 

@@ -45,12 +45,12 @@ public class MoonshotChatCompletionRequestTest {
 
 	@Test
 	void chatCompletionRequestWithOptionsTest() {
-		var options = MoonshotChatOptions.builder().withTemperature(0.5f).withTopP(0.8f).build();
+		var options = MoonshotChatOptions.builder().withTemperature(0.5).withTopP(0.8).build();
 		var request = chatModel.createRequest(new Prompt("test content", options), true);
 
 		assertThat(request.messages().size()).isEqualTo(1);
-		assertThat(request.topP()).isEqualTo(0.8f);
-		assertThat(request.temperature()).isEqualTo(0.5f);
+		assertThat(request.topP()).isEqualTo(0.8);
+		assertThat(request.temperature()).isEqualTo(0.5);
 		assertThat(request.stream()).isTrue();
 	}
 

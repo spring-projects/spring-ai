@@ -138,7 +138,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI) {
 		this(vertexAI,
-				VertexAiGeminiChatOptions.builder().withModel(ChatModel.GEMINI_1_5_PRO).withTemperature(0.8f).build());
+				VertexAiGeminiChatOptions.builder().withModel(ChatModel.GEMINI_1_5_PRO).withTemperature(0.8).build());
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {
@@ -354,7 +354,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		GenerationConfig.Builder generationConfigBuilder = GenerationConfig.newBuilder();
 
 		if (options.getTemperature() != null) {
-			generationConfigBuilder.setTemperature(options.getTemperature());
+			generationConfigBuilder.setTemperature(options.getTemperature().floatValue());
 		}
 		if (options.getMaxOutputTokens() != null) {
 			generationConfigBuilder.setMaxOutputTokens(options.getMaxOutputTokens());
@@ -363,7 +363,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			generationConfigBuilder.setTopK(options.getTopK());
 		}
 		if (options.getTopP() != null) {
-			generationConfigBuilder.setTopP(options.getTopP());
+			generationConfigBuilder.setTopP(options.getTopP().floatValue());
 		}
 		if (options.getCandidateCount() != null) {
 			generationConfigBuilder.setCandidateCount(options.getCandidateCount());

@@ -48,6 +48,7 @@ import static org.springframework.ai.moonshot.api.MoonshotConstants.DEFAULT_BASE
  * </p>
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  */
 public class MoonshotApi {
 
@@ -155,11 +156,11 @@ public class MoonshotApi {
             @JsonProperty("messages") List<ChatCompletionMessage> messages,
             @JsonProperty("model") String model,
             @JsonProperty("max_tokens") Integer maxTokens,
-            @JsonProperty("temperature") Float temperature,
-            @JsonProperty("top_p") Float topP,
+            @JsonProperty("temperature") Double temperature,
+            @JsonProperty("top_p") Double topP,
             @JsonProperty("n") Integer n,
-            @JsonProperty("frequency_penalty") Float frequencyPenalty,
-            @JsonProperty("presence_penalty") Float presencePenalty,
+            @JsonProperty("frequency_penalty") Double frequencyPenalty,
+            @JsonProperty("presence_penalty") Double presencePenalty,
             @JsonProperty("stop") List<String> stop,
             @JsonProperty("stream") Boolean stream,
 			@JsonProperty("tools") List<FunctionTool> tools,
@@ -174,7 +175,7 @@ public class MoonshotApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(messages, model, null, 0.3f, 1f, null, null, null, null, false, null, null);
+			this(messages, model, null, 0.3, 1.0, null, null, null, null, false, null, null);
 		}
 
 		/**
@@ -187,9 +188,9 @@ public class MoonshotApi {
 		 * @param stream Whether to stream back partial progress. If set, tokens will be
 		 * sent
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature,
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				boolean stream) {
-			this(messages, model, null, temperature, 1f, null, null, null, null, stream, null, null);
+			this(messages, model, null, temperature, 1.0, null, null, null, null, stream, null, null);
 		}
 
 		/**
@@ -200,8 +201,8 @@ public class MoonshotApi {
 		 * @param model ID of the model to use.
 		 * @param temperature What sampling temperature to use, between 0.0 and 1.0.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
-			this(messages, model, null, temperature, 1f, null, null, null, null, false, null, null);
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
+			this(messages, model, null, temperature, 1.0, null, null, null, null, false, null, null);
 		}
 
 		/**
@@ -216,7 +217,7 @@ public class MoonshotApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				Object toolChoice) {
-			this(messages, model, null, null, 1f, null, null, null, null, false, tools, toolChoice);
+			this(messages, model, null, null, 1.0, null, null, null, null, false, tools, toolChoice);
 		}
 
 		/**
@@ -224,7 +225,7 @@ public class MoonshotApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(messages, DEFAULT_CHAT_MODEL, null, 0.7f, 1F, null, null, null, null, stream, null, null);
+			this(messages, DEFAULT_CHAT_MODEL, null, 0.7, 1.0, null, null, null, null, stream, null, null);
 		}
 
 		/**

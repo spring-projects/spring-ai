@@ -67,13 +67,13 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	void observationForChatOperation() {
 		var options = OllamaOptions.builder()
 			.withModel(OllamaModel.MISTRAL.getName())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withNumPredict(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -91,13 +91,13 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	void observationForStreamingChatOperation() {
 		var options = OllamaOptions.builder()
 			.withModel(OllamaModel.MISTRAL.getName())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withNumPredict(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

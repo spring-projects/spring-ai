@@ -77,7 +77,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	 */
 	public QianFanChatModel(QianFanApi qianFanApi) {
 		this(qianFanApi,
-				QianFanChatOptions.builder().withModel(QianFanApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
+				QianFanChatOptions.builder().withModel(QianFanApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
 	}
 
 	/**

@@ -47,7 +47,7 @@ public class QianFanApiIT {
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = qianFanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), buildSystemMessage(), "ernie_speed", 0.7f, false));
+				List.of(chatCompletionMessage), buildSystemMessage(), "ernie_speed", 0.7, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -57,7 +57,7 @@ public class QianFanApiIT {
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		Flux<ChatCompletionChunk> response = qianFanApi.chatCompletionStream(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), buildSystemMessage(), "ernie_speed", 0.7f, true));
+				List.of(chatCompletionMessage), buildSystemMessage(), "ernie_speed", 0.7, true));
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();

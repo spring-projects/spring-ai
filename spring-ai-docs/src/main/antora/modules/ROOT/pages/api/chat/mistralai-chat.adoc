@@ -128,7 +128,7 @@ ChatResponse response = chatModel.call(
         "Generate the names of 5 famous pirates.",
         MistralAiChatOptions.builder()
             .withModel(MistralAiApi.ChatModel.LARGE.getValue())
-            .withTemperature(0.5f)
+            .withTemperature(0.5)
         .build()
     ));
 ----
@@ -226,7 +226,7 @@ var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
 var chatModel = new MistralAiChatModel(mistralAiApi, MistralAiChatOptions.builder()
                 .withModel(MistralAiApi.ChatModel.LARGE.getValue())
-                .withTemperature(0.4f)
+                .withTemperature(0.4)
                 .withMaxTokens(200)
                 .build());
 
@@ -257,11 +257,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = mistralAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8f, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = mistralAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8f, true));
+        new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralAiApi.java[MistralAiApi.java]'s JavaDoc for further information.

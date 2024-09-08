@@ -120,7 +120,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = AnthropicChatOptions.builder().withTemperature(0f).build();
+		var promptOptions = AnthropicChatOptions.builder().withTemperature(0.0).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();

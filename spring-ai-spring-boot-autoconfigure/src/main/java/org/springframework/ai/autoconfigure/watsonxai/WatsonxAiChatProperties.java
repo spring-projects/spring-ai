@@ -43,13 +43,13 @@ public class WatsonxAiChatProperties {
 	@NestedConfigurationProperty
 	private WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
 		.withModel("google/flan-ul2")
-		.withTemperature(0.7f)
-		.withTopP(1.0f)
+		.withTemperature(0.7)
+		.withTopP(1.0)
 		.withTopK(50)
 		.withDecodingMethod("greedy")
 		.withMaxNewTokens(20)
 		.withMinNewTokens(0)
-		.withRepetitionPenalty(1.0f)
+		.withRepetitionPenalty(1.0)
 		.withStopSequences(List.of())
 		.build();
 

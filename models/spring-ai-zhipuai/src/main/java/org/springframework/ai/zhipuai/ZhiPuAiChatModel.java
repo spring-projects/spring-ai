@@ -100,7 +100,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	 */
 	public ZhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi) {
 		this(zhiPuAiApi,
-				ZhiPuAiChatOptions.builder().withModel(ZhiPuAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
+				ZhiPuAiChatOptions.builder().withModel(ZhiPuAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
 	}
 
 	/**

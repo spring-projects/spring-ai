@@ -99,7 +99,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi) {
 		this(miniMaxApi,
-				MiniMaxChatOptions.builder().withModel(MiniMaxApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
+				MiniMaxChatOptions.builder().withModel(MiniMaxApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
 	}
 
 	/**

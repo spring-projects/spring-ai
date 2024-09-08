@@ -98,13 +98,13 @@ class DefaultChatModelObservationConventionTests {
 			.provider("superprovider")
 			.requestOptions(ChatOptionsBuilder.builder()
 				.withModel("mistral")
-				.withFrequencyPenalty(0.8f)
+				.withFrequencyPenalty(0.8)
 				.withMaxTokens(200)
-				.withPresencePenalty(1.0f)
+				.withPresencePenalty(1.0)
 				.withStopSequences(List.of("addio", "bye"))
-				.withTemperature(0.5f)
+				.withTemperature(0.5)
 				.withTopK(1)
-				.withTopP(0.9f)
+				.withTopP(0.9)
 				.build())
 			.build();
 		observationContext.setResponse(new ChatResponse(

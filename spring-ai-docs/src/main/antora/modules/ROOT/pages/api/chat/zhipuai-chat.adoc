@@ -122,7 +122,7 @@ ChatResponse response = chatModel.call(
         "Generate the names of 5 famous pirates.",
         ZhiPuAiChatOptions.builder()
             .withModel(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
-            .withTemperature(0.5f)
+            .withTemperature(0.5)
         .build()
     ));
 ----
@@ -205,7 +205,7 @@ var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
 var chatModel = new ZhiPuAiChatModel(zhiPuAiApi, ZhiPuAiChatOptions.builder()
                 .withModel(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
-                .withTemperature(0.4f)
+                .withTemperature(0.4)
                 .withMaxTokens(200)
                 .build());
 
@@ -236,11 +236,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = zhiPuAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7f, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = zhiPuAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7f, true));
+        new ChatCompletionRequest(List.of(chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/api/ZhiPuAiApi.java[ZhiPuAiApi.java]'s JavaDoc for further information.

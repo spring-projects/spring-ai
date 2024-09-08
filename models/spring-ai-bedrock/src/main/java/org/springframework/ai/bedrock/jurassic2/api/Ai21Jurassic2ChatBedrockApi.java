@@ -37,6 +37,7 @@ import software.amazon.awssdk.regions.Region;
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @author Wei Jiang
  * @since 0.8.0
  */
@@ -132,8 +133,8 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	@JsonInclude(Include.NON_NULL)
 	public record Ai21Jurassic2ChatRequest(
 			@JsonProperty("prompt") String prompt,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("topP") Float topP,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("topP") Double topP,
 			@JsonProperty("maxTokens") Integer maxTokens,
 			@JsonProperty("stopSequences") List<String> stopSequences,
 			@JsonProperty("countPenalty") IntegerScalePenalty countPenalty,
@@ -198,8 +199,8 @@ public class Ai21Jurassic2ChatBedrockApi extends
 		}
 		public static class Builder {
 			private String prompt;
-			private Float temperature;
-			private Float topP;
+			private Double temperature;
+			private Double topP;
 			private Integer maxTokens;
 			private List<String> stopSequences;
 			private IntegerScalePenalty countPenalty;
@@ -210,12 +211,12 @@ public class Ai21Jurassic2ChatBedrockApi extends
 				this.prompt = prompt;
 			}
 
-			public Builder withTemperature(Float temperature) {
+			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
-			public Builder withTopP(Float topP) {
+			public Builder withTopP(Double topP) {
 				this.topP = topP;
 				return this;
 			}

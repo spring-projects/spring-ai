@@ -71,9 +71,9 @@ public class AnthropicChatModelObservationIT {
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.withMaxTokens(2048)
 			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -93,9 +93,9 @@ public class AnthropicChatModelObservationIT {
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.withMaxTokens(2048)
 			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

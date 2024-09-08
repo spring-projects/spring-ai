@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OllamaChatRequestTests {
 
 	OllamaChatModel chatModel = new OllamaChatModel(new OllamaApi(),
-			new OllamaOptions().withModel("MODEL_NAME").withTopK(99).withTemperature(66.6f).withNumGPU(1));
+			new OllamaOptions().withModel("MODEL_NAME").withTopK(99).withTemperature(66.6).withNumGPU(1));
 
 	@Test
 	public void createRequestWithDefaultOptions() {
@@ -51,7 +51,7 @@ public class OllamaChatRequestTests {
 	public void createRequestWithPromptOllamaOptions() {
 
 		// Runtime options should override the default options.
-		OllamaOptions promptOptions = new OllamaOptions().withTemperature(0.8f).withTopP(0.5f).withNumGPU(2);
+		OllamaOptions promptOptions = new OllamaOptions().withTemperature(0.8).withTopP(0.5).withNumGPU(2);
 
 		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
 
@@ -73,9 +73,9 @@ public class OllamaChatRequestTests {
 
 		// Ollama runtime options.
 		ChatOptions portablePromptOptions = ChatOptionsBuilder.builder()
-			.withTemperature(0.9f)
+			.withTemperature(0.9)
 			.withTopK(100)
-			.withTopP(0.6f)
+			.withTopP(0.6)
 			.build();
 
 		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", portablePromptOptions), true);

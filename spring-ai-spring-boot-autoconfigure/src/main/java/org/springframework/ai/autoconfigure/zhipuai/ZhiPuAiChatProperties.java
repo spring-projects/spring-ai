@@ -40,7 +40,7 @@ public class ZhiPuAiChatProperties extends ZhiPuAiParentProperties {
 	@NestedConfigurationProperty
 	private ZhiPuAiChatOptions options = ZhiPuAiChatOptions.builder()
 		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.withTemperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public ZhiPuAiChatOptions getOptions() {

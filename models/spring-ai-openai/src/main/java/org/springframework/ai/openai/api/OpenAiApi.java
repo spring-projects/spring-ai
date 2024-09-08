@@ -415,20 +415,20 @@ public class OpenAiApi {
 	public record ChatCompletionRequest(// @formatter:off
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Float frequencyPenalty,
+			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("logprobs") Boolean logprobs,
 			@JsonProperty("top_logprobs") Integer topLogprobs,
 			@JsonProperty("max_tokens") Integer maxTokens,
 			@JsonProperty("n") Integer n,
-			@JsonProperty("presence_penalty") Float presencePenalty,
+			@JsonProperty("presence_penalty") Double presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
 			@JsonProperty("seed") Integer seed,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("stream_options") StreamOptions streamOptions,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("top_p") Float topP,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
@@ -441,7 +441,7 @@ public class OpenAiApi {
 		 * @param model ID of the model to use.
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
 					null, null, null, null);
@@ -456,7 +456,7 @@ public class OpenAiApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null,
 					null, null, null, stream, null, temperature, null,
 					null, null, null,  null);
@@ -474,7 +474,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, null, 0.8f, null,
+					null, null, null, false, null, 0.8, null,
 					tools, toolChoice, null, null);
 		}
 

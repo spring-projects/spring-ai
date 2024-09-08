@@ -23,19 +23,19 @@ public class ChatOptionsBuilder {
 
 		private String model;
 
-		private Float frequencyPenalty;
+		private Double frequencyPenalty;
 
 		private Integer maxTokens;
 
-		private Float presencePenalty;
+		private Double presencePenalty;
 
 		private List<String> stopSequences;
 
-		private Float temperature;
+		private Double temperature;
 
 		private Integer topK;
 
-		private Float topP;
+		private Double topP;
 
 		@Override
 		public String getModel() {
@@ -47,11 +47,11 @@ public class ChatOptionsBuilder {
 		}
 
 		@Override
-		public Float getFrequencyPenalty() {
+		public Double getFrequencyPenalty() {
 			return frequencyPenalty;
 		}
 
-		public void setFrequencyPenalty(Float frequencyPenalty) {
+		public void setFrequencyPenalty(Double frequencyPenalty) {
 			this.frequencyPenalty = frequencyPenalty;
 		}
 
@@ -65,11 +65,11 @@ public class ChatOptionsBuilder {
 		}
 
 		@Override
-		public Float getPresencePenalty() {
+		public Double getPresencePenalty() {
 			return presencePenalty;
 		}
 
-		public void setPresencePenalty(Float presencePenalty) {
+		public void setPresencePenalty(Double presencePenalty) {
 			this.presencePenalty = presencePenalty;
 		}
 
@@ -83,11 +83,11 @@ public class ChatOptionsBuilder {
 		}
 
 		@Override
-		public Float getTemperature() {
+		public Double getTemperature() {
 			return temperature;
 		}
 
-		public void setTemperature(Float temperature) {
+		public void setTemperature(Double temperature) {
 			this.temperature = temperature;
 		}
 
@@ -101,11 +101,11 @@ public class ChatOptionsBuilder {
 		}
 
 		@Override
-		public Float getTopP() {
+		public Double getTopP() {
 			return topP;
 		}
 
-		public void setTopP(Float topP) {
+		public void setTopP(Double topP) {
 			this.topP = topP;
 		}
 
@@ -138,7 +138,7 @@ public class ChatOptionsBuilder {
 		return this;
 	}
 
-	public ChatOptionsBuilder withFrequencyPenalty(Float frequencyPenalty) {
+	public ChatOptionsBuilder withFrequencyPenalty(Double frequencyPenalty) {
 		options.setFrequencyPenalty(frequencyPenalty);
 		return this;
 	}
@@ -148,7 +148,7 @@ public class ChatOptionsBuilder {
 		return this;
 	}
 
-	public ChatOptionsBuilder withPresencePenalty(Float presencePenalty) {
+	public ChatOptionsBuilder withPresencePenalty(Double presencePenalty) {
 		options.setPresencePenalty(presencePenalty);
 		return this;
 	}
@@ -158,7 +158,7 @@ public class ChatOptionsBuilder {
 		return this;
 	}
 
-	public ChatOptionsBuilder withTemperature(Float temperature) {
+	public ChatOptionsBuilder withTemperature(Double temperature) {
 		options.setTemperature(temperature);
 		return this;
 	}
@@ -168,7 +168,7 @@ public class ChatOptionsBuilder {
 		return this;
 	}
 
-	public ChatOptionsBuilder withTopP(Float topP) {
+	public ChatOptionsBuilder withTopP(Double topP) {
 		options.setTopP(topP);
 		return this;
 	}

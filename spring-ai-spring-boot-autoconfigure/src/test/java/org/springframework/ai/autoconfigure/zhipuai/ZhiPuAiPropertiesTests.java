@@ -61,7 +61,7 @@ public class ZhiPuAiPropertiesTests {
 				assertThat(chatProperties.getBaseUrl()).isNull();
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -90,7 +90,7 @@ public class ZhiPuAiPropertiesTests {
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -259,8 +259,8 @@ public class ZhiPuAiPropertiesTests {
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 				assertThat(chatProperties.getOptions().getRequestId()).isEqualTo("RequestId");
 				assertThat(chatProperties.getOptions().getDoSample()).isEqualTo(Boolean.TRUE);
 

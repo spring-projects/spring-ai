@@ -40,6 +40,7 @@ import org.springframework.ai.model.ChatModelDescription;
  * https://docs.aws.amazon.com/bedrock/latest/userguide/titan-text-models.html
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @author Wei Jiang
  * @since 0.8.0
  */
@@ -134,8 +135,8 @@ public class TitanChatBedrockApi extends
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record TextGenerationConfig(
-				@JsonProperty("temperature") Float temperature,
-				@JsonProperty("topP") Float topP,
+				@JsonProperty("temperature") Double temperature,
+				@JsonProperty("topP") Double topP,
 				@JsonProperty("maxTokenCount") Integer maxTokenCount,
 				@JsonProperty("stopSequences") List<String> stopSequences) {
 		}
@@ -151,8 +152,8 @@ public class TitanChatBedrockApi extends
 
 		public static class Builder {
 			private final String inputText;
-			private Float temperature;
-			private Float topP;
+			private Double temperature;
+			private Double topP;
 			private Integer maxTokenCount;
 			private List<String> stopSequences;
 
@@ -160,12 +161,12 @@ public class TitanChatBedrockApi extends
 				this.inputText = inputText;
 			}
 
-			public Builder withTemperature(Float temperature) {
+			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
-			public Builder withTopP(Float topP) {
+			public Builder withTopP(Double topP) {
 				this.topP = topP;
 				return this;
 			}
