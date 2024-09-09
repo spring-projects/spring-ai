@@ -105,6 +105,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
 				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
+		elasticsearchClient.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai"));
 		this.embeddingModel = embeddingModel;
 		this.options = options;
 		this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
