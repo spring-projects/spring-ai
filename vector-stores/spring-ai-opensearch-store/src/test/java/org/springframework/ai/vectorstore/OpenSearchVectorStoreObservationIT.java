@@ -36,6 +36,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -207,7 +208,7 @@ public class OpenSearchVectorStoreObservationIT {
 							.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
 							.build()),
 						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536,
-						true, observationRegistry, null);
+						true, observationRegistry, null, new TokenCountBatchingStrategy());
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);

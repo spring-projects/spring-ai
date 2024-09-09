@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -185,7 +186,7 @@ public class MongoDbVectorStoreObservationIT {
 					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
 						.withMetadataFieldsToFilter(List.of("country", "year"))
 						.build(),
-					true, observationRegistry, null);
+					true, observationRegistry, null, new TokenCountBatchingStrategy());
 		}
 
 		@Bean

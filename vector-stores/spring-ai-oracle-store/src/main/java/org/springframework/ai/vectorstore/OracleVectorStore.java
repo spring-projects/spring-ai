@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import static org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT;
@@ -33,7 +34,10 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -78,6 +82,7 @@ import oracle.sql.json.OracleJsonValue;
  *
  * @author Loïc Lefèvre
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -215,6 +220,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	private final int searchAccuracy;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
 				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, false, false, false);
@@ -230,14 +237,15 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
 			boolean forcedNormalization) {
 		this(jdbcTemplate, embeddingModel, tableName, indexType, distanceType, dimensions, searchAccuracy,
-				initializeSchema, removeExistingVectorStoreTable, forcedNormalization, ObservationRegistry.NOOP, null);
+				initializeSchema, removeExistingVectorStoreTable, forcedNormalization, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
 			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
 			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
 			boolean forcedNormalization, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -269,17 +277,19 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		this.initializeSchema = initializeSchema;
 		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
 		this.forcedNormalization = forcedNormalization;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
 	public void doAdd(final List<Document> documents) {
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 				final Document document = documents.get(i);
 				final String content = document.getContent();
 				final byte[] json = toJson(document.getMetadata());
-				final VECTOR embeddingVector = toVECTOR(embeddingModel.embed(document));
+				final VECTOR embeddingVector = toVECTOR(document.getEmbedding());
 
 				setParameterValue(ps, 1, Types.VARCHAR, document.getId());
 				setParameterValue(ps, 2, Types.VARCHAR, content);

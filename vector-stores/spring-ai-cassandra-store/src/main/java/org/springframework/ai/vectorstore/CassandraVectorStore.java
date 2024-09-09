@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
@@ -35,7 +36,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -96,6 +100,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Mick Semb Wever
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
  * @see VectorStore
  * @see org.springframework.ai.vectorstore.CassandraVectorStoreConfig
  * @see EmbeddingModel
@@ -137,12 +142,15 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Similarity similarity;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
-		this(conf, embeddingModel, ObservationRegistry.NOOP, null);
+		this(conf, embeddingModel, ObservationRegistry.NOOP, null, new TokenCountBatchingStrategy());
 	}
 
 	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel,
-			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -166,20 +174,19 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		this.filterExpressionConverter = new CassandraFilterExpressionConverter(
 				cassandraMetadata.getColumns().values());
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
 	public void doAdd(List<Document> documents) {
 		var futures = new CompletableFuture[documents.size()];
 
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		int i = 0;
 		for (Document d : documents) {
 			futures[i++] = CompletableFuture.runAsync(() -> {
 				List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
-
-				if (null == d.getEmbedding() || d.getEmbedding().length == 0) {
-					d.setEmbedding(this.embeddingModel.embed(d));
-				}
 
 				BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
 				for (int k = 0; k < primaryKeyValues.size(); ++k) {

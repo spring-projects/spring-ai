@@ -27,6 +27,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -183,7 +184,8 @@ public class OracleVectorStoreObservationIT {
 				ObservationRegistry observationRegistry) {
 			return new OracleVectorStore(jdbcTemplate, embeddingModel, OracleVectorStore.DEFAULT_TABLE_NAME,
 					OracleVectorStore.OracleVectorStoreIndexType.IVF, OracleVectorStoreDistanceType.COSINE, 384,
-					OracleVectorStore.DEFAULT_SEARCH_ACCURACY, true, true, true, observationRegistry, null);
+					OracleVectorStore.DEFAULT_SEARCH_ACCURACY, true, true, true, observationRegistry, null,
+					new TokenCountBatchingStrategy());
 		}
 
 		@Bean

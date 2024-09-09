@@ -25,6 +25,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
@@ -173,7 +174,8 @@ public class CassandraVectorStoreObservationIT {
 				.build();
 
 			conf.dropKeyspace();
-			return new CassandraVectorStore(conf, embeddingModel, observationRegistry, null);
+			return new CassandraVectorStore(conf, embeddingModel, observationRegistry, null,
+					new TokenCountBatchingStrategy());
 		}
 
 		@Bean

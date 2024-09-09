@@ -16,7 +16,9 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.GemFireVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -48,10 +50,17 @@ public class GemFireVectorStoreAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy batchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public GemFireVectorStore gemfireVectorStore(EmbeddingModel embeddingModel, GemFireVectorStoreProperties properties,
 			GemFireConnectionDetails gemFireConnectionDetails, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 		var builder = new GemFireVectorStore.GemFireVectorStoreConfig.Builder();
 
 		builder.setHost(gemFireConnectionDetails.getHost())
@@ -65,7 +74,7 @@ public class GemFireVectorStoreAutoConfiguration {
 			.setSslEnabled(properties.isSslEnabled());
 		return new GemFireVectorStore(builder.build(), embeddingModel, properties.isInitializeSchema(),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
+				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
 	}
 
 	private static class PropertiesGemFireConnectionDetails implements GemFireConnectionDetails {
