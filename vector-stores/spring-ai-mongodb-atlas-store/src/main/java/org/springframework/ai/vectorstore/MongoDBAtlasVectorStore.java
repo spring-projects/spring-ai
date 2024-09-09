@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
@@ -24,7 +25,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -81,6 +85,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
 		this(mongoTemplate, embeddingModel, MongoDBVectorStoreConfig.defaultConfig(), initializeSchema);
@@ -88,12 +94,13 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBVectorStoreConfig config, boolean initializeSchema) {
-		this(mongoTemplate, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null);
+		this(mongoTemplate, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBVectorStoreConfig config, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -102,6 +109,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		this.config = config;
 
 		this.initializeSchema = initializeSchema;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
@@ -175,9 +183,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 		for (Document document : documents) {
-			float[] embedding = this.embeddingModel.embed(document);
-			document.setEmbedding(embedding);
 			this.mongoTemplate.save(document, this.config.collectionName);
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -57,6 +60,7 @@ import io.pinecone.proto.Vector;
  *
  * @author Christian Tzolov
  * @author Adam Bchouti
+ * @author Soby Chacko
  */
 public class PineconeVectorStore extends AbstractObservationVectorStore {
 
@@ -79,6 +83,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private final String pineconeDistanceMetadataFieldName;
 
 	private final ObjectMapper objectMapper;
+
+	private final BatchingStrategy batchingStrategy;
 
 	/**
 	 * Configuration class for the PineconeVectorStore.
@@ -260,7 +266,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param embeddingModel The client for embedding operations.
 	 */
 	public PineconeVectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel) {
-		this(config, embeddingModel, ObservationRegistry.NOOP, null);
+		this(config, embeddingModel, ObservationRegistry.NOOP, null, new TokenCountBatchingStrategy());
 	}
 
 	/**
@@ -271,7 +277,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param customObservationConvention The custom observation convention.
 	 */
 	public PineconeVectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel,
-			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 		super(observationRegistry, customObservationConvention);
 		Assert.notNull(config, "PineconeVectorStoreConfig must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
@@ -283,6 +290,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		this.pineconeDistanceMetadataFieldName = config.distanceMetadataFieldName;
 		this.pineconeConnection = new PineconeClient(config.clientConfig).connect(config.connectionConfig);
 		this.objectMapper = new ObjectMapper();
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	/**
@@ -291,17 +299,14 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param namespace The namespace to add the documents to
 	 */
 	public void add(List<Document> documents, String namespace) {
-
-		List<Vector> upsertVectors = documents.stream().map(document -> {
-			// Compute and assign an embedding to the document.
-			document.setEmbedding(this.embeddingModel.embed(document));
-
-			return Vector.newBuilder()
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<Vector> upsertVectors = documents.stream()
+			.map(document -> Vector.newBuilder()
 				.setId(document.getId())
 				.addAllValues(EmbeddingUtils.toList(document.getEmbedding()))
 				.setMetadata(metadataToStruct(document))
-				.build();
-		}).toList();
+				.build())
+			.toList();
 
 		UpsertRequest upsertRequest = UpsertRequest.newBuilder()
 			.addAllVectors(upsertVectors)
