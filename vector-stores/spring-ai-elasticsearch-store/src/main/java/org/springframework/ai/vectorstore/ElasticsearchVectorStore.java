@@ -114,8 +114,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public void doAdd(List<Document> documents) {
 		if (!indexExists()) {
-			throw new IllegalArgumentException(
-					"Index not found");
+			throw new IllegalArgumentException("Index not found");
 		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
