@@ -113,6 +113,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
 		if (!indexExists()) {
 			throw new IllegalArgumentException("Index not found");
 		}
@@ -140,13 +142,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		// We call operations on BulkRequest.Builder only if the index exists.
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
-		if (indexExists()) {
-			for (String id : idList) {
-				bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
-			}
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
+		for (String id : idList) {
+			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
