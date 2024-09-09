@@ -105,6 +105,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
 				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
+		elasticsearchClient.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai"));
 		this.embeddingModel = embeddingModel;
 		this.options = options;
 		this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
@@ -112,6 +113,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 		for (Document document : documents) {
@@ -119,13 +125,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
-			// We call operations on BulkRequest.Builder only if the index exists.
-			// For the index to be present, either it must be pre-created or set the
-			// initializeSchema to true.
-			if (indexExists()) {
-				bulkRequestBuilder.operations(op -> op
-					.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
-			}
+			bulkRequestBuilder.operations(op -> op
+				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
@@ -141,13 +142,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		// We call operations on BulkRequest.Builder only if the index exists.
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
-		if (indexExists()) {
-			for (String id : idList) {
-				bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
-			}
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
+		for (String id : idList) {
+			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
