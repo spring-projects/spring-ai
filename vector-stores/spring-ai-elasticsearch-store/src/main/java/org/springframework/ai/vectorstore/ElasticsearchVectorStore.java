@@ -112,11 +112,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		// Elasticsearch can automatically create an index if it does not exist, but it
-		// will always use the default similarity function 'cosine'
-		if (!indexExists() && !options.getSimilarity().equals(SimilarityFunction.cosine)) {
+		if (!indexExists()) {
 			throw new IllegalArgumentException(
-					"Index not found, cannot use similarity functions other than 'cosine' if the index has not been previously configured");
+					"Index not found");
 		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
