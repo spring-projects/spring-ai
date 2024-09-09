@@ -93,6 +93,7 @@ public class OpenAiApi {
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
 	 */
 	public OpenAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder) {
@@ -104,6 +105,7 @@ public class OpenAiApi {
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public OpenAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
@@ -116,7 +118,10 @@ public class OpenAiApi {
 	 * Create a new chat completion api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param embeddingsPath the path to the embeddings endpoint.
 	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public OpenAiApi(String baseUrl, String apiKey, String completionsPath, String embeddingsPath,
@@ -132,7 +137,10 @@ public class OpenAiApi {
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 * @param headers the http headers to use.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param embeddingsPath the path to the embeddings endpoint.
 	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public OpenAiApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers, String completionsPath,
