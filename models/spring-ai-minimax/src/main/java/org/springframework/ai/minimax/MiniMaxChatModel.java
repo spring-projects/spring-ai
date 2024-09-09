@@ -17,7 +17,6 @@ package org.springframework.ai.minimax;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -57,8 +56,11 @@ import reactor.core.publisher.Mono;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.springframework.ai.minimax.api.MiniMaxApiConstants.TOOL_CALL_FUNCTION_TYPE;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal MiniMax}
@@ -169,12 +171,21 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 
 		List<Generation> generations = choices.stream().map(choice -> {
 			// @formatter:off
+			// if the choice is a web search tool call, return last message of choice.messages
+			ChatCompletionMessage message = null;
+			if(choice.message() != null) {
+				message = choice.message();
+			} else if(!CollectionUtils.isEmpty(choice.messages())){
+				// the MiniMax web search messages result is ['user message','assistant tool call', 'tool call', 'assistant message']
+				// so the last message is the assistant message
+				message = choice.messages().get(choice.messages().size() - 1);
+			}
 			Map<String, Object> metadata = Map.of(
 					"id", chatCompletion.id(),
-					"role", choice.message().role() != null ? choice.message().role().name() : "",
+					"role", message != null && message.role() != null ? message.role().name() : "",
 					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 			// @formatter:on
-			return buildGeneration(choice, metadata);
+			return buildGeneration(message, choice.finishReason(), metadata);
 		}).toList();
 
 		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
@@ -224,7 +235,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 									"role", roleMap.getOrDefault(id, ""),
 									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 							return buildGeneration(choice, metadata);
-						}).toList();
+						}).filter(Objects::nonNull).toList();
 						// @formatter:on
 
 					if (chatCompletion2.usage() != null) {
@@ -250,10 +261,26 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 				// conversation that contains the call responses.
 				return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 			}
-			else {
-				return Flux.just(response);
-			}
+			return Flux.just(response);
 		});
+	}
+
+	/**
+	 * The MimiMax web search function tool type is 'web_search', so we need to filter out
+	 * the tool calls whose type is not 'function'
+	 * @param generation the generation to check
+	 * @param toolCallFinishReasons the tool call finish reasons
+	 * @return true if the generation is a tool call
+	 */
+	@Override
+	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
+		if (!super.isToolCall(generation, toolCallFinishReasons)) {
+			return false;
+		}
+		return generation.getOutput()
+			.getToolCalls()
+			.stream()
+			.anyMatch(toolCall -> TOOL_CALL_FUNCTION_TYPE.equals(toolCall.type()));
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, RateLimit rateLimit) {
@@ -277,19 +304,26 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			.build();
 	}
 
-	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
-		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
+	private Generation buildGeneration(ChatCompletionMessage message, ChatCompletionFinishReason completionFinishReason,
+			Map<String, Object> metadata) {
+		if (message == null || message.role() == Role.TOOL) {
+			return null;
+		}
+		List<AssistantMessage.ToolCall> toolCalls = message.toolCalls() == null ? List.of()
+				: message.toolCalls()
 					.stream()
-					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(),
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		var assistantMessage = new AssistantMessage(message.content(), metadata, toolCalls);
+		String finishReason = (completionFinishReason != null ? completionFinishReason.name() : "");
 		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
 		return new Generation(assistantMessage, generationMetadata);
+	}
+
+	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		return buildGeneration(choice.message(), choice.finishReason(), metadata);
 	}
 
 	/**
