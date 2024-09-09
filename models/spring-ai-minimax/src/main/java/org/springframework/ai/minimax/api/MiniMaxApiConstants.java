@@ -10,4 +10,6 @@ public final class MiniMaxApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://api.minimax.chat";
 
+	public static final String TOOL_CALL_FUNCTION_TYPE = "function";
+
 }
