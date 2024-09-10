@@ -70,6 +70,19 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	@Test
+	void testMessageHistory() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
+		ChatResponse response = chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+
+		var promptWithMessageHistory = new Prompt(List.of(prompt.getInstructions().get(0),
+				response.getResult().getOutput(), new UserMessage("What was the answer from the previous question?")));
+		response = chatModel.call(promptWithMessageHistory);
+
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
 	void googleSearchTool() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().withGoogleSearchRetrieval(true).build());
 		ChatResponse response = chatModel.call(prompt);
