@@ -46,6 +46,7 @@ import com.knuddels.jtokkit.api.EncodingType;
  *
  * @author Soby Chacko
  * @author Mark Pollack
+ * @author Laura Trotta
  * @since 1.0.0
  */
 public class TokenCountBatchingStrategy implements BatchingStrategy {
