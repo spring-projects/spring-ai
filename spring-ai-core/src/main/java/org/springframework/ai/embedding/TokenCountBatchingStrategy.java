@@ -122,7 +122,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 			Integer tokenCount = documentTokens.get(document);
 			if (currentSize + tokenCount > maxInputTokenCount) {
 				batches.add(currentBatch);
-				currentBatch.clear();
+				currentBatch = new ArrayList<>();
 				currentSize = 0;
 			}
 			currentBatch.add(document);
