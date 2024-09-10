@@ -1,4 +1,4 @@
-= MiniMax Chat
+<= MiniMax Chat
 
 Spring AI supports the various AI language models from MiniMax. You can interact with MiniMax language models and create a multilingual conversational assistant based on MiniMax models.
 
@@ -121,8 +121,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MiniMaxChatOptions.builder()
-            .withModel(MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue())
-            .withTemperature(0.5)
+            .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
+            .withTemperature(0.5f)
         .build()
     ));
 ----
@@ -204,8 +204,8 @@ Next, create a `MiniMaxChatModel` and use it for text generations:
 var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
 var chatModel = new MiniMaxChatModel(miniMaxApi, MiniMaxChatOptions.builder()
-                .withModel(MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue())
-                .withTemperature(0.4)
+                .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
+                .withTemperature(0.4f)
                 .withMaxTokens(200)
                 .build());
 
@@ -236,16 +236,47 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = miniMaxApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue(), 0.7, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = miniMaxApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue(), 0.7, true));
+        new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/api/MiniMaxApi.java[MiniMaxApi.java]'s JavaDoc for further information.
 
+
+=== WebSearch chat [[web-search]]
+
+The MiniMax model supported the web search feature. The web search feature allows you to search the web for information and return the results in the chat response.
+
+About web search follow the https://platform.minimaxi.com/document/ChatCompletion%20v2[MiniMax ChatCompletion] for further information.
+
+Here is a simple snippet how to use the web search:
+
+[source,java]
+----
+UserMessage userMessage = new UserMessage(
+        "How many gold medals has the United States won in total at the 2024 Olympics?");
+
+List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
+
+MiniMaxChatOptions options = MiniMaxChatOptions.builder()
+    .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
+    .withTools(functionTool)
+    .build();
+
+
+// Sync request
+ChatResponse response = chatModel.call(new Prompt(messages, options));
+
+// Streaming request
+Flux<ChatResponse> streamResponse = chatModel.stream(new Prompt(messages, options));
+----
+
 ==== MiniMaxApi Samples
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/test/java/org/springframework/ai/minimax/api/MiniMaxApiIT.java[MiniMaxApiIT.java] test provides some general examples how to use the lightweight library.
 
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/test/java/org/springframework/ai/minimax/api/MiniMaxApiToolFunctionCallIT.java.java[MiniMaxApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/test/java/org/springframework/ai/minimax/api/MiniMaxApiToolFunctionCallIT.java[MiniMaxApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.>
