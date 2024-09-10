@@ -46,6 +46,7 @@ import com.knuddels.jtokkit.api.EncodingType;
  *
  * @author Soby Chacko
  * @author Mark Pollack
+ * @author Laura Trotta
  * @since 1.0.0
  */
 public class TokenCountBatchingStrategy implements BatchingStrategy {
@@ -122,7 +123,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 			Integer tokenCount = documentTokens.get(document);
 			if (currentSize + tokenCount > maxInputTokenCount) {
 				batches.add(currentBatch);
-				currentBatch.clear();
+				currentBatch = new ArrayList<>();
 				currentSize = 0;
 			}
 			currentBatch.add(document);
