@@ -108,24 +108,33 @@ class ElasticsearchVectorStoreIT {
 	}
 
 	@Test
-	public void addAndDeleteDocumentsTest(){
+	public void addAndDeleteDocumentsTest() {
 		getContextRunner().run(context -> {
 			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
 					ElasticsearchVectorStore.class);
 			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
 
-			IndicesStats stats = elasticsearchClient.indices().stats(s -> s.index("spring-ai-document-index")).indices().get("spring-ai-document-index");
+			IndicesStats stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
 
 			assertThat(stats.total().docs().count()).isEqualTo(0L);
 
 			vectorStore.add(documents);
 			elasticsearchClient.indices().refresh();
-			stats = elasticsearchClient.indices().stats(s -> s.index("spring-ai-document-index")).indices().get("spring-ai-document-index");
+			stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
 			assertThat(stats.total().docs().count()).isEqualTo(3L);
 
 			vectorStore.doDelete(List.of("1", "2", "3"));
 			elasticsearchClient.indices().refresh();
-			stats = elasticsearchClient.indices().stats(s -> s.index("spring-ai-document-index")).indices().get("spring-ai-document-index");
+			stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
 			assertThat(stats.total().docs().count()).isEqualTo(0L);
 		});
 	}
