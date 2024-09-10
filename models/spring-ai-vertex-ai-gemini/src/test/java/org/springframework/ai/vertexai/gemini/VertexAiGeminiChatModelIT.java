@@ -75,8 +75,8 @@ class VertexAiGeminiChatModelIT {
 		ChatResponse response = chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
 
-		var promptWithMessageHistory = new Prompt(List.of(prompt.getInstructions().get(0),
-				response.getResult().getOutput(), new UserMessage("What was the answer from the previous question?")));
+		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), prompt.getInstructions().get(1),
+				response.getResult().getOutput(), new UserMessage("Repeat the last assistant message.")));
 		response = chatModel.call(promptWithMessageHistory);
 
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");

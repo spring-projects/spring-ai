@@ -27,7 +27,11 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -71,6 +75,32 @@ class MistralAiChatClientIT {
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+	}
+
+	@Test
+	void testMessageHistory() {
+
+		// @formatter:off
+		ChatResponse response = ChatClient.create(chatModel).prompt()
+				.system(s -> s.text(systemTextResource)
+						.param("name", "Bob")
+						.param("voice", "pirate"))
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.call()
+				.chatResponse();
+		// @formatter:on
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+
+		// @formatter:off
+		response = ChatClient.create(chatModel).prompt()
+				.messages(List.of(new UserMessage("Dummy"), response.getResult().getOutput()))
+				.user("Repeat the last assistant message.")
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		logger.info("" + response);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
 	}
 
 	@Test

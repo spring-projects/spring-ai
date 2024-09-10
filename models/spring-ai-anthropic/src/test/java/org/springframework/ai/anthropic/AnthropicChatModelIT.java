@@ -100,6 +100,25 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void testMessageHistory() {
+		UserMessage userMessage = new UserMessage(
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
+				AnthropicChatOptions.builder().withModel("claude-3-sonnet-20240229").build());
+
+		ChatResponse response = chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+
+		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
+				new UserMessage("Repeat the last assistant message.")));
+		response = chatModel.call(promptWithMessageHistory);
+
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
 	void streamingWithTokenUsage() {
 		var promptOptions = AnthropicChatOptions.builder().withTemperature(0f).build();
 
