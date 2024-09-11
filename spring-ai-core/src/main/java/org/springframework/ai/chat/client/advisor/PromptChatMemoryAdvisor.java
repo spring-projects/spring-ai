@@ -66,7 +66,7 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request) {
+	public AdvisedRequest before(AdvisedRequest request) {
 
 		// 1. Advise system parameters.
 		List<Message> memoryMessages = this.getChatMemoryStore()
@@ -98,7 +98,7 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 	}
 
 	@Override
-	public AdvisedResponse adviseResponse(AdvisedResponse advisedResponse) {
+	public AdvisedResponse afterCall(AdvisedResponse advisedResponse) {
 
 		List<Message> assistantMessages = advisedResponse.response()
 			.getResults()

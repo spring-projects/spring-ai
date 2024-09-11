@@ -16,14 +16,14 @@
 
 package org.springframework.ai.chat.client;
 
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AfterAdvisor;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BeforeAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -35,13 +35,12 @@ import reactor.core.publisher.Flux;
  * {@link ChatModel#stream(Prompt)} methods calls. The {@link ChatClient} maintains a
  * chain of advisors with shared advise context.
  *
- * @deprecated since 1.0.0 please use {@link RequestAdvisor}, {@link ResponseAdvisor}
- * instead.
+ * @deprecated since 1.0.0 please use {@link BeforeAdvisor}, {@link AfterAdvisor} instead.
  * @author Christian Tzolov
  * @since 1.0.0
  */
 @Deprecated
-public interface RequestResponseAdvisor extends RequestAdvisor, ResponseAdvisor {
+public interface RequestResponseAdvisor extends BeforeAdvisor, AfterAdvisor {
 
 	@Override
 	default String getName() {
@@ -53,7 +52,7 @@ public interface RequestResponseAdvisor extends RequestAdvisor, ResponseAdvisor 
 	}
 
 	@Override
-	default AdvisedRequest adviseRequest(AdvisedRequest request) {
+	default AdvisedRequest before(AdvisedRequest request) {
 		var context = new HashMap<>(request.adviseContext());
 		var requestPrim = adviseRequest(request, context);
 		return AdvisedRequest.from(requestPrim).withAdviseContext(Collections.unmodifiableMap(context)).build();
@@ -64,7 +63,7 @@ public interface RequestResponseAdvisor extends RequestAdvisor, ResponseAdvisor 
 	}
 
 	@Override
-	default AdvisedResponse adviseResponse(AdvisedResponse advisedResponse) {
+	default AdvisedResponse afterCall(AdvisedResponse advisedResponse) {
 		var context = new HashMap<>(advisedResponse.adviseContext());
 		var chatResponse = adviseResponse(advisedResponse.response(), context);
 		return new AdvisedResponse(chatResponse, Collections.unmodifiableMap(context));
@@ -75,7 +74,7 @@ public interface RequestResponseAdvisor extends RequestAdvisor, ResponseAdvisor 
 	}
 
 	@Override
-	default Flux<AdvisedResponse> adviseResponse(Flux<AdvisedResponse> advisedResponseStream) {
+	default Flux<AdvisedResponse> afterStream(Flux<AdvisedResponse> advisedResponseStream) {
 
 		// TODO: this allows to modify the context for each chat response element in the
 		// stream.

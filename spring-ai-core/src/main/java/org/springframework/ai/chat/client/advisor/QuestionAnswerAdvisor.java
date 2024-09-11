@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BeforeAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AfterAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
@@ -42,7 +42,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class QuestionAnswerAdvisor implements RequestAdvisor, ResponseAdvisor {
+public class QuestionAnswerAdvisor implements BeforeAdvisor, AfterAdvisor {
 
 	private static final String DEFAULT_USER_TEXT_ADVISE = """
 			Context information is below.
@@ -99,7 +99,7 @@ public class QuestionAnswerAdvisor implements RequestAdvisor, ResponseAdvisor {
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request) {
+	public AdvisedRequest before(AdvisedRequest request) {
 
 		var context = new HashMap<>(request.adviseContext());
 
@@ -134,15 +134,15 @@ public class QuestionAnswerAdvisor implements RequestAdvisor, ResponseAdvisor {
 	}
 
 	@Override
-	public AdvisedResponse adviseResponse(AdvisedResponse advisedResponse) {
+	public AdvisedResponse afterCall(AdvisedResponse advisedResponse) {
 		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
 		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
 		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
 	}
 
 	@Override
-	public StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.ON_FINISH_ELEMENT;
+	public AfterStreamMode getAfterStreamMode() {
+		return AfterStreamMode.ON_FINISH_ELEMENT;
 	}
 
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {

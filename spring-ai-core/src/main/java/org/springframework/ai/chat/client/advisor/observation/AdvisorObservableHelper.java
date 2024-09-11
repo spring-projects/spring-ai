@@ -22,8 +22,8 @@ import java.util.List;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BeforeAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AfterAdvisor;
 import org.springframework.util.CollectionUtils;
 
 import io.micrometer.observation.Observation;
@@ -36,7 +36,7 @@ public abstract class AdvisorObservableHelper {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
-	public static AdvisedRequest adviseRequest(Observation parentObservation, RequestAdvisor advisor,
+	public static AdvisedRequest adviseRequest(Observation parentObservation, BeforeAdvisor advisor,
 			AdvisedRequest advisedRequest) {
 
 		var observationContext = AdvisorObservationContext.builder()
@@ -50,10 +50,10 @@ public abstract class AdvisorObservableHelper {
 			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					parentObservation.getObservationRegistry())
 			.parentObservation(parentObservation)
-			.observe(() -> advisor.adviseRequest(advisedRequest));
+			.observe(() -> advisor.before(advisedRequest));
 	}
 
-	public static AdvisedResponse adviseResponse(Observation parentObservation, ResponseAdvisor advisor,
+	public static AdvisedResponse adviseResponse(Observation parentObservation, AfterAdvisor advisor,
 			AdvisedResponse advisedResponse) {
 
 		var observationContext = AdvisorObservationContext.builder()
@@ -66,32 +66,32 @@ public abstract class AdvisorObservableHelper {
 			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					parentObservation.getObservationRegistry())
 			.parentObservation(parentObservation)
-			.observe(() -> advisor.adviseResponse(advisedResponse));
+			.observe(() -> advisor.afterCall(advisedResponse));
 	}
 
-	public static List<RequestAdvisor> requestAdvisors(List<Advisor> advisors) {
+	public static List<BeforeAdvisor> requestAdvisors(List<Advisor> advisors) {
 		if (CollectionUtils.isEmpty(advisors)) {
 			return Collections.emptyList();
 		}
 		return advisors.stream()
-			.filter(advisor -> advisor instanceof RequestAdvisor)
-			.map(a -> (RequestAdvisor) a)
+			.filter(advisor -> advisor instanceof BeforeAdvisor)
+			.map(a -> (BeforeAdvisor) a)
 			.toList();
 	}
 
 	/**
-	 * Extracts the {@link ResponseAdvisor} instances from the given list of advisors and
+	 * Extracts the {@link AfterAdvisor} instances from the given list of advisors and
 	 * returns them in reverse order.
 	 * @param advisors list of all registered advisor types.
-	 * @return the list of {@link ResponseAdvisor} instances in reverse order.
+	 * @return the list of {@link AfterAdvisor} instances in reverse order.
 	 */
-	public static List<ResponseAdvisor> responseAdvisors(List<Advisor> advisors) {
+	public static List<AfterAdvisor> responseAdvisors(List<Advisor> advisors) {
 		if (CollectionUtils.isEmpty(advisors)) {
 			return Collections.emptyList();
 		}
 		var list = advisors.stream()
-			.filter(advisor -> advisor instanceof ResponseAdvisor)
-			.map(a -> (ResponseAdvisor) a)
+			.filter(advisor -> advisor instanceof AfterAdvisor)
+			.map(a -> (AfterAdvisor) a)
 			.toList();
 
 		// reverse the list

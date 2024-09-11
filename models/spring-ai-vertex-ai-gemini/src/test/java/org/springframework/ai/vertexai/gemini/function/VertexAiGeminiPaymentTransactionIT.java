@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BeforeAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AfterAdvisor;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
@@ -65,7 +65,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 	record TransactionStatusResponse(String id, String status) {
 	}
 
-	private static class LoggingAdvisor implements RequestAdvisor, ResponseAdvisor {
+	private static class LoggingAdvisor implements BeforeAdvisor, AfterAdvisor {
 
 		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
 
@@ -75,7 +75,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 		}
 
 		@Override
-		public AdvisedRequest adviseRequest(AdvisedRequest request) {
+		public AdvisedRequest before(AdvisedRequest request) {
 			logger.info("System text: \n" + request.systemText());
 			logger.info("System params: " + request.systemParams());
 			logger.info("User text: \n" + request.userText());
@@ -88,7 +88,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 		}
 
 		@Override
-		public AdvisedResponse adviseResponse(AdvisedResponse advisedResponse) {
+		public AdvisedResponse afterCall(AdvisedResponse advisedResponse) {
 			logger.info("Response: " + advisedResponse.response());
 			return advisedResponse;
 		}

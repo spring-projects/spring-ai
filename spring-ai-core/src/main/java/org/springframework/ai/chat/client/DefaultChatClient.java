@@ -35,9 +35,9 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor.StreamResponseMode;
+import org.springframework.ai.chat.client.advisor.api.BeforeAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AfterAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AfterAdvisor.AfterStreamMode;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservableHelper;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
@@ -385,7 +385,7 @@ public class DefaultChatClient implements ChatClient {
 			AdvisedRequest advisedRequest = toAdvisedRequest(inputRequestSpec, formatParam);
 
 			// Apply the Request advisors
-			for (RequestAdvisor advisor : AdvisorObservableHelper.requestAdvisors(inputRequestSpec.advisors)) {
+			for (BeforeAdvisor advisor : AdvisorObservableHelper.requestAdvisors(inputRequestSpec.advisors)) {
 				advisedRequest = AdvisorObservableHelper.adviseRequest(parentObservation, advisor, advisedRequest);
 			}
 
@@ -394,7 +394,7 @@ public class DefaultChatClient implements ChatClient {
 			AdvisedResponse advisedResponse = inputRequestSpec.aroundAdvisorChain.nextAroundCall(advisedRequest);
 
 			// Apply the Response advisors.
-			for (ResponseAdvisor advisor : AdvisorObservableHelper.responseAdvisors(inputRequestSpec.getAdvisors())) {
+			for (AfterAdvisor advisor : AdvisorObservableHelper.responseAdvisors(inputRequestSpec.getAdvisors())) {
 				advisedResponse = AdvisorObservableHelper.adviseResponse(parentObservation, advisor, advisedResponse);
 			}
 
@@ -470,12 +470,12 @@ public class DefaultChatClient implements ChatClient {
 						var responseAdvisors = new ArrayList<>(
 								AdvisorObservableHelper.responseAdvisors(inputRequest.getAdvisors()));
 
-						List<ResponseAdvisor> perElementResponseAdvisors = responseAdvisors.stream()
-							.filter(a -> a.getStreamResponseMode() == StreamResponseMode.PER_ELEMENT)
+						List<AfterAdvisor> perElementResponseAdvisors = responseAdvisors.stream()
+							.filter(a -> a.getAfterStreamMode() == AfterStreamMode.PER_ELEMENT)
 							.toList();
 
-						List<ResponseAdvisor> onFinishElementResponseAdvisors = responseAdvisors.stream()
-							.filter(a -> a.getStreamResponseMode() == StreamResponseMode.ON_FINISH_ELEMENT)
+						List<AfterAdvisor> onFinishElementResponseAdvisors = responseAdvisors.stream()
+							.filter(a -> a.getAfterStreamMode() == AfterStreamMode.ON_FINISH_ELEMENT)
 							.toList();
 
 						// PER_ELEMENT and ON_FINISH_ELEMENT
@@ -483,14 +483,14 @@ public class DefaultChatClient implements ChatClient {
 
 							// PER_ELEMENT
 							if (!CollectionUtils.isEmpty(perElementResponseAdvisors)) {
-								for (ResponseAdvisor advisor : perElementResponseAdvisors) {
+								for (AfterAdvisor advisor : perElementResponseAdvisors) {
 									advisedResponse = AdvisorObservableHelper.adviseResponse(parentObservation, advisor,
 											advisedResponse);
 								}
 							}
 							// ON_FINISH_ELEMENT
 							if (!CollectionUtils.isEmpty(onFinishElementResponseAdvisors)) {
-								for (ResponseAdvisor advisor : onFinishElementResponseAdvisors) {
+								for (AfterAdvisor advisor : onFinishElementResponseAdvisors) {
 									boolean withFinishReason = advisedResponse.response()
 										.getResults()
 										.stream()
@@ -512,18 +512,18 @@ public class DefaultChatClient implements ChatClient {
 						// CUSTOM
 						// TODO: how to pass the parentObservation to the custom response
 						// advisor?
-						List<ResponseAdvisor> customResponseAdvisors = responseAdvisors.stream()
-							.filter(a -> a.getStreamResponseMode() == StreamResponseMode.CUSTOM)
+						List<AfterAdvisor> customResponseAdvisors = responseAdvisors.stream()
+							.filter(a -> a.getAfterStreamMode() == AfterStreamMode.CUSTOM)
 							.toList();
 						if (!CollectionUtils.isEmpty(customResponseAdvisors)) {
-							for (ResponseAdvisor advisor : customResponseAdvisors) {
-								advisedResponses = advisor.adviseResponse(advisedResponses);
+							for (AfterAdvisor advisor : customResponseAdvisors) {
+								advisedResponses = advisor.afterStream(advisedResponses);
 							}
 						}
 
 						// AGGREGATE
-						List<ResponseAdvisor> aggregateResponseAdvisors = responseAdvisors.stream()
-							.filter(a -> a.getStreamResponseMode() == StreamResponseMode.AGGREGATE)
+						List<AfterAdvisor> aggregateResponseAdvisors = responseAdvisors.stream()
+							.filter(a -> a.getAfterStreamMode() == AfterStreamMode.AGGREGATE)
 							.toList();
 
 						if (!CollectionUtils.isEmpty(aggregateResponseAdvisors)) {
@@ -537,7 +537,7 @@ public class DefaultChatClient implements ChatClient {
 									.withResponse(chatResponse)
 									.withAdviseContext(adviseContext.get())
 									.build();
-								for (ResponseAdvisor advisor : aggregateResponseAdvisors) {
+								for (AfterAdvisor advisor : aggregateResponseAdvisors) {
 									advisedResponse = AdvisorObservableHelper.adviseResponse(parentObservation, advisor,
 											advisedResponse);
 									adviseContext.set(advisedResponse.adviseContext());

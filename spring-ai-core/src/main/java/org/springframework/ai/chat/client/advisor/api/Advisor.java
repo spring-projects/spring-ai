@@ -20,8 +20,8 @@ package org.springframework.ai.chat.client.advisor.api;
  *
  * @author Christian Tzolov
  * @since 1.0.0
- * @see RequestAdvisor
- * @see ResponseAdvisor
+ * @see BeforeAdvisor
+ * @see AfterAdvisor
  * @see CallAroundAdvisor
  * @see StreamAroundAdvisor
  * @see AroundAdvisorChain

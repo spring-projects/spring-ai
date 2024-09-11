@@ -31,13 +31,13 @@ import org.springframework.ai.chat.prompt.Prompt;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public interface RequestAdvisor extends Advisor {
+public interface BeforeAdvisor extends Advisor {
 
 	/**
 	 * @param request the {@link AdvisedRequest} data to be advised. Represents the row
 	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
 	 * @return the advised {@link AdvisedRequest}.
 	 */
-	AdvisedRequest adviseRequest(AdvisedRequest request);
+	AdvisedRequest before(AdvisedRequest request);
 
 }

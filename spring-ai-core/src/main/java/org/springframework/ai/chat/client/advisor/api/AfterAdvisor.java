@@ -31,7 +31,7 @@ import reactor.core.publisher.Flux;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public interface ResponseAdvisor extends Advisor {
+public interface AfterAdvisor extends Advisor {
 
 	/**
 	 * @param response the {@link ChatResponse} data to be advised. Represents the row
@@ -39,12 +39,12 @@ public interface ResponseAdvisor extends Advisor {
 	 * called.
 	 * @return the advised {@link ChatResponse}.
 	 */
-	AdvisedResponse adviseResponse(AdvisedResponse advisedResponse);
+	AdvisedResponse afterCall(AdvisedResponse advisedResponse);
 
 	/**
 	 * Different modes of advising the streaming responses.
 	 */
-	public enum StreamResponseMode {
+	public enum AfterStreamMode {
 
 		/**
 		 * Called for each response element in the Flux. The response advisor can modify
@@ -72,8 +72,8 @@ public interface ResponseAdvisor extends Advisor {
 
 	}
 
-	default StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.ON_FINISH_ELEMENT;
+	default AfterStreamMode getAfterStreamMode() {
+		return AfterStreamMode.ON_FINISH_ELEMENT;
 	}
 
 	/**
@@ -82,7 +82,7 @@ public interface ResponseAdvisor extends Advisor {
 	 * {@link ChatModel#stream(Prompt)} method is called.
 	 * @return the advised {@link ChatResponse} flux.
 	 */
-	default Flux<AdvisedResponse> adviseResponse(Flux<AdvisedResponse> advisedResponseStream) {
+	default Flux<AdvisedResponse> afterStream(Flux<AdvisedResponse> advisedResponseStream) {
 		return advisedResponseStream;
 	}
 
