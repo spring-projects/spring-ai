@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import co.elastic.clients.transport.Version;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,9 +110,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		this.initializeSchema = initializeSchema;
 		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
-		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
-				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
-		elasticsearchClient.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai"));
+		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
+		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient,
+				new JacksonJsonpMapper(
+						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))))
+			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
 		this.embeddingModel = embeddingModel;
 		this.options = options;
 		this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
