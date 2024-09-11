@@ -79,4 +79,9 @@ public class SimpleLoggerAdvisor implements RequestAdvisor, ResponseAdvisor {
 		return SimpleLoggerAdvisor.class.getSimpleName();
 	}
 
+	@Override
+	public StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.AGGREGATE;
+	}
+
 }

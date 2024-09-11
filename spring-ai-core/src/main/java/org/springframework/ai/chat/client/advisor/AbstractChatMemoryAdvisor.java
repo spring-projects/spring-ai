@@ -65,6 +65,11 @@ public abstract class AbstractChatMemoryAdvisor<T> implements RequestAdvisor, Re
 		return this.getClass().getSimpleName();
 	}
 
+	@Override
+	public StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.AGGREGATE;
+	}
+
 	protected T getChatMemoryStore() {
 		return this.chatMemoryStore;
 	}

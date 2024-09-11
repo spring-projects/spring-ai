@@ -78,7 +78,7 @@ public interface ResponseAdvisor extends Advisor {
 	}
 
 	default StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.AGGREGATE;
+		return StreamResponseMode.ON_FINISH_ELEMENT;
 	}
 
 	/**

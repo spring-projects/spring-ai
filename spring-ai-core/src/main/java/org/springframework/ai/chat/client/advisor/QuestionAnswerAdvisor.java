@@ -136,6 +136,11 @@ public class QuestionAnswerAdvisor implements RequestAdvisor, ResponseAdvisor {
 		return chatResponseBuilder.build();
 	}
 
+	@Override
+	public StreamResponseMode getStreamResponseMode() {
+		return StreamResponseMode.ON_FINISH_ELEMENT;
+	}
+
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
 
 		if (!context.containsKey(FILTER_EXPRESSION)
