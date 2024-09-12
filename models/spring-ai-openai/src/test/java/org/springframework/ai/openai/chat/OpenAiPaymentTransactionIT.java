@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai.chat;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -26,11 +28,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -47,7 +48,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 import org.springframework.core.ParameterizedTypeReference;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Christian Tzolov
@@ -64,9 +65,13 @@ public class OpenAiPaymentTransactionIT {
 	record TransactionStatusResponse(String id, String status) {
 	}
 
-	private static class LoggingAdvisor implements RequestResponseAdvisor {
+	private static class LoggingAdvisor implements RequestAdvisor, ResponseAdvisor {
 
 		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
+
+		public String getName() {
+			return this.getClass().getSimpleName();
+		}
 
 		@Override
 		public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {

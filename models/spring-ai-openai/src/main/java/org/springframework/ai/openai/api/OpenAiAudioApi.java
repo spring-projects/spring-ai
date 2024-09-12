@@ -62,7 +62,7 @@ public class OpenAiAudioApi {
 	}
 
 	/**
-	 * Create an new chat completion api.
+	 * Create a new audio api.
 	 * @param baseUrl api base URL.
 	 * @param openAiToken OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
@@ -81,7 +81,7 @@ public class OpenAiAudioApi {
 	}
 
 	/**
-	 * Create an new chat completion api.
+	 * Create a new audio api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
@@ -96,7 +96,7 @@ public class OpenAiAudioApi {
 	}
 
 	/**
-	 * Create an new chat completion api.
+	 * Create a new audio api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 * @param headers the http headers to use.

@@ -41,6 +41,12 @@
             <!-- Document Readers -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-markdown-document-reader</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-pdf-document-reader</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -105,7 +111,7 @@
                 <artifactId>spring-ai-vertex-ai-palm2</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-vertex-ai-embedding</artifactId>
@@ -261,7 +267,7 @@
             <!-- Spring Boot Starters -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-apache-cassandra-store-spring-boot-starter</artifactId>
+                <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -456,6 +462,12 @@
                 <artifactId>spring-ai-typesense-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-spring-boot-docker-compose</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>

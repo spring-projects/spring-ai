@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
+import co.elastic.clients.elasticsearch.indices.stats.IndicesStats;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -36,6 +37,7 @@ import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -102,6 +104,38 @@ class ElasticsearchVectorStoreIT {
 			if (!indices.isEmpty()) {
 				elasticsearchClient.indices().delete(del -> del.index(indices));
 			}
+		});
+	}
+
+	@Test
+	public void addAndDeleteDocumentsTest() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
+
+			IndicesStats stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+
+			assertThat(stats.total().docs().count()).isEqualTo(0L);
+
+			vectorStore.add(documents);
+			elasticsearchClient.indices().refresh();
+			stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats.total().docs().count()).isEqualTo(3L);
+
+			vectorStore.doDelete(List.of("1", "2", "3"));
+			elasticsearchClient.indices().refresh();
+			stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats.total().docs().count()).isEqualTo(0L);
 		});
 	}
 

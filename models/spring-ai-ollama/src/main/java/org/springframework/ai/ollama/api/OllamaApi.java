@@ -100,7 +100,7 @@ public class OllamaApi {
 	 * @param baseUrl The base url of the Ollama server.
 	 */
 	public OllamaApi(String baseUrl) {
-		this(baseUrl, RestClient.builder());
+		this(baseUrl, RestClient.builder(), WebClient.builder());
 	}
 
 	/**
@@ -109,7 +109,7 @@ public class OllamaApi {
 	 * @param baseUrl The base url of the Ollama server.
 	 * @param restClientBuilder The {@link RestClient.Builder} to use.
 	 */
-	public OllamaApi(String baseUrl, RestClient.Builder restClientBuilder) {
+	public OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder) {
 
 		this.responseErrorHandler = new OllamaResponseErrorHandler();
 
@@ -120,7 +120,7 @@ public class OllamaApi {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
 
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
+		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
 	}
 
 	// --------------------------------------------------------------------------

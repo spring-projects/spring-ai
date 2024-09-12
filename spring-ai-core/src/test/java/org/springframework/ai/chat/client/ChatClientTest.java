@@ -471,16 +471,11 @@ public class ChatClientTest {
 
 		assertThat(response).isEqualTo("response");
 
-		assertThat(promptCaptor.getValue().getInstructions()).hasSize(2);
+		assertThat(promptCaptor.getValue().getInstructions()).hasSize(1);
 
 		Message systemMessage = promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getContent()).isEqualTo("System prompt");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
-
-		// Is this expected?
-		Message userMessage = promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getContent()).isEqualTo("");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 	}
 
 	@Test
