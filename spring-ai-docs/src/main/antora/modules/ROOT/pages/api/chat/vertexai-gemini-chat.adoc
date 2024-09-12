@@ -97,13 +97,13 @@ For example to override the default temperature for a specific request:
 ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
-        VertexAiPaLm2ChatOptions.builder()
+        VertexAiGeminiChatOptions.builder()
             .withTemperature(0.4)
         .build()
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiChatPaLm2Options` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
+TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
 https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 == Function Calling
@@ -140,7 +140,7 @@ ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-palm2-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-gemini-spring-boot-starter` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi chat model:
 
