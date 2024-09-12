@@ -15,7 +15,10 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.util.Assert;
@@ -25,6 +28,11 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public record AdvisedResponse(ChatResponse response, Map<String, Object> adviseContext) {
+
+	public AdvisedResponse contextTransform(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
+		return new AdvisedResponse(response,
+				Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(adviseContext))));
+	}
 
 	public static Builder builder() {
 		return new Builder();

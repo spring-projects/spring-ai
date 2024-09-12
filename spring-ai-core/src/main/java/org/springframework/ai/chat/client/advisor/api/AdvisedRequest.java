@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.client;
+package org.springframework.ai.chat.client.advisor.api;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.ai.model.Media;
-import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -60,6 +61,12 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages,
 		Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors,
 		Map<String, Object> advisorParams, Map<String, Object> adviseContext) {
+
+	public AdvisedRequest contextTransform(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
+		return from(this)
+			.withAdviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
+			.build();
+	}
 
 	public static Builder from(AdvisedRequest from) {
 		Builder builder = new Builder();

@@ -17,8 +17,8 @@ package org.springframework.ai.chat.client.advisor.observation;
 
 import java.util.Map;
 
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.util.Assert;
 

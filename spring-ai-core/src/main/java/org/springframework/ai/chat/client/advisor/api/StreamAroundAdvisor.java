@@ -15,8 +15,6 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
-import org.springframework.ai.chat.client.AdvisedRequest;
-
 import reactor.core.publisher.Flux;
 
 /**

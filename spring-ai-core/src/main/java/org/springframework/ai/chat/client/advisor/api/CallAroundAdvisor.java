@@ -15,7 +15,6 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
