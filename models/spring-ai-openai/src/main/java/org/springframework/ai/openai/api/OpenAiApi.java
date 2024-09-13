@@ -183,21 +183,26 @@ public class OpenAiApi {
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
-	/**
-	 * GPT-O1 Preview: A preview version of the GPT-O1 model, offering a glimpse into the upcoming
-	 * generation of models. It includes advanced features with improved performance.
-	 * Currently points to gpt-o1-preview-2024-09-12.
-	 */
-	GPT_O_1_PREVIEW("gpt-o1-preview"),
-	
-	/**
-	 * GPT-O1 Mini: A smaller, more efficient variant of the GPT-O1 model. It's designed for lightweight
-	 * tasks where speed and cost-efficiency are prioritized while still delivering high-quality results.
-	 * Currently points to gpt-o1-mini-2024-09-12.
-	 */
-	GPT_O_1_MINI("gpt-o1-mini"),
+		/**
+		 * Points to the most recent snapshot of the o1 model:o1-preview-2024-09-12
+		 */
+		GPT_O_1_PREVIEW("gpt-o1-preview"),
 
-			
+		/**
+		 * Latest o1 model snapshot
+		 */
+		GPT_O_1_PREVIEW_2024_09_12("gpt-o1-preview-2024-09-12"),
+
+		/**
+		 * Points to the most recent o1-mini snapshot:o1-mini-2024-09-12
+		 */
+		GPT_O_1_MINI("gpt-o1-mini"),
+
+		/**
+		 * Latest o1-mini model snapshot
+		 */
+		GPT_O_1_MINI_2024_09_12("gpt-o1-mini-2024-09-12"),
+
 		/**
 		 * Multimodal flagship model that’s cheaper and faster than GPT-4 Turbo. Currently
 		 * points to gpt-4o-2024-05-13.
