@@ -37,6 +37,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Ollama Chat Client.
@@ -61,8 +62,9 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails, RestClient.Builder restClientBuilder) {
-		return new OllamaApi(connectionDetails.getBaseUrl(), restClientBuilder);
+	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder) {
+		return new OllamaApi(connectionDetails.getBaseUrl(), restClientBuilder, webClientBuilder);
 	}
 
 	@Bean

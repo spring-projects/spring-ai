@@ -24,11 +24,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import co.elastic.clients.transport.Version;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -85,47 +89,52 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public ElasticsearchVectorStore(RestClient restClient, EmbeddingModel embeddingModel, boolean initializeSchema) {
 		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel, initializeSchema);
 	}
 
 	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
 			EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(options, restClient, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null);
+		this(options, restClient, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
 			EmbeddingModel embeddingModel, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
 		this.initializeSchema = initializeSchema;
 		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
-		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
-				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
+		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
+		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient,
+				new JacksonJsonpMapper(
+						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))))
+			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
 		this.embeddingModel = embeddingModel;
 		this.options = options;
 		this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		for (Document document : documents) {
-			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().length == 0) {
-				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
-				document.setEmbedding(this.embeddingModel.embed(document));
-			}
-			// We call operations on BulkRequest.Builder only if the index exists.
-			// For the index to be present, either it must be pre-created or set the
-			// initializeSchema to true.
-			if (indexExists()) {
-				bulkRequestBuilder.operations(op -> op
-					.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
-			}
+			bulkRequestBuilder.operations(op -> op
+				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
@@ -141,13 +150,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		// We call operations on BulkRequest.Builder only if the index exists.
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
-		if (indexExists()) {
-			for (String id : idList) {
-				bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
-			}
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
+		for (String id : idList) {
+			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}

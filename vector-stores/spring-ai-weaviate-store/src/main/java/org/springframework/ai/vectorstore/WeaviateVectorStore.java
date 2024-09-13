@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.util.ArrayList;
@@ -24,7 +25,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
@@ -95,6 +99,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private final ConsistentLevel consistencyLevel;
 
 	private final String weaviateObjectClass;
+
+	private final BatchingStrategy batchingStrategy;
 
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
@@ -290,7 +296,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 */
 	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
 			WeaviateClient weaviateClient) {
-		this(vectorStoreConfig, embeddingModel, weaviateClient, ObservationRegistry.NOOP, null);
+		this(vectorStoreConfig, embeddingModel, weaviateClient, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	/**
@@ -303,7 +310,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 */
 	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
 			WeaviateClient weaviateClient, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -318,6 +325,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 				this.filterMetadataFields.stream().map(MetadataField::name).toList());
 		this.weaviateClient = weaviateClient;
 		this.weaviateSimilaritySearchFields = buildWeaviateSimilaritySearchFields();
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	private Field[] buildWeaviateSimilaritySearchFields() {
@@ -346,6 +354,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		if (CollectionUtils.isEmpty(documents)) {
 			return;
 		}
+
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 
 		List<WeaviateObject> weaviateObjects = documents.stream().map(this::toWeaviateObject).toList();
 
@@ -384,11 +394,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	}
 
 	private WeaviateObject toWeaviateObject(Document document) {
-
-		if (document.getEmbedding() == null || document.getEmbedding().length == 0) {
-			float[] embedding = this.embeddingModel.embed(document);
-			document.setEmbedding(embedding);
-		}
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();

@@ -431,7 +431,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		else if (message instanceof AssistantMessage assistantMessage) {
 			List<Part> parts = new ArrayList<>();
 			if (StringUtils.hasText(assistantMessage.getContent())) {
-				List.of(Part.newBuilder().setText(assistantMessage.getContent()).build());
+				parts.add(Part.newBuilder().setText(assistantMessage.getContent()).build());
 			}
 			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 				parts.addAll(assistantMessage.getToolCalls()

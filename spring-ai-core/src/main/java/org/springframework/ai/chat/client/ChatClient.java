@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -122,9 +123,9 @@ public interface ChatClient {
 
 		AdvisorSpec params(Map<String, Object> p);
 
-		AdvisorSpec advisors(RequestResponseAdvisor... advisors);
+		AdvisorSpec advisors(Advisor... advisors);
 
-		AdvisorSpec advisors(List<RequestResponseAdvisor> advisors);
+		AdvisorSpec advisors(List<Advisor> advisors);
 
 	}
 
@@ -192,9 +193,9 @@ public interface ChatClient {
 
 		ChatClientRequestSpec advisors(Consumer<AdvisorSpec> consumer);
 
-		ChatClientRequestSpec advisors(RequestResponseAdvisor... advisors);
+		ChatClientRequestSpec advisors(Advisor... advisors);
 
-		ChatClientRequestSpec advisors(List<RequestResponseAdvisor> advisors);
+		ChatClientRequestSpec advisors(List<Advisor> advisors);
 
 		ChatClientRequestSpec messages(Message... messages);
 
@@ -237,11 +238,11 @@ public interface ChatClient {
 	 */
 	interface Builder {
 
-		Builder defaultAdvisors(RequestResponseAdvisor... advisor);
+		Builder defaultAdvisors(Advisor... advisor);
 
 		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);
 
-		Builder defaultAdvisors(List<RequestResponseAdvisor> advisors);
+		Builder defaultAdvisors(List<Advisor> advisors);
 
 		Builder defaultOptions(ChatOptions chatOptions);
 

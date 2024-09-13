@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.util.ArrayList;
@@ -26,7 +27,10 @@ import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.Embedding;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -69,18 +73,21 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, boolean initializeSchema) {
 		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME, initializeSchema);
 	}
 
 	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
 			boolean initializeSchema) {
-		this(embeddingModel, chromaApi, collectionName, initializeSchema, ObservationRegistry.NOOP, null);
+		this(embeddingModel, chromaApi, collectionName, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -89,6 +96,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		this.collectionName = collectionName;
 		this.initializeSchema = initializeSchema;
 		this.filterExpressionConverter = new ChromaFilterExpressionConverter();
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	public void setFilterExpressionConverter(FilterExpressionConverter filterExpressionConverter) {
@@ -108,11 +116,13 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		List<String> contents = new ArrayList<>();
 		List<float[]> embeddings = new ArrayList<>();
 
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		for (Document document : documents) {
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
 			contents.add(document.getContent());
-			document.setEmbedding(this.embeddingModel.embed(document));
+			document.setEmbedding(document.getEmbedding());
 			embeddings.add(document.getEmbedding());
 		}
 

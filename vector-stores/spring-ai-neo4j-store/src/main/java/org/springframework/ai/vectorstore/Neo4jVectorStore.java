@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.util.HashMap;
@@ -26,7 +27,10 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
@@ -43,6 +47,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Michael Simons
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -284,30 +289,32 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public Neo4jVectorStore(Driver driver, EmbeddingModel embeddingModel, Neo4jVectorStoreConfig config,
 			boolean initializeSchema) {
-		this(driver, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null);
+		this(driver, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public Neo4jVectorStore(Driver driver, EmbeddingModel embeddingModel, Neo4jVectorStoreConfig config,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
-
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 		super(observationRegistry, customObservationConvention);
 
 		this.initializeSchema = initializeSchema;
-
 		Assert.notNull(driver, "Neo4j driver must not be null");
 		Assert.notNull(embeddingModel, "Embedding model must not be null");
-
 		this.driver = driver;
 		this.embeddingModel = embeddingModel;
-
 		this.config = config;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
 	public void doAdd(List<Document> documents) {
+
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 
 		var rows = documents.stream().map(this::documentToRecord).toList();
 
@@ -398,8 +405,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	private Map<String, Object> documentToRecord(Document document) {
-		var embedding = this.embeddingModel.embed(document);
-		document.setEmbedding(embedding);
+		document.setEmbedding(document.getEmbedding());
 
 		var row = new HashMap<String, Object>();
 
@@ -411,7 +417,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
 
-		row.put(this.config.embeddingProperty, Values.value(embedding));
+		row.put(this.config.embeddingProperty, Values.value(document.getEmbedding()));
 		return row;
 	}
 

@@ -157,8 +157,8 @@
 		<awssdk.version>2.26.7</awssdk.version>
 
 		<jackson.version>2.16.1</jackson.version>
-		<djl.version>0.28.0</djl.version>
-		<onnxruntime.version>1.18.0</onnxruntime.version>
+		<djl.version>0.29.0</djl.version>
+		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<com.google.cloud.version>26.41.0</com.google.cloud.version>
 		<qdrant.version>1.9.1</qdrant.version>
 		<spring-retry.version>2.0.5</spring-retry.version>
@@ -423,9 +423,8 @@
 							<excludePackageNames>org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
 							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 							<detectJavaApiLink>false</detectJavaApiLink>
+							<failOnError>false</failOnError>
 							<doclint>none</doclint>
-<!--							<doclint>all,-missing</doclint>-->
-							<quiet>true</quiet>
 						</configuration>
 						<executions>
 							<execution>

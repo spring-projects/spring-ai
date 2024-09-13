@@ -25,6 +25,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -165,7 +166,8 @@ public class WeaviateVectorStoreObservationIT {
 				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
 				.build();
 
-			return new WeaviateVectorStore(config, embeddingModel, weaviateClient, observationRegistry, null);
+			return new WeaviateVectorStore(config, embeddingModel, weaviateClient, observationRegistry, null,
+					new TokenCountBatchingStrategy());
 
 		}
 
