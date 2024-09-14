@@ -62,7 +62,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors,
 		Map<String, Object> advisorParams, Map<String, Object> adviseContext) {
 
-	public AdvisedRequest contextTransform(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
+	public AdvisedRequest augmentContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
 		return from(this)
 			.withAdviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
 			.build();
