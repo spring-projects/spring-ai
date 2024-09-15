@@ -16,7 +16,7 @@ public class MoonshotUsage implements Usage {
 	}
 
 	protected MoonshotUsage(MoonshotApi.Usage usage) {
-		Assert.notNull(usage, "OpenAI Usage must not be null");
+		Assert.notNull(usage, "Moonshot Usage must not be null");
 		this.usage = usage;
 	}
 
