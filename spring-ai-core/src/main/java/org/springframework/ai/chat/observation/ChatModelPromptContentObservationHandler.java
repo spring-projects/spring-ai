@@ -23,6 +23,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiObservationEventNames;
+import org.springframework.ai.observation.tracing.TracingHelper;
 
 /**
  * Handler for including the chat prompt content in the observation as a span event.
@@ -36,7 +37,7 @@ public class ChatModelPromptContentObservationHandler implements ObservationHand
 	public void onStop(ChatModelObservationContext context) {
 		TracingObservationHandler.TracingContext tracingContext = context
 			.get(TracingObservationHandler.TracingContext.class);
-		Span otelSpan = ChatModelObservationContentProcessor.extractOtelSpan(tracingContext);
+		Span otelSpan = TracingHelper.extractOtelSpan(tracingContext);
 
 		if (otelSpan != null) {
 			otelSpan.addEvent(AiObservationEventNames.CONTENT_PROMPT.value(),

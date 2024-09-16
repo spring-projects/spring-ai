@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
 import javax.sql.DataSource;
 
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -34,6 +37,8 @@ import io.micrometer.observation.ObservationRegistry;
 /**
  * @author Christian Tzolov
  * @author Josh Long
+ * @author Soby Chacko
+ * @since 1.0.0
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ PgVectorStore.class, DataSource.class, JdbcTemplate.class })
@@ -41,10 +46,17 @@ import io.micrometer.observation.ObservationRegistry;
 public class PgVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy pgVectorStoreBatchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 			PgVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
 		var initializeSchema = properties.isInitializeSchema();
 
@@ -58,6 +70,7 @@ public class PgVectorStoreAutoConfiguration {
 			.withInitializeSchema(initializeSchema)
 			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.withSearchObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.withBatchingStrategy(batchingStrategy)
 			.build();
 	}
 

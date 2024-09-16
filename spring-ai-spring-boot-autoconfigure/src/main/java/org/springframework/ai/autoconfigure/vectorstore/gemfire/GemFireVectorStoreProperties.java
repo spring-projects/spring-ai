@@ -17,11 +17,12 @@
 package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
-import org.springframework.ai.vectorstore.GemFireVectorStoreConfig;
+import org.springframework.ai.vectorstore.GemFireVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Geet Rawat
+ * @author Soby Chacko
  */
 @ConfigurationProperties(GemFireVectorStoreProperties.CONFIG_PREFIX)
 public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
@@ -36,31 +37,31 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	 * "spring.ai.vectorstore.gemfire.host";
 	 *
 	 */
-	private String host = GemFireVectorStoreConfig.DEFAULT_HOST;
+	private String host = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_HOST;
 
 	/**
 	 * The port of the GemFire to connect to. To specify a custom port, use
 	 * "spring.ai.vectorstore.gemfire.port";
 	 */
-	private int port = GemFireVectorStoreConfig.DEFAULT_PORT;
+	private int port = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_PORT;
 
 	/**
 	 * The name of the index in the GemFire. To specify a custom index, use
 	 * "spring.ai.vectorstore.gemfire.index-name";
 	 */
-	private String indexName = GemFireVectorStoreConfig.DEFAULT_INDEX_NAME;
+	private String indexName = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_INDEX_NAME;
 
 	/**
 	 * The beam width for similarity queries. Default value is {@code 100}. To specify a
 	 * custom beam width, use "spring.ai.vectorstore.gemfire.beam-width";
 	 */
-	private int beamWidth = GemFireVectorStoreConfig.DEFAULT_BEAM_WIDTH;
+	private int beamWidth = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_BEAM_WIDTH;
 
 	/**
 	 * The maximum number of connections allowed. Default value is {@code 16}. To specify
 	 * custom number of connections, use "spring.ai.vectorstore.gemfire.max-connections";
 	 */
-	private int maxConnections = GemFireVectorStoreConfig.DEFAULT_MAX_CONNECTIONS;
+	private int maxConnections = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_MAX_CONNECTIONS;
 
 	/**
 	 * The similarity function to be used for vector comparisons. Default value is
@@ -68,14 +69,14 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	 * "spring.ai.vectorstore.gemfire.vector-similarity-function";
 	 *
 	 */
-	private String vectorSimilarityFunction = GemFireVectorStoreConfig.DEFAULT_SIMILARITY_FUNCTION;
+	private String vectorSimilarityFunction = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_SIMILARITY_FUNCTION;
 
 	/**
 	 * The fields to be used for queries. Default value is an array containing
 	 * {@code "vector"}. To specify custom fields, use
 	 * "spring.ai.vectorstore.gemfire.fields"
 	 */
-	private String[] fields = GemFireVectorStoreConfig.DEFAULT_FIELDS;
+	private String[] fields = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_FIELDS;
 
 	/**
 	 * The number of buckets to use for partitioning the data. Default value is {@code 0}.
@@ -83,14 +84,14 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	 * To specify custom buckets, use "spring.ai.vectorstore.gemfire.buckets";
 	 *
 	 */
-	private int buckets = GemFireVectorStoreConfig.DEFAULT_BUCKETS;
+	private int buckets = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_BUCKETS;
 
 	/**
 	 * Set to true if GemFire cluster is ssl enabled
 	 *
 	 * To specify sslEnabled, use "spring.ai.vectorstore.gemfire.ssl-enabled";
 	 */
-	private boolean sslEnabled = GemFireVectorStoreConfig.DEFAULT_SSL_ENABLED;
+	private boolean sslEnabled = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_SSL_ENABLED;
 
 	public int getBeamWidth() {
 		return beamWidth;

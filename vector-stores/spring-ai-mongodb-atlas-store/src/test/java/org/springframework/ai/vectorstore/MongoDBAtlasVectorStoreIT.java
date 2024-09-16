@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.springframework.ai.vectorstore;
 
 import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -28,10 +27,17 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
+import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
+import org.springframework.util.MimeType;
+
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +48,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Chris Smith
+ * @author Soby Chacko
  */
 @Testcontainers
-@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreIT {
 
 	@Container
@@ -201,13 +207,45 @@ class MongoDBAtlasVectorStoreIT {
 		}
 
 		@Bean
-		public MongoTemplate mongoTemplate(MongoClient mongoClient) {
-			return new MongoTemplate(mongoClient, "springaisample");
+		public MongoTemplate mongoTemplate(MongoClient mongoClient, MongoCustomConversions mongoCustomConversions) {
+			MongoTemplate mongoTemplate = new MongoTemplate(mongoClient, "springaisample");
+			MappingMongoConverter converter = (MappingMongoConverter) mongoTemplate.getConverter();
+			converter.setCustomConversions(mongoCustomConversions);
+			((MongoMappingContext) converter.getMappingContext())
+				.setSimpleTypeHolder(mongoCustomConversions.getSimpleTypeHolder());
+			converter.afterPropertiesSet();
+			return mongoTemplate;
 		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		}
+
+		@Bean
+		public Converter<MimeType, String> mimeTypeToStringConverter() {
+			return new Converter<MimeType, String>() {
+				@Override
+				public String convert(MimeType source) {
+					return source.toString();
+				}
+			};
+		}
+
+		@Bean
+		public Converter<String, MimeType> stringToMimeTypeConverter() {
+			return new Converter<String, MimeType>() {
+				@Override
+				public MimeType convert(String source) {
+					return MimeType.valueOf(source);
+				}
+			};
+		}
+
+		@Bean
+		public MongoCustomConversions mongoCustomConversions(Converter<MimeType, String> mimeTypeToStringConverter,
+				Converter<String, MimeType> stringToMimeTypeConverter) {
+			return new MongoCustomConversions(Arrays.asList(mimeTypeToStringConverter, stringToMimeTypeConverter));
 		}
 
 	}

@@ -26,7 +26,10 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -84,6 +87,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public final FilterExpressionConverter filterExpressionConverter = new TypesenseFilterExpressionConverter();
 
 	private final boolean initializeSchema;
+
+	private final BatchingStrategy batchingStrategy;
 
 	public static class TypesenseVectorStoreConfig {
 
@@ -162,12 +167,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
 			boolean initializeSchema) {
 
-		this(client, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null);
+		this(client, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -178,19 +184,21 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		this.embeddingModel = embeddingModel;
 		this.config = config;
 		this.initializeSchema = initializeSchema;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
 	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			float[] embedding = this.embeddingModel.embed(document.getContent());
-			typesenseDoc.put(EMBEDDING_FIELD_NAME, embedding);
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, document.getEmbedding());
 
 			return typesenseDoc;
 		}).toList();

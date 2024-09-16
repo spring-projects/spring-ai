@@ -29,6 +29,7 @@ import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiObservationEventNames;
+import org.springframework.ai.observation.tracing.TracingHelper;
 
 import java.util.List;
 
@@ -59,7 +60,7 @@ class ChatModelCompletionObservationHandlerTests {
 
 		new ChatModelCompletionObservationHandler().onStop(observationContext);
 
-		var otelSpan = ChatModelObservationContentProcessor.extractOtelSpan(tracingContext);
+		var otelSpan = TracingHelper.extractOtelSpan(tracingContext);
 		assertThat(otelSpan).isNotNull();
 		var spanData = ((ReadableSpan) otelSpan).toSpanData();
 		assertThat(spanData.getEvents().size()).isEqualTo(1);

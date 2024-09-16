@@ -18,6 +18,7 @@ package org.springframework.ai.vertexai.gemini;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -35,7 +36,8 @@ import org.springframework.util.Assert;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
- * @since 0.8.1
+ * @author Grogdunn
+ * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
 public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOptions {
@@ -77,6 +79,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	 * Gemini model name.
 	 */
 	private @JsonProperty("modelName") String model;
+	/**
+	 * Optional. Output response mimetype of the generated candidate text.
+	 * - text/plain: (default) Text output.
+	 * - application/json: JSON response in the candidates.
+	 */
+	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -100,6 +108,13 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
+
+	/**
+	 * Use Google search Grounding feature
+	 */
+	@JsonIgnore
+	private boolean googleSearchRetrieval = false;
+
 
 	// @formatter:on
 
@@ -151,6 +166,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 			return this;
 		}
 
+		public Builder withResponseMimeType(String mimeType) {
+			Assert.notNull(mimeType, "mimeType must not be null");
+			this.options.setResponseMimeType(mimeType);
+			return this;
+		}
+
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
@@ -165,6 +186,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withGoogleSearchRetrieval(boolean googleSearch) {
+			this.options.googleSearchRetrieval = googleSearch;
 			return this;
 		}
 
@@ -251,6 +277,14 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.model = modelName;
 	}
 
+	public String getResponseMimeType() {
+		return this.responseMimeType;
+	}
+
+	public String setResponseMimeType(String mimeType) {
+		return this.responseMimeType = mimeType;
+	}
+
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
 	}
@@ -279,99 +313,42 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		return null;
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((stopSequences == null) ? 0 : stopSequences.hashCode());
-		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
-		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
-		result = prime * result + ((topK == null) ? 0 : topK.hashCode());
-		result = prime * result + ((candidateCount == null) ? 0 : candidateCount.hashCode());
-		result = prime * result + ((maxOutputTokens == null) ? 0 : maxOutputTokens.hashCode());
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((functionCallbacks == null) ? 0 : functionCallbacks.hashCode());
-		result = prime * result + ((functions == null) ? 0 : functions.hashCode());
-		return result;
+	public boolean getGoogleSearchRetrieval() {
+		return this.googleSearchRetrieval;
+	}
+
+	public void setGoogleSearchRetrieval(boolean googleSearchRetrieval) {
+		this.googleSearchRetrieval = googleSearchRetrieval;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
+	public boolean equals(Object o) {
+		if (this == o)
 			return true;
-		if (obj == null)
+		if (!(o instanceof VertexAiGeminiChatOptions that))
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		VertexAiGeminiChatOptions other = (VertexAiGeminiChatOptions) obj;
-		if (stopSequences == null) {
-			if (other.stopSequences != null)
-				return false;
-		}
-		else if (!stopSequences.equals(other.stopSequences))
-			return false;
-		if (temperature == null) {
-			if (other.temperature != null)
-				return false;
-		}
-		else if (!temperature.equals(other.temperature))
-			return false;
-		if (topP == null) {
-			if (other.topP != null)
-				return false;
-		}
-		else if (!topP.equals(other.topP))
-			return false;
-		if (topK == null) {
-			if (other.topK != null)
-				return false;
-		}
-		else if (!topK.equals(other.topK))
-			return false;
-		if (candidateCount == null) {
-			if (other.candidateCount != null)
-				return false;
-		}
-		else if (!candidateCount.equals(other.candidateCount))
-			return false;
-		if (maxOutputTokens == null) {
-			if (other.maxOutputTokens != null)
-				return false;
-		}
-		else if (!maxOutputTokens.equals(other.maxOutputTokens))
-			return false;
-		if (model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (functionCallbacks == null) {
-			if (other.functionCallbacks != null)
-				return false;
-		}
-		else if (!functionCallbacks.equals(other.functionCallbacks))
-			return false;
-		if (functions == null) {
-			if (other.functions != null)
-				return false;
-		}
-		else if (!functions.equals(other.functions))
-			return false;
-		return true;
+		return googleSearchRetrieval == that.googleSearchRetrieval && Objects.equals(stopSequences, that.stopSequences)
+				&& Objects.equals(temperature, that.temperature) && Objects.equals(topP, that.topP)
+				&& Objects.equals(topK, that.topK) && Objects.equals(candidateCount, that.candidateCount)
+				&& Objects.equals(maxOutputTokens, that.maxOutputTokens) && Objects.equals(model, that.model)
+				&& Objects.equals(responseMimeType, that.responseMimeType)
+				&& Objects.equals(functionCallbacks, that.functionCallbacks)
+				&& Objects.equals(functions, that.functions);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(stopSequences, temperature, topP, topK, candidateCount, maxOutputTokens, model,
+				responseMimeType, functionCallbacks, functions, googleSearchRetrieval);
 	}
 
 	@Override
 	public String toString() {
-		return "VertexAiGeminiChatOptions [stopSequences=" + stopSequences + ", temperature=" + temperature + ", topP="
-				+ topP + ", topK=" + topK + ", candidateCount=" + candidateCount + ", maxOutputTokens="
-				+ maxOutputTokens + ", model=" + model + ", functionCallbacks=" + functionCallbacks + ", functions="
-				+ functions + ", getClass()=" + getClass() + ", getStopSequences()=" + getStopSequences()
-				+ ", getTemperature()=" + getTemperature() + ", getTopP()=" + getTopP() + ", getTopK()=" + getTopK()
-				+ ", getCandidateCount()=" + getCandidateCount() + ", getMaxOutputTokens()=" + getMaxOutputTokens()
-				+ ", getModel()=" + getModel() + ", getFunctionCallbacks()=" + getFunctionCallbacks()
-				+ ", getFunctions()=" + getFunctions() + ", hashCode()=" + hashCode() + ", toString()="
-				+ super.toString() + "]";
+		return "VertexAiGeminiChatOptions{" + "stopSequences=" + stopSequences + ", temperature=" + temperature
+				+ ", topP=" + topP + ", topK=" + topK + ", candidateCount=" + candidateCount + ", maxOutputTokens="
+				+ maxOutputTokens + ", model='" + model + '\'' + ", responseMimeType='" + responseMimeType + '\''
+				+ ", functionCallbacks=" + functionCallbacks + ", functions=" + functions + ", googleSearchRetrieval="
+				+ googleSearchRetrieval + '}';
 	}
 
 	@Override
@@ -389,7 +366,10 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		options.setMaxOutputTokens(fromOptions.getMaxOutputTokens());
 		options.setModel(fromOptions.getModel());
 		options.setFunctionCallbacks(fromOptions.getFunctionCallbacks());
+		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setFunctions(fromOptions.getFunctions());
+		options.setResponseMimeType(fromOptions.getResponseMimeType());
+		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		return options;
 	}
 

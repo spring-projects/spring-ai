@@ -46,22 +46,7 @@ Alternatively, you can use method names that are more naturally expressive for t
 vectorStore.write(tokenTextSplitter.split(pdfReader.read()));
 ----
 
-
-
-== Getting Started
-
-To begin creating a Spring AI RAG application, follow these steps:
-
-. Download the latest https://github.com/spring-projects/spring-cli/releases[Spring CLI Release]
-and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[installation instructions].
-. To create a simple OpenAI-based application, use the command:
-+
-```shell
-spring boot new --from ai-rag --name myrag
-```
-. Consult the generated `README.md` file for guidance on obtaining an OpenAI API Key and running your first AI RAG application.
-
-== ETL Interfaces and Implementations
+== ETL Interfaces
 
 The ETL pipeline is composed of the following interfaces and implementations.
 Detailed ETL class diagram is shown in the <<etl-class-diagram>> section.
@@ -79,15 +64,57 @@ public interface DocumentReader extends Supplier<List<Document>> {
 }
 ----
 
-==== JsonReader
-The `JsonReader` Parses documents in JSON format.
 
-Example:
+=== DocumentTransformer
+
+Transforms a batch of documents as part of the processing workflow.
+
+[source,java]
+----
+public interface DocumentTransformer extends Function<List<Document>, List<Document>> {
+
+    default List<Document> transform(List<Document> transform) {
+		return apply(transform);
+	}
+}
+----
+
+
+=== DocumentWriter
+
+Manages the final stage of the ETL process, preparing documents for storage.
+
+```java
+public interface DocumentWriter extends Consumer<List<Document>> {
+
+    default void write(List<Document> documents) {
+		accept(documents);
+	}
+}
+```
+
+
+[[etl-class-diagram]]
+=== ETL Class Diagram
+
+The following class diagram illustrates the ETL interfaces and implementations.
+
+// image::etl-class-diagram.jpg[align="center", width="800px"]
+image::etl-class-diagram.jpg[align="center"]
+
+== DocumentReaders
+
+=== JSON
+
+The `JsonReader` processes JSON documents, converting them into a list of `Document` objects.
+
+
+==== Example
 
 [source,java]
 ----
 @Component
-class MyAiAppComponent {
+class MyJsonReader {
 
 	private final Resource resource;
 
@@ -96,16 +123,69 @@ class MyAiAppComponent {
     }
 
 	List<Document> loadJsonAsDocuments() {
-		JsonReader jsonReader = new JsonReader(resource, "description");
-		return jsonReader.read();
+        JsonReader jsonReader = new JsonReader(resource, "description", "content");
+        return jsonReader.get();
 	}
 }
 ----
 
-==== TextReader
-The `TextReader` processes plain text documents.
+==== Constructor Options
 
-Example:
+The `JsonReader` provides several constructor options:
+
+1. `JsonReader(Resource resource)`
+2. `JsonReader(Resource resource, String... jsonKeysToUse)`
+3. `JsonReader(Resource resource, JsonMetadataGenerator jsonMetadataGenerator, String... jsonKeysToUse)`
+
+==== Parameters
+
+* `resource`: A Spring `Resource` object pointing to the JSON file.
+* `jsonKeysToUse`: An array of keys from the JSON that should be used as the text content in the resulting `Document` objects.
+* `jsonMetadataGenerator`: An optional `JsonMetadataGenerator` to create metadata for each `Document`.
+
+==== Behavior
+
+The `JsonReader` processes JSON content as follows:
+
+* It can handle both JSON arrays and single JSON objects.
+* For each JSON object (either in an array or a single object):
+** It extracts the content based on the specified `jsonKeysToUse`.
+** If no keys are specified, it uses the entire JSON object as content.
+** It generates metadata using the provided `JsonMetadataGenerator` (or an empty one if not provided).
+** It creates a `Document` object with the extracted content and metadata.
+
+==== Example JSON Structure
+
+[source,json]
+----
+[
+  {
+    "id": 1,
+    "brand": "Trek",
+    "description": "A high-performance mountain bike for trail riding."
+  },
+  {
+    "id": 2,
+    "brand": "Cannondale",
+    "description": "An aerodynamic road bike for racing enthusiasts."
+  }
+]
+----
+
+In this example, if the `JsonReader` is configured with `"description"` as the `jsonKeysToUse`, it will create `Document` objects where the content is the value of the "description" field for each bike in the array.
+
+==== Notes
+
+* The `JsonReader` uses Jackson for JSON parsing.
+* It can handle large JSON files efficiently by using streaming for arrays.
+* If multiple keys are specified in `jsonKeysToUse`, the content will be a concatenation of the values for those keys.
+* The reader is flexible and can be adapted to various JSON structures by customizing the `jsonKeysToUse` and `JsonMetadataGenerator`.
+
+
+=== Text
+The `TextReader` processes plain text documents, converting them into a list of `Document` objects.
+
+==== Example
 
 [source,java]
 ----
@@ -126,10 +206,153 @@ class MyTextReader {
 }
 ----
 
-==== PagePdfDocumentReader
+==== Constructor Options
+
+The `TextReader` provides two constructor options:
+
+1. `TextReader(String resourceUrl)`
+2. `TextReader(Resource resource)`
+
+==== Parameters
+
+* `resourceUrl`: A string representing the URL of the resource to be read.
+* `resource`: A Spring `Resource` object pointing to the text file.
+
+==== Configuration
+
+* `setCharset(Charset charset)`: Sets the character set used for reading the text file. Default is UTF-8.
+* `getCustomMetadata()`: Returns a mutable map where you can add custom metadata for the documents.
+
+==== Behavior
+
+The `TextReader` processes text content as follows:
+
+* It reads the entire content of the text file into a single `Document` object.
+* The content of the file becomes the content of the `Document`.
+* Metadata is automatically added to the `Document`:
+** `charset`: The character set used to read the file (default: "UTF-8").
+** `source`: The filename of the source text file.
+* Any custom metadata added via `getCustomMetadata()` is included in the `Document`.
+
+
+==== Notes
+
+* The `TextReader` reads the entire file content into memory, so it may not be suitable for very large files.
+* If you need to split the text into smaller chunks, you can use a text splitter like `TokenTextSplitter` after reading the document:
+
+[source,java]
+----
+List<Document> documents = textReader.get();
+List<Document> splitDocuments = new TokenTextSplitter().apply(documents);
+----
+
+* The reader uses Spring's `Resource` abstraction, allowing it to read from various sources (classpath, file system, URL, etc.).
+* Custom metadata can be added to all documents created by the reader using the `getCustomMetadata()` method.
+
+
+=== Markdown
+
+The `MarkdownDocumentReader` processes Markdown documents, converting them into a list of `Document` objects.
+
+==== Example
+
+[source,java]
+----
+@Component
+class MyMarkdownReader {
+
+    private final Resource resource;
+
+    MyMarkdownReader(@Value("classpath:code.md") Resource resource) {
+        this.resource = resource;
+    }
+
+    List<Document> loadMarkdown() {
+        MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+            .withHorizontalRuleCreateDocument(true)
+            .withIncludeCodeBlock(false)
+            .withIncludeBlockquote(false)
+            .withAdditionalMetadata("filename", "code.md")
+            .build();
+
+        MarkdownDocumentReader reader = new MarkdownDocumentReader(resource, config);
+        return reader.get();
+    }
+}
+----
+
+The `MarkdownDocumentReaderConfig` allows you to customize the behavior of the MarkdownDocumentReader:
+
+* `horizontalRuleCreateDocument`: When set to `true`, horizontal rules in the Markdown will create new `Document` objects.
+* `includeCodeBlock`: When set to `true`, code blocks will be included in the same `Document` as the surrounding text. When `false`, code blocks create separate `Document` objects.
+* `includeBlockquote`: When set to `true`, blockquotes will be included in the same `Document` as the surrounding text. When `false`, blockquotes create separate `Document` objects.
+* `additionalMetadata`: Allows you to add custom metadata to all created `Document` objects.
+
+==== Sample Document: code.md
+
+[source,markdown]
+----
+This is a Java sample application:
+
+```java
+package com.example.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DemoApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
+    }
+}
+```
+
+Markdown also provides the possibility to `use inline code formatting throughout` the entire sentence.
+
+---
+
+Another possibility is to set block code without specific highlighting:
+
+```
+./mvnw spring-javaformat:apply
+```
+----
+
+Behavior: The MarkdownDocumentReader processes the Markdown content and creates Document objects based on the configuration:
+
+* Headers become metadata in the Document objects.
+* Paragraphs become the content of Document objects.
+* Code blocks can be separated into their own Document objects or included with surrounding text.
+* Blockquotes can be separated into their own Document objects or included with surrounding text.
+* Horizontal rules can be used to split the content into separate Document objects.
+
+The reader preserves formatting like inline code, lists, and text styling within the content of the Document objects.
+
+
+=== PDF Page
 The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents
 
-Example:
+Add the dependency to your project using Maven or Gradle.
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-pdf-document-reader</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
+}
+----
+
+==== Example
 
 [source,java]
 ----
@@ -154,12 +377,32 @@ public class MyPagePdfDocumentReader {
 
 ----
 
-
-==== ParagraphPdfDocumentReader
+=== PDF Paragraph
 The `ParagraphPdfDocumentReader` uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
 NOTE: Not all PDF documents contain the PDF catalog.
 
-Example:
+==== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-pdf-document-reader</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
+}
+----
+
+
+==== Example
 
 [source,java]
 ----
@@ -183,10 +426,29 @@ public class MyPagePdfDocumentReader {
 ----
 
 
-==== TikaDocumentReader
+=== Tika (DOCX, PPTX, HTML...)
 The `TikaDocumentReader` uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/2.9.0/formats.html[Tika documentation].
 
-Example:
+==== Dependencies
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-tika-document-reader</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-tika-document-reader'
+}
+----
+
+==== Example
 
 [source,java]
 ----
@@ -207,60 +469,367 @@ class MyTikaDocumentReader {
 }
 ----
 
-=== DocumentTransformer
+== Transformers
 
-Transforms a batch of documents as part of the processing workflow.
-
-[source,java]
-----
-public interface DocumentTransformer extends Function<List<Document>, List<Document>> {
-
-    default List<Document> transform(List<Document> transform) {
-		return apply(transform);
-	}
-}
-----
-
-==== TextSplitter
+=== TextSplitter
 The `TextSplitter` an abstract base class that helps divides documents to fit the AI model's context window.
 
 
-==== TokenTextSplitter
-Splits documents while preserving token-level integrity.
+=== TokenTextSplitter
+The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text into chunks based on token count, using the `CL100K_BASE  encoding.
 
-==== ContentFormatTransformer
+==== Usage
+
+[source,java]
+----
+@Component
+class MyTokenTextSplitter {
+
+    public List<Document> splitDocuments(List<Document> documents) {
+        TokenTextSplitter splitter = new TokenTextSplitter();
+        return splitter.apply(documents);
+    }
+
+    public List<Document> splitCustomized(List<Document> documents) {
+        TokenTextSplitter splitter = new TokenTextSplitter(1000, 400, 10, 5000, true);
+        return splitter.apply(documents);
+    }
+}
+----
+
+==== Constructor Options
+
+The `TokenTextSplitter` provides two constructor options:
+
+1. `TokenTextSplitter()`: Creates a splitter with default settings.
+2. `TokenTextSplitter(int defaultChunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator)`
+
+
+==== Parameters
+
+* `defaultChunkSize`: The target size of each text chunk in tokens (default: 800).
+* `minChunkSizeChars`: The minimum size of each text chunk in characters (default: 350).
+* `minChunkLengthToEmbed`: The minimum length of a chunk to be included (default: 5).
+* `maxNumChunks`: The maximum number of chunks to generate from a text (default: 10000).
+* `keepSeparator`: Whether to keep separators (like newlines) in the chunks (default: true).
+
+==== Behavior
+
+The `TokenTextSplitter` processes text content as follows:
+
+1. It encodes the input text into tokens using the CL100K_BASE encoding.
+2. It splits the encoded text into chunks based on the `defaultChunkSize`.
+3. For each chunk:
+a. It decodes the chunk back into text.
+b. It attempts to find a suitable break point (period, question mark, exclamation mark, or newline) after the `minChunkSizeChars`.
+c. If a break point is found, it truncates the chunk at that point.
+d. It trims the chunk and optionally removes newline characters based on the `keepSeparator` setting.
+e. If the resulting chunk is longer than `minChunkLengthToEmbed`, it's added to the output.
+4. This process continues until all tokens are processed or `maxNumChunks` is reached.
+5. Any remaining text is added as a final chunk if it's longer than `minChunkLengthToEmbed`.
+
+==== Example
+
+[source,java]
+----
+Document doc1 = new Document("This is a long piece of text that needs to be split into smaller chunks for processing.",
+        Map.of("source", "example.txt"));
+Document doc2 = new Document("Another document with content that will be split based on token count.",
+        Map.of("source", "example2.txt"));
+
+TokenTextSplitter splitter = new TokenTextSplitter();
+List<Document> splitDocuments = splitter.apply(List.of(doc1, doc2));
+
+for (Document doc : splitDocuments) {
+    System.out.println("Chunk: " + doc.getContent());
+    System.out.println("Metadata: " + doc.getMetadata());
+}
+----
+
+
+==== Notes
+
+* The `TokenTextSplitter` uses the CL100K_BASE encoding from the `jtokkit` library, which is compatible with newer OpenAI models.
+* The splitter attempts to create semantically meaningful chunks by breaking at sentence boundaries where possible.
+* Metadata from the original documents is preserved and copied to all chunks derived from that document.
+* The content formatter (if set) from the original document is also copied to the derived chunks if `copyContentFormatter` is set to `true` (default behavior).
+* This splitter is particularly useful for preparing text for large language models that have token limits, ensuring that each chunk is within the model's processing capacity.
+=== ContentFormatTransformer
 Ensures uniform content formats across all documents.
 
-==== KeywordMetadataEnricher
-Augments documents with essential keyword metadata.
+=== KeywordMetadataEnricher
+The `KeywordMetadataEnricher` is a `DocumentTransformer` that uses a generative AI model to extract keywords from document content and add them as metadata.
 
-==== SummaryMetadataEnricher
-Enriches documents with summarization metadata for enhanced retrieval.
+==== Usage
 
-=== DocumentWriter
+[source,java]
+----
+@Component
+class MyKeywordEnricher {
 
-Manages the final stage of the ETL process, preparing documents for storage.
+    private final ChatModel chatModel;
 
-```java
-public interface DocumentWriter extends Consumer<List<Document>> {
+    MyKeywordEnricher(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
 
-    default void write(List<Document> documents) {
-		accept(documents);
-	}
+    List<Document> enrichDocuments(List<Document> documents) {
+        KeywordMetadataEnricher enricher = new KeywordMetadataEnricher(chatModel, 5);
+        return enricher.apply(documents);
+    }
 }
-```
-==== FileDocumentWriter
-Persist documents to a file .
+----
 
-==== VectorStore
+==== Constructor
+
+The `KeywordMetadataEnricher` constructor takes two parameters:
+
+1. `ChatModel chatModel`: The AI model used for generating keywords.
+2. `int keywordCount`: The number of keywords to extract for each document.
+
+==== Behavior
+
+The `KeywordMetadataEnricher` processes documents as follows:
+
+1. For each input document, it creates a prompt using the document's content.
+2. It sends this prompt to the provided `ChatModel` to generate keywords.
+3. The generated keywords are added to the document's metadata under the key "excerpt_keywords".
+4. The enriched documents are returned.
+
+
+==== Customization
+
+The keyword extraction prompt can be customized by modifying the `KEYWORDS_TEMPLATE` constant in the class. The default template is:
+
+[source,java]
+----
+\{context_str}. Give %s unique keywords for this document. Format as comma separated. Keywords:
+----
+
+Where `+{context_str}+` is replaced with the document content, and `%s` is replaced with the specified keyword count.
+
+==== Example
+
+[source,java]
+----
+ChatModel chatModel = // initialize your chat model
+KeywordMetadataEnricher enricher = new KeywordMetadataEnricher(chatModel, 5);
+
+Document doc = new Document("This is a document about artificial intelligence and its applications in modern technology.");
+
+List<Document> enrichedDocs = enricher.apply(List.of(doc));
+
+Document enrichedDoc = enrichedDocs.get(0);
+String keywords = (String) enrichedDoc.getMetadata().get("excerpt_keywords");
+System.out.println("Extracted keywords: " + keywords);
+----
+
+==== Notes
+
+* The `KeywordMetadataEnricher` requires a functioning `ChatModel` to generate keywords.
+* The keyword count must be 1 or greater.
+* The enricher adds the "excerpt_keywords" metadata field to each processed document.
+* The generated keywords are returned as a comma-separated string.
+* This enricher is particularly useful for improving document searchability and for generating tags or categories for documents.
+
+=== SummaryMetadataEnricher
+The `SummaryMetadataEnricher` is a `DocumentTransformer` that uses a generative AI model to create summaries for documents and add them as metadata. It can generate summaries for the current document, as well as adjacent documents (previous and next).
+
+==== Usage
+
+[source,java]
+----
+@Configuration
+class EnricherConfig {
+
+    @Bean
+    public SummaryMetadataEnricher summaryMetadata(OpenAiChatModel aiClient) {
+        return new SummaryMetadataEnricher(aiClient,
+            List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
+    }
+}
+
+@Component
+class MySummaryEnricher {
+
+    private final SummaryMetadataEnricher enricher;
+
+    MySummaryEnricher(SummaryMetadataEnricher enricher) {
+        this.enricher = enricher;
+    }
+
+    List<Document> enrichDocuments(List<Document> documents) {
+        return enricher.apply(documents);
+    }
+}
+----
+
+
+==== Constructor
+
+The `SummaryMetadataEnricher` provides two constructors:
+
+1. `SummaryMetadataEnricher(ChatModel chatModel, List<SummaryType> summaryTypes)`
+2. `SummaryMetadataEnricher(ChatModel chatModel, List<SummaryType> summaryTypes, String summaryTemplate, MetadataMode metadataMode)`
+
+==== Parameters
+
+* `chatModel`: The AI model used for generating summaries.
+* `summaryTypes`: A list of `SummaryType` enum values indicating which summaries to generate (PREVIOUS, CURRENT, NEXT).
+* `summaryTemplate`: A custom template for summary generation (optional).
+* `metadataMode`: Specifies how to handle document metadata when generating summaries (optional).
+
+
+==== Behavior
+
+The `SummaryMetadataEnricher` processes documents as follows:
+
+1. For each input document, it creates a prompt using the document's content and the specified summary template.
+2. It sends this prompt to the provided `ChatModel` to generate a summary.
+3. Depending on the specified `summaryTypes`, it adds the following metadata to each document:
+* `section_summary`: Summary of the current document.
+* `prev_section_summary`: Summary of the previous document (if available and requested).
+* `next_section_summary`: Summary of the next document (if available and requested).
+4. The enriched documents are returned.
+
+==== Customization
+
+The summary generation prompt can be customized by providing a custom `summaryTemplate`. The default template is:
+
+[source,java]
+----
+"""
+Here is the content of the section:
+{context_str}
+
+Summarize the key topics and entities of the section.
+
+Summary:
+"""
+----
+
+==== Example
+
+[source,java]
+----
+ChatModel chatModel = // initialize your chat model
+SummaryMetadataEnricher enricher = new SummaryMetadataEnricher(chatModel,
+    List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
+
+Document doc1 = new Document("Content of document 1");
+Document doc2 = new Document("Content of document 2");
+
+List<Document> enrichedDocs = enricher.apply(List.of(doc1, doc2));
+
+// Check the metadata of the enriched documents
+for (Document doc : enrichedDocs) {
+    System.out.println("Current summary: " + doc.getMetadata().get("section_summary"));
+    System.out.println("Previous summary: " + doc.getMetadata().get("prev_section_summary"));
+    System.out.println("Next summary: " + doc.getMetadata().get("next_section_summary"));
+}
+----
+
+The provided example demonstrates the expected behavior:
+
+* For a list of two documents, both documents receive a `section_summary`.
+* The first document receives a `next_section_summary` but no `prev_section_summary`.
+* The second document receives a `prev_section_summary` but no `next_section_summary`.
+* The `section_summary` of the first document matches the `prev_section_summary` of the second document.
+* The `next_section_summary` of the first document matches the `section_summary` of the second document.
+
+==== Notes
+
+* The `SummaryMetadataEnricher` requires a functioning `ChatModel` to generate summaries.
+* The enricher can handle document lists of any size, properly handling edge cases for the first and last documents.
+* This enricher is particularly useful for creating context-aware summaries, allowing for better understanding of document relationships in a sequence.
+* The `MetadataMode` parameter allows control over how existing metadata is incorporated into the summary generation process.
+
+
+== Writers
+
+=== File
+
+The `FileDocumentWriter` is a `DocumentWriter` implementation that writes the content of a list of `Document` objects into a file.
+
+==== Usage
+
+[source,java]
+----
+@Component
+class MyDocumentWriter {
+
+    public void writeDocuments(List<Document> documents) {
+        FileDocumentWriter writer = new FileDocumentWriter("output.txt", true, MetadataMode.ALL, false);
+        writer.accept(documents);
+    }
+}
+----
+
+==== Constructors
+
+The `FileDocumentWriter` provides three constructors:
+
+1. `FileDocumentWriter(String fileName)`
+2. `FileDocumentWriter(String fileName, boolean withDocumentMarkers)`
+3. `FileDocumentWriter(String fileName, boolean withDocumentMarkers, MetadataMode metadataMode, boolean append)`
+
+==== Parameters
+
+* `fileName`: The name of the file to write the documents to.
+* `withDocumentMarkers`: Whether to include document markers in the output (default: false).
+* `metadataMode`: Specifies what document content to be written to the file (default: MetadataMode.NONE).
+* `append`: If true, data will be written to the end of the file rather than the beginning (default: false).
+
+==== Behavior
+
+The `FileDocumentWriter` processes documents as follows:
+
+1. It opens a FileWriter for the specified file name.
+2. For each document in the input list:
+a. If `withDocumentMarkers` is true, it writes a document marker including the document index and page numbers.
+b. It writes the formatted content of the document based on the specified `metadataMode`.
+3. The file is closed after all documents have been written.
+
+
+
+==== Document Markers
+
+When `withDocumentMarkers` is set to true, the writer includes markers for each document in the following format:
+
+[source]
+----
+### Doc: [index], pages:[start_page_number,end_page_number]
+----
+
+==== Metadata Handling
+
+The writer uses two specific metadata keys:
+
+* `page_number`: Represents the starting page number of the document.
+* `end_page_number`: Represents the ending page number of the document.
+
+These are used when writing document markers.
+
+==== Example
+
+[source,java]
+----
+List<Document> documents = // initialize your documents
+FileDocumentWriter writer = new FileDocumentWriter("output.txt", true, MetadataMode.ALL, true);
+writer.accept(documents);
+----
+
+This will write all documents to "output.txt", including document markers, using all available metadata, and appending to the file if it already exists.
+
+==== Notes
+
+* The writer uses `FileWriter`, so it writes text files with the default character encoding of the operating system.
+* If an error occurs during writing, a `RuntimeException` is thrown with the original exception as its cause.
+* The `metadataMode` parameter allows control over how existing metadata is incorporated into the written content.
+* This writer is particularly useful for debugging or creating human-readable outputs of document collections.
+
+
+=== VectorStore
 
 Provides integration with various vector stores.
 See xref:api/vectordbs.adoc[Vector DB Documentation] for a full listing.
-
-[[etl-class-diagram]]
-=== ETL Class Diagram
-
-The following class diagram illustrates the ETL interfaces and implementations.
-
-// image::etl-class-diagram.jpg[align="center", width="800px"]
-image::etl-class-diagram.jpg[align="center"]

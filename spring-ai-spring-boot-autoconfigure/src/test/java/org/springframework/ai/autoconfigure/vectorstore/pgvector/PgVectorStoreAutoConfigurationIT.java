@@ -52,6 +52,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
  * @author Christian Tzolov
  * @author Muthukumaran Navaneethakrishnan
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class PgVectorStoreAutoConfigurationIT {
@@ -101,7 +102,7 @@ public class PgVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PG_VECTOR,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PG_VECTOR,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -113,14 +114,14 @@ public class PgVectorStoreAutoConfigurationIT {
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
 			assertThat(resultDoc.getMetadata()).containsKeys("depression", "distance");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PG_VECTOR,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PG_VECTOR,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.PG_VECTOR,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.PG_VECTOR,
 					VectorStoreObservationContext.Operation.DELETE);
 
 			results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));

@@ -215,6 +215,21 @@ for carrying. The bowl is placed on a flat surface with a neutral-colored backgr
 view of the fruit inside.
 ----
 
+You can also pass in a classpath resource instead of a URL as shown in the example below
+
+[source,java]
+----
+Resource resource = new ClassPathResource("multimodality/multimodal.test.png");
+
+String response = ChatClient.create(chatModel).prompt()
+    .options(AzureOpenAiChatOptions.builder()
+    .withDeploymentName("gpt-4o").build())
+    .user(u -> u.text("Explain what do you see on this picture?")
+    .media(MimeTypeUtils.IMAGE_PNG, resource))
+    .call()
+    .content();
+----
+
 == Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-azure-openai-spring-boot-starter` to your pom (or gradle) dependencies.

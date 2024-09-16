@@ -19,23 +19,26 @@ package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.vectorstore.GemFireVectorStoreConfig;
+
+import org.springframework.ai.vectorstore.GemFireVectorStore;
 
 /**
  * @author Geet Rawat
+ * @author Soby Chacko
  */
 class GemFireVectorStorePropertiesTests {
 
 	@Test
 	void defaultValues() {
 		var props = new GemFireVectorStoreProperties();
-		assertThat(props.getIndexName()).isEqualTo(GemFireVectorStoreConfig.DEFAULT_INDEX_NAME);
-		assertThat(props.getHost()).isEqualTo(GemFireVectorStoreConfig.DEFAULT_HOST);
-		assertThat(props.getPort()).isEqualTo(GemFireVectorStoreConfig.DEFAULT_PORT);
-		assertThat(props.getBeamWidth()).isEqualTo(GemFireVectorStoreConfig.DEFAULT_BEAM_WIDTH);
-		assertThat(props.getMaxConnections()).isEqualTo(GemFireVectorStoreConfig.DEFAULT_MAX_CONNECTIONS);
-		assertThat(props.getFields()).isEqualTo(GemFireVectorStoreConfig.DEFAULT_FIELDS);
-		assertThat(props.getBuckets()).isEqualTo(GemFireVectorStoreConfig.DEFAULT_BUCKETS);
+		assertThat(props.getIndexName()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_INDEX_NAME);
+		assertThat(props.getHost()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_HOST);
+		assertThat(props.getPort()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_PORT);
+		assertThat(props.getBeamWidth()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_BEAM_WIDTH);
+		assertThat(props.getMaxConnections())
+			.isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_MAX_CONNECTIONS);
+		assertThat(props.getFields()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_FIELDS);
+		assertThat(props.getBuckets()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_BUCKETS);
 	}
 
 	@Test

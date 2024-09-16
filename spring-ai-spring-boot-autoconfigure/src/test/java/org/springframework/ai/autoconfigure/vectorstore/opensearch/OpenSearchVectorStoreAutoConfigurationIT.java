@@ -91,7 +91,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.OPENSEARCH,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.OPENSEARCH,
 					VectorStoreObservationContext.Operation.ADD);
 
 			Awaitility.await()
@@ -104,7 +104,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 			List<Document> results = vectorStore
 				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.OPENSEARCH,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.OPENSEARCH,
 					VectorStoreObservationContext.Operation.QUERY);
 
 			observationRegistry.clear();
@@ -120,7 +120,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(Document::getId).toList());
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.OPENSEARCH,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.OPENSEARCH,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 

@@ -44,8 +44,11 @@ public class SimplePersistentVectorStoreIT {
 	@Autowired
 	private EmbeddingModel embeddingModel;
 
+	@TempDir(cleanup = CleanupMode.ON_SUCCESS)
+	Path workingDir;
+
 	@Test
-	void persist(@TempDir(cleanup = CleanupMode.ON_SUCCESS) Path workingDir) {
+	void persist() {
 		JsonReader jsonReader = new JsonReader(bikesJsonResource, new ProductMetadataGenerator(), "price", "name",
 				"shortDescription", "description", "tags");
 		List<Document> documents = jsonReader.get();

@@ -21,16 +21,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.model.Content;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.ai.model.Content;
 
 /**
  * Memory is retrieved added into the prompt's system text.
@@ -107,19 +104,6 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 		this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
 
 		return chatResponse;
-	}
-
-	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse, Map<String, Object> context) {
-
-		return new MessageAggregator().aggregate(fluxChatResponse, chatResponse -> {
-			List<Message> assistantMessages = chatResponse.getResults()
-				.stream()
-				.map(g -> (Message) g.getOutput())
-				.toList();
-
-			this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
-		});
 	}
 
 }

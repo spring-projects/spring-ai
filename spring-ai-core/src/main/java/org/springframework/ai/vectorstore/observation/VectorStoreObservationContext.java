@@ -19,12 +19,16 @@ import java.util.List;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import io.micrometer.observation.Observation;
 
 /**
- * @author Christian Tzolov
+ * Context used to store metadata for vector store operations.
+ *
+ * @author Christian Tzolo
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class VectorStoreObservationContext extends Observation.Context {
@@ -56,27 +60,34 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 	}
 
-	// SEARCH
-	private SearchRequest queryRequest;
-
-	private List<Document> queryResponse;
-
 	// COMMON
+
 	private final String databaseSystem;
 
-	private int dimensions = -1;
-
-	private String similarityMetric = "";
-
-	private String collectionName = "";
-
-	private String namespace = "";
-
-	private String fieldName = "";
-
-	private String indexName = "";
-
 	private final String operationName;
+
+	@Nullable
+	private String collectionName;
+
+	@Nullable
+	private Integer dimensions;
+
+	@Nullable
+	private String fieldName;
+
+	@Nullable
+	private String namespace;
+
+	@Nullable
+	private String similarityMetric;
+
+	// SEARCH
+
+	@Nullable
+	private SearchRequest queryRequest;
+
+	@Nullable
+	private List<Document> queryResponse;
 
 	public VectorStoreObservationContext(String databaseSystem, String operationName) {
 		Assert.hasText(databaseSystem, "databaseSystem cannot be null or empty");
@@ -85,76 +96,75 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.operationName = operationName;
 	}
 
-	public SearchRequest getQueryRequest() {
-		return this.queryRequest;
-	}
-
-	public void setQueryRequest(SearchRequest request) {
-		this.queryRequest = request;
-	}
-
-	public List<Document> getQueryResponse() {
-		return this.queryResponse;
-	}
-
-	public void setQueryResponse(List<Document> documents) {
-		this.queryResponse = documents;
-	}
-
 	public String getDatabaseSystem() {
 		return this.databaseSystem;
 	}
 
-	public int getDimensions() {
-		return this.dimensions;
+	public String getOperationName() {
+		return this.operationName;
 	}
 
-	public void setDimensions(int dimensions) {
-		this.dimensions = dimensions;
-	}
-
-	public String getSimilarityMetric() {
-		return this.similarityMetric;
-	}
-
-	public void setSimilarityMetric(String similarityMetric) {
-		this.similarityMetric = similarityMetric;
-	}
-
+	@Nullable
 	public String getCollectionName() {
-		return this.collectionName;
+		return collectionName;
 	}
 
-	public void setCollectionName(String collectionName) {
+	public void setCollectionName(@Nullable String collectionName) {
 		this.collectionName = collectionName;
 	}
 
-	public String getNamespace() {
-		return this.namespace;
+	@Nullable
+	public Integer getDimensions() {
+		return dimensions;
 	}
 
-	public void setNamespace(String namespace) {
-		this.namespace = namespace;
+	public void setDimensions(@Nullable Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
+	@Nullable
 	public String getFieldName() {
-		return this.fieldName;
+		return fieldName;
 	}
 
-	public void setFieldName(String fieldName) {
+	public void setFieldName(@Nullable String fieldName) {
 		this.fieldName = fieldName;
 	}
 
-	public String getIndexName() {
-		return this.indexName;
+	@Nullable
+	public String getNamespace() {
+		return namespace;
 	}
 
-	public void setIndexName(String indexName) {
-		this.indexName = indexName;
+	public void setNamespace(@Nullable String namespace) {
+		this.namespace = namespace;
 	}
 
-	public String getOperationName() {
-		return this.operationName;
+	@Nullable
+	public String getSimilarityMetric() {
+		return similarityMetric;
+	}
+
+	public void setSimilarityMetric(@Nullable String similarityMetric) {
+		this.similarityMetric = similarityMetric;
+	}
+
+	@Nullable
+	public SearchRequest getQueryRequest() {
+		return queryRequest;
+	}
+
+	public void setQueryRequest(@Nullable SearchRequest queryRequest) {
+		this.queryRequest = queryRequest;
+	}
+
+	@Nullable
+	public List<Document> getQueryResponse() {
+		return queryResponse;
+	}
+
+	public void setQueryResponse(@Nullable List<Document> queryResponse) {
+		this.queryResponse = queryResponse;
 	}
 
 	public static Builder builder(String databaseSystem, String operationName) {
@@ -167,10 +177,30 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 	public static class Builder {
 
-		private VectorStoreObservationContext context;
+		private final VectorStoreObservationContext context;
 
 		public Builder(String databaseSystem, String operationName) {
 			this.context = new VectorStoreObservationContext(databaseSystem, operationName);
+		}
+
+		public Builder withCollectionName(String collectionName) {
+			this.context.setCollectionName(collectionName);
+			return this;
+		}
+
+		public Builder withDimensions(Integer dimensions) {
+			this.context.setDimensions(dimensions);
+			return this;
+		}
+
+		public Builder withFieldName(String fieldName) {
+			this.context.setFieldName(fieldName);
+			return this;
+		}
+
+		public Builder withNamespace(String namespace) {
+			this.context.setNamespace(namespace);
+			return this;
 		}
 
 		public Builder withQueryRequest(SearchRequest request) {
@@ -183,33 +213,8 @@ public class VectorStoreObservationContext extends Observation.Context {
 			return this;
 		}
 
-		public Builder withDimensions(int dimensions) {
-			this.context.setDimensions(dimensions);
-			return this;
-		}
-
 		public Builder withSimilarityMetric(String similarityMetric) {
 			this.context.setSimilarityMetric(similarityMetric);
-			return this;
-		}
-
-		public Builder withCollectionName(String collectionName) {
-			this.context.setCollectionName(collectionName);
-			return this;
-		}
-
-		public Builder withNamespace(String namespace) {
-			this.context.setNamespace(namespace);
-			return this;
-		}
-
-		public Builder withFieldName(String fieldName) {
-			this.context.setFieldName(fieldName);
-			return this;
-		}
-
-		public Builder withIndexName(String indexName) {
-			this.context.setIndexName(indexName);
 			return this;
 		}
 

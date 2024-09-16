@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.anthropic3;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel {
@@ -79,7 +81,12 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
+		List<Generation> generations = response.content().stream().map(content -> {
+			return new Generation(content.text(), Map.of())
+				.withGenerationMetadata(ChatGenerationMetadata.from(response.stopReason(), null));
+		}).toList();
+
+		return new ChatResponse(generations);
 	}
 
 	@Override

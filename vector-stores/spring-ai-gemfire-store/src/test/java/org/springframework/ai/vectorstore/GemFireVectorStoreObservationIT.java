@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
@@ -53,10 +54,12 @@ import static org.hamcrest.Matchers.hasSize;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
+ * @author Soby Chacko
  */
 public class GemFireVectorStoreObservationIT {
 
-	public static final String INDEX_NAME = "spring-ai-index1";
+	public static final String TEST_INDEX_NAME = "spring-ai-index1";
 
 	private static GemFireCluster gemFireCluster;
 
@@ -121,20 +124,21 @@ public class GemFireVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store gemfire add")
+				.hasContextualNameEqualTo("gemfire add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
 						VectorStoreProvider.GEMFIRE.value())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DIMENSIONS.asString(), "384")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.NAMESPACE.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "/embeddings")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.INDEX_NAME.asString(), INDEX_NAME)
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_THRESHOLD.asString(), "none")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(),
+						SpringAiKind.VECTOR_STORE.value())
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "384")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), TEST_INDEX_NAME)
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "/embeddings")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString(),
+						"none")
 
 				.hasBeenStarted()
 				.hasBeenStopped();
@@ -156,21 +160,23 @@ public class GemFireVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("vector_store gemfire query")
+				.hasContextualNameEqualTo("gemfire query")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "query")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
 						VectorStoreProvider.GEMFIRE.value())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
+				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(),
+						SpringAiKind.VECTOR_STORE.value())
 
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "What is Great Depression")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DIMENSIONS.asString(), "384")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.NAMESPACE.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "/embeddings")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.INDEX_NAME.asString(), INDEX_NAME)
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "1")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_THRESHOLD.asString(), "0.0")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(),
+						"What is Great Depression")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "384")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), TEST_INDEX_NAME)
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "/embeddings")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString(), "1")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString(),
+						"0.0")
 
 				.hasBeenStarted()
 				.hasBeenStopped();
@@ -188,16 +194,12 @@ public class GemFireVectorStoreObservationIT {
 		}
 
 		@Bean
-		public GemFireVectorStoreConfig gemfireVectorStoreConfig() {
-			return new GemFireVectorStoreConfig().setHost("localhost")
+		public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
+			return new GemFireVectorStore(GemFireVectorStore.GemFireVectorStoreConfig.builder()
+				.setHost("localhost")
 				.setPort(HTTP_SERVICE_PORT)
-				.setIndexName(INDEX_NAME);
-		}
-
-		@Bean
-		public GemFireVectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
-				ObservationRegistry observationRegistry) {
-			return new GemFireVectorStore(config, embeddingModel, true, observationRegistry, null);
+				.setIndexName(TEST_INDEX_NAME)
+				.build(), embeddingModel, true, observationRegistry, null);
 		}
 
 		@Bean

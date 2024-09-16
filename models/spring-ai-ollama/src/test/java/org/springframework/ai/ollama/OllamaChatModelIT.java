@@ -102,6 +102,31 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	}
 
 	@Test
+	void testMessageHistory() {
+
+		Message systemMessage = new SystemPromptTemplate("""
+				You are a helpful AI assistant. Your name is {name}.
+				You are an AI assistant that helps people find information.
+				Your name is {name}
+				You should reply to the user's request with your name and also in the style of a {voice}.
+				""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
+
+		UserMessage userMessage = new UserMessage(
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+
+		ChatResponse response = chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Bonny");
+
+		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
+				new UserMessage("Repeat the last assistant message.")));
+		response = chatModel.call(promptWithMessageHistory);
+
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Bonny");
+	}
+
+	@Test
 	void usageTest() {
 		Prompt prompt = new Prompt("Tell me a joke");
 		ChatResponse response = chatModel.call(prompt);

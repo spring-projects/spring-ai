@@ -72,6 +72,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private final String pineconeNamespace;
 
+	private final String pineconeIndexName;
+
 	private final String pineconeContentFieldName;
 
 	private final String pineconeDistanceMetadataFieldName;
@@ -276,6 +278,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		this.embeddingModel = embeddingModel;
 		this.pineconeNamespace = config.namespace;
+		this.pineconeIndexName = config.connectionConfig.getIndexName();
 		this.pineconeContentFieldName = config.contentFieldName;
 		this.pineconeDistanceMetadataFieldName = config.distanceMetadataFieldName;
 		this.pineconeConnection = new PineconeClient(config.clientConfig).connect(config.connectionConfig);
@@ -447,6 +450,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.PINECONE.value(), operationName)
+			.withCollectionName(this.pineconeIndexName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withNamespace(this.pineconeNamespace)
 			.withFieldName(this.pineconeContentFieldName);

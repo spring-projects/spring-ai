@@ -54,11 +54,12 @@ public class FunctionCallbackInPromptIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.moonshot.chat.options.model=abab6-chat").run(context -> {
+		contextRunner.run(context -> {
 
 			MoonshotChatModel chatModel = context.getBean(MoonshotChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = MoonshotChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
@@ -79,11 +80,12 @@ public class FunctionCallbackInPromptIT {
 	@Test
 	void streamingFunctionCallTest() {
 
-		contextRunner.withPropertyValues("spring.ai.moonshot.chat.options.model=abab6-chat").run(context -> {
+		contextRunner.run(context -> {
 
 			MoonshotChatModel chatModel = context.getBean(MoonshotChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = MoonshotChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())

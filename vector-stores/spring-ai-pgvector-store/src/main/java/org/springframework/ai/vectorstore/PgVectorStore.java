@@ -27,7 +27,10 @@ import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -56,6 +59,9 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Muthukumaran Navaneethakrishnan
+ * @author Thomas Vitale
+ * @author Soby Chacko
+ * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -89,17 +95,19 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final boolean initializeSchema;
 
-	private int dimensions;
+	private final int dimensions;
 
-	private PgDistanceType distanceType;
+	private final PgDistanceType distanceType;
 
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	private boolean removeExistingVectorStoreTable;
+	private final boolean removeExistingVectorStoreTable;
 
-	private PgIndexType createIndexMethod;
+	private final PgIndexType createIndexMethod;
 
-	private PgVectorSchemaValidator schemaValidator;
+	private final PgVectorSchemaValidator schemaValidator;
+
+	private final BatchingStrategy batchingStrategy;
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgDistanceType.COSINE_DISTANCE, false,
@@ -133,13 +141,14 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		this(schemaName, vectorTableName, vectorTableValidationsEnabled, jdbcTemplate, embeddingModel, dimensions,
 				distanceType, removeExistingVectorStoreTable, createIndexMethod, initializeSchema,
-				ObservationRegistry.NOOP, null);
+				ObservationRegistry.NOOP, null, new TokenCountBatchingStrategy());
 	}
 
 	private PgVectorStore(String schemaName, String vectorTableName, boolean vectorTableValidationsEnabled,
 			JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions, PgDistanceType distanceType,
 			boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod, boolean initializeSchema,
-			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -162,6 +171,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.createIndexMethod = createIndexMethod;
 		this.initializeSchema = initializeSchema;
 		this.schemaValidator = new PgVectorSchemaValidator(jdbcTemplate);
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	public PgDistanceType getDistanceType() {
@@ -172,6 +182,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public void doAdd(List<Document> documents) {
 
 		int size = documents.size();
+
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 
 		this.jdbcTemplate.batchUpdate(
 				"INSERT INTO " + getFullyQualifiedTableName()
@@ -184,8 +196,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 						var document = documents.get(i);
 						var content = document.getContent();
 						var json = toJson(document.getMetadata());
-						var embedding = embeddingModel.embed(document);
-						document.setEmbedding(embedding);
+						var embedding = document.getEmbedding();
 						var pGvector = new PGvector(embedding);
 
 						StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
@@ -496,6 +507,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
 		@Nullable
 		private VectorStoreObservationConvention searchObservationConvention;
 
@@ -558,10 +571,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return this;
 		}
 
+		public Builder withBatchingStrategy(BatchingStrategy batchingStrategy) {
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
 		public PgVectorStore build() {
-			return new PgVectorStore(schemaName, vectorTableName, vectorTableValidationsEnabled, jdbcTemplate,
-					embeddingModel, dimensions, distanceType, removeExistingVectorStoreTable, indexType,
-					initializeSchema, observationRegistry, searchObservationConvention);
+			return new PgVectorStore(this.schemaName, this.vectorTableName, this.vectorTableValidationsEnabled,
+					this.jdbcTemplate, this.embeddingModel, this.dimensions, this.distanceType,
+					this.removeExistingVectorStoreTable, this.indexType, this.initializeSchema,
+					this.observationRegistry, this.searchObservationConvention, this.batchingStrategy);
 		}
 
 	}
@@ -570,11 +589,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
-			.withDimensions(this.embeddingDimensions())
 			.withCollectionName(this.vectorTableName)
+			.withDimensions(this.embeddingDimensions())
 			.withNamespace(this.schemaName)
-			.withSimilarityMetric(getSimilarityMetric())
-			.withIndexName(this.createIndexMethod.name());
+			.withSimilarityMetric(getSimilarityMetric());
 	}
 
 	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(

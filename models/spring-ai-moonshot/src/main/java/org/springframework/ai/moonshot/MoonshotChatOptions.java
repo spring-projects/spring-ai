@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
@@ -34,7 +35,7 @@ import java.util.Set;
  * @author Thomas Vitale
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MoonshotChatOptions implements ChatOptions {
+public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	/**
 	 * ID of the model to use
@@ -135,6 +136,25 @@ public class MoonshotChatOptions implements ChatOptions {
 	 * and detect abuse.
 	 */
 	private @JsonProperty("user") String user;
+
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return functions;
+	}
+
+	public void setFunctions(Set<String> functionNames) {
+		this.functions = functionNames;
+	}
 
 	public static Builder builder() {
 		return new Builder();

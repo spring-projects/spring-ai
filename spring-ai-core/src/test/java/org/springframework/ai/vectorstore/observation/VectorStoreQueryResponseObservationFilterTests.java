@@ -30,6 +30,7 @@ import io.micrometer.observation.Observation;
  * Unit tests for {@link VectorStoreQueryResponseObservationFilter}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 class VectorStoreQueryResponseObservationFilterTests {
 
@@ -64,8 +65,8 @@ class VectorStoreQueryResponseObservationFilterTests {
 
 		var augmentedContext = observationFilter.map(expectedContext);
 
-		assertThat(augmentedContext.getHighCardinalityKeyValues())
-			.contains(KeyValue.of(HighCardinalityKeyNames.QUERY_RESPONSE.asString(), "[\"doc1\", \"doc2\"]"));
+		assertThat(augmentedContext.getHighCardinalityKeyValues()).contains(KeyValue
+			.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_RESPONSE_DOCUMENTS.asString(), "[\"doc1\", \"doc2\"]"));
 	}
 
 }

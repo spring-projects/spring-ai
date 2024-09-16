@@ -67,6 +67,9 @@
 **** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 *** xref:api/audio/speech.adoc[]
 **** xref:api/audio/speech/openai-speech.adoc[OpenAI]
+** xref:api/moderation[Moderation Model API]
+*** xref:api/moderation/openai-moderation.adoc[OpenAI]
+
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/apache-cassandra.adoc[]
@@ -94,8 +97,16 @@
 ** xref:api/etl-pipeline.adoc[]
 ** xref:api/testing.adoc[]
 ** xref:api/generic-model.adoc[]
-* xref:contribution-guidelines.adoc[Contribution Guidelines]
-* Appendices
-** xref:upgrade-notes.adoc[]
+
+* xref:observabilty/index.adoc[]
+
+* Service Connections
 ** xref:api/docker-compose.adoc[Docker Compose]
 ** xref:api/testcontainers.adoc[Testcontainers]
+** xref:api/cloud-bindings.adoc[Cloud Bindings]
+
+* xref:contribution-guidelines.adoc[Contribution Guidelines]
+
+* Appendices
+** xref:upgrade-notes.adoc[]
+

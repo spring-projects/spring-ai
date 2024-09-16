@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,10 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 /**
  * @author Eddú Meléndez
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Container
@@ -95,7 +95,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
 			vectorStore.add(documents);
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MONGODB,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.MONGODB,
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
@@ -110,14 +110,14 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MONGODB,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.MONGODB,
 					VectorStoreObservationContext.Operation.QUERY);
 			observationRegistry.clear();
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
 
-			assertObservationRegistry(observationRegistry, "vector_store", VectorStoreProvider.MONGODB,
+			assertObservationRegistry(observationRegistry, VectorStoreProvider.MONGODB,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 

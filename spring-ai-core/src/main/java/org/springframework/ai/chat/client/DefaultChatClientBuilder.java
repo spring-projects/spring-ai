@@ -26,6 +26,7 @@ import org.springframework.ai.chat.client.ChatClient.Builder;
 import org.springframework.ai.chat.client.ChatClient.PromptSystemSpec;
 import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -69,7 +70,7 @@ public class DefaultChatClientBuilder implements Builder {
 		return new DefaultChatClient(this.chatModel, this.defaultRequest);
 	}
 
-	public Builder defaultAdvisors(RequestResponseAdvisor... advisor) {
+	public Builder defaultAdvisors(Advisor... advisor) {
 		this.defaultRequest.advisors(advisor);
 		return this;
 	}
@@ -79,7 +80,7 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
-	public Builder defaultAdvisors(List<RequestResponseAdvisor> advisors) {
+	public Builder defaultAdvisors(List<Advisor> advisors) {
 		this.defaultRequest.advisors(advisors);
 		return this;
 	}

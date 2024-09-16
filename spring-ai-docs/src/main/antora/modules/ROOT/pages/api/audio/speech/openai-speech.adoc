@@ -55,7 +55,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), optionally, you can specify which organization and project is used for an API request. 
 Usage from these API requests will count as usage for the specified organization and project.
 
-=== Configuraiton Properties
+=== Configuration Properties
 
 The prefix `spring.ai.openai.audio.speech` is used as the property prefix that lets you configure the OpenAI Text-to-Speech client.
 

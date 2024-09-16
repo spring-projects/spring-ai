@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -63,15 +64,41 @@ class VertexAiGeminiChatModelIT {
 
 	@Test
 	void roleTest() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
+		ChatResponse response = chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
+	void testMessageHistory() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
+		ChatResponse response = chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+
+		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), prompt.getInstructions().get(1),
+				response.getResult().getOutput(), new UserMessage("Repeat the last assistant message.")));
+		response = chatModel.call(promptWithMessageHistory);
+
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
+	void googleSearchTool() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().withGoogleSearchRetrieval(true).build());
+		ChatResponse response = chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@NotNull
+	private Prompt createPrompt(VertexAiGeminiChatOptions chatOptions) {
 		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
 		String name = "Bob";
 		String voice = "pirate";
 		UserMessage userMessage = new UserMessage(request);
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage), chatOptions);
+		return prompt;
 	}
 
 	@Test

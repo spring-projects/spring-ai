@@ -91,7 +91,7 @@ public class AnthropicApi {
 	 * @param anthropicApiKey Anthropic api Key.
 	 */
 	public AnthropicApi(String baseUrl, String anthropicApiKey) {
-		this(baseUrl, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(),
+		this(baseUrl, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(), WebClient.builder(),
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
@@ -103,8 +103,9 @@ public class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, anthropicApiKey, anthropicVersion, restClientBuilder, responseErrorHandler,
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, anthropicApiKey, anthropicVersion, restClientBuilder, webClientBuilder, responseErrorHandler,
 				DEFAULT_ANTHROPIC_BETA_VERSION);
 	}
 
@@ -117,8 +118,8 @@ public class AnthropicApi {
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
 	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler,
-			String anthropicBetaFeatures) {
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.add(HEADER_X_API_KEY, anthropicApiKey);
@@ -132,8 +133,7 @@ public class AnthropicApi {
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = WebClient.builder()
-			.baseUrl(baseUrl)
+		this.webClient = webClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(HttpStatusCode::isError,
 					resp -> Mono.just(new RuntimeException("Response exception, Status: [" + resp.statusCode()

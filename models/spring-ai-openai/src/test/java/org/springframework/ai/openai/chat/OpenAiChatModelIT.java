@@ -85,6 +85,24 @@ class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
+	void testMessageHistory() {
+		UserMessage userMessage = new UserMessage(
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+
+		ChatResponse response = chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+
+		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
+				new UserMessage("Repeat the last assistant message.")));
+		response = chatModel.call(promptWithMessageHistory);
+
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
 	void streamCompletenessTest() throws InterruptedException {
 		UserMessage userMessage = new UserMessage(
 				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any.");

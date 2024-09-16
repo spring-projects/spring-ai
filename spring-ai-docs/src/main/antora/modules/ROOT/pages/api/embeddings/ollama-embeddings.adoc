@@ -56,7 +56,6 @@ Here are the advanced request parameter for the Ollama embedding model:
 [cols="3,6,1"]
 |====
 | Property | Description | Default
-
 | spring.ai.ollama.embedding.enabled      | Enables the Ollama embedding model auto-configuration. | true
 | spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. 
 You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mistral

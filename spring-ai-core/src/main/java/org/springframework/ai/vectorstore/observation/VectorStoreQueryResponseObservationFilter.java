@@ -15,18 +15,18 @@
  */
 package org.springframework.ai.vectorstore.observation;
 
-import java.util.StringJoiner;
-
-import org.springframework.util.CollectionUtils;
+import org.springframework.ai.observation.tracing.TracingHelper;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationFilter;
+import org.springframework.util.CollectionUtils;
 
 /**
  * An {@link ObservationFilter} to include the Vector Store search response content in the
  * observation.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class VectorStoreQueryResponseObservationFilter implements ObservationFilter {
@@ -38,16 +38,13 @@ public class VectorStoreQueryResponseObservationFilter implements ObservationFil
 			return context;
 		}
 
-		if (CollectionUtils.isEmpty(observationContext.getQueryResponse())) {
-			return observationContext;
+		var documents = VectorStoreObservationContentProcessor.documents(observationContext);
+
+		if (!CollectionUtils.isEmpty(documents)) {
+			observationContext.addHighCardinalityKeyValue(
+					VectorStoreObservationDocumentation.HighCardinalityKeyNames.DB_VECTOR_QUERY_RESPONSE_DOCUMENTS
+						.withValue(TracingHelper.concatenateStrings(documents)));
 		}
-
-		StringJoiner joiner = new StringJoiner(", ", "[", "]");
-		observationContext.getQueryResponse().forEach(document -> joiner.add("\"" + document.getContent() + "\""));
-
-		observationContext
-			.addHighCardinalityKeyValue(VectorStoreObservationDocumentation.HighCardinalityKeyNames.QUERY_RESPONSE
-				.withValue(joiner.toString()));
 
 		return observationContext;
 	}

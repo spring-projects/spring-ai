@@ -78,8 +78,8 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(ChatClientObservationContext context) {
-		return KeyValues.of(toolFunctionNames(context), toolFunctionCallbacks(context), chatClientAvisor(context),
-				chatClientAvisorParam(context));
+		return KeyValues.of(toolFunctionNames(context), toolFunctionCallbacks(context), chatClientAdvisor(context),
+				chatClientAdvisorParam(context));
 	}
 
 	protected KeyValue springAiKind() {
@@ -127,7 +127,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 					.collect(Collectors.joining(",", "[", "]")));
 	}
 
-	protected KeyValue chatClientAvisor(ChatClientObservationContext context) {
+	protected KeyValue chatClientAdvisor(ChatClientObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getAdvisors())) {
 			return CHAT_CLIENT_ADVISOR_NONE;
 		}
@@ -139,7 +139,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 					.collect(Collectors.joining(",", "[", "]")));
 	}
 
-	protected KeyValue chatClientAvisorParam(ChatClientObservationContext context) {
+	protected KeyValue chatClientAdvisorParam(ChatClientObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getAdvisorParams())) {
 			return CHAT_CLIENT_ADVISOR_PARAM_NONE;
 		}

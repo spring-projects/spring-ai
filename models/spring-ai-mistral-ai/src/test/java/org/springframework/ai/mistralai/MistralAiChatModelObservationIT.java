@@ -139,7 +139,8 @@ public class MistralAiChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE)
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(),
+					StringUtils.hasText(responseMetadata.getId()) ? responseMetadata.getId() : KeyValue.NONE_VALUE)
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
