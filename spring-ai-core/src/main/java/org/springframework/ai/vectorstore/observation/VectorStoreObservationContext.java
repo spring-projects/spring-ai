@@ -27,7 +27,7 @@ import io.micrometer.observation.Observation;
 /**
  * Context used to store metadata for vector store operations.
  *
- * @author Christian Tzolo
+ * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
  */

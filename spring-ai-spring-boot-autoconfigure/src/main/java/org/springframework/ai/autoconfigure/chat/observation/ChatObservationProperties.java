@@ -38,6 +38,11 @@ public class ChatObservationProperties {
 	 */
 	private boolean includePrompt = false;
 
+	/**
+	 * Whether to include error logging in the observations.
+	 */
+	private boolean includeErrorLogging = false;
+
 	public boolean isIncludeCompletion() {
 		return includeCompletion;
 	}
@@ -52,6 +57,14 @@ public class ChatObservationProperties {
 
 	public void setIncludePrompt(boolean includePrompt) {
 		this.includePrompt = includePrompt;
+	}
+
+	public boolean isIncludeErrorLogging() {
+		return this.includeErrorLogging;
+	}
+
+	public void setIncludeErrorLogging(boolean includeErrorLogging) {
+		this.includeErrorLogging = includeErrorLogging;
 	}
 
 }

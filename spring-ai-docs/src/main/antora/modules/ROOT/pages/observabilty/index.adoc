@@ -106,13 +106,14 @@ The chat prompt and completion data are typically too big to be included in an o
 The preferred way to store large data it is as span events, which are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
 Spring AI supports storing these fields as events in OpenTelemetry and will provide a more general event based solution once the issue https://github.com/micrometer-metrics/micrometer/issues/5238 is resolved.
 
+
 [cols="6,3,1"]
 |====
 | Property | Description | Default
-| `spring.ai.chat.observations.include-prompt` | `true` or `false` | `false`
-| `spring.ai.chat.observations.include-completion` | `true` or `false` | `false`
+| `spring.ai.chat.observations.include-prompt` | Include the prompt content in observations. `true` or `false` | `false`
+| `spring.ai.chat.observations.include-completion` | Include the completion content in observations. `true` or `false` | `false`
+| `spring.ai.chat.observations.include-error-logging` | Include error logging in observations. `true` or `false` | `false`
 |====
-
 == EmbeddingModel
 
 NOTE: Observability features are currently supported only for ChatModel and EmbeddingModel implementations from the following AI model providers: OpenAI, Ollama, Anthropic, and Mistral.  Additional AI model providers will be supported in a future release.

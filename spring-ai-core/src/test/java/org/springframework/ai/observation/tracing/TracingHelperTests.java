@@ -1,18 +1,17 @@
 package org.springframework.ai.observation.tracing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.Test;
+
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.TraceContext;
 import io.micrometer.tracing.handler.TracingObservationHandler;
 import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
 import io.micrometer.tracing.otel.bridge.OtelTracer;
 import io.opentelemetry.api.OpenTelemetry;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.observation.ChatModelObservationContentProcessor;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link TracingHelper}.
