@@ -15,16 +15,23 @@
  */
 package org.springframework.ai.autoconfigure.chat.observation;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
+import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationFilter;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
+import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationFilter;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
+import org.springframework.ai.image.observation.ImageModelObservationContext;
+import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -35,6 +42,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.otel.bridge.OtelTracer;
 
 /**
  * Auto-configuration for Spring AI chat model observations.
@@ -111,6 +122,17 @@ public class ChatObservationAutoConfiguration {
 			return new ChatModelCompletionObservationFilter();
 		}
 
+	}
+
+	@Bean
+	@ConditionalOnBean(Tracer.class)
+	@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-error-logging",
+			havingValue = "true")
+	public ErrorLoggingObservationHandler errorLoggingObservationHandler(Tracer tracer) {
+		return new ErrorLoggingObservationHandler(tracer,
+				List.of(EmbeddingModelObservationContext.class, ImageModelObservationContext.class,
+						ChatModelObservationContext.class, ChatClientObservationContext.class,
+						AdvisorObservationContext.class, VectorStoreObservationContext.class));
 	}
 
 	private static void logPromptContentWarning() {
