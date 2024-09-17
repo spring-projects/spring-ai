@@ -22,7 +22,6 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -53,6 +52,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -185,7 +185,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 					"role", message != null && message.role() != null ? message.role().name() : "",
 					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 			// @formatter:on
-			return buildGeneration(message, choice.finishReason(), metadata);
+			return buildGeneration(choice, metadata);
 		}).toList();
 
 		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
@@ -283,17 +283,6 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			.anyMatch(toolCall -> TOOL_CALL_FUNCTION_TYPE.equals(toolCall.type()));
 	}
 
-	private ChatResponseMetadata from(ChatCompletion result, RateLimit rateLimit) {
-		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
-		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withUsage(MiniMaxUsage.from(result.usage()))
-			.withModel(result.model())
-			.withRateLimit(rateLimit)
-			.withKeyValue("created", result.created())
-			.build();
-	}
-
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
@@ -304,26 +293,38 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			.build();
 	}
 
-	private Generation buildGeneration(ChatCompletionMessage message, ChatCompletionFinishReason completionFinishReason,
-			Map<String, Object> metadata) {
-		if (message == null || message.role() == Role.TOOL) {
-			return null;
-		}
-		List<AssistantMessage.ToolCall> toolCalls = message.toolCalls() == null ? List.of()
-				: message.toolCalls()
+	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
+				: choice.message()
+					.toolCalls()
 					.stream()
-					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(),
-							toolCall.function().name(), toolCall.function().arguments()))
-					.toList();
-
-		var assistantMessage = new AssistantMessage(message.content(), metadata, toolCalls);
-		String finishReason = (completionFinishReason != null ? completionFinishReason.name() : "");
+					// the MiniMax's stream function calls response are really odd
+					// occasionally, tool call might get split.
+					// for example, id empty means the previous tool call is not finished,
+					// the toolCalls:
+					// [{id:'1',function:{name:'a'}},{id:'',function:{arguments:'[1]'}}]
+					// these need to be merged into [{id:'1', name:'a', arguments:'[1]'}]
+					// it worked before, maybe the model provider made some adjustments
+					.reduce(new ArrayList<>(), (acc, current) -> {
+						if (!acc.isEmpty() && current.id().isEmpty()) {
+							AssistantMessage.ToolCall prev = acc.get(acc.size() - 1);
+							acc.set(acc.size() - 1, new AssistantMessage.ToolCall(prev.id(), prev.type(), prev.name(),
+									current.function().arguments()));
+						}
+						else {
+							AssistantMessage.ToolCall currentToolCall = new AssistantMessage.ToolCall(current.id(),
+									current.type(), current.function().name(), current.function().arguments());
+							acc.add(currentToolCall);
+						}
+						return acc;
+					}, (acc1, acc2) -> {
+						acc1.addAll(acc2);
+						return acc1;
+					});
+		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
 		return new Generation(assistantMessage, generationMetadata);
-	}
-
-	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
-		return buildGeneration(choice.message(), choice.finishReason(), metadata);
 	}
 
 	/**
