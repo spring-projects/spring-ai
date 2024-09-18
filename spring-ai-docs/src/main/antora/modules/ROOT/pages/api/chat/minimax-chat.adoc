@@ -122,7 +122,7 @@ ChatResponse response = chatModel.call(
         "Generate the names of 5 famous pirates.",
         MiniMaxChatOptions.builder()
             .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
-            .withTemperature(0.5f)
+            .withTemperature(0.5)
         .build()
     ));
 ----
@@ -205,7 +205,7 @@ var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
 var chatModel = new MiniMaxChatModel(miniMaxApi, MiniMaxChatOptions.builder()
                 .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
-                .withTemperature(0.4f)
+                .withTemperature(0.4)
                 .withMaxTokens(200)
                 .build());
 
