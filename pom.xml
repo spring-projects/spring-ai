@@ -157,7 +157,7 @@
 		<awssdk.version>2.26.7</awssdk.version>
 
 		<jackson.version>2.16.1</jackson.version>
-		<djl.version>0.29.0</djl.version>
+		<djl.version>0.30.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<com.google.cloud.version>26.41.0</com.google.cloud.version>
 		<qdrant.version>1.9.1</qdrant.version>
