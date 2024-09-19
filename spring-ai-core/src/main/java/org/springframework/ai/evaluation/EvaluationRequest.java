@@ -21,6 +21,10 @@ public class EvaluationRequest {
 
 	private final String responseContent;
 
+	public EvaluationRequest(String userText, String responseContent) {
+		this(userText, List.of(), responseContent);
+	}
+
 	public EvaluationRequest(String userText, List<Content> dataList, String responseContent) {
 		this.userText = userText;
 		this.dataList = dataList;
