@@ -16,6 +16,8 @@
 package org.springframework.ai.autoconfigure.azure.openai;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
@@ -40,6 +42,7 @@ import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.credential.KeyCredential;
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.util.ClientOptions;
+import com.azure.core.util.Header;
 
 /**
  * @author Piotr Olaszewski
@@ -57,14 +60,19 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean({ OpenAIClient.class, TokenCredential.class })
 	public OpenAIClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
-
 		if (StringUtils.hasText(connectionProperties.getApiKey())) {
 
 			Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
 
+			Map<String, String> customHeaders = connectionProperties.getCustomHeaders();
+			List<Header> headers = customHeaders.entrySet()
+				.stream()
+				.map(entry -> new Header(entry.getKey(), entry.getValue()))
+				.collect(Collectors.toList());
+			ClientOptions clientOptions = new ClientOptions().setApplicationId(APPLICATION_ID).setHeaders(headers);
 			return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
 				.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
-				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
+				.clientOptions(clientOptions)
 				.buildClient();
 		}
 
