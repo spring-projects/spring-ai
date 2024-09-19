@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.azure;
 
 import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.util.ClientOptions;
 import com.azure.search.documents.indexes.SearchIndexClient;
 import com.azure.search.documents.indexes.SearchIndexClientBuilder;
 
@@ -47,11 +48,16 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.azure", value = { "url", "api-key", "index-name" })
 public class AzureVectorStoreAutoConfiguration {
 
+	private final static String APPLICATION_ID = "spring-ai";
+
 	@Bean
 	@ConditionalOnMissingBean
 	public SearchIndexClient searchIndexClient(AzureVectorStoreProperties properties) {
+		ClientOptions clientOptions = new ClientOptions();
+		clientOptions.setApplicationId(APPLICATION_ID);
 		return new SearchIndexClientBuilder().endpoint(properties.getUrl())
 			.credential(new AzureKeyCredential(properties.getApiKey()))
+			.clientOptions(clientOptions)
 			.buildClient();
 	}
 

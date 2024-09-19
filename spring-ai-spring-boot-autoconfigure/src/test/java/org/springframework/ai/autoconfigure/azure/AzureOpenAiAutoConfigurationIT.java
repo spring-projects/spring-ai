@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,20 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.ReflectionUtils;
+
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.implementation.OpenAIClientImpl;
+import com.azure.core.http.HttpHeader;
+import com.azure.core.http.HttpHeaderName;
+import com.azure.core.http.HttpMethod;
+import com.azure.core.http.HttpPipeline;
+import com.azure.core.http.HttpRequest;
+import com.azure.core.http.HttpResponse;
 import reactor.core.publisher.Flux;
 
+import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,11 +56,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Piotr Olaszewski
+ * @author Soby Chacko
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
-public class AzureOpenAiAutoConfigurationIT {
+class AzureOpenAiAutoConfigurationIT {
 
 	private static String CHAT_MODEL_NAME = "gpt-4o";
 
@@ -79,7 +92,7 @@ public class AzureOpenAiAutoConfigurationIT {
 			"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
 
 	@Test
-	public void chatCompletion() {
+	void chatCompletion() {
 		contextRunner.run(context -> {
 			AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage, systemMessage)));
@@ -88,7 +101,26 @@ public class AzureOpenAiAutoConfigurationIT {
 	}
 
 	@Test
-	public void chatCompletionStreaming() {
+	void httpRequestContainsUserAgentHeader() {
+		contextRunner.run(context -> {
+			OpenAIClient openAIClient = context.getBean(OpenAIClient.class);
+			Field serviceClientField = ReflectionUtils.findField(OpenAIClient.class, "serviceClient");
+			assertThat(serviceClientField).isNotNull();
+			ReflectionUtils.makeAccessible(serviceClientField);
+			OpenAIClientImpl oaci = (OpenAIClientImpl) ReflectionUtils.getField(serviceClientField, openAIClient);
+			assertThat(oaci).isNotNull();
+			HttpPipeline httpPipeline = oaci.getHttpPipeline();
+			HttpResponse httpResponse = httpPipeline
+				.send(new HttpRequest(HttpMethod.POST, new URI(System.getenv("AZURE_OPENAI_ENDPOINT")).toURL()))
+				.block();
+			assertThat(httpResponse).isNotNull();
+			HttpHeader httpHeader = httpResponse.getRequest().getHeaders().get(HttpHeaderName.USER_AGENT);
+			assertThat(httpHeader.getValue().startsWith("spring-ai azsdk-java-azure-ai-openai/")).isTrue();
+		});
+	}
+
+	@Test
+	void chatCompletionStreaming() {
 		contextRunner.run(context -> {
 
 			AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -140,7 +172,7 @@ public class AzureOpenAiAutoConfigurationIT {
 	}
 
 	@Test
-	public void chatActivation() {
+	void chatActivation() {
 
 		// Disable the chat auto-configuration.
 		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=false").run(context -> {
@@ -159,7 +191,7 @@ public class AzureOpenAiAutoConfigurationIT {
 	}
 
 	@Test
-	public void embeddingActivation() {
+	void embeddingActivation() {
 
 		// Disable the embedding auto-configuration.
 		contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=false").run(context -> {
@@ -178,7 +210,7 @@ public class AzureOpenAiAutoConfigurationIT {
 	}
 
 	@Test
-	public void audioTranscriptionActivation() {
+	void audioTranscriptionActivation() {
 
 		// Disable the transcription auto-configuration.
 		contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=false").run(context -> {
