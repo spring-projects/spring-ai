@@ -15,6 +15,9 @@
  */
 package org.springframework.ai.autoconfigure.azure;
 
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.implementation.OpenAIClientImpl;
+import com.azure.core.http.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
@@ -34,15 +37,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ReflectionUtils;
-
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.implementation.OpenAIClientImpl;
-import com.azure.core.http.HttpHeader;
-import com.azure.core.http.HttpHeaderName;
-import com.azure.core.http.HttpMethod;
-import com.azure.core.http.HttpPipeline;
-import com.azure.core.http.HttpRequest;
-import com.azure.core.http.HttpResponse;
 import reactor.core.publisher.Flux;
 
 import java.lang.reflect.Field;
