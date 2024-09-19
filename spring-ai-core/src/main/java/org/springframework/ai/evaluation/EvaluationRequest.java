@@ -2,6 +2,7 @@ package org.springframework.ai.evaluation;
 
 import org.springframework.ai.model.Content;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -22,7 +23,7 @@ public class EvaluationRequest {
 	private final String responseContent;
 
 	public EvaluationRequest(String userText, String responseContent) {
-		this(userText, List.of(), responseContent);
+		this(userText, Collections.emptyList(), responseContent);
 	}
 
 	public EvaluationRequest(String userText, List<Content> dataList, String responseContent) {
