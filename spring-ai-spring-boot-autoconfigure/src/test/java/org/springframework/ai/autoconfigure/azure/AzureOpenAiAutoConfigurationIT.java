@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.azure;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -95,22 +96,29 @@ class AzureOpenAiAutoConfigurationIT {
 	}
 
 	@Test
-	void httpRequestContainsUserAgentHeader() {
-		contextRunner.run(context -> {
-			OpenAIClient openAIClient = context.getBean(OpenAIClient.class);
-			Field serviceClientField = ReflectionUtils.findField(OpenAIClient.class, "serviceClient");
-			assertThat(serviceClientField).isNotNull();
-			ReflectionUtils.makeAccessible(serviceClientField);
-			OpenAIClientImpl oaci = (OpenAIClientImpl) ReflectionUtils.getField(serviceClientField, openAIClient);
-			assertThat(oaci).isNotNull();
-			HttpPipeline httpPipeline = oaci.getHttpPipeline();
-			HttpResponse httpResponse = httpPipeline
-				.send(new HttpRequest(HttpMethod.POST, new URI(System.getenv("AZURE_OPENAI_ENDPOINT")).toURL()))
-				.block();
-			assertThat(httpResponse).isNotNull();
-			HttpHeader httpHeader = httpResponse.getRequest().getHeaders().get(HttpHeaderName.USER_AGENT);
-			assertThat(httpHeader.getValue().startsWith("spring-ai azsdk-java-azure-ai-openai/")).isTrue();
-		});
+	void httpRequestContainsUserAgentAndCustomHeaders() {
+		contextRunner
+			.withPropertyValues("spring.ai.azure.openai.custom-headers.foo=bar",
+					"spring.ai.azure.openai.custom-headers.fizz=buzz")
+			.run(context -> {
+				OpenAIClient openAIClient = context.getBean(OpenAIClient.class);
+				Field serviceClientField = ReflectionUtils.findField(OpenAIClient.class, "serviceClient");
+				assertThat(serviceClientField).isNotNull();
+				ReflectionUtils.makeAccessible(serviceClientField);
+				OpenAIClientImpl oaci = (OpenAIClientImpl) ReflectionUtils.getField(serviceClientField, openAIClient);
+				assertThat(oaci).isNotNull();
+				HttpPipeline httpPipeline = oaci.getHttpPipeline();
+				HttpResponse httpResponse = httpPipeline
+					.send(new HttpRequest(HttpMethod.POST, new URI(System.getenv("AZURE_OPENAI_ENDPOINT")).toURL()))
+					.block();
+				assertThat(httpResponse).isNotNull();
+				HttpHeader httpHeader = httpResponse.getRequest().getHeaders().get(HttpHeaderName.USER_AGENT);
+				assertThat(httpHeader.getValue().startsWith("spring-ai azsdk-java-azure-ai-openai/")).isTrue();
+				HttpHeader customHeader1 = httpResponse.getRequest().getHeaders().get("foo");
+				assertThat(customHeader1.getValue()).isEqualTo("bar");
+				HttpHeader customHeader2 = httpResponse.getRequest().getHeaders().get("fizz");
+				assertThat(customHeader2.getValue()).isEqualTo("buzz");
+			});
 	}
 
 	@Test
