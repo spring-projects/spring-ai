@@ -117,7 +117,7 @@ public class DeepSeekRetryTests {
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", ChatCompletionMessage.Role.ASSISTANT), null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666L, "model", null,
-				null);
+				null, null);
 
 		when(deepSeekApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.thenThrow(new TransientAiException("Transient Error 1"))

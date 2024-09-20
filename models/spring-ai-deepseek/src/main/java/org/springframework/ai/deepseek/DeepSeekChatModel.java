@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -132,7 +133,7 @@ public class DeepSeekChatModel implements ChatModel, StreamingChatModel {
 		Assert.notNull(result, "DeepSeek ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.withId(result.id())
-			.withUsage(DeepSeekUsage.from(result.usage()))
+			.withUsage(result.usage() == null ? new EmptyUsage() : DeepSeekUsage.from(result.usage()))
 			.withModel(result.model())
 			.withKeyValue("created", result.created())
 			.withKeyValue("system-fingerprint", result.systemFingerprint())
@@ -182,7 +183,7 @@ public class DeepSeekChatModel implements ChatModel, StreamingChatModel {
 					}
 					return generation;
 				}).toList();
-				return new ChatResponse(generations);
+				return new ChatResponse(generations, from(chatCompletion));
 			});
 		});
 	}
@@ -199,7 +200,7 @@ public class DeepSeekChatModel implements ChatModel, StreamingChatModel {
 			.toList();
 
 		return new DeepSeekApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
-				chunk.systemFingerprint(), "chat.completion", null);
+				chunk.systemFingerprint(), "chat.completion", chunk.usage());
 	}
 
 	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {

@@ -412,7 +412,8 @@ public class DeepSeekApi {
 			@JsonProperty("created") Long created,
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object) {
+			@JsonProperty("object") String object,
+			@JsonProperty("usage") Usage usage) {
 
 		/**
 		 * Chat completion choice.
