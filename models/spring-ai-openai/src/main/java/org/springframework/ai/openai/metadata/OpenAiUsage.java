@@ -58,6 +58,12 @@ public class OpenAiUsage implements Usage {
 		return generationTokens != null ? generationTokens.longValue() : 0;
 	}
 
+	public Long getReasoningTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer reasoningTokens = completionTokenDetails != null ? completionTokenDetails.reasoningTokens() : null;
+		return reasoningTokens != null ? reasoningTokens.longValue() : 0;
+	}
+
 	@Override
 	public Long getTotalTokens() {
 		Integer totalTokens = getUsage().totalTokens();
