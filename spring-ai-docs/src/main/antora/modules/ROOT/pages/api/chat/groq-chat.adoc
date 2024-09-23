@@ -13,7 +13,7 @@ NOTE: The Groq API is not fully compatible with the OpenAI API.
 Be aware for the following https://console.groq.com/docs/openai[compatability constrains].
 Additionally, currently Groq doesn't support multimodal messages.
 
-Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/GroqWithOpenAiChatModelIT.java[GroqWithOpenAiChatModelIT.java] tests 
+Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/GroqWithOpenAiChatModelIT.java[GroqWithOpenAiChatModelIT.java] tests 
 for examples of using Groq with Spring AI.
 
 == Prerequisites

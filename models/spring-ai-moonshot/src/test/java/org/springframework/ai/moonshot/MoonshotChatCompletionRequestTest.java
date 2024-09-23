@@ -38,7 +38,7 @@ public class MoonshotChatCompletionRequestTest {
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.topP()).isEqualTo(1);
-		assertThat(request.temperature()).isEqualTo(0.7f);
+		assertThat(request.temperature()).isEqualTo(0.7);
 		assertThat(request.maxTokens()).isNull();
 		assertThat(request.stream()).isFalse();
 	}

@@ -189,7 +189,7 @@ For this, you need to configure the OpenAI base URL to your Ollama instance: `sp
 
 image::spring-ai-ollama-over-openai.jpg[Ollama OpenAI API compatibility, 800, 600, align="center"]
 
-Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
+Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
 
 == Sample Controller
 
