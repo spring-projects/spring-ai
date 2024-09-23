@@ -39,7 +39,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.openai.OpeAiApiAdapter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -51,8 +50,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.CollectionUtils;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.micrometer.observation.ObservationRegistry;
 
@@ -70,6 +67,36 @@ class OpenAiChatModelProxyToolCallsIT {
 	@Autowired
 	private FunctionCallHelper functionCallUtils;
 
+	/**
+	 * Helper used to provide only the function definition, without the actual function
+	 * call implementation.
+	 */
+	public static record FunctionDefinition(String name, String description,
+			String inputTypeSchema) implements FunctionCallback {
+
+		@Override
+		public String getName() {
+			return this.name();
+		}
+
+		@Override
+		public String getDescription() {
+			return this.description();
+		}
+
+		@Override
+		public String getInputTypeSchema() {
+			return this.inputTypeSchema();
+		}
+
+		@Override
+		public String call(String functionInput) {
+			throw new UnsupportedOperationException(
+					"FunctionDefinition provides only metadata. It doesn't implement the call method.");
+		}
+
+	}
+
 	@Test
 	void functionCallTest() {
 
@@ -78,8 +105,8 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		FunctionCallback functionDefinition = new OpeAiApiAdapter.FunctionDefinition("getCurrentWeather",
-				"Get the weather in location", """
+		FunctionCallback functionDefinition = new FunctionDefinition("getCurrentWeather", "Get the weather in location",
+				"""
 						{
 							"type": "object",
 							"properties": {
@@ -115,14 +142,6 @@ class OpenAiChatModelProxyToolCallsIT {
 		do {
 
 			chatResponse = chatModel.call(prompt);
-
-			try {
-				System.out.println("ChatCompletion:\n" + new ObjectMapper().writerWithDefaultPrettyPrinter()
-					.writeValueAsString(OpeAiApiAdapter.toChatCompletion(chatResponse)));
-			}
-			catch (Exception e) {
-				e.printStackTrace();
-			}
 
 			// We will have to convert the chatResponse into OpenAI assistant message.
 
