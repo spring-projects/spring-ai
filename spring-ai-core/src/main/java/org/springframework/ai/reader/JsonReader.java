@@ -42,19 +42,19 @@ import org.springframework.core.io.Resource;
  */
 public class JsonReader implements DocumentReader {
 
-	private Resource resource;
+	private final Resource resource;
 
-	private JsonMetadataGenerator jsonMetadataGenerator;
+	private final JsonMetadataGenerator jsonMetadataGenerator;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * The key from the JSON that we will use as the text to parse into the Document text
 	 */
-	private List<String> jsonKeysToUse;
+	private final List<String> jsonKeysToUse;
 
 	public JsonReader(Resource resource) {
-		this(resource, new ArrayList<>().toArray(new String[0]));
+		this(resource, new String[0]);
 	}
 
 	public JsonReader(Resource resource, String... jsonKeysToUse) {
@@ -92,9 +92,9 @@ public class JsonReader implements DocumentReader {
 	private Document parseJsonNode(JsonNode jsonNode, ObjectMapper objectMapper) {
 		Map<String, Object> item = objectMapper.convertValue(jsonNode, new TypeReference<Map<String, Object>>() {
 		});
-		StringBuffer sb = new StringBuffer();
+		var sb = new StringBuilder();
 
-		jsonKeysToUse.parallelStream().filter(item::containsKey).forEach(key -> {
+		jsonKeysToUse.stream().filter(item::containsKey).forEach(key -> {
 			sb.append(key).append(": ").append(item.get(key)).append(System.lineSeparator());
 		});
 
