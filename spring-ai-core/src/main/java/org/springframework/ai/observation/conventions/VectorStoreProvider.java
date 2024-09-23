@@ -25,6 +25,7 @@ public enum VectorStoreProvider {
         PG_VECTOR("pg_vector"),
         AZURE("azure"),
         CASSANDRA("cassandra"),
+		COSMOSDB("cosmosdb"),
         CHROMA("chroma"),
         ELASTICSEARCH("elasticsearch"),
         MILVUS("milvus"),
