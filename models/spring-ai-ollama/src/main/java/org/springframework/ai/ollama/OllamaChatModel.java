@@ -162,7 +162,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 			});
 
-		if (response != null && isToolCall(response, Set.of("stop"))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
+				&& isToolCall(response, Set.of("stop"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.

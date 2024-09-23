@@ -190,7 +190,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 
 		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
 
-		if (isToolCall(chatResponse,
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
 				Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
@@ -254,7 +254,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 
 		return chatResponse.flatMap(response -> {
 
-			if (isToolCall(response,
+			if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
 					Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
 				var toolCallConversation = handleToolCalls(prompt, response);
 				// Recursively call the stream method with the tool call message

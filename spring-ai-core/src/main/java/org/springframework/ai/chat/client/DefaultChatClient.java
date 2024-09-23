@@ -32,9 +32,9 @@ import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor.StreamResponseMode;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservableHelper;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
@@ -85,12 +85,9 @@ public class DefaultChatClient implements ChatClient {
 
 	private static final ChatClientObservationConvention DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION = new DefaultChatClientObservationConvention();
 
-	private final ChatModel chatModel;
-
 	private final DefaultChatClientRequestSpec defaultChatClientRequest;
 
-	public DefaultChatClient(ChatModel chatModel, DefaultChatClientRequestSpec defaultChatClientRequest) {
-		this.chatModel = chatModel;
+	public DefaultChatClient(DefaultChatClientRequestSpec defaultChatClientRequest) {
 		this.defaultChatClientRequest = defaultChatClientRequest;
 	}
 
@@ -100,13 +97,19 @@ public class DefaultChatClient implements ChatClient {
 	}
 
 	@Override
-	public ChatClientPromptRequestSpec prompt(String content) {
-		return new DefaultChatClientPromptRequestSpec(this.chatModel, new Prompt(content));
+	public ChatClientRequestSpec prompt(String content) {
+		return prompt(new Prompt(content));
 	}
 
-	@Override
-	public ChatClientPromptRequestSpec prompt(Prompt prompt) {
-		return new DefaultChatClientPromptRequestSpec(this.chatModel, prompt);
+	public ChatClientRequestSpec prompt(Prompt prompt) {
+
+		DefaultChatClientRequestSpec spec = new DefaultChatClientRequestSpec(this.defaultChatClientRequest);
+		spec.messages(prompt.getInstructions());
+		if (prompt.getOptions() != null) {
+			spec.options(prompt.getOptions());
+		}
+
+		return spec;
 	}
 
 	/**
@@ -993,27 +996,6 @@ public class DefaultChatClient implements ChatClient {
 				}
 				return r.getResult().getOutput().getContent();
 			}).filter(StringUtils::hasLength);
-		}
-
-	}
-
-	public static class DefaultChatClientPromptRequestSpec implements ChatClientPromptRequestSpec {
-
-		private final ChatModel chatModel;
-
-		private final Prompt prompt;
-
-		public DefaultChatClientPromptRequestSpec(ChatModel chatModel, Prompt prompt) {
-			this.chatModel = chatModel;
-			this.prompt = prompt;
-		}
-
-		public CallPromptResponseSpec call() {
-			return new DefaultCallPromptResponseSpec(this.chatModel, this.prompt);
-		}
-
-		public StreamPromptResponseSpec stream() {
-			return new DefaultStreamPromptResponseSpec(this.chatModel, this.prompt);
 		}
 
 	}

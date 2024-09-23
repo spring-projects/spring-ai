@@ -66,14 +66,13 @@ ChatClient chatClient = ChatClient.create(myChatModel);
 
 == ChatClient Fluent API
 
-The `ChatClient` fluent API allows you to create a prompt in three distinct ways using an overloaded `prompt` method to initiate the fluent API.
+The `ChatClient` fluent API allows you to create a prompt in three distinct ways using an overloaded `prompt` method to initiate the fluent API:
 
-* `prompt()`: This method with no arguments is the most flexible, allowing you to build up user, system, and other parts of the prompt using the fluent API.
+* `prompt()`: This method with no arguments lets you start using the fluent API, allowing you to build up user, system, and other parts of the prompt.
 
-* `prompt(Prompt prompt)`: This method accepts a `Prompt` argument, letting you pass in a `Prompt` instance that you have created using the Prompt's non-fluent APIs. The prompt passed to the model is 'sealed', meaning you can't modify it using fluent API methods.
+* `prompt(Prompt prompt)`: This method accepts a `Prompt` argument, letting you pass in a `Prompt` instance that you have created using the Prompt's non-fluent APIs.
 
-* `prompt(String content)`: This is a convenience method similar to the previous overload. It takes the user's text content and creates a `Prompt` instance internally via `new Prompt(content)`.
-
+* `prompt(String content)`: This is a convenience method similar to the previous overload. It takes the user's text content.
 
 == ChatClient Responses
 

@@ -50,8 +50,6 @@ public class DefaultChatClientBuilder implements Builder {
 
 	protected final DefaultChatClientRequestSpec defaultRequest;
 
-	private final ChatModel chatModel;
-
 	DefaultChatClientBuilder(ChatModel chatModel) {
 		this(chatModel, ObservationRegistry.NOOP, null);
 	}
@@ -60,14 +58,13 @@ public class DefaultChatClientBuilder implements Builder {
 			ChatClientObservationConvention customObservationConvention) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
-		this.chatModel = chatModel;
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(),
 				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
 				customObservationConvention);
 	}
 
 	public ChatClient build() {
-		return new DefaultChatClient(this.chatModel, this.defaultRequest);
+		return new DefaultChatClient(this.defaultRequest);
 	}
 
 	public Builder defaultAdvisors(Advisor... advisor) {

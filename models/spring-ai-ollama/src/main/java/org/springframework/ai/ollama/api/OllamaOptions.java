@@ -270,7 +270,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	
 	
 	/**
-	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded. 
+	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
 	 * Defaults to true.
 	 */
 	@JsonProperty("truncate") private Boolean truncate;
@@ -297,6 +297,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
 
 	public static OllamaOptions builder() {
 		return new OllamaOptions();
@@ -492,6 +494,11 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	public OllamaOptions withFunction(String functionName) {
 		Assert.hasText(functionName, "Function name must not be empty");
 		this.functions.add(functionName);
+		return this;
+	}
+
+	public OllamaOptions withProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
 		return this;
 	}
 
@@ -816,6 +823,15 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return null;
 	}
 
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -884,6 +900,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withPenalizeNewline(fromOptions.getPenalizeNewline())
 			.withStop(fromOptions.getStop())
 			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks());
 	}
 	// @formatter:on
@@ -913,7 +930,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				&& Objects.equals(mirostatTau, that.mirostatTau) && Objects.equals(mirostatEta, that.mirostatEta)
 				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(functions, that.functions);
+				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions);
 	}
 
 	@Override
@@ -923,7 +940,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
 				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions);
+				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls);
 	}
 
 }

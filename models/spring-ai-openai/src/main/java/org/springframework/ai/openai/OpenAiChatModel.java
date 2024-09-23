@@ -15,9 +15,16 @@
  */
 package org.springframework.ai.openai;
 
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -63,18 +70,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -189,6 +190,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+
 		super(functionCallbackContext, options, toolFunctionCallbacks);
 
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
@@ -259,8 +261,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 			});
 
-		if (response != null && isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-				OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions)
+				&& isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -330,7 +333,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 
-				if (isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message

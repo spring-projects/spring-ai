@@ -183,8 +183,9 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 				return chatResponse;
 			});
 
-		if (response != null && isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-				MistralAiApi.ChatCompletionFinishReason.STOP.name()))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
+				&& isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+						MistralAiApi.ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -255,7 +256,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				if (isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name()))) {
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name()))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.

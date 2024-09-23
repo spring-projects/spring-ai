@@ -142,6 +142,9 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
+
+	@JsonIgnore
+	private Boolean proxyToolCalls;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -239,6 +242,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
@@ -395,6 +403,15 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
@@ -411,6 +428,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((maskSensitiveInfo == null) ? 0 : maskSensitiveInfo.hashCode());
 		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
 		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
+		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
 		return result;
 	}
 
@@ -501,6 +519,12 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!toolChoice.equals(other.toolChoice))
 			return false;
+		if (this.proxyToolCalls == null) {
+			if (other.proxyToolCalls != null)
+				return false;
+		}
+		else if (!proxyToolCalls.equals(other.proxyToolCalls))
+			return false;
 		return true;
 	}
 
@@ -525,6 +549,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withToolChoice(fromOptions.getToolChoice())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
 			.build();
 	}
 

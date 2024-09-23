@@ -164,8 +164,9 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
 
-		if (isToolCall(chatResponse, Set.of(MoonshotApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-				MoonshotApi.ChatCompletionFinishReason.STOP.name()))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions)
+				&& isToolCall(chatResponse, Set.of(MoonshotApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+						MoonshotApi.ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -228,7 +229,8 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 		return chatResponse.flatMap(response -> {
 
-			if (isToolCall(response, Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), "stop"))) {
+			if (!isProxyToolCalls(prompt, this.defaultOptions)
+					&& isToolCall(response, Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), "stop"))) {
 				var toolCallConversation = handleToolCalls(prompt, response);
 				// Recursively call the stream method with the tool call message
 				// conversation that contains the call responses.

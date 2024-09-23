@@ -115,6 +115,8 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	@JsonIgnore
 	private boolean googleSearchRetrieval = false;
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
 
 	// @formatter:on
 
@@ -191,6 +193,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 		public Builder withGoogleSearchRetrieval(boolean googleSearch) {
 			this.options.googleSearchRetrieval = googleSearch;
+			return this;
+		}
+
+		public Builder withProxyToolCalls(boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
@@ -322,6 +329,15 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	}
 
 	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
@@ -333,13 +349,13 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 				&& Objects.equals(maxOutputTokens, that.maxOutputTokens) && Objects.equals(model, that.model)
 				&& Objects.equals(responseMimeType, that.responseMimeType)
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(functions, that.functions);
+				&& Objects.equals(functions, that.functions) && Objects.equals(proxyToolCalls, that.proxyToolCalls);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(stopSequences, temperature, topP, topK, candidateCount, maxOutputTokens, model,
-				responseMimeType, functionCallbacks, functions, googleSearchRetrieval);
+				responseMimeType, functionCallbacks, functions, googleSearchRetrieval, proxyToolCalls);
 	}
 
 	@Override
@@ -370,6 +386,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		options.setFunctions(fromOptions.getFunctions());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
+		options.setProxyToolCalls(fromOptions.getProxyToolCalls());
 		return options;
 	}
 

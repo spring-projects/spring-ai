@@ -74,9 +74,9 @@ public interface ChatClient {
 
 	ChatClientRequestSpec prompt();
 
-	ChatClientPromptRequestSpec prompt(String content);
+	ChatClientRequestSpec prompt(String content);
 
-	ChatClientPromptRequestSpec prompt(Prompt prompt);
+	ChatClientRequestSpec prompt(Prompt prompt);
 
 	/**
 	 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
@@ -156,14 +156,6 @@ public interface ChatClient {
 		Flux<ChatResponse> chatResponse();
 
 		Flux<String> content();
-
-	}
-
-	interface ChatClientPromptRequestSpec {
-
-		CallPromptResponseSpec call();
-
-		StreamPromptResponseSpec stream();
 
 	}
 

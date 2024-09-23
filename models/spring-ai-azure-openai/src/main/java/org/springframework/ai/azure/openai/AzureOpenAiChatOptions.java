@@ -31,6 +31,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
+import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
 
 /**
  * The configuration information for a chat completions request. Completions support a
@@ -161,6 +162,9 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -247,6 +251,11 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		public Builder withResponseFormat(AzureOpenAiResponseFormat responseFormat) {
 			Assert.notNull(responseFormat, "responseFormat must not be null");
 			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
@@ -396,6 +405,15 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	}
 
 	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
 	public AzureOpenAiChatOptions copy() {
 		return fromOptions(this);
 	}
@@ -413,6 +431,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 			.withUser(fromOptions.getUser())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withResponseFormat(fromOptions.getResponseFormat())
 			.build();
 	}
 

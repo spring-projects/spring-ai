@@ -102,6 +102,11 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
+	public FunctionCallingOptionsBuilder withProxyToolCalls(Boolean proxyToolCalls) {
+		this.options.setProxyToolCalls(proxyToolCalls);
+		return this;
+	}
+
 	public PortableFunctionCallingOptions build() {
 		return this.options;
 	}
@@ -127,6 +132,12 @@ public class FunctionCallingOptionsBuilder {
 		private Integer topK;
 
 		private Double topP;
+
+		private Boolean proxyToolCalls = false;
+
+		public static FunctionCallingOptionsBuilder builder() {
+			return new FunctionCallingOptionsBuilder();
+		}
 
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
@@ -221,6 +232,15 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
+		public Boolean getProxyToolCalls() {
+			return proxyToolCalls;
+		}
+
+		public void setProxyToolCalls(Boolean proxyToolCalls) {
+			this.proxyToolCalls = proxyToolCalls;
+		}
+
+		@Override
 		public ChatOptions copy() {
 			return new FunctionCallingOptionsBuilder().withModel(this.model)
 				.withFrequencyPenalty(this.frequencyPenalty)
@@ -232,6 +252,7 @@ public class FunctionCallingOptionsBuilder {
 				.withTopP(this.topP)
 				.withFunctions(this.functions)
 				.withFunctionCallbacks(this.functionCallbacks)
+				.withProxyToolCalls(this.proxyToolCalls)
 				.build();
 		}
 
