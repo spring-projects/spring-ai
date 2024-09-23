@@ -135,6 +135,10 @@ public class FunctionCallingOptionsBuilder {
 
 		private Boolean proxyToolCalls = false;
 
+		public static FunctionCallingOptionsBuilder builder() {
+			return new FunctionCallingOptionsBuilder();
+		}
+
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
 			return this.functionCallbacks;

@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -31,19 +33,15 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.ToolCallHelper;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.api.tool.MockWeatherService.Response;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -51,7 +49,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.CollectionUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.micrometer.observation.ObservationRegistry;
+import reactor.core.publisher.Flux;
 
 @SpringBootTest(classes = OpenAiChatModelProxyToolCallsIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -64,72 +67,51 @@ class OpenAiChatModelProxyToolCallsIT {
 	@Autowired
 	private OpenAiChatModel chatModel;
 
-	@Autowired
-	private FunctionCallHelper functionCallUtils;
+	// Helper class that reuses some of the {@link AbstractToolCallSupport} functionality
+	// to help to implement the function call handling logic on the client side.
+	private ToolCallHelper toolCallHelper = new ToolCallHelper();
 
-	/**
-	 * Helper used to provide only the function definition, without the actual function
-	 * call implementation.
-	 */
-	public static record FunctionDefinition(String name, String description,
-			String inputTypeSchema) implements FunctionCallback {
+	// Function which will be called by the AI model.
+	private String getWeatherInLocation(String location, String unit) {
 
-		@Override
-		public String getName() {
-			return this.name();
+		double temperature = 0;
+
+		if (location.contains("Paris")) {
+			temperature = 15;
+		}
+		else if (location.contains("Tokyo")) {
+			temperature = 10;
+		}
+		else if (location.contains("San Francisco")) {
+			temperature = 30;
 		}
 
-		@Override
-		public String getDescription() {
-			return this.description();
-		}
-
-		@Override
-		public String getInputTypeSchema() {
-			return this.inputTypeSchema();
-		}
-
-		@Override
-		public String call(String functionInput) {
-			throw new UnsupportedOperationException(
-					"FunctionDefinition provides only metadata. It doesn't implement the call method.");
-		}
-
+		return String.format("The weather in %s is %s%s", location, temperature, unit);
 	}
 
-	@Test
-	void functionCallTest() {
+	FunctionCallback functionDefinition = new ToolCallHelper.FunctionDefinition("getWeatherInLocation",
+			"Get the weather in location", """
+					{
+						"type": "object",
+						"properties": {
+							"location": {
+								"type": "string",
+								"description": "The city and state e.g. San Francisco, CA"
+							},
+							"unit": {
+								"type": "string",
+								"enum": ["C", "F"]
+							}
+						},
+						"required": ["location", "unit"]
+					}
+					""");
 
-		var weatherService = new MockWeatherService();
+	@Test
+	void functionCall() throws JsonMappingException, JsonProcessingException {
 
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
-
-		FunctionCallback functionDefinition = new FunctionDefinition("getCurrentWeather", "Get the weather in location",
-				"""
-						{
-							"type": "object",
-							"properties": {
-								"location": {
-									"type": "string",
-									"description": "The city and state e.g. San Francisco, CA"
-								},
-								"lat": {
-									"type": "number",
-									"description": "The city latitude"
-								},
-								"lon": {
-									"type": "number",
-									"description": "The city longitude"
-								},
-								"unit": {
-									"type": "string",
-									"enum": ["C", "F"]
-								}
-							},
-							"required": ["location", "lat", "lon", "unit"]
-						}
-						""");
 
 		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(functionDefinition)).build();
 
@@ -145,8 +127,9 @@ class OpenAiChatModelProxyToolCallsIT {
 
 			// We will have to convert the chatResponse into OpenAI assistant message.
 
-			// Code that the Python tools will have to implement
-			isToolCall = functionCallUtils.isToolCall(chatResponse,
+			// Note that the tool call check could be platform specific because the finish
+			// reasons.
+			isToolCall = toolCallHelper.isToolCall(chatResponse,
 					Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 							OpenAiApi.ChatCompletionFinishReason.STOP.name()));
 
@@ -167,14 +150,15 @@ class OpenAiChatModelProxyToolCallsIT {
 
 					var functionName = toolCall.name();
 
-					assertThat(functionName).isEqualTo("getCurrentWeather");
+					assertThat(functionName).isEqualTo("getWeatherInLocation");
 
 					String functionArguments = toolCall.arguments();
 
-					MockWeatherService.Request functionRequest = ModelOptionsUtils.jsonToObject(functionArguments,
-							MockWeatherService.Request.class);
+					@SuppressWarnings("unchecked")
+					Map<String, String> argumentsMap = new ObjectMapper().readValue(functionArguments, Map.class);
 
-					Response functionResponse = weatherService.apply(functionRequest);
+					String functionResponse = getWeatherInLocation(argumentsMap.get("location").toString(),
+							argumentsMap.get("unit").toString());
 
 					toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName,
 							ModelOptionsUtils.toJsonString(functionResponse)));
@@ -182,8 +166,8 @@ class OpenAiChatModelProxyToolCallsIT {
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
 
-				List<Message> toolCallConversation = functionCallUtils
-					.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
+				List<Message> toolCallConversation = toolCallHelper.buildToolCallConversation(prompt.getInstructions(),
+						assistantMessage, toolMessageResponse);
 
 				assertThat(toolCallConversation).isNotEmpty();
 
@@ -197,33 +181,173 @@ class OpenAiChatModelProxyToolCallsIT {
 		assertThat(chatResponse.getResult().getOutput().getContent()).contains("30", "10", "15");
 	}
 
-	/**
-	 * Helper class that reuses the {@link AbstractToolCallSupport} to implement the
-	 * function call handling logic on the client side.
-	 */
-	public static class FunctionCallHelper extends AbstractToolCallSupport {
+	@Test
+	void functionStream() throws JsonMappingException, JsonProcessingException {
 
-		protected FunctionCallHelper(FunctionCallbackContext functionCallbackContext,
-				FunctionCallingOptions functionCallingOptions, List<FunctionCallback> toolFunctionCallbacks) {
-			super(functionCallbackContext, functionCallingOptions, toolFunctionCallbacks);
+		List<Message> messages = List
+			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
+
+		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(functionDefinition)).build();
+
+		var prompt = new Prompt(messages, promptOptions);
+
+		String response = processToolCall(prompt, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+				OpenAiApi.ChatCompletionFinishReason.STOP.name()), toolCall -> {
+
+					var functionName = toolCall.name();
+
+					assertThat(functionName).isEqualTo("getWeatherInLocation");
+
+					String functionArguments = toolCall.arguments();
+
+					Map<String, String> argumentsMap = getFunctionArguments(functionArguments);
+
+					String functionResponse = getWeatherInLocation(argumentsMap.get("location").toString(),
+							argumentsMap.get("unit").toString());
+
+					return functionResponse;
+				})
+			.collectList()
+			.block()
+			.stream()
+			.map(cr -> cr.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+
+	}
+
+	private Flux<ChatResponse> processToolCall(Prompt prompt, Set<String> finishReasons,
+			Function<AssistantMessage.ToolCall, String> customFunction) {
+
+		Flux<ChatResponse> chatResponses = chatModel.stream(prompt);
+
+		return chatResponses.flatMap(chatResponse -> {
+
+			boolean isToolCall = toolCallHelper.isToolCall(chatResponse, finishReasons);
+
+			if (isToolCall) {
+
+				Optional<Generation> toolCallGeneration = chatResponse.getResults()
+					.stream()
+					.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
+					.findFirst();
+
+				assertThat(toolCallGeneration).isNotEmpty();
+
+				AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
+
+				List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+
+				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+
+					String functionResponse = customFunction.apply(toolCall);
+
+					toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(),
+							ModelOptionsUtils.toJsonString(functionResponse)));
+				}
+
+				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
+
+				List<Message> toolCallConversation = toolCallHelper.buildToolCallConversation(prompt.getInstructions(),
+						assistantMessage, toolMessageResponse);
+
+				assertThat(toolCallConversation).isNotEmpty();
+
+				var prompt2 = new Prompt(toolCallConversation, prompt.getOptions());
+
+				return processToolCall(prompt2, finishReasons, customFunction);
+			}
+
+			return Flux.just(chatResponse);
+		});
+	}
+
+	@Test
+	void functionCall2() throws JsonMappingException, JsonProcessingException {
+
+		List<Message> messages = List
+			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
+
+		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(functionDefinition)).build();
+
+		var prompt = new Prompt(messages, promptOptions);
+
+		ChatResponse chatResponse = toolCallHelper.processCall(chatModel, prompt,
+				Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+						OpenAiApi.ChatCompletionFinishReason.STOP.name()),
+				toolCall -> {
+
+					var functionName = toolCall.name();
+
+					assertThat(functionName).isEqualTo("getWeatherInLocation");
+
+					String functionArguments = toolCall.arguments();
+
+					Map<String, String> argumentsMap = getFunctionArguments(functionArguments);
+
+					String functionResponse = getWeatherInLocation(argumentsMap.get("location").toString(),
+							argumentsMap.get("unit").toString());
+
+					return functionResponse;
+				});
+
+		logger.info("Response: {}", chatResponse);
+
+		assertThat(chatResponse.getResult().getOutput().getContent()).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionStream2() throws JsonMappingException, JsonProcessingException {
+
+		List<Message> messages = List
+			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
+
+		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(functionDefinition)).build();
+
+		var prompt = new Prompt(messages, promptOptions);
+
+		Flux<ChatResponse> responses = toolCallHelper.processStream(chatModel, prompt,
+				Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+						OpenAiApi.ChatCompletionFinishReason.STOP.name()),
+				toolCall -> {
+
+					var functionName = toolCall.name();
+
+					assertThat(functionName).isEqualTo("getWeatherInLocation");
+
+					String functionArguments = toolCall.arguments();
+
+					Map<String, String> argumentsMap = getFunctionArguments(functionArguments);
+
+					String functionResponse = getWeatherInLocation(argumentsMap.get("location").toString(),
+							argumentsMap.get("unit").toString());
+
+					return functionResponse;
+				});
+
+		String response = responses.collectList()
+			.block()
+			.stream()
+			.map(cr -> cr.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Map<String, String> getFunctionArguments(String functionArguments) {
+		try {
+			return new ObjectMapper().readValue(functionArguments, Map.class);
 		}
-
-		@Override
-		public boolean isToolCall(ChatResponse chatResponse, Set<String> toolCallFinishReasons) {
-			return super.isToolCall(chatResponse, toolCallFinishReasons);
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
 		}
-
-		@Override
-		public List<Message> buildToolCallConversation(List<Message> previousMessages,
-				AssistantMessage assistantMessage, ToolResponseMessage toolResponseMessage) {
-			return super.buildToolCallConversation(previousMessages, assistantMessage, toolResponseMessage);
-		}
-
-		@Override
-		public List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {
-			return super.handleToolCalls(prompt, response);
-		}
-
 	}
 
 	@SpringBootConfiguration
@@ -241,12 +365,6 @@ class OpenAiChatModelProxyToolCallsIT {
 
 			return new OpenAiChatModel(openAiApi, options, null, toolFunctionCallbacks,
 					RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
-		}
-
-		@Bean
-		public FunctionCallHelper functionCallUtils(List<FunctionCallback> toolFunctionCallbacks) {
-			OpenAiChatOptions functionCallingOptions = OpenAiChatOptions.builder().build();
-			return new FunctionCallHelper(null, functionCallingOptions, toolFunctionCallbacks);
 		}
 
 	}
