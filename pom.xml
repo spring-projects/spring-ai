@@ -183,6 +183,7 @@
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-deepseek</module>
+		<module>models/spring-ai-google-gemini</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
