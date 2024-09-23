@@ -64,7 +64,7 @@ import reactor.core.publisher.Flux;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class OpenAiChatModelIT extends AbstractIT {
+public class OpenAiChatModelIT extends AbstractIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
 

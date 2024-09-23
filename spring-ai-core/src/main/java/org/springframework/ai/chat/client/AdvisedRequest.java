@@ -64,6 +64,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		builder.systemParams = from.systemParams;
 		builder.advisors = from.advisors;
 		builder.advisorParams = from.advisorParams;
+		builder.advisorParams = from.advisorParams;
 		return builder;
 	}
 

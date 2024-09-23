@@ -77,6 +77,9 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
+
+	@JsonIgnore
+	private Boolean proxyToolCalls;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -141,6 +144,11 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
@@ -247,6 +255,15 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	}
 
 	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
 	}
@@ -261,6 +278,7 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 			.withTopK(fromOptions.getTopK())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
 			.build();
 	}
 

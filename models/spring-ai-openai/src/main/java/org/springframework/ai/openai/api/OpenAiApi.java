@@ -756,6 +756,8 @@ public class OpenAiApi {
 		/**
 		 * The relevant tool call.
 		 *
+		 * @param index The index of the tool call in the list of tool calls. Required in
+		 * case of streaming.
 		 * @param id The ID of the tool call. This ID must be referenced when you submit
 		 * the tool outputs in using the Submit tool outputs to run endpoint.
 		 * @param type The type of tool call the output is required for. For now, this is
@@ -764,9 +766,14 @@ public class OpenAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(// @formatter:off
+				@JsonProperty("index") Integer index,
 				@JsonProperty("id") String id,
 				@JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function) {// @formatter:on
+
+			public ToolCall(String id, String type, ChatCompletionFunction function) {
+				this(null, id, type, function);
+			}
 		}
 
 		/**

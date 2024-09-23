@@ -54,6 +54,16 @@ public interface FunctionCallingOptions {
 	 */
 	void setFunctions(Set<String> functions);
 
+	default Boolean getProxyToolCalls() {
+		return false;
+	}
+
+	default void setProxyToolCalls(Boolean proxyToolCalls) {
+		if (proxyToolCalls != null) {
+			throw new UnsupportedOperationException("Setting Proxy Tool Calls are not supported!");
+		}
+	}
+
 	/**
 	 * @return Returns FunctionCallingOptionsBuilder to create a new instance of
 	 * FunctionCallingOptions.

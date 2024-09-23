@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -172,6 +173,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	private Set<String> functions = new HashSet<>();
 
 	/**
+	 * If true, the Spring AI will not handle the function calls internally, but will proxy them to the client.
+	 * It is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results.
+	 * If false, the Spring AI will handle the function calls internally.
+	 */
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+	/**
 	 * Optional HTTP headers to be added to the chat completion request.
 	 */
 	@NestedConfigurationProperty
@@ -307,8 +316,12 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
 		public Builder withHttpHeaders(Map<String, String> httpHeaders) {
-			Assert.notNull(httpHeaders, "HTTP headers must not be null");
 			this.options.httpHeaders = httpHeaders;
 			return this;
 		}
@@ -468,6 +481,15 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return this.toolChoice;
 	}
 
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
 	public void setToolChoice(String toolChoice) {
 		this.toolChoice = toolChoice;
 	}
@@ -522,152 +544,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((frequencyPenalty == null) ? 0 : frequencyPenalty.hashCode());
-		result = prime * result + ((logitBias == null) ? 0 : logitBias.hashCode());
-		result = prime * result + ((logprobs == null) ? 0 : logprobs.hashCode());
-		result = prime * result + ((topLogprobs == null) ? 0 : topLogprobs.hashCode());
-		result = prime * result + ((maxTokens == null) ? 0 : maxTokens.hashCode());
-		result = prime * result + ((n == null) ? 0 : n.hashCode());
-		result = prime * result + ((presencePenalty == null) ? 0 : presencePenalty.hashCode());
-		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
-		result = prime * result + ((streamOptions == null) ? 0 : streamOptions.hashCode());
-		result = prime * result + ((seed == null) ? 0 : seed.hashCode());
-		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
-		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
-		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
-		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
-		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
-		result = prime * result + ((user == null) ? 0 : user.hashCode());
-		result = prime * result + ((parallelToolCalls == null) ? 0 : parallelToolCalls.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		OpenAiChatOptions other = (OpenAiChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null)
-				return false;
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty))
-			return false;
-		if (this.logitBias == null) {
-			if (other.logitBias != null)
-				return false;
-		}
-		else if (!this.logitBias.equals(other.logitBias))
-			return false;
-		if (this.logprobs == null) {
-			if (other.logprobs != null)
-				return false;
-		}
-		else if (!this.logprobs.equals(other.logprobs))
-			return false;
-		if (this.topLogprobs == null) {
-			if (other.topLogprobs != null)
-				return false;
-		}
-		else if (!this.topLogprobs.equals(other.topLogprobs))
-			return false;
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null)
-				return false;
-		}
-		else if (!this.maxTokens.equals(other.maxTokens))
-			return false;
-		if (this.n == null) {
-			if (other.n != null)
-				return false;
-		}
-		else if (!this.n.equals(other.n))
-			return false;
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null)
-				return false;
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty))
-			return false;
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null)
-				return false;
-		}
-		else if (!this.responseFormat.equals(other.responseFormat))
-			return false;
-		if (this.streamOptions == null) {
-			if (other.streamOptions != null)
-				return false;
-		}
-		else if (!this.streamOptions.equals(other.streamOptions))
-			return false;
-		if (this.seed == null) {
-			if (other.seed != null)
-				return false;
-		}
-		else if (!this.seed.equals(other.seed))
-			return false;
-		if (this.stop == null) {
-			if (other.stop != null)
-				return false;
-		}
-		else if (!stop.equals(other.stop))
-			return false;
-		if (this.temperature == null) {
-			if (other.temperature != null)
-				return false;
-		}
-		else if (!this.temperature.equals(other.temperature))
-			return false;
-		if (this.topP == null) {
-			if (other.topP != null)
-				return false;
-		}
-		else if (!topP.equals(other.topP))
-			return false;
-		if (this.tools == null) {
-			if (other.tools != null)
-				return false;
-		}
-		else if (!tools.equals(other.tools))
-			return false;
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null)
-				return false;
-		}
-		else if (!toolChoice.equals(other.toolChoice))
-			return false;
-		if (this.user == null) {
-			if (other.user != null)
-				return false;
-		}
-		else if (!this.user.equals(other.user))
-			return false;
-		else if (this.parallelToolCalls == null) {
-			if (other.parallelToolCalls != null)
-				return false;
-		}
-		else if (!this.parallelToolCalls.equals(other.parallelToolCalls))
-			return false;
-
-		return true;
-	}
-
-	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
 	}
@@ -695,7 +571,40 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.withHttpHeaders(fromOptions.getHttpHeaders())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
 			.build();
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.model, this.frequencyPenalty, this.logitBias, this.logprobs, this.topLogprobs,
+				this.maxTokens, this.n, this.presencePenalty, this.responseFormat, this.streamOptions, this.seed,
+				this.stop, this.temperature, this.topP, this.tools, this.toolChoice, this.user, this.parallelToolCalls,
+				this.functionCallbacks, this.functions, this.httpHeaders, this.proxyToolCalls);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		OpenAiChatOptions other = (OpenAiChatOptions) o;
+		return Objects.equals(this.model, other.model) && Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
+				&& Objects.equals(this.logitBias, other.logitBias) && Objects.equals(this.logprobs, other.logprobs)
+				&& Objects.equals(this.topLogprobs, other.topLogprobs)
+				&& Objects.equals(this.maxTokens, other.maxTokens) && Objects.equals(this.n, other.n)
+				&& Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.responseFormat, other.responseFormat)
+				&& Objects.equals(this.streamOptions, other.streamOptions) && Objects.equals(this.seed, other.seed)
+				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.tools, other.tools)
+				&& Objects.equals(this.toolChoice, other.toolChoice) && Objects.equals(this.user, other.user)
+				&& Objects.equals(this.parallelToolCalls, other.parallelToolCalls)
+				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
+				&& Objects.equals(this.functions, other.functions)
+				&& Objects.equals(this.httpHeaders, other.httpHeaders)
+				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls);
 	}
 
 	@Override

@@ -180,7 +180,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(response));
 
-		if (isToolCall(chatResponse, Set.of(FinishReason.STOP.name()))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions)
+				&& isToolCall(chatResponse, Set.of(FinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -209,7 +210,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 				ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(response));
 
-				if (isToolCall(chatResponse,
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
 						Set.of(FinishReason.STOP.name(), FinishReason.FINISH_REASON_UNSPECIFIED.name()))) {
 					var toolCallConversation = handleToolCalls(prompt, chatResponse);
 					// Recursively call the stream method with the tool call message

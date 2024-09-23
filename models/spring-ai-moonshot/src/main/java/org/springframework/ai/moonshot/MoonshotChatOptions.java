@@ -137,6 +137,9 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	 */
 	private @JsonProperty("user") String user;
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
@@ -244,6 +247,11 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			return this;
 		}
 
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
 		public MoonshotChatOptions build() {
 			return this.options;
 		}
@@ -346,6 +354,15 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	}
 
 	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
 	public MoonshotChatOptions copy() {
 		return builder().withModel(this.model)
 			.withMaxTokens(this.maxTokens)
@@ -360,6 +377,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			.withToolChoice(this.toolChoice)
 			.withFunctionCallbacks(this.functionCallbacks)
 			.withFunctions(this.functions)
+			.withProxyToolCalls(this.proxyToolCalls)
 			.build();
 	}
 
@@ -376,6 +394,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
 		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
 		result = prime * result + ((user == null) ? 0 : user.hashCode());
+		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
 		return result;
 	}
 
@@ -440,6 +459,11 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			return other.user == null;
 		}
 		else if (!this.user.equals(other.user))
+			return false;
+		if (this.proxyToolCalls == null) {
+			return other.proxyToolCalls == null;
+		}
+		else if (!this.proxyToolCalls.equals(other.proxyToolCalls))
 			return false;
 		return true;
 	}

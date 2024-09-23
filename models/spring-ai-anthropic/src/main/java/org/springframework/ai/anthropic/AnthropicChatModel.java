@@ -225,7 +225,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				return chatResponse;
 			});
 
-		if (response != null && this.isToolCall(response, Set.of("tool_use"))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
+				&& this.isToolCall(response, Set.of("tool_use"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
 		}
@@ -256,7 +257,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse);
 
-				if (this.isToolCall(chatResponse, Set.of("tool_use"))) {
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = handleToolCalls(prompt, chatResponse);
 					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 				}

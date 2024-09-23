@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.chat;
+package org.springframework.ai.openai.chat.proxy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -50,6 +50,8 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
+import org.springframework.ai.openai.chat.ActorsFilms;
+import org.springframework.ai.openai.chat.OpenAiChatModelIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -59,35 +61,18 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.ollama.OllamaContainer;
 
 import reactor.core.publisher.Flux;
 
-@Disabled("For manual smoke testing only.")
-@Testcontainers
-@SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
-class OllamaWithOpenAiChatModelIT {
+@SpringBootTest(classes = GroqWithOpenAiChatModelIT.Config.class)
+@EnabledIfEnvironmentVariable(named = "GROQ_API_KEY", matches = ".+")
+class GroqWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
 
-	private static final String DEFAULT_OLLAMA_MODEL = "mistral";
+	private static final String GROQ_BASE_URL = "https://api.groq.com/openai";
 
-	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.3.6");
-
-	static String baseUrl = "http://localhost:11434";
-
-	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + DEFAULT_OLLAMA_MODEL + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", DEFAULT_OLLAMA_MODEL);
-		ollamaContainer.execInContainer("ollama", "pull", "llava");
-		logger.info(DEFAULT_OLLAMA_MODEL + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
-	}
+	private static final String DEFAULT_GROQ_MODEL = "llama3-70b-8192";
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -130,7 +115,7 @@ class OllamaWithOpenAiChatModelIT {
 	}
 
 	@Test
-	@Disabled("Not supported by the current Ollama API")
+	@Disabled("Not supported by the current Groq API")
 	void streamingWithTokenUsage() {
 		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
 
@@ -261,8 +246,7 @@ class OllamaWithOpenAiChatModelIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -281,7 +265,6 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamFunctionCallTest() {
 
@@ -313,8 +296,9 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(content).contains("30", "10", "15");
 	}
 
+	@Disabled("Groq does not support multi modality API")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llava" })
+	@ValueSource(strings = { "llama3-70b-8192" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		var imageData = new ClassPathResource("/test.png");
@@ -330,9 +314,9 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
 	}
 
-	@Disabled("Not supported by the current Ollama API")
+	@Disabled("Groq does not support multi modality API")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llava" })
+	@ValueSource(strings = { "llama3-70b-8192" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?", List
@@ -347,17 +331,15 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
 	}
 
-	@Disabled("Not supported by the current Ollama API")
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llava" })
-	void streamingMultiModalityImageUrl(String modelName) throws IOException {
+	@Disabled("Groq does not support multi modality API")
+	@Test
+	void streamingMultiModalityImageUrl() throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?", List
 			.of(new Media(MimeTypeUtils.IMAGE_PNG,
 					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
 
-		Flux<ChatResponse> response = chatModel
-			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+		Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage)));
 
 		String content = response.collectList()
 			.block()
@@ -373,7 +355,7 @@ class OllamaWithOpenAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "mistral" })
+	@ValueSource(strings = { "llama3-8b-8192", "llama3-70b-8192", "mixtral-8x7b-32768", "gemma-7b-it" })
 	void validateCallResponseMetadata(String model) {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
@@ -396,12 +378,12 @@ class OllamaWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(baseUrl, "");
+			return new OpenAiApi(GROQ_BASE_URL, System.getenv("GROQ_API_KEY"));
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().withModel(DEFAULT_OLLAMA_MODEL).build());
+			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().withModel(DEFAULT_GROQ_MODEL).build());
 		}
 
 	}

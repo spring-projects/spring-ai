@@ -151,7 +151,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		ChatResponse chatResponse = toChatResponse(chatCompletions);
 
-		if (isToolCall(chatResponse, Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions)
+				&& isToolCall(chatResponse, Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -199,7 +200,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 			ChatResponse chatResponse = toChatResponse(chatCompletions);
 
-			if (isToolCall(chatResponse, Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
+			if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
+					Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
 				var toolCallConversation = handleToolCalls(prompt, chatResponse);
 				// Recursively call the call method with the tool call message
 				// conversation that contains the call responses.
