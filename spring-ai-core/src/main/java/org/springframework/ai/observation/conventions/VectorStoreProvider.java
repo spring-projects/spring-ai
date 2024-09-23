@@ -29,26 +29,25 @@ package org.springframework.ai.observation.conventions;
 public enum VectorStoreProvider {
 
 	// @formatter:off
-
-	// Please, keep the alphabetical sorting.
-	AZURE("azure"),
-	CASSANDRA("cassandra"),
-	CHROMA("chroma"),
-	ELASTICSEARCH("elasticsearch"),
-	GEMFIRE("gemfire"),
-	HANA("hana"),
-	MILVUS("milvus"),
-	MONGODB("mongodb"),
-	NEO4J("neo4j"),
-	OPENSEARCH("opensearch"),
-	ORACLE("oracle"),
-	PG_VECTOR("pg_vector"),
-	PINECONE("pinecone"),
-	QDRANT("qdrant"),
-	REDIS("redis"),
-	SIMPLE("simple"),
-	TYPESENSE("typesense"),
-	WEAVIATE("weaviate");
+        PG_VECTOR("pg_vector"),
+        AZURE("azure"),
+        CASSANDRA("cassandra"),
+        CHROMA("chroma"),
+		COSMOSDB("cosmosdb"),
+        ELASTICSEARCH("elasticsearch"),
+        MILVUS("milvus"),
+        NEO4J("neo4j"),
+        OPENSEARCH("opensearch"),
+        QDRANT("qdrant"),
+        REDIS("redis"),
+        TYPESENSE("typesense"),
+        WEAVIATE("weaviate"),
+        PINECONE("pinecone"),
+        ORACLE("oracle"),
+        MONGODB("mongodb"),
+        GEMFIRE("gemfire"),
+        HANA("hana"),
+        SIMPLE("simple");
 
 	// @formatter:on
 
