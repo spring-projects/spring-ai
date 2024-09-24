@@ -281,22 +281,22 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			return new ChatResponse(List.of());
 		}
 
-		List<Generation> generations = new ArrayList<>(chatCompletion.content()
+		List<Generation> generations = chatCompletion.content()
 				.stream()
 				.filter(content -> content.type() != Type.TOOL_USE)
 				.map(content -> {
 					return new Generation(new AssistantMessage(content.text(), Map.of()),
 							ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
 				})
-				.toList());
+				.toList();
+
+		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
 			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
 					ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
-			generations.add(generation);
+			allGenerations.add(generation);
 		}
-
-		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		List<ContentBlock> toolToUseList = chatCompletion.content()
 			.stream()
