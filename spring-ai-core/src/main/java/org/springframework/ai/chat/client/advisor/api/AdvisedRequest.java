@@ -83,7 +83,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		builder.advisors = from.advisors;
 		builder.advisorParams = from.advisorParams;
 		builder.adviseContext = from.adviseContext;
-		
+
 		return builder;
 	}
 

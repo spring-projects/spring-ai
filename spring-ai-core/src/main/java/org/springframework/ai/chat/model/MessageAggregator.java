@@ -47,17 +47,6 @@ public class MessageAggregator {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
 
-	public Flux<AdvisedResponse> aggregateAdvisedResponse(Flux<AdvisedResponse> advisedResponseFlux,
-			Consumer<ChatResponse> onAggregationComplete) {
-
-		AtomicReference<Map<String, Object>> adviseContext = new AtomicReference<>();
-
-		return aggregate(advisedResponseFlux.map(advisedResponse -> {
-			adviseContext.set(advisedResponse.adviseContext());
-			return advisedResponse.response();
-		}), onAggregationComplete).map(chatResponse -> new AdvisedResponse(chatResponse, adviseContext.get()));
-	}
-
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
 

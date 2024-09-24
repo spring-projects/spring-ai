@@ -491,16 +491,16 @@ public class DefaultChatClient implements ChatClient {
 							}
 							// ON_FINISH_ELEMENT
 							if (!CollectionUtils.isEmpty(onFinishElementResponseAdvisors)) {
-								for (AfterAdvisor advisor : onFinishElementResponseAdvisors) {
-									boolean withFinishReason = advisedResponse.response()
-										.getResults()
-										.stream()
-										.filter(result -> result != null && result.getMetadata() != null
-												&& StringUtils.hasText(result.getMetadata().getFinishReason()))
-										.findFirst()
-										.isPresent();
+								boolean withFinishReason = advisedResponse.response()
+									.getResults()
+									.stream()
+									.filter(result -> result != null && result.getMetadata() != null
+											&& StringUtils.hasText(result.getMetadata().getFinishReason()))
+									.findFirst()
+									.isPresent();
 
-									if (withFinishReason) {
+								if (withFinishReason) {
+									for (AfterAdvisor advisor : onFinishElementResponseAdvisors) {
 										advisedResponse = AdvisorObservableHelper.adviseResponse(parentObservation,
 												advisor, advisedResponse);
 									}
@@ -528,10 +528,10 @@ public class DefaultChatClient implements ChatClient {
 							.toList();
 
 						if (!CollectionUtils.isEmpty(aggregateResponseAdvisors)) {
-							AtomicReference<Map<String, Object>> adviseContext = new AtomicReference<>();
+							AtomicReference<Map<String, Object>> adviseContext = new AtomicReference<>(new HashMap<>());
 
 							advisedResponses = new MessageAggregator().aggregate(advisedResponses.map(ar -> {
-								adviseContext.set(ar.adviseContext());
+								adviseContext.get().putAll(ar.adviseContext());
 								return ar.response();
 							}), chatResponse -> {
 								AdvisedResponse advisedResponse = AdvisedResponse.builder()
