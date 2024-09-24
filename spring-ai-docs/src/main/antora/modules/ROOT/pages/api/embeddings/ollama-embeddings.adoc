@@ -184,14 +184,13 @@ var ollamaApi = new OllamaApi();
 var embeddingModel = new OllamaEmbeddingModel(ollamaApi,
         OllamaOptions.builder()
 			.withModel(OllamaModel.MISTRAL.id())
-            .build()
-            .toMap());
+            .build());
 
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.builder()
             .withModel("chroma/all-minilm-l6-v2-f32"))
-            .withtTruncate(false)
+            .withTruncate(false)
             .build());
 ----
 
