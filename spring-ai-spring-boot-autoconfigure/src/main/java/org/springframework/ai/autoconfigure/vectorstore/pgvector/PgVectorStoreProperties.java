@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author Christian Tzolov
  * @author Muthukumaran Navaneethakrishnan
+ * @author Soby Chacko
  */
 @ConfigurationProperties(PgVectorStoreProperties.CONFIG_PREFIX)
 public class PgVectorStoreProperties extends CommonVectorStoreProperties {
@@ -44,6 +45,8 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 	private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
 
 	private boolean schemaValidation = PgVectorStore.DEFAULT_SCHEMA_VALIDATION;
+
+	private int maxDocumentBatchSize = PgVectorStore.MAX_DOCUMENT_BATCH_SIZE;
 
 	public int getDimensions() {
 		return dimensions;
@@ -99,6 +102,14 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setSchemaValidation(boolean schemaValidation) {
 		this.schemaValidation = schemaValidation;
+	}
+
+	public int getMaxDocumentBatchSize() {
+		return this.maxDocumentBatchSize;
+	}
+
+	public void setMaxDocumentBatchSize(int maxDocumentBatchSize) {
+		this.maxDocumentBatchSize = maxDocumentBatchSize;
 	}
 
 }
