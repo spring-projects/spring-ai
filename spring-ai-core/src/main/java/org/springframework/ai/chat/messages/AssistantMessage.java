@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Lets the generative know the content was generated as a response to the user. This role
@@ -52,13 +53,12 @@ public class AssistantMessage extends AbstractMessage {
 		this.toolCalls = toolCalls;
 	}
 
-	@Override
-	public String getContent() {
-		return this.textContent;
-	}
-
 	public List<ToolCall> getToolCalls() {
 		return this.toolCalls;
+	}
+
+	public boolean hasToolCalls() {
+		return !CollectionUtils.isEmpty(this.toolCalls);
 	}
 
 	@Override

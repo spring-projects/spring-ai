@@ -42,6 +42,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
 import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -104,10 +105,32 @@ public class DefaultChatClient implements ChatClient {
 	public ChatClientRequestSpec prompt(Prompt prompt) {
 
 		DefaultChatClientRequestSpec spec = new DefaultChatClientRequestSpec(this.defaultChatClientRequest);
-		spec.messages(prompt.getInstructions());
+
+		// Options
 		if (prompt.getOptions() != null) {
 			spec.options(prompt.getOptions());
 		}
+
+		// Messages
+		List<Message> messages = prompt.getInstructions();
+
+		if (!CollectionUtils.isEmpty(messages)) {
+			var lastMessage = messages.get(messages.size() - 1);
+			if (lastMessage.getMessageType() == MessageType.USER) {
+				// Unzip the last message
+				var userMessage = (UserMessage) lastMessage;
+				if (StringUtils.hasText(userMessage.getContent())) {
+					spec.user(lastMessage.getContent());
+				}
+				var media = userMessage.getMedia();
+				if (!CollectionUtils.isEmpty(media)) {
+					spec.user(u -> u.media(media.toArray(new Media[media.size()])));
+				}
+				messages = messages.subList(0, messages.size() - 1);
+			}
+		}
+
+		spec.messages(messages);
 
 		return spec;
 	}

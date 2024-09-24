@@ -38,6 +38,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
@@ -67,14 +68,15 @@ public class ChatClientTest {
 	@Test
 	public void defaultSystemText() {
 
-		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+		when(chatModel.call(promptCaptor.capture()))
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		when(chatModel.stream(promptCaptor.capture()))
-			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
-				sink.next(state);
-				sink.complete();
-				return state;
-			}));
+		when(chatModel.stream(promptCaptor.capture())).thenReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+					sink.next(state);
+					sink.complete();
+					return state;
+				}));
 
 		var chatClient = ChatClient.builder(chatModel).defaultSystem("Default system text").build();
 
@@ -114,14 +116,15 @@ public class ChatClientTest {
 	@Test
 	public void defaultSystemTextLambda() {
 
-		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+		when(chatModel.call(promptCaptor.capture()))
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		when(chatModel.stream(promptCaptor.capture()))
-			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
-				sink.next(state);
-				sink.complete();
-				return state;
-			}));
+		when(chatModel.stream(promptCaptor.capture())).thenReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+					sink.next(state);
+					sink.complete();
+					return state;
+				}));
 
 		var chatClient = ChatClient.builder(chatModel)
 			.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
@@ -438,10 +441,9 @@ public class ChatClientTest {
 	@Test
 	public void simpleUserPromptAsString() {
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		assertThat(ChatClient.builder(chatModel).build().prompt("User prompt").call().content())
-				.isEqualTo("response");
+		assertThat(ChatClient.builder(chatModel).build().prompt("User prompt").call().content()).isEqualTo("response");
 
 		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getContent()).isEqualTo("User prompt");
@@ -466,13 +468,17 @@ public class ChatClientTest {
 		when(chatModel.call(promptCaptor.capture()))
 			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		UserMessage message = new UserMessage("User prompt");
+		var media = new Media(MimeTypeUtils.IMAGE_JPEG, new DefaultResourceLoader().getResource("classpath:/bikes.json"));
+
+		UserMessage message = new UserMessage("User prompt", List.of(media));
 		Prompt prompt = new Prompt(message);
 		assertThat(ChatClient.builder(chatModel).build().prompt(prompt).call().content()).isEqualTo("response");
 
+		assertThat(promptCaptor.getValue().getInstructions()).hasSize(1);
 		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
-		assertThat(userMessage.getContent()).isEqualTo("User prompt");
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getContent()).isEqualTo("User prompt");
+		assertThat(((UserMessage) userMessage).getMedia()).hasSize(1);
 	}
 
 	@Test
@@ -527,7 +533,7 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG);
 		assertThat(userMessage.getMedia().iterator().next().getData())
 			.isEqualTo("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
-		
+
 		FunctionCallingOptions runtieOptions = (FunctionCallingOptions) promptCaptor.getValue().getOptions();
 
 		assertThat(runtieOptions.getFunctions()).containsExactly("function1");

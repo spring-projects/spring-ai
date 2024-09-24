@@ -230,7 +230,7 @@ public abstract class AbstractToolCallSupport {
 	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
 		var finishReason = (generation.getMetadata().getFinishReason() != null)
 				? generation.getMetadata().getFinishReason() : "";
-		return !CollectionUtils.isEmpty(generation.getOutput().getToolCalls()) && toolCallFinishReasons.stream()
+		return generation.getOutput().hasToolCalls() && toolCallFinishReasons.stream()
 			.map(s -> s.toLowerCase())
 			.toList()
 			.contains(finishReason.toLowerCase());

@@ -66,6 +66,7 @@ import reactor.core.publisher.Flux;
 
 @SpringBootTest(classes = GroqWithOpenAiChatModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "GROQ_API_KEY", matches = ".+")
+@Disabled("Due to rate limiting it is hard to run it in one go")
 class GroqWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
