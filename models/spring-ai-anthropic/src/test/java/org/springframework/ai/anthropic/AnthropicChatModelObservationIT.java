@@ -118,7 +118,7 @@ public class AnthropicChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, KeyValue.NONE_VALUE);
+		validate(responseMetadata, "[\"end_turn\"]");
 	}
 
 	private void validate(ChatResponseMetadata responseMetadata, String finishReasons) {

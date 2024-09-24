@@ -70,6 +70,7 @@ import reactor.core.publisher.Mono;
  * @author luocongqiu
  * @author Mariusz Bernacki
  * @author Thomas Vitale
+ * @author Claudio Silva Junior
  * @since 1.0.0
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -292,6 +293,12 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
+
+		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
+			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
+					ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
+			allGenerations.add(generation);
+		}
 
 		List<ContentBlock> toolToUseList = chatCompletion.content()
 			.stream()
