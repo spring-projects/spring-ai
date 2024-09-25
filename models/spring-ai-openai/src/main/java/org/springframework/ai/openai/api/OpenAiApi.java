@@ -390,6 +390,8 @@ public class OpenAiApi {
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion.
 	 * The total length of input tokens and generated tokens is limited by the model's
 	 * context length.
+	 * @param maxCompletionTokens An upper bound for the number of tokens that can be
+	 * generated for a completion, including visible output tokens and reasoning tokens.
 	 * @param n How many chat completion choices to generate for each input message. Note
 	 * that you will be charged based on the number of generated tokens across all the
 	 * choices. Keep n as 1 to minimize costs.
@@ -442,6 +444,7 @@ public class OpenAiApi {
 			@JsonProperty("logprobs") Boolean logprobs,
 			@JsonProperty("top_logprobs") Integer topLogprobs,
 			@JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("max_completion_tokens") Integer maxCompletionTokens,
 			@JsonProperty("n") Integer n,
 			@JsonProperty("presence_penalty") Double presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
@@ -464,7 +467,7 @@ public class OpenAiApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(messages, model, null, null, null, null, null, null, null,
+			this(messages, model, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
 					null, null, null, null);
 		}
@@ -479,7 +482,7 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
-			this(messages, model, null, null, null, null, null, null, null,
+			this(messages, model, null, null, null, null, null, null, null, null,
 					null, null, null, stream, null, temperature, null,
 					null, null, null,  null);
 		}
@@ -495,7 +498,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
-			this(messages, model, null, null, null, null, null, null, null,
+			this(messages, model, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, 0.8, null,
 					tools, toolChoice, null, null);
 		}
@@ -509,7 +512,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null,
-					null, null, null, stream, null, null, null,
+					null, null, null, null, stream, null, null, null,
 					null, null, null, null);
 		}
 
@@ -520,7 +523,7 @@ public class OpenAiApi {
 		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
 		 */
 		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
-			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, presencePenalty,
+			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, maxCompletionTokens, n, presencePenalty,
 					responseFormat, seed, stop, stream, streamOptions, temperature, topP,
 					tools, toolChoice, parallelToolCalls, user);
 		}
