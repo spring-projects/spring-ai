@@ -345,7 +345,6 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 				toolResponseMessage.getResponses().forEach(response -> {
 					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
-					Assert.isTrue(response.name() != null, "ToolResponseMessage must have a name");
 				});
 
 				return toolResponseMessage.getResponses()
