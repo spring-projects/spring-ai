@@ -31,7 +31,9 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -48,6 +50,9 @@ public class ChromaApi {
 
 	// Regular expression pattern that looks for a message inside the ValueError(...).
 	private static Pattern VALUE_ERROR_PATTERN = Pattern.compile("ValueError\\('([^']*)'\\)");
+
+	// Regular expression pattern that looks for a message.
+	private static Pattern MESSAGE_ERROR_PATTERN = Pattern.compile("\"message\":\"(.*?)\"");
 
 	private RestClient restClient;
 
@@ -316,8 +321,8 @@ public class ChromaApi {
 				.toEntity(Collection.class)
 				.getBody();
 		}
-		catch (HttpServerErrorException e) {
-			String msg = this.getValueErrorMessage(e.getMessage());
+		catch (HttpServerErrorException | HttpClientErrorException e) {
+			String msg = this.getErrorMessage(e);
 			if (String.format("Collection %s does not exist.", collectionName).equals(msg)) {
 				return null;
 			}
@@ -413,12 +418,28 @@ public class ChromaApi {
 		}
 	}
 
-	private String getValueErrorMessage(String logString) {
-		if (!StringUtils.hasText(logString)) {
+	private String getErrorMessage(HttpStatusCodeException e) {
+		var errorMessage = e.getMessage();
+
+		// If the error message is empty or null, return an empty string
+		if (!StringUtils.hasText(errorMessage)) {
 			return "";
 		}
-		Matcher m = VALUE_ERROR_PATTERN.matcher(logString);
-		return (m.find()) ? m.group(1) : "";
+
+		// If the exception is an HttpServerErrorException, use the VALUE_ERROR_PATTERN
+		Matcher valueErrorMatcher = VALUE_ERROR_PATTERN.matcher(errorMessage);
+		if (e instanceof HttpServerErrorException && valueErrorMatcher.find()) {
+			return valueErrorMatcher.group(1);
+		}
+
+		// Otherwise, use the MESSAGE_ERROR_PATTERN for other cases
+		Matcher messageErrorMatcher = MESSAGE_ERROR_PATTERN.matcher(errorMessage);
+		if (messageErrorMatcher.find()) {
+			return messageErrorMatcher.group(1);
+		}
+
+		// If no pattern matches, return an empty string
+		return "";
 	}
 
 }

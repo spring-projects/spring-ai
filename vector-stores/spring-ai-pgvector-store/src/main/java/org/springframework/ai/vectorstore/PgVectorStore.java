@@ -15,14 +15,10 @@
  */
 package org.springframework.ai.vectorstore;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pgvector.PGvector;
+import io.micrometer.observation.ObservationRegistry;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +42,14 @@ import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pgvector.PGvector;
-
-import io.micrometer.observation.ObservationRegistry;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Uses the "vector_store" table to store the Spring AI vector data. The table and the
@@ -81,6 +80,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
+	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
+
 	private final String vectorTableName;
 
 	private final String vectorIndexName;
@@ -109,6 +110,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final BatchingStrategy batchingStrategy;
 
+	private final int maxDocumentBatchSize;
+
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgDistanceType.COSINE_DISTANCE, false,
 				PgIndexType.NONE, false);
@@ -132,7 +135,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		this(DEFAULT_SCHEMA_NAME, vectorTableName, DEFAULT_SCHEMA_VALIDATION, jdbcTemplate, embeddingModel, dimensions,
 				distanceType, removeExistingVectorStoreTable, createIndexMethod, initializeSchema);
-
 	}
 
 	private PgVectorStore(String schemaName, String vectorTableName, boolean vectorTableValidationsEnabled,
@@ -141,14 +143,14 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		this(schemaName, vectorTableName, vectorTableValidationsEnabled, jdbcTemplate, embeddingModel, dimensions,
 				distanceType, removeExistingVectorStoreTable, createIndexMethod, initializeSchema,
-				ObservationRegistry.NOOP, null, new TokenCountBatchingStrategy());
+				ObservationRegistry.NOOP, null, new TokenCountBatchingStrategy(), MAX_DOCUMENT_BATCH_SIZE);
 	}
 
 	private PgVectorStore(String schemaName, String vectorTableName, boolean vectorTableValidationsEnabled,
 			JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions, PgDistanceType distanceType,
 			boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod, boolean initializeSchema,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
-			BatchingStrategy batchingStrategy) {
+			BatchingStrategy batchingStrategy, int maxDocumentBatchSize) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -172,6 +174,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.initializeSchema = initializeSchema;
 		this.schemaValidator = new PgVectorSchemaValidator(jdbcTemplate);
 		this.batchingStrategy = batchingStrategy;
+		this.maxDocumentBatchSize = maxDocumentBatchSize;
 	}
 
 	public PgDistanceType getDistanceType() {
@@ -180,40 +183,50 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public void doAdd(List<Document> documents) {
-
-		int size = documents.size();
-
 		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 
-		this.jdbcTemplate.batchUpdate(
-				"INSERT INTO " + getFullyQualifiedTableName()
-						+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
-						+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
-				new BatchPreparedStatementSetter() {
-					@Override
-					public void setValues(PreparedStatement ps, int i) throws SQLException {
+		List<List<Document>> batchedDocuments = batchDocuments(documents);
+		batchedDocuments.forEach(this::insertOrUpdateBatch);
+	}
 
-						var document = documents.get(i);
-						var content = document.getContent();
-						var json = toJson(document.getMetadata());
-						var embedding = document.getEmbedding();
-						var pGvector = new PGvector(embedding);
+	private List<List<Document>> batchDocuments(List<Document> documents) {
+		List<List<Document>> batches = new ArrayList<>();
+		for (int i = 0; i < documents.size(); i += this.maxDocumentBatchSize) {
+			batches.add(documents.subList(i, Math.min(i + this.maxDocumentBatchSize, documents.size())));
+		}
+		return batches;
+	}
 
-						StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
-								UUID.fromString(document.getId()));
-						StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
-						StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
-						StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
-						StatementCreatorUtils.setParameterValue(ps, 5, SqlTypeValue.TYPE_UNKNOWN, content);
-						StatementCreatorUtils.setParameterValue(ps, 6, SqlTypeValue.TYPE_UNKNOWN, json);
-						StatementCreatorUtils.setParameterValue(ps, 7, SqlTypeValue.TYPE_UNKNOWN, pGvector);
-					}
+	private void insertOrUpdateBatch(List<Document> batch) {
+		String sql = "INSERT INTO " + getFullyQualifiedTableName()
+				+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
+				+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
 
-					@Override
-					public int getBatchSize() {
-						return size;
-					}
-				});
+		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+
+				var document = batch.get(i);
+				var content = document.getContent();
+				var json = toJson(document.getMetadata());
+				var embedding = document.getEmbedding();
+				var pGvector = new PGvector(embedding);
+
+				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
+						UUID.fromString(document.getId()));
+				StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
+				StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
+				StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+				StatementCreatorUtils.setParameterValue(ps, 5, SqlTypeValue.TYPE_UNKNOWN, content);
+				StatementCreatorUtils.setParameterValue(ps, 6, SqlTypeValue.TYPE_UNKNOWN, json);
+				StatementCreatorUtils.setParameterValue(ps, 7, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+			}
+
+			@Override
+			public int getBatchSize() {
+				return batch.size();
+			}
+		});
 	}
 
 	private String toJson(Map<String, Object> map) {
@@ -285,7 +298,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	// Initialize
 	// ---------------------------------------------------------------------------------
 	@Override
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 
 		logger.info("Initializing PGVectorStore schema for table: {} in schema: {}", this.getVectorTableName(),
 				this.getSchemaName());
@@ -390,7 +403,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		 * speed-recall tradeoff). There’s no training step like IVFFlat, so the index can
 		 * be created without any data in the table.
 		 */
-		HNSW;
+		HNSW
 
 	}
 
@@ -443,7 +456,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private static final String COLUMN_DISTANCE = "distance";
 
-		private ObjectMapper objectMapper;
+		private final ObjectMapper objectMapper;
 
 		public DocumentRowMapper(ObjectMapper objectMapper) {
 			this.objectMapper = objectMapper;
@@ -508,6 +521,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
 		@Nullable
 		private VectorStoreObservationConvention searchObservationConvention;
@@ -576,11 +591,17 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return this;
 		}
 
+		public Builder withMaxDocumentBatchSize(int maxDocumentBatchSize) {
+			this.maxDocumentBatchSize = maxDocumentBatchSize;
+			return this;
+		}
+
 		public PgVectorStore build() {
 			return new PgVectorStore(this.schemaName, this.vectorTableName, this.vectorTableValidationsEnabled,
 					this.jdbcTemplate, this.embeddingModel, this.dimensions, this.distanceType,
 					this.removeExistingVectorStoreTable, this.indexType, this.initializeSchema,
-					this.observationRegistry, this.searchObservationConvention, this.batchingStrategy);
+					this.observationRegistry, this.searchObservationConvention, this.batchingStrategy,
+					this.maxDocumentBatchSize);
 		}
 
 	}

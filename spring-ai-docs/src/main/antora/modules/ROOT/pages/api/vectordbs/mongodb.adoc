@@ -256,5 +256,8 @@ List<Document> results = vectorStore.similaritySearch(
 );
 ----
 
+== Tutorials and Code Examples
+To get started with Spring AI and MongoDB:
 
-If you would like to try out Spring AI with MongoDB, see https://www.mongodb.com/docs/atlas/atlas-vector-search/ai-integrations/spring-ai/#std-label-spring-ai[Get Started with the Spring AI Integration].
+* See the https://www.mongodb.com/docs/atlas/atlas-vector-search/ai-integrations/spring-ai/#std-label-spring-ai[Getting Started guide for Spring AI Integration].
+* For a comprehensive code example demonstrating Retrieval Augmented Generation (RAG) with Spring AI and MongoDB, refer to this https://www.mongodb.com/developer/languages/java/retrieval-augmented-generation-spring-ai/[detailed tutorial].

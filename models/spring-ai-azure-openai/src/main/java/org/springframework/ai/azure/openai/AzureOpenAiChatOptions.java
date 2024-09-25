@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -40,6 +42,7 @@ import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
@@ -165,6 +168,37 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
+	/**
+	 * Seed value for deterministic sampling such that the same seed and parameters return
+	 * the same result.
+	 */
+	@JsonProperty(value = "seed")
+	private Long seed;
+
+	/**
+	 * Whether to return log probabilities of the output tokens or not. If true, returns
+	 * the log probabilities of each output token returned in the `content` of `message`.
+	 * This option is currently not available on the `gpt-4-vision-preview` model.
+	 */
+	@JsonProperty(value = "log_probs")
+	private Boolean logprobs;
+
+	/*
+	 * An integer between 0 and 5 specifying the number of most likely tokens to return at
+	 * each token position, each with an associated log probability. `logprobs` must be
+	 * set to `true` if this parameter is used.
+	 */
+	@JsonProperty(value = "top_log_probs")
+	private Integer topLogProbs;
+
+	/*
+	 * If provided, the configuration options for available Azure OpenAI chat
+	 * enhancements.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private AzureChatEnhancementConfiguration enhancements;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -256,6 +290,30 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withSeed(Long seed) {
+			Assert.notNull(seed, "seed must not be null");
+			this.options.seed = seed;
+			return this;
+		}
+
+		public Builder withLogprobs(Boolean logprobs) {
+			Assert.notNull(logprobs, "logprobs must not be null");
+			this.options.logprobs = logprobs;
+			return this;
+		}
+
+		public Builder withTopLogprobs(Integer topLogprobs) {
+			Assert.notNull(topLogprobs, "topLogprobs must not be null");
+			this.options.topLogProbs = topLogprobs;
+			return this;
+		}
+
+		public Builder withEnhancements(AzureChatEnhancementConfiguration enhancements) {
+			Assert.notNull(enhancements, "enhancements must not be null");
+			this.options.enhancements = enhancements;
 			return this;
 		}
 
@@ -404,6 +462,38 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		return null;
 	}
 
+	public Long getSeed() {
+		return this.seed;
+	}
+
+	public void setSeed(Long seed) {
+		this.seed = seed;
+	}
+
+	public Boolean isLogprobs() {
+		return this.logprobs;
+	}
+
+	public void setLogprobs(Boolean logprobs) {
+		this.logprobs = logprobs;
+	}
+
+	public Integer getTopLogProbs() {
+		return this.topLogProbs;
+	}
+
+	public void setTopLogProbs(Integer topLogProbs) {
+		this.topLogProbs = topLogProbs;
+	}
+
+	public AzureChatEnhancementConfiguration getEnhancements() {
+		return this.enhancements;
+	}
+
+	public void setEnhancements(AzureChatEnhancementConfiguration enhancements) {
+		this.enhancements = enhancements;
+	}
+
 	@Override
 	public Boolean getProxyToolCalls() {
 		return this.proxyToolCalls;
@@ -432,6 +522,10 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.withResponseFormat(fromOptions.getResponseFormat())
+			.withSeed(fromOptions.getSeed())
+			.withLogprobs(fromOptions.isLogprobs())
+			.withTopLogprobs(fromOptions.getTopLogProbs())
+			.withEnhancements(fromOptions.getEnhancements())
 			.build();
 	}
 

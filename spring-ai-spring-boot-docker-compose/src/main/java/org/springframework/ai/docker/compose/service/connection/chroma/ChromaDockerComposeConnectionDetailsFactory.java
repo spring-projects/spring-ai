@@ -60,7 +60,7 @@ class ChromaDockerComposeConnectionDetailsFactory
 
 		@Override
 		public String getHost() {
-			return this.host;
+			return "http://%s".formatted(this.host);
 		}
 
 		@Override

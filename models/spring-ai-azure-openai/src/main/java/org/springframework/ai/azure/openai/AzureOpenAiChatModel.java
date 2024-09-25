@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
@@ -92,6 +93,7 @@ import reactor.core.publisher.Mono;
  * @author Thomas Vitale
  * @author luocongqiu
  * @author timostark
+ * @author Soby Chacko
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  */
@@ -456,6 +458,18 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		mergedAzureOptions.setModel(fromAzureOptions.getModel() != null ? fromAzureOptions.getModel()
 				: toSpringAiOptions.getDeploymentName());
 
+		mergedAzureOptions
+			.setSeed(fromAzureOptions.getSeed() != null ? fromAzureOptions.getSeed() : toSpringAiOptions.getSeed());
+
+		mergedAzureOptions.setLogprobs((fromAzureOptions.isLogprobs() != null && fromAzureOptions.isLogprobs())
+				|| (toSpringAiOptions.isLogprobs() != null && toSpringAiOptions.isLogprobs()));
+
+		mergedAzureOptions.setTopLogprobs(fromAzureOptions.getTopLogprobs() != null ? fromAzureOptions.getTopLogprobs()
+				: toSpringAiOptions.getTopLogProbs());
+
+		mergedAzureOptions.setEnhancements(fromAzureOptions.getEnhancements() != null
+				? fromAzureOptions.getEnhancements() : toSpringAiOptions.getEnhancements());
+
 		return mergedAzureOptions;
 	}
 
@@ -520,6 +534,22 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			mergedAzureOptions.setResponseFormat(toAzureResponseFormat(fromSpringAiOptions.getResponseFormat()));
 		}
 
+		if (fromSpringAiOptions.getSeed() != null) {
+			mergedAzureOptions.setSeed(fromSpringAiOptions.getSeed());
+		}
+
+		if (fromSpringAiOptions.isLogprobs() != null) {
+			mergedAzureOptions.setLogprobs(fromSpringAiOptions.isLogprobs());
+		}
+
+		if (fromSpringAiOptions.getTopLogProbs() != null) {
+			mergedAzureOptions.setTopLogprobs(fromSpringAiOptions.getTopLogProbs());
+		}
+
+		if (fromSpringAiOptions.getEnhancements() != null) {
+			mergedAzureOptions.setEnhancements(fromSpringAiOptions.getEnhancements());
+		}
+
 		return mergedAzureOptions;
 	}
 
@@ -565,6 +595,19 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		}
 		if (fromOptions.getResponseFormat() != null) {
 			copyOptions.setResponseFormat(fromOptions.getResponseFormat());
+		}
+		if (fromOptions.getSeed() != null) {
+			copyOptions.setSeed(fromOptions.getSeed());
+		}
+
+		copyOptions.setLogprobs(fromOptions.isLogprobs());
+
+		if (fromOptions.getTopLogprobs() != null) {
+			copyOptions.setTopLogprobs(fromOptions.getTopLogprobs());
+		}
+
+		if (fromOptions.getEnhancements() != null) {
+			copyOptions.setEnhancements(fromOptions.getEnhancements());
 		}
 
 		return copyOptions;
