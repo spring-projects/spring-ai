@@ -83,6 +83,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 */
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
+	 * An upper bound for the number of tokens that can be generated for a completion,
+	 * including visible output tokens and reasoning tokens.
+	 */
+	private @JsonProperty("max_completion_tokens") Integer maxCompletionTokens;
+	/**
 	 * How many chat completion choices to generate for each input message. Note that you will be charged based
 	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 	 */
@@ -239,6 +244,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
+		public Builder withMaxCompletionTokens(Integer maxCompletionTokens) {
+			this.options.maxCompletionTokens = maxCompletionTokens;
+			return this;
+		}
+
 		public Builder withN(Integer n) {
 			this.options.n = n;
 			return this;
@@ -389,6 +399,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setMaxTokens(Integer maxTokens) {
 		this.maxTokens = maxTokens;
+	}
+
+	public Integer getMaxCompletionTokens() {
+		return maxCompletionTokens;
+	}
+
+	public void setMaxCompletionTokens(Integer maxCompletionTokens) {
+		this.maxCompletionTokens = maxCompletionTokens;
 	}
 
 	public Integer getN() {
@@ -556,6 +574,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withLogprobs(fromOptions.getLogprobs())
 			.withTopLogprobs(fromOptions.getTopLogprobs())
 			.withMaxTokens(fromOptions.getMaxTokens())
+			.withMaxCompletionTokens(fromOptions.getMaxCompletionTokens())
 			.withN(fromOptions.getN())
 			.withPresencePenalty(fromOptions.getPresencePenalty())
 			.withResponseFormat(fromOptions.getResponseFormat())
@@ -578,9 +597,10 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logitBias, this.logprobs, this.topLogprobs,
-				this.maxTokens, this.n, this.presencePenalty, this.responseFormat, this.streamOptions, this.seed,
-				this.stop, this.temperature, this.topP, this.tools, this.toolChoice, this.user, this.parallelToolCalls,
-				this.functionCallbacks, this.functions, this.httpHeaders, this.proxyToolCalls);
+				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
+				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
+				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
+				this.proxyToolCalls);
 	}
 
 	@Override
@@ -593,8 +613,9 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return Objects.equals(this.model, other.model) && Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
 				&& Objects.equals(this.logitBias, other.logitBias) && Objects.equals(this.logprobs, other.logprobs)
 				&& Objects.equals(this.topLogprobs, other.topLogprobs)
-				&& Objects.equals(this.maxTokens, other.maxTokens) && Objects.equals(this.n, other.n)
-				&& Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.maxTokens, other.maxTokens)
+				&& Objects.equals(this.maxCompletionTokens, other.maxCompletionTokens)
+				&& Objects.equals(this.n, other.n) && Objects.equals(this.presencePenalty, other.presencePenalty)
 				&& Objects.equals(this.responseFormat, other.responseFormat)
 				&& Objects.equals(this.streamOptions, other.streamOptions) && Objects.equals(this.seed, other.seed)
 				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.temperature, other.temperature)
