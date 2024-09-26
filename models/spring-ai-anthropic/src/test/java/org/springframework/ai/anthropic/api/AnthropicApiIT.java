@@ -29,6 +29,9 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.http.ResponseEntity;
 
+import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -40,6 +43,34 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class AnthropicApiIT {
 
 	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
+
+	@Test
+	void chatWithPromptCache() {
+		String userMessageText = "It could be either a contraction of the full title Quenta Silmarillion (\"Tale of the Silmarils\") or also a plain Genitive which "
+				+ "(as in Ancient Greek) signifies reference. This genitive is translated in English with \"about\" or \"of\" "
+				+ "constructions; the titles of the chapters in The Silmarillion are examples of this genitive in poetic English "
+				+ "(Of the Sindar, Of Men, Of the Darkening of Valinor etc), where \"of\" means \"about\" or \"concerning\". "
+				+ "In the same way, Silmarillion can be taken to mean \"Of/About the Silmarils\"";
+
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+				List.of(new ContentBlock(userMessageText.repeat(20), AnthropicCacheType.EPHEMERAL.cacheControl())),
+				Role.USER);
+
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
+				AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue(), List.of(chatCompletionMessage), null, 100, 0.8,
+				false);
+		AnthropicApi.Usage createdCacheToken = anthropicApi.chatCompletionEntity(chatCompletionRequest)
+			.getBody()
+			.usage();
+
+		assertThat(createdCacheToken.cacheCreationInputTokens()).isGreaterThan(0);
+		assertThat(createdCacheToken.cacheReadInputTokens()).isEqualTo(0);
+
+		AnthropicApi.Usage readCacheToken = anthropicApi.chatCompletionEntity(chatCompletionRequest).getBody().usage();
+
+		assertThat(readCacheToken.cacheCreationInputTokens()).isEqualTo(0);
+		assertThat(readCacheToken.cacheReadInputTokens()).isGreaterThan(0);
+	}
 
 	@Test
 	void chatCompletionEntity() {

@@ -42,6 +42,8 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
+import org.springframework.ai.anthropic.api.AnthropicCacheType;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -432,7 +434,16 @@ public class AnthropicChatModel implements ChatModel {
 			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
 			.map(message -> {
 				if (message.getMessageType() == MessageType.USER) {
-					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getText())));
+					AbstractMessage abstractMessage = (AbstractMessage) message;
+					List<ContentBlock> contents;
+					if (abstractMessage.getCache() != null) {
+						AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
+						contents = new ArrayList<>(
+								List.of(new ContentBlock(message.getText(), cacheType.cacheControl())));
+					}
+					else {
+						contents = new ArrayList<>(List.of(new ContentBlock(message.getText())));
+					}
 					if (message instanceof UserMessage userMessage) {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
