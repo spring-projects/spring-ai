@@ -364,7 +364,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 
-		Assert.isTrue(request.getTopK() > 0, "The number of documents to returned must be greater than zero");
+		Assert.isTrue(request.getTopK() > 0, "The number of documents to be returned must be greater than zero");
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");
 
@@ -382,6 +382,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		Query query = new Query(queryString).addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
 			.returnFields(returnFields.toArray(new String[0]))
 			.setSortBy(DISTANCE_FIELD_NAME, true)
+			.limit(0, request.getTopK())
 			.dialect(2);
 
 		SearchResult result = this.jedis.ftSearch(this.config.indexName, query);
