@@ -27,6 +27,7 @@ import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
 
 import com.knuddels.jtokkit.api.EncodingType;
+import org.springframework.util.Assert;
 
 /**
  * Token count based strategy implementation for {@link BatchingStrategy}. Using openai
@@ -96,7 +97,29 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 	 */
 	public TokenCountBatchingStrategy(EncodingType encodingType, int maxInputTokenCount, double reservePercentage,
 			ContentFormatter contentFormatter, MetadataMode metadataMode) {
+		Assert.notNull(encodingType, "EncodingType must not be null");
+		Assert.notNull(contentFormatter, "ContentFormatter must not be null");
+		Assert.notNull(metadataMode, "MetadataMode must not be null");
 		this.tokenCountEstimator = new JTokkitTokenCountEstimator(encodingType);
+		this.maxInputTokenCount = (int) Math.round(maxInputTokenCount * (1 - reservePercentage));
+		this.contentFormater = contentFormatter;
+		this.metadataMode = metadataMode;
+	}
+
+	/**
+	 * Constructs a TokenCountBatchingStrategy with the specified parameters.
+	 * @param tokenCountEstimator the TokenCountEstimator to be used for estimating token
+	 * counts.
+	 * @param maxInputTokenCount the initial upper limit for input tokens.
+	 * @param reservePercentage the percentage of tokens to reserve from the max input
+	 * token count to create a buffer.
+	 * @param contentFormatter the ContentFormatter to be used for formatting content.
+	 * @param metadataMode the MetadataMode to be used for handling metadata.
+	 */
+	public TokenCountBatchingStrategy(TokenCountEstimator tokenCountEstimator, int maxInputTokenCount,
+			double reservePercentage, ContentFormatter contentFormatter, MetadataMode metadataMode) {
+		Assert.notNull(tokenCountEstimator, "TokenCountEstimator must not be null");
+		this.tokenCountEstimator = tokenCountEstimator;
 		this.maxInputTokenCount = (int) Math.round(maxInputTokenCount * (1 - reservePercentage));
 		this.contentFormater = contentFormatter;
 		this.metadataMode = metadataMode;
