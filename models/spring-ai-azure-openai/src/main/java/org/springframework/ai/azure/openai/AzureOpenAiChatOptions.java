@@ -22,18 +22,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
+
+import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * The configuration information for a chat completions request. Completions support a
@@ -283,7 +282,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withResponseFormat(AzureOpenAiResponseFormat responseFormat) {
-			Assert.notNull(responseFormat, "responseFormat must not be null");
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
@@ -294,25 +292,21 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withSeed(Long seed) {
-			Assert.notNull(seed, "seed must not be null");
 			this.options.seed = seed;
 			return this;
 		}
 
 		public Builder withLogprobs(Boolean logprobs) {
-			Assert.notNull(logprobs, "logprobs must not be null");
 			this.options.logprobs = logprobs;
 			return this;
 		}
 
 		public Builder withTopLogprobs(Integer topLogprobs) {
-			Assert.notNull(topLogprobs, "topLogprobs must not be null");
 			this.options.topLogProbs = topLogprobs;
 			return this;
 		}
 
 		public Builder withEnhancements(AzureChatEnhancementConfiguration enhancements) {
-			Assert.notNull(enhancements, "enhancements must not be null");
 			this.options.enhancements = enhancements;
 			return this;
 		}

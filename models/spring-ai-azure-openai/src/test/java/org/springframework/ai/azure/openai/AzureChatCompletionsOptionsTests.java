@@ -16,24 +16,23 @@
 
 package org.springframework.ai.azure.openai;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
-import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
-import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
-
-import org.springframework.ai.chat.prompt.Prompt;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
+import org.springframework.ai.chat.prompt.Prompt;
+
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
+import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 
 /**
  * @author Christian Tzolov
@@ -161,6 +160,20 @@ public class AzureChatCompletionsOptionsTests {
 		else {
 			assertThat(options.getFrequencyPenalty()).isEqualTo(frequencyPenalty);
 		}
+	}
+
+	@Test
+	void fromOptionsCheckWithNullValuesExpectSuccess() {
+		var sourceOptions = AzureOpenAiChatOptions.builder().withMaxTokens(100).withPresencePenalty(0.5).build();
+
+		var targetOptions = AzureOpenAiChatOptions.fromOptions(sourceOptions);
+
+		assertThat(targetOptions.getMaxTokens()).isEqualTo(100);
+		assertThat(targetOptions.getPresencePenalty()).isEqualTo(0.5);
+		assertThat(targetOptions.getFrequencyPenalty()).isNull();
+		assertThat(targetOptions.getResponseFormat()).isNull();
+		assertThat(targetOptions.getSeed()).isNull();
+
 	}
 
 }
