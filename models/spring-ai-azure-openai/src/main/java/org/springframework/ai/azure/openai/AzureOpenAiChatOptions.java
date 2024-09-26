@@ -283,7 +283,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withResponseFormat(AzureOpenAiResponseFormat responseFormat) {
-			Assert.notNull(responseFormat, "responseFormat must not be null");
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
@@ -294,25 +293,21 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withSeed(Long seed) {
-			Assert.notNull(seed, "seed must not be null");
 			this.options.seed = seed;
 			return this;
 		}
 
 		public Builder withLogprobs(Boolean logprobs) {
-			Assert.notNull(logprobs, "logprobs must not be null");
 			this.options.logprobs = logprobs;
 			return this;
 		}
 
 		public Builder withTopLogprobs(Integer topLogprobs) {
-			Assert.notNull(topLogprobs, "topLogprobs must not be null");
 			this.options.topLogProbs = topLogprobs;
 			return this;
 		}
 
 		public Builder withEnhancements(AzureChatEnhancementConfiguration enhancements) {
-			Assert.notNull(enhancements, "enhancements must not be null");
 			this.options.enhancements = enhancements;
 			return this;
 		}
