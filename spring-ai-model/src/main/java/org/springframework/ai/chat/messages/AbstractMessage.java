@@ -51,18 +51,25 @@ public abstract class AbstractMessage implements Message {
 	 */
 	protected final String textContent;
 
+	protected String cache;
+
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
 	 */
 	protected final Map<String, Object> metadata;
 
-	/**
-	 * Create a new AbstractMessage with the given message type, text content, and
-	 * metadata.
-	 * @param messageType the message type
-	 * @param textContent the text content
-	 * @param metadata the metadata
-	 */
+	protected AbstractMessage(MessageType messageType, String textContent, Map<String, Object> metadata, String cache) {
+		Assert.notNull(messageType, "Message type must not be null");
+		if (messageType == MessageType.SYSTEM || messageType == MessageType.USER) {
+			Assert.notNull(textContent, "Content must not be null for SYSTEM or USER messages");
+		}
+		this.messageType = messageType;
+		this.textContent = textContent;
+		this.metadata = new HashMap<>(metadata);
+		this.metadata.put(MESSAGE_TYPE, messageType);
+		this.cache = cache;
+	}
+
 	protected AbstractMessage(MessageType messageType, String textContent, Map<String, Object> metadata) {
 		Assert.notNull(messageType, "Message type must not be null");
 		if (messageType == MessageType.SYSTEM || messageType == MessageType.USER) {
@@ -93,6 +100,20 @@ public abstract class AbstractMessage implements Message {
 		this.metadata.put(MESSAGE_TYPE, messageType);
 	}
 
+	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> metadata, String cache) {
+		Assert.notNull(resource, "Resource must not be null");
+		try (InputStream inputStream = resource.getInputStream()) {
+			this.textContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
+		}
+		this.messageType = messageType;
+		this.metadata = new HashMap<>(metadata);
+		this.metadata.put(MESSAGE_TYPE, messageType);
+		this.cache = cache;
+	}
+
 	/**
 	 * Get the content of the message.
 	 * @return the content of the message
@@ -118,6 +139,10 @@ public abstract class AbstractMessage implements Message {
 	@Override
 	public MessageType getMessageType() {
 		return this.messageType;
+	}
+
+	public String getCache() {
+		return cache;
 	}
 
 	@Override
