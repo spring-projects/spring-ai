@@ -368,8 +368,10 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 					List<ContentBlock> contents;
 					if (abstractMessage.getCache() != null) {
 						AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
-						contents = new ArrayList<>(List.of(new ContentBlock(message.getContent(), cacheType.cacheControl())));
-					} else {
+						contents = new ArrayList<>(
+								List.of(new ContentBlock(message.getContent(), cacheType.cacheControl())));
+					}
+					else {
 						contents = new ArrayList<>(List.of(new ContentBlock(message.getContent())));
 					}
 					if (message instanceof UserMessage userMessage) {

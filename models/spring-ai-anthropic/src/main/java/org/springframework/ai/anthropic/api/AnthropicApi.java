@@ -271,8 +271,8 @@ public class AnthropicApi {
 		}
 
 		/**
-		 * @param type is the cache type supported by anthropic.
-		 * <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
+		 * @param type is the cache type supported by anthropic. <a href=
+		 * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record CacheControl(String type) {

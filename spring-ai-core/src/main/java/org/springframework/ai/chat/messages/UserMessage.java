@@ -73,7 +73,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	}
 
 	public UserMessage(MessageType messageType, String textContent, Collection<Media> media,
-					   Map<String, Object> metadata, String cache) {
+			Map<String, Object> metadata, String cache) {
 		super(messageType, textContent, metadata, cache);
 		Assert.notNull(media, "media data must not be null");
 		this.media = new ArrayList<>(media);
@@ -103,4 +103,5 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	public String getCache() {
 		return super.getCache();
 	}
+
 }

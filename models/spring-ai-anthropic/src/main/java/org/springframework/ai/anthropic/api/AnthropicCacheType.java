@@ -5,6 +5,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.C
 import java.util.function.Supplier;
 
 public enum AnthropicCacheType {
+
 	EPHEMERAL(() -> new CacheControl("ephemeral"));
 
 	private Supplier<CacheControl> value;
@@ -16,4 +17,5 @@ public enum AnthropicCacheType {
 	public CacheControl cacheControl() {
 		return this.value.get();
 	}
+
 }
