@@ -35,10 +35,12 @@ import java.time.Duration;
  * Java client for the Bedrock Llama chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html
  *
+ * Model IDs can be found here https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
- * @since 0.8.0
+ * @since 1.0.0
  */
 public class LlamaChatBedrockApi extends
 		AbstractBedrockApi<LlamaChatRequest, LlamaChatResponse, LlamaChatResponse> {
@@ -226,7 +228,42 @@ public class LlamaChatBedrockApi extends
 		/**
 		 * meta.llama3-70b-instruct-v1:0
 		 */
-		LLAMA3_70B_INSTRUCT_V1("meta.llama3-70b-instruct-v1:0");
+		LLAMA3_70B_INSTRUCT_V1("meta.llama3-70b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-1-8b-instruct-v1:0
+		 */
+		LLAMA3_1_8B_INSTRUCT_V1("meta.llama3-1-8b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-1-70b-instruct-v1:0
+		 */
+		LLAMA3_1_70B_INSTRUCT_V1("meta.llama3-1-70b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-1-405b-instruct-v1:0
+		 */
+		LLAMA3_1_405B_INSTRUCT_V1("meta.llama3-1-405b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-2-1b-instruct-v1:0
+		 */
+		LLAMA3_2_1B_INSTRUCT_V1("meta.llama3-2-1b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-2-3b-instruct-v1:0
+		 */
+		LLAMA3_2_3B_INSTRUCT_V1("meta.llama3-2-3b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-2-11b-instruct-v1:0
+		 */
+		LLAMA3_2_11B_INSTRUCT_V1("meta.llama3-2-11b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-2-90b-instruct-v1:0
+		 */
+		LLAMA3_2_90B_INSTRUCT_V1("meta.llama3-2-90b-instruct-v1:0");
 
 		private final String id;
 
