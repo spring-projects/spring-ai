@@ -91,6 +91,66 @@ It will not be initialized for you by default.
 You must opt-in, by passing a `boolean` for the appropriate constructor argument or, if using Spring Boot, setting the appropriate `initialize-schema` property to `true` in `application.properties` or `application.yml`.
 Check the documentation for the vector store you are using for the specific property name.
 
+== Batching Strategy
+
+Spring AI includes a batching feature to address a crucial limitation in the document embedding process.
+Embedding models typically have an upper threshold for tokens and cannot process more than this threshold in a single embedding request.
+When inserting a large number of documents into a vector store, the combined content may exceed this token threshold.
+Batching solves this issue by breaking down the documents into smaller groups that fit within the model's limits.
+This feature is implemented through the `BatchingStrategy` interface, which allows for processing documents in sub-batches rather than individually.
+In addition to solving the threshold issue, batching can lead to significant performance benefits, especially when dealing with large numbers of documents or APIs with token limitations.
+
+The core `BatchingStrategy` interface is defined as follows:
+
+[source,java]
+----
+public interface BatchingStrategy {
+    List<List<Document>> batch(List<Document> documents);
+}
+----
+
+This interface defines a single method, `batch`, which takes a list of documents and returns a list of document batches.
+
+=== Default Implementation: TokenCountBatchingStrategy
+
+Spring AI provides a default implementation called `TokenCountBatchingStrategy`.
+This strategy batches documents based on their token counts, ensuring that each batch does not exceed a calculated maximum input token count.
+
+Key features of `TokenCountBatchingStrategy`:
+
+1. Uses https://platform.openai.com/docs/guides/embeddings/embedding-models[OpenAI's] max input token count (8191) as the default upper limit.
+2. Incorporates a reserve percentage (default 10%) to provide a buffer for potential overhead.
+3. Calculates the actual max input token count as: `actualMaxInputTokenCount = originalMaxInputTokenCount * (1 - RESERVE_PERCENTAGE)`
+
+The strategy estimates the token count for each document, groups them into batches without exceeding the max input token count, and throws an exception if a single document exceeds this limit.
+
+Several vector stores supported by Spring AI are already configured to use this default batching strategy.
+
+=== Using the BatchingStrategy
+
+The `BatchingStrategy` is used internally by `EmbeddingModel` implementations to optimize the embedding process.
+It automatically batches documents when finding embeddings.
+
+=== Customizing Batching Strategy
+
+While `TokenCountBatchingStrategy` provides a robust default implementation, you can customize the batching strategy to fit your specific needs.
+This can be done through Spring Boot's auto-configuration.
+
+To customize the batching strategy, define a `BatchingStrategy` bean in your Spring Boot application:
+
+[source,java]
+----
+@Configuration
+public class EmbeddingConfig {
+    @Bean
+    public BatchingStrategy customBatchingStrategy() {
+        return new CustomBatchingStrategy();
+    }
+}
+----
+
+This custom `BatchingStrategy` will then be automatically used by the `EmbeddingModel` implementations in your application.
+
 == Available Implementations
 
 These are the available implementations of the `VectorStore` interface:
