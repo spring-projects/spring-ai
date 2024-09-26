@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -70,6 +71,8 @@ public class AnthropicApi {
 	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04";
 
 	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
+
+	public static final String BETA_PROMPT_CACHING = "prompt-caching-2024-07-31";
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -267,6 +270,14 @@ public class AnthropicApi {
 		public record Metadata(@JsonProperty("user_id") String userId) {
 		}
 
+		/**
+		 * @param type is the cache type supported by anthropic.
+		 * <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record CacheControl(String type) {
+		}
+
 		public static ChatCompletionRequestBuilder builder() {
 			return new ChatCompletionRequestBuilder();
 		}
@@ -433,7 +444,10 @@ public class AnthropicApi {
 
 		// tool_result response only
 		@JsonProperty("tool_use_id") String toolUseId,
-		@JsonProperty("content") String content
+		@JsonProperty("content") String content,
+
+		// cache object
+		@JsonProperty("cache_control") CacheControl cacheControl
 		) {
 		// @formatter:on
 
@@ -442,25 +456,29 @@ public class AnthropicApi {
 		}
 
 		public ContentBlock(Source source) {
-			this(Type.IMAGE, source, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null, null);
 		}
 
 		public ContentBlock(String text) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null);
+		}
+
+		public ContentBlock(String text, CacheControl cache) {
+			this(Type.TEXT, null, text, null, null, null, null, null, null, cache);
 		}
 
 		// Tool result
 		public ContentBlock(Type type, String toolUseId, String content) {
-			this(type, null, null, null, null, null, null, toolUseId, content);
+			this(type, null, null, null, null, null, null, toolUseId, content, null);
 		}
 
 		public ContentBlock(Type type, Source source, String text, Integer index) {
-			this(type, source, text, index, null, null, null, null, null);
+			this(type, source, text, index, null, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
-			this(type, null, null, null, id, name, input, null, null);
+			this(type, null, null, null, id, name, input, null, null, null);
 		}
 
 		/**

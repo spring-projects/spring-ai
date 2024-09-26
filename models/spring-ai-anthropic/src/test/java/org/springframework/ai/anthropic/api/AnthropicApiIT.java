@@ -26,8 +26,11 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 
+import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
 /**
@@ -37,6 +40,26 @@ import reactor.core.publisher.Flux;
 public class AnthropicApiIT {
 
 	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
+
+
+	@Test
+	void chatWithPromptCache() {
+		AnthropicApi anthropicApiBeta = new AnthropicApi(AnthropicApi.DEFAULT_BASE_URL,
+				System.getenv("ANTHROPIC_API_KEY"),
+				AnthropicApi.DEFAULT_ANTHROPIC_VERSION,
+				RestClient.builder(),
+				WebClient.builder(),
+				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER,
+				AnthropicApi.BETA_PROMPT_CACHING);
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?", AnthropicCacheType.EPHEMERAL.cacheControl())),
+				Role.USER);
+
+		ResponseEntity<ChatCompletionResponse> response = anthropicApiBeta
+				.chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue(),
+						List.of(chatCompletionMessage), null, 100, 0.8, false));
+
+		assertThat(response).isNotNull();
+	}
 
 	@Test
 	void chatCompletionEntity() {
