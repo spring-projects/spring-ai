@@ -21,6 +21,7 @@ import org.springframework.core.Ordered;
  * Parent advisor interface for all advisors.
  *
  * @author Christian Tzolov
+ * @author Dariusz Jedrzejczyk
  * @since 1.0.0
  * @see CallAroundAdvisor
  * @see StreamAroundAdvisor

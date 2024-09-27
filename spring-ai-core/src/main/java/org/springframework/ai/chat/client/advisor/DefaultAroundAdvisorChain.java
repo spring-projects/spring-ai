@@ -1,15 +1,30 @@
+/*
+* Copyright 2024 - 2024 the original author or authors.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
@@ -24,6 +39,15 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 
+/**
+ * Implementation of the {@link CallAroundAdvisorChain} and
+ * {@link StreamAroundAdvisorChain}. Used by the {@link ChatClient} to delegate the call
+ * to the next {@link CallAroundAdvisor} or {@link StreamAroundAdvisor} in the chain.
+ *
+ * @author Christian Tzolov
+ * @author Dariusz Jedrzejczyk
+ * @since 1.0.0
+ */
 public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, StreamAroundAdvisorChain {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
@@ -37,8 +61,8 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, List<Advisor> advisors) {
 		Assert.notNull(advisors, "the advisors must be non-null");
 		this.observationRegistry = observationRegistry;
-		this.callAroundAdvisors = new ArrayDeque<>();
-		this.streamAroundAdvisors = new ArrayDeque<>();
+		this.callAroundAdvisors = new ConcurrentLinkedDeque<>();
+		this.streamAroundAdvisors = new ConcurrentLinkedDeque<>();
 		this.pushAll(advisors);
 	}
 
@@ -69,7 +93,7 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 
 	/**
 	 * (Re)orders the advisors in priority order based on their Ordered attribute.
-	 * 
+	 *
 	 * Note: this can be thread unsafe if the advisors are dynamically modified in the
 	 * prompt. To avoid this make sure to set advisors only in the ChatClient default
 	 * (e.g.builder) section.

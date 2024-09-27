@@ -17,6 +17,7 @@ package org.springframework.ai.chat.client.advisor.api;
 
 /**
  * @author Christian Tzolov
+ * @author Dariusz Jedrzejczyk
  * @since 1.0.0
  */
 
