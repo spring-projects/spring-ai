@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client.advisor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,28 +66,39 @@ public class AdvisorsTests {
 
 		public List<AdvisedResponse> aroundAdvisedResponses = new ArrayList<>();
 
+		private final String name;
+
+		private final int order;
+
+		public MockAroundAdvisor(String name, int order) {
+			this.name = name;
+			this.order = order;
+		}
+
 		@Override
 		public String getName() {
-			return "MockAroundAdvisor";
+			return name;
 		}
 
 		@Override
 		public int getOrder() {
-			return 0;
+			return order;
 		}
 
 		@Override
 		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 
 			this.advisedRequest = advisedRequest.updateContext(context -> {
-				context.put("aroundCallBefore", "AROUND_CALL_BEFORE");
+				context.put("aroundCallBefore" + name, "AROUND_CALL_BEFORE " + name);
+				context.put("lastBefore", name);
 				return context;
 			});
 
 			AdvisedResponse advisedResponse = this.advisedResponse = chain.nextAroundCall(this.advisedRequest);
 
 			this.advisedResponse = advisedResponse.updateContext(context -> {
-				context.put("aroundCallAfter", "AROUND_CALL_AFTER");
+				context.put("aroundCallAfter" + name, "AROUND_CALL_AFTER " + name);
+				context.put("lastAfter", name);
 				return context;
 			});
 
@@ -97,7 +109,8 @@ public class AdvisorsTests {
 		public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
 			this.advisedRequest = advisedRequest.updateContext(context -> {
-				context.put("aroundStreamBefore", "AROUND_STREAM_BEFORE");
+				context.put("aroundStreamBefore" + name, "AROUND_STREAM_BEFORE " + name);
+				context.put("lastBefore", name);
 				return context;
 			});
 
@@ -105,7 +118,8 @@ public class AdvisorsTests {
 
 			return advisedResponseStream.map(advisedResponse -> {
 				return advisedResponse.updateContext(context -> {
-					context.put("aroundStreamAfter", "AROUND_STREAM_AFTER");
+					context.put("aroundStreamAfter" + name, "AROUND_STREAM_AFTER " + name);
+					context.put("lastAfter", name);
 					return context;
 				});
 			}).doOnNext(ar -> this.aroundAdvisedResponses.add(ar));
@@ -117,19 +131,22 @@ public class AdvisorsTests {
 	@Test
 	public void callAdvisorsContextPropagation() {
 
-		var mockAroundAdvisor = new MockAroundAdvisor();
+		// Order==0 has higher priority thant order == 1. The lower the order the higher
+		// the priority.
+		var mockAroundAdvisor1 = new MockAroundAdvisor("Advisor1", 0);
+		var mockAroundAdvisor2 = new MockAroundAdvisor("Advisor2", 1);
 
 		when(chatModel.call(promptCaptor.capture()))
-			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))))
-			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your name is John")))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))));
 
 		var chatClient = ChatClient.builder(chatModel)
 			.defaultSystem("Default system text.")
-			.defaultAdvisors(mockAroundAdvisor)
+			.defaultAdvisors(mockAroundAdvisor1)
 			.build();
 
 		var content = chatClient.prompt()
 			.user("my name is John")
+			.advisors(mockAroundAdvisor2)
 			.advisors(a -> a.param("key1", "value1").params(Map.of("key2", "value2")))
 			.call()
 			.content();
@@ -137,17 +154,24 @@ public class AdvisorsTests {
 		assertThat(content).isEqualTo("Hello John");
 
 		// AROUND
-		assertThat(mockAroundAdvisor.advisedResponse.response()).isNotNull();
-		assertThat(mockAroundAdvisor.advisedResponse.adviseContext()).containsEntry("key1", "value1")
+		assertThat(mockAroundAdvisor1.advisedResponse.response()).isNotNull();
+		assertThat(mockAroundAdvisor1.advisedResponse.adviseContext()).containsEntry("key1", "value1")
 			.containsEntry("key2", "value2")
-			.containsEntry("aroundCallBefore", "AROUND_CALL_BEFORE")
-			.containsEntry("aroundCallAfter", "AROUND_CALL_AFTER");
+			.containsEntry("aroundCallBeforeAdvisor1", "AROUND_CALL_BEFORE Advisor1")
+			.containsEntry("aroundCallAfterAdvisor1", "AROUND_CALL_AFTER Advisor1")
+			.containsEntry("aroundCallBeforeAdvisor2", "AROUND_CALL_BEFORE Advisor2")
+			.containsEntry("aroundCallAfterAdvisor2", "AROUND_CALL_AFTER Advisor2")
+			.containsEntry("lastBefore", "Advisor2") // inner
+			.containsEntry("lastAfter", "Advisor1"); // outer
+
+		verify(chatModel).call(promptCaptor.capture());
 	}
 
 	@Test
 	public void streamAdvisorsContextPropagation() {
 
-		var mockAroundAdvisor = new MockAroundAdvisor();
+		var mockAroundAdvisor1 = new MockAroundAdvisor("Advisor1", 0);
+		var mockAroundAdvisor2 = new MockAroundAdvisor("Advisor2", 1);
 
 		when(chatModel.stream(promptCaptor.capture()))
 			.thenReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello")))),
@@ -155,12 +179,13 @@ public class AdvisorsTests {
 
 		var chatClient = ChatClient.builder(chatModel)
 			.defaultSystem("Default system text.")
-			.defaultAdvisors(mockAroundAdvisor)
+			.defaultAdvisors(mockAroundAdvisor1)
 			.build();
 
 		var content = chatClient.prompt()
 			.user("my name is John")
 			.advisors(a -> a.param("key1", "value1").params(Map.of("key2", "value2")))
+			.advisors(mockAroundAdvisor2)
 			.stream()
 			.content()
 			.collectList()
@@ -171,14 +196,20 @@ public class AdvisorsTests {
 		assertThat(content).isEqualTo("Hello John");
 
 		// AROUND
-		assertThat(mockAroundAdvisor.aroundAdvisedResponses).isNotEmpty();
+		assertThat(mockAroundAdvisor1.aroundAdvisedResponses).isNotEmpty();
 
-		mockAroundAdvisor.aroundAdvisedResponses.stream().forEach(advisedResponse -> {
+		mockAroundAdvisor1.aroundAdvisedResponses.stream().forEach(advisedResponse -> {
 			assertThat(advisedResponse.adviseContext()).containsEntry("key1", "value1")
 				.containsEntry("key2", "value2")
-				.containsEntry("aroundStreamBefore", "AROUND_STREAM_BEFORE")
-				.containsEntry("aroundStreamAfter", "AROUND_STREAM_AFTER");
+				.containsEntry("aroundStreamBeforeAdvisor1", "AROUND_STREAM_BEFORE Advisor1")
+				.containsEntry("aroundStreamAfterAdvisor1", "AROUND_STREAM_AFTER Advisor1")
+				.containsEntry("aroundStreamBeforeAdvisor2", "AROUND_STREAM_BEFORE Advisor2")
+				.containsEntry("aroundStreamAfterAdvisor2", "AROUND_STREAM_AFTER Advisor2")
+				.containsEntry("lastBefore", "Advisor2") // inner
+				.containsEntry("lastAfter", "Advisor1"); // outer
 		});
+
+		verify(chatModel).stream(promptCaptor.capture());
 	}
 
 }

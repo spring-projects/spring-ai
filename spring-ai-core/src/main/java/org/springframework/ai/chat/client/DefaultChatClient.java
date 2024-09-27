@@ -379,7 +379,8 @@ public class DefaultChatClient implements ChatClient {
 
 			// Apply the around advisor chain that terminates with the, last, model call
 			// advisor.
-			AdvisedResponse advisedResponse = inputRequestSpec.aroundAdvisorChain.nextAroundCall(advisedRequest);
+			AdvisedResponse advisedResponse = inputRequestSpec.aroundAdvisorChainBuilder.build()
+				.nextAroundCall(advisedRequest);
 
 			return advisedResponse.response();
 		}
@@ -424,7 +425,7 @@ public class DefaultChatClient implements ChatClient {
 //				 		advisedResponse -> couchbaseClient.streamToBucket(advisedResponse).then();
 //
 //				 List<StreamAggregationAdvisor> streamAggregationAdvisors = List.of(aggregationAdvisor);
-				 Flux<AdvisedResponse> stream = inputRequest.aroundAdvisorChain.nextAroundStream(initialAdvisedRequest);
+				 Flux<AdvisedResponse> stream = inputRequest.aroundAdvisorChainBuilder.build().nextAroundStream(initialAdvisedRequest);
 
 //				 if (aggregationAdvisor != null) {
 //				 	stream = new MessageAggregator().aggregateAdvisedResponse(stream, aggregationAdvisor);
@@ -485,11 +486,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> advisorParams = new HashMap<>();
 
-		private final DefaultAroundAdvisorChain aroundAdvisorChain;
-
-		public CallAroundAdvisorChain getAroundAdvisorChain() {
-			return this.aroundAdvisorChain;
-		}
+		private final DefaultAroundAdvisorChain.Builder aroundAdvisorChainBuilder;
 
 		private ObservationRegistry getObservationRegistry() {
 			return this.observationRegistry;
@@ -574,51 +571,52 @@ public class DefaultChatClient implements ChatClient {
 			this.observationRegistry = observationRegistry;
 			this.customObservationConvention = customObservationConvention;
 
-			// @formatter:off
-			this.aroundAdvisorChain = DefaultAroundAdvisorChain.builder(observationRegistry)
-				// At the stack bottom add the non-streaming and streaming model call advisors.
-				// They play the role of the last advisor in the around advisor chain.
-				.push(new CallAroundAdvisor() {
+			// @formatter:off		
+			// At the stack bottom add the non-streaming and streaming model call advisors.
+			// They play the role of the last advisor in the around advisor chain.				
+			this.advisors.add(new CallAroundAdvisor() {
 
-					@Override
-					public String getName() {						
-						return CallAroundAdvisor.class.getSimpleName();
-					}
+				@Override
+				public String getName() {						
+					return CallAroundAdvisor.class.getSimpleName();
+				}
 
-					@Override
-					public int getOrder() {
-						return Ordered.LOWEST_PRECEDENCE;
-					}
+				@Override
+				public int getOrder() {
+					return Ordered.LOWEST_PRECEDENCE;
+				}
 
-					@Override					
-					public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-						return new AdvisedResponse(chatModel.call(advisedRequest.toPrompt()), Collections.unmodifiableMap(advisedRequest.adviseContext()));
-					}
-				})
-				.push(new StreamAroundAdvisor() {
+				@Override					
+				public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+					return new AdvisedResponse(chatModel.call(advisedRequest.toPrompt()), Collections.unmodifiableMap(advisedRequest.adviseContext()));
+				}
+			});
 
-					@Override
-					public String getName() {
-						return StreamAroundAdvisor.class.getSimpleName();
-					}
+			this.advisors.add(new StreamAroundAdvisor() {
 
-					@Override
-					public int getOrder() {
-						return Ordered.LOWEST_PRECEDENCE;
-					}
+				@Override
+				public String getName() {
+					return StreamAroundAdvisor.class.getSimpleName();
+				}
 
-					@Override
-					public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-						// TODO: use aggregate stream advisors and apply over the original
-						//  stream
-						return chatModel.stream(advisedRequest.toPrompt())
-						.map( chatResponse -> new AdvisedResponse(chatResponse, Collections.unmodifiableMap(advisedRequest.adviseContext())))
-						.publishOn(Schedulers.boundedElastic());// TODO add option to disable.
-					}
-				})
-				.pushAll(this.advisors)
-				.build();
-			 // @formatter:on
+				@Override
+				public int getOrder() {
+					return Ordered.LOWEST_PRECEDENCE;
+				}
+
+				@Override
+				public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+					// TODO: use aggregate stream advisors and apply over the original
+					//  stream
+					return chatModel.stream(advisedRequest.toPrompt())
+					.map( chatResponse -> new AdvisedResponse(chatResponse, Collections.unmodifiableMap(advisedRequest.adviseContext())))
+					.publishOn(Schedulers.boundedElastic());// TODO add option to disable.
+				}
+			});
+			// @formatter:on
+
+			this.aroundAdvisorChainBuilder = DefaultAroundAdvisorChain.builder(observationRegistry)
+				.pushAll(this.advisors);
 		}
 
 		/**
@@ -648,18 +646,21 @@ public class DefaultChatClient implements ChatClient {
 			consumer.accept(as);
 			this.advisorParams.putAll(as.getParams());
 			this.advisors.addAll(as.getAdvisors());
+			this.aroundAdvisorChainBuilder.pushAll(as.getAdvisors());
 			return this;
 		}
 
 		public ChatClientRequestSpec advisors(Advisor... advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
 			this.advisors.addAll(Arrays.asList(advisors));
+			this.aroundAdvisorChainBuilder.pushAll(Arrays.asList(advisors));
 			return this;
 		}
 
 		public ChatClientRequestSpec advisors(List<Advisor> advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
 			this.advisors.addAll(advisors);
+			this.aroundAdvisorChainBuilder.pushAll(advisors);
 			return this;
 		}
 

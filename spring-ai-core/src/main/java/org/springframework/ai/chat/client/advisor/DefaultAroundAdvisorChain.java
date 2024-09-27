@@ -58,57 +58,16 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 
 	private final ObservationRegistry observationRegistry;
 
-	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, List<Advisor> advisors) {
-		Assert.notNull(advisors, "the advisors must be non-null");
+	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, Deque<CallAroundAdvisor> callAroundAdvisors,
+			Deque<StreamAroundAdvisor> streamAroundAdvisors) {
+
+		Assert.notNull(observationRegistry, "the observationRegistry must be non-null");
+		Assert.notNull(callAroundAdvisors, "the callAroundAdvisors must be non-null");
+		Assert.notNull(streamAroundAdvisors, "the streamAroundAdvisors must be non-null");
+
 		this.observationRegistry = observationRegistry;
-		this.callAroundAdvisors = new ConcurrentLinkedDeque<>();
-		this.streamAroundAdvisors = new ConcurrentLinkedDeque<>();
-		this.pushAll(advisors);
-	}
-
-	void pushAll(List<? extends Advisor> advisors) {
-		Assert.notNull(advisors, "the advisors must be non-null");
-		if (!CollectionUtils.isEmpty(advisors)) {
-			List<CallAroundAdvisor> callAroundAdvisors = advisors.stream()
-				.filter(a -> a instanceof CallAroundAdvisor)
-				.map(a -> (CallAroundAdvisor) a)
-				.toList();
-
-			if (!CollectionUtils.isEmpty(callAroundAdvisors)) {
-				callAroundAdvisors.forEach(this.callAroundAdvisors::push);
-			}
-
-			List<StreamAroundAdvisor> streamAroundAdvisors = advisors.stream()
-				.filter(a -> a instanceof StreamAroundAdvisor)
-				.map(a -> (StreamAroundAdvisor) a)
-				.toList();
-
-			if (!CollectionUtils.isEmpty(streamAroundAdvisors)) {
-				streamAroundAdvisors.forEach(this.streamAroundAdvisors::push);
-			}
-
-			this.reOrder();
-		}
-	}
-
-	/**
-	 * (Re)orders the advisors in priority order based on their Ordered attribute.
-	 *
-	 * Note: this can be thread unsafe if the advisors are dynamically modified in the
-	 * prompt. To avoid this make sure to set advisors only in the ChatClient default
-	 * (e.g.builder) section.
-	 */
-	private void reOrder() {
-		//
-		ArrayList<CallAroundAdvisor> callAdvisors = new ArrayList<>(this.callAroundAdvisors);
-		OrderComparator.sort(callAdvisors);
-		this.callAroundAdvisors.clear();
-		callAdvisors.forEach(this.callAroundAdvisors::addLast);
-
-		ArrayList<StreamAroundAdvisor> streamAdvisors = new ArrayList<>(this.streamAroundAdvisors);
-		OrderComparator.sort(streamAdvisors);
-		this.streamAroundAdvisors.clear();
-		streamAdvisors.forEach(this.streamAroundAdvisors::addLast);
+		this.callAroundAdvisors = callAroundAdvisors;
+		this.streamAroundAdvisors = streamAroundAdvisors;
 	}
 
 	@Override
@@ -171,28 +130,65 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 
 		private final ObservationRegistry observationRegistry;
 
-		// TODO(dj): this has all advisors actually; the build step filters the around
-		// advisors
-		private final List<Advisor> aroundAdvisors = new ArrayList<>();
+		private final Deque<CallAroundAdvisor> callAroundAdvisors;
+
+		private final Deque<StreamAroundAdvisor> streamAroundAdvisors;
 
 		public Builder(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
+			this.callAroundAdvisors = new ConcurrentLinkedDeque<>();
+			this.streamAroundAdvisors = new ConcurrentLinkedDeque<>();
 		}
 
 		public Builder push(Advisor aroundAdvisor) {
 			Assert.notNull(aroundAdvisor, "the aroundAdvisor must be non-null");
-			this.aroundAdvisors.add(aroundAdvisor);
+			return this.pushAll(List.of(aroundAdvisor));
+		}
+
+		public Builder pushAll(List<? extends Advisor> advisors) {
+			Assert.notNull(advisors, "the advisors must be non-null");
+			if (!CollectionUtils.isEmpty(advisors)) {
+				List<CallAroundAdvisor> callAroundAdvisors = advisors.stream()
+					.filter(a -> a instanceof CallAroundAdvisor)
+					.map(a -> (CallAroundAdvisor) a)
+					.toList();
+
+				if (!CollectionUtils.isEmpty(callAroundAdvisors)) {
+					callAroundAdvisors.forEach(this.callAroundAdvisors::push);
+				}
+
+				List<StreamAroundAdvisor> streamAroundAdvisors = advisors.stream()
+					.filter(a -> a instanceof StreamAroundAdvisor)
+					.map(a -> (StreamAroundAdvisor) a)
+					.toList();
+
+				if (!CollectionUtils.isEmpty(streamAroundAdvisors)) {
+					streamAroundAdvisors.forEach(this.streamAroundAdvisors::push);
+				}
+
+				this.reOrder();
+			}
 			return this;
 		}
 
-		public Builder pushAll(List<Advisor> aroundAdvisors) {
-			Assert.notNull(aroundAdvisors, "the aroundAdvisors must be non-null");
-			this.aroundAdvisors.addAll(aroundAdvisors);
-			return this;
+		/**
+		 * (Re)orders the advisors in priority order based on their Ordered attribute.
+		 */
+		private void reOrder() {
+			ArrayList<CallAroundAdvisor> callAdvisors = new ArrayList<>(this.callAroundAdvisors);
+			OrderComparator.sort(callAdvisors);
+			this.callAroundAdvisors.clear();
+			callAdvisors.forEach(this.callAroundAdvisors::addLast);
+
+			ArrayList<StreamAroundAdvisor> streamAdvisors = new ArrayList<>(this.streamAroundAdvisors);
+			OrderComparator.sort(streamAdvisors);
+			this.streamAroundAdvisors.clear();
+			streamAdvisors.forEach(this.streamAroundAdvisors::addLast);
 		}
 
 		public DefaultAroundAdvisorChain build() {
-			return new DefaultAroundAdvisorChain(this.observationRegistry, this.aroundAdvisors);
+			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAroundAdvisors,
+					this.streamAroundAdvisors);
 		}
 
 	}
