@@ -35,11 +35,10 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 	private final ObservationRegistry observationRegistry;
 
 	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, List<Advisor> advisors) {
-		Assert.notNull(advisors, "the callAroundAdvisors must be non-null");
+		Assert.notNull(advisors, "the advisors must be non-null");
 		this.observationRegistry = observationRegistry;
 		this.callAroundAdvisors = new ArrayDeque<>();
 		this.streamAroundAdvisors = new ArrayDeque<>();
-		Assert.notNull(advisors, "the advisors must be non-null");
 		this.pushAll(advisors);
 	}
 
@@ -68,17 +67,24 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 		}
 	}
 
-	public void reOrder() {
-		// Order the advisors in priority order based on their Ordered attribute.
-		ArrayList<CallAroundAdvisor> temp = new ArrayList<>(this.callAroundAdvisors);
-		OrderComparator.sort(temp);
+	/**
+	 * (Re)orders the advisors in priority order based on their Ordered attribute.
+	 * 
+	 * Note: this can be thread unsafe if the advisors are dynamically modified in the
+	 * prompt. To avoid this make sure to set advisors only in the ChatClient default
+	 * (e.g.builder) section.
+	 */
+	private void reOrder() {
+		//
+		ArrayList<CallAroundAdvisor> callAdvisors = new ArrayList<>(this.callAroundAdvisors);
+		OrderComparator.sort(callAdvisors);
 		this.callAroundAdvisors.clear();
-		temp.forEach(this.callAroundAdvisors::addLast);
+		callAdvisors.forEach(this.callAroundAdvisors::addLast);
 
-		ArrayList<StreamAroundAdvisor> temp2 = new ArrayList<>(this.streamAroundAdvisors);
-		OrderComparator.sort(temp2);
+		ArrayList<StreamAroundAdvisor> streamAdvisors = new ArrayList<>(this.streamAroundAdvisors);
+		OrderComparator.sort(streamAdvisors);
 		this.streamAroundAdvisors.clear();
-		temp2.forEach(this.streamAroundAdvisors::addLast);
+		streamAdvisors.forEach(this.streamAroundAdvisors::addLast);
 	}
 
 	@Override
@@ -139,14 +145,14 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 
 	public static class Builder {
 
-		private final DefaultAroundAdvisorChain aroundAdvisorChain;
+		private final ObservationRegistry observationRegistry;
 
 		// TODO(dj): this has all advisors actually; the build step filters the around
 		// advisors
 		private final List<Advisor> aroundAdvisors = new ArrayList<>();
 
 		public Builder(ObservationRegistry observationRegistry) {
-			this.aroundAdvisorChain = new DefaultAroundAdvisorChain(observationRegistry, aroundAdvisors);
+			this.observationRegistry = observationRegistry;
 		}
 
 		public Builder push(Advisor aroundAdvisor) {
@@ -162,8 +168,7 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 		}
 
 		public DefaultAroundAdvisorChain build() {
-			this.aroundAdvisorChain.pushAll(this.aroundAdvisors);
-			return this.aroundAdvisorChain;
+			return new DefaultAroundAdvisorChain(this.observationRegistry, this.aroundAdvisors);
 		}
 
 	}
