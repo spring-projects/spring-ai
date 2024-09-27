@@ -33,14 +33,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
 							   VectorStoreObservationConvention customObservationConvention,
 							   CosmosAsyncClient cosmosClient,
-							   String databaseName,
-							   String containerName,
+							   CosmosDBVectorStoreConfig properties,
 							   EmbeddingModel embeddingModel) {
 		super(observationRegistry, customObservationConvention);
 		this.cosmosClient = cosmosClient;
-		cosmosClient.createDatabaseIfNotExists(databaseName).block();
+		cosmosClient.createDatabaseIfNotExists(properties.databaseName).block();
 
-		initializeContainer(containerName, databaseName);
+		initializeContainer(properties.containerName, properties.databaseName);
 
 		this.embeddingModel = embeddingModel;
 
@@ -70,7 +69,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		CosmosVectorIndexSpec cosmosVectorIndexSpec = new CosmosVectorIndexSpec();
 		cosmosVectorIndexSpec.setPath("/embedding");
 		cosmosVectorIndexSpec.setType(CosmosVectorIndexType.DISK_ANN.toString());
-		indexingPolicy.setVectorIndexes(Arrays.asList(cosmosVectorIndexSpec));
+		indexingPolicy.setVectorIndexes(List.of(cosmosVectorIndexSpec));
 		collectionDefinition.setIndexingPolicy(indexingPolicy);
 
 
@@ -78,6 +77,54 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		CosmosAsyncDatabase cosmosAsyncDatabase = cosmosClient.getDatabase(databaseName);
 		cosmosAsyncDatabase.createContainerIfNotExists(collectionDefinition, throughputProperties).block();
 		this.container = cosmosAsyncDatabase.getContainer(containerName);
+	}
+
+	public static class CosmosDBVectorStoreConfig {
+		private String containerName;
+		private String databaseName;
+		private String partitionKeyPath;
+		private String endpoint;
+		private String key;
+
+		public String getEndpoint() {
+			return endpoint;
+		}
+
+		public void setEndpoint(String endpoint) {
+			this.endpoint = endpoint;
+		}
+
+		public String getKey() {
+			return key;
+		}
+
+		public void setKey(String key) {
+			this.key = key;
+		}
+
+		public String getContainerName() {
+			return containerName;
+		}
+
+		public void setContainerName(String containerName) {
+			this.containerName = containerName;
+		}
+
+		public String getDatabaseName() {
+			return databaseName;
+		}
+
+		public void setDatabaseName(String databaseName) {
+			this.databaseName = databaseName;
+		}
+
+		public String getPartitionKeyPath() {
+			return partitionKeyPath;
+		}
+
+		public void setPartitionKeyPath(String partitionKeyPath) {
+			this.partitionKeyPath = partitionKeyPath;
+		}
 	}
 
 	@Override
@@ -104,8 +151,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		// Use put for simple values and set for JsonNode values
 		objectNode.put("id", id);
 		objectNode.put("content", content);
-		objectNode.set("embedding", embeddingNode); // Use set to add JsonNode directly
 		objectNode.set("metadata", metadataNode);  // Use set to add JsonNode directly
+		objectNode.set("embedding", embeddingNode); // Use set to add JsonNode directly
 
 		// Log each field of the ObjectNode for debugging
 		objectNode.fields().forEachRemaining(entry -> logger.info("Node: {} = {}", entry.getKey(), entry.getValue()));

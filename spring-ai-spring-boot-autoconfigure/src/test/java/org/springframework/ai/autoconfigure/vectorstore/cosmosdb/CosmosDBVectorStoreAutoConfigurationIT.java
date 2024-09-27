@@ -1,20 +1,24 @@
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.autoconfigure.vectorstore.cosmosdb;
 
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosClientBuilder;
-import com.azure.spring.data.cosmos.repository.config.EnableCosmosRepositories;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.assertj.core.util.Files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.CosmosDBVectorStore;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.testcontainers.containers.CosmosDBEmulatorContainer;
 
 import java.io.BufferedReader;
@@ -36,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 //@Testcontainers
 @EnableAutoConfiguration
-public class CosmosDBVectorStoreIT {
+public class CosmosDBVectorStoreAutoConfigurationIT {
 
 
 	//static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest");
@@ -46,10 +50,13 @@ public class CosmosDBVectorStoreIT {
 
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			//.withConfiguration(AutoConfigurations.of(CosmosDBVectorStoreAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(CosmosDBVectorStoreAutoConfiguration.class))
 			.withPropertyValues("spring.ai.vectorstore.cosmosdb.databaseName=test-database")
 			.withPropertyValues("spring.ai.vectorstore.cosmosdb.containerName=test-container")
-			.withUserConfiguration(TestApplication.class);
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.endpoint="+System.getenv("COSMOSDB_AI_ENDPOINT"))
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.key="+System.getenv("COSMOSDB_AI_KEY"))
+			.withUserConfiguration(Config.class);
+
 
 	private VectorStore vectorStore;
 
@@ -192,45 +199,19 @@ public class CosmosDBVectorStoreIT {
 		assertThat(results2).isEmpty();
 	}
 
-	@SpringBootConfiguration
-	@EnableAutoConfiguration
-	public static class TestApplication {
-
-		@Bean
-		public VectorStore vectorStore(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel, VectorStoreObservationConvention convention) {
-
-			CosmosDBVectorStore.CosmosDBVectorStoreConfig config = new CosmosDBVectorStore.CosmosDBVectorStoreConfig();
-			config.setDatabaseName("test-database");
-			config.setContainerName("test-container");
-			cosmosClient.createDatabaseIfNotExists(config.getDatabaseName()).block();
-			return new CosmosDBVectorStore(null, convention,  cosmosClient, config, embeddingModel);
-
-		}
-
-		@Bean
-		public CosmosAsyncClient cosmosClient() {
-			return new CosmosClientBuilder()
-					.endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
-					.key(System.getenv("COSMOSDB_AI_KEY"))
-					//.endpoint(cosmosDBEmulatorContainer.getEmulatorEndpoint())
-					//.key(cosmosDBEmulatorContainer.getEmulatorKey())
-					.gatewayMode()
-					.buildAsyncClient();
-		}
-
-
+	@Configuration(proxyBeanMethods = false)
+	static class Config {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			// Replace with actual EmbeddingModel implementation or a mock for testing purposes
-				return new TransformersEmbeddingModel();
+			return new TransformersEmbeddingModel();
 		}
 
 		@Bean
-		public VectorStoreObservationConvention observationConvention() {
-			// Replace with an actual observation convention or a mock if needed
-			return new VectorStoreObservationConvention() {};
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
 		}
+
 	}
 
 }
