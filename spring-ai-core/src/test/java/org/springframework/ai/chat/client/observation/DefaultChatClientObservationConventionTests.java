@@ -153,7 +153,8 @@ class DefaultChatClientObservationConventionTests {
 		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "json", true);
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(), "[\"advisor1\",\"advisor2\"]"),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(),
+						"[\"advisor1\",\"advisor2\",\"CallAroundAdvisor\",\"StreamAroundAdvisor\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),
 						"[\"advParam1\":\"advisorParam1Value\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(),

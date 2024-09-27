@@ -43,7 +43,7 @@ import reactor.core.scheduler.Schedulers;
  * Memory is retrieved from a VectorStore added into the prompt's system text.
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
 
@@ -104,13 +104,14 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		// This can be executed by both blocking and non-blocking Threads
 		// E.g. a command line or Tomcat blocking Thread implementation
 		// or by a WebFlux dispatch in a non-blocking manner.
-		if (protectFromBlocking) {
-			advisedRequest = this.before(advisedRequest);
-		}
-
-		Mono<AdvisedRequest> mono = Mono.just(advisedRequest).publishOn(Schedulers.boundedElastic()).map(this::before);
-
-		Flux<AdvisedResponse> advisedResponses = mono.flatMapMany(request -> chain.nextAroundStream(request));
+		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
+		// @formatter:off
+			Mono.just(advisedRequest)
+				.publishOn(Schedulers.boundedElastic())
+				.map(this::before)
+				.flatMapMany(request -> chain.nextAroundStream(request))
+			: chain.nextAroundStream(this.before(advisedRequest));
+			// @formatter:on
 
 		// The observeAfter will certainly be executed on non-blocking Threads in case
 		// of some models - e.g. when the model client is a WebClient

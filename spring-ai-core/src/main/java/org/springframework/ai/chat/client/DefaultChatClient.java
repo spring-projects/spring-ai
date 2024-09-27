@@ -76,6 +76,7 @@ import reactor.core.scheduler.Schedulers;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Soby Chacko
+ * @author Dariusz Jedrzejczyk
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
