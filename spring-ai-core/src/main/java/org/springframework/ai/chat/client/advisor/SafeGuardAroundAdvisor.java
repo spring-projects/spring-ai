@@ -4,9 +4,10 @@ import java.util.List;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.util.CollectionUtils;
 
@@ -32,7 +33,7 @@ public class SafeGuardAroundAdvisor implements CallAroundAdvisor, StreamAroundAd
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 
 		if (!CollectionUtils.isEmpty(this.sensitiveWords)
 				&& sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {
@@ -44,7 +45,7 @@ public class SafeGuardAroundAdvisor implements CallAroundAdvisor, StreamAroundAd
 	}
 
 	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
 		if (!CollectionUtils.isEmpty(this.sensitiveWords)
 				&& sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {

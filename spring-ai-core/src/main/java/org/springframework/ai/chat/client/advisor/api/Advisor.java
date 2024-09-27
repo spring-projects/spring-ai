@@ -15,19 +15,18 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
+import org.springframework.core.Ordered;
+
 /**
  * Parent advisor interface for all advisors.
  *
  * @author Christian Tzolov
  * @since 1.0.0
- * @see BeforeAdvisor
- * @see ObservingAfterAdvisor
- * @see AfterAdvisor
  * @see CallAroundAdvisor
  * @see StreamAroundAdvisor
- * @see AroundAdvisorChain
+ * @see CallAroundAdvisorChain
  */
-public interface Advisor {
+public interface Advisor extends Ordered {
 
 	/**
 	 * @return the advisor name.

@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -35,6 +36,8 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Memory is retrieved from a VectorStore added into the prompt's system text.
@@ -61,6 +64,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	private final String systemTextAdvise;
 
+	private final boolean protectFromBlocking = true;
+
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore) {
 		this(vectorStore, DEFAULT_SYSTEM_TEXT_ADVISE);
 	}
@@ -82,7 +87,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 
 		advisedRequest = this.before(advisedRequest);
 
@@ -94,12 +99,21 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	}
 
 	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
-		advisedRequest = this.before(advisedRequest);
+		// This can be executed by both blocking and non-blocking Threads
+		// E.g. a command line or Tomcat blocking Thread implementation
+		// or by a WebFlux dispatch in a non-blocking manner.
+		if (protectFromBlocking) {
+			advisedRequest = this.before(advisedRequest);
+		}
 
-		Flux<AdvisedResponse> advisedResponses = chain.nextAroundStream(advisedRequest);
+		Mono<AdvisedRequest> mono = Mono.just(advisedRequest).publishOn(Schedulers.boundedElastic()).map(this::before);
 
+		Flux<AdvisedResponse> advisedResponses = mono.flatMapMany(request -> chain.nextAroundStream(request));
+
+		// The observeAfter will certainly be executed on non-blocking Threads in case
+		// of some models - e.g. when the model client is a WebClient
 		return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
 	}
 

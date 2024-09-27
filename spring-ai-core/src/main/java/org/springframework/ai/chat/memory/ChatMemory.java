@@ -30,6 +30,8 @@ import org.springframework.ai.chat.messages.Message;
  */
 public interface ChatMemory {
 
+	// TODO: consider a non-blocking interface for streaming usages
+
 	default void add(String conversationId, Message message) {
 		this.add(conversationId, List.of(message));
 	}

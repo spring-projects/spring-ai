@@ -23,7 +23,7 @@ import reactor.core.publisher.Flux;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public interface StreamAroundAdvisor extends Advisor, Ordered {
+public interface StreamAroundAdvisor extends Advisor {
 
 	/**
 	 * Around advice that wraps the invocation of the advised request.
@@ -31,6 +31,6 @@ public interface StreamAroundAdvisor extends Advisor, Ordered {
 	 * @param chain the chain of advisors to execute
 	 * @return the result of the advised request
 	 */
-	Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain);
+	Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain);
 
 }

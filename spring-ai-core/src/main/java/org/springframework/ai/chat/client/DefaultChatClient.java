@@ -32,9 +32,10 @@ import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
@@ -419,7 +420,17 @@ public class DefaultChatClient implements ChatClient {
 				// @formatter:off				
 				// Apply the around advisor chain that terminates with the, last,
 				// model call advisor.
-				return inputRequest.aroundAdvisorChain.nextAroundStream(initialAdvisedRequest)
+//				 StreamAggregationAdvisor aggregationAdvisor =
+//				 		advisedResponse -> couchbaseClient.streamToBucket(advisedResponse).then();
+//
+//				 List<StreamAggregationAdvisor> streamAggregationAdvisors = List.of(aggregationAdvisor);
+				 Flux<AdvisedResponse> stream = inputRequest.aroundAdvisorChain.nextAroundStream(initialAdvisedRequest);
+
+//				 if (aggregationAdvisor != null) {
+//				 	stream = new MessageAggregator().aggregateAdvisedResponse(stream, aggregationAdvisor);
+//				 }
+
+				 return stream
 					.map(AdvisedResponse::response)
 					.doOnError(observation::error)
 					.doFinally(s -> observation.stop())
@@ -476,7 +487,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final DefaultAroundAdvisorChain aroundAdvisorChain;
 
-		public AroundAdvisorChain getAroundAdvisorChain() {
+		public CallAroundAdvisorChain getAroundAdvisorChain() {
 			return this.aroundAdvisorChain;
 		}
 
@@ -580,7 +591,7 @@ public class DefaultChatClient implements ChatClient {
 					}
 
 					@Override					
-					public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {						
+					public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 						return new AdvisedResponse(chatModel.call(advisedRequest.toPrompt()), Collections.unmodifiableMap(advisedRequest.adviseContext()));
 					}
 				})
@@ -597,7 +608,9 @@ public class DefaultChatClient implements ChatClient {
 					}
 
 					@Override
-					public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+					public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+						// TODO: use aggregate stream advisors and apply over the original
+						//  stream
 						return chatModel.stream(advisedRequest.toPrompt())
 						.map( chatResponse -> new AdvisedResponse(chatResponse, Collections.unmodifiableMap(advisedRequest.adviseContext())))
 						.publishOn(Schedulers.boundedElastic());// TODO add option to disable.
@@ -635,21 +648,18 @@ public class DefaultChatClient implements ChatClient {
 			consumer.accept(as);
 			this.advisorParams.putAll(as.getParams());
 			this.advisors.addAll(as.getAdvisors());
-			this.aroundAdvisorChain.pushAll(as.getAdvisors());
 			return this;
 		}
 
 		public ChatClientRequestSpec advisors(Advisor... advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
 			this.advisors.addAll(Arrays.asList(advisors));
-			this.aroundAdvisorChain.pushAll(Arrays.asList(advisors));
 			return this;
 		}
 
 		public ChatClientRequestSpec advisors(List<Advisor> advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
 			this.advisors.addAll(advisors);
-			this.aroundAdvisorChain.pushAll(advisors);
 			return this;
 		}
 

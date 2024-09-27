@@ -15,14 +15,12 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
-import org.springframework.core.Ordered;
-
 /**
  * @author Christian Tzolov
  * @since 1.0.0
  */
 
-public interface CallAroundAdvisor extends Advisor, Ordered {
+public interface CallAroundAdvisor extends Advisor {
 
 	/**
 	 * Around advice that wraps the ChatModel#call(Prompt) method.
@@ -30,6 +28,6 @@ public interface CallAroundAdvisor extends Advisor, Ordered {
 	 * @param chain the advisor chain
 	 * @return the response
 	 */
-	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain);
+	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain);
 
 }

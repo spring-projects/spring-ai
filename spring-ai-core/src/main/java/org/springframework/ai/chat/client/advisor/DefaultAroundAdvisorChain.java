@@ -8,9 +8,10 @@ import java.util.List;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
@@ -23,7 +24,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 
-public class DefaultAroundAdvisorChain implements AroundAdvisorChain {
+public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, StreamAroundAdvisorChain {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
@@ -33,35 +34,25 @@ public class DefaultAroundAdvisorChain implements AroundAdvisorChain {
 
 	private final ObservationRegistry observationRegistry;
 
-	public DefaultAroundAdvisorChain(ObservationRegistry observationRegistry) {
-		this(observationRegistry, new ArrayDeque<CallAroundAdvisor>(), new ArrayDeque<StreamAroundAdvisor>());
-	}
-
-	public DefaultAroundAdvisorChain(ObservationRegistry observationRegistry,
-			Deque<CallAroundAdvisor> callAroundAdvisors, Deque<StreamAroundAdvisor> streamAroundAdvisors) {
-		Assert.notNull(callAroundAdvisors, "the callAroundAdvisors must be non-null");
+	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, List<Advisor> advisors) {
+		Assert.notNull(advisors, "the callAroundAdvisors must be non-null");
 		this.observationRegistry = observationRegistry;
-		this.callAroundAdvisors = callAroundAdvisors;
-		this.streamAroundAdvisors = streamAroundAdvisors;
-	}
-
-	public DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, List<Advisor> advisors) {
-		this(observationRegistry);
+		this.callAroundAdvisors = new ArrayDeque<>();
+		this.streamAroundAdvisors = new ArrayDeque<>();
 		Assert.notNull(advisors, "the advisors must be non-null");
 		this.pushAll(advisors);
 	}
 
-	public void pushAll(List<? extends Advisor> advisors) {
+	void pushAll(List<? extends Advisor> advisors) {
 		Assert.notNull(advisors, "the advisors must be non-null");
 		if (!CollectionUtils.isEmpty(advisors)) {
-
 			List<CallAroundAdvisor> callAroundAdvisors = advisors.stream()
 				.filter(a -> a instanceof CallAroundAdvisor)
 				.map(a -> (CallAroundAdvisor) a)
 				.toList();
 
 			if (!CollectionUtils.isEmpty(callAroundAdvisors)) {
-				callAroundAdvisors.stream().forEach(this.callAroundAdvisors::push);
+				callAroundAdvisors.forEach(this.callAroundAdvisors::push);
 			}
 
 			List<StreamAroundAdvisor> streamAroundAdvisors = advisors.stream()
@@ -70,7 +61,7 @@ public class DefaultAroundAdvisorChain implements AroundAdvisorChain {
 				.toList();
 
 			if (!CollectionUtils.isEmpty(streamAroundAdvisors)) {
-				streamAroundAdvisors.stream().forEach(this.streamAroundAdvisors::push);
+				streamAroundAdvisors.forEach(this.streamAroundAdvisors::push);
 			}
 
 			this.reOrder();
@@ -79,16 +70,15 @@ public class DefaultAroundAdvisorChain implements AroundAdvisorChain {
 
 	public void reOrder() {
 		// Order the advisors in priority order based on their Ordered attribute.
-
 		ArrayList<CallAroundAdvisor> temp = new ArrayList<>(this.callAroundAdvisors);
 		OrderComparator.sort(temp);
 		this.callAroundAdvisors.clear();
-		temp.stream().forEach(this.callAroundAdvisors::addLast);
+		temp.forEach(this.callAroundAdvisors::addLast);
 
 		ArrayList<StreamAroundAdvisor> temp2 = new ArrayList<>(this.streamAroundAdvisors);
 		OrderComparator.sort(temp2);
 		this.streamAroundAdvisors.clear();
-		temp2.stream().forEach(this.streamAroundAdvisors::addLast);
+		temp2.forEach(this.streamAroundAdvisors::addLast);
 	}
 
 	@Override
@@ -114,9 +104,7 @@ public class DefaultAroundAdvisorChain implements AroundAdvisorChain {
 
 	@Override
 	public Flux<AdvisedResponse> nextAroundStream(AdvisedRequest advisedRequest) {
-
 		return Flux.deferContextual(contextView -> {
-
 			if (this.streamAroundAdvisors.isEmpty()) {
 				return Flux.error(new IllegalStateException("No AroundAdvisor available to execute"));
 			}
@@ -137,9 +125,10 @@ public class DefaultAroundAdvisorChain implements AroundAdvisorChain {
 
 			// @formatter:off
 			return Flux.defer(() -> advisor.aroundStream(advisedRequest, this))
-				.doOnError(observation::error)
-				.doFinally(s -> { observation.stop();
-			}).contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			           .doOnError(observation::error)
+			           .doFinally(s -> {
+						   observation.stop();
+			           }).contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 		});
 	}
@@ -152,10 +141,12 @@ public class DefaultAroundAdvisorChain implements AroundAdvisorChain {
 
 		private final DefaultAroundAdvisorChain aroundAdvisorChain;
 
+		// TODO(dj): this has all advisors actually; the build step filters the around
+		// advisors
 		private final List<Advisor> aroundAdvisors = new ArrayList<>();
 
 		public Builder(ObservationRegistry observationRegistry) {
-			this.aroundAdvisorChain = new DefaultAroundAdvisorChain(observationRegistry);
+			this.aroundAdvisorChain = new DefaultAroundAdvisorChain(observationRegistry, aroundAdvisors);
 		}
 
 		public Builder push(Advisor aroundAdvisor) {

@@ -20,13 +20,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.AroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -38,8 +38,8 @@ import reactor.core.publisher.Flux;
  * {@link ChatModel#stream(Prompt)} methods calls. The {@link ChatClient} maintains a
  * chain of advisors with shared advise context.
  *
- * @deprecated since 1.0.0 please use {@link CallAroundAdvisor},
- * {@link StreamAroundAdvisor}, {@link ObservingAfterAdvisor} instead.
+ * @deprecated since 1.0.0 please use {@link CallAroundAdvisor} or
+ * {@link StreamAroundAdvisor} instead.
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -64,7 +64,7 @@ public interface RequestResponseAdvisor extends CallAroundAdvisor, StreamAroundA
 	}
 
 	@Override
-	default AdvisedResponse aroundCall(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+	default AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 		var context = new HashMap<>(advisedRequest.adviseContext());
 		var requestPrim = adviseRequest(advisedRequest, context);
 		advisedRequest = AdvisedRequest.from(requestPrim)
@@ -78,7 +78,7 @@ public interface RequestResponseAdvisor extends CallAroundAdvisor, StreamAroundA
 		return new AdvisedResponse(chatResponse, Collections.unmodifiableMap(context));
 	}
 
-	default Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, AroundAdvisorChain chain) {
+	default Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
 		ConcurrentHashMap<String, Object> context = new ConcurrentHashMap<>(advisedRequest.adviseContext());
 
