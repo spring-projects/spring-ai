@@ -45,11 +45,11 @@ public class TextReader implements DocumentReader {
 	private final Resource resource;
 
 	/**
-	 * @return Character set to be used when loading data from the
+	 * Character set to be used when loading data from the
 	 */
 	private Charset charset = StandardCharsets.UTF_8;
 
-	private Map<String, Object> customMetadata = new HashMap<>();
+	private final Map<String, Object> customMetadata = new HashMap<>();
 
 	public TextReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
@@ -85,7 +85,8 @@ public class TextReader implements DocumentReader {
 
 			// Inject source information as a metadata.
 			this.customMetadata.put(CHARSET_METADATA, this.charset.name());
-			this.customMetadata.put(SOURCE_METADATA, this.resource.getFilename());
+			this.customMetadata.put(SOURCE_METADATA, this.resource.getFilename() != null ? this.resource.getFilename()
+					: Objects.toIdentityString(this.resource));
 
 			return List.of(new Document(document, this.customMetadata));
 
