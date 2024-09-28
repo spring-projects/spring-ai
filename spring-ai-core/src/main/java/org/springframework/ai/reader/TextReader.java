@@ -16,6 +16,8 @@
 package org.springframework.ai.reader;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -45,11 +47,11 @@ public class TextReader implements DocumentReader {
 	private final Resource resource;
 
 	/**
-	 * @return Character set to be used when loading data from the
+	 * Character set to be used when loading data from the
 	 */
 	private Charset charset = StandardCharsets.UTF_8;
 
-	private Map<String, Object> customMetadata = new HashMap<>();
+	private final Map<String, Object> customMetadata = new HashMap<>();
 
 	public TextReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
@@ -86,6 +88,7 @@ public class TextReader implements DocumentReader {
 			// Inject source information as a metadata.
 			this.customMetadata.put(CHARSET_METADATA, this.charset.name());
 			this.customMetadata.put(SOURCE_METADATA, this.resource.getFilename());
+			this.customMetadata.put(SOURCE_METADATA, getResourceIdentifier(this.resource));
 
 			return List.of(new Document(document, this.customMetadata));
 
@@ -93,6 +96,39 @@ public class TextReader implements DocumentReader {
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	protected String getResourceIdentifier(Resource resource) {
+		// Try to get the filename first
+		String filename = resource.getFilename();
+		if (filename != null && !filename.isEmpty()) {
+			return filename;
+		}
+
+		// Try to get the URI
+		try {
+			URI uri = resource.getURI();
+			if (uri != null) {
+				return uri.toString();
+			}
+		}
+		catch (IOException ignored) {
+			// If getURI() throws an exception, we'll try the next method
+		}
+
+		// Try to get the URL
+		try {
+			URL url = resource.getURL();
+			if (url != null) {
+				return url.toString();
+			}
+		}
+		catch (IOException ignored) {
+			// If getURL() throws an exception, we'll fall back to getDescription()
+		}
+
+		// If all else fails, use the description
+		return resource.getDescription();
 	}
 
 }
