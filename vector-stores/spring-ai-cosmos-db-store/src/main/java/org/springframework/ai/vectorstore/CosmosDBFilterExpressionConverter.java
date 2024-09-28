@@ -19,11 +19,14 @@ import java.util.stream.Collectors;
  */
 class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-    private final Map<String, String> columnsByName;
+    private  Map<String, String> columnsByName;
+
 
     public CosmosDBFilterExpressionConverter(Collection<String> columns) {
         this.columnsByName = columns.stream()
             .collect(Collectors.toMap(Function.identity(), Function.identity()));
+		columnsByName.put("country", "country");
+		columnsByName.put("year", "year");
     }
 
     /**
@@ -33,7 +36,8 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
      */
     private Optional<String> getMetadataField(String name) {
         // Assume all metadata fields are stored under "metadata" in the JSON document
-        String metadataField = "metadata." + name;
+        //String metadataField = "metadata." + name;
+		String metadataField = name;
         return Optional.ofNullable(columnsByName.get(metadataField));
     }
 
@@ -42,7 +46,7 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
         String keyName = key.key();
         Optional<String> metadataField = getMetadataField(keyName);
         if (metadataField.isPresent()) {
-            context.append(metadataField.get());
+            context.append("metadata."+metadataField.get());
         } else {
             throw new IllegalArgumentException(String.format("No metadata field %s has been configured", keyName));
         }
