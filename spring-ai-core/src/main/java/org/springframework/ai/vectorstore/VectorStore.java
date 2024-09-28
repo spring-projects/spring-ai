@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentRetriever;
 import org.springframework.ai.document.DocumentWriter;
 
 /**
@@ -29,7 +30,7 @@ import org.springframework.ai.document.DocumentWriter;
  * This interface allows for adding, deleting, and searching documents based on their
  * similarity to a given query.
  */
-public interface VectorStore extends DocumentWriter {
+public interface VectorStore extends DocumentWriter, DocumentRetriever {
 
 	default String getName() {
 		return this.getClass().getSimpleName();
@@ -72,6 +73,16 @@ public interface VectorStore extends DocumentWriter {
 	 */
 	default List<Document> similaritySearch(String query) {
 		return this.similaritySearch(SearchRequest.query(query));
+	}
+
+	/**
+	 * Retrieves relevant documents
+	 * @param query query string
+	 * @return relevant documents
+	 */
+	@Override
+	default List<Document> retrieve(String query) {
+		return similaritySearch(query);
 	}
 
 }
