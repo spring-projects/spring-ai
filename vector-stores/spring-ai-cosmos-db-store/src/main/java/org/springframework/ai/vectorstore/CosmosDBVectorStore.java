@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -37,9 +38,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 							   EmbeddingModel embeddingModel) {
 		super(observationRegistry, customObservationConvention);
 		this.cosmosClient = cosmosClient;
-		cosmosClient.createDatabaseIfNotExists(properties.databaseName).block();
+		cosmosClient.createDatabaseIfNotExists(properties.getDatabaseName()).block();
 
-		initializeContainer(properties.containerName, properties.databaseName);
+		initializeContainer(properties.getContainerName(), properties.getDatabaseName());
 
 		this.embeddingModel = embeddingModel;
 
@@ -79,7 +80,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.container = cosmosAsyncDatabase.getContainer(containerName);
 	}
 
-	public static class CosmosDBVectorStoreConfig {
+/*	public static class CosmosDBVectorStoreConfig {
 		private String containerName;
 		private String databaseName;
 		private String partitionKeyPath;
@@ -125,7 +126,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		public void setPartitionKeyPath(String partitionKeyPath) {
 			this.partitionKeyPath = partitionKeyPath;
 		}
-	}
+	}*/
 
 	@Override
 	public void close() {
@@ -216,6 +217,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		return similaritySearch(SearchRequest.query(query));
 	}
 
+
+
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		// Ensure topK is within acceptable limits
@@ -232,8 +235,22 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.mapToObj(i -> embedding[i])
 				.collect(Collectors.toList());
 
-		// Build query for similarity search
-		String query = "SELECT TOP @topK * FROM c WHERE VectorDistance(c.embedding, @embedding) > @similarityThreshold ORDER BY VectorDistance(c.embedding, @embedding)";
+		// Start building query for similarity search
+		StringBuilder queryBuilder = new StringBuilder("SELECT TOP @topK * FROM c WHERE ");
+		queryBuilder.append("VectorDistance(c.embedding, @embedding) > @similarityThreshold");
+
+		// Handle filter expression if it's set
+		Filter.Expression filterExpression = request.getFilterExpression();
+		if (filterExpression != null) {
+			CosmosDBFilterExpressionConverter filterExpressionConverter = new CosmosDBFilterExpressionConverter(
+					List.of()); // Use the expression directly as it handles the "metadata" fields internally
+			String filterQuery = filterExpressionConverter.convertExpression(filterExpression);
+			queryBuilder.append(" AND ").append(filterQuery);
+		}
+
+		queryBuilder.append(" ORDER BY VectorDistance(c.embedding, @embedding)");
+
+		String query = queryBuilder.toString();
 		List<SqlParameter> parameters = new ArrayList<>();
 		parameters.add(new SqlParameter("@embedding", embeddingList));
 		parameters.add(new SqlParameter("@topK", request.getTopK()));
@@ -264,6 +281,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			return List.of();
 		}
 	}
+
+
 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {

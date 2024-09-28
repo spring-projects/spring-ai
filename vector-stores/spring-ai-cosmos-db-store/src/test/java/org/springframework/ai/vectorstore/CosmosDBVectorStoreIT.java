@@ -199,7 +199,7 @@ public class CosmosDBVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel, VectorStoreObservationConvention convention) {
 
-			CosmosDBVectorStore.CosmosDBVectorStoreConfig config = new CosmosDBVectorStore.CosmosDBVectorStoreConfig();
+			CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
 			config.setDatabaseName("test-database");
 			config.setContainerName("test-container");
 			cosmosClient.createDatabaseIfNotExists(config.getDatabaseName()).block();
