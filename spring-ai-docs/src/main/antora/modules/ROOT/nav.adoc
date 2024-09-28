@@ -90,6 +90,7 @@
 *** xref:api/vectordbs/weaviate.adoc[]
 
 
+** xref:api/advisors.adoc[Advisors]
 ** xref:api/functions.adoc[Function Calling]
 ** xref:api/multimodality.adoc[Multimodality]
 ** xref:api/prompt.adoc[]
