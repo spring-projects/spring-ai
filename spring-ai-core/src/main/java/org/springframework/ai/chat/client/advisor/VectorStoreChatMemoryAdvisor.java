@@ -36,8 +36,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 /**
  * Memory is retrieved from a VectorStore added into the prompt's system text.
@@ -64,8 +62,6 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	private final String systemTextAdvise;
 
-	private final boolean protectFromBlocking = true;
-
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore) {
 		this(vectorStore, DEFAULT_SYSTEM_TEXT_ADVISE);
 	}
@@ -82,7 +78,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize, String systemTextAdvise) {
-		super(vectorStore, defaultConversationId, chatHistoryWindowSize);
+		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true);
 		this.systemTextAdvise = systemTextAdvise;
 	}
 
@@ -101,17 +97,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	@Override
 	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
-		// This can be executed by both blocking and non-blocking Threads
-		// E.g. a command line or Tomcat blocking Thread implementation
-		// or by a WebFlux dispatch in a non-blocking manner.
-		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
-		// @formatter:off
-			Mono.just(advisedRequest)
-				.publishOn(Schedulers.boundedElastic())
-				.map(this::before)
-				.flatMapMany(request -> chain.nextAroundStream(request))
-			: chain.nextAroundStream(this.before(advisedRequest));
-			// @formatter:on
+		Flux<AdvisedResponse> advisedResponses = this.doNextWithProtectFromBlockingBefore(advisedRequest, chain,
+				this::before);
 
 		// The observeAfter will certainly be executed on non-blocking Threads in case
 		// of some models - e.g. when the model client is a WebClient

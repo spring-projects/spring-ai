@@ -17,11 +17,19 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
+import java.util.function.Function;
 
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Abstract class that serves as a base for chat memory advisors.
@@ -46,11 +54,14 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 
 	protected final int defaultChatMemoryRetrieveSize;
 
+	private final boolean protectFromBlocking;
+
 	public AbstractChatMemoryAdvisor(T chatMemory) {
-		this(chatMemory, DEFAULT_CHAT_MEMORY_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE);
+		this(chatMemory, DEFAULT_CHAT_MEMORY_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE, true);
 	}
 
-	public AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize) {
+	public AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize,
+			boolean protectFromBlocking) {
 
 		Assert.notNull(chatMemory, "The chatMemory must not be null!");
 		Assert.hasText(defaultConversationId, "The conversationId must not be empty!");
@@ -59,6 +70,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		this.chatMemoryStore = chatMemory;
 		this.defaultConversationId = defaultConversationId;
 		this.defaultChatMemoryRetrieveSize = defaultChatMemoryRetrieveSize;
+		this.protectFromBlocking = protectFromBlocking;
 	}
 
 	@Override
@@ -89,5 +101,21 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 				? Integer.parseInt(context.get(CHAT_MEMORY_RETRIEVE_SIZE_KEY).toString())
 				: this.defaultChatMemoryRetrieveSize;
 	}
+
+	protected Flux<AdvisedResponse> doNextWithProtectFromBlockingBefore(AdvisedRequest advisedRequest,
+			StreamAroundAdvisorChain chain, Function<AdvisedRequest, AdvisedRequest> beforeAdvise) {
+
+		// This can be executed by both blocking and non-blocking Threads
+		// E.g. a command line or Tomcat blocking Thread implementation
+		// or by a WebFlux dispatch in a non-blocking manner.
+		return (this.protectFromBlocking) ?
+		// @formatter:off
+			Mono.just(advisedRequest)
+				.publishOn(Schedulers.boundedElastic())
+				.map(beforeAdvise)
+				.flatMapMany(request -> chain.nextAroundStream(request))
+			: chain.nextAroundStream(beforeAdvise.apply(advisedRequest));
+	}
+
 
 }

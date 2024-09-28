@@ -66,7 +66,7 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
 			String systemTextAdvise) {
-		super(chatMemory, defaultConversationId, chatHistoryWindowSize);
+		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true);
 		this.systemTextAdvise = systemTextAdvise;
 	}
 
@@ -85,9 +85,8 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 	@Override
 	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
-		advisedRequest = this.before(advisedRequest);
-
-		Flux<AdvisedResponse> advisedResponses = chain.nextAroundStream(advisedRequest);
+		Flux<AdvisedResponse> advisedResponses = this.doNextWithProtectFromBlockingBefore(advisedRequest, chain,
+				this::before);
 
 		return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
 	}

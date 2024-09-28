@@ -39,6 +39,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Context for the question is retrieved from a Vector Store and added to the prompt's
@@ -69,10 +71,24 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
+	private final boolean protectFromBlocking;
+
+	/**
+	 * The QuestionAnswerAdvisor retrieves context information from a Vector Store and
+	 * combines it with the user's text.
+	 * @param vectorStore The vector store to use
+	 */
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
 		this(vectorStore, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE);
 	}
 
+	/**
+	 * The QuestionAnswerAdvisor retrieves context information from a Vector Store and
+	 * combines it with the user's text.
+	 * @param vectorStore The vector store to use
+	 * @param searchRequest The search request defined using the portable filter
+	 * expression syntax
+	 */
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest) {
 		this(vectorStore, searchRequest, DEFAULT_USER_TEXT_ADVISE);
 	}
@@ -85,9 +101,26 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 * expression syntax
 	 * @param userTextAdvise the user text to append to the existing user prompt. The text
 	 * should contain a placeholder named "question_answer_context".
-	 *
 	 */
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise) {
+		this(vectorStore, searchRequest, userTextAdvise, true);
+	}
+
+	/**
+	 * The QuestionAnswerAdvisor retrieves context information from a Vector Store and
+	 * combines it with the user's text.
+	 * @param vectorStore The vector store to use
+	 * @param searchRequest The search request defined using the portable filter
+	 * expression syntax
+	 * @param userTextAdvise the user text to append to the existing user prompt. The text
+	 * should contain a placeholder named "question_answer_context".
+	 * @param protectFromBlocking if true the advisor will protect the execution from
+	 * blocking threads. If false the advisor will not protect the execution from blocking
+	 * threads. This is useful when the advisor is used in a non-blocking environment. It
+	 * is true by default.
+	 */
+	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise,
+			boolean protectFromBlocking) {
 
 		Assert.notNull(vectorStore, "The vectorStore must not be null!");
 		Assert.notNull(searchRequest, "The searchRequest must not be null!");
@@ -96,6 +129,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		this.vectorStore = vectorStore;
 		this.searchRequest = searchRequest;
 		this.userTextAdvise = userTextAdvise;
+		this.protectFromBlocking = protectFromBlocking;
 	}
 
 	@Override
@@ -121,9 +155,19 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	@Override
 	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
-		advisedRequest = before(advisedRequest);
+		// This can be executed by both blocking and non-blocking Threads
+		// E.g. a command line or Tomcat blocking Thread implementation
+		// or by a WebFlux dispatch in a non-blocking manner.
+		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
+		// @formatter:off
+			Mono.just(advisedRequest)
+				.publishOn(Schedulers.boundedElastic())
+				.map(this::before)
+				.flatMapMany(request -> chain.nextAroundStream(request))
+			: chain.nextAroundStream(before(advisedRequest));
+		// @formatter:on
 
-		return chain.nextAroundStream(advisedRequest).map(ar -> {
+		return advisedResponses.map(ar -> {
 			if (onFinishReason().test(ar)) {
 				ar = after(ar);
 			}
@@ -189,6 +233,49 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 					&& StringUtils.hasText(result.getMetadata().getFinishReason()))
 			.findFirst()
 			.isPresent();
+	}
+
+	public static Builder builder(VectorStore vectorStore) {
+		return new Builder(vectorStore);
+	}
+
+	public static class Builder {
+
+		private final VectorStore vectorStore;
+
+		private SearchRequest searchRequest = SearchRequest.defaults();
+
+		private String userTextAdvise = DEFAULT_USER_TEXT_ADVISE;
+
+		private boolean protectFromBlocking = true;
+
+		private Builder(VectorStore vectorStore) {
+			Assert.notNull(vectorStore, "The vectorStore must not be null!");
+			this.vectorStore = vectorStore;
+		}
+
+		public Builder withSearchRequest(SearchRequest searchRequest) {
+			Assert.notNull(searchRequest, "The searchRequest must not be null!");
+			this.searchRequest = searchRequest;
+			return this;
+		}
+
+		public Builder withUserTextAdvise(String userTextAdvise) {
+			Assert.hasText(userTextAdvise, "The userTextAdvise must not be empty!");
+			this.userTextAdvise = userTextAdvise;
+			return this;
+		}
+
+		public Builder withProtectFromBlocking(boolean protectFromBlocking) {
+			this.protectFromBlocking = protectFromBlocking;
+			return this;
+		}
+
+		public QuestionAnswerAdvisor build() {
+			return new QuestionAnswerAdvisor(this.vectorStore, this.searchRequest, this.userTextAdvise,
+					this.protectFromBlocking);
+		}
+
 	}
 
 }
