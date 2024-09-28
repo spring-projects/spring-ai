@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -28,6 +29,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -190,6 +192,41 @@ public class CosmosDBVectorStoreIT {
 
 		// Verify the search results
 		assertThat(results2).isEmpty();
+	}
+
+	@Test
+	void testSimilaritySearchWithFilter() {
+
+		// Insert documents using vectorStore.add
+		Map<String, Object> metadata1;
+		metadata1 = new HashMap<>();
+		metadata1.put("country", "UK");
+		metadata1.put("year", 2021);
+
+		Map<String, Object> metadata2;
+		metadata2 = new HashMap<>();
+		metadata2.put("country", "NL");
+		metadata2.put("year", 2022);
+
+		Map<String, Object> metadata3;
+		metadata3 = new HashMap<>();
+		metadata3.put("country", "US");
+		metadata3.put("year", 2019);
+
+		Document document1 = new Document("1", "A document about the UK", metadata1);
+		Document document2 = new Document("2", "A document about the Netherlands", metadata2);
+		Document document3 = new Document("3", "A document about the US", metadata3);
+
+		vectorStore.add(List.of (document1, document2, document3));
+		FilterExpressionBuilder b = new FilterExpressionBuilder();
+		CosmosDBFilterExpressionConverter filter = new CosmosDBFilterExpressionConverter(List.of("country", "year"));
+		List<Document> results = vectorStore.similaritySearch(
+				SearchRequest.query("The World").withTopK(10).withFilterExpression((b.in("country", "UK", "NL")).build()));
+
+		assertThat(results).hasSize(2);
+		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
+
+		vectorStore.delete(List.of(document1.getId(), document2.getId(), document3.getId()));
 	}
 
 	@SpringBootConfiguration
