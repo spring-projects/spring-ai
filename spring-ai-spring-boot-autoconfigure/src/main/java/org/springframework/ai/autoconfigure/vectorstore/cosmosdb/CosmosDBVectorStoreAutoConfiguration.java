@@ -5,6 +5,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStore;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.ai.vectorstore.CosmosDBVectorStore;
+import org.springframework.ai.vectorstore.CosmosDBVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -42,7 +43,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
             CosmosAsyncClient cosmosAsyncClient,
             EmbeddingModel embeddingModel) {
 
-		CosmosDBVectorStore.CosmosDBVectorStoreConfig config = new CosmosDBVectorStore.CosmosDBVectorStoreConfig();
+		CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
 		config.setDatabaseName(properties.getDatabaseName());
 		config.setContainerName(properties.getContainerName());
         return new CosmosDBVectorStore(observationRegistry,
