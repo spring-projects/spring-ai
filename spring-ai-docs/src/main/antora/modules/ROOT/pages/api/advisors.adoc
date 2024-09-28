@@ -72,7 +72,15 @@ image::advisors-flow.jpg[Advisors API Flow, width=400, align="left"]
 
 To create an advisor, implement either `CallAroundAdvisor` or `StreamAroundAdvisor` (or both). The key method to implement is `nextAroundCall()` for non-streaming or `nextAroundStream()` for streaming advisors.
 
-=== Logging Advisor Example
+=== Examples
+
+We will provide few hands-on examples to illustrate how to implement advisors for observing and augmenting use-cases.
+
+==== Logging Advisor
+
+We can implement a simple logging advisor that logs the `AdvisedRequest` before and the `AdvisedResponse` after the call to the next advisor in the chain.
+Note that the advisor only observes the request and response and does not modify them.
+This implementation support both non-streaming and streaming scenarios.
 
 [source,java]
 ----
@@ -81,13 +89,13 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
 	@Override
-	public String getName() {
+	public String getName() { // <1>
 		return this.getClass().getSimpleName();
 	}
 
 	@Override
-	public int getOrder() {
-		return 0;
+	public int getOrder() { // <2>
+		return 0; 
 	}
 
 	@Override
@@ -110,10 +118,81 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 		Flux<AdvisedResponse> advisedResponses = chain.nextAroundStream(advisedRequest);
 		
         return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, 
-                    advisedResponse -> logger.debug("AFTER: {}", advisedResponse));
+                    advisedResponse -> logger.debug("AFTER: {}", advisedResponse)); // <3>
 	}
 }
 ----
+<1> Provides a unique name for the advisor.
+<2> You can control the order of execution by setting the order value. Lower values execute first.
+<3> The `MessageAggregator` is a utility class that aggregates the Flux responses into a single AdvisedResponse.
+This can be useful for logging or other processing that observe the entire response rather than individual items in the stream.
+Note that you can not alter the response in the `MessageAggregator` as it is a read-only operation.
+
+==== Re-Reading (Re2) Advisor
+
+This https://arxiv.org/pdf/2309.06275[Re-Reading Improves Reasoning in Large Language Models] article introduces a technique called Re-Reading (Re2) that improves the reasoning capabilities of large language models.
+The Re2 technique requires augmenting the input prompt like this:
+
+----
+{Input Query}
+Read the question again: {Input Query}
+----
+
+Then an advisor can be implemented to apply this technique to the user's input query.
+
+[source,java]
+----
+public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+
+	private static final String DEFAULT_USER_TEXT_ADVISE = """
+			{re2_input_query}
+            Read the question again: {re2_input_query}
+			""";
+
+	@Override
+	public String getName() { 
+		return this.getClass().getSimpleName();
+	}
+
+	@Override
+	public int getOrder() { // <1>
+		return 0; 
+	}
+
+	private AdvisedRequest before(AdvisedRequest advisedRequest) {
+
+		String inputQuery = advisedRequest.userText();
+
+		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
+		advisedUserParams.put("re2_input_query", inputQuery);
+
+        AdvisedRequest advisedRequest = AdvisedRequest.from(advisedRequest)
+			.withUserText(DEFAULT_USER_TEXT_ADVISE)
+			.withUserParams(advisedUserParams)
+			.build();
+    }
+
+	@Override
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+
+		return chain.nextAroundCall(before(advisedRequest));
+	}
+
+	@Override
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+
+		return chain.nextAroundStream(before(advisedRequest));		
+	}
+}
+----
+<1> You can control the order of execution by setting the order value. Lower values execute first.
+
+==== Spring AI built-in Advisors
+
+You can also explore the built-in advisors provided by the Spring AI framework.
+For example the `MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor` and `VectorStoreChatMemoryAdvisor` advisors provide different strategies the conversation chat history in a chat memory store and the `QuestionAnswerAdvisor` uses a vector store to provide question-answering capabilities (e.g. implements the RAG pattern).
+
+The `SafeGuardAdvisor` is another, simple, built-in advisor that can be used to prevent the model from generating harmful or inappropriate content.
 
 === Streaming vs Non-Streaming
 

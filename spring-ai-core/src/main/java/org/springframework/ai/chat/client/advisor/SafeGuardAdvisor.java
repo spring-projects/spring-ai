@@ -20,11 +20,11 @@ import reactor.core.publisher.Flux;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class SafeGuardAroundAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	private final List<String> sensitiveWords;
 
-	public SafeGuardAroundAdvisor(List<String> sensitiveWords) {
+	public SafeGuardAdvisor(List<String> sensitiveWords) {
 		this.sensitiveWords = sensitiveWords;
 	}
 
