@@ -50,7 +50,9 @@ import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
@@ -109,11 +111,16 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	private final OpenAIClient openAIClient;
 
 	/**
+	 * The {@link OpenAIAsyncClient} used for streaming async operations.
+	 */
+	private final OpenAIAsyncClient openAIAsyncClient;
+
+	/**
 	 * The configuration information for a chat completions request.
 	 */
 	private AzureOpenAiChatOptions defaultOptions;
 
-	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient) {
+	public AzureOpenAiChatModel(OpenAIClientBuilder microsoftOpenAiClient) {
 		this(microsoftOpenAiClient,
 				AzureOpenAiChatOptions.builder()
 					.withDeploymentName(DEFAULT_DEPLOYMENT_NAME)
@@ -121,21 +128,22 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 					.build());
 	}
 
-	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options) {
-		this(microsoftOpenAiClient, options, null);
+	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options) {
+		this(openAIClientBuilder, options, null);
 	}
 
-	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
+	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext) {
-		this(microsoftOpenAiClient, options, functionCallbackContext, List.of());
+		this(openAIClientBuilder, options, functionCallbackContext, List.of());
 	}
 
-	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
+	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
 		super(functionCallbackContext, options, toolFunctionCallbacks);
-		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
+		Assert.notNull(openAIClientBuilder, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
-		this.openAIClient = microsoftOpenAiClient;
+		this.openAIClient = openAIClientBuilder.buildClient();
+		this.openAIAsyncClient = openAIClientBuilder.buildAsyncClient();
 		this.defaultOptions = options;
 	}
 
@@ -170,11 +178,11 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(true);
 
-		IterableStream<ChatCompletions> chatCompletionsStream = this.openAIClient
+		Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
 			.getChatCompletionsStream(options.getModel(), options);
 
 		final var isFunctionCall = new AtomicBoolean(false);
-		final Flux<ChatCompletions> accessibleChatCompletionsFlux = Flux.fromIterable(chatCompletionsStream)
+		final Flux<ChatCompletions> accessibleChatCompletionsFlux = chatCompletionsStream
 			// Note: the first chat completions can be ignored when using Azure OpenAI
 			// service which is a known service bug.
 			.filter(chatCompletions -> !CollectionUtils.isEmpty(chatCompletions.getChoices()))

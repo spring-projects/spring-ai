@@ -44,7 +44,6 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	@Autowired
 	private final OpenAIClient openAIClient;
 
 	private final AzureOpenAiImageOptions defaultOptions;

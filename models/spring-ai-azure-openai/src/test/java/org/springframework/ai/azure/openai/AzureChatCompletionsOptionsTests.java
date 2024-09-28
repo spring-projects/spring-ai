@@ -17,6 +17,7 @@
 package org.springframework.ai.azure.openai;
 
 import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
 import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
@@ -44,7 +45,7 @@ public class AzureChatCompletionsOptionsTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
 
 		AzureChatEnhancementConfiguration mockAzureChatEnhancementConfiguration = Mockito
 			.mock(AzureChatEnhancementConfiguration.class);
