@@ -183,14 +183,13 @@ class AzureOpenAiChatModelFunctionCallIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClient openAIClient() {
+		public OpenAIClientBuilder openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
+				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"));
 		}
 
 		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient, String selectedModel) {
+		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClient, String selectedModel) {
 			return new AzureOpenAiChatModel(openAIClient,
 					AzureOpenAiChatOptions.builder().withDeploymentName(selectedModel).withMaxTokens(500).build());
 		}

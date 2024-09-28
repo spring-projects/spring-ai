@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.azure;
 
 import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.implementation.OpenAIClientImpl;
 import com.azure.core.http.*;
 import org.junit.jupiter.api.Test;
@@ -101,7 +102,8 @@ class AzureOpenAiAutoConfigurationIT {
 			.withPropertyValues("spring.ai.azure.openai.custom-headers.foo=bar",
 					"spring.ai.azure.openai.custom-headers.fizz=buzz")
 			.run(context -> {
-				OpenAIClient openAIClient = context.getBean(OpenAIClient.class);
+				OpenAIClientBuilder openAIClientBuilder = context.getBean(OpenAIClientBuilder.class);
+				OpenAIClient openAIClient = openAIClientBuilder.buildClient();
 				Field serviceClientField = ReflectionUtils.findField(OpenAIClient.class, "serviceClient");
 				assertThat(serviceClientField).isNotNull();
 				ReflectionUtils.makeAccessible(serviceClientField);

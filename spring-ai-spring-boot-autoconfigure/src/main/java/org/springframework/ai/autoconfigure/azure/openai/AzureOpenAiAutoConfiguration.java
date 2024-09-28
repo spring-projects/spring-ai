@@ -58,8 +58,8 @@ public class AzureOpenAiAutoConfiguration {
 	private final static String APPLICATION_ID = "spring-ai";
 
 	@Bean
-	@ConditionalOnMissingBean({ OpenAIClient.class, TokenCredential.class })
-	public OpenAIClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
+	@ConditionalOnMissingBean // ({ OpenAIClient.class, TokenCredential.class })
+	public OpenAIClientBuilder openAIClientBuilder(AzureOpenAiConnectionProperties connectionProperties) {
 		if (StringUtils.hasText(connectionProperties.getApiKey())) {
 
 			Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
@@ -72,8 +72,7 @@ public class AzureOpenAiAutoConfiguration {
 			ClientOptions clientOptions = new ClientOptions().setApplicationId(APPLICATION_ID).setHeaders(headers);
 			return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
 				.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
-				.clientOptions(clientOptions)
-				.buildClient();
+				.clientOptions(clientOptions);
 		}
 
 		// Connect to OpenAI (e.g. not the Azure OpenAI). The deploymentName property is
@@ -81,8 +80,7 @@ public class AzureOpenAiAutoConfiguration {
 		if (StringUtils.hasText(connectionProperties.getOpenAiApiKey())) {
 			return new OpenAIClientBuilder().endpoint("https://api.openai.com/v1")
 				.credential(new KeyCredential(connectionProperties.getOpenAiApiKey()))
-				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
-				.buildClient();
+				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID));
 		}
 
 		throw new IllegalArgumentException("Either API key or OpenAI API key must not be empty");
@@ -91,7 +89,7 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(TokenCredential.class)
-	public OpenAIClient openAIClientWithTokenCredential(AzureOpenAiConnectionProperties connectionProperties,
+	public OpenAIClientBuilder openAIClientWithTokenCredential(AzureOpenAiConnectionProperties connectionProperties,
 			TokenCredential tokenCredential) {
 
 		Assert.notNull(tokenCredential, "TokenCredential must not be null");
@@ -99,19 +97,18 @@ public class AzureOpenAiAutoConfiguration {
 
 		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
 			.credential(tokenCredential)
-			.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
-			.buildClient();
+			.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID));
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient,
+	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder,
 			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext) {
 
-		return new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(), functionCallbackContext,
+		return new AzureOpenAiChatModel(openAIClientBuilder, chatProperties.getOptions(), functionCallbackContext,
 				toolFunctionCallbacks);
 	}
 
@@ -119,9 +116,9 @@ public class AzureOpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClient openAIClient,
+	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClientBuilder openAIClient,
 			AzureOpenAiEmbeddingProperties embeddingProperties) {
-		return new AzureOpenAiEmbeddingModel(openAIClient, embeddingProperties.getMetadataMode(),
+		return new AzureOpenAiEmbeddingModel(openAIClient.buildClient(), embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions());
 	}
 
@@ -137,19 +134,19 @@ public class AzureOpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiImageOptionsProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIClient openAIClient,
+	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIClientBuilder openAIClientBuilder,
 			AzureOpenAiImageOptionsProperties imageProperties) {
 
-		return new AzureOpenAiImageModel(openAIClient, imageProperties.getOptions());
+		return new AzureOpenAiImageModel(openAIClientBuilder.buildClient(), imageProperties.getOptions());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiAudioTranscriptionModel azureOpenAiAudioTranscriptionModel(OpenAIClient openAIClient,
+	public AzureOpenAiAudioTranscriptionModel azureOpenAiAudioTranscriptionModel(OpenAIClientBuilder openAIClient,
 			AzureOpenAiAudioTranscriptionProperties audioProperties) {
-		return new AzureOpenAiAudioTranscriptionModel(openAIClient, audioProperties.getOptions());
+		return new AzureOpenAiAudioTranscriptionModel(openAIClient.buildClient(), audioProperties.getOptions());
 	}
 
 }

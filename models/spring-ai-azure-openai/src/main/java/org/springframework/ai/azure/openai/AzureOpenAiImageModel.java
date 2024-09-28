@@ -22,7 +22,6 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.util.List;
@@ -36,7 +35,7 @@ import static java.lang.String.format;
  * @author Benoit Moussaud
  * @see ImageModel
  * @see com.azure.ai.openai.OpenAIClient
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public class AzureOpenAiImageModel implements ImageModel {
 
@@ -44,7 +43,6 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	@Autowired
 	private final OpenAIClient openAIClient;
 
 	private final AzureOpenAiImageOptions defaultOptions;
