@@ -1,6 +1,6 @@
 [[Advisors]]
 
-= Spring AI Advisors API
+= Advisors API
 
 The Spring AI Advisors API introduces a powerful component called `AroundAdvisor`. 
 This component dynamically intercepts chat-completion requests and responses, allowing for transformation or utilization of information within these interactions.
@@ -42,14 +42,14 @@ image::advisors-api-classes.jpg[Advisors API Classes, width=600, align="center"]
 The `AdvisedRequest` represents the unsealed Prompt request, while the `AdvisedResponse` represents the Chat Completion response.
 Both contain an `AdviserContext` object for sharing state across the advisor chain.
 
-The `nextAroundCall()` and the `nextAroundStream()` are key advisor methods, typically performing these actions:
+The `nextAroundCall()` and the `nextAroundStream()` are the key advisor methods, typically performing actions like:
 
-* Examining the unsealed Prompt data
-* Customizing and augmenting the Prompt data
-* Invoking the next entity in the advisor chain
-* Optionally blocking the request
-* Examining the chat completion response
-* Throwing exceptions to indicate processing errors
+- Examining the unsealed Prompt data
+- Customizing and augmenting the Prompt data
+- Invoking the next entity in the advisor chain
+- Optionally blocking the request
+- Examining the chat completion response
+- Throwing exceptions to indicate processing errors
 
 In addition the `getOrder()` method determines the advisor's priority in the chain and the `getName()` method provides a unique identifier for the advisor.
 
@@ -143,6 +143,14 @@ public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamA
 }
 ----
 
+=== Advisor Order
+
+The order of advisors in the chain is determined by the `getOrder()` method. Advisors with lower order values are executed first.
+Because the advisor chain is a stack, the first advisor in the chain is the last to process the request and the first to process the response.
+If you want to ensure that an advisor is executed last, set its order to `Integer.MAX_VALUE - 1` and vice versa.
+If you have multiple advisors with the same order value, the order of execution is not guaranteed.
+
+For use case that needs to be first in the chain on the input side and first on the output side, you have to use separate advisors for each side and use teh advisor context to share state between them.
 
 === Best Practices
 
