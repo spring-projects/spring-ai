@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author inpink
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -178,6 +179,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			Filter.Expression filterExpression) {
 		return similaritySearch(new org.opensearch.client.opensearch.core.SearchRequest.Builder()
 			.query(getOpenSearchSimilarityQuery(embedding, filterExpression))
+			.index(this.index)
 			.sort(sortOptionsBuilder -> sortOptionsBuilder
 				.score(scoreSortBuilder -> scoreSortBuilder.order(SortOrder.Desc)))
 			.size(topK)
