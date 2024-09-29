@@ -321,6 +321,8 @@ java.util.function.Function<I, O> function)`
 
 == Advisors
 
+The xref:api/advisors.adoc[Advisors API] provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications. 
+
 A common pattern when calling an AI model with user text is to append or augment the prompt with contextual data.
 
 This contextual data can be of different types. Common types include:
@@ -360,7 +362,6 @@ ChatClient.builder(chatModel)
 ----
 
 In this configuration, the `ChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
-
 
 === Retrieval Augmented Generation
 
