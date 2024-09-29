@@ -59,6 +59,11 @@ public class AdvisorObservationContext extends Observation.Context {
 	 */
 	private Map<String, Object> advisorResponseContext;
 
+	/**
+	 * The order of the advisor in the advisor chain.
+	 */
+	private int order;
+
 	public void setAdvisorName(String advisorName) {
 		this.advisorName = advisorName;
 	}
@@ -99,6 +104,14 @@ public class AdvisorObservationContext extends Observation.Context {
 		this.advisorResponseContext = advisorResponseContext;
 	}
 
+	public int getOrder() {
+		return this.order;
+	}
+
+	public void setOrder(int order) {
+		this.order = order;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -129,6 +142,11 @@ public class AdvisorObservationContext extends Observation.Context {
 
 		public Builder withAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
 			this.context.setAdvisorResponseContext(advisorResponseContext);
+			return this;
+		}
+
+		public Builder withOrder(int order) {
+			this.context.setOrder(order);
 			return this;
 		}
 

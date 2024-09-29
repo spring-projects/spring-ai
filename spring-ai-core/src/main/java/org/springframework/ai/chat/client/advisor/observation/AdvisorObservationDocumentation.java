@@ -81,6 +81,15 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 			public String asString() {
 				return "spring.ai.chat.client.advisor.name";
 			}
+		},
+		/**
+		 * Advisor order in the advisor chain.
+		 */
+		ADVISOR_ORDER {
+			@Override
+			public String asString() {
+				return "spring.ai.chat.client.advisor.order";
+			}
 		};
 
 	}

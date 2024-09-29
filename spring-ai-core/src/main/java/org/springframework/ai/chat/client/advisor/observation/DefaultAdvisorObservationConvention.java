@@ -90,7 +90,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(AdvisorObservationContext context) {
-		return KeyValues.of(advisorName(context));
+		return KeyValues.of(advisorName(context), advisorOrder(context));
 	}
 
 	protected KeyValue advisorName(AdvisorObservationContext context) {
@@ -98,6 +98,10 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 			return KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
 		}
 		return ADVISOR_NAME_NONE;
+	}
+
+	protected KeyValue advisorOrder(AdvisorObservationContext context) {
+		return KeyValue.of(HighCardinalityKeyNames.ADVISOR_ORDER, "" + context.getOrder());
 	}
 
 }

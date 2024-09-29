@@ -42,17 +42,17 @@ class DefaultAdvisorObservationConventionTests {
 	void contextualName() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.BEFORE)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext))
-			.isEqualTo("chat_client_advisor my_name_before");
+			.isEqualTo("chat_client_advisor my_name_around");
 	}
 
 	@Test
 	void supportsAdvisorObservationContext() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.BEFORE)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
@@ -62,10 +62,10 @@ class DefaultAdvisorObservationConventionTests {
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AFTER)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(), "AFTER"),
+				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(), "AROUND"),
 				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "chat_client_advisor"));
 	}
 
@@ -73,11 +73,13 @@ class DefaultAdvisorObservationConventionTests {
 	void shouldHaveKeyValuesWhenDefinedAndResponse() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AFTER)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
+			.withOrder(678)
 			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
-			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"));
+			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"))
+			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_ORDER.asString(), "678"));
 	}
 
 }
