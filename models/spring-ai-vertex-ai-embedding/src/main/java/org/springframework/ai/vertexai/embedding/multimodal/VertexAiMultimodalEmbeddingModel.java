@@ -35,7 +35,7 @@ import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddigConnectionDetails;
+import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
@@ -59,6 +59,7 @@ import java.util.stream.Stream;
  * is not yet fully functional and is subject to change.
  *
  * @author Christian Tzolov
+ * @author Mark Pollack
  * @since 1.0.0
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
@@ -76,9 +77,9 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 	private static final List<MimeType> SUPPORTED_IMAGE_MIME_SUB_TYPES = List.of(MimeTypeUtils.IMAGE_JPEG,
 			MimeTypeUtils.IMAGE_GIF, MimeTypeUtils.IMAGE_PNG, MimeTypeUtils.parseMimeType("image/bmp"));
 
-	private final VertexAiEmbeddigConnectionDetails connectionDetails;
+	private final VertexAiEmbeddingConnectionDetails connectionDetails;
 
-	public VertexAiMultimodalEmbeddingModel(VertexAiEmbeddigConnectionDetails connectionDetails,
+	public VertexAiMultimodalEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiMultimodalEmbeddingOptions defaultEmbeddingOptions) {
 
 		Assert.notNull(defaultEmbeddingOptions, "VertexAiMultimodalEmbeddingOptions must not be null");

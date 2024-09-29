@@ -23,11 +23,15 @@ import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
 
 /**
- * VertexAiEmbeddigConnectionDetails represents the details of a connection to the Vertex
+ * VertexAiEmbeddingConnectionDetails represents the details of a connection to the Vertex
  * AI embedding service. It provides methods to access the project ID, location,
  * publisher, and PredictionServiceSettings.
+ *
+ * @author Christian Tzolov
+ * @author Mark Pollack
+ * @since 1.0.0
  */
-public class VertexAiEmbeddigConnectionDetails {
+public class VertexAiEmbeddingConnectionDetails {
 
 	private static final String DEFAULT_LOCATION = "us-central1";
 
@@ -55,7 +59,7 @@ public class VertexAiEmbeddigConnectionDetails {
 
 	private final String publisher;
 
-	public VertexAiEmbeddigConnectionDetails(String endpoint, String projectId, String location, String publisher) {
+	public VertexAiEmbeddingConnectionDetails(String endpoint, String projectId, String location, String publisher) {
 		this.projectId = projectId;
 		this.location = location;
 		this.publisher = publisher;
@@ -119,7 +123,7 @@ public class VertexAiEmbeddigConnectionDetails {
 			return this;
 		}
 
-		public VertexAiEmbeddigConnectionDetails build() {
+		public VertexAiEmbeddingConnectionDetails build() {
 			if (!StringUtils.hasText(this.endpoint)) {
 				if (!StringUtils.hasText(this.location)) {
 					this.endpoint = DEFAULT_ENDPOINT;
@@ -134,7 +138,7 @@ public class VertexAiEmbeddigConnectionDetails {
 				this.publisher = DEFAULT_PUBLISHER;
 			}
 
-			return new VertexAiEmbeddigConnectionDetails(this.endpoint, this.projectId, this.location, this.publisher);
+			return new VertexAiEmbeddingConnectionDetails(this.endpoint, this.projectId, this.location, this.publisher);
 		}
 
 	}

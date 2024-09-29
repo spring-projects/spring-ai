@@ -15,14 +15,16 @@
  */
 package org.springframework.ai.vertexai.gemini;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.cloud.vertexai.api.GoogleSearchRetrieval;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.api.*;
+import com.google.cloud.vertexai.api.Candidate.FinishReason;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.cloud.vertexai.generativeai.PartMaker;
+import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.protobuf.Struct;
+import com.google.protobuf.util.JsonFormat;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -42,40 +44,29 @@ import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.Candidate;
-import com.google.cloud.vertexai.api.Candidate.FinishReason;
-import com.google.cloud.vertexai.api.Content;
-import com.google.cloud.vertexai.api.FunctionCall;
-import com.google.cloud.vertexai.api.FunctionDeclaration;
-import com.google.cloud.vertexai.api.FunctionResponse;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.api.GenerationConfig;
-import com.google.cloud.vertexai.api.Part;
-import com.google.cloud.vertexai.api.Schema;
-import com.google.cloud.vertexai.api.Tool;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
-import com.google.cloud.vertexai.generativeai.PartMaker;
-import com.google.cloud.vertexai.generativeai.ResponseStream;
-import com.google.protobuf.Struct;
-import com.google.protobuf.util.JsonFormat;
-
 import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Christian Tzolov
  * @author Grogdunn
  * @author luocongqiu
  * @author Chris Turchin
+ * @author Mark Pollack
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
@@ -85,6 +76,11 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	private final VertexAI vertexAI;
 
 	private final VertexAiGeminiChatOptions defaultOptions;
+
+	/**
+	 * The retry template used to retry the API calls.
+	 */
+	private final RetryTemplate retryTemplate;
 
 	private final GenerationConfig generationConfig;
 
@@ -152,43 +148,52 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
+		this(vertexAI, options, functionCallbackContext, toolFunctionCallbacks, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate) {
 
 		super(functionCallbackContext, options, toolFunctionCallbacks);
 
 		Assert.notNull(vertexAI, "VertexAI must not be null");
 		Assert.notNull(options, "VertexAiGeminiChatOptions must not be null");
 		Assert.notNull(options.getModel(), "VertexAiGeminiChatOptions.modelName must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 
 		this.vertexAI = vertexAI;
 		this.defaultOptions = options;
 		this.generationConfig = toGenerationConfig(options);
+		this.retryTemplate = retryTemplate;
 	}
 
 	// https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return retryTemplate.execute(context -> {
+			var geminiRequest = createGeminiRequest(prompt);
 
-		var geminiRequest = createGeminiRequest(prompt);
+			GenerateContentResponse response = this.getContentResponse(geminiRequest);
 
-		GenerateContentResponse response = this.getContentResponse(geminiRequest);
+			List<Generation> generations = response.getCandidatesList()
+				.stream()
+				.map(this::responseCandiateToGeneration)
+				.flatMap(List::stream)
+				.toList();
 
-		List<Generation> generations = response.getCandidatesList()
-			.stream()
-			.map(this::responseCandiateToGeneration)
-			.flatMap(List::stream)
-			.toList();
+			ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(response));
 
-		ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(response));
+			if (!isProxyToolCalls(prompt, this.defaultOptions)
+					&& isToolCall(chatResponse, Set.of(FinishReason.STOP.name()))) {
+				var toolCallConversation = handleToolCalls(prompt, chatResponse);
+				// Recursively call the call method with the tool call message
+				// conversation that contains the call responses.
+				return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+			}
 
-		if (!isProxyToolCalls(prompt, this.defaultOptions)
-				&& isToolCall(chatResponse, Set.of(FinishReason.STOP.name()))) {
-			var toolCallConversation = handleToolCalls(prompt, chatResponse);
-			// Recursively call the call method with the tool call message
-			// conversation that contains the call responses.
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
-		}
-
-		return chatResponse;
+			return chatResponse;
+		});
 	}
 
 	@Override
@@ -525,7 +530,14 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		}
 	}
 
-	private GenerateContentResponse getContentResponse(GeminiRequest request) {
+	/**
+	 * Generates the content response based on the provided Gemini request. Package
+	 * protected for testing purposes.
+	 * @param request the GeminiRequest containing the content and model information
+	 * @return a GenerateContentResponse containing the generated content
+	 * @throws RuntimeException if content generation fails
+	 */
+	GenerateContentResponse getContentResponse(GeminiRequest request) {
 		try {
 			return request.model.generateContent(request.contents);
 		}
