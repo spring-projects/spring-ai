@@ -2,10 +2,10 @@
 
 = Advisors API
 
-The Spring AI Advisors API introduces a powerful component called `AroundAdvisor`. 
-This component dynamically intercepts chat-completion requests and responses, allowing for transformation or utilization of information within these interactions.
+The Spring AI Advisors API provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications. 
+By leveraging the Advisors API, developers can create more sophisticated, reusable, and maintainable AI components.
 
-The key benefits include encapsulating recurring GenAI patterns, transforming data sent to and from Language Models (LLMs), and providing portability across various models and use cases.
+The key benefits include encapsulating recurring Generative AI patterns, transforming data sent to and from Language Models (LLMs), and providing portability across various models and use cases.
 
 You can configure existing advisors using the xref:api/chatclient.adoc#_advisor_configuration_in_chatclient[ChatClient API] as shown in the following example:
 
@@ -35,9 +35,11 @@ image::advisors-api-classes.jpg[Advisors API Classes, width=600, align="center"]
 
 The `nextAroundCall()` and the `nextAroundStream()` are the key advisor methods, typically performing actions such as examining the unsealed Prompt data, customizing and augmenting the Prompt data, invoking the next entity in the advisor chain, optionally blocking the request, examining the chat completion response, and throwing exceptions to indicate processing errors.
 
-In addition the `getOrder()` method determines advisor priority in the chain, while `getName()` provides a unique identifier for the advisor.
+In addition the `getOrder()` method determines advisor order in the chain, while `getName()` provides a unique advisor name.
 
-The Advisor Chain, created by the Spring AI framework, allows sequential invocation of multiple advisors. It is ordered by `getOrder()` values, with lower values executing first. The last advisor, added automatically, sends the request to the LLM.
+The Advisor Chain, created by the Spring AI framework, allows sequential invocation of multiple advisors ordered by their `getOrder()` values. 
+The lower values are executed first. 
+The last advisor, added automatically, sends the request to the LLM.
 
 Following flow diagram illustrates the interaction between the advisor chain and the Chat Model:
 
@@ -220,4 +222,9 @@ public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamA
 . Implement both streaming and non-streaming versions of your advisor for maximum flexibility.
 . Carefully consider the order of advisors in your chain to ensure proper data flow.
 
-The Spring AI Advisors API provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications. By leveraging this API, developers can create more sophisticated, reusable, and maintainable AI components.
+
+== Backward Compatibility
+
+NOTE: the `AdvisedRequest` class has been moved to a new package.
+While the `RequestResponseAdvisor` interface is still available it is marked as deprecated and will be removed around the M3 release.
+It is recommended to use the new `CallAroundAdvisor` and `StreamAroundAdvisor` interfaces for new implementations.
