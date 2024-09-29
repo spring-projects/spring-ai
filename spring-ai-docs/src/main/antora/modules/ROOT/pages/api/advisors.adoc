@@ -225,6 +225,6 @@ public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamA
 
 == Backward Compatibility
 
-NOTE: the `AdvisedRequest` class has been moved to a new package.
+IMPORTANT: The `AdvisedRequest` class is moved to a new package.
 While the `RequestResponseAdvisor` interface is still available it is marked as deprecated and will be removed around the M3 release.
 It is recommended to use the new `CallAroundAdvisor` and `StreamAroundAdvisor` interfaces for new implementations.
