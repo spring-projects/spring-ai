@@ -3,6 +3,7 @@
 * xref:getting-started.adoc[Getting Started]
 * xref:api/index.adoc[]
 ** xref:api/chatclient.adoc[]
+*** xref:api/advisors.adoc[Advisors]
 ** xref:api/chatmodel.adoc[]
 *** xref:api/bedrock-chat.adoc[Amazon Bedrock]
 **** xref:api/chat/bedrock/bedrock-anthropic3.adoc[Anthropic3]
@@ -89,8 +90,6 @@
 *** xref:api/vectordbs/typesense.adoc[]
 *** xref:api/vectordbs/weaviate.adoc[]
 
-
-** xref:api/advisors.adoc[Advisors]
 ** xref:api/functions.adoc[Function Calling]
 ** xref:api/multimodality.adoc[Multimodality]
 ** xref:api/prompt.adoc[]
