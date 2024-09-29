@@ -24,7 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddigConnectionDetails;
+import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -67,15 +67,15 @@ class VertexAiTextEmbeddingModelIT {
 	static class Config {
 
 		@Bean
-		public VertexAiEmbeddigConnectionDetails connectionDetails() {
-			return VertexAiEmbeddigConnectionDetails.builder()
+		public VertexAiEmbeddingConnectionDetails connectionDetails() {
+			return VertexAiEmbeddingConnectionDetails.builder()
 				.withProjectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
 				.withLocation(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 				.build();
 		}
 
 		@Bean
-		public VertexAiTextEmbeddingModel vertexAiEmbeddingModel(VertexAiEmbeddigConnectionDetails connectionDetails) {
+		public VertexAiTextEmbeddingModel vertexAiEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails) {
 
 			VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
 				.withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
