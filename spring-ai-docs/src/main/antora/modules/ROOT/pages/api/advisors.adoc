@@ -5,13 +5,9 @@
 The Spring AI Advisors API introduces a powerful component called `AroundAdvisor`. 
 This component dynamically intercepts chat-completion requests and responses, allowing for transformation or utilization of information within these interactions.
 
-The Advisors are important for a number of reasons:
+The key benefits include encapsulating recurring GenAI patterns, transforming data sent to and from Language Models (LLMs), and providing portability across various models and use cases.
 
- - Encapsulation of Recurring Tasks: AroundAdvisors enable the packaging of common GenAI patterns into reusable units.
- - Transformation: They facilitate the augmentation of data sent to Language Models (LLMs) and formatting of responses sent back to clients.
- - Portability: As part of the Spring AI core specification, developers can create reusable transformation components that work across various models and use cases.
-
-The xref:api/chatclient.adoc#_advisor_configuration_in_chatclient[ChatClient API] provides a simple way to configure and use advisors. For example you can enable the built-in chat-memory and question-answer advisors like this:
+You can configure existing advisors using the xref:api/chatclient.adoc#_advisor_configuration_in_chatclient[ChatClient API] as shown in the following example:
 
 [source,java]
 ----
@@ -30,34 +26,20 @@ ChatClient.builder(chatModel)
     .call();
 ----
 
-The ChatClient API allows configuring advisors at build time and at runtime as well as providing parameters to the advisors.
-You can use some of the provided advisors or implement custom such to meet your specific requirements.
-
 == Core Components
 
-The Advisor API is defined in the `org.springframework.ai.chat.client.advisor.api` package by the pair of `CallAroundAdvisor` and `CallAroundAdvisorChain` interfaces and the corresponding `StreamAroundAdvisor` and `StreamAroundAdvisorChain` pair for the streaming responses.
+The API consists of `CallAroundAdvisor` and `CallAroundAdvisorChain` for non-streaming scenarios, and `StreamAroundAdvisor` and `StreamAroundAdvisorChain` for streaming scenarios. 
+It also includes `AdvisedRequest` to represent the unsealed Prompt request, `AdvisedResponse` for the Chat Completion response. Both hold an `advise-context` to share state across the advisor chain.
 
 image::advisors-api-classes.jpg[Advisors API Classes, width=600, align="center"]
 
-The `AdvisedRequest` represents the unsealed Prompt request, while the `AdvisedResponse` represents the Chat Completion response.
-Both contain an `AdviserContext` object for sharing state across the advisor chain.
+The `nextAroundCall()` and the `nextAroundStream()` are the key advisor methods, typically performing actions such as examining the unsealed Prompt data, customizing and augmenting the Prompt data, invoking the next entity in the advisor chain, optionally blocking the request, examining the chat completion response, and throwing exceptions to indicate processing errors.
 
-The `nextAroundCall()` and the `nextAroundStream()` are the key advisor methods, typically performing actions like:
+In addition the `getOrder()` method determines advisor priority in the chain, while `getName()` provides a unique identifier for the advisor.
 
-- Examining the unsealed Prompt data
-- Customizing and augmenting the Prompt data
-- Invoking the next entity in the advisor chain
-- Optionally blocking the request
-- Examining the chat completion response
-- Throwing exceptions to indicate processing errors
+The Advisor Chain, created by the Spring AI framework, allows sequential invocation of multiple advisors. It is ordered by `getOrder()` values, with lower values executing first. The last advisor, added automatically, sends the request to the LLM.
 
-In addition the `getOrder()` method determines the advisor's priority in the chain and the `getName()` method provides a unique identifier for the advisor.
-
-The `Advisor Chain`, created and provided by the Spring AI framework, allows for the sequential invocation of multiple advisors. 
-This chain is represented by `CallAroundAdvisorChain` for non-streaming and `StreamAroundAdvisorChain` for streaming scenarios.
-You add advisors to the chain using the The xref:api/chatclient.adoc#_advisor_configuration_in_chatclient[ChatClient API].
-
-Following usage flow diagram illustrates the interaction between the advisor chain and the Chat Model:
+Following flow diagram illustrates the interaction between the advisor chain and the Chat Model:
 
 image::advisors-flow.jpg[Advisors API Flow, width=400, align="left"]
 
