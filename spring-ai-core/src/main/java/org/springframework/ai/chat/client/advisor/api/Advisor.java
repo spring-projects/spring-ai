@@ -30,6 +30,26 @@ import org.springframework.core.Ordered;
 public interface Advisor extends Ordered {
 
 	/**
+	 * Useful constant for the highest precedence value for ordering advisors.
+	 */
+	public static int HIGHEST_PRECEDENCE_ORDER = Ordered.HIGHEST_PRECEDENCE;
+
+	/**
+	 * Useful constant for the lowest precedence value for ordering advisors. Note that
+	 * the values from Ordered.LOWEST_PRECEDENCE to Ordered.LOWEST_PRECEDENCE + 1000 are
+	 * reserved for internal use within the Spring AI framework.
+	 */
+	public static int LOWEST_PRECEDENCE_ORDER = Ordered.LOWEST_PRECEDENCE + 1000;
+
+	/**
+	 * Useful constant for the default Chat Memory precedence order. Ensures this order
+	 * has lower priority (e.g. precedences) than the Spring AI internal advisors. It
+	 * leaves room (1000 slots) for the user to plug in their own advisors with higher
+	 * priority.
+	 */
+	public static int DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER = Ordered.HIGHEST_PRECEDENCE + 1000;
+
+	/**
 	 * @return the advisor name.
 	 */
 	String getName();

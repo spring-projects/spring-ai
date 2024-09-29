@@ -68,6 +68,16 @@ image::advisors-flow.jpg[Advisors API Flow, width=400, align="left"]
 . Each advisor can process or modify the response.
 . The final `AdvisedResponse` is returned to the client by extracting the `ChatCompletion`.
 
+=== Advisor Order
+
+The order of advisors in the chain is determined by the `getOrder()` method. 
+Advisors with lower order values are executed first.
+Because the advisor chain is a stack, the first advisor in the chain is the last to process the request and the first to process the response.
+If you want to ensure that an advisor is executed last, set its order close to the `Advisor.LOWEST_PRECEDENCE_ORDER` value and vice versa to execute first set the order close to the `Advisor.HIGHEST_PRECEDENCE_ORDER` value.
+If you have multiple advisors with the same order value, the order of execution is not guaranteed.
+
+TIP: For use cases that need to be first in the chain on the input side and first on the output side, you have to use separate advisors for each side, configured with different order values and use teh advisor context to share state between them.
+
 == Implementing an Advisor
 
 To create an advisor, implement either `CallAroundAdvisor` or `StreamAroundAdvisor` (or both). The key method to implement is `nextAroundCall()` for non-streaming or `nextAroundStream()` for streaming advisors.
@@ -130,62 +140,61 @@ Note that you can not alter the response in the `MessageAggregator` as it is a r
 
 ==== Re-Reading (Re2) Advisor
 
-This https://arxiv.org/pdf/2309.06275[Re-Reading Improves Reasoning in Large Language Models] article introduces a technique called Re-Reading (Re2) that improves the reasoning capabilities of large language models.
+The "https://arxiv.org/pdf/2309.06275[Re-Reading Improves Reasoning in Large Language Models]" article introduces a technique called Re-Reading (Re2) that improves the reasoning capabilities of Large Language Models.
 The Re2 technique requires augmenting the input prompt like this:
 
 ----
-{Input Query}
-Read the question again: {Input Query}
+{Input_Query}
+Read the question again: {Input_Query}
 ----
 
-Then an advisor can be implemented to apply this technique to the user's input query.
+Implementing an advisor that applies the Re2 technique to the user's input query can be done like this:
 
 [source,java]
 ----
 public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
-	private static final String DEFAULT_USER_TEXT_ADVISE = """
-			{re2_input_query}
-            Read the question again: {re2_input_query}
-			""";
 
-	@Override
-	public String getName() { 
-		return this.getClass().getSimpleName();
+	private AdvisedRequest before(AdvisedRequest advisedRequest) { // <1>
+
+		Map<String, Object> advisedUserParams = new HashMap<>(advisedRequest.userParams());
+		advisedUserParams.put("re2_input_query", advisedRequest.userText());
+
+		return AdvisedRequest.from(advisedRequest)
+			.withUserText("""
+			    {re2_input_query}
+			    Read the question again: {re2_input_query}
+			    """)
+			.withUserParams(advisedUserParams)
+			.build();
 	}
 
 	@Override
-	public int getOrder() { // <1>
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) { // <2>
+		return chain.nextAroundCall(this.before(advisedRequest));
+	}
+
+	@Override
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) { // <3>
+		return chain.nextAroundStream(this.before(advisedRequest));
+	}
+
+	@Override
+	public int getOrder() { // <4>
 		return 0; 
 	}
 
-	private AdvisedRequest before(AdvisedRequest advisedRequest) {
-
-		String inputQuery = advisedRequest.userText();
-
-		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put("re2_input_query", inputQuery);
-
-        AdvisedRequest advisedRequest = AdvisedRequest.from(advisedRequest)
-			.withUserText(DEFAULT_USER_TEXT_ADVISE)
-			.withUserParams(advisedUserParams)
-			.build();
-    }
-
-	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-
-		return chain.nextAroundCall(before(advisedRequest));
-	}
-
-	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-
-		return chain.nextAroundStream(before(advisedRequest));		
+    @Override
+    public String getName() { // <5>
+		return this.getClass().getSimpleName();
 	}
 }
 ----
-<1> You can control the order of execution by setting the order value. Lower values execute first.
+<1> The `before` method augments the user's input query applying the Re-Reading technique.
+<2> The `aroundCall` method intercepts the non-streaming request and applies the Re-Reading technique.
+<3> The `aroundStream` method intercepts the streaming request and applies the Re-Reading technique.
+<4> You can control the order of execution by setting the order value. Lower values execute first.
+<5> Provides a unique name for the advisor.
 
 ==== Spring AI built-in Advisors
 
@@ -221,15 +230,6 @@ public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamA
             });
 }
 ----
-
-=== Advisor Order
-
-The order of advisors in the chain is determined by the `getOrder()` method. Advisors with lower order values are executed first.
-Because the advisor chain is a stack, the first advisor in the chain is the last to process the request and the first to process the response.
-If you want to ensure that an advisor is executed last, set its order to `Integer.MAX_VALUE - 1` and vice versa.
-If you have multiple advisors with the same order value, the order of execution is not guaranteed.
-
-For use case that needs to be first in the chain on the input side and first on the output side, you have to use separate advisors for each side and use teh advisor context to share state between them.
 
 === Best Practices
 

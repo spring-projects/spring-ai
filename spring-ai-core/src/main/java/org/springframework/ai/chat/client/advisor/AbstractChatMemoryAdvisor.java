@@ -21,10 +21,10 @@ import java.util.function.Function;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
-import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 import reactor.core.publisher.Flux;
@@ -80,10 +80,11 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 
 	@Override
 	public int getOrder() {
-		// ensure it has lower priority (e.g. precedences) than the internal advisors.
-		// It leaves room (100 slots) for the user to plug in their own advisors with
-		// higher priority.
-		return Ordered.HIGHEST_PRECEDENCE + 100;
+		// The (Ordered.HIGHEST_PRECEDENCE + 1000) value ensures this order has lower
+		// priority (e.g. precedences) than the internal Spring AI advisors. It leaves
+		// room (1000 slots) for the user to plug in their own advisors with higher
+		// priority.
+		return Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 	}
 
 	protected T getChatMemoryStore() {
