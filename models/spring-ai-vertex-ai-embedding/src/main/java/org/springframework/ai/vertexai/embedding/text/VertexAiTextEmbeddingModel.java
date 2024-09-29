@@ -117,10 +117,6 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 			}
 			return new EmbeddingResponse(embeddingList,
 					generateResponseMetadata(finalOptions.getModel(), totalTokenCount));
-			// }
-			// catch (Exception e) {
-			// throw new RuntimeException(e);
-			// }
 		});
 	}
 
