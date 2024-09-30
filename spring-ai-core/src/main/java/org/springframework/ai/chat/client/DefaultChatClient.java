@@ -422,15 +422,7 @@ public class DefaultChatClient implements ChatClient {
 				// @formatter:off				
 				// Apply the around advisor chain that terminates with the, last,
 				// model call advisor.
-//				 StreamAggregationAdvisor aggregationAdvisor =
-//				 		advisedResponse -> couchbaseClient.streamToBucket(advisedResponse).then();
-//
-//				 List<StreamAggregationAdvisor> streamAggregationAdvisors = List.of(aggregationAdvisor);
 				 Flux<AdvisedResponse> stream = inputRequest.aroundAdvisorChainBuilder.build().nextAroundStream(initialAdvisedRequest);
-
-//				 if (aggregationAdvisor != null) {
-//				 	stream = new MessageAggregator().aggregateAdvisedResponse(stream, aggregationAdvisor);
-//				 }
 
 				 return stream
 					.map(AdvisedResponse::response)
