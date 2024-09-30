@@ -41,6 +41,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 /**
@@ -60,13 +61,12 @@ public class ChromaVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chroma.getHost(),
 				"spring.ai.vectorstore.chroma.client.port=" + chroma.getMappedPort(8000),
-				"spring.ai.vectorstore.chroma.initializeSchema=true",
 				"spring.ai.vectorstore.chroma.collectionName=TestCollection");
 
 	@Test
 	public void addAndSearchWithFilters() {
 
-		contextRunner.run(context -> {
+		contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=true").run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
@@ -122,6 +122,16 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.hasBeenStopped();
 			observationRegistry.clear();
 
+		});
+	}
+
+	@Test
+	public void throwExceptionOnMissingCollectionAndDisabledInitializedSchema() {
+
+		contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=false").run(context -> {
+			assertThrows(
+					"Collection TestCollection doesn't exist and won't be created as the initializeSchema is set to false.",
+					java.lang.RuntimeException.class, () -> context.getBean(VectorStore.class));
 		});
 	}
 
