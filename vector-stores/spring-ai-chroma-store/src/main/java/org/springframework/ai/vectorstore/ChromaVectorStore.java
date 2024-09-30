@@ -185,13 +185,16 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-
-		if (!this.initializeSchema)
-			return;
-
 		var collection = this.chromaApi.getCollection(this.collectionName);
 		if (collection == null) {
-			collection = this.chromaApi.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
+			if (initializeSchema) {
+				collection = this.chromaApi
+					.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
+			}
+			else {
+				throw new RuntimeException("Collection " + this.collectionName
+						+ " doesn't exist. It won't be created when initializeSchema is set to false.");
+			}
 		}
 		this.collectionId = collection.id();
 	}
