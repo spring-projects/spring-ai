@@ -607,8 +607,6 @@ public class DefaultChatClient implements ChatClient {
 
 				@Override
 				public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-					// TODO: use aggregate stream advisors and apply over the original
-					//  stream
 					return chatModel.stream(advisedRequest.toPrompt())
 					.map( chatResponse -> new AdvisedResponse(chatResponse, Collections.unmodifiableMap(advisedRequest.adviseContext())))
 					.publishOn(Schedulers.boundedElastic());// TODO add option to disable.
