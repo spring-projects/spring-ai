@@ -11,20 +11,23 @@ You can configure existing advisors using the xref:api/chatclient.adoc#_advisor_
 
 [source,java]
 ----
-ChatClient.builder(chatModel)
-    // Enable the built-in chat-memory and question-answer (RAG) advisors at build time.
+var chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(
-        new ChatMemoryAdvisor(chatMemory),
-        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
+        new MessageChatMemoryAdvisor(chatMemory), // chat-memory advisor
+        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()) // RAG advisor
     )
-    .build()
-    .prompt()
-    // At runtime, assign a conversation ID  and  size to the ChatMemoryAdvisor.
+    .build();
+
+String response = chatClient.prompt()
+    // Set advisor parameters at runtime
     .advisors(advisor -> advisor.param("chat_memory_conversation_id", "678") 
             .param("chat_memory_response_size", 100)) 
     .user(userText)
-    .call();
+    .call()
+	.content();
 ----
+
+It is recommend to register the advisors at build time using builder's `defaultAdvisors()` method. 
 
 == Core Components
 

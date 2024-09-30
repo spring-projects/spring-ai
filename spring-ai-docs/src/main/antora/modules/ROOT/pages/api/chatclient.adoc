@@ -354,14 +354,15 @@ ChatClient.builder(chatModel)
     .build()
     .prompt()
     .advisors(
-        new ChatMemoryAdvisor(chatMemory),
+        new MessageChatMemoryAdvisor(chatMemory),
         new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
     )
     .user(userText)
-    .call();
+    .call()
+    .content();
 ----
 
-In this configuration, the `ChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
+In this configuration, the `MessageChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
 
 === Retrieval Augmented Generation
 
