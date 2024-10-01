@@ -18,13 +18,10 @@ package org.springframework.ai.autoconfigure.vectorstore.mongo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
@@ -33,7 +30,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -44,12 +40,11 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
+import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
 /**
  * @author Eddú Meléndez
@@ -62,12 +57,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Container
-	static GenericContainer<?> mongo = new GenericContainer<>("mongodb/atlas:v1.24.0").withPrivilegedMode(true)
-		.withCommand("/bin/bash", "-c",
-				"atlas deployments setup local-test --type local --port 27778 --bindIpAll --username root --password root --force && tail -f /dev/null")
-		.withExposedPorts(27778)
-		.waitingFor(Wait.forLogMessage(".*Deployment created!.*\\n", 1))
-		.withStartupTimeout(Duration.ofMinutes(5));
+	static MongoDBAtlasLocalContainer mongo = new MongoDBAtlasLocalContainer("mongodb/mongodb-atlas-local:7.0.9");
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
@@ -94,9 +84,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 				// "spring.ai.vectorstore.mongodb.path-name=testembedding",
 				"spring.ai.vectorstore.mongodb.index-name=text_index",
 				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
-				String.format(
-						"spring.data.mongodb.uri=" + String.format("mongodb://root:root@%s:%s/?directConnection=true",
-								mongo.getHost(), mongo.getMappedPort(27778))));
+				String.format("spring.data.mongodb.uri=" + mongo.getConnectionString()));
 
 	@Test
 	public void addAndSearch() {
