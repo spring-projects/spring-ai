@@ -36,6 +36,7 @@ import org.springframework.util.MimeType;
 
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,12 +50,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Chris Smith
  * @author Soby Chacko
+ * @author Eddú Meléndez
  */
 @Testcontainers
 class MongoDBAtlasVectorStoreIT {
 
 	@Container
-	private static MongoDBAtlasContainer container = new MongoDBAtlasContainer();
+	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(
+			"mongodb/mongodb-atlas-local:7.0.9");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)

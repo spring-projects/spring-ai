@@ -56,18 +56,21 @@ import com.mongodb.client.MongoClient;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Eddú Meléndez
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class MongoDbVectorStoreObservationIT {
 
 	@Container
-	private static MongoDBAtlasContainer container = new MongoDBAtlasContainer();
+	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(
+			"mongodb/mongodb-atlas-local:7.0.9");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class)
