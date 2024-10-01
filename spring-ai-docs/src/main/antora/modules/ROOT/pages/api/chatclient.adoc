@@ -351,12 +351,12 @@ IMPORTANT: The order in which advisors are added to the chain is crucial, as it 
 [source,java]
 ----
 ChatClient.builder(chatModel)
+    .defaultAdvisors(
+        new MessageChatMemoryAdvisor(chatMemory), // chat-memory advisor
+        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()) // RAG advisor
+    )
     .build()
     .prompt()
-    .advisors(
-        new MessageChatMemoryAdvisor(chatMemory),
-        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
-    )
     .user(userText)
     .call()
     .content();
@@ -376,8 +376,8 @@ Assuming you have already loaded data into a `VectorStore`, you can perform Retr
 [source,java]
 ----
 ChatResponse response = ChatClient.builder(chatModel)
-        .build().prompt()
-        .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+        .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+        .build().prompt()        
         .user(userText)
         .call()
         .chatResponse();
