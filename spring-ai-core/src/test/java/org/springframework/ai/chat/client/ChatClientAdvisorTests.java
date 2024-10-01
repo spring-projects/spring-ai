@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.client.advisor.QueryTransformerQuestionAnswerAdvisor;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
@@ -40,6 +45,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 
 /**
  * @author Christian Tzolov
@@ -52,6 +58,15 @@ public class ChatClientAdvisorTests {
 
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;
+
+	@Mock
+	VectorStore vectorStore;
+
+	@Captor
+	ArgumentCaptor<String> userInputCaptor;
+
+	@Captor
+	ArgumentCaptor<SearchRequest> queryCaptor;
 
 	private String join(Flux<String> fluxContent) {
 		return fluxContent.collectList().block().stream().collect(Collectors.joining());
@@ -267,6 +282,48 @@ public class ChatClientAdvisorTests {
 			.containsEntry("adviseRequest", "adviseRequest")
 			.containsEntry("adviseResponse", "adviseResponse");
 		assertThat(mockAdvisor.chatResponse).isNotNull();
+	}
+
+	@Test
+	public void queryTransformerQuestionAnswerAdvisor() {
+
+		// Query transformer advisor
+		when(chatModel.call(userInputCaptor.capture()))
+				.thenReturn("Hello");
+
+
+		when(vectorStore.similaritySearch(queryCaptor.capture()))
+				.thenReturn(List.of(new Document("Hello")));
+
+		// real call
+		when(chatModel.call(promptCaptor.capture()))
+				.thenReturn(new ChatResponse(List.of(new Generation("Hello John"))));
+
+
+		var chatClient = ChatClient.builder(chatModel)
+				.defaultSystem("Default system text.")
+				.defaultAdvisors(new QueryTransformerQuestionAnswerAdvisor(vectorStore, chatModel, "query must be in English"))
+				.build();
+
+		var content = chatClient.prompt()
+				.user("Bonjour")
+				.call().content();
+
+		assertThat(content).isEqualTo("Hello John");
+
+		when(chatModel.call(userInputCaptor.capture())).thenReturn("Hello2");
+		when(vectorStore.similaritySearch(queryCaptor.capture())).thenReturn(List.of(new Document("Hello2")));;
+		when(chatModel.call(promptCaptor.capture()))
+				.thenReturn(new ChatResponse(List.of(new Generation("Hello John2"))));
+
+		Consumer<ChatClient.AdvisorSpec> advisorSpecConsumer = advisorSpec -> {
+			advisorSpec.param(QueryTransformerQuestionAnswerAdvisor.QUERY_REQUIREMENT, "query must be in English");
+		};
+		content = chatClient.prompt()
+				.user("Bonjour").advisors(advisorSpecConsumer)
+				.call().content();
+
+		assertThat(content).isEqualTo("Hello John2");
 	}
 
 }
