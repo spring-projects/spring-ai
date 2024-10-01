@@ -35,6 +35,8 @@ import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -63,7 +65,7 @@ public class WeatherServicePromptIT {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
 
-				UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
+				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 				// UserMessage userMessage = new UserMessage("What's the weather like in
 				// San Francisco, Tokyo, and
 				// Paris?");
@@ -83,6 +85,32 @@ public class WeatherServicePromptIT {
 				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
 				// assertThat(response.getResult().getOutput().getContent()).contains("30.0",
 				// "10.0", "15.0");
+			});
+	}
+
+	@Test
+	void functionCallWithPortableFunctionCallingOptions() {
+		contextRunner
+			.withPropertyValues("spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.LARGE.getValue())
+			.run(context -> {
+
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+
+				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
+
+				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MyWeatherService())
+						.withName("CurrentWeatherService")
+						.withDescription("Get the current weather in requested location")
+						.build()))
+
+					.build();
+
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+
+				logger.info("Response: {}", response);
+
+				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
 			});
 	}
 

@@ -51,6 +51,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
@@ -477,8 +478,16 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		Set<String> enabledToolsToUse = new HashSet<>();
 
 		if (prompt.getOptions() != null) {
-			OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-					ChatOptions.class, OpenAiChatOptions.class);
+			OpenAiChatOptions updatedRuntimeOptions = null;
+
+			if (prompt.getOptions() instanceof FunctionCallingOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(((FunctionCallingOptions) prompt.getOptions()),
+						FunctionCallingOptions.class, OpenAiChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof OpenAiChatOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						OpenAiChatOptions.class);
+			}
 
 			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 

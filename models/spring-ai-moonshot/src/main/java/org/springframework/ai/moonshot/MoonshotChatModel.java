@@ -33,6 +33,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletion;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletion.Choice;
@@ -341,9 +342,16 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 		Set<String> enabledToolsToUse = new HashSet<>();
 
 		if (prompt.getOptions() != null) {
-			MoonshotChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-					ChatOptions.class, MoonshotChatOptions.class);
+			MoonshotChatOptions updatedRuntimeOptions;
 
+			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions,
+						FunctionCallingOptions.class, MoonshotChatOptions.class);
+			}
+			else {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						MoonshotChatOptions.class);
+			}
 			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
 			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);

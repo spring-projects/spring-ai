@@ -18,10 +18,12 @@ package org.springframework.ai.model.function;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
+
 /**
  * @author Christian Tzolov
  */
-public interface FunctionCallingOptions {
+public interface FunctionCallingOptions extends ChatOptions {
 
 	/**
 	 * Function Callbacks to be registered with the ChatModel. For Prompt Options the
