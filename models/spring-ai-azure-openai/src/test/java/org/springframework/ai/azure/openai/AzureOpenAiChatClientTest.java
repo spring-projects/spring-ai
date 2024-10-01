@@ -19,6 +19,7 @@ package org.springframework.ai.azure.openai;
 import static com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -47,33 +48,42 @@ public class AzureOpenAiChatClientTest {
 	private ChatClient chatClient;
 
 	@Test
-	void basicAzureOpenAiChatClientStreaming() {
-		String stitchedResponseContent = chatClient.prompt(
-				"Name all states in the USA and their capitals, add a space followed by a hyphen, then another space between the two")
+	void streamingAndImperativeResponsesContainIdenticalRelevantResults() {
+		String prompt = "Name all states in the USA and their capitals, add a space followed by a hyphen, then another space between the two. "
+				+ "List them with a numerical index. Do not use any abbreviations in state or capitals.";
+
+		// Imperative call
+		String rawDataFromImperativeCall = chatClient.prompt(prompt).call().content();
+		String imperativeStatesData = extractStatesData(rawDataFromImperativeCall);
+		String formattedImperativeResponse = formatResponse(imperativeStatesData);
+
+		// Streaming call
+		String stitchedResponseFromStream = chatClient.prompt(prompt)
 			.stream()
 			.content()
 			.collectList()
 			.block()
 			.stream()
 			.collect(Collectors.joining());
-		verifyResponse(stitchedResponseContent);
+		String streamingStatesData = extractStatesData(stitchedResponseFromStream);
+		String formattedStreamingResponse = formatResponse(streamingStatesData);
+
+		// Assertions
+		assertThat(formattedStreamingResponse).isEqualTo(formattedImperativeResponse);
+		assertThat(formattedStreamingResponse).contains("1. Alabama - Montgomery");
+		assertThat(formattedStreamingResponse).contains("50. Wyoming - Cheyenne");
+		assertThat(formattedStreamingResponse.lines().count()).isEqualTo(50);
 	}
 
-	@Test
-	void basicAzureOpenAiChatClientImperative() {
-		String stitchedResponseContent = chatClient.prompt(
-				"Name all states in the USA and their capitals, add a space followed by a hyphen, then another space between the two")
-			.call()
-			.content();
-		verifyResponse(stitchedResponseContent);
+	private String extractStatesData(String rawData) {
+		int firstStateIndex = rawData.indexOf("1. Alabama - Montgomery");
+		String lastAlphabeticalState = "50. Wyoming - Cheyenne";
+		int lastStateIndex = rawData.indexOf(lastAlphabeticalState) + lastAlphabeticalState.length();
+		return rawData.substring(firstStateIndex, lastStateIndex);
 	}
 
-	private static void verifyResponse(String stitchedResponseContent) {
-		assertThat(stitchedResponseContent).contains("Alabama - Montgomery");
-		assertThat(stitchedResponseContent).contains("New York - Albany");
-		assertThat(stitchedResponseContent).contains("Pennsylvania - Harrisburg");
-		assertThat(stitchedResponseContent).contains("Tennessee - Nashville");
-		assertThat(stitchedResponseContent).contains("Wyoming - Cheyenne");
+	private String formatResponse(String response) {
+		return String.join("\n", Arrays.stream(response.split("\n")).map(String::strip).toArray(String[]::new));
 	}
 
 	@SpringBootConfiguration
