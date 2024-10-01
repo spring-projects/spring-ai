@@ -35,6 +35,8 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -122,6 +124,27 @@ public class FunctionCallbackWrapperIT {
 			logger.info("Response: " + content);
 
 			assertThat(content).contains("30", "10", "15");
+		});
+	}
+
+	@Test
+	void functionCallWithPortableFunctionCallingOptions() {
+		contextRunner.run(context -> {
+
+			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.withFunction("WeatherInfo")
+				.build();
+
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+
+			logger.info("Response: " + response.getResult().getOutput().getContent());
+
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 		});
 	}
 

@@ -181,15 +181,9 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() != null) {
-				var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						QianFanChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					QianFanChatOptions.class);
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 		}
 		return request;
 	}

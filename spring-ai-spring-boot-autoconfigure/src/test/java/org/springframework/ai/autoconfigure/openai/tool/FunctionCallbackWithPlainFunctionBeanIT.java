@@ -26,12 +26,13 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
@@ -91,15 +92,19 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			// @formatter:off
-			String content = ChatClient.builder(chatModel).build().prompt()
-				.functions("weatherFunction")
-				.user("What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'")
-				.stream().content()
-				.collectList().block().stream().collect(Collectors.joining());
-			// @formatter:on
+				// Test weatherFunction
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris?");
 
-				logger.info("Response: {}", content);
+				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+					.withFunction("weatherFunction")
+					.build();
+
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+
+				logger.info("Response: {}", response.getResult().getOutput().getContent());
+
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 			});
 	}
 
