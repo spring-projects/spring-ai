@@ -16,6 +16,7 @@
 package org.springframework.ai.reader;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,33 +70,19 @@ public class JsonReader implements DocumentReader {
 		this.jsonKeysToUse = List.of(jsonKeysToUse);
 	}
 
-	public List<Document> get(JsonNode rootNode) {
-		if (rootNode.isArray()) {
-			return StreamSupport.stream(rootNode.spliterator(), true)
-				.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
-				.toList();
-		}
-		else {
-			return Collections.singletonList(parseJsonNode(rootNode, objectMapper));
-		}
-	}
-
 	@Override
 	public List<Document> get() {
 		try {
 			JsonNode rootNode = objectMapper.readTree(this.resource.getInputStream());
-			return get(rootNode);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
-	public List<Document> get(String pointer) {
-		try {
-			JsonNode rootNode = objectMapper.readTree(this.resource.getInputStream());
-			rootNode = rootNode.at(pointer);
-			return get(rootNode);
+			if (rootNode.isArray()) {
+				return StreamSupport.stream(rootNode.spliterator(), true)
+					.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
+					.toList();
+			}
+			else {
+				return Collections.singletonList(parseJsonNode(rootNode, objectMapper));
+			}
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
@@ -116,4 +103,25 @@ public class JsonReader implements DocumentReader {
 		return new Document(content, metadata);
 	}
 
+	public List<Document> get(JsonNode rootNode) {
+		if (rootNode.isArray()) {
+			return StreamSupport.stream(rootNode.spliterator(), true)
+					.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
+					.toList();
+		}
+		else {
+			return Collections.singletonList(parseJsonNode(rootNode, objectMapper));
+		}
+	}
+
+	public List<Document> get(String pointer) {
+		try {
+			JsonNode rootNode = objectMapper.readTree(this.resource.getInputStream());
+			rootNode = rootNode.at(pointer);
+			return get(rootNode);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }
