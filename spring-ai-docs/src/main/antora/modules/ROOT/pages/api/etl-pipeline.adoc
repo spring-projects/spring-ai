@@ -154,6 +154,44 @@ The `JsonReader` processes JSON content as follows:
 ** It generates metadata using the provided `JsonMetadataGenerator` (or an empty one if not provided).
 ** It creates a `Document` object with the extracted content and metadata.
 
+
+==== Using JSON Pointers
+
+The `JsonReader` now supports retrieving specific parts of a JSON document using JSON Pointers. This feature allows you to easily extract nested data from complex JSON structures.
+
+===== The `get(String pointer)` method
+
+[source,java]
+----
+public List<Document> get(String pointer)
+----
+
+This method allows you to use a JSON Pointer to retrieve a specific part of the JSON document.
+
+====== Parameters
+
+* `pointer`: A JSON Pointer string (as defined in RFC 6901) to locate the desired element within the JSON structure.
+
+====== Return Value
+
+* Returns a `List<Document>` containing the documents parsed from the JSON element located by the pointer.
+
+====== Behavior
+
+* The method uses the provided JSON Pointer to navigate to a specific location in the JSON structure.
+* If the pointer is valid and points to an existing element:
+** For a JSON object: it returns a list with a single Document.
+** For a JSON array: it returns a list of Documents, one for each element in the array.
+* If the pointer is invalid or points to a non-existent element, it throws an `IllegalArgumentException`.
+
+====== Example
+
+[source,java]
+----
+JsonReader jsonReader = new JsonReader(resource, "description");
+List<Document> documents = jsonReader.get("/store/books/0");
+----
+
 ==== Example JSON Structure
 
 [source,json]

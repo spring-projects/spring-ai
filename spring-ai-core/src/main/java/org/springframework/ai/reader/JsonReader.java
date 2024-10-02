@@ -103,4 +103,37 @@ public class JsonReader implements DocumentReader {
 		return new Document(content, metadata);
 	}
 
+	protected List<Document> get(JsonNode rootNode) {
+		if (rootNode.isArray()) {
+			return StreamSupport.stream(rootNode.spliterator(), true)
+				.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
+				.toList();
+		}
+		else {
+			return Collections.singletonList(parseJsonNode(rootNode, objectMapper));
+		}
+	}
+
+	/**
+	 * Retrieves documents from the JSON resource using a JSON Pointer.
+	 * @param pointer A JSON Pointer string (RFC 6901) to locate the desired element
+	 * @return A list of Documents parsed from the located JSON element
+	 * @throws RuntimeException if the JSON cannot be parsed or the pointer is invalid
+	 */
+	public List<Document> get(String pointer) {
+		try {
+			JsonNode rootNode = objectMapper.readTree(this.resource.getInputStream());
+			JsonNode targetNode = rootNode.at(pointer);
+
+			if (targetNode.isMissingNode()) {
+				throw new IllegalArgumentException("Invalid JSON Pointer: " + pointer);
+			}
+
+			return get(targetNode);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Error reading JSON resource", e);
+		}
+	}
+
 }
