@@ -80,4 +80,5 @@ public class JsonReaderTests {
 		assertThat(documents.size()).isEqualTo(1);
 		assertThat(documents.get(0).getContent()).contains("name: Bike Shop");
 	}
+
 }

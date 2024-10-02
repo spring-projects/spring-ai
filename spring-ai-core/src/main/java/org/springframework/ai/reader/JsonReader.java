@@ -106,8 +106,8 @@ public class JsonReader implements DocumentReader {
 	public List<Document> get(JsonNode rootNode) {
 		if (rootNode.isArray()) {
 			return StreamSupport.stream(rootNode.spliterator(), true)
-					.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
-					.toList();
+				.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
+				.toList();
 		}
 		else {
 			return Collections.singletonList(parseJsonNode(rootNode, objectMapper));
@@ -124,4 +124,5 @@ public class JsonReader implements DocumentReader {
 			throw new RuntimeException(e);
 		}
 	}
+
 }
