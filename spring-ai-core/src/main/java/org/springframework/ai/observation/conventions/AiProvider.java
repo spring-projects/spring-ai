@@ -35,7 +35,8 @@ public enum AiProvider {
 	OPENAI("openai"),
 	SPRING_AI("spring_ai"),
 	VERTEX_AI("vertex_ai"),
-	OCI_GENAI("oci_genai");
+	OCI_GENAI("oci_genai"),
+	AZURE_OPENAI("azure-openai");
 
 	private final String value;
 
