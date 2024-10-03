@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -40,8 +41,9 @@ import okhttp3.mockwebserver.MockWebServer;
  * {@link Dispatcher} to integrate with Spring {@link MockMvc}.
  *
  * @author John Blum
+ * @author Soby Chacko
  * @see org.springframework.boot.SpringBootConfiguration
- * @see org.springframework.ai.test.config.MockAiTestConfiguration
+ * @see org.springframework.ai.azure.openai.MockAiTestConfiguration
  * @since 0.7.0
  */
 @SpringBootConfiguration
@@ -51,11 +53,9 @@ import okhttp3.mockwebserver.MockWebServer;
 public class MockAzureOpenAiTestConfiguration {
 
 	@Bean
-	OpenAIClient microsoftAzureOpenAiClient(MockWebServer webServer) {
-
+	OpenAIClientBuilder microsoftAzureOpenAiClient(MockWebServer webServer) {
 		HttpUrl baseUrl = webServer.url(MockAiTestConfiguration.SPRING_AI_API_PATH);
-
-		return new OpenAIClientBuilder().endpoint(baseUrl.toString()).buildClient();
+		return new OpenAIClientBuilder().endpoint(baseUrl.toString());
 	}
 
 	@Bean
