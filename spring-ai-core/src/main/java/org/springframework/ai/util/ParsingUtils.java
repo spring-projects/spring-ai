@@ -69,7 +69,7 @@ public abstract class ParsingUtils {
 	 * @param delimiter must not be {@literal null}.
 	 * @return
 	 */
-	public static String reconcatenateCamelCase(String source, String delimiter) {
+	public static String reConcatenateCamelCase(String source, String delimiter) {
 
 		Assert.notNull(source, "Source string must not be null");
 		Assert.notNull(delimiter, "Delimiter must not be null");

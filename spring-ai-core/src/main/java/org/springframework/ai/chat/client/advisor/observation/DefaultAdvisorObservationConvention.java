@@ -58,9 +58,9 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	@Override
 	@Nullable
 	public String getContextualName(AdvisorObservationContext context) {
-		return "%s %s_%s".formatted(CHAT_CLIENT_ADVISOR_SPRING_AI_KIND,
-				ParsingUtils.reconcatenateCamelCase(context.getAdvisorName(), "_"),
-				context.getAdvisorType().name().toLowerCase());
+		return ParsingUtils.reConcatenateCamelCase(context.getAdvisorName(), "_")
+			.replace("_around_advisor", "")
+			.replace("_advisor", "");
 	}
 
 	// ------------------------

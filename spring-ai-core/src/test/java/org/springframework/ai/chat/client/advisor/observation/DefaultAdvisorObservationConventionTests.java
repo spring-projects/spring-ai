@@ -44,8 +44,7 @@ class DefaultAdvisorObservationConventionTests {
 			.withAdvisorName("MyName")
 			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
-		assertThat(this.observationConvention.getContextualName(observationContext))
-			.isEqualTo("chat_client_advisor my_name_around");
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("my_name");
 	}
 
 	@Test
