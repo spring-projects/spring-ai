@@ -3,16 +3,42 @@ package org.springframework.ai.autoconfigure.vectorstore.cosmosdb;
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.List;
+
 @ConfigurationProperties(CosmosDBVectorStoreProperties.CONFIG_PREFIX)
 public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
-    public static final String CONFIG_PREFIX = "spring.ai.vectorstore.cosmosdb";
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.cosmosdb";
 
-    private String containerName;
+	private String containerName;
+
 	private String databaseName;
-    private String partitionKeyPath;
+
+	private String metadataFields;
+
+	private int vectorStoreThoughput = 400;
+
+	private String partitionKeyPath;
+
 	private String endpoint;
+
 	private String key;
+
+	public int getVectorStoreThoughput() {
+		return vectorStoreThoughput;
+	}
+
+	public void setVectorStoreThoughput(int vectorStoreThoughput) {
+		this.vectorStoreThoughput = vectorStoreThoughput;
+	}
+
+	public String getMetadataFields() {
+		return metadataFields;
+	}
+
+	public void setMetadataFields(String metadataFields) {
+		this.metadataFields = metadataFields;
+	}
 
 	public String getEndpoint() {
 		return endpoint;
@@ -31,26 +57,27 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getDatabaseName() {
-		return containerName;
+		return databaseName;
 	}
 
 	public void setDatabaseName(String databaseName) {
 		this.databaseName = databaseName;
 	}
 
-    public String getContainerName() {
-        return containerName;
-    }
+	public String getContainerName() {
+		return containerName;
+	}
 
-    public void setContainerName(String containerName) {
-        this.containerName = containerName;
-    }
+	public void setContainerName(String containerName) {
+		this.containerName = containerName;
+	}
 
-    public String getPartitionKeyPath() {
-        return partitionKeyPath;
-    }
+	public String getPartitionKeyPath() {
+		return partitionKeyPath;
+	}
 
-    public void setPartitionKeyPath(String partitionKeyPath) {
-        this.partitionKeyPath = partitionKeyPath;
-    }
+	public void setPartitionKeyPath(String partitionKeyPath) {
+		this.partitionKeyPath = partitionKeyPath;
+	}
+
 }

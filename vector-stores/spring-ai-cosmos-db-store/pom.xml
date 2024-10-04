@@ -35,6 +35,8 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-core</artifactId>
 			<version>${project.parent.version}</version>
+<!--			<scope>system</scope>
+			<systemPath>${project.basedir}/../../spring-ai-core/target/spring-ai-core-1.0.0-SNAPSHOT.jar</systemPath>-->
 		</dependency>
 
 		<!-- TESTING -->
@@ -75,6 +77,7 @@
 			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 </project>
