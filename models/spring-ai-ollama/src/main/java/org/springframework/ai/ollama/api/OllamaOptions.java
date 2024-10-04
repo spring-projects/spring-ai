@@ -300,6 +300,10 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	public static OllamaOptions builder() {
 		return new OllamaOptions();
 	}
@@ -499,6 +503,16 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	public OllamaOptions withProxyToolCalls(Boolean proxyToolCalls) {
 		this.proxyToolCalls = proxyToolCalls;
+		return this;
+	}
+
+	public OllamaOptions withToolContext(Map<String, Object> toolContext) {
+		if (this.toolContext == null) {
+			this.toolContext = toolContext;
+		}
+		else {
+			this.toolContext.putAll(toolContext);
+		}		
 		return this;
 	}
 
@@ -832,6 +846,16 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.proxyToolCalls = proxyToolCalls;
 	}
 
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -901,7 +925,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withStop(fromOptions.getStop())
 			.withFunctions(fromOptions.getFunctions())
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks());
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withToolContext(fromOptions.getToolContext());
 	}
 	// @formatter:on
 
@@ -930,7 +955,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				&& Objects.equals(mirostatTau, that.mirostatTau) && Objects.equals(mirostatEta, that.mirostatEta)
 				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions);
+				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions)
+				&& Objects.equals(toolContext, that.toolContext);
 	}
 
 	@Override
@@ -940,7 +966,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
 				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls);
+				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
+				this.toolContext);
 	}
 
 }

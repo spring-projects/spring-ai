@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.openai.tool;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,6 +55,30 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
+
+	@Test
+	void functionCallTest2() {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+			.run(context -> {
+
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				// Test weatherFunction
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+						OpenAiChatOptions.builder()
+							.withFunction("weatherFunctionWithContext")
+							.withToolContext(Map.of("sessionId", "123"))
+							.build()));
+
+				logger.info("Response: {}", response);
+
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+
+			});
+	}
 
 	@Test
 	void functionCallTest() {
@@ -158,6 +184,14 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Configuration
 	static class Config {
+
+		@Bean
+		@Description("Get the weather in location")
+		public BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response> weatherFunctionWithContext() {
+			return (request, context) -> {
+				return new MockWeatherService().apply(request);
+			};
+		}
 
 		@Bean
 		@Description("Get the weather in location")

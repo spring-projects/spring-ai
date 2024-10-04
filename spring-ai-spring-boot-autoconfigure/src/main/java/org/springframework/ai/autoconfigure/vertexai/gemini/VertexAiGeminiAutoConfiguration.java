@@ -21,7 +21,7 @@ import java.util.List;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
+import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;

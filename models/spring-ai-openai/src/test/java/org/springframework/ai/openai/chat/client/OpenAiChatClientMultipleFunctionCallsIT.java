@@ -137,11 +137,11 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		MyFunction myFunction = new MyFunction();
 		Function<MyFunction.Req, Object> function = createFunction(myFunction, currentTemp);
 
-		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
+		String content = chatClient.prompt()
 			.user("What's the weather like in Shanghai?")
-			.function("currentTemp", "get current temp", MyFunction.Req.class, function);
-
-		String content = chatClientRequestSpec.call().content();
+			.function("currentTemp", "get current temp", MyFunction.Req.class, function)
+			.call()
+			.content();
 
 		assertThat(content).contains("23");
 	}

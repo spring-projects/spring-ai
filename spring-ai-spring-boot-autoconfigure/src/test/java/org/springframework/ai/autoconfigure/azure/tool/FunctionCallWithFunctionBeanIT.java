@@ -16,6 +16,8 @@
 package org.springframework.ai.autoconfigure.azure.tool;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
@@ -108,6 +110,18 @@ class FunctionCallWithFunctionBeanIT {
 		@Description("Get the weather in location")
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
 			return new MockWeatherService();
+		}
+
+		@Bean
+		@Description("Get the weather in location")
+		public Function<MockWeatherService.Request, Function<Map<String, Object>, MockWeatherService.Response>> weatherFunctionWithContext() {
+			return request -> context -> new MockWeatherService().apply(request);
+		}
+
+		@Bean
+		@Description("Get the weather in location")
+		public BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response> weatherFunctionWithContext2() {
+			return (request, context) -> new MockWeatherService().apply(request);
 		}
 
 		// Relies on the Request's JsonClassDescription annotation to provide the

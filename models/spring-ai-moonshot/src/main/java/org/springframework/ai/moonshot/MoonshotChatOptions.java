@@ -28,6 +28,7 @@ import org.springframework.util.Assert;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -140,6 +141,10 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
@@ -249,6 +254,16 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -363,6 +378,16 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	}
 
 	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public MoonshotChatOptions copy() {
 		return builder().withModel(this.model)
 			.withMaxTokens(this.maxTokens)
@@ -378,6 +403,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			.withFunctionCallbacks(this.functionCallbacks)
 			.withFunctions(this.functions)
 			.withProxyToolCalls(this.proxyToolCalls)
+			.withToolContext(this.toolContext)
 			.build();
 	}
 
@@ -395,6 +421,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
 		result = prime * result + ((user == null) ? 0 : user.hashCode());
 		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
+		result = prime * result + ((toolContext == null) ? 0 : toolContext.hashCode());
 		return result;
 	}
 
@@ -464,6 +491,11 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			return other.proxyToolCalls == null;
 		}
 		else if (!this.proxyToolCalls.equals(other.proxyToolCalls))
+			return false;
+		if (this.toolContext == null) {
+			return other.toolContext == null;
+		}
+		else if (!this.toolContext.equals(other.toolContext))
 			return false;
 		return true;
 	}

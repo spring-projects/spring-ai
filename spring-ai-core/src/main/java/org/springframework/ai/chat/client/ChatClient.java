@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
@@ -200,6 +201,11 @@ public interface ChatClient {
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
 
+		<I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.BiFunction<I, Map<String, Object>, O> function);
+
+		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
+
 		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
@@ -258,7 +264,12 @@ public interface ChatClient {
 
 		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
 
+		<I, O> Builder defaultFunction(String name, String description,
+				java.util.function.BiFunction<I, Map<String, Object>, O> function);
+
 		Builder defaultFunctions(String... functionNames);
+
+		Builder defaultFunctions(FunctionCallback... functionCallbacks);
 
 		ChatClient build();
 

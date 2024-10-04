@@ -37,6 +37,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 	@JsonClassDescription("Weather API request")
 	public record Request(@JsonProperty(required = true,
 			value = "location") @JsonPropertyDescription("The city and state e.g. San Francisco, CA") String location,
+
 			@JsonProperty(required = true, value = "unit") @JsonPropertyDescription("Temperature unit") Unit unit) {
 	}
 

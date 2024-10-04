@@ -15,6 +15,9 @@
  */
 package org.springframework.ai.model.function;
 
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,7 +40,7 @@ import org.springframework.util.Assert;
  * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
  */
-abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, FunctionCallback {
+abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, Map<String, Object>, O>, FunctionCallback {
 
 	private final String name;
 
@@ -98,13 +101,18 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 	}
 
 	@Override
-	public String call(String functionArguments) {
+	public String call(String functionInput, Map<String, Object> toolContext) {
+		I request = fromJson(functionInput, inputType);
+		O response = this.apply(request, toolContext);
+		return this.responseConverter.apply(response);
+	}
 
+	@Override
+	public String call(String functionArguments) {
 		// Convert the tool calls JSON arguments into a Java function request object.
 		I request = fromJson(functionArguments, inputType);
-
 		// extend conversation with function response.
-		return this.andThen(this.responseConverter).apply(request);
+		return this.andThen(this.responseConverter).apply(request, null);
 	}
 
 	private <T> T fromJson(String json, Class<T> targetClass) {
@@ -118,42 +126,21 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((description == null) ? 0 : description.hashCode());
-		result = prime * result + ((inputType == null) ? 0 : inputType.hashCode());
-		return result;
+		return Objects.hash(name, description, inputType);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj == null)
+		if (obj == null || getClass() != obj.getClass())
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
+
 		AbstractFunctionCallback other = (AbstractFunctionCallback) obj;
-		if (name == null) {
-			if (other.name != null)
-				return false;
-		}
-		else if (!name.equals(other.name))
-			return false;
-		if (description == null) {
-			if (other.description != null)
-				return false;
-		}
-		else if (!description.equals(other.description))
-			return false;
-		if (inputType == null) {
-			if (other.inputType != null)
-				return false;
-		}
-		else if (!inputType.equals(other.inputType))
-			return false;
-		return true;
+
+		return Objects.equals(this.name, other.name) && Objects.equals(this.description, other.description)
+				&& Objects.equals(this.inputType, other.inputType);
+
 	}
 
 }
