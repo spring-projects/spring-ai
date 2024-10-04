@@ -27,28 +27,58 @@ import java.util.stream.IntStream;
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(CosmosDBVectorStore.class);
+
 	private final CosmosAsyncClient cosmosClient;
+
 	private CosmosAsyncContainer container;
+
 	private final EmbeddingModel embeddingModel;
 
+	private final CosmosDBVectorStoreConfig properties;
+
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
-							   VectorStoreObservationConvention customObservationConvention,
-							   CosmosAsyncClient cosmosClient,
-							   CosmosDBVectorStoreConfig properties,
-							   EmbeddingModel embeddingModel) {
+			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
+			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel) {
 		super(observationRegistry, customObservationConvention);
 		this.cosmosClient = cosmosClient;
+		this.properties = properties;
 		cosmosClient.createDatabaseIfNotExists(properties.getDatabaseName()).block();
 
-		initializeContainer(properties.getContainerName(), properties.getDatabaseName());
+		initializeContainer(properties.getContainerName(), properties.getDatabaseName(),
+				properties.getVectorStoreThoughput(), properties.getPartitionKeyPath());
 
 		this.embeddingModel = embeddingModel;
 
 	}
 
-	private void initializeContainer(String containerName, String databaseName) {
+	private void initializeContainer(String containerName, String databaseName, int vectorStoreThoughput,
+			String partitionKeyPath) {
 
-		CosmosContainerProperties collectionDefinition = new CosmosContainerProperties(containerName, "/id");
+		// Set defaults if not provided
+		if (vectorStoreThoughput == 0) {
+			vectorStoreThoughput = 400;
+		}
+		if (partitionKeyPath == null) {
+			partitionKeyPath = "/id";
+		}
+
+		// handle hierarchical partition key
+		PartitionKeyDefinition subpartitionKeyDefinition = new PartitionKeyDefinition();
+		List<String> pathsfromCommaSeparatedList = new ArrayList<String>();
+		String[] subpartitionKeyPaths = partitionKeyPath.split(",");
+		for (String path : subpartitionKeyPaths) {
+			pathsfromCommaSeparatedList.add(path);
+		}
+		if (subpartitionKeyPaths.length > 1) {
+			subpartitionKeyDefinition.setPaths(pathsfromCommaSeparatedList);
+			subpartitionKeyDefinition.setKind(PartitionKind.MULTI_HASH);
+		}
+		else {
+			subpartitionKeyDefinition.setPaths(Collections.singletonList(partitionKeyPath));
+			subpartitionKeyDefinition.setKind(PartitionKind.HASH);
+		}
+		CosmosContainerProperties collectionDefinition = new CosmosContainerProperties(containerName,
+				subpartitionKeyDefinition);
 		// Set vector embedding policy if needed, similar to Cassandra vector settings
 		CosmosVectorEmbeddingPolicy embeddingPolicy = new CosmosVectorEmbeddingPolicy();
 		CosmosVectorEmbedding embedding = new CosmosVectorEmbedding();
@@ -59,7 +89,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		embeddingPolicy.setCosmosVectorEmbeddings(Collections.singletonList(embedding));
 		collectionDefinition.setVectorEmbeddingPolicy(embeddingPolicy);
 
-		//set vector indexing policy
+		// set vector indexing policy
 		IndexingPolicy indexingPolicy = new IndexingPolicy();
 		indexingPolicy.setIndexingMode(IndexingMode.CONSISTENT);
 		ExcludedPath excludedPath = new ExcludedPath("/*");
@@ -73,60 +103,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		indexingPolicy.setVectorIndexes(List.of(cosmosVectorIndexSpec));
 		collectionDefinition.setIndexingPolicy(indexingPolicy);
 
-
-		ThroughputProperties throughputProperties = ThroughputProperties.createManualThroughput(400);
+		ThroughputProperties throughputProperties = ThroughputProperties.createManualThroughput(vectorStoreThoughput);
 		CosmosAsyncDatabase cosmosAsyncDatabase = cosmosClient.getDatabase(databaseName);
 		cosmosAsyncDatabase.createContainerIfNotExists(collectionDefinition, throughputProperties).block();
 		this.container = cosmosAsyncDatabase.getContainer(containerName);
 	}
-
-/*	public static class CosmosDBVectorStoreConfig {
-		private String containerName;
-		private String databaseName;
-		private String partitionKeyPath;
-		private String endpoint;
-		private String key;
-
-		public String getEndpoint() {
-			return endpoint;
-		}
-
-		public void setEndpoint(String endpoint) {
-			this.endpoint = endpoint;
-		}
-
-		public String getKey() {
-			return key;
-		}
-
-		public void setKey(String key) {
-			this.key = key;
-		}
-
-		public String getContainerName() {
-			return containerName;
-		}
-
-		public void setContainerName(String containerName) {
-			this.containerName = containerName;
-		}
-
-		public String getDatabaseName() {
-			return databaseName;
-		}
-
-		public void setDatabaseName(String databaseName) {
-			this.databaseName = databaseName;
-		}
-
-		public String getPartitionKeyPath() {
-			return partitionKeyPath;
-		}
-
-		public void setPartitionKeyPath(String partitionKeyPath) {
-			this.partitionKeyPath = partitionKeyPath;
-		}
-	}*/
 
 	@Override
 	public void close() {
@@ -152,61 +133,56 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		// Use put for simple values and set for JsonNode values
 		objectNode.put("id", id);
 		objectNode.put("content", content);
-		objectNode.set("metadata", metadataNode);  // Use set to add JsonNode directly
+		objectNode.set("metadata", metadataNode); // Use set to add JsonNode directly
 		objectNode.set("embedding", embeddingNode); // Use set to add JsonNode directly
-
-		// Log each field of the ObjectNode for debugging
-		objectNode.fields().forEachRemaining(entry -> logger.info("Node: {} = {}", entry.getKey(), entry.getValue()));
 
 		return objectNode;
 	}
-
-
-
 
 	@Override
 	public void doAdd(List<Document> documents) {
 
 		List<CosmosItemOperation> itemOperations = documents.stream()
-				.map(doc -> CosmosBulkOperations.getCreateItemOperation(mapCosmosDocument(doc, this.embeddingModel.embed(doc.getContent())), new PartitionKey(doc.getId())))
-				.collect(Collectors.toList());
+			.map(doc -> CosmosBulkOperations.getCreateItemOperation(
+					mapCosmosDocument(doc, this.embeddingModel.embed(doc.getContent())), new PartitionKey(doc.getId())))
+			.collect(Collectors.toList());
 
 		try {
 
-			container.executeBulkOperations(Flux.fromIterable(itemOperations))
-					.doOnNext(response -> {
-						// Check if the response or its content is null before accessing the status code
-						if (response != null && response.getResponse() != null) {
-							logger.info("Document added with status: {}", response.getResponse().getStatusCode());
-						} else {
-							logger.warn("Received a null response or null status code for a document operation.");
-						}
-					})
-					.doOnError(error -> logger.error("Error adding document: {}", error.getMessage()))
-					.doOnComplete(() -> logger.info("Bulk operation completed successfully."))
-					.blockLast(); // Block until the last item of the Flux is processed
-		} catch (Exception e) {
+			container.executeBulkOperations(Flux.fromIterable(itemOperations)).doOnNext(response -> {
+				// Check if the response or its content is null before accessing the
+				// status code
+				if (response != null && response.getResponse() != null) {
+					logger.info("Document added with status: {}", response.getResponse().getStatusCode());
+				}
+				else {
+					logger.warn("Received a null response or null status code for a document operation.");
+				}
+			})
+				.doOnError(error -> logger.error("Error adding document: {}", error.getMessage()))
+				.doOnComplete(() -> logger.info("Bulk operation completed successfully."))
+				.blockLast(); // Block until the last item of the Flux is processed
+		}
+		catch (Exception e) {
 			logger.error("Exception occurred during bulk add operation: {}", e.getMessage(), e);
 		}
 	}
-
-
-
 
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		try {
 			List<CosmosItemOperation> itemOperations = idList.stream()
-					.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
-					.collect(Collectors.toList());
+				.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
+				.collect(Collectors.toList());
 
 			container.executeBulkOperations(Flux.fromIterable(itemOperations))
-					.subscribe(
-							response -> logger.info("Document deleted with status: {}", response.getResponse().getStatusCode()),
-							error -> logger.error("Error deleting document: {}", error.getMessage())
-					);
+				.subscribe(
+						response -> logger.info("Document deleted with status: {}",
+								response.getResponse().getStatusCode()),
+						error -> logger.error("Error deleting document: {}", error.getMessage()));
 			return Optional.of(true);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Exception while deleting documents: {}", e.getMessage());
 			return Optional.of(false);
 		}
@@ -216,8 +192,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public List<Document> similaritySearch(String query) {
 		return similaritySearch(SearchRequest.query(query));
 	}
-
-
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
@@ -232,8 +206,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		logger.info("similarity threshold: {}", request.getSimilarityThreshold());
 
 		List<Float> embeddingList = IntStream.range(0, embedding.length)
-				.mapToObj(i -> embedding[i])
-				.collect(Collectors.toList());
+			.mapToObj(i -> embedding[i])
+			.collect(Collectors.toList());
 
 		// Start building query for similarity search
 		StringBuilder queryBuilder = new StringBuilder("SELECT TOP @topK * FROM c WHERE ");
@@ -243,7 +217,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		Filter.Expression filterExpression = request.getFilterExpression();
 		if (filterExpression != null) {
 			CosmosDBFilterExpressionConverter filterExpressionConverter = new CosmosDBFilterExpressionConverter(
-					List.of()); // Use the expression directly as it handles the "metadata" fields internally
+					properties.getMetadataFieldsList()); // Use the expression directly as
+															// it handles the "metadata"
+															// fields internally
 			String filterQuery = filterExpressionConverter.convertExpression(filterExpression);
 			queryBuilder.append(" AND ").append(filterQuery);
 		}
@@ -261,35 +237,37 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		CosmosPagedFlux<JsonNode> pagedFlux = container.queryItems(sqlQuerySpec, options, JsonNode.class);
 
+		logger.info("Executing similarity search query: {}", query);
 		try {
 			// Collect documents from the paged flux
 			List<JsonNode> documents = pagedFlux.byPage()
-					.flatMap(page -> Flux.fromIterable(page.getResults()))
-					.collectList()
-					.block();
-			if (documents != null) {
-				documents.forEach(doc -> logger.info("Found document with ID: {}", doc.get("id")));
-			}
+				.flatMap(page -> Flux.fromIterable(page.getResults()))
+				.collectList()
+				.block();
+			/*
+			 * if (documents != null) { documents.forEach(doc ->
+			 * logger.info("Found document with ID: {}", doc.get("id"))); }
+			 */
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-					.map(doc -> new Document(doc.get("id").asText(), doc.get("content").asText(), new HashMap<>()))
-					.collect(Collectors.toList());
+				.map(doc -> new Document(doc.get("id").asText(), doc.get("content").asText(), new HashMap<>()))
+				.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error during similarity search: {}", e.getMessage());
 			return List.of();
 		}
 	}
 
-
-
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.COSMOSDB.value(),operationName)
-				.withCollectionName(container.getId())
-				.withDimensions(this.embeddingModel.dimensions())
-				.withNamespace(container.getDatabase().getId())
-				.withSimilarityMetric("cosine");
+		return VectorStoreObservationContext.builder(VectorStoreProvider.COSMOSDB.value(), operationName)
+			.withCollectionName(container.getId())
+			.withDimensions(this.embeddingModel.dimensions())
+			.withNamespace(container.getDatabase().getId())
+			.withSimilarityMetric("cosine");
 	}
+
 }

@@ -1,0 +1,150 @@
+= Azure Cosmos DB
+
+This section walks you through setting up `CosmosDBVectorStore` to store document embeddings and perform similarity searches.
+
+== What is Azure Cosmos DB?
+
+link:https://azure.microsoft.com/en-us/services/cosmos-db/[Azure Cosmos DB] is a globally distributed, multi-model database service designed for mission-critical applications. It offers high availability, low latency, and the ability to scale horizontally to meet your application's demands. Azure Cosmos DB is not just a database; it's a comprehensive platform that enables you to build highly responsive applications across multiple regions and environments. It's relied upon by OpenAI to scale its ChatGPT service, ensuring seamless user interactions at an unprecedented scale. Furthermore, Cosmos DB serves as the go-to vector database for Retrieval-Augmented Generation (RAG) pattern applications, enabling powerful search and retrieval capabilities essential for modern AI solutions.
+
+== Setting up CosmosDBVectorStore without Auto Configuration
+
+The following code demonstrates how to set up the `CosmosDBVectorStore` without relying on auto-configuration:
+
+```java
+package com.example.demo;
+
+import com.azure.cosmos.CosmosAsyncClient;
+import com.azure.cosmos.CosmosClientBuilder;
+import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.CosmosDBVectorStore;
+import org.springframework.ai.vectorstore.CosmosDBVectorStoreConfig;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@SpringBootApplication
+public class DemoApplication implements CommandLineRunner {
+
+    @Lazy
+    @Autowired
+    private VectorStore vectorStore;
+
+    @Lazy
+    @Autowired
+    private EmbeddingModel embeddingModel;
+
+    public static void main(String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        Document document1 = new Document(UUID.randomUUID().toString(), "Sample content1", Map.of("key1", "value1"));
+        Document document2 = new Document(UUID.randomUUID().toString(), "Sample content2", Map.of("key2", "value2"));
+        vectorStore.add(List.of(document1, document2));
+    }
+
+    @Bean
+    public ObservationRegistry observationRegistry() {
+        return ObservationRegistry.create();
+    }
+
+    @Bean
+    public VectorStore vectorStore(ObservationRegistry observationRegistry) {
+        CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
+        config.setDatabaseName("spring-ai-sample");
+        config.setContainerName("container");
+        config.setMetadataFields("country,city");
+        config.setVectorStoreThoughput(400);
+
+        CosmosAsyncClient cosmosClient = new CosmosClientBuilder()
+                .endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
+                .key(System.getenv("COSMOSDB_AI_KEY"))
+                .gatewayMode()
+                .buildAsyncClient();
+
+        return new CosmosDBVectorStore(observationRegistry, null, cosmosClient, config, embeddingModel);
+    }
+
+    @Bean
+    public EmbeddingModel embeddingModel() {
+        return new TransformersEmbeddingModel();
+    }
+}
+```
+
+== Setting up CosmosDBVectorStore with Auto Configuration
+
+The following code demonstrates how to set up the `CosmosDBVectorStore` with auto-configuration:
+
+```java
+package com.example.demo;
+
+import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootApplication
+@EnableAutoConfiguration
+public class DemoApplication implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DemoApplication.class);
+
+    @Lazy
+    @Autowired
+    private VectorStore vectorStore;
+
+    public static void main(String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        Document document1 = new Document(UUID.randomUUID().toString(), "Sample content1", Map.of("key1", "value1"));
+        Document document2 = new Document(UUID.randomUUID().toString(), "Sample content2", Map.of("key2", "value2"));
+        vectorStore.add(List.of(document1, document2));
+        List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sample content").withTopK(1));
+
+        log.info("Search results: {}", results);
+        // Verify the search results
+        assertThat(results).isNotEmpty();
+        assertThat(results.get(0).getId()).isEqualTo(document1.getId());
+
+        // Remove the documents from the vector store
+        vectorStore.delete(List.of(document1.getId(), document2.getId()));
+    }
+
+    @Bean
+    public ObservationRegistry observationRegistry() {
+        return ObservationRegistry.create();
+    }
+}
+```
+

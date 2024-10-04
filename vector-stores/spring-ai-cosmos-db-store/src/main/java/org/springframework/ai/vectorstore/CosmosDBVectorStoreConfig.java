@@ -1,11 +1,45 @@
 package org.springframework.ai.vectorstore;
 
-public  class CosmosDBVectorStoreConfig implements AutoCloseable {
+import java.util.List;
+
+public class CosmosDBVectorStoreConfig implements AutoCloseable {
+
 	private String containerName;
+
 	private String databaseName;
+
 	private String partitionKeyPath;
+
 	private String endpoint;
+
 	private String key;
+
+	private String metadataFields;
+
+	private int vectorStoreThoughput = 400;
+
+	private List<String> metadataFieldsList;
+
+	public int getVectorStoreThoughput() {
+		return vectorStoreThoughput;
+	}
+
+	public void setVectorStoreThoughput(int vectorStoreThoughput) {
+		this.vectorStoreThoughput = vectorStoreThoughput;
+	}
+
+	public void setMetadataFields(String metadataFields) {
+		this.metadataFields = metadataFields;
+		this.metadataFieldsList = List.of(metadataFields.split(","));
+	}
+
+	public String getMetadataFields() {
+		return metadataFields;
+	}
+
+	public List<String> getMetadataFieldsList() {
+		return metadataFieldsList;
+	}
 
 	public String getEndpoint() {
 		return endpoint;
@@ -51,4 +85,5 @@ public  class CosmosDBVectorStoreConfig implements AutoCloseable {
 	public void close() throws Exception {
 
 	}
+
 }
