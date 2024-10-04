@@ -5,17 +5,25 @@ import java.util.Objects;
 
 public class EvaluationResponse {
 
-	private boolean pass;
+	private final boolean pass;
 
-	private float score;
+	private final float score;
 
-	private String feedback;
+	private final String feedback;
 
-	Map<String, Object> metadata;
+	private final Map<String, Object> metadata;
 
+	@Deprecated
 	public EvaluationResponse(boolean pass, float score, String feedback, Map<String, Object> metadata) {
 		this.pass = pass;
 		this.score = score;
+		this.feedback = feedback;
+		this.metadata = metadata;
+	}
+
+	public EvaluationResponse(boolean pass, String feedback, Map<String, Object> metadata) {
+		this.pass = pass;
+		this.score = 0;
 		this.feedback = feedback;
 		this.metadata = metadata;
 	}

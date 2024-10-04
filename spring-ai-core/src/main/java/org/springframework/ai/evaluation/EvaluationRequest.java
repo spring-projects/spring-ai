@@ -12,6 +12,7 @@ import java.util.Objects;
  * correctness of the chat response based on the context.
  *
  * @author Mark Pollack
+ * @author Eddú Meléndez
  * @since 1.0.0 M1
  */
 public class EvaluationRequest {
@@ -24,6 +25,10 @@ public class EvaluationRequest {
 
 	public EvaluationRequest(String userText, String responseContent) {
 		this(userText, Collections.emptyList(), responseContent);
+	}
+
+	public EvaluationRequest(List<Content> dataList, String responseContent) {
+		this("", dataList, responseContent);
 	}
 
 	public EvaluationRequest(String userText, List<Content> dataList, String responseContent) {
