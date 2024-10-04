@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -80,6 +81,10 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 
 	@JsonIgnore
 	private Boolean proxyToolCalls;
+
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -149,6 +154,16 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -264,6 +279,16 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	}
 
 	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
 	}
@@ -279,6 +304,7 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 

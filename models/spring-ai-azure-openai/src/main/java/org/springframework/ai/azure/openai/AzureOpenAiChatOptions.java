@@ -22,18 +22,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
+
+import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * The configuration information for a chat completions request. Completions support a
@@ -199,6 +198,10 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	@JsonIgnore
 	private AzureChatEnhancementConfiguration enhancements;
 
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -309,6 +312,16 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 
 		public Builder withEnhancements(AzureChatEnhancementConfiguration enhancements) {
 			this.options.enhancements = enhancements;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -499,6 +512,16 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	}
 
 	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public AzureOpenAiChatOptions copy() {
 		return fromOptions(this);
 	}
@@ -521,6 +544,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 			.withLogprobs(fromOptions.isLogprobs())
 			.withTopLogprobs(fromOptions.getTopLogProbs())
 			.withEnhancements(fromOptions.getEnhancements())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 

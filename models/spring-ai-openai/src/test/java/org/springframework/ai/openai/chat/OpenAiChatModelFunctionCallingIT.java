@@ -31,6 +31,8 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
+import org.springframework.ai.openai.api.tool.MockWeatherService.Request;
+import org.springframework.ai.openai.api.tool.MockWeatherService.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,6 +41,8 @@ import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,19 +58,58 @@ class OpenAiChatModelFunctionCallingIT {
 
 	@Test
 	void functionCallTest() {
-
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
+		functionCallTest(OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
 				.withResponseConverter((response) -> "" + response.temp() + response.unit())
 				.build()))
-			.build();
+			.build());
+	}
+
+	@Test
+	void functionCallWithToolContextTest() {
+
+		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+
+			@Override
+			public Response apply(Request request, Map<String, Object> toolContext) {
+
+				assertThat(toolContext).containsEntry("sessionId", "123");
+
+				double temperature = 0;
+				if (request.location().contains("Paris")) {
+					temperature = 15;
+				}
+				else if (request.location().contains("Tokyo")) {
+					temperature = 10;
+				}
+				else if (request.location().contains("San Francisco")) {
+					temperature = 30;
+				}
+
+				return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
+			}
+
+		};
+
+		functionCallTest(OpenAiChatOptions.builder()
+			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(biFunction)
+				.withName("getCurrentWeather")
+				.withDescription("Get the weather in location")
+				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.build()))
+			.withToolContext(Map.of("sessionId", "123"))
+			.build());
+	}
+
+	void functionCallTest(OpenAiChatOptions promptOptions) {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
 
@@ -78,18 +121,58 @@ class OpenAiChatModelFunctionCallingIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+		streamFunctionCallTest(OpenAiChatOptions.builder()
+			.withFunctionCallbacks(List.of((FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
 				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
+				.build())))
+			.build());
+	}
+
+	@Test
+	void streamFunctionCallWithToolContextTest() {
+
+		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+
+			@Override
+			public Response apply(Request request, Map<String, Object> toolContext) {
+
+				assertThat(toolContext).containsEntry("sessionId", "123");
+
+				double temperature = 0;
+				if (request.location().contains("Paris")) {
+					temperature = 15;
+				}
+				else if (request.location().contains("Tokyo")) {
+					temperature = 10;
+				}
+				else if (request.location().contains("San Francisco")) {
+					temperature = 30;
+				}
+
+				return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
+			}
+
+		};
+
+		OpenAiChatOptions promptOptions = OpenAiChatOptions.builder()
+			.withFunctionCallbacks(List.of((FunctionCallbackWrapper.builder(biFunction)
+				.withName("getCurrentWeather")
+				.withDescription("Get the weather in location")
+				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.build())))
+			.withToolContext(Map.of("sessionId", "123"))
 			.build();
+
+		streamFunctionCallTest(promptOptions);
+	}
+
+	void streamFunctionCallTest(OpenAiChatOptions promptOptions) {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, promptOptions));
 

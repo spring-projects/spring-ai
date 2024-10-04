@@ -18,6 +18,8 @@ package org.springframework.ai.mistralai;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -138,6 +140,10 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -220,6 +226,16 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -374,6 +390,16 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	}
 
 	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public MistralAiChatOptions copy() {
 		return fromOptions(this);
 	}
@@ -392,113 +418,37 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
-		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
-		result = prime * result + ((maxTokens == null) ? 0 : maxTokens.hashCode());
-		result = prime * result + ((safePrompt == null) ? 0 : safePrompt.hashCode());
-		result = prime * result + ((randomSeed == null) ? 0 : randomSeed.hashCode());
-		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
-		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
-		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
-		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
-		result = prime * result + ((functionCallbacks == null) ? 0 : functionCallbacks.hashCode());
-		result = prime * result + ((functions == null) ? 0 : functions.hashCode());
-		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
-		return result;
+
+		return Objects.hash(model, temperature, topP, maxTokens, safePrompt, randomSeed, responseFormat, stop, tools,
+				toolChoice, functionCallbacks, functions, proxyToolCalls, toolContext);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj == null)
+
+		if (obj == null || getClass() != obj.getClass())
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
+
 		MistralAiChatOptions other = (MistralAiChatOptions) obj;
-		if (model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (temperature == null) {
-			if (other.temperature != null)
-				return false;
-		}
-		else if (!temperature.equals(other.temperature))
-			return false;
-		if (topP == null) {
-			if (other.topP != null)
-				return false;
-		}
-		else if (!topP.equals(other.topP))
-			return false;
-		if (maxTokens == null) {
-			if (other.maxTokens != null)
-				return false;
-		}
-		else if (!maxTokens.equals(other.maxTokens))
-			return false;
-		if (safePrompt == null) {
-			if (other.safePrompt != null)
-				return false;
-		}
-		else if (!safePrompt.equals(other.safePrompt))
-			return false;
-		if (randomSeed == null) {
-			if (other.randomSeed != null)
-				return false;
-		}
-		else if (!randomSeed.equals(other.randomSeed))
-			return false;
-		if (responseFormat == null) {
-			if (other.responseFormat != null)
-				return false;
-		}
-		else if (!responseFormat.equals(other.responseFormat))
-			return false;
-		if (stop == null) {
-			if (other.stop != null)
-				return false;
-		}
-		else if (!stop.equals(other.stop))
-			return false;
-		if (tools == null) {
-			if (other.tools != null)
-				return false;
-		}
-		else if (!tools.equals(other.tools))
-			return false;
-		if (toolChoice != other.toolChoice)
-			return false;
-		if (functionCallbacks == null) {
-			if (other.functionCallbacks != null)
-				return false;
-		}
-		else if (!functionCallbacks.equals(other.functionCallbacks))
-			return false;
-		if (functions == null) {
-			if (other.functions != null)
-				return false;
-		}
-		else if (!functions.equals(other.functions))
-			return false;
-		if (proxyToolCalls == null) {
-			if (other.proxyToolCalls != null)
-				return false;
-		}
-		else if (!proxyToolCalls.equals(other.proxyToolCalls))
-			return false;
-		return true;
+
+		return Objects.equals(this.model, other.model) && Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.maxTokens, other.maxTokens)
+				&& Objects.equals(this.safePrompt, other.safePrompt)
+				&& Objects.equals(this.randomSeed, other.randomSeed)
+				&& Objects.equals(this.responseFormat, other.responseFormat) && Objects.equals(this.stop, other.stop)
+				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
+				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
+				&& Objects.equals(this.functions, other.functions)
+				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
+				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
 }

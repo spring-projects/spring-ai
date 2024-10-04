@@ -481,6 +481,8 @@ public class DefaultChatClient implements ChatClient {
 
 		private final DefaultAroundAdvisorChain.Builder aroundAdvisorChainBuilder;
 
+		private final Map<String, Object> toolContext = new HashMap<>();
+
 		private ObservationRegistry getObservationRegistry() {
 			return this.observationRegistry;
 		}
@@ -531,6 +533,10 @@ public class DefaultChatClient implements ChatClient {
 
 		public List<FunctionCallback> getFunctionCallbacks() {
 			return this.functionCallbacks;
+		}
+
+		public Map<String, Object> getToolContext() {
+			return this.toolContext;
 		}
 
 		/* copy constructor */
@@ -678,6 +684,22 @@ public class DefaultChatClient implements ChatClient {
 			return this.function(name, description, null, function);
 		}
 
+		public <I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.BiFunction<I, Map<String, Object>, O> biFunction) {
+
+			Assert.hasText(name, "the name must be non-null and non-empty");
+			Assert.hasText(description, "the description must be non-null and non-empty");
+			Assert.notNull(biFunction, "the biFunction must be non-null");
+
+			FunctionCallbackWrapper<I, O> fcw = FunctionCallbackWrapper.builder(biFunction)
+				.withDescription(description)
+				.withName(name)
+				.withResponseConverter(Object::toString)
+				.build();
+			this.functionCallbacks.add(fcw);
+			return this;
+		}
+
 		public <I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function) {
 
@@ -698,6 +720,12 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec functions(String... functionBeanNames) {
 			Assert.notNull(functionBeanNames, "the functionBeanNames must be non-null");
 			this.functionNames.addAll(List.of(functionBeanNames));
+			return this;
+		}
+
+		public ChatClientRequestSpec functions(FunctionCallback... functionCallbacks) {
+			Assert.notNull(functionCallbacks, "the functionCallbacks must be non-null");
+			this.functionCallbacks.addAll(Arrays.asList(functionCallbacks));
 			return this;
 		}
 

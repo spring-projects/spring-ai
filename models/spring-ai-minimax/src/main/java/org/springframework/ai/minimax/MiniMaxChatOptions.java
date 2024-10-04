@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -145,6 +146,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	@JsonIgnore
 	private Boolean proxyToolCalls;
+
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -247,6 +253,16 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -412,6 +428,16 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
@@ -429,6 +455,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
 		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
 		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
+		result = prime * result + ((toolContext == null) ? 0 : toolContext.hashCode());
 		return result;
 	}
 
@@ -525,6 +552,14 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!proxyToolCalls.equals(other.proxyToolCalls))
 			return false;
+
+		if (this.toolContext == null) {
+			if (other.toolContext != null)
+				return false;
+		}
+		else if (!toolContext.equals(other.toolContext))
+			return false;
+
 		return true;
 	}
 
@@ -550,6 +585,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 

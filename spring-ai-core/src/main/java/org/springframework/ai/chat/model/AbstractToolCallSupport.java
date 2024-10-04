@@ -136,7 +136,13 @@ public abstract class AbstractToolCallSupport {
 			throw new IllegalStateException("No tool call generation found in the response!");
 		}
 		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
-		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage);
+
+		Map<String, Object> toolContext = null;
+		if (prompt.getOptions() instanceof FunctionCallingOptions functionCallOptions) {
+			toolContext = functionCallOptions.getToolContext();
+		}
+		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage, toolContext);
+
 		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
 	}
 
@@ -184,7 +190,7 @@ public abstract class AbstractToolCallSupport {
 		return retrievedFunctionCallbacks;
 	}
 
-	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage) {
+	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage, Map<String, Object> toolContext) {
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
@@ -197,7 +203,8 @@ public abstract class AbstractToolCallSupport {
 				throw new IllegalStateException("No function callback found for function name: " + functionName);
 			}
 
-			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+			String functionResponse = this.functionCallbackRegister.get(functionName)
+				.call(functionArguments, toolContext);
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName, functionResponse));
 		}

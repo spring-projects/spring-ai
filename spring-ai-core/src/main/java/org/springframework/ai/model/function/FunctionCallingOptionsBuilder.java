@@ -16,8 +16,10 @@
 package org.springframework.ai.model.function;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -107,6 +109,19 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
+	public FunctionCallingOptionsBuilder withToolContext(Map<String, Object> context) {
+		Assert.notNull(context, "Tool context must not be null");
+		this.options.getToolContext().putAll(context);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withToolContext(String key, Object value) {
+		Assert.notNull(key, "Key must not be null");
+		Assert.notNull(value, "Value must not be null");
+		this.options.getToolContext().put(key, value);
+		return this;
+	}
+
 	public PortableFunctionCallingOptions build() {
 		return this.options;
 	}
@@ -134,6 +149,8 @@ public class FunctionCallingOptionsBuilder {
 		private Double topP;
 
 		private Boolean proxyToolCalls = false;
+
+		private Map<String, Object> context = new HashMap<>();
 
 		public static FunctionCallingOptionsBuilder builder() {
 			return new FunctionCallingOptionsBuilder();
@@ -240,6 +257,14 @@ public class FunctionCallingOptionsBuilder {
 			this.proxyToolCalls = proxyToolCalls;
 		}
 
+		public Map<String, Object> getToolContext() {
+			return context;
+		}
+
+		public void setToolContext(Map<String, Object> context) {
+			this.context = context;
+		}
+
 		@Override
 		public ChatOptions copy() {
 			return new FunctionCallingOptionsBuilder().withModel(this.model)
@@ -253,6 +278,7 @@ public class FunctionCallingOptionsBuilder {
 				.withFunctions(this.functions)
 				.withFunctionCallbacks(this.functionCallbacks)
 				.withProxyToolCalls(this.proxyToolCalls)
+				.withToolContext(this.getToolContext())
 				.build();
 		}
 

@@ -16,6 +16,7 @@
 package org.springframework.ai.model.function;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -71,5 +72,9 @@ public interface FunctionCallingOptions {
 	public static FunctionCallingOptionsBuilder builder() {
 		return new FunctionCallingOptionsBuilder();
 	}
+
+	Map<String, Object> getToolContext();
+
+	void setToolContext(Map<String, Object> functionContext);
 
 }

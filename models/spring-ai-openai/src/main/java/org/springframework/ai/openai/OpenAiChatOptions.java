@@ -191,6 +191,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, String> httpHeaders = new HashMap<>();
+
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -333,6 +338,16 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 		public Builder withHttpHeaders(Map<String, String> httpHeaders) {
 			this.options.httpHeaders = httpHeaders;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -562,6 +577,16 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
 	}
@@ -591,6 +616,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withFunctions(fromOptions.getFunctions())
 			.withHttpHeaders(fromOptions.getHttpHeaders())
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -600,7 +626,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
-				this.proxyToolCalls);
+				this.proxyToolCalls, this.toolContext);
 	}
 
 	@Override
@@ -625,6 +651,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
 				&& Objects.equals(this.functions, other.functions)
 				&& Objects.equals(this.httpHeaders, other.httpHeaders)
+				&& Objects.equals(this.toolContext, other.toolContext)
 				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls);
 	}
 
