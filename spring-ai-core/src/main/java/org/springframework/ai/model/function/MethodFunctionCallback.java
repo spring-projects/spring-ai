@@ -35,8 +35,10 @@ import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 
 /**
  * A {@link FunctionCallback} implementation that invokes a method on a given object. It
- * supports both static and non-static methods. Aslo it supports methods with arbitrary
- * number of input parameters and methods with void return type.
+ * supports both static and non-static methods.
+ *
+ * Supports methods with arbitrary number of input parameters and methods with void return
+ * type.
  *
  * @author Christian Tzolov
  * @since 1.0.0
@@ -70,7 +72,7 @@ public class MethodFunctionCallback implements FunctionCallback {
 	/**
 	 * The JSON schema generated from the method input parameters.
 	 */
-	private final String inptuSchema;
+	private final String inputSchema;
 
 	public MethodFunctionCallback(Object functionObject, Method method, String description, ObjectMapper mapper) {
 
@@ -89,9 +91,9 @@ public class MethodFunctionCallback implements FunctionCallback {
 		// Generate the JSON schema from the method input parameters
 		Map<String, Class<?>> methodParameters = Stream.of(method.getParameters())
 			.collect(Collectors.toMap(param -> param.getName(), param -> param.getType()));
-		this.inptuSchema = generateJsonSchema(methodParameters);
+		this.inputSchema = generateJsonSchema(methodParameters);
 
-		logger.info("Generated JSON Schema: \n:" + this.inptuSchema);
+		logger.info("Generated JSON Schema: \n:" + this.inputSchema);
 	}
 
 	@Override
@@ -106,7 +108,7 @@ public class MethodFunctionCallback implements FunctionCallback {
 
 	@Override
 	public String getInputTypeSchema() {
-		return this.inptuSchema;
+		return this.inputSchema;
 	}
 
 	@Override
