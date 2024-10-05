@@ -89,7 +89,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	/**
 	 * The lower-level API for the Anthropic service.
 	 */
-	public final AnthropicApi anthropicApi;
+	private final AnthropicApi anthropicApi;
 
 	/**
 	 * The default options used for the chat completion requests.
