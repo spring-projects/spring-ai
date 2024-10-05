@@ -32,7 +32,7 @@ import io.micrometer.common.KeyValues;
 
 public class DefaultChatClientObservationConvention implements ChatClientObservationConvention {
 
-	public static final String DEFAULT_NAME = "spring.ai.chat.client.operation";
+	public static final String DEFAULT_NAME = "spring.ai.chat.client";
 
 	private static final String CHAT_CLIENT_SPRING_AI_KIND = "chat_client";
 
