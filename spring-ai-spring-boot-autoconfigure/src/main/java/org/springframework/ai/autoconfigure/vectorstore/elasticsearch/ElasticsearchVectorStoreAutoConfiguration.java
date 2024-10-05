@@ -46,7 +46,7 @@ import io.micrometer.observation.ObservationRegistry;
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
 @ConditionalOnClass({ ElasticsearchVectorStore.class, EmbeddingModel.class, RestClient.class })
 @EnableConfigurationProperties(ElasticsearchVectorStoreProperties.class)
-class ElasticsearchVectorStoreAutoConfiguration {
+public class ElasticsearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(BatchingStrategy.class)
