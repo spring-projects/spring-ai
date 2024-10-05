@@ -15,8 +15,9 @@
  */
 package org.springframework.ai.autoconfigure.chat.observation;
 
-import java.util.List;
-
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.otel.bridge.OtelTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
@@ -43,9 +44,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.tracing.Tracer;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
+import java.util.List;
 
 /**
  * Auto-configuration for Spring AI chat model observations.
@@ -124,15 +123,22 @@ public class ChatObservationAutoConfiguration {
 
 	}
 
-	@Bean
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnClass(Tracer.class)
 	@ConditionalOnBean(Tracer.class)
-	@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-error-logging",
-			havingValue = "true")
-	public ErrorLoggingObservationHandler errorLoggingObservationHandler(Tracer tracer) {
-		return new ErrorLoggingObservationHandler(tracer,
-				List.of(EmbeddingModelObservationContext.class, ImageModelObservationContext.class,
-						ChatModelObservationContext.class, ChatClientObservationContext.class,
-						AdvisorObservationContext.class, VectorStoreObservationContext.class));
+	static class TracingChatContentObservationConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-error-logging",
+				havingValue = "true")
+		public ErrorLoggingObservationHandler errorLoggingObservationHandler(Tracer tracer) {
+			return new ErrorLoggingObservationHandler(tracer,
+					List.of(EmbeddingModelObservationContext.class, ImageModelObservationContext.class,
+							ChatModelObservationContext.class, ChatClientObservationContext.class,
+							AdvisorObservationContext.class, VectorStoreObservationContext.class));
+		}
+
 	}
 
 	private static void logPromptContentWarning() {
