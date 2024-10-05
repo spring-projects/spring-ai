@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.ollama;
 
-import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 
@@ -45,8 +44,6 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link OllamaEmbeddingModel}.
@@ -101,8 +98,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					OllamaModel.NOMIC_EMBED_TEXT.getName())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(),
-					KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),

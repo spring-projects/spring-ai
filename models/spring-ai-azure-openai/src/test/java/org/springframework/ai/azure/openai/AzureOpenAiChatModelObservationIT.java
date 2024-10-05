@@ -39,7 +39,6 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.http.policy.HttpLogOptions;
-import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 
@@ -106,9 +105,8 @@ class AzureOpenAiChatModelObservationIT {
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
-			.hasHighCardinalityKeyValue(
-					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_K.asString(),
-					KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_K.asString())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
 			.hasHighCardinalityKeyValue(

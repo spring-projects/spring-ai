@@ -20,6 +20,7 @@ import io.micrometer.common.KeyValues;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
@@ -32,45 +33,6 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
 		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
-
-	private static final KeyValue RESPONSE_MODEL_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_FREQUENCY_PENALTY_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_MAX_TOKENS_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_PRESENCE_PENALTY_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_STOP_SEQUENCES_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_TEMPERATURE_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TEMPERATURE, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_TOP_K_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_K, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_TOP_P_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P, KeyValue.NONE_VALUE);
-
-	private static final KeyValue RESPONSE_FINISH_REASONS_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASONS, KeyValue.NONE_VALUE);
-
-	private static final KeyValue RESPONSE_ID_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_ID, KeyValue.NONE_VALUE);
-
-	private static final KeyValue USAGE_INPUT_TOKENS_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS, KeyValue.NONE_VALUE);
-
-	private static final KeyValue USAGE_OUTPUT_TOKENS_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS, KeyValue.NONE_VALUE);
-
-	private static final KeyValue USAGE_TOTAL_TOKENS_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS, KeyValue.NONE_VALUE);
 
 	public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
@@ -90,8 +52,9 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(ChatModelObservationContext context) {
-		return KeyValues.of(aiOperationType(context), aiProvider(context), requestModel(context),
-				responseModel(context));
+		var keyValues = KeyValues.of(aiOperationType(context), aiProvider(context), requestModel(context));
+		keyValues = responseModel(keyValues, context);
+		return keyValues;
 	}
 
 	protected KeyValue aiOperationType(ChatModelObservationContext context) {
@@ -112,88 +75,107 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		return REQUEST_MODEL_NONE;
 	}
 
-	protected KeyValue responseModel(ChatModelObservationContext context) {
+	protected KeyValues responseModel(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getModel() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL,
+				&& StringUtils.hasText(context.getResponse().getMetadata().getModel())) {
+			return keyValues.and(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
 					context.getResponse().getMetadata().getModel());
 		}
-		return RESPONSE_MODEL_NONE;
+		return keyValues;
 	}
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(ChatModelObservationContext context) {
-		return KeyValues.of(requestFrequencyPenalty(context), requestMaxTokens(context),
-				requestPresencePenalty(context), requestStopSequences(context), requestTemperature(context),
-				requestTopK(context), requestTopP(context), responseFinishReasons(context), responseId(context),
-				usageInputTokens(context), usageOutputTokens(context), usageTotalTokens(context));
+		var keyValues = KeyValues.empty();
+		// Request
+		keyValues = requestFrequencyPenalty(keyValues, context);
+		keyValues = requestMaxTokens(keyValues, context);
+		keyValues = requestPresencePenalty(keyValues, context);
+		keyValues = requestStopSequences(keyValues, context);
+		keyValues = requestTemperature(keyValues, context);
+		keyValues = requestTopK(keyValues, context);
+		keyValues = requestTopP(keyValues, context);
+		// Response
+		keyValues = responseFinishReasons(keyValues, context);
+		keyValues = responseId(keyValues, context);
+		keyValues = usageInputTokens(keyValues, context);
+		keyValues = usageOutputTokens(keyValues, context);
+		keyValues = usageTotalTokens(keyValues, context);
+		return keyValues;
 	}
 
 	// Request
 
-	protected KeyValue requestFrequencyPenalty(ChatModelObservationContext context) {
+	protected KeyValues requestFrequencyPenalty(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequestOptions().getFrequencyPenalty() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
 					String.valueOf(context.getRequestOptions().getFrequencyPenalty()));
 		}
-		return REQUEST_FREQUENCY_PENALTY_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestMaxTokens(ChatModelObservationContext context) {
+	protected KeyValues requestMaxTokens(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequestOptions().getMaxTokens() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(),
 					String.valueOf(context.getRequestOptions().getMaxTokens()));
 		}
-		return REQUEST_MAX_TOKENS_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestPresencePenalty(ChatModelObservationContext context) {
+	protected KeyValues requestPresencePenalty(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequestOptions().getPresencePenalty() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
 					String.valueOf(context.getRequestOptions().getPresencePenalty()));
 		}
-		return REQUEST_PRESENCE_PENALTY_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestStopSequences(ChatModelObservationContext context) {
+	protected KeyValues requestStopSequences(KeyValues keyValues, ChatModelObservationContext context) {
 		if (!CollectionUtils.isEmpty(context.getRequestOptions().getStopSequences())) {
 			StringJoiner stopSequencesJoiner = new StringJoiner(", ", "[", "]");
 			context.getRequestOptions()
 				.getStopSequences()
 				.forEach(value -> stopSequencesJoiner.add("\"" + value + "\""));
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES,
+			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES,
+					context.getRequestOptions().getStopSequences(), Objects::nonNull);
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					stopSequencesJoiner.toString());
 		}
-		return REQUEST_STOP_SEQUENCES_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestTemperature(ChatModelObservationContext context) {
+	protected KeyValues requestTemperature(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequestOptions().getTemperature() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TEMPERATURE,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(),
 					String.valueOf(context.getRequestOptions().getTemperature()));
 		}
-		return REQUEST_TEMPERATURE_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestTopK(ChatModelObservationContext context) {
+	protected KeyValues requestTopK(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequestOptions().getTopK() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_K,
+			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_K.asString(),
 					String.valueOf(context.getRequestOptions().getTopK()));
 		}
-		return REQUEST_TOP_K_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestTopP(ChatModelObservationContext context) {
+	protected KeyValues requestTopP(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequestOptions().getTopP() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P,
+			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P.asString(),
 					String.valueOf(context.getRequestOptions().getTopP()));
 		}
-		return REQUEST_TOP_P_NONE;
+		return keyValues;
 	}
 
 	// Response
 
-	protected KeyValue responseFinishReasons(ChatModelObservationContext context) {
+	protected KeyValues responseFinishReasons(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getResponse() != null && !CollectionUtils.isEmpty(context.getResponse().getResults())) {
 			var finishReasons = context.getResponse()
 				.getResults()
@@ -202,53 +184,57 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 				.map(generation -> generation.getMetadata().getFinishReason())
 				.toList();
 			if (CollectionUtils.isEmpty(finishReasons)) {
-				return RESPONSE_FINISH_REASONS_NONE;
+				return keyValues;
 			}
 			StringJoiner finishReasonsJoiner = new StringJoiner(", ", "[", "]");
 			finishReasons.forEach(finishReason -> finishReasonsJoiner.add("\"" + finishReason + "\""));
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASONS,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(),
 					finishReasonsJoiner.toString());
 		}
-		return RESPONSE_FINISH_REASONS_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue responseId(ChatModelObservationContext context) {
+	protected KeyValues responseId(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& StringUtils.hasText(context.getResponse().getMetadata().getId())) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_ID,
+			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_ID.asString(),
 					context.getResponse().getMetadata().getId());
 		}
-		return RESPONSE_ID_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue usageInputTokens(ChatModelObservationContext context) {
+	protected KeyValues usageInputTokens(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& context.getResponse().getMetadata().getUsage() != null
 				&& context.getResponse().getMetadata().getUsage().getPromptTokens() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getPromptTokens()));
 		}
-		return USAGE_INPUT_TOKENS_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue usageOutputTokens(ChatModelObservationContext context) {
+	protected KeyValues usageOutputTokens(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& context.getResponse().getMetadata().getUsage() != null
 				&& context.getResponse().getMetadata().getUsage().getGenerationTokens() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getGenerationTokens()));
 		}
-		return USAGE_OUTPUT_TOKENS_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue usageTotalTokens(ChatModelObservationContext context) {
+	protected KeyValues usageTotalTokens(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& context.getResponse().getMetadata().getUsage() != null
 				&& context.getResponse().getMetadata().getUsage().getTotalTokens() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS,
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getTotalTokens()));
 		}
-		return USAGE_TOTAL_TOKENS_NONE;
+		return keyValues;
 	}
 
 }
