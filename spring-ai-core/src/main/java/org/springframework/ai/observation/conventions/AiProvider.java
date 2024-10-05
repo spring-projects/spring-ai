@@ -29,14 +29,15 @@ public enum AiProvider {
 
 	// @formatter:off
 
+	// Please, keep the alphabetical sorting.
 	ANTHROPIC("anthropic"),
+	AZURE_OPENAI("azure-openai"),
 	MISTRAL_AI("mistral_ai"),
+	OCI_GENAI("oci_genai"),
 	OLLAMA("ollama"),
 	OPENAI("openai"),
 	SPRING_AI("spring_ai"),
-	VERTEX_AI("vertex_ai"),
-	OCI_GENAI("oci_genai"),
-	AZURE_OPENAI("azure-openai");
+	VERTEX_AI("vertex_ai");
 
 	private final String value;
 

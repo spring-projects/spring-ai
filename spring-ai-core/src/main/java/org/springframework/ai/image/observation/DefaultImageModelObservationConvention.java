@@ -30,16 +30,6 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
 		.of(ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
 
-	private static final KeyValue REQUEST_IMAGE_RESPONSE_FORMAT_NONE = KeyValue.of(
-			ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_IMAGE_SIZE_NONE = KeyValue
-		.of(ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE, KeyValue.NONE_VALUE);
-
-	private static final KeyValue REQUEST_IMAGE_STYLE_NONE = KeyValue
-		.of(ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_STYLE, KeyValue.NONE_VALUE);
-
 	public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
 	@Override
@@ -81,33 +71,41 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(ImageModelObservationContext context) {
-		return KeyValues.of(requestImageFormat(context), requestImageSize(context), requestImageStyle(context));
+		var keyValues = KeyValues.empty();
+		// Request
+		keyValues = requestImageFormat(keyValues, context);
+		keyValues = requestImageSize(keyValues, context);
+		keyValues = requestImageStyle(keyValues, context);
+		return keyValues;
 	}
 
 	// Request
 
-	protected KeyValue requestImageFormat(ImageModelObservationContext context) {
+	protected KeyValues requestImageFormat(KeyValues keyValues, ImageModelObservationContext context) {
 		if (StringUtils.hasText(context.getRequestOptions().getResponseFormat())) {
-			return KeyValue.of(ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT,
+			return keyValues.and(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),
 					context.getRequestOptions().getResponseFormat());
 		}
-		return REQUEST_IMAGE_RESPONSE_FORMAT_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestImageSize(ImageModelObservationContext context) {
+	protected KeyValues requestImageSize(KeyValues keyValues, ImageModelObservationContext context) {
 		if (context.getRequestOptions().getWidth() != null && context.getRequestOptions().getHeight() != null) {
-			return KeyValue.of(ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE,
+			return keyValues.and(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
 					"%sx%s".formatted(context.getRequestOptions().getWidth(), context.getRequestOptions().getHeight()));
 		}
-		return REQUEST_IMAGE_SIZE_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue requestImageStyle(ImageModelObservationContext context) {
+	protected KeyValues requestImageStyle(KeyValues keyValues, ImageModelObservationContext context) {
 		if (StringUtils.hasText(context.getRequestOptions().getStyle())) {
-			return KeyValue.of(ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_STYLE,
+			return keyValues.and(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_STYLE.asString(),
 					context.getRequestOptions().getStyle());
 		}
-		return REQUEST_IMAGE_STYLE_NONE;
+		return keyValues;
 	}
 
 }

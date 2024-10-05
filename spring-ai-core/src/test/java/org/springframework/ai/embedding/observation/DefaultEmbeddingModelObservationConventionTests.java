@@ -108,19 +108,22 @@ class DefaultEmbeddingModelObservationConventionTests {
 	}
 
 	@Test
-	void shouldHaveNoneKeyValuesWhenMissing() {
+	void shouldNotHaveKeyValuesWhenMissing() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
 			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().build())
 			.build();
-		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), KeyValue.NONE_VALUE));
-		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(), KeyValue.NONE_VALUE));
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), KeyValue.NONE_VALUE));
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
+			.noneMatch(keyValue -> keyValue.getKey().equals(LowCardinalityKeyNames.RESPONSE_MODEL.asString()));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(),
+					HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
+					HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString());
 	}
 
 	private EmbeddingRequest generateEmbeddingRequest() {
