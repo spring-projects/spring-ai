@@ -211,13 +211,15 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 			Flux<ChatResponse> chatResponse = ollamaResponse.map(chunk -> {
 				String content = (chunk.message() != null) ? chunk.message().content() : "";
-				List<AssistantMessage.ToolCall> toolCalls = chunk.message().toolCalls() == null ? List.of()
-						: chunk.message()
-							.toolCalls()
-							.stream()
-							.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
-									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
-							.toList();
+				// Added null checks to prevent NPE when accessing tool calls
+				List<AssistantMessage.ToolCall> toolCalls = (chunk.message() != null && chunk.message().toolCalls() != null)
+						? chunk.message()
+						.toolCalls()
+						.stream()
+						.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+								ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+						.toList()
+						: List.of();
 
 				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
 
