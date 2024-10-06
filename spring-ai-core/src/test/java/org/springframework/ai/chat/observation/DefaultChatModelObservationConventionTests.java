@@ -140,9 +140,8 @@ class DefaultChatModelObservationConventionTests {
 			.requestOptions(ChatOptionsBuilder.builder().build())
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
-			.contains(KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), KeyValue.NONE_VALUE));
-		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
-			.noneMatch(keyValue -> keyValue.getKey().equals(LowCardinalityKeyNames.RESPONSE_MODEL.asString()));
+			.contains(KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), KeyValue.NONE_VALUE))
+			.contains(KeyValue.of(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), KeyValue.NONE_VALUE));
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
 			.stream()
 			.map(KeyValue::getKey)
