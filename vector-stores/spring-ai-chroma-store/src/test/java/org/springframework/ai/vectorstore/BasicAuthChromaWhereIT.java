@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ChromaImage;
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -45,6 +46,7 @@ import org.testcontainers.utility.MountableFile;
  *
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class BasicAuthChromaWhereIT {
@@ -54,7 +56,7 @@ public class BasicAuthChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#basic-authentication
 	 */
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0")
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE)
 		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS_FILE", "/chroma/server.htpasswd")
 		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.basic_authn.BasicAuthenticationServerProvider")
 		.withCopyToContainer(MountableFile.forClasspathResource("server.htpasswd"), "/chroma/server.htpasswd");

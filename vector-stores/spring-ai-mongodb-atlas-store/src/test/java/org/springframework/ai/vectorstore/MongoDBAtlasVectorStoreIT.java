@@ -51,13 +51,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Smith
  * @author Soby Chacko
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  */
 @Testcontainers
 class MongoDBAtlasVectorStoreIT {
 
 	@Container
-	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(
-			"mongodb/mongodb-atlas-local:7.0.9");
+	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(MongoDbImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)

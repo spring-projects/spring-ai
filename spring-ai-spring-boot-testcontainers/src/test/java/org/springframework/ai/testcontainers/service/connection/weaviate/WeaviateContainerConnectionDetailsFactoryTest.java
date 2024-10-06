@@ -52,7 +52,7 @@ class WeaviateContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.25.4")
+	static WeaviateContainer weaviateContainer = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
 
 	@Autowired

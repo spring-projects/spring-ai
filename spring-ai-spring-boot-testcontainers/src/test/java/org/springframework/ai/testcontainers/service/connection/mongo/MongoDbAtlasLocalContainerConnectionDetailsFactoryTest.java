@@ -52,8 +52,7 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(
-			"mongodb/mongodb-atlas-local:7.0.9");
+	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(MongoDbImage.DEFAULT_IMAGE);
 
 	@Autowired
 	private VectorStore vectorStore;

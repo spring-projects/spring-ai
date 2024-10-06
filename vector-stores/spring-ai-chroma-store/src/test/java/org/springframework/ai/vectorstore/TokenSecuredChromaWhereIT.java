@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ChromaImage;
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -45,6 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class TokenSecuredChromaWhereIT {
@@ -56,7 +58,7 @@ public class TokenSecuredChromaWhereIT {
 	 * https://docs.trychroma.com/deployment/auth
 	 */
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0")
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE)
 		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
 		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.token_authn.TokenAuthenticationServerProvider");
 

@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ChromaImage;
 import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.Collection;
 import org.springframework.ai.chroma.ChromaApi.GetEmbeddingsRequest;
@@ -37,13 +38,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  */
 @SpringBootTest
 @Testcontainers
 public class ChromaApiIT {
 
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0");
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
 
 	@Autowired
 	ChromaApi chroma;

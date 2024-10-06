@@ -21,10 +21,10 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.CassandraImage;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -36,15 +36,14 @@ import org.springframework.context.annotation.Bean;
  * Use `mvn failsafe:integration-test -Dit.test=CassandraChatMemoryIT`
  *
  * @author Mick Semb Wever
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @Testcontainers
 class CassandraChatMemoryIT {
 
-	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("cassandra");
-
 	@Container
-	static CassandraContainer cassandraContainer = new CassandraContainer(DEFAULT_IMAGE_NAME.withTag("5.0"));
+	static CassandraContainer<?> cassandraContainer = new CassandraContainer<>(CassandraImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(CassandraChatMemoryIT.TestApplication.class);

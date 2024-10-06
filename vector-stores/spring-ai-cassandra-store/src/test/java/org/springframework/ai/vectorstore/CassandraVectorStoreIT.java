@@ -29,10 +29,10 @@ import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.CassandraImage;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -55,15 +55,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Use `mvn failsafe:integration-test -Dit.test=CassandraVectorStoreIT`
  *
  * @author Mick Semb Wever
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @Testcontainers
 class CassandraVectorStoreIT {
 
-	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("cassandra");
-
 	@Container
-	static CassandraContainer cassandraContainer = new CassandraContainer(DEFAULT_IMAGE_NAME.withTag("5.0"));
+	static CassandraContainer<?> cassandraContainer = new CassandraContainer<>(CassandraImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);

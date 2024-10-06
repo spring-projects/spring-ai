@@ -66,7 +66,7 @@ class ElasticsearchVectorStoreIT {
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
-			"docker.elastic.co/elasticsearch/elasticsearch:8.13.3")
+			ElasticsearchImage.DEFAULT_IMAGE)
 		.withEnv("xpack.security.enabled", "false");
 
 	private final List<Document> documents = List.of(
