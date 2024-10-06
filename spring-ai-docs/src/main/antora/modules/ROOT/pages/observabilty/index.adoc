@@ -53,7 +53,7 @@ WARNING: If you enable the inclusion of the input content in the observations, t
 
 === Chat Client Advisors
 
-The `spring.ai.chat.client.advisor` observations are recorded when a call or stream around advisors is performed. 
+The `spring.ai.advisor` observations are recorded when a call or stream around advisors is performed. 
 They measure the time spent in the advisor (including the time spend on the inner advisors) and propagate the related tracing information.
 
 .Low Cardinality Keys
