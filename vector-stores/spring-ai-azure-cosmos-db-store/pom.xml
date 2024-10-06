@@ -8,7 +8,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-cosmos-db-store</artifactId>
+	<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Vector Store – Azure Cosmos DB</name>
 	<description>Spring AI Vector Store for Azure Cosmos DB</description>
@@ -35,8 +35,6 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-core</artifactId>
 			<version>${project.parent.version}</version>
-<!--			<scope>system</scope>
-			<systemPath>${project.basedir}/../../spring-ai-core/target/spring-ai-core-1.0.0-SNAPSHOT.jar</systemPath>-->
 		</dependency>
 
 		<!-- TESTING -->
