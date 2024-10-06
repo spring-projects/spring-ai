@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  */
 @SpringJUnitConfig
 @Disabled("requires more memory than is often available on dev machines")
@@ -55,7 +56,7 @@ class OllamaContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static OllamaContainer ollama = new OllamaContainer("ollama/ollama:0.3.9");
+	static OllamaContainer ollama = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	@Autowired
 	private OllamaEmbeddingModel embeddingModel;

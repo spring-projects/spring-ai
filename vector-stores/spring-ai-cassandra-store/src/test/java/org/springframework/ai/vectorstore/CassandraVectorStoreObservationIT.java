@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.CassandraImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -42,7 +43,6 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -59,10 +59,8 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 @Testcontainers
 public class CassandraVectorStoreObservationIT {
 
-	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("cassandra");
-
 	@Container
-	static CassandraContainer cassandraContainer = new CassandraContainer(DEFAULT_IMAGE_NAME.withTag("5.0"));
+	static CassandraContainer<?> cassandraContainer = new CassandraContainer<>(CassandraImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class);

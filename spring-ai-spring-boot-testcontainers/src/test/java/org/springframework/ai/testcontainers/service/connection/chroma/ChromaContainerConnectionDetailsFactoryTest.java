@@ -46,7 +46,7 @@ class ChromaContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0");
+	static ChromaDBContainer chroma = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
 
 	@Autowired
 	private VectorStore vectorStore;

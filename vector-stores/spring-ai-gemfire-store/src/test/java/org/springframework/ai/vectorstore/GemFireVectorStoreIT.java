@@ -46,6 +46,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 /**
  * @author Geet Rawat
  * @author Soby Chacko
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class GemFireVectorStoreIT {
@@ -70,7 +71,7 @@ public class GemFireVectorStoreIT {
 		Ports.Binding hostPort = Ports.Binding.bindPort(HTTP_SERVICE_PORT);
 		ExposedPort exposedPort = new ExposedPort(HTTP_SERVICE_PORT);
 		PortBinding mappedPort = new PortBinding(hostPort, exposedPort);
-		gemFireCluster = new GemFireCluster("gemfire/gemfire-all:10.1-jdk17", LOCATOR_COUNT, SERVER_COUNT);
+		gemFireCluster = new GemFireCluster(GemFireImage.DEFAULT_IMAGE, LOCATOR_COUNT, SERVER_COUNT);
 		gemFireCluster.withConfiguration(GemFireCluster.SERVER_GLOB,
 				container -> container.withExposedPorts(HTTP_SERVICE_PORT)
 					.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withPortBindings(mappedPort)));

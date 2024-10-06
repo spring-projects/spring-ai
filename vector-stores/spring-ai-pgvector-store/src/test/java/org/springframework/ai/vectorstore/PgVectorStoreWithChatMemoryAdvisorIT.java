@@ -50,6 +50,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * @author Fabian Krüger
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @Testcontainers
 class PgVectorStoreWithChatMemoryAdvisorIT {
@@ -58,7 +59,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 
 	@Container
 	@SuppressWarnings("resource")
-	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
 		.withPassword("postgres");
 

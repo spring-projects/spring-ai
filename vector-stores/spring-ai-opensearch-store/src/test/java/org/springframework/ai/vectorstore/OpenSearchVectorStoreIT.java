@@ -38,7 +38,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -58,6 +57,7 @@ import static org.hamcrest.Matchers.hasSize;
 /**
  * @author Jemin Huh
  * @author Soby Chacko
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @Testcontainers
@@ -66,7 +66,7 @@ class OpenSearchVectorStoreIT {
 
 	@Container
 	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
-			DockerImageName.parse("opensearchproject/opensearch:2.13.0"));
+			OpenSearchImage.DEFAULT_IMAGE);
 
 	private static final String DEFAULT = "cosinesimil";
 

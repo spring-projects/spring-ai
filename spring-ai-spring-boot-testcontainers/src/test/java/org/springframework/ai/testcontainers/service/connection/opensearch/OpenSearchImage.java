@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.testcontainers.service.connection.opensearch;
 
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * @author Thomas Vitale
  */
-public class Neo4jImage {
+public class OpenSearchImage {
 
-	// Needs to be Neo4j 5.15+ because Neo4j 5.15 deprecated the old vector index creation
-	// function.
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("neo4j:5.24");
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("opensearchproject/opensearch:2.17.1");
 
 }
