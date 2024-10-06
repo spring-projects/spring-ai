@@ -386,25 +386,16 @@
 			<version>${awssdk.version}</version>
 			<optional>true</optional>
 		</dependency>
-		<!-- Cosmos DB Vector Store -->
-<!--		<dependency>
-			<groupId>com.azure</groupId>
-			<artifactId>azure-spring-data-cosmos</artifactId>
-			<version>LATEST</version>
-		</dependency>-->
 
-		<!-- Cosmos DB vector store -->
+		<!-- Azure Cosmos DB vector store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-cosmos-db-store</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
+			<version>${project.parent.version}</version>
 			<optional>true</optional>
-			<!--<scope>system</scope>
-			<systemPath>${project.basedir}/../vector-stores/spring-ai-cosmos-db-store/target/spring-ai-cosmos-db-store-1.0.0-SNAPSHOT.jar</systemPath>-->
 		</dependency>
 
 		<!-- test dependencies -->
-
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>

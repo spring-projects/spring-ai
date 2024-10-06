@@ -17,9 +17,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.ai.vectorstore.SearchRequest;
 import reactor.core.publisher.Flux;
-
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -244,10 +242,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.flatMap(page -> Flux.fromIterable(page.getResults()))
 				.collectList()
 				.block();
-			/*
-			 * if (documents != null) { documents.forEach(doc ->
-			 * logger.info("Found document with ID: {}", doc.get("id"))); }
-			 */
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
 				.map(doc -> new Document(doc.get("id").asText(), doc.get("content").asText(), new HashMap<>()))

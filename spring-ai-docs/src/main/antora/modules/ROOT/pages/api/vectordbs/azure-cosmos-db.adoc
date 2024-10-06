@@ -88,7 +88,7 @@ Add the following dependency to your Maven project:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-cosmos-db-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-azure-cosmos-db-store-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -224,6 +224,6 @@ Add the following dependency in your Maven project:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-cosmos-db-store</artifactId>
+    <artifactId>spring-ai-azure-cosmos-db-store</artifactId>
 </dependency>
 ----

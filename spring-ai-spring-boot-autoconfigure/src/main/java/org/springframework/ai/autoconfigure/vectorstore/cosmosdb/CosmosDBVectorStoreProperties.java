@@ -3,8 +3,6 @@ package org.springframework.ai.autoconfigure.vectorstore.cosmosdb;
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.util.List;
-
 @ConfigurationProperties(CosmosDBVectorStoreProperties.CONFIG_PREFIX)
 public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 

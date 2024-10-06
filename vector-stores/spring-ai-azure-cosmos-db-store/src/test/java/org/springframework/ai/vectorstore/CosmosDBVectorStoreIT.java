@@ -2,9 +2,9 @@ package org.springframework.ai.vectorstore;
 
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosClientBuilder;
-import org.assertj.core.util.Files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -14,19 +14,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.testcontainers.containers.CosmosDBEmulatorContainer;
-
-import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.file.Path;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,16 +21,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-//@Testcontainers
-@EnableAutoConfiguration
+@EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
 public class CosmosDBVectorStoreIT {
-
-	// static final DockerImageName DEFAULT_IMAGE_NAME =
-	// DockerImageName.parse("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest");
-
-	// @Container
-	// static CosmosDBEmulatorContainer cosmosDBEmulatorContainer = new
-	// CosmosDBEmulatorContainer(DEFAULT_IMAGE_NAME);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -52,124 +32,9 @@ public class CosmosDBVectorStoreIT {
 
 	@BeforeEach
 	public void setup() {
-		// emulatorSetup(cosmosDBEmulatorContainer);
 		contextRunner.run(context -> {
 			vectorStore = context.getBean(VectorStore.class);
 		});
-	}
-
-	private void emulatorSetup(CosmosDBEmulatorContainer cosmosDBEmulatorContainer) {
-		cosmosDBEmulatorContainer.start();
-		while (!cosmosDBEmulatorContainer.isRunning()) {
-			try {
-				System.out.println("Waiting for CosmosDB Emulator to start...");
-				Thread.sleep(1000);
-			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		Files tempFolder = null;
-		Path keyStoreFile = Files.newFile("v1-azure-cosmos-emulator.keystore").toPath();
-
-		// Retry loop for buildNewKeyStore()
-		KeyStore keyStore = null;
-		while (true) {
-			try {
-				System.out.println("Tyring to get keystore from emulator...");
-				keyStore = cosmosDBEmulatorContainer.buildNewKeyStore();
-				System.out.println("Got keystore from emulator...");
-				break; // If no exception is thrown, break the loop
-			}
-			catch (IllegalStateException e) {
-				System.out.println("Failed getting keystore from emulator...");
-				try {
-					Thread.sleep(10000); // Sleep for 1 second before retrying
-				}
-				catch (InterruptedException ie) {
-					throw new RuntimeException(ie);
-				}
-			}
-
-		}
-
-		try {
-			keyStore.store(new FileOutputStream(keyStoreFile.toFile()),
-					cosmosDBEmulatorContainer.getEmulatorKey().toCharArray());
-		}
-		catch (KeyStoreException e) {
-			throw new RuntimeException(e);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
-		catch (CertificateException e) {
-			throw new RuntimeException(e);
-		}
-
-		System.setProperty("javax.net.ssl.trustStore", keyStoreFile.toString());
-		System.setProperty("javax.net.ssl.trustStorePassword", cosmosDBEmulatorContainer.getEmulatorKey());
-		System.setProperty("javax.net.ssl.trustStoreType", "PKCS12");
-		while (true) {
-			try {
-				System.out.println("Tyring to ping data explorer endpoint: "
-						+ cosmosDBEmulatorContainer.getEmulatorEndpoint() + "/_explorer/index.html");
-				// Specify the endpoint URL
-				String endpointUrl = cosmosDBEmulatorContainer.getEmulatorEndpoint() + "/_explorer/index.html";
-
-				// Create a URL object with the specified endpoint
-				URL url = new URL(endpointUrl);
-
-				// Open a connection to the URL
-				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-				// Set the request method to GET
-				connection.setRequestMethod("GET");
-
-				// Set headers if needed
-				connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-				connection.setRequestProperty("Accept", "application/json");
-
-				// Get the response code
-				int responseCode = connection.getResponseCode();
-				System.out.println("Response Code: " + responseCode);
-
-				// If the response code is 200 (HTTP_OK), read the response
-				if (responseCode == HttpURLConnection.HTTP_OK) {
-					BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-					String inputLine;
-					StringBuffer response = new StringBuffer();
-
-					while ((inputLine = in.readLine()) != null) {
-						response.append(inputLine);
-					}
-					in.close();
-
-					// Print the response
-					System.out.println("Response: " + response);
-				}
-				else {
-					System.out.println("GET request failed.");
-				}
-				break; // If no exception is thrown, break the loop
-			}
-			catch (Exception e) {
-				System.out.println("Failed creating client from emulator endpoint...");
-				try {
-					Thread.sleep(10000); // Sleep for 1 second before retrying
-				}
-				catch (InterruptedException ie) {
-					throw new RuntimeException(ie);
-				}
-			}
-
-		}
-
-		Files.delete(keyStoreFile.toFile());
 	}
 
 	@Test
@@ -250,6 +115,12 @@ public class CosmosDBVectorStoreIT {
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
 
 		vectorStore.delete(List.of(document1.getId(), document2.getId(), document3.getId(), document4.getId()));
+
+		// Perform a similarity search again
+		List<Document> results3 = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(1));
+
+		// Verify the search results
+		assertThat(results3).isEmpty();
 	}
 
 	@SpringBootConfiguration
@@ -259,7 +130,6 @@ public class CosmosDBVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel,
 				VectorStoreObservationConvention convention) {
-
 			CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
 			config.setDatabaseName("test-database");
 			config.setContainerName("test-container");
@@ -272,18 +142,14 @@ public class CosmosDBVectorStoreIT {
 
 		@Bean
 		public CosmosAsyncClient cosmosClient() {
-			return new CosmosClientBuilder().endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
-				.key(System.getenv("COSMOSDB_AI_KEY"))
-				// .endpoint(cosmosDBEmulatorContainer.getEmulatorEndpoint())
-				// .key(cosmosDBEmulatorContainer.getEmulatorKey())
+			return new CosmosClientBuilder().endpoint(System.getenv("AZURE_COSMOSDB_ENDPOINT"))
+				.key(System.getenv("AZURE_COSMOSDB_KEY"))
 				.gatewayMode()
 				.buildAsyncClient();
 		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			// Replace with actual EmbeddingModel implementation or a mock for testing
-			// purposes
 			return new TransformersEmbeddingModel();
 		}
 
