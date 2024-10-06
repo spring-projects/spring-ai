@@ -35,6 +35,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -491,7 +492,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.withCollectionName(this.config.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withFieldName(this.config.embeddingFieldName)
-			.withSimilarityMetric(vectorAlgorithm().name());
+			.withSimilarityMetric(
+					"COSINE".equals(DEFAULT_DISTANCE_METRIC) ? VectorStoreSimilarityMetric.COSINE.value() : "");
 
 	}
 

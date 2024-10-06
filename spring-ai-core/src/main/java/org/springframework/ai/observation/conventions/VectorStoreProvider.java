@@ -16,32 +16,42 @@
 package org.springframework.ai.observation.conventions;
 
 /**
+ * Collection of systems providing vector store functionality. Based on the OpenTelemetry
+ * Semantic Conventions for Vector Databases.
+ *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
+ * @see <a href=
+ * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/database">DB
+ * Semantic Conventions</a>.
  */
 public enum VectorStoreProvider {
 
 	// @formatter:off
-        PG_VECTOR("pg_vector"),
-        AZURE("azure"),
-        CASSANDRA("cassandra"),
-        CHROMA("chroma"),
-        ELASTICSEARCH("elasticsearch"),
-        MILVUS("milvus"),
-        NEO4J("neo4j"),
-        OPENSEARCH("opensearch"),
-        QDRANT("qdrant"),
-        REDIS("redis"),
-        TYPESENSE("typesense"),
-        WEAVIATE("weaviate"),
-        PINECONE("pinecone"),
-        ORACLE("oracle"),
-        MONGODB("mongodb"),
-        GEMFIRE("gemfire"),
-        HANA("hana"),
-        SIMPLE("simple");
 
-        // @formatter:on
+	// Please, keep the alphabetical sorting.
+	AZURE("azure"),
+	CASSANDRA("cassandra"),
+	CHROMA("chroma"),
+	ELASTICSEARCH("elasticsearch"),
+	GEMFIRE("gemfire"),
+	HANA("hana"),
+	MILVUS("milvus"),
+	MONGODB("mongodb"),
+	NEO4J("neo4j"),
+	OPENSEARCH("opensearch"),
+	ORACLE("oracle"),
+	PG_VECTOR("pg_vector"),
+	PINECONE("pinecone"),
+	QDRANT("qdrant"),
+	REDIS("redis"),
+	SIMPLE("simple"),
+	TYPESENSE("typesense"),
+	WEAVIATE("weaviate");
+
+	// @formatter:on
+
 	private final String value;
 
 	VectorStoreProvider(String value) {

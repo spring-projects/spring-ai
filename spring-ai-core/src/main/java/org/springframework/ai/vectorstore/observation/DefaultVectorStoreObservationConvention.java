@@ -35,33 +35,6 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 
 	public static final String DEFAULT_NAME = "db.vector.client.operation";
 
-	private static final KeyValue COLLECTION_NAME_NONE = KeyValue.of(HighCardinalityKeyNames.DB_COLLECTION_NAME,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue DIMENSIONS_NONE = KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue METADATA_FILTER_NONE = KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue FIELD_NAME_NONE = KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue NAMESPACE_NONE = KeyValue.of(HighCardinalityKeyNames.DB_NAMESPACE,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue QUERY_CONTENT_NONE = KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue SIMILARITY_METRIC_NONE = KeyValue
-		.of(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC, KeyValue.NONE_VALUE);
-
-	private static final KeyValue SIMILARITY_THRESHOLD_NONE = KeyValue
-		.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD, KeyValue.NONE_VALUE);
-
-	private static final KeyValue TOP_K_NONE = KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K,
-			KeyValue.NONE_VALUE);
-
 	private final String name;
 
 	public DefaultVectorStoreObservationConvention() {
@@ -102,74 +75,86 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(VectorStoreObservationContext context) {
-		return KeyValues.of(collectionName(context), dimensions(context), fieldName(context), metadataFilter(context),
-				namespace(context), queryContent(context), similarityMetric(context), similarityThreshold(context),
-				topK(context));
+		var keyValues = KeyValues.empty();
+		keyValues = collectionName(keyValues, context);
+		keyValues = dimensions(keyValues, context);
+		keyValues = fieldName(keyValues, context);
+		keyValues = metadataFilter(keyValues, context);
+		keyValues = namespace(keyValues, context);
+		keyValues = queryContent(keyValues, context);
+		keyValues = similarityMetric(keyValues, context);
+		keyValues = similarityThreshold(keyValues, context);
+		keyValues = topK(keyValues, context);
+		return keyValues;
 	}
 
-	protected KeyValue collectionName(VectorStoreObservationContext context) {
+	protected KeyValues collectionName(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (StringUtils.hasText(context.getCollectionName())) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_COLLECTION_NAME, context.getCollectionName());
+			return keyValues.and(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), context.getCollectionName());
 		}
-		return COLLECTION_NAME_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue dimensions(VectorStoreObservationContext context) {
+	protected KeyValues dimensions(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (context.getDimensions() != null && context.getDimensions() > 0) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT, "" + context.getDimensions());
+			return keyValues.and(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(),
+					"" + context.getDimensions());
 		}
-		return DIMENSIONS_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue fieldName(VectorStoreObservationContext context) {
+	protected KeyValues fieldName(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (StringUtils.hasText(context.getFieldName())) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME, context.getFieldName());
+			return keyValues.and(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), context.getFieldName());
 		}
-		return FIELD_NAME_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue metadataFilter(VectorStoreObservationContext context) {
+	protected KeyValues metadataFilter(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (context.getQueryRequest() != null && context.getQueryRequest().getFilterExpression() != null) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER,
+			return keyValues.and(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER.asString(),
 					context.getQueryRequest().getFilterExpression().toString());
 		}
-		return METADATA_FILTER_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue namespace(VectorStoreObservationContext context) {
+	protected KeyValues namespace(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (StringUtils.hasText(context.getNamespace())) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_NAMESPACE, context.getNamespace());
+			return keyValues.and(HighCardinalityKeyNames.DB_NAMESPACE.asString(), context.getNamespace());
 		}
-		return NAMESPACE_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue queryContent(VectorStoreObservationContext context) {
+	protected KeyValues queryContent(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (context.getQueryRequest() != null && StringUtils.hasText(context.getQueryRequest().getQuery())) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT, context.getQueryRequest().getQuery());
+			return keyValues.and(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(),
+					context.getQueryRequest().getQuery());
 		}
-		return QUERY_CONTENT_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue similarityMetric(VectorStoreObservationContext context) {
+	protected KeyValues similarityMetric(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (StringUtils.hasText(context.getSimilarityMetric())) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC, context.getSimilarityMetric());
+			return keyValues.and(HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString(),
+					context.getSimilarityMetric());
 		}
-		return SIMILARITY_METRIC_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue similarityThreshold(VectorStoreObservationContext context) {
+	protected KeyValues similarityThreshold(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (context.getQueryRequest() != null && context.getQueryRequest().getSimilarityThreshold() >= 0) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD,
+			return keyValues.and(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString(),
 					String.valueOf(context.getQueryRequest().getSimilarityThreshold()));
 		}
-		return SIMILARITY_THRESHOLD_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue topK(VectorStoreObservationContext context) {
+	protected KeyValues topK(KeyValues keyValues, VectorStoreObservationContext context) {
 		if (context.getQueryRequest() != null && context.getQueryRequest().getTopK() > 0) {
-			return KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K, "" + context.getQueryRequest().getTopK());
+			return keyValues.and(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString(),
+					"" + context.getQueryRequest().getTopK());
 		}
-		return TOP_K_NONE;
+		return keyValues;
 	}
 
 }

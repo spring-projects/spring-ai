@@ -116,6 +116,18 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 			}
 		},
 
+		// DB Search
+
+		/**
+		 * The metric used in similarity search.
+		 */
+		DB_SEARCH_SIMILARITY_METRIC {
+			@Override
+			public String asString() {
+				return VectorStoreObservationAttributes.DB_SEARCH_SIMILARITY_METRIC.value();
+			}
+		},
+
 		// DB Vector
 
 		/**
@@ -187,16 +199,6 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 			@Override
 			public String asString() {
 				return VectorStoreObservationAttributes.DB_VECTOR_QUERY_TOP_K.value();
-			}
-		},
-
-		/**
-		 * The metric used in similarity search.
-		 */
-		DB_VECTOR_SIMILARITY_METRIC {
-			@Override
-			public String asString() {
-				return VectorStoreObservationAttributes.DB_VECTOR_SIMILARITY_METRIC.value();
 			}
 		};
 
