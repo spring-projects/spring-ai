@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link AdvisorObservationContext}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 class AdvisorObservationContextTests {
 
@@ -42,14 +43,14 @@ class AdvisorObservationContextTests {
 		assertThatThrownBy(() -> AdvisorObservationContext.builder()
 			.withAdvisorType(AdvisorObservationContext.Type.BEFORE)
 			.build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("The advisorName must not be empty!");
+			.hasMessageContaining("advisorName must not be null or empty");
 	}
 
 	@Test
 	void missingAdvisorType() {
 		assertThatThrownBy(() -> AdvisorObservationContext.builder().withAdvisorName("MyName").build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("The advisorType must not be null!");
+			.hasMessageContaining("advisorType must not be null");
 	}
 
 }

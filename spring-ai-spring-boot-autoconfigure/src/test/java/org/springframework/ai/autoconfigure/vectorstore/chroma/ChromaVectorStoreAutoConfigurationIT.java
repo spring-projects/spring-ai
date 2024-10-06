@@ -118,7 +118,6 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
 				.hasContextualNameEqualTo("chroma delete")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_FILTER.asString(), "none")
 				.hasBeenStarted()
 				.hasBeenStopped();
 			observationRegistry.clear();

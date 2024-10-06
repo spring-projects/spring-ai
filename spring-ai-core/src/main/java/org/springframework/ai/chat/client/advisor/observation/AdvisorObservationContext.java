@@ -20,15 +20,18 @@ import java.util.Map;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import io.micrometer.observation.Observation;
 
 /**
+ * Context used to store metadata for chat client advisors.
+ *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-
 public class AdvisorObservationContext extends Observation.Context {
 
 	public enum Type {
@@ -37,35 +40,48 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	}
 
-	private String advisorName;
+	private final String advisorName;
 
-	private Type advisorType;
+	private final Type advisorType;
 
 	/**
 	 * The {@link AdvisedRequest} data to be advised. Represents the row
 	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
 	 */
+	@Nullable
 	private AdvisedRequest advisorRequest;
 
 	/**
 	 * The shared data between the advisors in the chain. It is shared between all request
 	 * and response advising points of all advisors in the chain.
 	 */
+	@Nullable
 	private Map<String, Object> advisorRequestContext;
 
 	/**
 	 * the shared data between the advisors in the chain. It is shared between all request
 	 * and response advising points of all advisors in the chain.
 	 */
+	@Nullable
 	private Map<String, Object> advisorResponseContext;
 
 	/**
 	 * The order of the advisor in the advisor chain.
 	 */
-	private int order;
+	private final int order;
 
-	public void setAdvisorName(String advisorName) {
+	public AdvisorObservationContext(String advisorName, Type advisorType, @Nullable AdvisedRequest advisorRequest,
+			@Nullable Map<String, Object> advisorRequestContext, @Nullable Map<String, Object> advisorResponseContext,
+			int order) {
+		Assert.hasText(advisorName, "advisorName must not be null or empty");
+		Assert.notNull(advisorType, "advisorType must not be null");
+
 		this.advisorName = advisorName;
+		this.advisorType = advisorType;
+		this.advisorRequest = advisorRequest;
+		this.advisorRequestContext = advisorRequestContext;
+		this.advisorResponseContext = advisorResponseContext;
+		this.order = order;
 	}
 
 	public String getAdvisorName() {
@@ -76,40 +92,35 @@ public class AdvisorObservationContext extends Observation.Context {
 		return this.advisorType;
 	}
 
-	public void setAdvisorType(Type type) {
-		this.advisorType = type;
-	}
-
+	@Nullable
 	public AdvisedRequest getAdvisedRequest() {
 		return this.advisorRequest;
 	}
 
-	public void setAdvisedRequest(AdvisedRequest advisedRequest) {
+	public void setAdvisedRequest(@Nullable AdvisedRequest advisedRequest) {
 		this.advisorRequest = advisedRequest;
 	}
 
+	@Nullable
 	public Map<String, Object> getAdvisorRequestContext() {
 		return this.advisorRequestContext;
 	}
 
-	public void setAdvisorRequestContext(Map<String, Object> advisorRequestContext) {
+	public void setAdvisorRequestContext(@Nullable Map<String, Object> advisorRequestContext) {
 		this.advisorRequestContext = advisorRequestContext;
 	}
 
+	@Nullable
 	public Map<String, Object> getAdvisorResponseContext() {
 		return this.advisorResponseContext;
 	}
 
-	public void setAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
+	public void setAdvisorResponseContext(@Nullable Map<String, Object> advisorResponseContext) {
 		this.advisorResponseContext = advisorResponseContext;
 	}
 
 	public int getOrder() {
 		return this.order;
-	}
-
-	public void setOrder(int order) {
-		this.order = order;
 	}
 
 	public static Builder builder() {
@@ -118,42 +129,51 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	public static class Builder {
 
-		private final AdvisorObservationContext context = new AdvisorObservationContext();
+		private String advisorName;
+
+		private Type advisorType;
+
+		private AdvisedRequest advisorRequest;
+
+		private Map<String, Object> advisorRequestContext;
+
+		private Map<String, Object> advisorResponseContext;
+
+		private int order = 0;
 
 		public Builder withAdvisorName(String advisorName) {
-			this.context.setAdvisorName(advisorName);
+			this.advisorName = advisorName;
 			return this;
 		}
 
 		public Builder withAdvisorType(Type advisorType) {
-			this.context.setAdvisorType(advisorType);
+			this.advisorType = advisorType;
 			return this;
 		}
 
 		public Builder withAdvisedRequest(AdvisedRequest advisedRequest) {
-			this.context.setAdvisedRequest(advisedRequest);
+			this.advisorRequest = advisedRequest;
 			return this;
 		}
 
 		public Builder withAdvisorRequestContext(Map<String, Object> advisorRequestContext) {
-			this.context.setAdvisorRequestContext(advisorRequestContext);
+			this.advisorRequestContext = advisorRequestContext;
 			return this;
 		}
 
 		public Builder withAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
-			this.context.setAdvisorResponseContext(advisorResponseContext);
+			this.advisorResponseContext = advisorResponseContext;
 			return this;
 		}
 
 		public Builder withOrder(int order) {
-			this.context.setOrder(order);
+			this.order = order;
 			return this;
 		}
 
 		public AdvisorObservationContext build() {
-			Assert.hasText(this.context.advisorName, "The advisorName must not be empty!");
-			Assert.notNull(this.context.advisorType, "The advisorType must not be null!");
-			return this.context;
+			return new AdvisorObservationContext(advisorName, advisorType, advisorRequest, advisorRequestContext,
+					advisorResponseContext, order);
 		}
 
 	}

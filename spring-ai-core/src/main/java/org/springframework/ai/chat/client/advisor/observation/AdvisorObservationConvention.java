@@ -19,6 +19,8 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 
 /**
+ * Interface for an {@link ObservationConvention} for chat client advisors.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */

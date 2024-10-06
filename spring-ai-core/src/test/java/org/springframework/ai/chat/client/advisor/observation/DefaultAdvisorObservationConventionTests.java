@@ -23,11 +23,13 @@ import org.springframework.ai.chat.client.advisor.observation.AdvisorObservation
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 
 /**
  * Unit tests for {@link DefaultAdvisorObservationConvention}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 class DefaultAdvisorObservationConventionTests {
 
@@ -64,8 +66,9 @@ class DefaultAdvisorObservationConventionTests {
 			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(), "AROUND"),
-				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "chat_client_advisor"));
+				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(),
+						AdvisorObservationContext.Type.AROUND.name()),
+				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), SpringAiKind.ADVISOR.value()));
 	}
 
 	@Test
