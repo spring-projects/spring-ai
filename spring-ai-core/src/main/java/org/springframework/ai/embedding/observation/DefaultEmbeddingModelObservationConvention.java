@@ -30,6 +30,9 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
 		.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
 
+	private static final KeyValue RESPONSE_MODEL_NONE = KeyValue
+		.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL, KeyValue.NONE_VALUE);
+
 	public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
 	@Override
@@ -48,9 +51,8 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(EmbeddingModelObservationContext context) {
-		var keyValues = KeyValues.of(aiOperationType(context), aiProvider(context), requestModel(context));
-		keyValues = responseModel(keyValues, context);
-		return keyValues;
+		return KeyValues.of(aiOperationType(context), aiProvider(context), requestModel(context),
+				responseModel(context));
 	}
 
 	protected KeyValue aiOperationType(EmbeddingModelObservationContext context) {
@@ -71,14 +73,13 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 		return REQUEST_MODEL_NONE;
 	}
 
-	protected KeyValues responseModel(KeyValues keyValues, EmbeddingModelObservationContext context) {
+	protected KeyValue responseModel(EmbeddingModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& StringUtils.hasText(context.getResponse().getMetadata().getModel())) {
-			return keyValues.and(
-					EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
+			return KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL,
 					context.getResponse().getMetadata().getModel());
 		}
-		return keyValues;
+		return RESPONSE_MODEL_NONE;
 	}
 
 	@Override
