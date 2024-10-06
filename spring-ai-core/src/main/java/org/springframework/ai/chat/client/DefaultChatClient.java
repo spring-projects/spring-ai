@@ -77,6 +77,7 @@ import reactor.core.scheduler.Schedulers;
  * @author Arjen Poutsma
  * @author Soby Chacko
  * @author Dariusz Jedrzejczyk
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -360,8 +361,11 @@ public class DefaultChatClient implements ChatClient {
 		private ChatResponse doGetObservableChatResponse(DefaultChatClientRequestSpec inputRequest,
 				String formatParam) {
 
-			ChatClientObservationContext observationContext = new ChatClientObservationContext(inputRequest,
-					formatParam, false);
+			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+				.withRequest(inputRequest)
+				.withFormat(formatParam)
+				.withStream(false)
+				.build();
 
 			var observation = ChatClientObservationDocumentation.AI_CHAT_CLIENT.observation(
 					inputRequest.getCustomObservationConvention(), DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION,
@@ -407,8 +411,10 @@ public class DefaultChatClient implements ChatClient {
 		private Flux<ChatResponse> doGetObservableFluxChatResponse(DefaultChatClientRequestSpec inputRequest) {
 			return Flux.deferContextual(contextView -> {
 
-				ChatClientObservationContext observationContext = new ChatClientObservationContext(inputRequest, "",
-						true);
+				ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+					.withRequest(inputRequest)
+					.withStream(true)
+					.build();
 
 				Observation observation = ChatClientObservationDocumentation.AI_CHAT_CLIENT.observation(
 						inputRequest.getCustomObservationConvention(), DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION,

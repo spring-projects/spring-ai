@@ -17,6 +17,7 @@ package org.springframework.ai.chat.client.advisor.observation;
 
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.lang.Nullable;
 
@@ -27,18 +28,9 @@ import io.micrometer.common.KeyValues;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-
 public class DefaultAdvisorObservationConvention implements AdvisorObservationConvention {
 
-	public static final String DEFAULT_NAME = "spring.ai.chat.client.advisor";
-
-	private static final String CHAT_CLIENT_ADVISOR_SPRING_AI_KIND = "chat_client_advisor";
-
-	private static final KeyValue ADVISOR_TYPE_NONE = KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue ADVISOR_NAME_NONE = KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME,
-			KeyValue.NONE_VALUE);
+	public static final String DEFAULT_NAME = "spring.ai.advisor";
 
 	private final String name;
 
@@ -73,15 +65,12 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	}
 
 	protected KeyValue advisorType(AdvisorObservationContext context) {
-		if (context.getAdvisorType() != null) {
-			return KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, context.getAdvisorType().name());
-		}
-		return ADVISOR_TYPE_NONE;
+		return KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, context.getAdvisorType().name());
 	}
 
 	protected KeyValue springAiKind() {
 		return KeyValue.of(AdvisorObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
-				CHAT_CLIENT_ADVISOR_SPRING_AI_KIND);
+				SpringAiKind.ADVISOR.value());
 	}
 
 	// ------------------------
@@ -94,10 +83,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	}
 
 	protected KeyValue advisorName(AdvisorObservationContext context) {
-		if (context.getAdvisorType() != null) {
-			return KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
-		}
-		return ADVISOR_NAME_NONE;
+		return KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
 	}
 
 	protected KeyValue advisorOrder(AdvisorObservationContext context) {

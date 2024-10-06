@@ -85,6 +85,7 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.withAdvisedRequest(advisedRequest)
 			.withAdvisorRequestContext(advisedRequest.adviseContext())
+			.withOrder(advisor.getOrder())
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
@@ -106,6 +107,7 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 				.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 				.withAdvisedRequest(advisedRequest)
 				.withAdvisorRequestContext(advisedRequest.adviseContext())
+				.withOrder(advisor.getOrder())
 				.build();
 
 			var observation = AdvisorObservationDocumentation.AI_ADVISOR.observation(null,

@@ -13,33 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.observation.conventions;
 
-/**
- * Types of Spring AI constructs which can be observed.
- *
- * @author Thomas Vitale
- * @since 1.0.0
- */
-public enum SpringAiKind {
+@NonNullApi
+@NonNullFields
+package org.springframework.ai.chat.client.observation;
 
-	// @formatter:off
-
-	// Please, keep the alphabetical sorting.
-	ADVISOR("advisor"),
-	CHAT_CLIENT("chat_client"),
-	VECTOR_STORE("vector_store");
-
-	private final String value;
-
-	SpringAiKind(String value) {
-		this.value = value;
-	}
-
-	public String value() {
-		return this.value;
-	}
-
-	// @formatter:on
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;

@@ -38,11 +38,14 @@ import org.springframework.ai.model.function.FunctionCallback;
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 
 /**
  * Unit tests for {@link DefaultChatClientObservationConvention}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 class DefaultChatClientObservationConventionTests {
@@ -67,14 +70,21 @@ class DefaultChatClientObservationConventionTests {
 
 	@Test
 	void shouldHaveContextualName() {
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withStream(true)
+			.build();
 
-		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("spring_ai chat_client");
+		assertThat(this.observationConvention.getContextualName(observationContext))
+			.isEqualTo("%s %s".formatted(AiProvider.SPRING_AI.value(), SpringAiKind.CHAT_CLIENT.value()));
 	}
 
 	@Test
 	void supportsOnlyChatClientObservationContext() {
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withStream(true)
+			.build();
 
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
@@ -82,7 +92,10 @@ class DefaultChatClientObservationConventionTests {
 
 	@Test
 	void shouldHaveRequiredKeyValues() {
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withStream(true)
+			.build();
 
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "chat_client"),
@@ -143,38 +156,27 @@ class DefaultChatClientObservationConventionTests {
 
 	@Test
 	void shouldHaveOptionalKeyValues() {
-
 		var request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(),
 				List.of(dummyFunction("functionCallback1"), dummyFunction("functionCallback2")), List.of(),
 				List.of("function1", "function2"), List.of(), null,
 				List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")), Map.of("advParam1", "advisorParam1Value"),
 				ObservationRegistry.NOOP, null);
 
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "json", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withFormat("json")
+			.withStream(true)
+			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(),
-						"[\"advisor1\",\"advisor2\",\"CallAroundAdvisor\",\"StreamAroundAdvisor\"]"),
+						"[\"advisor1\", \"advisor2\", \"CallAroundAdvisor\", \"StreamAroundAdvisor\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),
 						"[\"advParam1\":\"advisorParam1Value\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(),
-						"[\"function1\",\"function2\"]"),
+						"[\"function1\", \"function2\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS.asString(),
-						"[\"functionCallback1\",\"functionCallback2\"]"));
-	}
-
-	static class TestUsage implements Usage {
-
-		@Override
-		public Long getPromptTokens() {
-			return 1000L;
-		}
-
-		@Override
-		public Long getGenerationTokens() {
-			return 500L;
-		}
-
+						"[\"functionCallback1\", \"functionCallback2\"]"));
 	}
 
 }
