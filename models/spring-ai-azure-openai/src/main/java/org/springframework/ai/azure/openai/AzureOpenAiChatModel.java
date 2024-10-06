@@ -21,6 +21,7 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.models.*;
 import com.azure.core.util.BinaryData;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiUsage;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -37,6 +38,7 @@ import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -51,8 +53,9 @@ import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -62,6 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -189,51 +193,83 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
-		options.setStream(true);
+		return Flux.deferContextual(contextView -> {
+			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
+			options.setStream(true);
 
-		Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
-			.getChatCompletionsStream(options.getModel(), options);
+			Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
+				.getChatCompletionsStream(options.getModel(), options);
 
-		final var isFunctionCall = new AtomicBoolean(false);
-		final Flux<ChatCompletions> accessibleChatCompletionsFlux = chatCompletionsStream
-			// Note: the first chat completions can be ignored when using Azure OpenAI
-			// service which is a known service bug.
-			.filter(chatCompletions -> !CollectionUtils.isEmpty(chatCompletions.getChoices()))
-			.map(chatCompletions -> {
-				final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
-				isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
-				return chatCompletions;
-			})
-			.windowUntil(chatCompletions -> {
-				if (isFunctionCall.get() && chatCompletions.getChoices()
-					.get(0)
-					.getFinishReason() == CompletionsFinishReason.TOOL_CALLS) {
-					isFunctionCall.set(false);
-					return true;
+			// For chunked responses, only the first chunk contains the choice role.
+			// The rest of the chunks with same ID share the same role.
+			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+
+			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+				.prompt(prompt)
+				.provider(AiProvider.AZURE_OPENAI.value())
+				.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
+				.build();
+
+			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry);
+
+			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
+			final var isFunctionCall = new AtomicBoolean(false);
+
+			final Flux<ChatCompletions> accessibleChatCompletionsFlux = chatCompletionsStream
+				// Note: the first chat completions can be ignored when using Azure OpenAI
+				// service which is a known service bug.
+				.filter(chatCompletions -> !CollectionUtils.isEmpty(chatCompletions.getChoices()))
+				.map(chatCompletions -> {
+					final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
+					isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
+					return chatCompletions;
+				})
+				.windowUntil(chatCompletions -> {
+					if (isFunctionCall.get() && chatCompletions.getChoices()
+						.get(0)
+						.getFinishReason() == CompletionsFinishReason.TOOL_CALLS) {
+						isFunctionCall.set(false);
+						return true;
+					}
+					return !isFunctionCall.get();
+				})
+				.concatMapIterable(window -> {
+					final var reduce = window.reduce(MergeUtils.emptyChatCompletions(),
+							MergeUtils::mergeChatCompletions);
+					return List.of(reduce);
+				})
+				.flatMap(mono -> mono);
+
+			return accessibleChatCompletionsFlux.switchMap(chatCompletions -> {
+
+				ChatResponse chatResponse = toChatResponse(chatCompletions);
+
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
+						Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
+					var toolCallConversation = handleToolCalls(prompt, chatResponse);
+					// Recursively call the call method with the tool call message
+					// conversation that contains the call responses.
+					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 				}
-				return !isFunctionCall.get();
-			})
-			.concatMapIterable(window -> {
-				final var reduce = window.reduce(MergeUtils.emptyChatCompletions(), MergeUtils::mergeChatCompletions);
-				return List.of(reduce);
-			})
-			.flatMap(mono -> mono);
 
-		return accessibleChatCompletionsFlux.switchMap(chatCompletions -> {
+				Flux<ChatResponse> flux = Flux.just(chatResponse).doOnError(observation::error).doFinally(s -> {
+					// TODO: Consider a custom ObservationContext and
+					// include additional metadata
+					// if (s == SignalType.CANCEL) {
+					// observationContext.setAborted(true);
+					// }
+					observation.stop();
+				}).contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				// @formatter:on
 
-			ChatResponse chatResponse = toChatResponse(chatCompletions);
+				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			});
 
-			if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
-					Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
-				var toolCallConversation = handleToolCalls(prompt, chatResponse);
-				// Recursively call the call method with the tool call message
-				// conversation that contains the call responses.
-				return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
-			}
-
-			return Mono.just(chatResponse);
 		});
+
 	}
 
 	private ChatResponse toChatResponse(ChatCompletions chatCompletions) {
