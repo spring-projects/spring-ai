@@ -1,111 +1,126 @@
 [[introduction]]
 = Observability
 
-Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations.  Spring AI provides metrics and tracing capabilities for its core components: ChatClient (including Advisors), ChatModel, EmbeddingModel, ImageModel and VectorStore.
+Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations.
+Spring AI provides metrics and tracing capabilities for its core components: `ChatClient` (including `Advisor`),
+`ChatModel`, `EmbeddingModel`, `ImageModel`, and `VectorStore`.
 
 NOTE: Low cardinality keys will be added to metrics and traces, while high cardinality keys will only be added to traces.
 
+== Chat Client
 
-== ChatClient
-
-.Low cardinality Keys
+.Low Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`gen_ai.operation.name` |`framework`
-|`gen_ai.system` |`spring_ai`
-|`spring.ai.kind` |Spring AI kind - `chat_client`
-|`spring.ai.chat.client.stream` |Is the chat model response a stream - `true or false`
+|`gen_ai.operation.name` | Always `framework`.
+|`gen_ai.system` | Always `spring_ai`.
+|`spring.ai.chat.client.stream` | Is the chat model response a stream - `true or false`
+|`spring.ai.kind` | The kind of framework API in Spring AI: `chat_client`.
 |===
 
-.High cardinality Keys
+.High Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`spring.ai.chat.client.advisor.params` |Map of advisor parameters.
-|`spring.ai.chat.client.advisors` |List of configured chat client advisors.
-|`spring.ai.chat.client.stream` |Is the chat model response a stream.
-|`spring.ai.chat.client.system.params` |Chat client system parameters.
-|`spring.ai.chat.client.system.text` |Chat client system text.
-|`spring.ai.chat.client.tool.function.names` |Enabled tool function names.
-|`spring.ai.chat.client.tool.functioncallbacks` |List of configured chat client function callbacks.
-|`spring.ai.chat.client.user.params` |Chat client user parameters.
-|`spring.ai.chat.client.user.text` |Chat client user text.
+|`spring.ai.chat.client.advisor.params` | Map of advisor parameters.
+|`spring.ai.chat.client.advisors` | List of configured chat client advisors.
+|`spring.ai.chat.client.system.params` |Chat client system parameters. Optional.
+|`spring.ai.chat.client.system.text` |Chat client system text. Optional.
+|`spring.ai.chat.client.tool.function.names` | Enabled tool function names.
+|`spring.ai.chat.client.tool.function.callbacks` |List of configured chat client function callbacks.
+|`spring.ai.chat.client.user.params` | Chat client user parameters. Optional.
+|`spring.ai.chat.client.user.text` | Chat client user text. Optional.
 |===
 
-=== ChatClient input data
+=== Input Data
 
-The ChatClient input data is typically too big to be included in an observation as span attributes.
-The preferred way to store large data it is as span events, which are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
-Spring AI supports storing these fields as events in OpenTelemetry and will provide a more general event based solution once the issue https://github.com/micrometer-metrics/micrometer/issues/5238 is resolved.
+The `ChatClient` input data is typically big and possibly containing sensitive information.
+For those reasons, it is not exported by default.
+
+Spring AI supports exporting input data as span attributes across all tracing backends.
 
 [cols="6,3,1"]
 |====
 | Property | Description | Default
-| `spring.ai.chat.client.observations.include-input` |  Enables the inclusion of the input content in the observations. This brings the risk of exposing sensitive or private information. Please, be careful! | `false`
+| `spring.ai.chat.client.observations.include-input` |  Whether to include the input content in the observations. | `false`
 |====
 
+WARNING: If you enable the inclusion of the input content in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
 
-=== ChatClient Advisors
+=== Chat Client Advisors
 
 .Low Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`spring.ai.kind` |Spring AI kind - `chat_client_advisor`
-|`spring.ai.chat.client.advisor.type` | Where the advisor applies it's logic in the request processing, one of `BEFORE`, `AFTER`, or `AROUND`.
+|`gen_ai.operation.name` | Always `framework`.
+|`gen_ai.system` | Always `spring_ai`.
+|`spring.ai.advisor.type` | Where the advisor applies it's logic in the request processing, one of `BEFORE`, `AFTER`, or `AROUND`.
+|`spring.ai.kind` | The kind of framework API in Spring AI: `advisor`.
 |===
 
 .High Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`spring.ai.chat.client.advisor.name`| Name of the advisor
+|`spring.ai.advisor.name`| Name of the advisor.
+|`spring.ai.advisor.order`| Advisor order in the advisor chain.
 |===
 
+== Chat Model
 
-
-== ChatModel
-
-NOTE: Observability features are currently supported only for ChatModel and EmbeddingModel implementations from the following AI model providers: OpenAI, Ollama, Anthropic, and Mistral.  Additional AI model providers will be supported in a future release.
-
+NOTE: Observability features are currently supported only for `ChatModel` implementations from the following AI model
+providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, and OpenAI.
+Additional AI model providers will be supported in a future release.
 
 .Low Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`gen_ai.operation.name` |The name of the operation being performed.
-|`gen_ai.system` |The model provider as identified by the client instrumentation.
-|`gen_ai.request.model` |The name of the model a request is being made to.
-|`gen_ai.response.model` |The name of the model that generated the response.
+|`gen_ai.operation.name` | The name of the operation being performed.
+|`gen_ai.system` | The model provider as identified by the client instrumentation.
+|`gen_ai.request.model` | The name of the model a request is being made to.
+|`gen_ai.response.model` | The name of the model that generated the response.
 |===
 
 .High Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`gen_ai.request.frequency_penalty` |The frequency penalty setting for the model request.
-|`gen_ai.request.max_tokens` |The maximum number of tokens the model generates for a request.
-|`gen_ai.request.presence_penalty` |The presence penalty setting for the model request.
-|`gen_ai.request.stop_sequences` |List of sequences that the model will use to stop generating further tokens.
-|`gen_ai.request.temperature` |The temperature setting for the model request.
-|`gen_ai.request.top_k` |The top_k sampling setting for the model request.
-|`gen_ai.request.top_p` |The top_p sampling setting for the model request.
-|`gen_ai.response.finish_reasons` |Reasons the model stopped generating tokens, corresponding to each generation received.
-|`gen_ai.response.id` |The unique identifier for the AI response.
-|`gen_ai.usage.input_tokens` |The number of tokens used in the model input (prompt).
-|`gen_ai.usage.output_tokens` |The number of tokens used in the model output (completion).
-|`gen_ai.usage.total_tokens` |The total number of tokens used in the model exchange.
-|`gen_ai.prompt` |The full prompt sent to the model.
-|`gen_ai.completion` |The full response received from the model.
+|`gen_ai.request.frequency_penalty` | The frequency penalty setting for the model request.
+|`gen_ai.request.max_tokens` | The maximum number of tokens the model generates for a request.
+|`gen_ai.request.presence_penalty` | The presence penalty setting for the model request.
+|`gen_ai.request.stop_sequences` | List of sequences that the model will use to stop generating further tokens.
+|`gen_ai.request.temperature` | The temperature setting for the model request.
+|`gen_ai.request.top_k` | The top_k sampling setting for the model request.
+|`gen_ai.request.top_p` | The top_p sampling setting for the model request.
+|`gen_ai.response.finish_reasons` | Reasons the model stopped generating tokens, corresponding to each generation received.
+|`gen_ai.response.id` | The unique identifier for the AI response.
+|`gen_ai.usage.input_tokens` | The number of tokens used in the model input (prompt).
+|`gen_ai.usage.output_tokens` | The number of tokens used in the model output (completion).
+|`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
+|`gen_ai.prompt` | The full prompt sent to the model. Optional.
+|`gen_ai.completion` | The full response received from the model. Optional.
 |===
 
-=== Chat prompt and completion data
+.Events
+[cols="a,a"]
+|===
+|Name | Description
+|`gen_ai.content.prompt` | Event including the content of the chat prompt. Optional.
+|`gen_ai.content.completion` | Event including the content of the chat completion. Optional.
+|===
 
-The chat prompt and completion data are typically too big to be included in an observation as span attributes.
-The preferred way to store large data it is as span events, which are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
-Spring AI supports storing these fields as events in OpenTelemetry and will provide a more general event based solution once the issue https://github.com/micrometer-metrics/micrometer/issues/5238 is resolved.
+=== Chat Prompt and Completion Data
 
+The chat prompt and completion data is typically big and possibly containing sensitive information.
+For those reasons, it is not exported by default.
+
+Spring AI supports exporting chat prompt and completion data as span events if you use an OpenTelemetry tracing backend,
+whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
+
+Furthermore, Spring AI supports logging chat prompt and completion data, useful for troubleshooting scenarios.
 
 [cols="6,3,1"]
 |====
@@ -114,66 +129,85 @@ Spring AI supports storing these fields as events in OpenTelemetry and will prov
 | `spring.ai.chat.observations.include-completion` | Include the completion content in observations. `true` or `false` | `false`
 | `spring.ai.chat.observations.include-error-logging` | Include error logging in observations. `true` or `false` | `false`
 |====
+
+WARNING: If you enable the inclusion of the chat prompt and completion data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+
 == EmbeddingModel
 
-NOTE: Observability features are currently supported only for ChatModel and EmbeddingModel implementations from the following AI model providers: OpenAI, Ollama, Anthropic, and Mistral.  Additional AI model providers will be supported in a future release.
+NOTE: Observability features are currently supported only for `EmbeddingModel` implementations from the following
+AI model providers: Azure OpenAI, Mistral AI, Ollama, and OpenAI.
+Additional AI model providers will be supported in a future release.
 
 .Low Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`gen_ai.operation.name` |The name of the operation being performed.
-|`gen_ai.system` |The model provider as identified by the client instrumentation.
-|`gen_ai.request.model` |The name of the model a request is being made to.
-|`gen_ai.response.model` |The name of the model that generated the response.
+|`gen_ai.operation.name` | The name of the operation being performed.
+|`gen_ai.system` | The model provider as identified by the client instrumentation.
+|`gen_ai.request.model` | The name of the model a request is being made to.
+|`gen_ai.response.model` | The name of the model that generated the response.
 |===
 
 .High Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`gen_ai.request.embedding.dimensions` |The number of dimensions the resulting output embeddings have.
-|`gen_ai.usage.input_tokens` |The number of tokens used in the model input.
-|`gen_ai.usage.total_tokens` |The total number of tokens used in the model exchange.
+|`gen_ai.request.embedding.dimensions` | The number of dimensions the resulting output embeddings have.
+|`gen_ai.usage.input_tokens` | The number of tokens used in the model input.
+|`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |===
 
-== ImageModel
+== Image Model
 
+NOTE: Observability features are currently supported only for `ImageModel` implementations from the following AI model
+providers: OpenAI.
+Additional AI model providers will be supported in a future release.
 
 .Low Cardinality Keys
 [cols="a,a"]
 |===
 |Name | Description
-|`gen_ai.operation.name`|The name of the operation being performed.
-|`gen_ai.system`|The model provider as identified by the client instrumentation.
-|`gen_ai.request.model`|The name of the model a request is being made to.
+|`gen_ai.operation.name`| The name of the operation being performed.
+|`gen_ai.system`| The model provider as identified by the client instrumentation.
+|`gen_ai.request.model`| The name of the model a request is being made to.
 |===
 
 .High Cardinality Keys
 |===
 |Name | Description
-|`gen_ai.request.image.response_format` |The format in which the generated image is returned.
-|`gen_ai.request.image.size` |The size of the image to generate.
-|`gen_ai.request.image.style` |The style of the image to generate.
-|`gen_ai.response.id` |The unique identifier for the AI response.
-|``gen_ai.response.model`` |The name of the model that generated the response.
-|`gen_ai.usage.input_tokens` |The number of tokens used in the model input (prompt).
-|`gen_ai.usage.output_tokens` |The number of tokens used in the model output (generation).
-|`gen_ai.usage.total_tokens` |The total number of tokens used in the model exchange.
-|`gen_ai.prompt` |The full prompt sent to the model.
+|`gen_ai.request.image.response_format` | The format in which the generated image is returned.
+|`gen_ai.request.image.size` | The size of the image to generate.
+|`gen_ai.request.image.style` | The style of the image to generate.
+|`gen_ai.response.id` | The unique identifier for the AI response.
+|`gen_ai.response.model` | The name of the model that generated the response.
+|`gen_ai.usage.input_tokens` | The number of tokens used in the model input (prompt).
+|`gen_ai.usage.output_tokens` | The number of tokens used in the model output (generation).
+|`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
+|`gen_ai.prompt` | The full prompt sent to the model. Optional.
 |===
 
-=== Image prompt data
+.Events
+[cols="a,a"]
+|===
+|Name | Description
+|`gen_ai.content.prompt` | Event including the content of the image prompt. Optional.
+|===
 
-The image prompt data are typically too big to be included in an observation as span attributes.
-The preferred way to store large data it is as span events, which are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
-Spring AI supports storing these fields as events in OpenTelemetry and will provide a more general event based solution once the issue https://github.com/micrometer-metrics/micrometer/issues/5238 is resolved.
+=== Image Prompt Data
+
+The image prompt data is typically big and possibly containing sensitive information.
+For those reasons, it is not exported by default.
+
+Spring AI supports exporting image prompt data as span events if you use an OpenTelemetry tracing backend,
+whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
 
 [cols="6,3,1"]
 |===
 | Property | Description | Default
 | `spring.ai.image.observations.include-prompt` | `true` or `false` | `false`
 |===
+
+WARNING: If you enable the inclusion of the image prompt data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
 
 == Vector Stores
 
@@ -183,9 +217,9 @@ All vector store implementations in Spring AI are instrumented to provide metric
 [cols="a,a"]
 |===
 |Name | Description
-|`spring.ai.kind` |Spring AI kind - `vector_store`
-|`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `hana`, `simple`
-|`db.operation.name` |The name of the operation or command being executed.  One of `add`, `delete`, or `query`.
+|`db.operation.name` | The name of the operation or command being executed. One of `add`, `delete`, or `query`.
+|`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `hana`, `simple`.
+|`spring.ai.kind` | The kind of framework API in Spring AI: `vector_store`.
 |===
 
 .High Cardinality Keys
@@ -193,27 +227,37 @@ All vector store implementations in Spring AI are instrumented to provide metric
 |===
 |Name | Description
 |`db.collection.name` | The name of a collection (table, container) within the database.
+|`db.namespace` | The name of the database, fully qualified within the server address and port.
+|`db.record.id` | The record identifier if present.
+|`db.search.similarity_metric` | The metric used in similarity search.
 |`db.vector.dimension_count` | The dimension of the vector.
 |`db.vector.field_name` | The name field as of the vector (e.g. a field name).
-|`db.vector.query.filter` | The metadata filters used in the search query.
-|`db.namespace` | The namespace of the database.
 |`db.vector.query.content` | The content of the search query being executed.
-|`db.vector.query.response.documents` | Returned documents from a similarity search query.  Needs to be enabled with auto-configuration and use of OpenTelemetry events.
-|`db.vector.similarity_metric` | The metric used in similarity search.
+|`db.vector.query.filter` | The metadata filters used in the search query.
+|`db.vector.query.response.documents` | Returned documents from a similarity search query. Optional.
 |`db.vector.query.similarity_threshold` | Similarity threshold that accepts all search scores. A threshold value of 0.0 means any similarity is accepted or disable the similarity threshold filtering. A threshold value of 1.0 means an exact match is required.
 |`db.vector.query.top_k` | The top-k most similar vectors returned by a query.
 |===
 
+.Events
+[cols="a,a"]
+|===
+|Name | Description
+|`db.vector.content.query.response` | Event including the vector search response data. Optional.
+|===
 
+=== Response Data
 
-=== Vector Store response data
+The vector search response data is typically big and possibly containing sensitive information.
+For those reasons, it is not exported by default.
 
-The Vector Store response data are typically too big to be included in an observation as span attributes.
-The preferred way to store large data it is as span events, which are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
-Spring AI supports storing these fields as events in OpenTelemetry and will provide a more general event based solution once the issue https://github.com/micrometer-metrics/micrometer/issues/5238 is resolved.
+Spring AI supports exporting vector search response data as span events if you use an OpenTelemetry tracing backend,
+whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
 
 [cols="6,3,1"]
 |===
 | Property | Description | Default
 | `spring.ai.vectorstore.observations.include-query-response` | `true` or `false` | `false`
 |===
+
+WARNING: If you enable the inclusion of the vector search response data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
