@@ -47,12 +47,13 @@ import io.weaviate.client.WeaviateClient;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class WeaviateVectorStoreIT {
 
 	@Container
-	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.25.4")
+	static WeaviateContainer weaviateContainer = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

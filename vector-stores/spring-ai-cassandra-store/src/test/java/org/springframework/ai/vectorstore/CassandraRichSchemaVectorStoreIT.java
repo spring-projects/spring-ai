@@ -36,11 +36,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.CassandraImage;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
-import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -61,12 +61,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Use `mvn failsafe:integration-test -Dit.test=CassandraRichSchemaVectorStoreIT`
  *
  * @author Mick Semb Wever
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @Testcontainers
 class CassandraRichSchemaVectorStoreIT {
-
-	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("cassandra");
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraRichSchemaVectorStoreIT.class);
 
@@ -87,7 +86,7 @@ class CassandraRichSchemaVectorStoreIT {
 	private static final String URANUS_ORBIT_QUERY = "It was the first planet to be discovered using mathematics. In 1821, astronomers saw that Uranus orbit was different from what they expected. Another nearby planets mass was changing Uranus orbit.";
 
 	@Container
-	static CassandraContainer cassandraContainer = new CassandraContainer(DEFAULT_IMAGE_NAME.withTag("5.0"));
+	static CassandraContainer<?> cassandraContainer = new CassandraContainer<>(CassandraImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);

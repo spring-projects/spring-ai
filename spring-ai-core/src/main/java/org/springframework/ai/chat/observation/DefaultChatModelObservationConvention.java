@@ -34,6 +34,9 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
 		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
 
+	private static final KeyValue RESPONSE_MODEL_NONE = KeyValue
+		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL, KeyValue.NONE_VALUE);
+
 	public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
 	@Override
@@ -52,9 +55,8 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(ChatModelObservationContext context) {
-		var keyValues = KeyValues.of(aiOperationType(context), aiProvider(context), requestModel(context));
-		keyValues = responseModel(keyValues, context);
-		return keyValues;
+		return KeyValues.of(aiOperationType(context), aiProvider(context), requestModel(context),
+				responseModel(context));
 	}
 
 	protected KeyValue aiOperationType(ChatModelObservationContext context) {
@@ -75,13 +77,13 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		return REQUEST_MODEL_NONE;
 	}
 
-	protected KeyValues responseModel(KeyValues keyValues, ChatModelObservationContext context) {
+	protected KeyValue responseModel(ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& StringUtils.hasText(context.getResponse().getMetadata().getModel())) {
-			return keyValues.and(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
+			return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL,
 					context.getResponse().getMetadata().getModel());
 		}
-		return keyValues;
+		return RESPONSE_MODEL_NONE;
 	}
 
 	@Override

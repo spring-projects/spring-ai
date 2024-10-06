@@ -21,6 +21,8 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
+ * Documented conventions for chat client observations.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -88,7 +90,7 @@ public enum ChatClientObservationDocumentation implements ObservationDocumentati
 		CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS {
 			@Override
 			public String asString() {
-				return "spring.ai.chat.client.tool.functioncallbacks";
+				return "spring.ai.chat.client.tool.function.callbacks";
 			}
 		},
 

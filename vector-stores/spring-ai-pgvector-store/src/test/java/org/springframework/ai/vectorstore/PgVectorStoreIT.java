@@ -62,6 +62,7 @@ import com.zaxxer.hikari.HikariDataSource;
 /**
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -69,7 +70,7 @@ public class PgVectorStoreIT {
 
 	@Container
 	@SuppressWarnings("resource")
-	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
 		.withPassword("postgres");
 

@@ -25,8 +25,9 @@ public enum SpringAiKind {
 
 	// @formatter:off
 
+	// Please, keep the alphabetical sorting.
+	ADVISOR("advisor"),
 	CHAT_CLIENT("chat_client"),
-	CHAT_CLIENT_ADVISOR("chat_client_advisor"),
 	VECTOR_STORE("vector_store");
 
 	private final String value;

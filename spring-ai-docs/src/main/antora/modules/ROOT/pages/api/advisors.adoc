@@ -62,20 +62,20 @@ The execution order of advisors in the chain is determined by the `getOrder()` m
 
 * Advisors with lower order values are executed first.
 * The advisor chain operates as a stack:
-** The first advisor in the chain is the last to process the request.
-** It is also the first to process the response.
+** The first advisor in the chain is the first to process the request.
+** It is also the last to process the response.
 * To control execution order:
-** Set the order close to `Ordered.HIGHEST_PRECEDENCE` to ensure an advisor is executed first in the chain (last for request processing, first for response processing).
-** Set the order close to `Ordered.LOWEST_PRECEDENCE` to ensure an advisor is executed last in the chain (first for request processing, last for response processing).
+** Set the order close to `Ordered.HIGHEST_PRECEDENCE` to ensure an advisor is executed first in the chain (first for request processing, last for response processing).
+** Set the order close to `Ordered.LOWEST_PRECEDENCE` to ensure an advisor is executed last in the chain (last for request processing, first for response processing).
 * Higher values are interpreted as lower priority.
 * If multiple advisors have the same order value, their execution order is not guaranteed.
 
 [NOTE]
 ====
 The seeming contradiction between order and execution sequence is due to the stack-like nature of the advisor chain:
-* An advisor with the highest precedence (lowest order value) is added to the bottom of the stack.
-* It will be the last to process the request as the stack unwinds.
-* It will be the first to process the response as the stack rewinds.
+* An advisor with the highest precedence (lowest order value) is added to the top of the stack.
+* It will be the first to process the request as the stack unwinds.
+* It will be the last to process the response as the stack rewinds.
 ====
 
 As a reminder, here are the semantics of the Spring `Ordered` interface:

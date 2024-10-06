@@ -49,12 +49,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Pablo Sanchidrian Herrera
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class TypesenseVectorStoreIT {
 
 	@Container
-	private static GenericContainer<?> typesenseContainer = new GenericContainer<>("typesense/typesense:26.0")
+	private static GenericContainer<?> typesenseContainer = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
 		.withExposedPorts(8108)
 		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors");
 

@@ -31,7 +31,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -49,17 +48,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Gerrit Meier
  * @author Michael Simons
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class Neo4jVectorStoreIT {
 
-	// Needs to be Neo4j 5.15+, because Neo4j 5.15 deprecated the old vector index
-	// creation
-	// function.
 	@Container
-	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.18"))
-		.withRandomPassword();
+	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(Neo4jImage.DEFAULT_IMAGE).withRandomPassword();
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",

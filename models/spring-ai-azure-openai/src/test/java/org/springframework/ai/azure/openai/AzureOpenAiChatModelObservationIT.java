@@ -19,7 +19,9 @@ import static com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -41,6 +43,7 @@ import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.http.policy.HttpLogOptions;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Soby Chacko
@@ -55,6 +58,11 @@ class AzureOpenAiChatModelObservationIT {
 
 	@Autowired
 	TestObservationRegistry observationRegistry;
+
+	@BeforeEach
+	void beforeEach() {
+		observationRegistry.clear();
+	}
 
 	@Test
 	void observationForImperativeChatOperation() {
@@ -76,22 +84,63 @@ class AzureOpenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(observationRegistry)
+	@Test
+	void observationForStreamingChatOperation() {
+
+		var options = AzureOpenAiChatOptions.builder()
+			.withFrequencyPenalty(0.0)
+			.withDeploymentName("gpt-4o")
+			.withMaxTokens(2048)
+			.withPresencePenalty(0.0)
+			.withStop(List.of("this-is-the-end"))
+			.withTemperature(0.7)
+			.withTopP(1.0)
+			.build();
+
+		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
+
+		Flux<ChatResponse> chatResponseFlux = chatModel.stream(prompt);
+		List<ChatResponse> responses = chatResponseFlux.collectList().block();
+		assertThat(responses).isNotEmpty();
+		assertThat(responses).hasSizeGreaterThan(10);
+
+		String aggregatedResponse = responses.subList(0, responses.size() - 1)
+			.stream()
+			.map(r -> r.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+		assertThat(aggregatedResponse).isNotEmpty();
+
+		ChatResponse lastChatResponse = responses.get(responses.size() - 1);
+
+		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
+
+		validate(responseMetadata, false);
+	}
+
+	private void validate(ChatResponseMetadata responseMetadata, boolean checkModel) {
+
+		TestObservationRegistryAssert.That that = TestObservationRegistryAssert.assertThat(observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
-			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
-			.that()
+			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME);
+
+		// TODO - Investigate why streaming does not contain model in the response.
+		if (checkModel) {
+			that.that()
+				.hasLowCardinalityKeyValue(
+						ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
+						responseMetadata.getModel());
+		}
+
+		that.that()
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
 					AiProvider.AZURE_OPENAI.value())
-			.hasLowCardinalityKeyValue(
-					ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
-					responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
 					"0.0")

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ChromaImage;
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -40,12 +41,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class ChromaVectorStoreIT {
 
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0");
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",

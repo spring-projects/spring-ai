@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.mistralai;
 
+import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,18 +128,9 @@ public class MistralAiChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.MISTRAL_AI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-			.matches(contextView -> {
-				var keyValue = contextView.getLowCardinalityKeyValues()
-					.stream()
-					.filter(tag -> tag.getKey().equals(LowCardinalityKeyNames.RESPONSE_MODEL.asString()))
-					.findFirst();
-				if (StringUtils.hasText(responseMetadata.getModel())) {
-					return keyValue.isPresent() && keyValue.get().getValue().equals(responseMetadata.getModel());
-				}
-				else {
-					return keyValue.isEmpty();
-				}
-			})
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
+					StringUtils.hasText(responseMetadata.getModel()) ? responseMetadata.getModel()
+							: KeyValue.NONE_VALUE)
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString())

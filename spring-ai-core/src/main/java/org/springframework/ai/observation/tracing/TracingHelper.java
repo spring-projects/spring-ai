@@ -28,6 +28,7 @@ import org.springframework.util.StringUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 
 /**
@@ -64,10 +65,16 @@ public final class TracingHelper {
 		return null;
 	}
 
+	public static String concatenateMaps(Map<String, Object> keyValues) {
+		var keyValuesJoiner = new StringJoiner(", ", "[", "]");
+		keyValues.forEach((key, value) -> keyValuesJoiner.add("\"" + key + "\":\"" + value + "\""));
+		return keyValuesJoiner.toString();
+	}
+
 	public static String concatenateStrings(List<String> strings) {
-		var promptMessagesJoiner = new StringJoiner(", ", "[", "]");
-		strings.forEach(string -> promptMessagesJoiner.add("\"" + string + "\""));
-		return promptMessagesJoiner.toString();
+		var stringsJoiner = new StringJoiner(", ", "[", "]");
+		strings.forEach(string -> stringsJoiner.add("\"" + string + "\""));
+		return stringsJoiner.toString();
 	}
 
 }

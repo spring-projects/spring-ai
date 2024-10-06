@@ -15,10 +15,12 @@
 */
 package org.springframework.ai.chat.client.observation;
 
-import java.util.stream.Collectors;
-
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.observation.conventions.SpringAiKind;
+import org.springframework.ai.observation.tracing.TracingHelper;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 
@@ -26,29 +28,15 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
 /**
+ * Default conventions to populate observations for chat client workflows.
+ *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-
 public class DefaultChatClientObservationConvention implements ChatClientObservationConvention {
 
 	public static final String DEFAULT_NAME = "spring.ai.chat.client";
-
-	private static final String CHAT_CLIENT_SPRING_AI_KIND = "chat_client";
-
-	private static final KeyValue CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS_NONE = KeyValue.of(
-			ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue CHAT_CLIENT_TOOL_FUNCTION_NAMES_NONE = KeyValue.of(
-			ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue CHAT_CLIENT_ADVISOR_NONE = KeyValue
-		.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS, KeyValue.NONE_VALUE);
-
-	private static final KeyValue CHAT_CLIENT_ADVISOR_PARAM_NONE = KeyValue
-		.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS, KeyValue.NONE_VALUE);
 
 	private final String name;
 
@@ -68,27 +56,12 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 	@Override
 	@Nullable
 	public String getContextualName(ChatClientObservationContext context) {
-		return "%s %s".formatted(context.getOperationMetadata().provider(), CHAT_CLIENT_SPRING_AI_KIND);
+		return "%s %s".formatted(context.getOperationMetadata().provider(), SpringAiKind.CHAT_CLIENT.value());
 	}
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(ChatClientObservationContext context) {
-		return KeyValues.of(springAiKind(), aiOperationType(context), aiProvider(context), stream(context));
-	}
-
-	@Override
-	public KeyValues getHighCardinalityKeyValues(ChatClientObservationContext context) {
-		return KeyValues.of(toolFunctionNames(context), toolFunctionCallbacks(context), chatClientAdvisor(context),
-				chatClientAdvisorParam(context));
-	}
-
-	protected KeyValue springAiKind() {
-		return KeyValue.of(ChatClientObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
-				CHAT_CLIENT_SPRING_AI_KIND);
-	}
-
-	protected KeyValue stream(ChatClientObservationContext context) {
-		return KeyValue.of(LowCardinalityKeyNames.STREAM, "" + context.isStream());
+		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(), stream(context));
 	}
 
 	protected KeyValue aiOperationType(ChatClientObservationContext context) {
@@ -101,55 +74,66 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 				context.getOperationMetadata().provider());
 	}
 
-	protected KeyValue toolFunctionNames(ChatClientObservationContext context) {
-		if (CollectionUtils.isEmpty(context.getRequest().getFunctionNames())) {
-			return CHAT_CLIENT_TOOL_FUNCTION_NAMES_NONE;
-		}
-		return KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES,
-				context.getRequest()
-					.getFunctionNames()
-					.stream()
-					.map(v -> "\"" + v + "\"")
-					.collect(Collectors.joining(",", "[", "]")));
+	protected KeyValue springAiKind() {
+		return KeyValue.of(ChatClientObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
+				SpringAiKind.CHAT_CLIENT.value());
 	}
 
-	protected KeyValue toolFunctionCallbacks(ChatClientObservationContext context) {
-		if (CollectionUtils.isEmpty(context.getRequest().getFunctionCallbacks())) {
-			return CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS_NONE;
-		}
-
-		return KeyValue.of(
-				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS,
-				context.getRequest()
-					.getFunctionCallbacks()
-					.stream()
-					.map(fc -> "\"" + fc.getName() + "\"")
-					.collect(Collectors.joining(",", "[", "]")));
+	protected KeyValue stream(ChatClientObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.STREAM, "" + context.isStream());
 	}
 
-	protected KeyValue chatClientAdvisor(ChatClientObservationContext context) {
+	@Override
+	public KeyValues getHighCardinalityKeyValues(ChatClientObservationContext context) {
+		var keyValues = KeyValues.empty();
+		keyValues = chatClientAdvisorNames(keyValues, context);
+		keyValues = chatClientAdvisorParams(keyValues, context);
+		keyValues = toolFunctionNames(keyValues, context);
+		keyValues = toolFunctionCallbacks(keyValues, context);
+		return keyValues;
+	}
+
+	protected KeyValues chatClientAdvisorNames(KeyValues keyValues, ChatClientObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getAdvisors())) {
-			return CHAT_CLIENT_ADVISOR_NONE;
+			return keyValues;
 		}
-		return KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS,
-				context.getRequest()
-					.getAdvisors()
-					.stream()
-					.map(a -> "\"" + a.getName() + "\"")
-					.collect(Collectors.joining(",", "[", "]")));
+		var advisorNames = context.getRequest().getAdvisors().stream().map(Advisor::getName).toList();
+		return keyValues.and(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(),
+				TracingHelper.concatenateStrings(advisorNames));
 	}
 
-	protected KeyValue chatClientAdvisorParam(ChatClientObservationContext context) {
+	protected KeyValues chatClientAdvisorParams(KeyValues keyValues, ChatClientObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getAdvisorParams())) {
-			return CHAT_CLIENT_ADVISOR_PARAM_NONE;
+			return keyValues;
 		}
-		return KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS,
-				context.getRequest()
-					.getAdvisorParams()
-					.entrySet()
-					.stream()
-					.map(e -> "\"" + e.getKey() + "\":\"" + e.getValue() + "\"")
-					.collect(Collectors.joining(",", "[", "]")));
+		var advisorParams = context.getRequest().getAdvisorParams();
+		return keyValues.and(
+				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),
+				TracingHelper.concatenateMaps(advisorParams));
+	}
+
+	protected KeyValues toolFunctionNames(KeyValues keyValues, ChatClientObservationContext context) {
+		if (CollectionUtils.isEmpty(context.getRequest().getFunctionNames())) {
+			return keyValues;
+		}
+		var functionNames = context.getRequest().getFunctionNames();
+		return keyValues.and(
+				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(),
+				TracingHelper.concatenateStrings(functionNames));
+	}
+
+	protected KeyValues toolFunctionCallbacks(KeyValues keyValues, ChatClientObservationContext context) {
+		if (CollectionUtils.isEmpty(context.getRequest().getFunctionCallbacks())) {
+			return keyValues;
+		}
+		var functionCallbacks = context.getRequest()
+			.getFunctionCallbacks()
+			.stream()
+			.map(FunctionCallback::getName)
+			.toList();
+		return keyValues
+			.and(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS
+				.asString(), TracingHelper.concatenateStrings(functionCallbacks));
 	}
 
 }

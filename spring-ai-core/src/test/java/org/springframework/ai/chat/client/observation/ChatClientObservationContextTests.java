@@ -33,6 +33,7 @@ import io.micrometer.observation.ObservationRegistry;
  * Unit tests for {@link ChatClientObservationContext}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 class ChatClientObservationContextTests {
@@ -46,7 +47,7 @@ class ChatClientObservationContextTests {
 		var request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
 				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null);
 
-		var observationContext = new ChatClientObservationContext(request, "", true);
+		var observationContext = ChatClientObservationContext.builder().withRequest(request).withStream(true).build();
 
 		assertThat(observationContext).isNotNull();
 	}
