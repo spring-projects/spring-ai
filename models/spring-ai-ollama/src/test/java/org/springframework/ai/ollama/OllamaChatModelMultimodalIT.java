@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 
 @SpringBootTest
 @Testcontainers
@@ -66,6 +67,18 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 	@Autowired
 	private OllamaChatModel chatModel;
+
+	@Test
+	void unsupportedMediaType() throws IOException {
+
+		var imageData = new ClassPathResource("/norway.webp");
+
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+
+		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt(List.of(userMessage))));
+
+	}
 
 	@Test
 	void multiModalityTest() throws IOException {
