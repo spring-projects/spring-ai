@@ -192,4 +192,10 @@ public class FilterExpressionTextParserTests {
 		assertThat(exp).isEqualTo(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
 	}
 
+	@Test
+	public void testUnescapedIdentifierWithUnderscores() {
+		Expression exp = parser.parse("file_name == 'medicaid-wa-faqs.pdf'");
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("file_name"), new Value("medicaid-wa-faqs.pdf")));
+	}
+
 }
