@@ -687,4 +687,13 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		return new ChatCompletionsTextResponseFormat();
 	}
 
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
+	}
+
 }
