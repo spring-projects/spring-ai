@@ -36,6 +36,7 @@ public enum AiProvider {
 	OCI_GENAI("oci_genai"),
 	OLLAMA("ollama"),
 	OPENAI("openai"),
+	MINIMAX("minimax"),
 	SPRING_AI("spring_ai"),
 	VERTEX_AI("vertex_ai");
 

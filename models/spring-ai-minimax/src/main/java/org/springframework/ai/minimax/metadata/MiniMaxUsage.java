@@ -43,17 +43,23 @@ public class MiniMaxUsage implements Usage {
 
 	@Override
 	public Long getPromptTokens() {
-		return getUsage().promptTokens().longValue();
+		Integer promptTokens = getUsage().promptTokens();
+		return promptTokens != null ? promptTokens.longValue() : 0;
 	}
 
 	@Override
 	public Long getGenerationTokens() {
-		return getUsage().completionTokens().longValue();
+		Integer generationTokens = getUsage().completionTokens();
+		return generationTokens != null ? generationTokens.longValue() : 0;
 	}
 
 	@Override
 	public Long getTotalTokens() {
-		return getUsage().totalTokens().longValue();
+		Integer totalTokens = getUsage().totalTokens();
+		if (totalTokens != null) {
+			return totalTokens.longValue();
+		}
+		return getPromptTokens() + getGenerationTokens();
 	}
 
 	@Override
