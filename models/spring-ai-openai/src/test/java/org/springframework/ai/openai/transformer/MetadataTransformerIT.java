@@ -84,7 +84,7 @@ public class MetadataTransformerIT {
 		assertThat(keywords2).containsKeys("excerpt_keywords");
 
 		assertThat((String) keywords1.get("excerpt_keywords")).contains("Andes", "Aymara");
-		assertThat((String) keywords2.get("excerpt_keywords")).contains("Spring Framework", "dependency injection");
+		assertThat((String) keywords2.get("excerpt_keywords")).contains("Spring MVC", "Dependency Injection");
 	}
 
 	@Test
@@ -169,13 +169,13 @@ public class MetadataTransformerIT {
 		}
 
 		@Bean
-		public KeywordMetadataEnricher keywordMetadata(OpenAiChatModel aiClient) {
-			return new KeywordMetadataEnricher(aiClient, 5);
+		public KeywordMetadataEnricher keywordMetadata(OpenAiChatModel chatModel) {
+			return new KeywordMetadataEnricher(chatModel, 5);
 		}
 
 		@Bean
-		public SummaryMetadataEnricher summaryMetadata(OpenAiChatModel aiClient) {
-			return new SummaryMetadataEnricher(aiClient,
+		public SummaryMetadataEnricher summaryMetadata(OpenAiChatModel chatModel) {
+			return new SummaryMetadataEnricher(chatModel,
 					List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
 		}
 
