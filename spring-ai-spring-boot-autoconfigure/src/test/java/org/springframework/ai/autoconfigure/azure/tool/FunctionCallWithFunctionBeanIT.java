@@ -15,22 +15,22 @@
  */
 package org.springframework.ai.autoconfigure.azure.tool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
+
 import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -38,9 +38,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
@@ -110,18 +107,6 @@ class FunctionCallWithFunctionBeanIT {
 		@Description("Get the weather in location")
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
 			return new MockWeatherService();
-		}
-
-		@Bean
-		@Description("Get the weather in location")
-		public Function<MockWeatherService.Request, Function<Map<String, Object>, MockWeatherService.Response>> weatherFunctionWithContext() {
-			return request -> context -> new MockWeatherService().apply(request);
-		}
-
-		@Bean
-		@Description("Get the weather in location")
-		public BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response> weatherFunctionWithContext2() {
-			return (request, context) -> new MockWeatherService().apply(request);
 		}
 
 		// Relies on the Request's JsonClassDescription annotation to provide the

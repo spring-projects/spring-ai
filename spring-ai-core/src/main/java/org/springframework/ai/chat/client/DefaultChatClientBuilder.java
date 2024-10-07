@@ -29,6 +29,7 @@ import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientReq
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.io.Resource;
@@ -142,7 +143,7 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	public <I, O> Builder defaultFunction(String name, String description,
-			java.util.function.BiFunction<I, Map<String, Object>, O> biFunction) {
+			java.util.function.BiFunction<I, ToolContext, O> biFunction) {
 		this.defaultRequest.function(name, description, biFunction);
 		return this;
 	}

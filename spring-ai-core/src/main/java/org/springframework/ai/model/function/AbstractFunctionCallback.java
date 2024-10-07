@@ -15,15 +15,15 @@
  */
 package org.springframework.ai.model.function;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.util.Assert;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.springframework.util.Assert;
 
 /**
  * Abstract implementation of the {@link FunctionCallback} for interacting with the
@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
  * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
  */
-abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, Map<String, Object>, O>, FunctionCallback {
+abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
 
 	private final String name;
 
@@ -101,7 +101,7 @@ abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, Map<Strin
 	}
 
 	@Override
-	public String call(String functionInput, Map<String, Object> toolContext) {
+	public String call(String functionInput, ToolContext toolContext) {
 		I request = fromJson(functionInput, inputType);
 		O response = this.apply(request, toolContext);
 		return this.responseConverter.apply(response);

@@ -224,16 +224,18 @@ The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot
 
 Spring AI now supports passing additional contextual information to function callbacks through a tool context. This feature allows you to provide extra data that can be used within the function execution, enhancing the flexibility and power of function calling.
 
+The context information that is passed in as the second argument of a `java.util.BiFunction`.  The `ToolContext` contains as an immutable `Map<String,Object>` allowing you to access key-value pairs.
+
 ==== How to Use Tool Context
 
 You can set the tool context when building your chat options and use a BiFunction for your callback:
 
 [source,java]
 ----
-BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response> weatherFunction =
+BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response> weatherFunction =
     (request, toolContext) -> {
-        String sessionId = (String) toolContext.get("sessionId");
-        String userId = (String) toolContext.get("userId");
+        String sessionId = (String) toolContext.getContext().get("sessionId");
+        String userId = (String) toolContext.getContext().get("userId");
 
         // Use sessionId and userId in your function logic
         double temperature = 0;

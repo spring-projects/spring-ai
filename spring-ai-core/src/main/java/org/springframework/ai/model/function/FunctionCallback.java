@@ -17,6 +17,8 @@ package org.springframework.ai.model.function;
 
 import java.util.Map;
 
+import org.springframework.ai.chat.model.ToolContext;
+
 /**
  * Represents a model function call handler. Implementations are registered with the
  * Models and called on prompts that trigger the function call.
@@ -60,13 +62,13 @@ public interface FunctionCallback {
 	 * @param functionInput JSON string with the function arguments to be passed to the
 	 * function. The arguments are defined as JSON schema usually registered with the the
 	 * model. Arguments are provided by the AI model.
-	 * @param functionContext Map with the function context. The context is used to pass
+	 * @param tooContext Map with the function context. The context is used to pass
 	 * additional user provided state in addition to the arguments provided by the AI
 	 * model.
 	 * @return String containing the function call response.
 	 */
-	default String call(String functionInput, Map<String, Object> functionContext) {
-		if (functionContext != null) {
+	default String call(String functionInput, ToolContext tooContext) {
+		if (tooContext != null) {
 			throw new UnsupportedOperationException("Function context is not supported!");
 		}
 		return call(functionInput);

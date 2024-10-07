@@ -56,6 +56,7 @@ import org.springframework.util.StringUtils;
  * @param advisors the list of request response advisors
  * @param advisorParams the map of advisor parameters
  * @param adviseContext the map of advise context
+ * @param toolContext the tool context
  */
 public record AdvisedRequest(ChatModel chatModel, String userText, String systemText, ChatOptions chatOptions,
 		List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages,
@@ -94,8 +95,6 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 
 	public static class Builder {
 
-		public Map<String, Object> toolContext;
-
 		private ChatModel chatModel;
 
 		private String userText = "";
@@ -121,6 +120,8 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		private Map<String, Object> advisorParams = Map.of();
 
 		private Map<String, Object> adviseContext = Map.of();
+
+		public Map<String, Object> toolContext = Map.of();
 
 		public Builder withChatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;

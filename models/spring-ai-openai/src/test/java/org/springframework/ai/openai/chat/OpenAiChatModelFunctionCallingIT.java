@@ -25,6 +25,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -71,12 +72,12 @@ class OpenAiChatModelFunctionCallingIT {
 	@Test
 	void functionCallWithToolContextTest() {
 
-		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+		var biFunction = new BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>() {
 
 			@Override
-			public Response apply(Request request, Map<String, Object> toolContext) {
+			public Response apply(Request request, ToolContext toolContext) {
 
-				assertThat(toolContext).containsEntry("sessionId", "123");
+				assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
 
 				double temperature = 0;
 				if (request.location().contains("Paris")) {
@@ -133,12 +134,12 @@ class OpenAiChatModelFunctionCallingIT {
 	@Test
 	void streamFunctionCallWithToolContextTest() {
 
-		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+		var biFunction = new BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>() {
 
 			@Override
-			public Response apply(Request request, Map<String, Object> toolContext) {
+			public Response apply(Request request, ToolContext toolContext) {
 
-				assertThat(toolContext).containsEntry("sessionId", "123");
+				assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
 
 				double temperature = 0;
 				if (request.location().contains("Paris")) {
