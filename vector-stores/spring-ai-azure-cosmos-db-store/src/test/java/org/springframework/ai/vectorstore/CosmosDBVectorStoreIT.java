@@ -135,7 +135,6 @@ public class CosmosDBVectorStoreIT {
 			config.setContainerName("test-container");
 			config.setMetadataFields("country,year,city");
 			config.setVectorStoreThoughput(1000);
-			cosmosClient.createDatabaseIfNotExists(config.getDatabaseName()).block();
 			return new CosmosDBVectorStore(null, convention, cosmosClient, config, embeddingModel);
 
 		}
@@ -144,6 +143,7 @@ public class CosmosDBVectorStoreIT {
 		public CosmosAsyncClient cosmosClient() {
 			return new CosmosClientBuilder().endpoint(System.getenv("AZURE_COSMOSDB_ENDPOINT"))
 				.key(System.getenv("AZURE_COSMOSDB_KEY"))
+				.userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
 				.gatewayMode()
 				.buildAsyncClient();
 		}
