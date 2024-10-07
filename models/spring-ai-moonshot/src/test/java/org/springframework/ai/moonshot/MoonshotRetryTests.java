@@ -145,7 +145,7 @@ public class MoonshotRetryTests {
 	public void moonshotChatStreamNonTransientError() {
 		when(moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
 	}
 
 }
