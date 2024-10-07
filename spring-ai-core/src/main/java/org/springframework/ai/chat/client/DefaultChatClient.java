@@ -549,14 +549,14 @@ public class DefaultChatClient implements ChatClient {
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
 					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
-					ccr.observationRegistry, ccr.customObservationConvention);
+					ccr.observationRegistry, ccr.customObservationConvention, ccr.toolContext);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, String userText, Map<String, Object> userParams,
 				String systemText, Map<String, Object> systemParams, List<FunctionCallback> functionCallbacks,
 				List<Message> messages, List<String> functionNames, List<Media> media, ChatOptions chatOptions,
 				List<Advisor> advisors, Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
-				ChatClientObservationConvention customObservationConvention) {
+				ChatClientObservationConvention customObservationConvention, Map<String, Object> toolContext) {
 
 			this.chatModel = chatModel;
 			this.chatOptions = chatOptions != null ? chatOptions.copy()
@@ -575,6 +575,7 @@ public class DefaultChatClient implements ChatClient {
 			this.advisorParams.putAll(advisorParams);
 			this.observationRegistry = observationRegistry;
 			this.customObservationConvention = customObservationConvention;
+			this.toolContext.putAll(toolContext);
 
 			// @formatter:off		
 			// At the stack bottom add the non-streaming and streaming model call advisors.
@@ -639,6 +640,7 @@ public class DefaultChatClient implements ChatClient {
 			// workaround to set the missing fields.
 			builder.defaultRequest.getMessages().addAll(this.messages);
 			builder.defaultRequest.getFunctionCallbacks().addAll(this.functionCallbacks);
+			builder.defaultRequest.getToolContext().putAll(this.toolContext);
 
 			return builder;
 		}
@@ -735,6 +737,12 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		public ChatClientRequestSpec toolContext(Map<String, Object> toolContext) {
+			Assert.notNull(toolContext, "the toolContext must be non-null");
+			this.toolContext.putAll(toolContext);
+			return this;
+		}
+
 		public ChatClientRequestSpec system(String text) {
 			Assert.notNull(text, "the text must be non-null");
 			this.systemText = text;
@@ -827,7 +835,8 @@ public class DefaultChatClient implements ChatClient {
 		return new AdvisedRequest(inputRequest.chatModel, inputRequest.userText, inputRequest.systemText,
 				inputRequest.chatOptions, inputRequest.media, inputRequest.functionNames,
 				inputRequest.functionCallbacks, inputRequest.messages, inputRequest.userParams,
-				inputRequest.systemParams, inputRequest.advisors, inputRequest.advisorParams, advisorContext);
+				inputRequest.systemParams, inputRequest.advisors, inputRequest.advisorParams, advisorContext,
+				inputRequest.toolContext);
 	}
 
 	public static DefaultChatClientRequestSpec toDefaultChatClientRequestSpec(AdvisedRequest advisedRequest,
@@ -837,7 +846,8 @@ public class DefaultChatClient implements ChatClient {
 				advisedRequest.userParams(), advisedRequest.systemText(), advisedRequest.systemParams(),
 				advisedRequest.functionCallbacks(), advisedRequest.messages(), advisedRequest.functionNames(),
 				advisedRequest.media(), advisedRequest.chatOptions(), advisedRequest.advisors(),
-				advisedRequest.advisorParams(), observationRegistry, customObservationConvention);
+				advisedRequest.advisorParams(), observationRegistry, customObservationConvention,
+				advisedRequest.toolContext());
 	}
 
 	// Prompt

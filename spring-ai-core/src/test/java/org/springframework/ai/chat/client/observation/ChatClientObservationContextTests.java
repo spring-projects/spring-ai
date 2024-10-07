@@ -45,7 +45,7 @@ class ChatClientObservationContextTests {
 	void whenMandatoryRequestOptionsThenReturn() {
 
 		var request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null);
+				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of());
 
 		var observationContext = ChatClientObservationContext.builder().withRequest(request).withStream(true).build();
 

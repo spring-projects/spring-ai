@@ -211,6 +211,8 @@ public interface ChatClient {
 
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
+		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
+
 		ChatClientRequestSpec system(String text);
 
 		ChatClientRequestSpec system(Resource textResource, Charset charset);
@@ -270,6 +272,8 @@ public interface ChatClient {
 		Builder defaultFunctions(String... functionNames);
 
 		Builder defaultFunctions(FunctionCallback... functionCallbacks);
+
+		Builder defaultToolContext(Map<String, Object> toolContext);
 
 		ChatClient build();
 

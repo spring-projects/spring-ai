@@ -60,7 +60,8 @@ class ChatClientInputContentObservationFilterTests {
 		ChatClientObservationConvention customObservationConvention = null;
 
 		var request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), observationRegistry, customObservationConvention);
+				List.of(), List.of(), null, List.of(), Map.of(), observationRegistry, customObservationConvention,
+				Map.of());
 
 		var expectedContext = ChatClientObservationContext.builder().withRequest(request).build();
 
@@ -76,7 +77,7 @@ class ChatClientInputContentObservationFilterTests {
 
 		var request = new DefaultChatClientRequestSpec(chatModel, "sample user text", Map.of("up1", "upv1"),
 				"sample system text", Map.of("sp1", "sp1v"), List.of(), List.of(), List.of(), List.of(), null,
-				List.of(), Map.of(), observationRegistry, customObservationConvention);
+				List.of(), Map.of(), observationRegistry, customObservationConvention, Map.of());
 
 		var originalContext = ChatClientObservationContext.builder().withRequest(request).build();
 

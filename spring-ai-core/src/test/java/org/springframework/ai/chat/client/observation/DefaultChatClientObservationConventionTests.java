@@ -26,20 +26,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
-import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import org.springframework.ai.observation.conventions.AiProvider;
-import org.springframework.ai.observation.conventions.SpringAiKind;
 
 /**
  * Unit tests for {@link DefaultChatClientObservationConvention}.
@@ -60,7 +59,7 @@ class DefaultChatClientObservationConventionTests {
 	@BeforeEach
 	public void beforeEach() {
 		request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null);
+				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of());
 	}
 
 	@Test
@@ -160,7 +159,7 @@ class DefaultChatClientObservationConventionTests {
 				List.of(dummyFunction("functionCallback1"), dummyFunction("functionCallback2")), List.of(),
 				List.of("function1", "function2"), List.of(), null,
 				List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")), Map.of("advParam1", "advisorParam1Value"),
-				ObservationRegistry.NOOP, null);
+				ObservationRegistry.NOOP, null, Map.of());
 
 		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 			.withRequest(request)
