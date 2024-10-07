@@ -34,9 +34,12 @@ import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import reactor.core.publisher.Flux;
@@ -60,9 +63,19 @@ public class ChatClientAdvisorTests {
 	@Test
 	public void promptChatMemory() {
 
+		var builder = ChatResponseMetadata.builder()
+			.withId("124")
+			.withUsage(new MessageAggregator.DefaultUsage(1, 2, 3))
+			.withModel("gpt4o")
+			.withKeyValue("created", 0L)
+			.withKeyValue("system-fingerprint", "john doe");
+		ChatResponseMetadata chatResponseMetadata = builder.build();
+
 		when(chatModel.call(promptCaptor.capture()))
-			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))))
-			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your name is John")))));
+			.thenReturn(
+					new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John"))), chatResponseMetadata))
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your name is John"))),
+					chatResponseMetadata));
 
 		ChatMemory chatMemory = new InMemoryChatMemory();
 
@@ -71,8 +84,9 @@ public class ChatClientAdvisorTests {
 			.defaultAdvisors(new PromptChatMemoryAdvisor(chatMemory))
 			.build();
 
-		var content = chatClient.prompt().user("my name is John").call().content();
+		ChatResponse chatResponse = chatClient.prompt().user("my name is John").call().chatResponse();
 
+		String content = chatResponse.getResult().getOutput().getContent();
 		assertThat(content).isEqualTo("Hello John");
 
 		Message systemMessage = promptCaptor.getValue().getInstructions().get(0);

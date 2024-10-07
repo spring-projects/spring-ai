@@ -212,19 +212,25 @@ class OpenAiChatClientIT extends AbstractIT {
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
 		// @formatter:off
-		Flux<String> chatResponse = ChatClient.create(chatModel)
+		Flux<ChatResponse> chatResponse = ChatClient.create(chatModel)
 				.prompt()
+				.options(OpenAiChatOptions.builder().withStreamUsage(true).build())
 				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
 						.param("format", outputConverter.getFormat()))
 				.stream()
-				.content();
+				.chatResponse();
 
-		String generationTextFromStream = chatResponse.collectList()
+		List<ChatResponse> chatResponses = chatResponse.collectList()
 				.block()
 				.stream()
+				.toList();
+
+		String generationTextFromStream = chatResponses
+				.stream()
+				.map(cr -> cr.getResult().getOutput().getContent())
 				.collect(Collectors.joining());
 		// @formatter:on
 

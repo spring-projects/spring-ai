@@ -20,13 +20,18 @@ import static com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -35,17 +40,76 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.http.policy.HttpLogOptions;
+import org.springframework.core.io.Resource;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Soby Chacko
  */
-@SpringBootTest(classes = AzureOpenAiChatClientTest.TestConfiguration.class)
+@SpringBootTest(classes = AzureOpenAiChatClientIT.TestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
-public class AzureOpenAiChatClientTest {
+public class AzureOpenAiChatClientIT {
 
 	@Autowired
 	private ChatClient chatClient;
+
+	@Value("classpath:/prompts/system-message.st")
+	private Resource systemTextResource;
+
+	record ActorsFilms(String actor, List<String> movies) {
+	}
+
+	@Test
+	void call() {
+
+		// @formatter:off
+		ChatResponse response = chatClient.prompt()
+				.advisors(new SimpleLoggerAdvisor())
+				.system(s -> s.text(systemTextResource)
+						.param("name", "Bob")
+						.param("voice", "pirate"))
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+	}
+
+	@Test
+	void beanStreamOutputConverterRecords() {
+
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
+
+		// @formatter:off
+		Flux<ChatResponse> chatResponse = chatClient
+				.prompt()
+				.advisors(new SimpleLoggerAdvisor())
+				.user(u -> u
+						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+								+ "{format}")
+						.param("format", outputConverter.getFormat()))
+				.stream()
+				.chatResponse();
+
+		List<ChatResponse> chatResponses = chatResponse.collectList()
+				.block()
+				.stream()
+				.toList();
+
+		String generationTextFromStream = chatResponses
+				.stream()
+				.map(cr -> cr.getResult().getOutput().getContent())
+				.collect(Collectors.joining());
+		// @formatter:on
+
+		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
 
 	@Test
 	void streamingAndImperativeResponsesContainIdenticalRelevantResults() {
