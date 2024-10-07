@@ -230,6 +230,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		String generationTextFromStream = chatResponses
 				.stream()
+				.filter(cr -> cr.getResult() != null)
 				.map(cr -> cr.getResult().getOutput().getContent())
 				.collect(Collectors.joining());
 		// @formatter:on
