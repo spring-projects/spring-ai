@@ -60,7 +60,7 @@ import org.springframework.util.StringUtils;
 public record AdvisedRequest(ChatModel chatModel, String userText, String systemText, ChatOptions chatOptions,
 		List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages,
 		Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors,
-		Map<String, Object> advisorParams, Map<String, Object> adviseContext) {
+		Map<String, Object> advisorParams, Map<String, Object> adviseContext, Map<String, Object> toolContext) {
 
 	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
 		return from(this)
@@ -83,6 +83,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		builder.advisors = from.advisors;
 		builder.advisorParams = from.advisorParams;
 		builder.adviseContext = from.adviseContext;
+		builder.toolContext = from.toolContext;
 
 		return builder;
 	}
@@ -92,6 +93,8 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 	}
 
 	public static class Builder {
+
+		public Map<String, Object> toolContext;
 
 		private ChatModel chatModel;
 
@@ -154,6 +157,11 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 			return this;
 		}
 
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			this.toolContext = toolContext;
+			return this;
+		}
+
 		public Builder withMessages(List<Message> messages) {
 			this.messages = messages;
 			return this;
@@ -187,7 +195,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		public AdvisedRequest build() {
 			return new AdvisedRequest(chatModel, this.userText, this.systemText, this.chatOptions, this.media,
 					this.functionNames, this.functionCallbacks, this.messages, this.userParams, this.systemParams,
-					this.advisors, this.advisorParams, this.adviseContext);
+					this.advisors, this.advisorParams, this.adviseContext, this.toolContext);
 		}
 
 	}
@@ -227,6 +235,9 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 			}
 			if (!this.functionCallbacks().isEmpty()) {
 				functionCallingOptions.setFunctionCallbacks(this.functionCallbacks());
+			}
+			if (!CollectionUtils.isEmpty(this.toolContext())) {
+				functionCallingOptions.setToolContext(this.toolContext());
 			}
 		}
 

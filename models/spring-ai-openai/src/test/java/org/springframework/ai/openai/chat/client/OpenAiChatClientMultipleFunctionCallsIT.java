@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,8 +29,11 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
+import org.springframework.ai.openai.api.tool.MockWeatherService.Request;
+import org.springframework.ai.openai.api.tool.MockWeatherService.Response;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -100,6 +105,87 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
 			.build()
 			.prompt().call().content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void defaultFunctionCallTestWithToolContext() {
+
+		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+
+			@Override
+			public Response apply(Request request, Map<String, Object> toolContext) {
+
+				assertThat(toolContext).containsEntry("sessionId", "123");
+
+				double temperature = 0;
+				if (request.location().contains("Paris")) {
+					temperature = 15;
+				}
+				else if (request.location().contains("Tokyo")) {
+					temperature = 10;
+				}
+				else if (request.location().contains("San Francisco")) {
+					temperature = 30;
+				}
+
+				return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
+			}
+
+		};
+
+		// @formatter:off
+		String response = ChatClient.builder(chatModel)
+				.defaultFunction("getCurrentWeather", "Get the weather in location", biFunction)
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.defaultToolContext(Map.of("sessionId", "123"))
+			.build()
+			.prompt().call().content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallTestWithToolContext() {
+
+		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+
+			@Override
+			public Response apply(Request request, Map<String, Object> toolContext) {
+
+				assertThat(toolContext).containsEntry("sessionId", "123");
+
+				double temperature = 0;
+				if (request.location().contains("Paris")) {
+					temperature = 15;
+				}
+				else if (request.location().contains("Tokyo")) {
+					temperature = 10;
+				}
+				else if (request.location().contains("San Francisco")) {
+					temperature = 30;
+				}
+
+				return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
+			}
+
+		};
+
+		// @formatter:off
+		String response = ChatClient.builder(chatModel)
+				.defaultFunction("getCurrentWeather", "Get the weather in location", biFunction)
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))				
+			.build()
+			.prompt()
+			.toolContext(Map.of("sessionId", "123"))
+			.call().content();
 		// @formatter:on
 
 		logger.info("Response: {}", response);

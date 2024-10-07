@@ -61,7 +61,7 @@ public class DefaultChatClientBuilder implements Builder {
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(),
 				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
-				customObservationConvention);
+				customObservationConvention, Map.of());
 	}
 
 	public ChatClient build() {
@@ -154,6 +154,11 @@ public class DefaultChatClientBuilder implements Builder {
 
 	public Builder defaultFunctions(FunctionCallback... functionCallbacks) {
 		this.defaultRequest.functions(functionCallbacks);
+		return this;
+	}
+
+	public Builder defaultToolContext(Map<String, Object> toolContext) {
+		this.defaultRequest.toolContext(toolContext);
 		return this;
 	}
 
