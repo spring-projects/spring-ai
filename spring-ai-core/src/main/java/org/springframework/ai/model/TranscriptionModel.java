@@ -18,4 +18,5 @@ public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, Audi
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
 		return this.call(prompt).getResult().getOutput();
 	}
+
 }
