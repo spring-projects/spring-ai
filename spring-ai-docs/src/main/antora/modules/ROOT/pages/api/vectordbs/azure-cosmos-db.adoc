@@ -202,6 +202,7 @@ public class DemoApplication implements CommandLineRunner {
 
         CosmosAsyncClient cosmosClient = new CosmosClientBuilder()
                 .endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
+                .userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
                 .key(System.getenv("COSMOSDB_AI_KEY"))
                 .gatewayMode()
                 .buildAsyncClient();
