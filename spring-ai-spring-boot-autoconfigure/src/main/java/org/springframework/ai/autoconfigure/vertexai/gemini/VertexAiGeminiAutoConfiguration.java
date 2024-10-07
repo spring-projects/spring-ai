@@ -19,10 +19,12 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -38,6 +40,7 @@ import org.springframework.util.StringUtils;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * Auto-configuration for Vertex AI Gemini Chat.
@@ -86,12 +89,17 @@ public class VertexAiGeminiAutoConfiguration {
 	@ConditionalOnProperty(prefix = VertexAiGeminiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public VertexAiGeminiChatModel vertexAiGeminiChat(VertexAI vertexAi, VertexAiGeminiChatProperties chatProperties,
-			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context, RetryTemplate retryTemplate) {
+			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context, RetryTemplate retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
 
-		return new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(), functionCallbackContext,
-				toolFunctionCallbacks, retryTemplate);
+		VertexAiGeminiChatModel chatModel = new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(),
+				functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+		return chatModel;
 	}
 
 	/**
