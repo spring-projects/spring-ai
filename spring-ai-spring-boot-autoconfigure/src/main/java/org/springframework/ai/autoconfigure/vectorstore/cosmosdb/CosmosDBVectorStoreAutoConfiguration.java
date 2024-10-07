@@ -28,6 +28,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
 	@Bean
 	public CosmosAsyncClient cosmosClient(CosmosDBVectorStoreProperties properties) {
 		return new CosmosClientBuilder().endpoint(properties.getEndpoint())
+			.userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
 			.key(properties.getKey())
 			.gatewayMode()
 			.buildAsyncClient();
