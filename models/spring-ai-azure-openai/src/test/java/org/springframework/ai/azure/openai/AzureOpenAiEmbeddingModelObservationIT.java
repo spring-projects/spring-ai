@@ -62,7 +62,9 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 	void observationForEmbeddingOperation() {
 		var options = AzureOpenAiEmbeddingOptions.builder()
 			.withDeploymentName("text-embedding-ada-002")
-			.withDimensions(1536)
+			// should not send dimension value?
+			// https://github.com/SciPhi-AI/R2R/issues/354
+			// .withDimensions(1536)
 			.build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
@@ -82,7 +84,8 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 					AiOperationType.EMBEDDING.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.AZURE_OPENAI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "text-embedding-ada-002")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(), "1536")
+			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(),
+			// "1536")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
