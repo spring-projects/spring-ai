@@ -15,10 +15,10 @@
  */
 package org.springframework.ai.model.function;
 
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.util.Assert;
@@ -37,22 +37,21 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  */
 public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
 
-	private final BiFunction<I, Map<String, Object>, O> biFunction;
+	private final BiFunction<I, ToolContext, O> biFunction;
 
 	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, ObjectMapper objectMapper,
-			BiFunction<I, Map<String, Object>, O> function) {
+			Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
 		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
 		this.biFunction = function;
 	}
 
 	@Override
-	public O apply(I input, Map<String, Object> context) {
+	public O apply(I input, ToolContext context) {
 		return this.biFunction.apply(input, context);
 	}
 
-	public static <I, O> Builder<I, O> builder(BiFunction<I, Map<String, Object>, O> biFunction) {
+	public static <I, O> Builder<I, O> builder(BiFunction<I, ToolContext, O> biFunction) {
 		return new Builder<>(biFunction);
 	}
 
@@ -68,13 +67,13 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 		private Class<I> inputType;
 
-		private final BiFunction<I, Map<String, Object>, O> biFunction;
+		private final BiFunction<I, ToolContext, O> biFunction;
 
 		private final Function<I, O> function;
 
 		private SchemaType schemaType = SchemaType.JSON_SCHEMA;
 
-		public Builder(BiFunction<I, Map<String, Object>, O> biFunction) {
+		public Builder(BiFunction<I, ToolContext, O> biFunction) {
 			Assert.notNull(biFunction, "Function must not be null");
 			this.biFunction = biFunction;
 			this.function = null;
@@ -159,7 +158,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 				this.inputTypeSchema = ModelOptionsUtils.getJsonSchema(this.inputType, upperCaseTypeValues);
 			}
 
-			BiFunction<I, Map<String, Object>, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
+			BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
 					: (request, context) -> this.function.apply(request);
 
 			return new FunctionCallbackWrapper<>(this.name, this.description, this.inputTypeSchema, this.inputType,
@@ -167,9 +166,9 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 		}
 
 		@SuppressWarnings("unchecked")
-		private static <I, O> Class<I> resolveInputType(BiFunction<I, Map<String, Object>, O> biFunction) {
+		private static <I, O> Class<I> resolveInputType(BiFunction<I, ToolContext, O> biFunction) {
 			return (Class<I>) TypeResolverHelper
-				.getBiFunctionInputClass((Class<BiFunction<I, Map<String, Object>, O>>) biFunction.getClass());
+				.getBiFunctionInputClass((Class<BiFunction<I, ToolContext, O>>) biFunction.getClass());
 		}
 
 		@SuppressWarnings("unchecked")

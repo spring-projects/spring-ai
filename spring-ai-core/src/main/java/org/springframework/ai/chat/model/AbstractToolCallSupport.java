@@ -16,6 +16,7 @@
 package org.springframework.ai.chat.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -137,11 +138,13 @@ public abstract class AbstractToolCallSupport {
 		}
 		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
 
-		Map<String, Object> toolContext = null;
-		if (prompt.getOptions() instanceof FunctionCallingOptions functionCallOptions) {
-			toolContext = functionCallOptions.getToolContext();
+		Map<String, Object> toolContextMap = Map.of();
+		if (prompt.getOptions() instanceof FunctionCallingOptions functionCallOptions
+				&& !CollectionUtils.isEmpty(functionCallOptions.getToolContext())) {
+			toolContextMap = functionCallOptions.getToolContext();
 		}
-		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage, toolContext);
+		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage,
+				new ToolContext(toolContextMap));
 
 		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
 	}
@@ -190,7 +193,7 @@ public abstract class AbstractToolCallSupport {
 		return retrievedFunctionCallbacks;
 	}
 
-	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage, Map<String, Object> toolContext) {
+	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage, ToolContext toolContext) {
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 

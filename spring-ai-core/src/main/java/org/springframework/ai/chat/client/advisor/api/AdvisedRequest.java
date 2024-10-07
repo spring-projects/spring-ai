@@ -62,7 +62,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors,
 		Map<String, Object> advisorParams, Map<String, Object> adviseContext, Map<String, Object> toolContext) {
 
-	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
+	public AdvisedRequest updateAdvisedContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
 		return from(this)
 			.withAdviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
 			.build();
@@ -94,8 +94,6 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 
 	public static class Builder {
 
-		public Map<String, Object> toolContext;
-
 		private ChatModel chatModel;
 
 		private String userText = "";
@@ -121,6 +119,8 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		private Map<String, Object> advisorParams = Map.of();
 
 		private Map<String, Object> adviseContext = Map.of();
+
+		public Map<String, Object> toolContext = Map.of();
 
 		public Builder withChatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;

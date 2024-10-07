@@ -230,10 +230,10 @@ You can set the tool context when building your chat options and use a BiFunctio
 
 [source,java]
 ----
-BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response> weatherFunction =
+BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response> weatherFunction =
     (request, toolContext) -> {
-        String sessionId = (String) toolContext.get("sessionId");
-        String userId = (String) toolContext.get("userId");
+        String sessionId = (String) toolContext.getContext().get("sessionId");
+        String userId = (String) toolContext.getContext().get("userId");
 
         // Use sessionId and userId in your function logic
         double temperature = 0;

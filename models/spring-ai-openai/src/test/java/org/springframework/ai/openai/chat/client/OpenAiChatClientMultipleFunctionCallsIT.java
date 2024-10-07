@@ -29,7 +29,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.api.tool.MockWeatherService.Request;
@@ -115,12 +115,12 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 	@Test
 	void defaultFunctionCallTestWithToolContext() {
 
-		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+		var biFunction = new BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>() {
 
 			@Override
-			public Response apply(Request request, Map<String, Object> toolContext) {
+			public Response apply(Request request, ToolContext toolContext) {
 
-				assertThat(toolContext).containsEntry("sessionId", "123");
+				assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
 
 				double temperature = 0;
 				if (request.location().contains("Paris")) {
@@ -155,12 +155,12 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 	@Test
 	void functionCallTestWithToolContext() {
 
-		var biFunction = new BiFunction<MockWeatherService.Request, Map<String, Object>, MockWeatherService.Response>() {
+		var biFunction = new BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>() {
 
 			@Override
-			public Response apply(Request request, Map<String, Object> toolContext) {
+			public Response apply(Request request, ToolContext toolContext) {
 
-				assertThat(toolContext).containsEntry("sessionId", "123");
+				assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
 
 				double temperature = 0;
 				if (request.location().contains("Paris")) {

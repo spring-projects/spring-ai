@@ -88,7 +88,7 @@ public class AdvisorsTests {
 		@Override
 		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 
-			this.advisedRequest = advisedRequest.updateContext(context -> {
+			this.advisedRequest = advisedRequest.updateAdvisedContext(context -> {
 				context.put("aroundCallBefore" + getName(), "AROUND_CALL_BEFORE " + getName());
 				context.put("lastBefore", getName());
 				return context;
@@ -108,7 +108,7 @@ public class AdvisorsTests {
 		@Override
 		public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
-			this.advisedRequest = advisedRequest.updateContext(context -> {
+			this.advisedRequest = advisedRequest.updateAdvisedContext(context -> {
 				context.put("aroundStreamBefore" + name, "AROUND_STREAM_BEFORE " + name);
 				context.put("lastBefore", name);
 				return context;

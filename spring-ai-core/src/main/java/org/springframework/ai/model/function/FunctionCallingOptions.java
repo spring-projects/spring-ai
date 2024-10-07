@@ -77,6 +77,6 @@ public interface FunctionCallingOptions extends ChatOptions {
 
 	Map<String, Object> getToolContext();
 
-	void setToolContext(Map<String, Object> functionContext);
+	void setToolContext(Map<String, Object> tooContext);
 
 }

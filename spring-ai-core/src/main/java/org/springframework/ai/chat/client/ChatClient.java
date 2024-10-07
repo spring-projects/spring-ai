@@ -26,6 +26,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
@@ -202,7 +203,7 @@ public interface ChatClient {
 				java.util.function.Function<I, O> function);
 
 		<I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.BiFunction<I, Map<String, Object>, O> function);
+				java.util.function.BiFunction<I, ToolContext, O> function);
 
 		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
 
@@ -267,7 +268,7 @@ public interface ChatClient {
 		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
 
 		<I, O> Builder defaultFunction(String name, String description,
-				java.util.function.BiFunction<I, Map<String, Object>, O> function);
+				java.util.function.BiFunction<I, ToolContext, O> function);
 
 		Builder defaultFunctions(String... functionNames);
 

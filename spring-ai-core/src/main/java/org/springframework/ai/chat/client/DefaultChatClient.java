@@ -46,6 +46,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -693,7 +694,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		public <I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.BiFunction<I, Map<String, Object>, O> biFunction) {
+				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
 
 			Assert.hasText(name, "the name must be non-null and non-empty");
 			Assert.hasText(description, "the description must be non-null and non-empty");

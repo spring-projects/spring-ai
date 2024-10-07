@@ -16,12 +16,10 @@
 package org.springframework.ai.model.function;
 
 import java.lang.reflect.Type;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.beans.BeansException;
 import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
 import org.springframework.cloud.function.context.config.FunctionContextUtils;
@@ -32,6 +30,8 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 
 /**
  * A Spring {@link ApplicationContextAware} implementation that provides a way to retrieve
@@ -127,7 +127,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				.build();
 		}
 		else if (bean instanceof BiFunction<?, ?, ?> biFunction) {
-			return FunctionCallbackWrapper.builder((BiFunction<?, Map<String, Object>, ?>) biFunction)
+			return FunctionCallbackWrapper.builder((BiFunction<?, ToolContext, ?>) biFunction)
 				.withName(functionName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
