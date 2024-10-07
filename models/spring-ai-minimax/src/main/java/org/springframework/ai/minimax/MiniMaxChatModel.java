@@ -514,4 +514,8 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 		}).toList();
 	}
 
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
+	}
+
 }
