@@ -85,8 +85,8 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedr
 
 On start-up, the default options can be configured with the `BedrockCohereEmbeddingModel(api, options)` constructor or the `spring.ai.bedrock.cohere.embedding.options.*` properties.
 
-At run-time you can override the default options by adding new, request specific, options to the `EmbeddingRequest` call.
-For example to override the default temperature for a specific request:
+At runtime you can override the default options by adding new, request-specific, options to the `EmbeddingRequest` call.
+For example to override the default input type for a specific request:
 
 [source,java]
 ----
