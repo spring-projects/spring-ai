@@ -119,6 +119,7 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
 With this configuraiton the `spring.ai.azure.openai.chat.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+| spring.ai.azure.openai.custom-headers | A map of custom headers to be included in the API requests. Each entry in the map represents a header, where the key is the header name and the value is the header value. | Empty map
 |====
 
 The prefix `spring.ai.azure.openai.chat` is the property prefix that configures the `ChatModel` implementation for Azure OpenAI.
