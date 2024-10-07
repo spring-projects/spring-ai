@@ -19,6 +19,7 @@ package org.springframework.ai.vertexai.gemini;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Soby Chacko
@@ -78,6 +80,38 @@ public class VertexAiChatModelObservationIT {
 		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
+
+		validate(responseMetadata);
+	}
+
+	@Test
+	void observationForStreamingOperation() {
+
+		var options = VertexAiGeminiChatOptions.builder()
+			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
+			.withTemperature(0.7)
+			.withStopSequences(List.of("this-is-the-end"))
+			.withMaxOutputTokens(2048)
+			.withTopP(1.0)
+			.build();
+
+		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
+
+		Flux<ChatResponse> chatResponse = chatModel.stream(prompt);
+		List<ChatResponse> responses = chatResponse.collectList().block();
+		assertThat(responses).isNotEmpty();
+		assertThat(responses).hasSizeGreaterThan(1);
+
+		String aggregatedResponse = responses.subList(0, responses.size() - 1)
+			.stream()
+			.map(r -> r.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+		assertThat(aggregatedResponse).isNotEmpty();
+
+		ChatResponse lastChatResponse = responses.get(responses.size() - 1);
+
+		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
 		validate(responseMetadata);
