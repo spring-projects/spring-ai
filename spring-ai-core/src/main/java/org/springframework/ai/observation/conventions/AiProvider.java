@@ -39,7 +39,8 @@ public enum AiProvider {
 	MINIMAX("minimax"),
 	MOONSHOT("moonshot"),
 	SPRING_AI("spring_ai"),
-	VERTEX_AI("vertex_ai");
+	VERTEX_AI("vertex_ai"),
+	ONNX("onnx");
 
 	private final String value;
 
