@@ -297,14 +297,10 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 				}
 				return Flux.just(response);
-			}).doOnError(observation::error).doFinally(s -> {
-				// TODO: Consider a custom ObservationContext and
-				// include additional metadata
-				// if (s == SignalType.CANCEL) {
-				// observationContext.setAborted(true);
-				// }
-				observation.stop();
-			}).contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			})
+			.doOnError(observation::error)
+			.doFinally(s -> observation.stop())
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
