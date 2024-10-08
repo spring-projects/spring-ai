@@ -17,6 +17,7 @@ package org.springframework.ai.bedrock.titan.api;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -26,6 +27,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
+import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
 import org.springframework.util.Assert;
@@ -139,7 +141,10 @@ public class TitanEmbeddingBedrockApi extends
 	public record TitanEmbeddingResponse(
 			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("inputTextTokenCount") Integer inputTextTokenCount,
+			@JsonProperty("embeddingsByType") Map<String, Object> embeddingsByType,
 			@JsonProperty("message") Object message) {
+		
+			
 	}
 
 	/**

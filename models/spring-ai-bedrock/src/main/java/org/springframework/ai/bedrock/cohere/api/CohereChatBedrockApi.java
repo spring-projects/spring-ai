@@ -322,6 +322,7 @@ public class CohereChatBedrockApi extends
 		@JsonInclude(Include.NON_NULL)
 		public record Generation(
 				@JsonProperty("id") String id,
+				@JsonProperty("event_type") String event_type,
 				@JsonProperty("likelihood") Float likelihood,
 				@JsonProperty("token_likelihoods") List<TokenLikelihood> tokenLikelihoods,
 				@JsonProperty("finish_reason") FinishReason finishReason,
