@@ -185,8 +185,10 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 					}
 				}
 
-				var metadata = new EmbeddingResponseMetadata(request.getOptions().getModel(),
-						ZhiPuAiUsage.from(totalUsage));
+				String model = (request.getOptions() != null && request.getOptions().getModel() != null)
+						? request.getOptions().getModel() : "unknown";
+
+				var metadata = new EmbeddingResponseMetadata(model, ZhiPuAiUsage.from(totalUsage));
 
 				var indexCounter = new AtomicInteger(0);
 

@@ -68,10 +68,10 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				ChatClient chatClient = ChatClient.builder(chatModel).build();
 
 				String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-						.functions("weatherFunctionWithContext")
-						.toolContext(Map.of("sessionId", "123"))
-						.call()
-						.content();
+					.functions("weatherFunctionWithContext")
+					.toolContext(Map.of("sessionId", "123"))
+					.call()
+					.content();
 				System.out.println(content);
 
 				// Test weatherFunction
