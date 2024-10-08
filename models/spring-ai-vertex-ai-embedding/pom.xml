@@ -76,6 +76,12 @@
 			<artifactId>spring-boot-starter-logging</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

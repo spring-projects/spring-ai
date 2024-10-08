@@ -18,9 +18,11 @@ package org.springframework.ai.autoconfigure.vertexai.embedding;
 import java.io.IOException;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingModel;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -33,6 +35,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.google.cloud.vertexai.VertexAI;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * Auto-configuration for Vertex AI Gemini Chat.
@@ -73,9 +77,16 @@ public class VertexAiEmbeddingAutoConfiguration {
 	@ConditionalOnProperty(prefix = VertexAiTextEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
 	public VertexAiTextEmbeddingModel textEmbedding(VertexAiEmbeddingConnectionDetails connectionDetails,
-			VertexAiTextEmbeddingProperties textEmbeddingProperties, RetryTemplate retryTemplate) {
+			VertexAiTextEmbeddingProperties textEmbeddingProperties, RetryTemplate retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		return new VertexAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.getOptions(), retryTemplate);
+		var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.getOptions(),
+				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
+
+		return embeddingModel;
 	}
 
 	@Bean
