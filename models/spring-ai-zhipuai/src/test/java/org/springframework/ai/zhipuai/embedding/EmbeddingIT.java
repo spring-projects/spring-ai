@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
+import org.springframework.ai.zhipuai.ZhiPuAiTestConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -29,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Geng Rong
  */
-@SpringBootTest
+@SpringBootTest(classes = ZhiPuAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".+")
 class EmbeddingIT {
 
