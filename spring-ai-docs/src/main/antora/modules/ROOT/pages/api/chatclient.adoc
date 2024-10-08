@@ -423,7 +423,16 @@ The following advisor implementations use the `ChatMemory` interface to advice t
 
 * `MessageChatMemoryAdvisor` :  Memory is retrieved and added as a collection of messages to the prompt
 * `PromptChatMemoryAdvisor` :  Memory is retrieved and added into the prompt's system text.
-* `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize)` lets you specify the VectorStore to retrieve the chat history from, the unique conversation ID, the size of the chat history to be retrieved in token size.
+* `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize, int order)`  This constructor allows you to:
+
+. Specify the VectorStore instance used for managing and querying documents.
+. Set a default conversation ID to be used if none is provided in the context.
+. Define the window size for chat history retrieval in terms of token size.
+. Provide system text advice used for the chat advisor system.
+. Set the order of precedence for this advisor in the chain.
+
+
+The `VectorStoreChatMemoryAdvisor.builder()` method lets you specify the default conversation ID, the chat history window size, and the order of the chat history to be retrieved.
 
 A sample `@Service` implementation that uses several advisors is shown below.
 
@@ -452,10 +461,9 @@ public class CustomerSupportAssistant {
                     If there is a charge for the change, you MUST ask the user to consent before proceeding.
                     """)
             .defaultAdvisors(
-                    new PromptChatMemoryAdvisor(chatMemory),
-                    // new MessageChatMemoryAdvisor(chatMemory), // CHAT MEMORY
+                    new MessageChatMemoryAdvisor(chatMemory), // CHAT MEMORY
                     new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()), // RAG
-                    new LoggingAdvisor())
+                    new SimpleLoggerAdvisor())
             .defaultFunctions("getBookingDetails", "changeBooking", "cancelBooking") // FUNCTION CALLING
             .build();
     }

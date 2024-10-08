@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -61,6 +61,8 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 			the user that you can't answer the question.
 			""";
 
+	private static final int DEFAULT_ORDER = 0;
+
 	private final VectorStore vectorStore;
 
 	private final String userTextAdvise;
@@ -72,6 +74,8 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
 	private final boolean protectFromBlocking;
+
+	private final int order;
 
 	/**
 	 * The QuestionAnswerAdvisor retrieves context information from a Vector Store and
@@ -121,6 +125,25 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 */
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise,
 			boolean protectFromBlocking) {
+		this(vectorStore, searchRequest, userTextAdvise, protectFromBlocking, DEFAULT_ORDER);
+	}
+
+	/**
+	 * The QuestionAnswerAdvisor retrieves context information from a Vector Store and
+	 * combines it with the user's text.
+	 * @param vectorStore The vector store to use
+	 * @param searchRequest The search request defined using the portable filter
+	 * expression syntax
+	 * @param userTextAdvise the user text to append to the existing user prompt. The text
+	 * should contain a placeholder named "question_answer_context".
+	 * @param protectFromBlocking if true the advisor will protect the execution from
+	 * blocking threads. If false the advisor will not protect the execution from blocking
+	 * threads. This is useful when the advisor is used in a non-blocking environment. It
+	 * is true by default.
+	 * @param order the order of the advisor.
+	 */
+	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise,
+			boolean protectFromBlocking, int order) {
 
 		Assert.notNull(vectorStore, "The vectorStore must not be null!");
 		Assert.notNull(searchRequest, "The searchRequest must not be null!");
@@ -130,6 +153,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		this.searchRequest = searchRequest;
 		this.userTextAdvise = userTextAdvise;
 		this.protectFromBlocking = protectFromBlocking;
+		this.order = order;
 	}
 
 	@Override
@@ -139,7 +163,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 	@Override
 	public int getOrder() {
-		return 0;
+		return this.order;
 	}
 
 	@Override
@@ -249,6 +273,8 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 		private boolean protectFromBlocking = true;
 
+		private int order = DEFAULT_ORDER;
+
 		private Builder(VectorStore vectorStore) {
 			Assert.notNull(vectorStore, "The vectorStore must not be null!");
 			this.vectorStore = vectorStore;
@@ -271,9 +297,14 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 			return this;
 		}
 
+		public Builder withOrder(int order) {
+			this.order = order;
+			return this;
+		}
+
 		public QuestionAnswerAdvisor build() {
 			return new QuestionAnswerAdvisor(this.vectorStore, this.searchRequest, this.userTextAdvise,
-					this.protectFromBlocking);
+					this.protectFromBlocking, this.order);
 		}
 
 	}

@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -78,7 +79,23 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize, String systemTextAdvise) {
-		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true);
+		this(vectorStore, defaultConversationId, chatHistoryWindowSize, systemTextAdvise,
+				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	}
+
+	/**
+	 * Constructor for VectorStoreChatMemoryAdvisor.
+	 * @param vectorStore the vector store instance used for managing and querying
+	 * documents.
+	 * @param defaultConversationId the default conversation ID used if none is provided
+	 * in the context.
+	 * @param chatHistoryWindowSize the window size for the chat history retrieval.
+	 * @param systemTextAdvise the system text advice used for the chat advisor system.
+	 * @param order the order of precedence for this advisor in the chain.
+	 */
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+			int chatHistoryWindowSize, String systemTextAdvise, int order) {
+		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.systemTextAdvise = systemTextAdvise;
 	}
 
@@ -166,6 +183,31 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.toList();
 
 		return docs;
+	}
+
+	public static Builder builder(VectorStore chatMemory) {
+		return new Builder(chatMemory);
+	}
+
+	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<VectorStore> {
+
+		private String systemTextAdvise = DEFAULT_SYSTEM_TEXT_ADVISE;
+
+		protected Builder(VectorStore chatMemory) {
+			super(chatMemory);
+		}
+
+		public Builder withSystemTextAdvise(String systemTextAdvise) {
+			this.systemTextAdvise = systemTextAdvise;
+			return this;
+		}
+
+		@Override
+		public VectorStoreChatMemoryAdvisor build() {
+			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
+					this.systemTextAdvise);
+		}
+
 	}
 
 }

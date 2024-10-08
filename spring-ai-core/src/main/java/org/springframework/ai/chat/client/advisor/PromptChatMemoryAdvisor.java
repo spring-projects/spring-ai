@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -66,7 +67,13 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
 			String systemTextAdvise) {
-		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true);
+		this(chatMemory, defaultConversationId, chatHistoryWindowSize, systemTextAdvise,
+				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	}
+
+	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
+			String systemTextAdvise, int order) {
+		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.systemTextAdvise = systemTextAdvise;
 	}
 
@@ -131,6 +138,30 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			.toList();
 
 		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
+	}
+
+	public static Builder builder(ChatMemory chatMemory) {
+		return new Builder(chatMemory);
+	}
+
+	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory> {
+
+		private String systemTextAdvise = DEFAULT_SYSTEM_TEXT_ADVISE;
+
+		protected Builder(ChatMemory chatMemory) {
+			super(chatMemory);
+		}
+
+		public Builder withSystemTextAdvise(String systemTextAdvise) {
+			this.systemTextAdvise = systemTextAdvise;
+			return this;
+		}
+
+		public PromptChatMemoryAdvisor build() {
+			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
+					this.systemTextAdvise, this.order);
+		}
+
 	}
 
 }
