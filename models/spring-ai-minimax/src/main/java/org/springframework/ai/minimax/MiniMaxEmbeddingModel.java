@@ -205,4 +205,8 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 		return optionBuilder.build();
 	}
 
+	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
+	}
+
 }
