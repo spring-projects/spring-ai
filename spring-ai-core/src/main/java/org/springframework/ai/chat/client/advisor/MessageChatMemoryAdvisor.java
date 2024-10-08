@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -43,7 +44,12 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 	}
 
 	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
-		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true);
+		this(chatMemory, defaultConversationId, chatHistoryWindowSize, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	}
+
+	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
+			int order) {
+		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
 	}
 
 	@Override
@@ -99,6 +105,23 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 			.toList();
 
 		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
+	}
+
+	public static Builder builder(ChatMemory chatMemory) {
+		return new Builder(chatMemory);
+	}
+
+	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory> {
+
+		protected Builder(ChatMemory chatMemory) {
+			super(chatMemory);
+		}
+
+		public MessageChatMemoryAdvisor build() {
+			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
+					this.order);
+		}
+
 	}
 
 }
