@@ -164,7 +164,7 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiChatStreamNonTransientError() {
 		when(zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
 	}
 
 	@Test

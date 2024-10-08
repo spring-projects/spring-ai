@@ -39,6 +39,7 @@ public enum AiProvider {
 	MINIMAX("minimax"),
 	MOONSHOT("moonshot"),
 	QIANFAN("qianfan"),
+	ZHIPUAI("zhipuai"),
 	SPRING_AI("spring_ai"),
 	VERTEX_AI("vertex_ai");
 
