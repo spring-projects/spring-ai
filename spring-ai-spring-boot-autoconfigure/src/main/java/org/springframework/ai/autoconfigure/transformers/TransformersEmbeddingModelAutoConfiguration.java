@@ -15,16 +15,19 @@
  */
 package org.springframework.ai.autoconfigure.transformers;
 
-import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
-import ai.onnxruntime.OrtSession;
-
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+
+import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
+import ai.onnxruntime.OrtSession;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -38,9 +41,12 @@ public class TransformersEmbeddingModelAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = TransformersEmbeddingModelProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public TransformersEmbeddingModel embeddingModel(TransformersEmbeddingModelProperties properties) {
+	public TransformersEmbeddingModel embeddingModel(TransformersEmbeddingModelProperties properties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel(properties.getMetadataMode());
+		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel(properties.getMetadataMode(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		embeddingModel.setDisableCaching(!properties.getCache().isEnabled());
 		embeddingModel.setResourceCacheDirectory(properties.getCache().getDirectory());
@@ -53,6 +59,8 @@ public class TransformersEmbeddingModelAutoConfiguration {
 		embeddingModel.setGpuDeviceId(properties.getOnnx().getGpuDeviceId());
 
 		embeddingModel.setModelOutputName(properties.getOnnx().getModelOutputName());
+
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
 		return embeddingModel;
 	}
