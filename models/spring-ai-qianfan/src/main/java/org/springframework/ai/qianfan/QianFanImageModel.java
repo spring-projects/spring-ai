@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.qianfan;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.image.Image;
@@ -23,10 +24,16 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationContext;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.qianfan.api.QianFanConstants;
 import org.springframework.ai.qianfan.api.QianFanImageApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -42,6 +49,8 @@ import java.util.List;
 public class QianFanImageModel implements ImageModel {
 
 	private final static Logger logger = LoggerFactory.getLogger(QianFanImageModel.class);
+
+	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
 	/**
 	 * The default options used for the image completion requests.
@@ -59,6 +68,16 @@ public class QianFanImageModel implements ImageModel {
 	private final QianFanImageApi qianFanImageApi;
 
 	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+
+	/**
 	 * Creates an instance of the QianFanImageModel.
 	 * @param qianFanImageApi The QianFanImageApi instance to be used for interacting with
 	 * the QianFan Image API.
@@ -69,48 +88,85 @@ public class QianFanImageModel implements ImageModel {
 	}
 
 	/**
+	 * Creates an instance of the QianFanImageModel.
+	 * @param qianFanImageApi The QianFanImageApi instance to be used for interacting with
+	 * the QianFan Image API.
+	 * @param options The QianFanImageOptions to configure the image model.
+	 * @throws IllegalArgumentException if qianFanImageApi is null
+	 */
+	public QianFanImageModel(QianFanImageApi qianFanImageApi, QianFanImageOptions options) {
+		this(qianFanImageApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	/**
+	 * Creates an instance of the QianFanImageModel.
+	 * @param qianFanImageApi The QianFanImageApi instance to be used for interacting with
+	 * the QianFan Image API.
+	 * @param options The QianFanImageOptions to configure the image model.
+	 * @param retryTemplate The retry template.
+	 * @throws IllegalArgumentException if qianFanImageApi is null
+	 */
+	public QianFanImageModel(QianFanImageApi qianFanImageApi, QianFanImageOptions options,
+			RetryTemplate retryTemplate) {
+		this(qianFanImageApi, options, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	/**
 	 * Initializes a new instance of the QianFanImageModel.
 	 * @param qianFanImageApi The QianFanImageApi instance to be used for interacting with
 	 * the QianFan Image API.
 	 * @param options The QianFanImageOptions to configure the image model.
 	 * @param retryTemplate The retry template.
+	 * @param observationRegistry The ObservationRegistry used for instrumentation.
 	 */
-	public QianFanImageModel(QianFanImageApi qianFanImageApi, QianFanImageOptions options,
-			RetryTemplate retryTemplate) {
+	public QianFanImageModel(QianFanImageApi qianFanImageApi, QianFanImageOptions options, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		Assert.notNull(qianFanImageApi, "QianFanImageApi must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		this.qianFanImageApi = qianFanImageApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		return this.retryTemplate.execute(ctx -> {
+		QianFanImageOptions requestImageOptions = mergeOptions(imagePrompt.getOptions(), this.defaultOptions);
 
-			String instructions = imagePrompt.getInstructions().get(0).getText();
+		QianFanImageApi.QianFanImageRequest imageRequest = createRequest(imagePrompt, requestImageOptions);
 
-			QianFanImageApi.QianFanImageRequest imageRequest = new QianFanImageApi.QianFanImageRequest(instructions,
-					QianFanImageApi.DEFAULT_IMAGE_MODEL);
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt)
+			.provider(QianFanConstants.PROVIDER_NAME)
+			.requestOptions(requestImageOptions)
+			.build();
 
-			if (this.defaultOptions != null) {
-				imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-						QianFanImageApi.QianFanImageRequest.class);
-			}
+		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
 
-			if (imagePrompt.getOptions() != null) {
-				imageRequest = ModelOptionsUtils.merge(toQianFanImageOptions(imagePrompt.getOptions()), imageRequest,
-						QianFanImageApi.QianFanImageRequest.class);
-			}
+				ResponseEntity<QianFanImageApi.QianFanImageResponse> imageResponseEntity = this.retryTemplate
+					.execute(ctx -> this.qianFanImageApi.createImage(imageRequest));
 
-			// Make the request
-			ResponseEntity<QianFanImageApi.QianFanImageResponse> imageResponseEntity = this.qianFanImageApi
-				.createImage(imageRequest);
+				ImageResponse imageResponse = convertResponse(imageResponseEntity, imageRequest);
 
-			// Convert to org.springframework.ai.model derived ImageResponse data type
-			return convertResponse(imageResponseEntity, imageRequest);
-		});
+				observationContext.setResponse(imageResponse);
+
+				return imageResponse;
+			});
+	}
+
+	private QianFanImageApi.QianFanImageRequest createRequest(ImagePrompt imagePrompt,
+			QianFanImageOptions requestImageOptions) {
+		String instructions = imagePrompt.getInstructions().get(0).getText();
+
+		QianFanImageApi.QianFanImageRequest imageRequest = new QianFanImageApi.QianFanImageRequest(instructions,
+				QianFanImageApi.DEFAULT_IMAGE_MODEL);
+
+		return ModelOptionsUtils.merge(requestImageOptions, imageRequest, QianFanImageApi.QianFanImageRequest.class);
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<QianFanImageApi.QianFanImageResponse> imageResponseEntity,
@@ -132,33 +188,32 @@ public class QianFanImageModel implements ImageModel {
 	/**
 	 * Convert the {@link ImageOptions} into {@link QianFanImageOptions}.
 	 * @param runtimeImageOptions the image options to use.
+	 * @param defaultOptions the default options.
 	 * @return the converted {@link QianFanImageOptions}.
 	 */
-	private QianFanImageOptions toQianFanImageOptions(ImageOptions runtimeImageOptions) {
-		QianFanImageOptions.Builder qianFanImageOptionsBuilder = QianFanImageOptions.builder();
-		if (runtimeImageOptions != null) {
-			if (runtimeImageOptions.getN() != null) {
-				qianFanImageOptionsBuilder.withN(runtimeImageOptions.getN());
-			}
-			if (runtimeImageOptions.getModel() != null) {
-				qianFanImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
-			}
-			if (runtimeImageOptions.getWidth() != null) {
-				qianFanImageOptionsBuilder.withWidth(runtimeImageOptions.getWidth());
-			}
-			if (runtimeImageOptions.getHeight() != null) {
-				qianFanImageOptionsBuilder.withHeight(runtimeImageOptions.getHeight());
-			}
-			if (runtimeImageOptions instanceof QianFanImageOptions runtimeQianFanImageOptions) {
-				if (runtimeQianFanImageOptions.getStyle() != null) {
-					qianFanImageOptionsBuilder.withStyle(runtimeQianFanImageOptions.getStyle());
-				}
-				if (runtimeQianFanImageOptions.getUser() != null) {
-					qianFanImageOptionsBuilder.withUser(runtimeQianFanImageOptions.getUser());
-				}
-			}
+	private QianFanImageOptions mergeOptions(@Nullable ImageOptions runtimeImageOptions,
+			QianFanImageOptions defaultOptions) {
+		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeImageOptions, ImageOptions.class,
+				QianFanImageOptions.class);
+
+		if (runtimeOptionsForProvider == null) {
+			return defaultOptions;
 		}
-		return qianFanImageOptionsBuilder.build();
+
+		return QianFanImageOptions.builder()
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withN(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getN(), defaultOptions.getN()))
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withWidth(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getWidth(), defaultOptions.getWidth()))
+			.withHeight(
+					ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getHeight(), defaultOptions.getHeight()))
+			.withStyle(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getStyle(), defaultOptions.getStyle()))
+			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
+			.build();
+	}
+
+	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
 	}
 
 }
