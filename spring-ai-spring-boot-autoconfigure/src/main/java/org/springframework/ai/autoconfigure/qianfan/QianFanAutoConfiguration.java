@@ -19,6 +19,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.qianfan.QianFanChatModel;
 import org.springframework.ai.qianfan.QianFanEmbeddingModel;
@@ -99,7 +100,8 @@ public class QianFanAutoConfiguration {
 			matchIfMissing = true)
 	public QianFanImageModel qianFanImageModel(QianFanConnectionProperties commonProperties,
 			QianFanImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -116,7 +118,12 @@ public class QianFanAutoConfiguration {
 
 		var qianFanImageApi = new QianFanImageApi(baseUrl, apiKey, secretKey, restClientBuilder, responseErrorHandler);
 
-		return new QianFanImageModel(qianFanImageApi, imageProperties.getOptions(), retryTemplate);
+		var imageModel = new QianFanImageModel(qianFanImageApi, imageProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(imageModel::setObservationConvention);
+
+		return imageModel;
 	}
 
 	private QianFanApi qianFanApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
