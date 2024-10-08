@@ -1,7 +1,7 @@
 [[vector-databases]]
 = Vector Databases
 
-A vector databases is a specialized type of database that plays an essential role in AI applications.
+A vector database is a specialized type of database that plays an essential role in AI applications.
 
 In vector databases, queries differ from traditional relational databases.
 Instead of exact matches, they perform similarity searches.
@@ -334,5 +334,3 @@ Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 == Understanding Vectors
 
 xref:api/vectordbs/understand-vectordbs.adoc[Understanding Vectors]
-
-
