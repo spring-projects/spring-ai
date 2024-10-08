@@ -77,13 +77,13 @@ They measure the time spent in the advisor (including the time spend on the inne
 == Chat Model
 
 NOTE: Observability features are currently supported only for `ChatModel` implementations from the following AI model
-providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, and OpenAI.
+providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, OpenAI, Vertex AI, MiniMax, Moonshot, QianFan, Zhiu AI.
 Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
 They measure the time spent on method completion and propagate the related tracing information.
 
-The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
+IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
 
 
 .Low Cardinality Keys
@@ -115,6 +115,9 @@ The `gen_ai.client.token.usage` metrics measures number of input and output toke
 |`gen_ai.prompt` | The full prompt sent to the model. Optional.
 |`gen_ai.completion` | The full response received from the model. Optional.
 |===
+
+NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
+Use the metric name `gen_ai.client.token.usage` that is provided by the `ChatModel`.
 
 .Events
 [cols="a,a"]
@@ -153,7 +156,7 @@ Additional AI model providers will be supported in a future release.
 The `gen_ai.client.operation` observations are recorded on embedding model method calls. 
 They measure the time spent on method completion and propagate the related tracing information.
 
-The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
+IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
 
 .Low Cardinality Keys
 [cols="a,a"]
@@ -174,6 +177,9 @@ The `gen_ai.client.token.usage` metrics measures number of input and output toke
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |===
 
+NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
+Use the metric name `gen_ai.client.token.usage` that is provided by the `EmbeddingModel`.
+
 == Image Model
 
 NOTE: Observability features are currently supported only for `ImageModel` implementations from the following AI model
@@ -183,7 +189,7 @@ Additional AI model providers will be supported in a future release.
 The `gen_ai.client.operation` observations are recorded on image model method calls. 
 They measure the time spent on method completion and propagate the related tracing information.
 
-The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
+IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
 
 
 .Low Cardinality Keys
@@ -208,6 +214,9 @@ The `gen_ai.client.token.usage` metrics measures number of input and output toke
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |`gen_ai.prompt` | The full prompt sent to the model. Optional.
 |===
+
+NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
+Use the metric name `gen_ai.client.token.usage` that is provided by the `ImageModel`.
 
 .Events
 [cols="a,a"]
