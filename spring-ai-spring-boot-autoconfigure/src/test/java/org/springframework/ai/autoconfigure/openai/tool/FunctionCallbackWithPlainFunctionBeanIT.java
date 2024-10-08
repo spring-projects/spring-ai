@@ -28,6 +28,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -63,6 +64,15 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				ChatClient chatClient = ChatClient.builder(chatModel).build();
+
+				String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
+						.functions("weatherFunctionWithContext")
+						.toolContext(Map.of("sessionId", "123"))
+						.call()
+						.content();
+				System.out.println(content);
 
 				// Test weatherFunction
 				UserMessage userMessage = new UserMessage(
