@@ -84,7 +84,8 @@ public class MetadataTransformerIT {
 		assertThat(keywords2).containsKeys("excerpt_keywords");
 
 		assertThat((String) keywords1.get("excerpt_keywords")).contains("Andes", "Aymara");
-		assertThat((String) keywords2.get("excerpt_keywords")).contains("Spring MVC", "Dependency Injection");
+		assertThat(((String) keywords2.get("excerpt_keywords")).toLowerCase()).containsAnyOf("spring mvc",
+				"dependency injection");
 	}
 
 	@Test

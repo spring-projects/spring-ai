@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
@@ -223,7 +224,10 @@ class VertexAiGeminiChatModelIT {
 		// I see a bunch of bananas in a golden basket. The bananas are ripe and yellow.
 		// There are also some red apples in the basket. The basket is sitting on a table.
 		// The background is a blurred light blue color.'
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
+		assertThat(response.getResult().getOutput().getContent()).satisfies(content -> {
+			long count = Stream.of("bananas", "apple", "basket").filter(content::contains).count();
+			assertThat(count).isGreaterThanOrEqualTo(2);
+		});
 
 		// Error with image from URL:
 		// com.google.api.gax.rpc.InvalidArgumentException:

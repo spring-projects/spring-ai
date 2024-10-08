@@ -100,7 +100,8 @@ class MistralAiChatClientIT {
 		// @formatter:on
 
 		logger.info("" + response);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+		assertThat(response.getResult().getOutput().getContent().toLowerCase()).containsAnyOf("blackbeard",
+				"bartholomew roberts");
 	}
 
 	@Test

@@ -12,8 +12,8 @@ public class BaseOllamaIT {
 	}
 
 	/**
-	 * Change the value to false in order to run multiple Ollama IT tests locally reusing
-	 * the same container image Also add the entry
+	 * Change the return value to false in order to run multiple Ollama IT tests locally
+	 * reusing the same container image Also add the entry
 	 *
 	 * testcontainers.reuse.enable=true
 	 *
