@@ -15,11 +15,13 @@
  */
 package org.springframework.ai.vertexai.embedding.text;
 
-import com.google.cloud.aiplatform.v1.EndpointName;
-import com.google.cloud.aiplatform.v1.PredictRequest;
-import com.google.cloud.aiplatform.v1.PredictResponse;
-import com.google.cloud.aiplatform.v1.PredictionServiceClient;
-import com.google.protobuf.Value;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -28,7 +30,12 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
@@ -39,12 +46,13 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.google.cloud.aiplatform.v1.EndpointName;
+import com.google.cloud.aiplatform.v1.PredictRequest;
+import com.google.cloud.aiplatform.v1.PredictResponse;
+import com.google.cloud.aiplatform.v1.PredictionServiceClient;
+import com.google.protobuf.Value;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * A class representing a Vertex AI Text Embedding Model.
@@ -55,11 +63,23 @@ import java.util.stream.Stream;
  */
 public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
+	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+
 	public final VertexAiTextEmbeddingOptions defaultOptions;
 
 	private final VertexAiEmbeddingConnectionDetails connectionDetails;
 
 	private final RetryTemplate retryTemplate;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public VertexAiTextEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiTextEmbeddingOptions defaultEmbeddingOptions) {
@@ -68,11 +88,19 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	public VertexAiTextEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiTextEmbeddingOptions defaultEmbeddingOptions, RetryTemplate retryTemplate) {
+		this(connectionDetails, defaultEmbeddingOptions, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	public VertexAiTextEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails,
+			VertexAiTextEmbeddingOptions defaultEmbeddingOptions, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		Assert.notNull(defaultEmbeddingOptions, "VertexAiTextEmbeddingOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		this.defaultOptions = defaultEmbeddingOptions.initializeDefaults();
 		this.connectionDetails = connectionDetails;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
@@ -83,42 +111,64 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-		return retryTemplate.execute(context -> {
-			VertexAiTextEmbeddingOptions finalOptions = this.defaultOptions;
 
-			if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
-				var defaultOptionsCopy = VertexAiTextEmbeddingOptions.builder().from(this.defaultOptions).build();
-				finalOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
-						VertexAiTextEmbeddingOptions.class);
-			}
+		final VertexAiTextEmbeddingOptions finalOptions = mergedOptions(request);
 
-			PredictionServiceClient client = createPredictionServiceClient();
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(request)
+			.provider(AiProvider.VERTEX_AI.value())
+			.requestOptions(finalOptions)
+			.build();
 
-			EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
+		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				PredictionServiceClient client = createPredictionServiceClient();
 
-			PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
-					finalOptions);
+				EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
 
-			PredictResponse embeddingResponse = getPredictResponse(client, predictRequestBuilder);
+				PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
+						finalOptions);
 
-			int index = 0;
-			int totalTokenCount = 0;
-			List<Embedding> embeddingList = new ArrayList<>();
-			for (Value prediction : embeddingResponse.getPredictionsList()) {
-				Value embeddings = prediction.getStructValue().getFieldsOrThrow("embeddings");
-				Value statistics = embeddings.getStructValue().getFieldsOrThrow("statistics");
-				Value tokenCount = statistics.getStructValue().getFieldsOrThrow("token_count");
-				totalTokenCount = totalTokenCount + (int) tokenCount.getNumberValue();
+				PredictResponse embeddingResponse = retryTemplate
+					.execute(context -> getPredictResponse(client, predictRequestBuilder));
 
-				Value values = embeddings.getStructValue().getFieldsOrThrow("values");
+				int index = 0;
+				int totalTokenCount = 0;
+				List<Embedding> embeddingList = new ArrayList<>();
+				for (Value prediction : embeddingResponse.getPredictionsList()) {
+					Value embeddings = prediction.getStructValue().getFieldsOrThrow("embeddings");
+					Value statistics = embeddings.getStructValue().getFieldsOrThrow("statistics");
+					Value tokenCount = statistics.getStructValue().getFieldsOrThrow("token_count");
+					totalTokenCount = totalTokenCount + (int) tokenCount.getNumberValue();
 
-				float[] vectorValues = VertexAiEmbeddingUtils.toVector(values);
+					Value values = embeddings.getStructValue().getFieldsOrThrow("values");
 
-				embeddingList.add(new Embedding(vectorValues, index++));
-			}
-			return new EmbeddingResponse(embeddingList,
-					generateResponseMetadata(finalOptions.getModel(), totalTokenCount));
-		});
+					float[] vectorValues = VertexAiEmbeddingUtils.toVector(values);
+
+					embeddingList.add(new Embedding(vectorValues, index++));
+				}
+				EmbeddingResponse response = new EmbeddingResponse(embeddingList,
+						generateResponseMetadata(finalOptions.getModel(), totalTokenCount));
+
+				observationContext.setResponse(response);
+
+				return response;
+			});
+	}
+
+	private VertexAiTextEmbeddingOptions mergedOptions(EmbeddingRequest request) {
+
+		VertexAiTextEmbeddingOptions mergedOptions = this.defaultOptions;
+
+		if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
+			var defaultOptionsCopy = VertexAiTextEmbeddingOptions.builder().from(this.defaultOptions).build();
+			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
+					VertexAiTextEmbeddingOptions.class);
+		}
+
+		return mergedOptions;
 	}
 
 	protected PredictRequest.Builder getPredictRequestBuilder(EmbeddingRequest request, EndpointName endpointName,
@@ -182,5 +232,14 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		.of(VertexAiTextEmbeddingModelName.values())
 		.collect(Collectors.toMap(VertexAiTextEmbeddingModelName::getName,
 				VertexAiTextEmbeddingModelName::getDimensions));
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
+	}
 
 }
