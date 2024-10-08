@@ -44,7 +44,7 @@ public class QianFanImageApi extends AuthApi {
 	 * @param secretKey QianFan secret key.
 	 */
 	public QianFanImageApi(String apiKey, String secretKey) {
-		this(ApiUtils.DEFAULT_BASE_URL, apiKey, secretKey, RestClient.builder());
+		this(QianFanConstants.DEFAULT_BASE_URL, apiKey, secretKey, RestClient.builder());
 	}
 
 	/**
@@ -71,7 +71,7 @@ public class QianFanImageApi extends AuthApi {
 		super(apiKey, secretKey);
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders())
+			.defaultHeaders(QianFanUtils.defaultHeaders())
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 	}

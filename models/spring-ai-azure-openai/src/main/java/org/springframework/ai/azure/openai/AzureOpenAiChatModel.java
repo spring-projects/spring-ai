@@ -256,14 +256,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 				}
 
 				Flux<ChatResponse> flux = Flux.just(chatResponse).doOnError(observation::error).doFinally(s -> {
-					// TODO: Consider a custom ObservationContext and
-					// include additional metadata
-					// if (s == SignalType.CANCEL) {
-					// observationContext.setAborted(true);
-					// }
 					observation.stop();
 				}).contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-				// @formatter:on
 
 				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 			});

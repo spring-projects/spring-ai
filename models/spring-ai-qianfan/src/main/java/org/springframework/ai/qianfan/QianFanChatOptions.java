@@ -51,7 +51,7 @@ public class QianFanChatOptions implements ChatOptions {
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 */
-	private @JsonProperty("max_tokens") Integer maxTokens;
+	private @JsonProperty("max_output_tokens") Integer maxTokens;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.

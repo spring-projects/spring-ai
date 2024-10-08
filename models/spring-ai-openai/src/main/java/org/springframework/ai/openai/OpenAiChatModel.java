@@ -347,11 +347,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			})
 			.doOnError(observation::error)
 			.doFinally(s -> {
-				// TODO: Consider a custom ObservationContext and
-				// include additional metadata
-				// if (s == SignalType.CANCEL) {
-				// observationContext.setAborted(true);
-				// }
 				observation.stop();
 			})
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));

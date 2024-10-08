@@ -15,13 +15,25 @@
  */
 package org.springframework.ai.qianfan;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.observation.ChatModelObservationContext;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.qianfan.api.QianFanApi;
@@ -30,11 +42,14 @@ import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionChunk;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage.Role;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionRequest;
+import org.springframework.ai.qianfan.api.QianFanConstants;
+import org.springframework.ai.qianfan.metadata.QianFanUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,14 +60,16 @@ import java.util.Map;
  * backed by {@link QianFanApi}.
  *
  * @author Geng Rong
- * @since 1.0
  * @see ChatModel
  * @see StreamingChatModel
  * @see QianFanApi
+ * @since 1.0
  */
 public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(QianFanChatModel.class);
+
+	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -68,6 +85,16 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	 * Low-level access to the QianFan API.
 	 */
 	private final QianFanApi qianFanApi;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
 	 * Creates an instance of the QianFanChatModel.
@@ -98,12 +125,27 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	 * @param retryTemplate The retry template.
 	 */
 	public QianFanChatModel(QianFanApi qianFanApi, QianFanChatOptions options, RetryTemplate retryTemplate) {
+		this(qianFanApi, options, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Initializes a new instance of the QianFanChatModel.
+	 * @param qianFanApi The QianFanApi instance to be used for interacting with the
+	 * QianFan Chat API.
+	 * @param options The QianFanChatOptions to configure the chat client.
+	 * @param retryTemplate The retry template.
+	 * @param observationRegistry The ObservationRegistry used for instrumentation.
+	 */
+	public QianFanChatModel(QianFanApi qianFanApi, QianFanChatOptions options, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		Assert.notNull(qianFanApi, "QianFanApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
 		this.qianFanApi = qianFanApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
@@ -111,39 +153,80 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		return this.retryTemplate.execute(ctx -> {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(prompt)
+			.provider(QianFanConstants.PROVIDER_NAME)
+			.requestOptions(buildRequestOptions(request))
+			.build();
 
-			ResponseEntity<ChatCompletion> completionEntity = this.doChatCompletion(request);
+		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+					.execute(ctx -> this.qianFanApi.chatCompletionEntity(request));
 
-			var chatCompletion = completionEntity.getBody();
-			if (chatCompletion == null) {
-				logger.warn("No chat completion returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
+				var chatCompletion = completionEntity.getBody();
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-			// if (chatCompletion.baseResponse() != null &&
-			// chatCompletion.baseResponse().statusCode() != 0) {
-			// throw new RuntimeException(chatCompletion.baseResponse().message());
-			// }
+			// @formatter:off
+					Map<String, Object> metadata = Map.of(
+						"id", chatCompletion.id(),
+						"role", Role.ASSISTANT
+					);
+					// @formatter:on
 
-			var generation = new Generation(chatCompletion.result(),
-					Map.of("id", chatCompletion.id(), "role", Role.ASSISTANT));
-			return new ChatResponse(Collections.singletonList(generation));
-		});
+				var assistantMessage = new AssistantMessage(chatCompletion.result(), metadata);
+				List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
+				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
+				observationContext.setResponse(chatResponse);
+				return chatResponse;
+			});
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		var request = createRequest(prompt, true);
 
-		return retryTemplate.execute(ctx -> {
+		return Flux.deferContextual(contextView -> {
+			ChatCompletionRequest request = createRequest(prompt, true);
+
 			var completionChunks = this.qianFanApi.chatCompletionStream(request);
 
-			return completionChunks.map(this::toChatCompletion).map(chatCompletion -> {
-				String id = chatCompletion.id();
-				var generation = new Generation(chatCompletion.result(), Map.of("id", id, "role", Role.ASSISTANT));
-				return new ChatResponse(Collections.singletonList(generation));
-			});
+			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+				.prompt(prompt)
+				.provider(QianFanConstants.PROVIDER_NAME)
+				.requestOptions(buildRequestOptions(request))
+				.build();
+
+			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry);
+
+			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
+			Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion)
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				// @formatter:off
+						Map<String, Object> metadata = Map.of(
+								"id", chatCompletion.id(),
+								"role", Role.ASSISTANT
+						);
+						// @formatter:on
+
+					var assistantMessage = new AssistantMessage(chatCompletion.result(), metadata);
+					List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
+					return new ChatResponse(generations, from(chatCompletion, request.model()));
+				}))
+				.doOnError(observation::error)
+				.doFinally(s -> {
+					observation.stop();
+				})
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			return new MessageAggregator().aggregate(chatResponse, observationContext::setResponse);
+
 		});
 	}
 
@@ -153,7 +236,8 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion toChatCompletion(ChatCompletionChunk chunk) {
-		return new ChatCompletion(chunk.id(), chunk.object(), chunk.created(), chunk.result(), chunk.usage());
+		return new ChatCompletion(chunk.id(), chunk.object(), chunk.created(), chunk.result(), chunk.finishReason(),
+				chunk.usage());
 	}
 
 	/**
@@ -193,8 +277,30 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 		return QianFanChatOptions.fromOptions(this.defaultOptions);
 	}
 
-	private ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
-		return this.qianFanApi.chatCompletionEntity(request);
+	private ChatOptions buildRequestOptions(QianFanApi.ChatCompletionRequest request) {
+		return ChatOptionsBuilder.builder()
+			.withModel(request.model())
+			.withFrequencyPenalty(request.frequencyPenalty())
+			.withMaxTokens(request.maxTokens())
+			.withPresencePenalty(request.presencePenalty())
+			.withStopSequences(request.stop())
+			.withTemperature(request.temperature())
+			.withTopP(request.topP())
+			.build();
+	}
+
+	private ChatResponseMetadata from(QianFanApi.ChatCompletion result, String model) {
+		Assert.notNull(result, "QianFan ChatCompletionResult must not be null");
+		return ChatResponseMetadata.builder()
+			.withId(result.id() != null ? result.id() : "")
+			.withUsage(result.usage() != null ? QianFanUsage.from(result.usage()) : new EmptyUsage())
+			.withModel(model)
+			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.build();
+	}
+
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
 	}
 
 }

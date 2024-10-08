@@ -60,7 +60,7 @@ public class QianFanApi extends AuthApi {
 	 * @param secretKey QianFan secret key.
 	 */
 	public QianFanApi(String apiKey, String secretKey) {
-		this(ApiUtils.DEFAULT_BASE_URL, apiKey, secretKey);
+		this(QianFanConstants.DEFAULT_BASE_URL, apiKey, secretKey);
 	}
 
 	/**
@@ -110,18 +110,18 @@ public class QianFanApi extends AuthApi {
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public QianFanApi(String baseUrl, String apiKey, String secretKey, RestClient.Builder restClientBuilder,
-					  WebClient.Builder webClientBuilder,ResponseErrorHandler responseErrorHandler) {
+					  WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		super(apiKey, secretKey);
 
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders())
+				.defaultHeaders(QianFanUtils.defaultHeaders())
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = webClientBuilder
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders())
+				.defaultHeaders(QianFanUtils.defaultHeaders())
 				.build();
 	}
 
@@ -308,6 +308,7 @@ public class QianFanApi extends AuthApi {
 			@JsonProperty("object") String object,
 			@JsonProperty("created") Long created,
 			@JsonProperty("result") String result,
+			@JsonProperty("finish_reason") String finishReason,
 			@JsonProperty("usage") Usage usage) {
 	}
 
@@ -319,6 +320,7 @@ public class QianFanApi extends AuthApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(
+			@JsonProperty("completion_tokens") Integer completionTokens,
 			@JsonProperty("prompt_tokens") Integer promptTokens,
 			@JsonProperty("total_tokens") Integer totalTokens) {
 
@@ -339,6 +341,7 @@ public class QianFanApi extends AuthApi {
 			@JsonProperty("object") String object,
 			@JsonProperty("created") Long created,
 			@JsonProperty("result") String result,
+			@JsonProperty("finish_reason") String finishReason,
 			@JsonProperty("is_end") Boolean end,
 
 			@JsonProperty("usage") Usage usage
