@@ -307,12 +307,35 @@ public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 <4> You can control the order of execution by setting the order value. Lower values execute first.
 <5> Provides a unique name for the advisor.
 
-==== Spring AI built-in Advisors
+==== Spring AI Built-in Advisors
 
-You can also explore the built-in advisors provided by the Spring AI framework.
-For example the `MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor` and `VectorStoreChatMemoryAdvisor` advisors provide different strategies the conversation chat history in a chat memory store and the `QuestionAnswerAdvisor` uses a vector store to provide question-answering capabilities (e.g. implements the RAG pattern).
+Spring AI framework provides several built-in advisors to enhance your AI interactions. Here's an overview of the available advisors:
 
-The `SafeGuardAdvisor` is another, simple, built-in advisor that can be used to prevent the model from generating harmful or inappropriate content.
+===== Chat Memory Advisors
+These advisors manage conversation history in a chat memory store:
+
+* `MessageChatMemoryAdvisor`
++
+Retrieves memory and adds it as a collection of messages to the prompt. This approach maintains the structure of the conversation history.  Note, not all AI Models support this approach.
+
+* `PromptChatMemoryAdvisor`
++
+Retrieves memory and incorporates it into the prompt's system text.
+
+* `VectorStoreChatMemoryAdvisor`
++
+Retrieves memory from a VectorStore and adds it into the prompt's system text. This advisor is useful for efficiently searching and retrieving relevant information from large datasets.
+
+===== Question Answering Advisor
+* `QuestionAnswerAdvisor`
++
+This advisor uses a vector store to provide question-answering capabilities, implementing the RAG (Retrieval-Augmented Generation) pattern.
+
+===== Content Safety Advisor
+* `SafeGuardAdvisor`
++
+A simple advisor designed to prevent the model from generating harmful or inappropriate content.
+
 
 === Streaming vs Non-Streaming
 
