@@ -2,6 +2,8 @@
 
 Hugging Face Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
 
+TIP: Please select the LLMs link:https://huggingface.co/docs/text-generation-inference/index[text-generation-inference] support.
+
 == Prerequisites
 
 You will need to create an Inference Endpoint on Hugging Face and create an API token to access the endpoint.
