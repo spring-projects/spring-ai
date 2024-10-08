@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.qianfan;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -25,11 +26,17 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.qianfan.api.QianFanApi;
 import org.springframework.ai.qianfan.api.QianFanApi.EmbeddingList;
+import org.springframework.ai.qianfan.api.QianFanConstants;
 import org.springframework.ai.qianfan.metadata.QianFanUsage;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -46,6 +53,8 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(QianFanEmbeddingModel.class);
 
+	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+
 	private final QianFanEmbeddingOptions defaultOptions;
 
 	private final RetryTemplate retryTemplate;
@@ -53,6 +62,16 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 	private final QianFanApi qianFanApi;
 
 	private final MetadataMode metadataMode;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
 	 * Constructor for the QianFanEmbeddingModel class.
@@ -69,8 +88,7 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public QianFanEmbeddingModel(QianFanApi qianFanApi, MetadataMode metadataMode) {
 		this(qianFanApi, metadataMode,
-				QianFanEmbeddingOptions.builder().withModel(QianFanApi.DEFAULT_EMBEDDING_MODEL).build(),
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
+				QianFanEmbeddingOptions.builder().withModel(QianFanApi.DEFAULT_EMBEDDING_MODEL).build());
 	}
 
 	/**
@@ -86,22 +104,37 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 
 	/**
 	 * Initializes a new instance of the QianFanEmbeddingModel class.
+	 * @param qianFanApi The QianFanApi instance to use for making API requests.
+	 * @param metadataMode The mode for generating metadata.
+	 * @param qianFanEmbeddingOptions The options for QianFan embedding.
+	 * @param retryTemplate - The RetryTemplate for retrying failed API requests.
+	 */
+	public QianFanEmbeddingModel(QianFanApi qianFanApi, MetadataMode metadataMode,
+			QianFanEmbeddingOptions qianFanEmbeddingOptions, RetryTemplate retryTemplate) {
+		this(qianFanApi, metadataMode, qianFanEmbeddingOptions, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Initializes a new instance of the QianFanEmbeddingModel class.
 	 * @param qianFanApi - The QianFanApi instance to use for making API requests.
 	 * @param metadataMode - The mode for generating metadata.
 	 * @param options - The options for QianFan embedding.
 	 * @param retryTemplate - The RetryTemplate for retrying failed API requests.
+	 * @param observationRegistry - The ObservationRegistry used for instrumentation.
 	 */
 	public QianFanEmbeddingModel(QianFanApi qianFanApi, MetadataMode metadataMode, QianFanEmbeddingOptions options,
-			RetryTemplate retryTemplate) {
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		Assert.notNull(qianFanApi, "QianFanApi must not be null");
 		Assert.notNull(metadataMode, "metadataMode must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 
 		this.qianFanApi = qianFanApi;
 		this.metadataMode = metadataMode;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
@@ -112,41 +145,72 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
+		QianFanEmbeddingOptions requestOptions = mergeOptions(request.getOptions(), this.defaultOptions);
+		QianFanApi.EmbeddingRequest apiRequest = new QianFanApi.EmbeddingRequest(request.getInstructions(),
+				requestOptions.getModel(), requestOptions.getUser());
 
-		return this.retryTemplate.execute(ctx -> {
-			QianFanApi.EmbeddingRequest apiRequest = (this.defaultOptions != null)
-					? new QianFanApi.EmbeddingRequest(request.getInstructions(), this.defaultOptions.getModel(),
-							this.defaultOptions.getUser())
-					: new QianFanApi.EmbeddingRequest(request.getInstructions());
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(request)
+			.provider(QianFanConstants.PROVIDER_NAME)
+			.requestOptions(requestOptions)
+			.build();
 
-			if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
-				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
-						QianFanApi.EmbeddingRequest.class);
-			}
+		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				EmbeddingList apiEmbeddingResponse = this.retryTemplate
+					.execute(ctx -> this.qianFanApi.embeddings(apiRequest).getBody());
 
-			EmbeddingList apiEmbeddingResponse = this.qianFanApi.embeddings(apiRequest).getBody();
+				if (apiEmbeddingResponse == null) {
+					logger.warn("No embeddings returned for request: {}", request);
+					return new EmbeddingResponse(List.of());
+				}
 
-			if (apiEmbeddingResponse == null) {
-				logger.warn("No embeddings returned for request: {}", request);
-				return new EmbeddingResponse(List.of());
-			}
+				if (apiEmbeddingResponse.errorNsg() != null) {
+					logger.error("Error message returned for request: {}", apiEmbeddingResponse.errorNsg());
+					throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.errorCode()
+							+ ", message:" + apiEmbeddingResponse.errorNsg());
+				}
 
-			if (apiEmbeddingResponse.errorNsg() != null) {
-				logger.error("Error message returned for request: {}", apiEmbeddingResponse.errorNsg());
-				throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.errorCode()
-						+ ", message:" + apiEmbeddingResponse.errorNsg());
-			}
+				var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
+						QianFanUsage.from(apiEmbeddingResponse.usage()));
 
-			var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-					QianFanUsage.from(apiEmbeddingResponse.usage()));
+				List<Embedding> embeddings = apiEmbeddingResponse.data()
+					.stream()
+					.map(e -> new Embedding(e.embedding(), e.index()))
+					.toList();
 
-			List<Embedding> embeddings = apiEmbeddingResponse.data()
-				.stream()
-				.map(e -> new Embedding(e.embedding(), e.index()))
-				.toList();
+				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, metadata);
 
-			return new EmbeddingResponse(embeddings, metadata);
-		});
+				observationContext.setResponse(embeddingResponse);
+
+				return embeddingResponse;
+			});
+
+	}
+
+	/**
+	 * Merge runtime and default {@link EmbeddingOptions} to compute the final options to
+	 * use in the request.
+	 */
+	private QianFanEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions runtimeOptions,
+			QianFanEmbeddingOptions defaultOptions) {
+		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, EmbeddingOptions.class,
+				QianFanEmbeddingOptions.class);
+
+		if (runtimeOptionsForProvider == null) {
+			return defaultOptions;
+		}
+
+		return QianFanEmbeddingOptions.builder()
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
+			.build();
+	}
+
+	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
 	}
 
 }
