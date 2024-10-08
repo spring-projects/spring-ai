@@ -184,7 +184,7 @@
 		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>
 		<milvus.version>2.3.4</milvus.version>
 		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
-		<pinecone.version>0.8.0</pinecone.version>
+		<pinecone.version>2.1.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>

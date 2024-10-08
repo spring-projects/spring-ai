@@ -16,7 +16,6 @@
 
 package org.springframework.ai.vectorstore;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,15 +42,11 @@ import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
 
 import io.micrometer.observation.ObservationRegistry;
-import io.pinecone.PineconeClient;
-import io.pinecone.PineconeClientConfig;
-import io.pinecone.PineconeConnection;
-import io.pinecone.PineconeConnectionConfig;
-import io.pinecone.proto.DeleteRequest;
-import io.pinecone.proto.QueryRequest;
-import io.pinecone.proto.QueryResponse;
-import io.pinecone.proto.UpsertRequest;
-import io.pinecone.proto.Vector;
+import io.pinecone.clients.Index;
+import io.pinecone.clients.Pinecone;
+import io.pinecone.unsigned_indices_model.QueryResponseWithUnsignedIndices;
+import io.pinecone.unsigned_indices_model.VectorWithUnsignedIndices;
+import static io.pinecone.commons.IndexInterface.buildUpsertVectorWithUnsignedIndices;
 
 /**
  * A VectorStore implementation backed by Pinecone, a cloud-based vector database. This
@@ -72,7 +67,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private final EmbeddingModel embeddingModel;
 
-	private final PineconeConnection pineconeConnection;
+	private final Pinecone pinecone;
+
+	private final Index index;
 
 	private final String pineconeNamespace;
 
@@ -91,6 +88,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 */
 	public static final class PineconeVectorStoreConfig {
 
+		private final String apiKey;
+
 		// The free tier (gcp-starter) doesn't support Namespaces.
 		// Leave the namespace empty (e.g. "") for the free tier.
 		private final String namespace;
@@ -99,32 +98,18 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		private final String distanceMetadataFieldName;
 
-		private final PineconeConnectionConfig connectionConfig;
+		private final String indexName;
 
-		private final PineconeClientConfig clientConfig;
-
-		// private final int defaultSimilarityTopK;
-
-		/**
-		 * Constructor using the builder.
-		 * @param builder The configuration builder.
-		 */
 		/**
 		 * Constructor using the builder.
 		 * @param builder The configuration builder.
 		 */
 		public PineconeVectorStoreConfig(Builder builder) {
+			this.apiKey = builder.apiKey;
 			this.namespace = builder.namespace;
 			this.contentFieldName = builder.contentFieldName;
 			this.distanceMetadataFieldName = builder.distanceMetadataFieldName;
-
-			// this.defaultSimilarityTopK = builder.defaultSimilarityTopK;
-			this.connectionConfig = new PineconeConnectionConfig().withIndexName(builder.indexName);
-			this.clientConfig = new PineconeClientConfig().withApiKey(builder.apiKey)
-				.withEnvironment(builder.environment)
-				.withProjectName(builder.projectId)
-				.withApiKey(builder.apiKey)
-				.withServerSideTimeoutSec((int) builder.serverSideTimeout.toSeconds());
+			this.indexName = builder.indexName;
 		}
 
 		/**
@@ -146,10 +131,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 			private String apiKey;
 
-			private String projectId;
-
-			private String environment;
-
 			private String indexName;
 
 			// The free-tier (gcp-starter) doesn't support Namespaces!
@@ -158,12 +139,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			private String contentFieldName = CONTENT_FIELD_NAME;
 
 			private String distanceMetadataFieldName = DISTANCE_METADATA_FIELD_NAME;
-
-			/**
-			 * Optional server-side timeout in seconds for all operations. Default: 20
-			 * seconds.
-			 */
-			private Duration serverSideTimeout = Duration.ofSeconds(20);
 
 			private Builder() {
 			}
@@ -175,26 +150,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 */
 			public Builder withApiKey(String apiKey) {
 				this.apiKey = apiKey;
-				return this;
-			}
-
-			/**
-			 * Pinecone project id.
-			 * @param projectId Project id to use.
-			 * @return this builder.
-			 */
-			public Builder withProjectId(String projectId) {
-				this.projectId = projectId;
-				return this;
-			}
-
-			/**
-			 * Pinecone environment name.
-			 * @param environment Environment name (e.g. gcp-starter).
-			 * @return this builder.
-			 */
-			public Builder withEnvironment(String environment) {
-				this.environment = environment;
 				return this;
 			}
 
@@ -240,16 +195,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			}
 
 			/**
-			 * Pinecone server side timeout.
-			 * @param serverSideTimeout server timeout to use.
-			 * @return this builder.
-			 */
-			public Builder withServerSideTimeout(Duration serverSideTimeout) {
-				this.serverSideTimeout = serverSideTimeout;
-				return this;
-			}
-
-			/**
 			 * {@return the immutable configuration}
 			 */
 			public PineconeVectorStoreConfig build() {
@@ -285,10 +230,11 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		this.embeddingModel = embeddingModel;
 		this.pineconeNamespace = config.namespace;
-		this.pineconeIndexName = config.connectionConfig.getIndexName();
+		this.pineconeIndexName = config.indexName;
 		this.pineconeContentFieldName = config.contentFieldName;
 		this.pineconeDistanceMetadataFieldName = config.distanceMetadataFieldName;
-		this.pineconeConnection = new PineconeClient(config.clientConfig).connect(config.connectionConfig);
+		this.pinecone = new Pinecone.Builder(config.apiKey).build();
+		this.index = pinecone.getIndexConnection(pineconeIndexName);
 		this.objectMapper = new ObjectMapper();
 		this.batchingStrategy = batchingStrategy;
 	}
@@ -300,20 +246,13 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 */
 	public void add(List<Document> documents, String namespace) {
 		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
-		List<Vector> upsertVectors = documents.stream()
-			.map(document -> Vector.newBuilder()
-				.setId(document.getId())
-				.addAllValues(EmbeddingUtils.toList(document.getEmbedding()))
-				.setMetadata(metadataToStruct(document))
-				.build())
+
+		List<VectorWithUnsignedIndices> upsertVectors = documents.stream()
+			.map(document -> buildUpsertVectorWithUnsignedIndices(document.getId(),
+					EmbeddingUtils.toList(document.getEmbedding()), null, null, metadataToStruct(document)))
 			.toList();
 
-		UpsertRequest upsertRequest = UpsertRequest.newBuilder()
-			.addAllVectors(upsertVectors)
-			.setNamespace(namespace)
-			.build();
-
-		this.pineconeConnection.getBlockingStub().upsert(upsertRequest);
+		this.index.upsert(upsertVectors, namespace);
 	}
 
 	/**
@@ -361,13 +300,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 */
 	public Optional<Boolean> delete(List<String> documentIds, String namespace) {
 
-		DeleteRequest deleteRequest = DeleteRequest.newBuilder()
-			.setNamespace(namespace) // ignored for free tier.
-			.addAllIds(documentIds)
-			.setDeleteAll(false)
-			.build();
-
-		this.pineconeConnection.getBlockingStub().delete(deleteRequest);
+		this.index.deleteByIds(documentIds, namespace);
 
 		// The Pinecone delete API does not provide deletion status info.
 		return Optional.of(true);
@@ -390,17 +323,15 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
-		var queryRequestBuilder = QueryRequest.newBuilder()
-			.addAllVector(EmbeddingUtils.toList(queryEmbedding))
-			.setTopK(request.getTopK())
-			.setIncludeMetadata(true)
-			.setNamespace(namespace);
-
+		QueryResponseWithUnsignedIndices queryResponse = null;
 		if (StringUtils.hasText(nativeExpressionFilters)) {
-			queryRequestBuilder.setFilter(metadataFiltersToStruct(nativeExpressionFilters));
+			queryResponse = this.index.queryByVector(request.getTopK(), EmbeddingUtils.toList(queryEmbedding),
+					namespace, metadataFiltersToStruct(nativeExpressionFilters));
 		}
-
-		QueryResponse queryResponse = this.pineconeConnection.getBlockingStub().query(queryRequestBuilder.build());
+		else {
+			queryResponse = this.index.queryByVector(request.getTopK(), EmbeddingUtils.toList(queryEmbedding),
+					namespace);
+		}
 
 		return queryResponse.getMatchesList()
 			.stream()
