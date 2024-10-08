@@ -340,17 +340,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 								}
 							}
 						}
-						finally {
-							if (!inputIds.isClosed()) {
-								inputIds.close();
-							}
-							if (!attentionMask.isClosed()) {
-								attentionMask.close();
-							}
-							if (!tokenTypeIds.isClosed()) {
-								tokenTypeIds.close();
-							}
-						}
 					}
 				}
 				catch (OrtException ex) {
