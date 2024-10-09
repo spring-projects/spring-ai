@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.audio.speech;
+package org.springframework.ai.audio.speech;
 
 import org.springframework.ai.model.ModelResponse;
-import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
+import org.springframework.util.Assert;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Creates a new instance of SpeechResponse with the given speech result.
+ * The speech completion (i.e. speech generation) response returned by an AI provider.
  *
  * @author Ahmed Yousri
- * @since 1.0.0-M1
+ * @author Thomas Vitale
+ * @since 1.0.0
  */
 public class SpeechResponse implements ModelResponse<Speech> {
 
 	private final Speech speech;
 
-	private final OpenAiAudioSpeechResponseMetadata speechResponseMetadata;
+	private final SpeechResponseMetadata speechResponseMetadata;
 
 	/**
 	 * Creates a new instance of SpeechResponse with the given speech result.
@@ -41,7 +41,7 @@ public class SpeechResponse implements ModelResponse<Speech> {
 	 * @see Speech
 	 */
 	public SpeechResponse(Speech speech) {
-		this(speech, OpenAiAudioSpeechResponseMetadata.NULL);
+		this(speech, new SpeechResponseMetadata());
 	}
 
 	/**
@@ -51,9 +51,11 @@ public class SpeechResponse implements ModelResponse<Speech> {
 	 * @param speechResponseMetadata the speech response metadata to be set in the
 	 * SpeechResponse
 	 * @see Speech
-	 * @see OpenAiAudioSpeechResponseMetadata
+	 * @see SpeechResponseMetadata
 	 */
-	public SpeechResponse(Speech speech, OpenAiAudioSpeechResponseMetadata speechResponseMetadata) {
+	public SpeechResponse(Speech speech, SpeechResponseMetadata speechResponseMetadata) {
+		Assert.notNull(speech, "speech cannot be null");
+		Assert.notNull(speechResponseMetadata, "speechResponseMetadata cannot be null");
 		this.speech = speech;
 		this.speechResponseMetadata = speechResponseMetadata;
 	}
@@ -65,12 +67,17 @@ public class SpeechResponse implements ModelResponse<Speech> {
 
 	@Override
 	public List<Speech> getResults() {
-		return Collections.singletonList(speech);
+		return List.of(speech);
 	}
 
 	@Override
-	public OpenAiAudioSpeechResponseMetadata getMetadata() {
+	public SpeechResponseMetadata getMetadata() {
 		return speechResponseMetadata;
+	}
+
+	@Override
+	public String toString() {
+		return "SpeechResponse [" + "speechResponseMetadata=" + speechResponseMetadata + ", speech=" + speech + "]";
 	}
 
 	@Override

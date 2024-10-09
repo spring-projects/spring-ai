@@ -19,34 +19,37 @@ package org.springframework.ai.openai;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.audio.speech.Speech;
+import org.springframework.ai.audio.speech.SpeechModel;
+import org.springframework.ai.audio.speech.SpeechOptions;
+import org.springframework.ai.audio.speech.SpeechPrompt;
+import org.springframework.ai.audio.speech.SpeechResponse;
+import org.springframework.ai.audio.speech.StreamingSpeechModel;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
-import org.springframework.ai.openai.audio.speech.Speech;
-import org.springframework.ai.openai.audio.speech.SpeechModel;
-import org.springframework.ai.openai.audio.speech.SpeechPrompt;
-import org.springframework.ai.openai.audio.speech.SpeechResponse;
-import org.springframework.ai.openai.audio.speech.StreamingSpeechModel;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
 /**
- * OpenAI audio speech client implementation for backed by {@link OpenAiAudioApi}.
+ * OpenAI audio speech client implementation backed by {@link OpenAiAudioApi}.
  *
  * @author Ahmed Yousri
  * @author Hyunjoon Choi
  * @author Thomas Vitale
  * @see OpenAiAudioApi
- * @since 1.0.0-M1
+ * @since 1.0.0
  */
 public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final static Logger logger = LoggerFactory.getLogger(OpenAiAudioSpeechModel.class);
 
 	/**
 	 * The default options used for the audio completion requests.
@@ -115,15 +118,9 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	}
 
 	@Override
-	public byte[] call(String text) {
-		SpeechPrompt speechRequest = new SpeechPrompt(text);
-		return call(speechRequest).getResult().getOutput();
-	}
-
-	@Override
 	public SpeechResponse call(SpeechPrompt speechPrompt) {
-
-		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
+		OpenAiAudioSpeechOptions requestSpeechOptions = mergeOptions(speechPrompt.getOptions(), this.defaultOptions);
+		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt, requestSpeechOptions);
 
 		ResponseEntity<byte[]> speechEntity = this.retryTemplate
 			.execute(ctx -> this.audioApi.createSpeech(speechRequest));
@@ -149,53 +146,54 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	 */
 	@Override
 	public Flux<SpeechResponse> stream(SpeechPrompt speechPrompt) {
+		OpenAiAudioSpeechOptions requestSpeechOptions = mergeOptions(speechPrompt.getOptions(), this.defaultOptions);
+		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt, requestSpeechOptions);
 
-		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
+		Flux<ResponseEntity<byte[]>> speechEntity = this.audioApi.stream(speechRequest);
 
-		Flux<ResponseEntity<byte[]>> speechEntity = this.retryTemplate
-			.execute(ctx -> this.audioApi.stream(speechRequest));
-
-		return speechEntity.map(entity -> new SpeechResponse(new Speech(entity.getBody()),
+		return speechEntity.map(entity -> new SpeechResponse(
+				new Speech(entity.getBody() != null ? entity.getBody() : new byte[0]),
 				new OpenAiAudioSpeechResponseMetadata(OpenAiResponseHeaderExtractor.extractAiResponseHeaders(entity))));
 	}
 
-	private OpenAiAudioApi.SpeechRequest createRequest(SpeechPrompt request) {
-		OpenAiAudioSpeechOptions options = this.defaultOptions;
-
-		if (request.getOptions() != null) {
-			if (request.getOptions() instanceof OpenAiAudioSpeechOptions runtimeOptions) {
-				options = this.merge(runtimeOptions, options);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type SpeechOptions: "
-						+ request.getOptions().getClass().getSimpleName());
-			}
-		}
-
-		String input = StringUtils.isNotBlank(options.getInput()) ? options.getInput()
+	private OpenAiAudioApi.SpeechRequest createRequest(SpeechPrompt request,
+			OpenAiAudioSpeechOptions requestSpeechOptions) {
+		String input = StringUtils.isNotBlank(requestSpeechOptions.getInput()) ? requestSpeechOptions.getInput()
 				: request.getInstructions().getText();
 
 		OpenAiAudioApi.SpeechRequest.Builder requestBuilder = OpenAiAudioApi.SpeechRequest.builder()
-			.withModel(options.getModel())
+			.withModel(requestSpeechOptions.getModel())
 			.withInput(input)
-			.withVoice(options.getVoice())
-			.withResponseFormat(options.getResponseFormat())
-			.withSpeed(options.getSpeed());
+			.withResponseFormat(requestSpeechOptions.getResponseFormat())
+			.withSpeed(requestSpeechOptions.getSpeed())
+			.withVoice(requestSpeechOptions.getVoice());
 
 		return requestBuilder.build();
 	}
 
-	private OpenAiAudioSpeechOptions merge(OpenAiAudioSpeechOptions source, OpenAiAudioSpeechOptions target) {
-		OpenAiAudioSpeechOptions.Builder mergedBuilder = OpenAiAudioSpeechOptions.builder();
+	/**
+	 * Merge runtime and default {@link SpeechOptions} to compute the final options to use
+	 * in the request.
+	 */
+	private OpenAiAudioSpeechOptions mergeOptions(@Nullable SpeechOptions runtimeOptions,
+			OpenAiAudioSpeechOptions defaultOptions) {
+		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, SpeechOptions.class,
+				OpenAiAudioSpeechOptions.class);
 
-		mergedBuilder.withModel(source.getModel() != null ? source.getModel() : target.getModel());
-		mergedBuilder.withInput(source.getInput() != null ? source.getInput() : target.getInput());
-		mergedBuilder.withVoice(source.getVoice() != null ? source.getVoice() : target.getVoice());
-		mergedBuilder.withResponseFormat(
-				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
-		mergedBuilder.withSpeed(source.getSpeed() != null ? source.getSpeed() : target.getSpeed());
+		if (runtimeOptionsForProvider == null) {
+			return defaultOptions;
+		}
 
-		return mergedBuilder.build();
+		return OpenAiAudioSpeechOptions.builder()
+			// Handle portable options
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			// Handle OpenAI specific options
+			.withInput(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getInput(), defaultOptions.getInput()))
+			.withResponseFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getResponseFormat(),
+					defaultOptions.getResponseFormat()))
+			.withSpeed(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getSpeed(), defaultOptions.getSpeed()))
+			.withVoice(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getVoice(), defaultOptions.getVoice()))
+			.build();
 	}
 
 }

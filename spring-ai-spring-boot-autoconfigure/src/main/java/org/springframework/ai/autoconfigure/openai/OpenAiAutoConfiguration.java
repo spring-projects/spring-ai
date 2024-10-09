@@ -213,7 +213,7 @@ public class OpenAiAutoConfiguration {
 		var openAiAudioApi = new OpenAiAudioApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
 				restClientBuilder, webClientBuilder, responseErrorHandler);
 
-		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
+		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean

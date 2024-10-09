@@ -18,6 +18,9 @@ package org.springframework.ai.openai.audio.speech;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.audio.speech.SpeechPrompt;
+import org.springframework.ai.audio.speech.SpeechResponse;
+import org.springframework.ai.audio.speech.SpeechResponseMetadata;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -44,11 +47,12 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 /**
  * @author Ahmed Yousri
+ * @author Thomas Vitale
  */
 @RestClientTest(OpenAiSpeechModelWithSpeechResponseMetadataTests.Config.class)
 public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
-	private static String TEST_API_KEY = "sk-1234567890";
+	private static final String TEST_API_KEY = "sk-1234567890";
 
 	private static final Float SPEED = 1.0f;
 
@@ -65,7 +69,6 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
 	@Test
 	void aiResponseContainsImageResponseMetadata() {
-
 		prepareMock();
 
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
@@ -75,16 +78,20 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 			.withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
 			.build();
 
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
+		SpeechPrompt speechPrompt = SpeechPrompt.builder()
+			.withMessage("Today is a wonderful day to build something people love!")
+			.withSpeechOptions(speechOptions)
+			.build();
 		SpeechResponse response = openAiSpeechClient.call(speechPrompt);
 
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(audioBytes).hasSizeGreaterThan(0);
 
-		OpenAiAudioSpeechResponseMetadata speechResponseMetadata = response.getMetadata();
+		SpeechResponseMetadata speechResponseMetadata = response.getMetadata();
 		assertThat(speechResponseMetadata).isNotNull();
-		var requestLimit = speechResponseMetadata.getRateLimit();
+		assertThat(speechResponseMetadata).isInstanceOf(OpenAiAudioSpeechResponseMetadata.class);
+		var requestLimit = ((OpenAiAudioSpeechResponseMetadata) speechResponseMetadata).getRateLimit();
+		assertThat(requestLimit).isNotNull();
 		Long requestsLimit = requestLimit.getRequestsLimit();
 		Long tokensLimit = requestLimit.getTokensLimit();
 		Long tokensRemaining = requestLimit.getTokensRemaining();
@@ -96,11 +103,9 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 		assertThat(tokensRemaining).isEqualTo(112358L);
 		assertThat(requestsRemaining).isEqualTo(999L);
 		assertThat(requestsReset).isEqualTo(Duration.parse("PT64H15M29S"));
-
 	}
 
 	private void prepareMock() {
-
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.set(OpenAiApiResponseHeaders.REQUESTS_LIMIT_HEADER.getName(), "4000");
 		httpHeaders.set(OpenAiApiResponseHeaders.REQUESTS_REMAINING_HEADER.getName(), "999");
@@ -114,7 +119,6 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess("Audio bytes as string", MediaType.APPLICATION_OCTET_STREAM).headers(httpHeaders));
-
 	}
 
 	@SpringBootConfiguration
