@@ -58,6 +58,12 @@ public class OpenAiUsage implements Usage {
 		return generationTokens != null ? generationTokens.longValue() : 0;
 	}
 
+	public Long getCachedTokens() {
+		OpenAiApi.Usage.PromptTokensDetails promptTokenDetails = getUsage().promptTokensDetails();
+		Integer cachedTokens = promptTokenDetails != null ? promptTokenDetails.cachedTokens() : null;
+		return cachedTokens != null ? cachedTokens.longValue() : 0;
+	}
+
 	public Long getReasoningTokens() {
 		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
 		Integer reasoningTokens = completionTokenDetails != null ? completionTokenDetails.reasoningTokens() : null;
