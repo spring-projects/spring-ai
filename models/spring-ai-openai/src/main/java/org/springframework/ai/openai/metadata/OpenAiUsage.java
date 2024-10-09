@@ -24,6 +24,7 @@ import org.springframework.util.Assert;
  *
  * @author John Blum
  * @author Thomas Vitale
+ * @author David Frizelle
  * @since 0.7.0
  * @see <a href=
  * "https://platform.openai.com/docs/api-reference/completions/object">Completion
@@ -56,6 +57,12 @@ public class OpenAiUsage implements Usage {
 	public Long getGenerationTokens() {
 		Integer generationTokens = getUsage().completionTokens();
 		return generationTokens != null ? generationTokens.longValue() : 0;
+	}
+
+	public Long getCachedTokens() {
+		OpenAiApi.Usage.PromptTokensDetails promptTokenDetails = getUsage().promptTokensDetails();
+		Integer cachedTokens = promptTokenDetails != null ? promptTokenDetails.cachedTokens() : null;
+		return cachedTokens != null ? cachedTokens.longValue() : 0;
 	}
 
 	public Long getReasoningTokens() {

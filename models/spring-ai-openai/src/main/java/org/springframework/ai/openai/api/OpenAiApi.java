@@ -56,6 +56,7 @@ import reactor.core.publisher.Mono;
  * @author Michael Lavelle
  * @author Mariusz Bernacki
  * @author Thomas Vitale
+ * @author David Frizelle
  */
 public class OpenAiApi {
 
@@ -938,17 +939,29 @@ public class OpenAiApi {
 	 * @param promptTokens Number of tokens in the prompt.
 	 * @param totalTokens Total number of tokens used in the request (prompt +
 	 * completion).
-	 * @param completionTokenDetails Breakdown of tokens used in a completion
+	 * @param promptTokensDetails Breakdown of tokens used in the prompt.
+	 * @param completionTokenDetails Breakdown of tokens used in a completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(// @formatter:off
 			@JsonProperty("completion_tokens") Integer completionTokens,
 			@JsonProperty("prompt_tokens") Integer promptTokens,
 			@JsonProperty("total_tokens") Integer totalTokens,
+			@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails,
 			@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails) {// @formatter:on
 
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
-			this(completionTokens, promptTokens, totalTokens, null);
+			this(completionTokens, promptTokens, totalTokens, null, null);
+		}
+
+		/**
+		 * Breakdown of tokens used in the prompt
+		 *
+		 * @param cachedTokens Cached tokens present in the prompt.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record PromptTokensDetails(// @formatter:off
+				@JsonProperty("cached_tokens") Integer cachedTokens) {// @formatter:on
 		}
 
 		/**

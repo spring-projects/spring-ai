@@ -55,16 +55,17 @@ class OpenAiUsageTests {
 	}
 
 	@Test
-	void whenCompletionTokenDetailsIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null);
+	void whenPromptAndCompletionTokensDetailsIsNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null);
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getTotalTokens()).isEqualTo(300);
+		assertThat(usage.getCachedTokens()).isEqualTo(0);
 		assertThat(usage.getReasoningTokens()).isEqualTo(0);
 	}
 
 	@Test
 	void whenReasoningTokensIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
 				new OpenAiApi.Usage.CompletionTokenDetails(null));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getReasoningTokens()).isEqualTo(0);
@@ -72,10 +73,26 @@ class OpenAiUsageTests {
 
 	@Test
 	void whenCompletionTokenDetailsIsPresent() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
 				new OpenAiApi.Usage.CompletionTokenDetails(50));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getReasoningTokens()).isEqualTo(50);
+	}
+
+	@Test
+	void whenCacheTokensIsNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, new OpenAiApi.Usage.PromptTokensDetails(null),
+				null);
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getCachedTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void whenCacheTokensIsPresent() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, new OpenAiApi.Usage.PromptTokensDetails(15),
+				null);
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getCachedTokens()).isEqualTo(15);
 	}
 
 }
