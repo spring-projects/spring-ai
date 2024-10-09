@@ -57,10 +57,7 @@ import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.MimeType;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -309,6 +306,8 @@ public class DefaultChatClient implements ChatClient {
 
 		private final DefaultChatClientRequestSpec request;
 
+		private ChatResponse chatResponse;
+
 		public DefaultCallResponseSpec(DefaultChatClientRequestSpec request) {
 			this.request = request;
 		}
@@ -392,11 +391,15 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		public ChatResponse chatResponse() {
-			return doGetChatResponse();
+			this.chatResponse = doGetChatResponse();
+			return this.chatResponse;
 		}
 
 		public String content() {
-			return doGetChatResponse().getResult().getOutput().getContent();
+			if (this.chatResponse == null) {
+				this.chatResponse = doGetChatResponse();
+			}
+			return this.chatResponse.getResult().getOutput().getContent();
 		}
 
 	}
@@ -404,6 +407,8 @@ public class DefaultChatClient implements ChatClient {
 	public static class DefaultStreamResponseSpec implements StreamResponseSpec {
 
 		private final DefaultChatClientRequestSpec request;
+
+		private Flux<ChatResponse> chatResponse;
 
 		public DefaultStreamResponseSpec(DefaultChatClientRequestSpec request) {
 			this.request = request;
@@ -441,11 +446,15 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		public Flux<ChatResponse> chatResponse() {
-			return doGetObservableFluxChatResponse(this.request);
+			this.chatResponse = doGetObservableFluxChatResponse(this.request);
+			return this.chatResponse;
 		}
 
 		public Flux<String> content() {
-			return doGetObservableFluxChatResponse(this.request).map(r -> {
+			if (this.chatResponse == null) {
+				this.chatResponse = doGetObservableFluxChatResponse(this.request);
+			}
+			return this.chatResponse.map(r -> {
 				if (r.getResult() == null || r.getResult().getOutput() == null
 						|| r.getResult().getOutput().getContent() == null) {
 					return "";
@@ -859,25 +868,35 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Prompt prompt;
 
+		private ChatResponse chatResponse;
+
 		public DefaultCallPromptResponseSpec(ChatModel chatModel, Prompt prompt) {
 			this.chatModel = chatModel;
 			this.prompt = prompt;
 		}
 
 		public String content() {
-			return doGetChatResponse(this.prompt).getResult().getOutput().getContent();
+			if (this.chatResponse == null) {
+				this.chatResponse = doGetChatResponse(this.prompt);
+			}
+			return this.chatResponse.getResult().getOutput().getContent();
 		}
 
 		public List<String> contents() {
-			return doGetChatResponse(this.prompt).getResults().stream().map(r -> r.getOutput().getContent()).toList();
+			if (this.chatResponse == null) {
+				this.chatResponse = doGetChatResponse(this.prompt);
+			}
+			return this.chatResponse.getResults().stream().map(r -> r.getOutput().getContent()).toList();
 		}
 
 		public ChatResponse chatResponse() {
-			return doGetChatResponse(this.prompt);
+			this.chatResponse = doGetChatResponse(this.prompt);
+			return this.chatResponse;
 		}
 
 		private ChatResponse doGetChatResponse(Prompt prompt) {
-			return chatModel.call(prompt);
+			this.chatResponse = chatModel.call(prompt);
+			return this.chatResponse;
 		}
 
 	}
@@ -888,21 +907,28 @@ public class DefaultChatClient implements ChatClient {
 
 		private final StreamingChatModel chatModel;
 
+		private Flux<ChatResponse> chatResponse;
+
 		public DefaultStreamPromptResponseSpec(StreamingChatModel streamingChatModel, Prompt prompt) {
 			this.chatModel = streamingChatModel;
 			this.prompt = prompt;
 		}
 
 		public Flux<ChatResponse> chatResponse() {
-			return doGetFluxChatResponse(this.prompt);
+			this.chatResponse = doGetFluxChatResponse(this.prompt);
+			return this.chatResponse;
 		}
 
 		private Flux<ChatResponse> doGetFluxChatResponse(Prompt prompt) {
-			return this.chatModel.stream(prompt);
+			this.chatResponse = this.chatModel.stream(prompt);
+			return this.chatResponse;
 		}
 
 		public Flux<String> content() {
-			return doGetFluxChatResponse(this.prompt).map(r -> {
+			if (this.chatResponse == null) {
+				this.chatResponse = doGetFluxChatResponse(this.prompt);
+			}
+			return this.chatResponse.map(r -> {
 				if (r.getResult() == null || r.getResult().getOutput() == null
 						|| r.getResult().getOutput().getContent() == null) {
 					return "";
