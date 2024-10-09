@@ -16,7 +16,8 @@
 package org.springframework.ai.azure.openai.metadata;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
-import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions;
+import org.springframework.ai.audio.transcription.metadata.StructuredResponse;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -28,13 +29,9 @@ public class AzureOpenAiAudioTranscriptionResponseMetadata extends AudioTranscri
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s }";
 
-	public static final AzureOpenAiAudioTranscriptionResponseMetadata NULL = new AzureOpenAiAudioTranscriptionResponseMetadata() {
-	};
-
-	public static AzureOpenAiAudioTranscriptionResponseMetadata from(
-			AzureOpenAiAudioTranscriptionOptions.StructuredResponse result) {
-		Assert.notNull(result, "AzureOpenAI Transcription must not be null");
-		return new AzureOpenAiAudioTranscriptionResponseMetadata();
+	public static AzureOpenAiAudioTranscriptionResponseMetadata from(StructuredResponse structuredResponse) {
+		Assert.notNull(structuredResponse, "AzureOpenAI Transcription must not be null");
+		return new AzureOpenAiAudioTranscriptionResponseMetadata(structuredResponse);
 	}
 
 	public static AzureOpenAiAudioTranscriptionResponseMetadata from(String result) {
@@ -42,7 +39,19 @@ public class AzureOpenAiAudioTranscriptionResponseMetadata extends AudioTranscri
 		return new AzureOpenAiAudioTranscriptionResponseMetadata();
 	}
 
+	private final StructuredResponse structuredResponse;
+
 	protected AzureOpenAiAudioTranscriptionResponseMetadata() {
+		this(null);
+	}
+
+	public AzureOpenAiAudioTranscriptionResponseMetadata(StructuredResponse structuredResponse) {
+		this.structuredResponse = structuredResponse;
+	}
+
+	@Nullable
+	public StructuredResponse getStructuredResponse() {
+		return structuredResponse;
 	}
 
 	@Override
