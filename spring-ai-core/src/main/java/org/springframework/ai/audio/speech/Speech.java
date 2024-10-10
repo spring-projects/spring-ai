@@ -13,30 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.audio.speech;
+package org.springframework.ai.audio.speech;
 
 import org.springframework.ai.model.ModelResult;
-import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechMetadata;
-import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * The Speech class represents the result of speech synthesis from an AI model. It
- * implements the ModelResult interface with the output type of byte array.
+ * The result of speech synthesis from an AI model.
  *
  * @author Ahmed Yousri
- * @since 1.0.0-M1
+ * @author Thomas Vitale
+ * @since 1.0.0
  */
 public class Speech implements ModelResult<byte[]> {
 
 	private final byte[] audio;
 
-	private OpenAiAudioSpeechMetadata speechMetadata;
+	private final SpeechMetadata speechMetadata;
 
 	public Speech(byte[] audio) {
+		this(audio, SpeechMetadata.EMPTY);
+	}
+
+	public Speech(byte[] audio, SpeechMetadata speechMetadata) {
+		Assert.notNull(audio, "audio cannot be null");
+		Assert.notNull(speechMetadata, "speechMetadata cannot be null");
 		this.audio = audio;
+		this.speechMetadata = speechMetadata;
 	}
 
 	@Override
@@ -45,13 +51,8 @@ public class Speech implements ModelResult<byte[]> {
 	}
 
 	@Override
-	public OpenAiAudioSpeechMetadata getMetadata() {
-		return speechMetadata != null ? speechMetadata : OpenAiAudioSpeechMetadata.NULL;
-	}
-
-	public Speech withSpeechMetadata(@Nullable OpenAiAudioSpeechMetadata speechMetadata) {
-		this.speechMetadata = speechMetadata;
-		return this;
+	public SpeechMetadata getMetadata() {
+		return speechMetadata;
 	}
 
 	@Override
@@ -70,7 +71,7 @@ public class Speech implements ModelResult<byte[]> {
 
 	@Override
 	public String toString() {
-		return "Speech{" + "text=" + audio + ", speechMetadata=" + speechMetadata + '}';
+		return "Speech{" + "text=<byte[]>, speechMetadata=" + speechMetadata + "}";
 	}
 
 }
