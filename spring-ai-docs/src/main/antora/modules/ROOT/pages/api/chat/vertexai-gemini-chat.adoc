@@ -11,7 +11,7 @@ link:https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemin
 == Prerequisites
 
 - Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, apropriate for you OS.
-- Authenticate by running the following command. 
+- Authenticate by running the following command.
 Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
 
 [source]
@@ -153,7 +153,7 @@ spring.ai.vertex.ai.gemini.chat.options.model=vertex-pro-vision
 spring.ai.vertex.ai.gemini.chat.options.temperature=0.5
 ----
 
-TIP: replace the `api-key` with your VertexAI credentials.
+TIP: replace the `project-id` with your Google Cloud Project ID and `location` with a https://cloud.google.com/gemini/docs/locations[Gemini location].
 
 This will create a `VertexAiGeminiChatModel` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the chat model for text generations.
@@ -232,4 +232,3 @@ The `VertexAiGeminiChatOptions.Builder` is fluent options builder.
 Following class diagram illustrates the Vertex AI Gemini native Java API:
 
 image::vertex-ai-gemini-native-api.jpg[w=800,align="center"]
-
