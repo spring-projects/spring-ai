@@ -18,11 +18,14 @@ package org.springframework.ai.bedrock.anthropic3;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
@@ -82,11 +85,17 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
 		List<Generation> generations = response.content().stream().map(content -> {
-			return new Generation(content.text(), Map.of())
-				.withGenerationMetadata(ChatGenerationMetadata.from(response.stopReason(), null));
+			return new Generation(new AssistantMessage(content.text()),
+					ChatGenerationMetadata.from(response.stopReason(), null));
 		}).toList();
 
-		return new ChatResponse(generations);
+		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
+			.withId(response.id())
+			.withModel(response.model())
+			.withUsage(extractUsage(response))
+			.build();
+
+		return new ChatResponse(generations, metadata);
 	}
 
 	@Override
@@ -114,6 +123,11 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 
 			return new ChatResponse(List.of(generation));
 		});
+	}
+
+	protected Usage extractUsage(AnthropicChatResponse response) {
+		return new DefaultUsage(response.usage().inputTokens().longValue(),
+				response.usage().outputTokens().longValue());
 	}
 
 	/**
