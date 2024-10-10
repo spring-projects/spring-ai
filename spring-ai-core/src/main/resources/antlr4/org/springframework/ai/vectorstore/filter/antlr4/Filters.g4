@@ -97,7 +97,7 @@ DECIMAL_VALUE
     ;
 
 IDENTIFIER
-    : (LETTER | DIGIT)+
+    : (LETTER | DIGIT | '_')+
     ;
 
 fragment DECIMAL_DIGITS
