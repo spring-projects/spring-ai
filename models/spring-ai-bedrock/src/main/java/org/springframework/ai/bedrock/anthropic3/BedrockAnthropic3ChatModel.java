@@ -18,10 +18,10 @@ package org.springframework.ai.bedrock.anthropic3;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import reactor.core.publisher.Flux;
 
@@ -82,8 +82,9 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
 		List<Generation> generations = response.content().stream().map(content -> {
-			return new Generation(content.text(), Map.of())
-				.withGenerationMetadata(ChatGenerationMetadata.from(response.stopReason(), null));
+			return new Generation(new AssistantMessage(content.text()),
+					ChatGenerationMetadata.from(response.stopReason(), new Anthropic3ChatBedrockApi.AnthropicUsage(
+							response.usage().inputTokens(), response.usage().outputTokens())));
 		}).toList();
 
 		return new ChatResponse(generations);
