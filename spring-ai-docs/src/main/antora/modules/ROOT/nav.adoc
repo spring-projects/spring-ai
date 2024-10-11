@@ -3,7 +3,7 @@
 * xref:getting-started.adoc[Getting Started]
 * xref:api/chatclient.adoc[]
 ** xref:api/advisors.adoc[Advisors]
-* xref:api/index.adoc[AI Model API]
+* xref:api/index.adoc[AI Models]
 ** xref:api/prompt.adoc[]
 ** xref:api/chatmodel.adoc[]
 *** xref:api/bedrock-chat.adoc[Amazon Bedrock]
