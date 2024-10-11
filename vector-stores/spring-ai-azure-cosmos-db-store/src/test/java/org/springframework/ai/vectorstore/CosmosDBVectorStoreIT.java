@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
@@ -47,6 +48,12 @@ public class CosmosDBVectorStoreIT {
 		// Add the document to the vector store
 		vectorStore.add(List.of(document1, document2));
 
+		//create duplicate docs and assert that second one throws exception
+		Document document3 = new Document(document1.getId(), "Sample content3", Map.of("key3", "value3"));
+		assertThatThrownBy(() -> vectorStore.add(List.of(document3)))
+				.isInstanceOf(Exception.class)
+				.hasMessageContaining("Duplicate document id: " + document1.getId());
+
 		// Perform a similarity search
 		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sample content").withTopK(1));
 
@@ -62,6 +69,8 @@ public class CosmosDBVectorStoreIT {
 
 		// Verify the search results
 		assertThat(results2).isEmpty();
+
+
 	}
 
 	@Test
@@ -114,13 +123,21 @@ public class CosmosDBVectorStoreIT {
 		assertThat(results2).hasSize(1);
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
 
+		List<Document> results3 = vectorStore.similaritySearch(SearchRequest.query("The World")
+			.withTopK(10)
+			.withFilterExpression(
+					b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
+
+		assertThat(results3).hasSize(1);
+		assertThat(results3).extracting(Document::getId).containsExactlyInAnyOrder("4");
+
 		vectorStore.delete(List.of(document1.getId(), document2.getId(), document3.getId(), document4.getId()));
 
 		// Perform a similarity search again
-		List<Document> results3 = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(1));
+		List<Document> results4 = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(1));
 
 		// Verify the search results
-		assertThat(results3).isEmpty();
+		assertThat(results4).isEmpty();
 	}
 
 	@SpringBootConfiguration

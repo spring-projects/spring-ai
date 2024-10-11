@@ -18,6 +18,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 
 	private int vectorStoreThoughput = 400;
 
+	private long vectorDimensions = 1536;
+
 	private List<String> metadataFieldsList;
 
 	public int getVectorStoreThoughput() {
@@ -86,4 +88,11 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 
 	}
 
+	public long getVectorDimensions() {
+		return vectorDimensions;
+	}
+
+	public void setVectorDimensions(long vectorDimensions) {
+		this.vectorDimensions = vectorDimensions;
+	}
 }
