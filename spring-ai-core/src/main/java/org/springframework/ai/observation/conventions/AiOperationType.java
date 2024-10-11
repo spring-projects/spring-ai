@@ -29,6 +29,7 @@ public enum AiOperationType {
 
 	// @formatter:off
 
+	// Please, keep the alphabetical sorting.
 	CHAT("chat"),
 	EMBEDDING("embedding"),
 	FRAMEWORK("framework"),

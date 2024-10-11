@@ -16,8 +16,10 @@
 package org.springframework.ai.model.function;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -29,6 +31,7 @@ import org.springframework.util.Assert;
  * function-calling.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 public class FunctionCallingOptionsBuilder {
@@ -66,7 +69,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFrequencyPenalty(Float frequencyPenalty) {
+	public FunctionCallingOptionsBuilder withFrequencyPenalty(Double frequencyPenalty) {
 		this.options.setFrequencyPenalty(frequencyPenalty);
 		return this;
 	}
@@ -76,7 +79,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withPresencePenalty(Float presencePenalty) {
+	public FunctionCallingOptionsBuilder withPresencePenalty(Double presencePenalty) {
 		this.options.setPresencePenalty(presencePenalty);
 		return this;
 	}
@@ -86,7 +89,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withTemperature(Float temperature) {
+	public FunctionCallingOptionsBuilder withTemperature(Double temperature) {
 		this.options.setTemperature(temperature);
 		return this;
 	}
@@ -96,8 +99,26 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withTopP(Float topP) {
+	public FunctionCallingOptionsBuilder withTopP(Double topP) {
 		this.options.setTopP(topP);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withProxyToolCalls(Boolean proxyToolCalls) {
+		this.options.setProxyToolCalls(proxyToolCalls);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withToolContext(Map<String, Object> context) {
+		Assert.notNull(context, "Tool context must not be null");
+		this.options.getToolContext().putAll(context);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withToolContext(String key, Object value) {
+		Assert.notNull(key, "Key must not be null");
+		Assert.notNull(value, "Value must not be null");
+		this.options.getToolContext().put(key, value);
 		return this;
 	}
 
@@ -113,19 +134,27 @@ public class FunctionCallingOptionsBuilder {
 
 		private String model;
 
-		private Float frequencyPenalty;
+		private Double frequencyPenalty;
 
 		private Integer maxTokens;
 
-		private Float presencePenalty;
+		private Double presencePenalty;
 
 		private List<String> stopSequences;
 
-		private Float temperature;
+		private Double temperature;
 
 		private Integer topK;
 
-		private Float topP;
+		private Double topP;
+
+		private Boolean proxyToolCalls = false;
+
+		private Map<String, Object> context = new HashMap<>();
+
+		public static FunctionCallingOptionsBuilder builder() {
+			return new FunctionCallingOptionsBuilder();
+		}
 
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
@@ -157,11 +186,11 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getFrequencyPenalty() {
+		public Double getFrequencyPenalty() {
 			return frequencyPenalty;
 		}
 
-		public void setFrequencyPenalty(Float frequencyPenalty) {
+		public void setFrequencyPenalty(Double frequencyPenalty) {
 			this.frequencyPenalty = frequencyPenalty;
 		}
 
@@ -175,11 +204,11 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getPresencePenalty() {
+		public Double getPresencePenalty() {
 			return presencePenalty;
 		}
 
-		public void setPresencePenalty(Float presencePenalty) {
+		public void setPresencePenalty(Double presencePenalty) {
 			this.presencePenalty = presencePenalty;
 		}
 
@@ -193,11 +222,11 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getTemperature() {
+		public Double getTemperature() {
 			return temperature;
 		}
 
-		public void setTemperature(Float temperature) {
+		public void setTemperature(Double temperature) {
 			this.temperature = temperature;
 		}
 
@@ -211,12 +240,29 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getTopP() {
+		public Double getTopP() {
 			return topP;
 		}
 
-		public void setTopP(Float topP) {
+		public void setTopP(Double topP) {
 			this.topP = topP;
+		}
+
+		@Override
+		public Boolean getProxyToolCalls() {
+			return proxyToolCalls;
+		}
+
+		public void setProxyToolCalls(Boolean proxyToolCalls) {
+			this.proxyToolCalls = proxyToolCalls;
+		}
+
+		public Map<String, Object> getToolContext() {
+			return context;
+		}
+
+		public void setToolContext(Map<String, Object> context) {
+			this.context = context;
 		}
 
 		@Override
@@ -231,6 +277,8 @@ public class FunctionCallingOptionsBuilder {
 				.withTopP(this.topP)
 				.withFunctions(this.functions)
 				.withFunctionCallbacks(this.functionCallbacks)
+				.withProxyToolCalls(this.proxyToolCalls)
+				.withToolContext(this.getToolContext())
 				.build();
 		}
 

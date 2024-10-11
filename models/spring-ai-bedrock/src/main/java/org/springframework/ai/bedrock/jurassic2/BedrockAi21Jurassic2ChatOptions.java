@@ -61,13 +61,13 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Modifies the distribution from which tokens are sampled.
 	 */
 	@JsonProperty("temperature")
-	private Float temperature;
+	private Double temperature;
 
 	/**
 	 * Sample tokens from the corresponding top percentile of probability mass.
 	 */
 	@JsonProperty("topP")
-	private Float topP;
+	private Double topP;
 
 	/**
 	 * Return the top-K (topKReturn) alternative tokens.
@@ -171,7 +171,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * @return The temperature.
 	 */
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return temperature;
 	}
 
@@ -179,7 +179,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Sets the temperature for modifying the token sampling distribution.
 	 * @param temperature The temperature.
 	 */
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
@@ -189,7 +189,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * @return The topP parameter.
 	 */
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return topP;
 	}
 
@@ -198,7 +198,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * mass.
 	 * @param topP The topP parameter.
 	 */
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -238,12 +238,12 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return getFrequencyPenaltyOptions() != null ? getFrequencyPenaltyOptions().scale() : null;
 	}
 
 	@JsonIgnore
-	public void setFrequencyPenalty(Float frequencyPenalty) {
+	public void setFrequencyPenalty(Double frequencyPenalty) {
 		if (frequencyPenalty != null) {
 			setFrequencyPenaltyOptions(Penalty.builder().scale(frequencyPenalty).build());
 		}
@@ -267,12 +267,12 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return getPresencePenaltyOptions() != null ? getPresencePenaltyOptions().scale() : null;
 	}
 
 	@JsonIgnore
-	public void setPresencePenalty(Float presencePenalty) {
+	public void setPresencePenalty(Double presencePenalty) {
 		if (presencePenalty != null) {
 			setPresencePenaltyOptions(Penalty.builder().scale(presencePenalty).build());
 		}
@@ -344,12 +344,12 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			request.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			request.setTopP(topP);
 			return this;
 		}
@@ -389,7 +389,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Penalty object for frequency, presence, and count penalties.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record Penalty(@JsonProperty("scale") Float scale, @JsonProperty("applyToNumbers") Boolean applyToNumbers,
+	public record Penalty(@JsonProperty("scale") Double scale, @JsonProperty("applyToNumbers") Boolean applyToNumbers,
 			@JsonProperty("applyToPunctuations") Boolean applyToPunctuations,
 			@JsonProperty("applyToStopwords") Boolean applyToStopwords,
 			@JsonProperty("applyToWhitespaces") Boolean applyToWhitespaces,
@@ -401,7 +401,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 		public static class Builder {
 
-			private Float scale;
+			private Double scale;
 
 			// can't keep it null due to modelOptionsUtils#mapToClass convert null to
 			// false
@@ -415,7 +415,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 			private Boolean applyToEmojis = true;
 
-			public Builder scale(Float scale) {
+			public Builder scale(Double scale) {
 				this.scale = scale;
 				return this;
 			}

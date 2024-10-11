@@ -9,9 +9,7 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,7 +34,7 @@ class TypesenseContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	private static final GenericContainer<?> typesense = new GenericContainer<>("typesense/typesense:26.0")
+	private static final GenericContainer<?> typesense = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
 		.withExposedPorts(8108)
 		.withCommand("--data-dir", "/tmp", "--enable-cors")
 		.withEnv("TYPESENSE_API_KEY", "secret")

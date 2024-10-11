@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,6 +63,38 @@ class OpenAiChatClientIT extends AbstractIT {
 	private Resource systemTextResource;
 
 	record ActorsFilms(String actor, List<String> movies) {
+	}
+
+	@Test
+	@Disabled("Although the Re2 advisor improves the response correctness it is not always guarantied to work.")
+	void re2() {
+		// .user(" Could Scooby Doo fit in a Kangaroo Pouch? Choices: (A) Yes (B) No")
+		// .user("Roger has 5 tennis balls. He buys 2 more cans of tennis " +
+		// "balls. Each can has 3 tennis balls. How many tennis balls " +
+		// "does he have now?")
+
+		String REASON_QUESTION = """
+				What do these words have in common?
+				Freight Stone Often Canine.
+					""";
+
+		// @formatter:off
+		ChatClient chatClient = ChatClient.builder(chatModel)
+			.defaultOptions(OpenAiChatOptions.builder()
+				.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build())
+			.defaultUser(REASON_QUESTION)
+			.build();
+						
+		String response = chatClient.prompt()
+				.advisors(new ReReadingAdvisor())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("" + response);
+		assertThat(response.toLowerCase().replace("(", " ").replace(")", " ").replace("\"", " ").replace("\"", " "))
+			.contains(" eight", " one", " ten", " nine");
+
 	}
 
 	@Test
@@ -179,19 +212,26 @@ class OpenAiChatClientIT extends AbstractIT {
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
 		// @formatter:off
-		Flux<String> chatResponse = ChatClient.create(chatModel)
+		Flux<ChatResponse> chatResponse = ChatClient.create(chatModel)
 				.prompt()
+				.options(OpenAiChatOptions.builder().withStreamUsage(true).build())
 				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
 						.param("format", outputConverter.getFormat()))
 				.stream()
-				.content();
+				.chatResponse();
 
-		String generationTextFromStream = chatResponse.collectList()
+		List<ChatResponse> chatResponses = chatResponse.collectList()
 				.block()
 				.stream()
+				.toList();
+
+		String generationTextFromStream = chatResponses
+				.stream()
+				.filter(cr -> cr.getResult() != null)
+				.map(cr -> cr.getResult().getOutput().getContent())
 				.collect(Collectors.joining());
 		// @formatter:on
 

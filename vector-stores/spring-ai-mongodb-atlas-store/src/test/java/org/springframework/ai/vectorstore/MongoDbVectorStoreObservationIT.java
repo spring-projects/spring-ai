@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -55,18 +56,20 @@ import com.mongodb.client.MongoClient;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Eddú Meléndez
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class MongoDbVectorStoreObservationIT {
 
 	@Container
-	private static MongoDBAtlasContainer container = new MongoDBAtlasContainer();
+	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(MongoDbImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class)
@@ -113,22 +116,23 @@ public class MongoDbVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("mongodb add")
+				.hasContextualNameEqualTo("%s add".formatted(VectorStoreProvider.MONGODB.value()))
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
 						VectorStoreProvider.MONGODB.value())
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(),
 						SpringAiKind.VECTOR_STORE.value())
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString(), "none")
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "1536")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
 						MongoDBAtlasVectorStore.DEFAULT_VECTOR_COLLECTION_NAME)
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "none")
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_NAMESPACE.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "embedding")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString(), "none")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString(),
-						"none")
+				.doesNotHaveHighCardinalityKeyValueWithKey(
+						HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString())
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString())
+				.doesNotHaveHighCardinalityKeyValueWithKey(
+						HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString())
 
 				.hasBeenStarted()
 				.hasBeenStopped();
@@ -144,7 +148,7 @@ public class MongoDbVectorStoreObservationIT {
 				.doesNotHaveAnyRemainingCurrentObservation()
 				.hasObservationWithNameEqualTo(DefaultVectorStoreObservationConvention.DEFAULT_NAME)
 				.that()
-				.hasContextualNameEqualTo("mongodb query")
+				.hasContextualNameEqualTo("%s query".formatted(VectorStoreProvider.MONGODB.value()))
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "query")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(),
 						VectorStoreProvider.MONGODB.value())
@@ -156,9 +160,10 @@ public class MongoDbVectorStoreObservationIT {
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "1536")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
 						MongoDBAtlasVectorStore.DEFAULT_VECTOR_COLLECTION_NAME)
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "none")
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_NAMESPACE.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "embedding")
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_SIMILARITY_METRIC.asString(), "none")
+				.doesNotHaveHighCardinalityKeyValueWithKey(
+						HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_TOP_K.asString(), "1")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_QUERY_SIMILARITY_THRESHOLD.asString(),
 						"0.0")
@@ -185,7 +190,7 @@ public class MongoDbVectorStoreObservationIT {
 					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
 						.withMetadataFieldsToFilter(List.of("country", "year"))
 						.build(),
-					true, observationRegistry, null);
+					true, observationRegistry, null, new TokenCountBatchingStrategy());
 		}
 
 		@Bean

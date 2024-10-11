@@ -34,6 +34,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @author Wei Jiang
  * @since 0.8.0
  */
@@ -139,10 +140,10 @@ public class AnthropicChatBedrockApi extends
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatRequest(
 			@JsonProperty("prompt") String prompt,
-			@JsonProperty("temperature") Float temperature,
+			@JsonProperty("temperature") Double temperature,
 			@JsonProperty("max_tokens_to_sample") Integer maxTokensToSample,
 			@JsonProperty("top_k") Integer topK,
-			@JsonProperty("top_p") Float topP,
+			@JsonProperty("top_p") Double topP,
 			@JsonProperty("stop_sequences") List<String> stopSequences,
 			@JsonProperty("anthropic_version") String anthropicVersion) {
 
@@ -152,10 +153,10 @@ public class AnthropicChatBedrockApi extends
 
 		public static class Builder {
 			private final String prompt;
-			private Float temperature;// = 0.7f;
+			private Double temperature;// = 0.7;
 			private Integer maxTokensToSample;// = 500;
 			private Integer topK;// = 10;
-			private Float topP;
+			private Double topP;
 			private List<String> stopSequences;
 			private String anthropicVersion;
 
@@ -163,7 +164,7 @@ public class AnthropicChatBedrockApi extends
 				this.prompt = prompt;
 			}
 
-			public Builder withTemperature(Float temperature) {
+			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
@@ -178,7 +179,7 @@ public class AnthropicChatBedrockApi extends
 				return this;
 			}
 
-			public Builder withTopP(Float tpoP) {
+			public Builder withTopP(Double tpoP) {
 				this.topP = tpoP;
 				return this;
 			}

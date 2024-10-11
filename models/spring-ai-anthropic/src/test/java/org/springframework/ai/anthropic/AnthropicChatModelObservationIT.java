@@ -39,7 +39,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 
-import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import reactor.core.publisher.Flux;
@@ -71,9 +70,9 @@ public class AnthropicChatModelObservationIT {
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.withMaxTokens(2048)
 			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -93,9 +92,9 @@ public class AnthropicChatModelObservationIT {
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.withMaxTokens(2048)
 			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -118,7 +117,7 @@ public class AnthropicChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, KeyValue.NONE_VALUE);
+		validate(responseMetadata, "[\"end_turn\"]");
 	}
 
 	private void validate(ChatResponseMetadata responseMetadata, String finishReasons) {
@@ -133,11 +132,9 @@ public class AnthropicChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
-					KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
-					KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")

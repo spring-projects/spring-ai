@@ -18,6 +18,7 @@ package org.springframework.ai.vertexai.gemini;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -58,11 +59,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	/**
 	 * Optional. Controls the randomness of predictions.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 	/**
 	 * Optional. If specified, nucleus sampling will be used.
 	 */
-	private @JsonProperty("topP") Float topP;
+	private @JsonProperty("topP") Double topP;
 	/**
 	 * Optional. If specified, top k sampling will be used.
 	 */
@@ -115,6 +116,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	@JsonIgnore
 	private boolean googleSearchRetrieval = false;
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
 
 	// @formatter:on
 
@@ -131,12 +138,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
@@ -194,6 +201,21 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 			return this;
 		}
 
+		public Builder withProxyToolCalls(boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
 		public VertexAiGeminiChatOptions build() {
 			return this.options;
 		}
@@ -210,20 +232,20 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -303,13 +325,13 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 
@@ -319,6 +341,25 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 	public void setGoogleSearchRetrieval(boolean googleSearchRetrieval) {
 		this.googleSearchRetrieval = googleSearchRetrieval;
+	}
+
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
 	}
 
 	@Override
@@ -333,13 +374,14 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 				&& Objects.equals(maxOutputTokens, that.maxOutputTokens) && Objects.equals(model, that.model)
 				&& Objects.equals(responseMimeType, that.responseMimeType)
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(functions, that.functions);
+				&& Objects.equals(functions, that.functions) && Objects.equals(proxyToolCalls, that.proxyToolCalls)
+				&& Objects.equals(toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(stopSequences, temperature, topP, topK, candidateCount, maxOutputTokens, model,
-				responseMimeType, functionCallbacks, functions, googleSearchRetrieval);
+				responseMimeType, functionCallbacks, functions, googleSearchRetrieval, proxyToolCalls, toolContext);
 	}
 
 	@Override
@@ -370,6 +412,8 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		options.setFunctions(fromOptions.getFunctions());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
+		options.setProxyToolCalls(fromOptions.getProxyToolCalls());
+		options.setToolContext(fromOptions.getToolContext());
 		return options;
 	}
 

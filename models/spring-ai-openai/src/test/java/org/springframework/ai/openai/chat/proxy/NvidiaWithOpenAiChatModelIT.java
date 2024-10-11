@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -61,6 +62,7 @@ import reactor.core.publisher.Flux;
  */
 @SpringBootTest(classes = NvidiaWithOpenAiChatModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "NVIDIA_API_KEY", matches = ".+")
+@Disabled("Requires NVIDIA credits")
 class NvidiaWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(NvidiaWithOpenAiChatModelIT.class);

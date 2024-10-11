@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,7 +55,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @JsonProperty("frequency_penalty") Float frequencyPenalty;
+	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
@@ -69,7 +70,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @JsonProperty("presence_penalty") Float presencePenalty;
+	private @JsonProperty("presence_penalty") Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
@@ -92,13 +93,13 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Double topP;
 	/**
 	 * Mask the text information in the output that is easy to involve privacy issues,
 	 * including but not limited to email, domain name, link, ID number, home address, etc.
@@ -142,6 +143,14 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
+
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -165,7 +174,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Float frequencyPenalty) {
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
@@ -180,7 +189,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withPresencePenalty(Float presencePenalty) {
+		public Builder withPresencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
@@ -200,12 +209,12 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -242,6 +251,21 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
 		public MiniMaxChatOptions build() {
 			return this.options;
 		}
@@ -258,11 +282,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Float frequencyPenalty) {
+	public void setFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
@@ -284,11 +308,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Float presencePenalty) {
+	public void setPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
@@ -328,20 +352,20 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -395,6 +419,25 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
@@ -411,6 +454,8 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((maskSensitiveInfo == null) ? 0 : maskSensitiveInfo.hashCode());
 		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
 		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
+		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
+		result = prime * result + ((toolContext == null) ? 0 : toolContext.hashCode());
 		return result;
 	}
 
@@ -501,6 +546,20 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!toolChoice.equals(other.toolChoice))
 			return false;
+		if (this.proxyToolCalls == null) {
+			if (other.proxyToolCalls != null)
+				return false;
+		}
+		else if (!proxyToolCalls.equals(other.proxyToolCalls))
+			return false;
+
+		if (this.toolContext == null) {
+			if (other.toolContext != null)
+				return false;
+		}
+		else if (!toolContext.equals(other.toolContext))
+			return false;
+
 		return true;
 	}
 
@@ -525,6 +584,8 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withToolChoice(fromOptions.getToolChoice())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 

@@ -171,7 +171,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * more diverse text, while a lower value (e.g., 0.5) will generate more focused and
 	 * conservative text. (Default: 0.9)
 	 */
-	@JsonProperty("top_p") private Float topP;
+	@JsonProperty("top_p") private Double topP;
 
 	/**
 	 * Tail free sampling is used to reduce the impact of less probable tokens
@@ -195,24 +195,24 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * The temperature of the model. Increasing the temperature will
 	 * make the model answer more creatively. (Default: 0.8)
 	 */
-	@JsonProperty("temperature") private Float temperature;
+	@JsonProperty("temperature") private Double temperature;
 
 	/**
 	 * Sets how strongly to penalize repetitions. A higher value
 	 * (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g.,
 	 * 0.9) will be more lenient. (Default: 1.1)
 	 */
-	@JsonProperty("repeat_penalty") private Float repeatPenalty;
+	@JsonProperty("repeat_penalty") private Double repeatPenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("presence_penalty") private Float presencePenalty;
+	@JsonProperty("presence_penalty") private Double presencePenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("frequency_penalty") private Float frequencyPenalty;
+	@JsonProperty("frequency_penalty") private Double frequencyPenalty;
 
 	/**
 	 * Enable Mirostat sampling for controlling perplexity. (default: 0, 0
@@ -270,7 +270,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	
 	
 	/**
-	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded. 
+	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
 	 * Defaults to true.
 	 */
 	@JsonProperty("truncate") private Boolean truncate;
@@ -297,6 +297,12 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
 
 	public static OllamaOptions builder() {
 		return new OllamaOptions();
@@ -414,7 +420,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return this;
 	}
 
-	public OllamaOptions withTopP(Float topP) {
+	public OllamaOptions withTopP(Double topP) {
 		this.topP = topP;
 		return this;
 	}
@@ -434,22 +440,22 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return this;
 	}
 
-	public OllamaOptions withTemperature(Float temperature) {
+	public OllamaOptions withTemperature(Double temperature) {
 		this.temperature = temperature;
 		return this;
 	}
 
-	public OllamaOptions withRepeatPenalty(Float repeatPenalty) {
+	public OllamaOptions withRepeatPenalty(Double repeatPenalty) {
 		this.repeatPenalty = repeatPenalty;
 		return this;
 	}
 
-	public OllamaOptions withPresencePenalty(Float presencePenalty) {
+	public OllamaOptions withPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 		return this;
 	}
 
-	public OllamaOptions withFrequencyPenalty(Float frequencyPenalty) {
+	public OllamaOptions withFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 		return this;
 	}
@@ -492,6 +498,21 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	public OllamaOptions withFunction(String functionName) {
 		Assert.hasText(functionName, "Function name must not be empty");
 		this.functions.add(functionName);
+		return this;
+	}
+
+	public OllamaOptions withProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+		return this;
+	}
+
+	public OllamaOptions withToolContext(Map<String, Object> toolContext) {
+		if (this.toolContext == null) {
+			this.toolContext = toolContext;
+		}
+		else {
+			this.toolContext.putAll(toolContext);
+		}		
 		return this;
 	}
 
@@ -664,11 +685,11 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -697,37 +718,37 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
-	public Float getRepeatPenalty() {
+	public Double getRepeatPenalty() {
 		return this.repeatPenalty;
 	}
 
-	public void setRepeatPenalty(Float repeatPenalty) {
+	public void setRepeatPenalty(Double repeatPenalty) {
 		this.repeatPenalty = repeatPenalty;
 	}
 
 	@Override
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Float presencePenalty) {
+	public void setPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
 	@Override
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Float frequencyPenalty) {
+	public void setFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
@@ -816,6 +837,25 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return null;
 	}
 
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -884,7 +924,9 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withPenalizeNewline(fromOptions.getPenalizeNewline())
 			.withStop(fromOptions.getStop())
 			.withFunctions(fromOptions.getFunctions())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks());
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withToolContext(fromOptions.getToolContext());
 	}
 	// @formatter:on
 
@@ -913,7 +955,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				&& Objects.equals(mirostatTau, that.mirostatTau) && Objects.equals(mirostatEta, that.mirostatEta)
 				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(functions, that.functions);
+				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions)
+				&& Objects.equals(toolContext, that.toolContext);
 	}
 
 	@Override
@@ -923,7 +966,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
 				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions);
+				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
+				this.toolContext);
 	}
 
 }

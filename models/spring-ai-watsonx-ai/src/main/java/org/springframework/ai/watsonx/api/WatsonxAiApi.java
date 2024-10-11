@@ -52,6 +52,7 @@ public class WatsonxAiApi {
     private final IamAuthenticator iamAuthenticator;
     private final String streamEndpoint;
     private final String textEndpoint;
+	private final String embeddingEndpoint;
     private final String projectId;
     private IamToken token;
 
@@ -60,6 +61,7 @@ public class WatsonxAiApi {
      * @param baseUrl api base URL.
      * @param streamEndpoint streaming generation.
      * @param textEndpoint text generation.
+	 * @param embeddingEndpoint embedding generation
      * @param projectId watsonx.ai project identifier.
      * @param IAMToken IBM Cloud IAM token.
      * @param restClientBuilder rest client builder.
@@ -68,12 +70,14 @@ public class WatsonxAiApi {
             String baseUrl,
             String streamEndpoint,
             String textEndpoint,
+			String embeddingEndpoint,
             String projectId,
             String IAMToken,
             RestClient.Builder restClientBuilder
     ) {
         this.streamEndpoint = streamEndpoint;
         this.textEndpoint = textEndpoint;
+		this.embeddingEndpoint = embeddingEndpoint;
         this.projectId = projectId;
         this.iamAuthenticator = IamAuthenticator.fromConfiguration(Map.of("APIKEY", IAMToken));
         this.token = this.iamAuthenticator.requestToken();
@@ -94,8 +98,8 @@ public class WatsonxAiApi {
     }
 
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
-    public ResponseEntity<WatsonxAiResponse> generate(WatsonxAiRequest watsonxAiRequest) {
-        Assert.notNull(watsonxAiRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
+    public ResponseEntity<WatsonxAiChatResponse> generate(WatsonxAiChatRequest watsonxAiChatRequest) {
+        Assert.notNull(watsonxAiChatRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
 
         if(this.token.needsRefresh()) {
             this.token = this.iamAuthenticator.requestToken();
@@ -104,14 +108,14 @@ public class WatsonxAiApi {
         return this.restClient.post()
                 .uri(this.textEndpoint)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
-                .body(watsonxAiRequest.withProjectId(projectId))
+                .body(watsonxAiChatRequest.withProjectId(projectId))
                 .retrieve()
-                .toEntity(WatsonxAiResponse.class);
+                .toEntity(WatsonxAiChatResponse.class);
     }
 
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
-    public Flux<WatsonxAiResponse> generateStreaming(WatsonxAiRequest watsonxAiRequest) {
-        Assert.notNull(watsonxAiRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
+    public Flux<WatsonxAiChatResponse> generateStreaming(WatsonxAiChatRequest watsonxAiChatRequest) {
+        Assert.notNull(watsonxAiChatRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
 
         if(this.token.needsRefresh()) {
             this.token = this.iamAuthenticator.requestToken();
@@ -120,9 +124,9 @@ public class WatsonxAiApi {
         return this.webClient.post()
                 .uri(this.streamEndpoint)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
-                .bodyValue(watsonxAiRequest.withProjectId(this.projectId))
+                .bodyValue(watsonxAiChatRequest.withProjectId(this.projectId))
                 .retrieve()
-                .bodyToFlux(WatsonxAiResponse.class)
+                .bodyToFlux(WatsonxAiChatResponse.class)
                 .handle((data, sink) -> {
                     if (logger.isTraceEnabled()) {
                         logger.trace(data);
@@ -130,5 +134,22 @@ public class WatsonxAiApi {
                     sink.next(data);
                 });
     }
+
+	@Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
+	public ResponseEntity<WatsonxAiEmbeddingResponse> embeddings(WatsonxAiEmbeddingRequest request) {
+		Assert.notNull(request, WATSONX_REQUEST_CANNOT_BE_NULL);
+
+        if(this.token.needsRefresh()) {
+			this.token = this.iamAuthenticator.requestToken();
+		}
+
+        return this.restClient.post()
+				.uri(this.embeddingEndpoint)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
+				.body(request.withProjectId(projectId))
+				.retrieve()
+				.toEntity(WatsonxAiEmbeddingResponse.class);
+	}
+
 
 }

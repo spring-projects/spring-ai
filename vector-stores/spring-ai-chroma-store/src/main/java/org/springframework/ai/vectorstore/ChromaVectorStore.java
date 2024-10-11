@@ -50,6 +50,10 @@ import io.micrometer.observation.ObservationRegistry;
  * their similarity to a query, using the {@link ChromaApi} and {@link EmbeddingModel} for
  * embedding calculations. For more information about how it does this, see the official
  * <a href="https://www.trychroma.com/">Chroma website</a>.
+ * 
+ * @author Christian Tzolov
+ * @author Fu Cheng
+ * 
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -185,13 +189,16 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-
-		if (!this.initializeSchema)
-			return;
-
 		var collection = this.chromaApi.getCollection(this.collectionName);
 		if (collection == null) {
-			collection = this.chromaApi.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
+			if (initializeSchema) {
+				collection = this.chromaApi
+					.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
+			}
+			else {
+				throw new RuntimeException("Collection " + this.collectionName
+						+ " doesn't exist and won't be created as the initializeSchema is set to false.");
+			}
 		}
 		this.collectionId = collection.id();
 	}

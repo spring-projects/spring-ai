@@ -15,8 +15,7 @@
  */
 package org.springframework.ai.chat.client.observation;
 
-import java.util.stream.Collectors;
-
+import org.springframework.ai.observation.tracing.TracingHelper;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -32,72 +31,54 @@ import io.micrometer.observation.ObservationFilter;
  */
 public class ChatClientInputContentObservationFilter implements ObservationFilter {
 
-	private static final KeyValue CHAT_CLIENT_SYSTEM_TEXT_NONE = KeyValue
-		.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_SYSTEM_TEXT, KeyValue.NONE_VALUE);
-
-	private static final KeyValue CHAT_CLIENT_SYSTEM_PARAM_NONE = KeyValue
-		.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_SYSTEM_PARAM, KeyValue.NONE_VALUE);
-
-	private static final KeyValue CHAT_CLIENT_USER_TEXT_NONE = KeyValue
-		.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_USER_TEXT, KeyValue.NONE_VALUE);
-
-	private static final KeyValue CHAT_CLIENT_USER_PARAM_NONE = KeyValue
-		.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_USER_PARAMS, KeyValue.NONE_VALUE);
-
 	@Override
 	public Observation.Context map(Observation.Context context) {
 		if (!(context instanceof ChatClientObservationContext chatClientObservationContext)) {
 			return context;
 		}
 
-		chatClientObservationContext.addHighCardinalityKeyValue(chatClientSystemText(chatClientObservationContext))
-			.addHighCardinalityKeyValue(chatClientSystemParam(chatClientObservationContext))
-			.addHighCardinalityKeyValue(chatClientUserText(chatClientObservationContext))
-			.addHighCardinalityKeyValue(chatClientUserParam(chatClientObservationContext));
+		chatClientSystemText(chatClientObservationContext);
+		chatClientSystemParams(chatClientObservationContext);
+		chatClientUserText(chatClientObservationContext);
+		chatClientUserParams(chatClientObservationContext);
 
 		return chatClientObservationContext;
 	}
 
-	protected KeyValue chatClientSystemText(ChatClientObservationContext context) {
-		if (!StringUtils.hasText(context.getRequest().getUserText())) {
-			return CHAT_CLIENT_SYSTEM_TEXT_NONE;
+	protected void chatClientSystemText(ChatClientObservationContext context) {
+		if (!StringUtils.hasText(context.getRequest().getSystemText())) {
+			return;
 		}
-		return KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_SYSTEM_TEXT,
-				context.getRequest().getSystemText());
+		context.addHighCardinalityKeyValue(
+				KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_SYSTEM_TEXT,
+						context.getRequest().getSystemText()));
 	}
 
-	protected KeyValue chatClientSystemParam(ChatClientObservationContext context) {
+	protected void chatClientSystemParams(ChatClientObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getSystemParams())) {
-			return CHAT_CLIENT_SYSTEM_PARAM_NONE;
+			return;
 		}
-		return KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_SYSTEM_PARAM,
-				context.getRequest()
-					.getSystemParams()
-					.entrySet()
-					.stream()
-					.map(e -> "\"" + e.getKey() + "\":\"" + e.getValue() + "\"")
-					.collect(Collectors.joining(",", "[", "]")));
+		context.addHighCardinalityKeyValue(
+				KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_SYSTEM_PARAM,
+						TracingHelper.concatenateMaps(context.getRequest().getSystemParams())));
 	}
 
-	protected KeyValue chatClientUserText(ChatClientObservationContext context) {
+	protected void chatClientUserText(ChatClientObservationContext context) {
 		if (!StringUtils.hasText(context.getRequest().getUserText())) {
-			return CHAT_CLIENT_USER_TEXT_NONE;
+			return;
 		}
-		return KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_USER_TEXT,
-				context.getRequest().getUserText());
+		context.addHighCardinalityKeyValue(
+				KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_USER_TEXT,
+						context.getRequest().getUserText()));
 	}
 
-	protected KeyValue chatClientUserParam(ChatClientObservationContext context) {
+	protected void chatClientUserParams(ChatClientObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getUserParams())) {
-			return CHAT_CLIENT_USER_PARAM_NONE;
+			return;
 		}
-		return KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_USER_PARAMS,
-				context.getRequest()
-					.getUserParams()
-					.entrySet()
-					.stream()
-					.map(e -> "\"" + e.getKey() + "\":\"" + e.getValue() + "\"")
-					.collect(Collectors.joining(",", "[", "]")));
+		context.addHighCardinalityKeyValue(
+				KeyValue.of(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_USER_PARAMS,
+						TracingHelper.concatenateMaps(context.getRequest().getUserParams())));
 	}
 
 }

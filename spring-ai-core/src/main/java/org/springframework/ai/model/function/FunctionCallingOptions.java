@@ -16,12 +16,15 @@
 package org.springframework.ai.model.function;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
  * @author Christian Tzolov
  */
-public interface FunctionCallingOptions {
+public interface FunctionCallingOptions extends ChatOptions {
 
 	/**
 	 * Function Callbacks to be registered with the ChatModel. For Prompt Options the
@@ -54,6 +57,16 @@ public interface FunctionCallingOptions {
 	 */
 	void setFunctions(Set<String> functions);
 
+	default Boolean getProxyToolCalls() {
+		return false;
+	}
+
+	default void setProxyToolCalls(Boolean proxyToolCalls) {
+		if (proxyToolCalls != null) {
+			throw new UnsupportedOperationException("Setting Proxy Tool Calls are not supported!");
+		}
+	}
+
 	/**
 	 * @return Returns FunctionCallingOptionsBuilder to create a new instance of
 	 * FunctionCallingOptions.
@@ -61,5 +74,9 @@ public interface FunctionCallingOptions {
 	public static FunctionCallingOptionsBuilder builder() {
 		return new FunctionCallingOptionsBuilder();
 	}
+
+	Map<String, Object> getToolContext();
+
+	void setToolContext(Map<String, Object> tooContext);
 
 }

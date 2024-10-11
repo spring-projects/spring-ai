@@ -43,13 +43,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Muthukumaran Navaneethakrishnan
+ * @author Thomas Vitale
  */
 @Testcontainers
 public class PgVectorStoreCustomNamesIT {
 
 	@Container
 	@SuppressWarnings("resource")
-	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
 		.withPassword("postgres");
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -24,7 +25,10 @@ import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -59,16 +63,23 @@ public class OpenSearchVectorStoreAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy batchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	OpenSearchVectorStore vectorStore(OpenSearchVectorStoreProperties properties, OpenSearchClient openSearchClient,
 			EmbeddingModel embeddingModel, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 		var indexName = Optional.ofNullable(properties.getIndexName()).orElse(OpenSearchVectorStore.DEFAULT_INDEX_NAME);
 		var mappingJson = Optional.ofNullable(properties.getMappingJson())
 			.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536);
 		return new OpenSearchVectorStore(indexName, openSearchClient, embeddingModel, mappingJson,
 				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
+				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
 	}
 
 	@Configuration(proxyBeanMethods = false)

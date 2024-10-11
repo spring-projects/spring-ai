@@ -93,3 +93,58 @@ void testEvaluation() {
 ----
 
 The code above is from the example application located https://github.com/rd-1-2022/ai-azure-rag.git[here].
+
+== FactCheckingEvaluator
+
+The FactCheckingEvaluator is another implementation of the Evaluator interface, designed to assess the factual accuracy of AI-generated responses against provided context. This evaluator helps detect and reduce hallucinations in AI outputs by verifying if a given statement (claim) is logically supported by the provided context (document).
+
+The 'claim' and 'document' are presented to the AI model for evaluation. Smaller and more efficient AI models dedicated to this purpose are available, such as Bespoke's Minicheck, which helps reduce the cost of performing these checks compared to flagship models like GPT-4. Minicheck is also available for use through Ollama.
+
+
+=== Usage
+The FactCheckingEvaluator constructor takes a ChatClient.Builder as a parameter:
+[source,java]
+----
+public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
+  this.chatClientBuilder = chatClientBuilder;
+}
+----
+The evaluator uses the following prompt template for fact-checking:
+[source,text]
+----
+Document: {document}
+Claim: {claim}
+----
+Where `+{document}+` is the context information, and `+{claim}+` is the AI model's response to be evaluated.
+
+=== Example
+Here's an example of how to use the FactCheckingEvaluator with an Ollama-based ChatModel, specifically the Bespoke-Minicheck model:
+
+[source,java]
+----
+@Test
+void testFactChecking() {
+  // Set up the Ollama API
+  OllamaApi ollamaApi = new OllamaApi("http://localhost:11434");
+
+  ChatModel chatModel = new OllamaChatModel(ollamaApi,
+				OllamaOptions.builder().withModel(BESPOKE_MINICHECK).withNumPredict(2).withTemperature(0.0d).build())
+
+
+  // Create the FactCheckingEvaluator
+  var factCheckingEvaluator = new FactCheckingEvaluator(ChatClient.builder(chatModel));
+
+  // Example context and claim
+  String context = "The Earth is the third planet from the Sun and the only astronomical object known to harbor life.";
+  String claim = "The Earth is the fourth planet from the Sun.";
+
+  // Create an EvaluationRequest
+  EvaluationRequest evaluationRequest = new EvaluationRequest(context, Collections.emptyList(), claim);
+
+  // Perform the evaluation
+  EvaluationResponse evaluationResponse = factCheckingEvaluator.evaluate(evaluationRequest);
+
+  assertFalse(evaluationResponse.isPass(), "The claim should not be supported by the context");
+
+}
+----

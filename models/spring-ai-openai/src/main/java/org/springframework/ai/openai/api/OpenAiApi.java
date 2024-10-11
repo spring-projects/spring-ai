@@ -174,14 +174,36 @@ public class OpenAiApi {
 	}
 
 	/**
-	 * OpenAI Chat Completion Models: -
-	 * <a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a> -
-	 * <a href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o mini</a> -
-	 * <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and
-	 * GPT-4 Turbo</a> -
-	 * <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
+	 * OpenAI Chat Completion Models:
+	 *
+	 * <ul>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o
+	 * mini</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4
+	 * and GPT-4 Turbo</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5
+	 * Turbo</a></li>
+	 * </ul>
 	 */
 	public enum ChatModel implements ChatModelDescription {
+
+		/**
+		 * Points to the most recent snapshot of the o1 model:o1-preview-2024-09-12
+		 */
+		O1_PREVIEW("o1-preview"),
+		/**
+		 * Latest o1 model snapshot
+		 */
+		O1_PREVIEW_2024_09_12("o1-preview-2024-09-12"),
+		/**
+		 * Points to the most recent o1-mini snapshot:o1-mini-2024-09-12
+		 */
+		O1_MINI("o1-mini"),
+		/**
+		 * Latest o1-mini model snapshot
+		 */
+		O1_MINI_2024_09_12("o1-mini-2024-09-12"),
 
 		/**
 		 * Multimodal flagship model that’s cheaper and faster than GPT-4 Turbo. Currently
@@ -207,7 +229,7 @@ public class OpenAiApi {
 		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and
 		 * function calling.
 		 */
-		GPT_4_TURBO_2204_04_09("gpt-4-turbo-2024-04-09"),
+		GPT_4_TURBO_2024_04_09("gpt-4-turbo-2024-04-09"),
 
 		/**
 		 * (New) GPT-4 Turbo - latest GPT-4 model intended to reduce cases of “laziness”
@@ -368,6 +390,8 @@ public class OpenAiApi {
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion.
 	 * The total length of input tokens and generated tokens is limited by the model's
 	 * context length.
+	 * @param maxCompletionTokens An upper bound for the number of tokens that can be
+	 * generated for a completion, including visible output tokens and reasoning tokens.
 	 * @param n How many chat completion choices to generate for each input message. Note
 	 * that you will be charged based on the number of generated tokens across all the
 	 * choices. Keep n as 1 to minimize costs.
@@ -415,20 +439,21 @@ public class OpenAiApi {
 	public record ChatCompletionRequest(// @formatter:off
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Float frequencyPenalty,
+			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("logprobs") Boolean logprobs,
 			@JsonProperty("top_logprobs") Integer topLogprobs,
 			@JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("max_completion_tokens") Integer maxCompletionTokens,
 			@JsonProperty("n") Integer n,
-			@JsonProperty("presence_penalty") Float presencePenalty,
+			@JsonProperty("presence_penalty") Double presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
 			@JsonProperty("seed") Integer seed,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("stream_options") StreamOptions streamOptions,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("top_p") Float topP,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
@@ -441,8 +466,8 @@ public class OpenAiApi {
 		 * @param model ID of the model to use.
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
-			this(messages, model, null, null, null, null, null, null, null,
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
+			this(messages, model, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
 					null, null, null, null);
 		}
@@ -456,8 +481,8 @@ public class OpenAiApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
-			this(messages, model, null, null, null, null, null, null, null,
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
+			this(messages, model, null, null, null, null, null, null, null, null,
 					null, null, null, stream, null, temperature, null,
 					null, null, null,  null);
 		}
@@ -473,8 +498,8 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
-			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, null, 0.8f, null,
+			this(messages, model, null, null, null, null, null, null, null, null,
+					null, null, null, false, null, 0.8, null,
 					tools, toolChoice, null, null);
 		}
 
@@ -487,7 +512,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null,
-					null, null, null, stream, null, null, null,
+					null, null, null, null, stream, null, null, null,
 					null, null, null, null);
 		}
 
@@ -498,7 +523,7 @@ public class OpenAiApi {
 		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
 		 */
 		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
-			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, presencePenalty,
+			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, maxCompletionTokens, n, presencePenalty,
 					responseFormat, seed, stop, stream, streamOptions, temperature, topP,
 					tools, toolChoice, parallelToolCalls, user);
 		}
@@ -734,6 +759,8 @@ public class OpenAiApi {
 		/**
 		 * The relevant tool call.
 		 *
+		 * @param index The index of the tool call in the list of tool calls. Required in
+		 * case of streaming.
 		 * @param id The ID of the tool call. This ID must be referenced when you submit
 		 * the tool outputs in using the Submit tool outputs to run endpoint.
 		 * @param type The type of tool call the output is required for. For now, this is
@@ -742,9 +769,14 @@ public class OpenAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(// @formatter:off
+				@JsonProperty("index") Integer index,
 				@JsonProperty("id") String id,
 				@JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function) {// @formatter:on
+
+			public ToolCall(String id, String type, ChatCompletionFunction function) {
+				this(null, id, type, function);
+			}
 		}
 
 		/**
@@ -907,12 +939,28 @@ public class OpenAiApi {
 	 * @param promptTokens Number of tokens in the prompt.
 	 * @param totalTokens Total number of tokens used in the request (prompt +
 	 * completion).
+	 * @param completionTokenDetails Breakdown of tokens used in a completion
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(// @formatter:off
 			@JsonProperty("completion_tokens") Integer completionTokens,
 			@JsonProperty("prompt_tokens") Integer promptTokens,
-			@JsonProperty("total_tokens") Integer totalTokens) {// @formatter:on
+			@JsonProperty("total_tokens") Integer totalTokens,
+			@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails) {// @formatter:on
+
+		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
+			this(completionTokens, promptTokens, totalTokens, null);
+		}
+
+		/**
+		 * Breakdown of tokens used in a completion
+		 *
+		 * @param reasoningTokens Number of tokens generated by the model for reasoning.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record CompletionTokenDetails(// @formatter:off
+				@JsonProperty("reasoning_tokens") Integer reasoningTokens) {// @formatter:on
+		}
 
 	}
 

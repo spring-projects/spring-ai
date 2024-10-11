@@ -40,7 +40,7 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 	@NestedConfigurationProperty
 	private OpenAiChatOptions options = OpenAiChatOptions.builder()
 		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.withTemperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public OpenAiChatOptions getOptions() {

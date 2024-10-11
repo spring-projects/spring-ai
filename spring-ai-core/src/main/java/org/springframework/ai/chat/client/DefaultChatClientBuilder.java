@@ -29,7 +29,9 @@ import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientReq
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
@@ -50,8 +52,6 @@ public class DefaultChatClientBuilder implements Builder {
 
 	protected final DefaultChatClientRequestSpec defaultRequest;
 
-	private final ChatModel chatModel;
-
 	DefaultChatClientBuilder(ChatModel chatModel) {
 		this(chatModel, ObservationRegistry.NOOP, null);
 	}
@@ -60,14 +60,13 @@ public class DefaultChatClientBuilder implements Builder {
 			ChatClientObservationConvention customObservationConvention) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
-		this.chatModel = chatModel;
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(),
 				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
-				customObservationConvention);
+				customObservationConvention, Map.of());
 	}
 
 	public ChatClient build() {
-		return new DefaultChatClient(this.chatModel, this.defaultRequest);
+		return new DefaultChatClient(this.defaultRequest);
 	}
 
 	public Builder defaultAdvisors(Advisor... advisor) {
@@ -143,8 +142,24 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	public <I, O> Builder defaultFunction(String name, String description,
+			java.util.function.BiFunction<I, ToolContext, O> biFunction) {
+		this.defaultRequest.function(name, description, biFunction);
+		return this;
+	}
+
 	public Builder defaultFunctions(String... functionNames) {
 		this.defaultRequest.functions(functionNames);
+		return this;
+	}
+
+	public Builder defaultFunctions(FunctionCallback... functionCallbacks) {
+		this.defaultRequest.functions(functionCallbacks);
+		return this;
+	}
+
+	public Builder defaultToolContext(Map<String, Object> toolContext) {
+		this.defaultRequest.toolContext(toolContext);
 		return this;
 	}
 

@@ -70,8 +70,8 @@ public class MistralAiChatModelObservationIT {
 			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 			.withMaxTokens(2048)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -91,8 +91,8 @@ public class MistralAiChatModelObservationIT {
 			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 			.withMaxTokens(2048)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -128,19 +128,29 @@ public class MistralAiChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.MISTRAL_AI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
-					KeyValue.NONE_VALUE)
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
+					StringUtils.hasText(responseMetadata.getModel()) ? responseMetadata.getModel()
+							: KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
-					KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_TOP_K.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(),
-					StringUtils.hasText(responseMetadata.getId()) ? responseMetadata.getId() : KeyValue.NONE_VALUE)
+			.matches(contextView -> {
+				var keyValue = contextView.getHighCardinalityKeyValues()
+					.stream()
+					.filter(tag -> tag.getKey().equals(HighCardinalityKeyNames.RESPONSE_ID.asString()))
+					.findFirst();
+				if (StringUtils.hasText(responseMetadata.getId())) {
+					return keyValue.isPresent() && keyValue.get().getValue().equals(responseMetadata.getId());
+				}
+				else {
+					return keyValue.isEmpty();
+				}
+			})
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))

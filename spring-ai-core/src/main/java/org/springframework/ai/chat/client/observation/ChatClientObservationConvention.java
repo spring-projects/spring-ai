@@ -19,10 +19,11 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 
 /**
+ * Interface for an {@link ObservationConvention} for chat client workflows.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
-
 public interface ChatClientObservationConvention extends ObservationConvention<ChatClientObservationContext> {
 
 	@Override

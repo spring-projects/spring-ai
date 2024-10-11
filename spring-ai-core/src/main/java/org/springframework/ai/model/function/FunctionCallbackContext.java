@@ -16,11 +16,10 @@
 package org.springframework.ai.model.function;
 
 import java.lang.reflect.Type;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-
-import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.beans.BeansException;
 import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
 import org.springframework.cloud.function.context.config.FunctionContextUtils;
@@ -31,6 +30,8 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 
 /**
  * A Spring {@link ApplicationContextAware} implementation that provides a way to retrieve
@@ -51,6 +52,12 @@ import org.springframework.util.StringUtils;
 public class FunctionCallbackContext implements ApplicationContextAware {
 
 	private GenericApplicationContext applicationContext;
+
+	public enum SchemaType {
+
+		JSON_SCHEMA, OPEN_API_SCHEMA
+
+	}
 
 	private SchemaType schemaType = SchemaType.JSON_SCHEMA;
 
@@ -73,9 +80,10 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 					"Functional bean with name: " + beanName + " does not exist in the context.");
 		}
 
-		if (!Function.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))) {
+		if (!Function.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))
+				&& !BiFunction.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))) {
 			throw new IllegalArgumentException(
-					"Function call Bean must be of type Function. Found: " + beanType.getTypeName());
+					"Function call Bean must be of type Function or BiFunction. Found: " + beanType.getTypeName());
 		}
 
 		Type functionInputType = TypeResolverHelper.getFunctionArgumentType(beanType, 0);
@@ -112,6 +120,14 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 
 		if (bean instanceof Function<?, ?> function) {
 			return FunctionCallbackWrapper.builder(function)
+				.withName(functionName)
+				.withSchemaType(this.schemaType)
+				.withDescription(functionDescription)
+				.withInputType(functionInputClass)
+				.build();
+		}
+		else if (bean instanceof BiFunction<?, ?, ?> biFunction) {
+			return FunctionCallbackWrapper.builder((BiFunction<?, ToolContext, ?>) biFunction)
 				.withName(functionName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)

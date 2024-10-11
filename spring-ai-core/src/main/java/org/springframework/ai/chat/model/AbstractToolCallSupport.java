@@ -16,6 +16,7 @@
 package org.springframework.ai.chat.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,18 +76,18 @@ public abstract class AbstractToolCallSupport {
 		}
 	}
 
-	private static List<FunctionCallback> merge(FunctionCallingOptions funcitonOptions,
+	private static List<FunctionCallback> merge(FunctionCallingOptions functionOptions,
 			List<FunctionCallback> toolFunctionCallbacks) {
 		List<FunctionCallback> toolFunctionCallbacksCopy = new ArrayList<>();
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			toolFunctionCallbacksCopy.addAll(toolFunctionCallbacks);
 		}
 
-		if (!CollectionUtils.isEmpty(funcitonOptions.getFunctionCallbacks())) {
-			toolFunctionCallbacksCopy.addAll(funcitonOptions.getFunctionCallbacks());
+		if (!CollectionUtils.isEmpty(functionOptions.getFunctionCallbacks())) {
+			toolFunctionCallbacksCopy.addAll(functionOptions.getFunctionCallbacks());
 			// Make sure that that function callbacks are are registered directly to the
 			// functionCallbackRegister and not passed in the default options.
-			funcitonOptions.setFunctionCallbacks(List.of());
+			functionOptions.setFunctionCallbacks(List.of());
 		}
 		return toolFunctionCallbacksCopy;
 	}
@@ -136,7 +137,15 @@ public abstract class AbstractToolCallSupport {
 			throw new IllegalStateException("No tool call generation found in the response!");
 		}
 		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
-		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage);
+
+		Map<String, Object> toolContextMap = Map.of();
+		if (prompt.getOptions() instanceof FunctionCallingOptions functionCallOptions
+				&& !CollectionUtils.isEmpty(functionCallOptions.getToolContext())) {
+			toolContextMap = functionCallOptions.getToolContext();
+		}
+		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage,
+				new ToolContext(toolContextMap));
+
 		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
 	}
 
@@ -184,7 +193,7 @@ public abstract class AbstractToolCallSupport {
 		return retrievedFunctionCallbacks;
 	}
 
-	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage) {
+	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage, ToolContext toolContext) {
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
@@ -197,7 +206,8 @@ public abstract class AbstractToolCallSupport {
 				throw new IllegalStateException("No function callback found for function name: " + functionName);
 			}
 
-			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+			String functionResponse = this.functionCallbackRegister.get(functionName)
+				.call(functionArguments, toolContext);
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName, functionResponse));
 		}
@@ -220,13 +230,42 @@ public abstract class AbstractToolCallSupport {
 		return generations.stream().anyMatch(g -> isToolCall(g, toolCallFinishReasons));
 	}
 
+	/**
+	 * Check if the generation is a tool call. The tool call finish reasons are used to
+	 * determine if the generation is a tool call.
+	 * @param generation the generation to check.
+	 * @param toolCallFinishReasons the tool call finish reasons to check.
+	 * @return true if the generation is a tool call, false otherwise.
+	 */
 	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
 		var finishReason = (generation.getMetadata().getFinishReason() != null)
 				? generation.getMetadata().getFinishReason() : "";
-		return !CollectionUtils.isEmpty(generation.getOutput().getToolCalls()) && toolCallFinishReasons.stream()
+		return generation.getOutput().hasToolCalls() && toolCallFinishReasons.stream()
 			.map(s -> s.toLowerCase())
 			.toList()
 			.contains(finishReason.toLowerCase());
+	}
+
+	/**
+	 * Check if the proxyToolCalls is enabled for the given prompt or the default tool
+	 * call options. The prompt options take precedence over the default options. When the
+	 * proxyToolCalls is enabled the ChatModel implementation will not handle the function
+	 * calling internally. The tool call and tool response messages are exposed outside
+	 * the ChatModel implementation.
+	 * @param prompt the prompt to check.
+	 * @param defaultOptions the default tool call options to check.
+	 * @return true if the proxyToolCalls is enabled, false otherwise.
+	 */
+	protected boolean isProxyToolCalls(Prompt prompt, FunctionCallingOptions defaultOptions) {
+		if (prompt.getOptions() instanceof FunctionCallingOptions functionCallOptions
+				&& functionCallOptions.getProxyToolCalls() != null) {
+			return functionCallOptions.getProxyToolCalls();
+		}
+		else if (defaultOptions.getProxyToolCalls() != null) {
+			return defaultOptions.getProxyToolCalls();
+		}
+
+		return false;
 	}
 
 }

@@ -21,22 +21,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
+import reactor.core.publisher.Flux;
+
 /**
  * Memory is retrieved from a VectorStore added into the prompt's system text.
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
 
@@ -73,18 +79,57 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize, String systemTextAdvise) {
-		super(vectorStore, defaultConversationId, chatHistoryWindowSize);
+		this(vectorStore, defaultConversationId, chatHistoryWindowSize, systemTextAdvise,
+				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	}
+
+	/**
+	 * Constructor for VectorStoreChatMemoryAdvisor.
+	 * @param vectorStore the vector store instance used for managing and querying
+	 * documents.
+	 * @param defaultConversationId the default conversation ID used if none is provided
+	 * in the context.
+	 * @param chatHistoryWindowSize the window size for the chat history retrieval.
+	 * @param systemTextAdvise the system text advice used for the chat advisor system.
+	 * @param order the order of precedence for this advisor in the chain.
+	 */
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+			int chatHistoryWindowSize, String systemTextAdvise, int order) {
+		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.systemTextAdvise = systemTextAdvise;
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+
+		advisedRequest = this.before(advisedRequest);
+
+		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+
+		this.observeAfter(advisedResponse);
+
+		return advisedResponse;
+	}
+
+	@Override
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+
+		Flux<AdvisedResponse> advisedResponses = this.doNextWithProtectFromBlockingBefore(advisedRequest, chain,
+				this::before);
+
+		// The observeAfter will certainly be executed on non-blocking Threads in case
+		// of some models - e.g. when the model client is a WebClient
+		return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
+	}
+
+	private AdvisedRequest before(AdvisedRequest request) {
 
 		String advisedSystemText = request.systemText() + System.lineSeparator() + this.systemTextAdvise;
 
 		var searchRequest = SearchRequest.query(request.userText())
-			.withTopK(this.doGetChatMemoryRetrieveSize(context))
-			.withFilterExpression(DOCUMENT_METADATA_CONVERSATION_ID + "=='" + this.doGetConversationId(context) + "'");
+			.withTopK(this.doGetChatMemoryRetrieveSize(request.adviseContext()))
+			.withFilterExpression(DOCUMENT_METADATA_CONVERSATION_ID + "=='"
+					+ this.doGetConversationId(request.adviseContext()) + "'");
 
 		List<Document> documents = this.getChatMemoryStore().similaritySearch(searchRequest);
 
@@ -101,19 +146,22 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.build();
 
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());
-		this.getChatMemoryStore().write(toDocuments(List.of(userMessage), this.doGetConversationId(context)));
+		this.getChatMemoryStore()
+			.write(toDocuments(List.of(userMessage), this.doGetConversationId(request.adviseContext())));
 
 		return advisedRequest;
 	}
 
-	@Override
-	public ChatResponse adviseResponse(ChatResponse chatResponse, Map<String, Object> context) {
+	private void observeAfter(AdvisedResponse advisedResponse) {
 
-		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
+		List<Message> assistantMessages = advisedResponse.response()
+			.getResults()
+			.stream()
+			.map(g -> (Message) g.getOutput())
+			.toList();
 
-		this.getChatMemoryStore().write(toDocuments(assistantMessages, this.doGetConversationId(context)));
-
-		return chatResponse;
+		this.getChatMemoryStore()
+			.write(toDocuments(assistantMessages, this.doGetConversationId(advisedResponse.adviseContext())));
 	}
 
 	private List<Document> toDocuments(List<Message> messages, String conversationId) {
@@ -135,6 +183,31 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.toList();
 
 		return docs;
+	}
+
+	public static Builder builder(VectorStore chatMemory) {
+		return new Builder(chatMemory);
+	}
+
+	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<VectorStore> {
+
+		private String systemTextAdvise = DEFAULT_SYSTEM_TEXT_ADVISE;
+
+		protected Builder(VectorStore chatMemory) {
+			super(chatMemory);
+		}
+
+		public Builder withSystemTextAdvise(String systemTextAdvise) {
+			this.systemTextAdvise = systemTextAdvise;
+			return this;
+		}
+
+		@Override
+		public VectorStoreChatMemoryAdvisor build() {
+			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
+					this.systemTextAdvise);
+		}
+
 	}
 
 }

@@ -24,7 +24,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddigConnectionDetails;
+import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -213,8 +213,8 @@ class VertexAiMultimodalEmbeddingModelIT {
 	static class Config {
 
 		@Bean
-		public VertexAiEmbeddigConnectionDetails connectionDetails() {
-			return VertexAiEmbeddigConnectionDetails.builder()
+		public VertexAiEmbeddingConnectionDetails connectionDetails() {
+			return VertexAiEmbeddingConnectionDetails.builder()
 				.withProjectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
 				.withLocation(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 				.build();
@@ -222,7 +222,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 
 		@Bean
 		public VertexAiMultimodalEmbeddingModel vertexAiEmbeddingModel(
-				VertexAiEmbeddigConnectionDetails connectionDetails) {
+				VertexAiEmbeddingConnectionDetails connectionDetails) {
 
 			VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
 				.withModel(VertexAiMultimodalEmbeddingModelName.MULTIMODAL_EMBEDDING_001)

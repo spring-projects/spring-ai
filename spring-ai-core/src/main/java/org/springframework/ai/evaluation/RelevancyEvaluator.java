@@ -1,12 +1,8 @@
 package org.springframework.ai.evaluation;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.model.Content;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class RelevancyEvaluator implements Evaluator {
 
@@ -51,16 +47,6 @@ public class RelevancyEvaluator implements Evaluator {
 		}
 
 		return new EvaluationResponse(passing, score, "", Collections.emptyMap());
-	}
-
-	protected String doGetSupportingData(EvaluationRequest evaluationRequest) {
-		List<Content> data = evaluationRequest.getDataList();
-		return data.stream()
-			.map(Content::getContent)
-			.filter(Objects::nonNull)
-			.filter(c -> c instanceof String)
-			.map(Object::toString)
-			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
 }

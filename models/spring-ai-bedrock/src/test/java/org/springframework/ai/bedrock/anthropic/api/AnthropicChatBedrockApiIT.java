@@ -52,7 +52,7 @@ public class AnthropicChatBedrockApiIT {
 
 		AnthropicChatRequest request = AnthropicChatRequest
 			.builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-			.withTemperature(0.8f)
+			.withTemperature(0.8)
 			.withMaxTokensToSample(300)
 			.withTopK(10)
 			.build();
@@ -75,7 +75,7 @@ public class AnthropicChatBedrockApiIT {
 
 		AnthropicChatRequest request = AnthropicChatRequest
 			.builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-			.withTemperature(0.8f)
+			.withTemperature(0.8)
 			.withMaxTokensToSample(300)
 			.withTopK(10)
 			.withStopSequences(List.of("\n\nHuman:"))

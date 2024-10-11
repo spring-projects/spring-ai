@@ -18,6 +18,7 @@ package org.springframework.ai.model.function;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import net.jodah.typetools.TypeResolver;
@@ -31,6 +32,15 @@ import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
  * @author Christian Tzolov
  */
 public abstract class TypeResolverHelper {
+
+	/**
+	 * Returns the input class of a given function class.
+	 * @param biFunctionClass The function class.
+	 * @return The input class of the function.
+	 */
+	public static Class<?> getBiFunctionInputClass(Class<? extends BiFunction<?, ?, ?>> biFunctionClass) {
+		return getBiFunctionArgumentClass(biFunctionClass, 0);
+	}
 
 	/**
 	 * Returns the input class of a given function class.
@@ -60,6 +70,22 @@ public abstract class TypeResolverHelper {
 		Type type = TypeResolver.reify(Function.class, functionClass);
 
 		var argumentType = type instanceof ParameterizedType
+				? ((ParameterizedType) type).getActualTypeArguments()[argumentIndex] : Object.class;
+
+		return toRawClass(argumentType);
+	}
+
+	/**
+	 * Retrieves the class of a specific argument in a given function class.
+	 * @param biFunctionClass The function class.
+	 * @param argumentIndex The index of the argument whose class should be retrieved.
+	 * @return The class of the specified function argument.
+	 */
+	public static Class<?> getBiFunctionArgumentClass(Class<? extends BiFunction<?, ?, ?>> biFunctionClass,
+			int argumentIndex) {
+		Type type = TypeResolver.reify(BiFunction.class, biFunctionClass);
+
+		Type argumentType = type instanceof ParameterizedType
 				? ((ParameterizedType) type).getActualTypeArguments()[argumentIndex] : Object.class;
 
 		return toRawClass(argumentType);

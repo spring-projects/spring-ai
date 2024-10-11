@@ -39,7 +39,7 @@ public class VertexAiPaLm2ChatRequestTests {
 		assertThat(request.prompt().messages()).hasSize(1);
 
 		assertThat(request.candidateCount()).isEqualTo(1);
-		assertThat(request.temperature()).isEqualTo(0.7f);
+		assertThat(request.temperature()).isEqualTo(0.7);
 		assertThat(request.topK()).isEqualTo(20);
 		assertThat(request.topP()).isNull();
 	}
@@ -49,8 +49,8 @@ public class VertexAiPaLm2ChatRequestTests {
 
 		// Runtime options should override the default options.
 		VertexAiPaLm2ChatOptions promptOptions = VertexAiPaLm2ChatOptions.builder()
-			.withTemperature(0.8f)
-			.withTopP(0.5f)
+			.withTemperature(0.8)
+			.withTopP(0.5)
 			.withTopK(99)
 			// .withCandidateCount(2)
 			.build();
@@ -60,9 +60,9 @@ public class VertexAiPaLm2ChatRequestTests {
 		assertThat(request.prompt().messages()).hasSize(1);
 
 		assertThat(request.candidateCount()).isEqualTo(1);
-		assertThat(request.temperature()).isEqualTo(0.8f);
+		assertThat(request.temperature()).isEqualTo(0.8);
 		assertThat(request.topK()).isEqualTo(99);
-		assertThat(request.topP()).isEqualTo(0.5f);
+		assertThat(request.topP()).isEqualTo(0.5);
 	}
 
 	@Test
@@ -70,9 +70,9 @@ public class VertexAiPaLm2ChatRequestTests {
 
 		// runtime options.
 		ChatOptions portablePromptOptions = ChatOptionsBuilder.builder()
-			.withTemperature(0.9f)
+			.withTemperature(0.9)
 			.withTopK(100)
-			.withTopP(0.6f)
+			.withTopP(0.6)
 			.build();
 
 		var request = chatModel.createRequest(new Prompt("Test message content", portablePromptOptions));
@@ -80,9 +80,9 @@ public class VertexAiPaLm2ChatRequestTests {
 		assertThat(request.prompt().messages()).hasSize(1);
 
 		assertThat(request.candidateCount()).isEqualTo(1);
-		assertThat(request.temperature()).isEqualTo(0.9f);
+		assertThat(request.temperature()).isEqualTo(0.9);
 		assertThat(request.topK()).isEqualTo(100);
-		assertThat(request.topP()).isEqualTo(0.6f);
+		assertThat(request.topP()).isEqualTo(0.6);
 	}
 
 }

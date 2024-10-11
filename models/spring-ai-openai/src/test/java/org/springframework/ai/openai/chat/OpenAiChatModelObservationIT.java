@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.openai.chat;
 
-import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import reactor.core.publisher.Flux;
@@ -71,12 +70,12 @@ public class OpenAiChatModelObservationIT {
 
 		var options = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withMaxTokens(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -94,12 +93,12 @@ public class OpenAiChatModelObservationIT {
 	void observationForStreamingChatOperation() {
 		var options = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withMaxTokens(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
+			.withTemperature(0.7)
+			.withTopP(1.0)
 			.withStreamUsage(true)
 			.build();
 
@@ -143,7 +142,7 @@ public class OpenAiChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_TOP_K.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")

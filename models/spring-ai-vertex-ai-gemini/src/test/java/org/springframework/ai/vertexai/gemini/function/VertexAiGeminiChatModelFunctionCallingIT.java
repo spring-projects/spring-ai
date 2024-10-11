@@ -32,8 +32,8 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -242,7 +242,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
 						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
-						.withTemperature(0.9f)
+						.withTemperature(0.9)
 						.build());
 		}
 

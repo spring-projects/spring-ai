@@ -15,18 +15,24 @@
  */
 package org.springframework.ai.ollama;
 
-import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaApiIT;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,11 +40,10 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
+import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link OllamaEmbeddingModel}.
@@ -49,11 +54,26 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
 @DisabledIf("isDisabled")
 public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 
+	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
+
+	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
+
 	@Autowired
 	TestObservationRegistry observationRegistry;
 
 	@Autowired
 	OllamaEmbeddingModel embeddingModel;
+
+	static String baseUrl = "http://localhost:11434";
+
+	@BeforeAll
+	public static void beforeAll() throws IOException, InterruptedException {
+		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
+		ollamaContainer.execInContainer("ollama", "pull", MODEL);
+		logger.info(MODEL + " pulling competed!");
+
+		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+	}
 
 	@Test
 	void observationForEmbeddingOperation() {
@@ -78,8 +98,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					OllamaModel.NOMIC_EMBED_TEXT.getName())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(),
-					KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
@@ -98,7 +117,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi openAiApi() {
-			return new OllamaApi();
+			return new OllamaApi(baseUrl);
 		}
 
 		@Bean

@@ -164,7 +164,7 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiChatStreamNonTransientError() {
 		when(zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
 	}
 
 	@Test
@@ -183,7 +183,7 @@ public class ZhiPuAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
-		assertThat(retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(retryListener.onSuccessRetryCount).isEqualTo(0);
 		assertThat(retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 

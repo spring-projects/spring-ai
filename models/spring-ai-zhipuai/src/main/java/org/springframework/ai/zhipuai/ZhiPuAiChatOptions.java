@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -62,13 +63,13 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Double topP;
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
@@ -123,6 +124,13 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
+
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+		@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -156,12 +164,12 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -205,6 +213,21 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -252,20 +275,20 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -330,13 +353,13 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 
@@ -344,6 +367,25 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	@JsonIgnore
 	public Integer getTopK() {
 		return null;
+	}
+
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
 	}
 
 	@Override
@@ -358,6 +400,8 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
 		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
 		result = prime * result + ((user == null) ? 0 : user.hashCode());
+		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
+		result = prime * result + ((toolContext == null) ? 0 : toolContext.hashCode());
 		return result;
 	}
 
@@ -430,6 +474,18 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!this.doSample.equals(other.doSample))
 			return false;
+		if (this.proxyToolCalls == null) {
+			if (other.proxyToolCalls != null)
+				return false;
+		}
+		else if (!this.proxyToolCalls.equals(other.proxyToolCalls))
+			return false;
+		if (this.toolContext == null) {
+			if (other.toolContext != null)
+				return false;
+		}
+		else if (!this.toolContext.equals(other.toolContext))
+			return false;
 		return true;
 	}
 
@@ -452,6 +508,8 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withDoSample(fromOptions.getDoSample())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 

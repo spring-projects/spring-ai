@@ -15,18 +15,27 @@
 */
 package org.springframework.ai.chat.client.advisor.api;
 
+import org.springframework.core.Ordered;
+
 /**
  * Parent advisor interface for all advisors.
  *
  * @author Christian Tzolov
+ * @author Dariusz Jedrzejczyk
  * @since 1.0.0
- * @see RequestAdvisor
- * @see ResponseAdvisor
  * @see CallAroundAdvisor
  * @see StreamAroundAdvisor
- * @see AroundAdvisorChain
+ * @see CallAroundAdvisorChain
  */
-public interface Advisor {
+public interface Advisor extends Ordered {
+
+	/**
+	 * Useful constant for the default Chat Memory precedence order. Ensures this order
+	 * has lower priority (e.g. precedences) than the Spring AI internal advisors. It
+	 * leaves room (1000 slots) for the user to plug in their own advisors with higher
+	 * priority.
+	 */
+	int DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER = Ordered.HIGHEST_PRECEDENCE + 1000;
 
 	/**
 	 * @return the advisor name.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.azure.openai;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -40,6 +44,8 @@ public class AzureOpenAiConnectionProperties {
 	 */
 	private String endpoint;
 
+	private Map<String, String> customHeaders = new HashMap<>();
+
 	public String getEndpoint() {
 		return this.endpoint;
 	}
@@ -62,6 +68,14 @@ public class AzureOpenAiConnectionProperties {
 
 	public void setOpenAiApiKey(String openAiApiKey) {
 		this.openAiApiKey = openAiApiKey;
+	}
+
+	public Map<String, String> getCustomHeaders() {
+		return customHeaders;
+	}
+
+	public void setCustomHeaders(Map<String, String> customHeaders) {
+		this.customHeaders = customHeaders;
 	}
 
 }

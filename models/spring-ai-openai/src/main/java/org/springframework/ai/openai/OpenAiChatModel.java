@@ -15,9 +15,16 @@
  */
 package org.springframework.ai.openai;
 
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -44,6 +51,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
@@ -63,18 +71,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -134,7 +136,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi) {
 		this(openAiApi,
-				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
+				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
 	}
 
 	/**
@@ -189,6 +191,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+
 		super(functionCallbackContext, options, toolFunctionCallbacks);
 
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
@@ -259,8 +262,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 			});
 
-		if (response != null && isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-				OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions)
+				&& isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -330,7 +334,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 
-				if (isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
@@ -343,11 +347,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			})
 			.doOnError(observation::error)
 			.doFinally(s -> {
-				// TODO: Consider a custom ObservationContext and
-				// include additional metadata
-				// if (s == SignalType.CANCEL) {
-				// observationContext.setAborted(true);
-				// }
 				observation.stop();
 			})
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
@@ -456,7 +455,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 				toolMessage.getResponses().forEach(response -> {
 					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
-					Assert.isTrue(response.name() != null, "ToolResponseMessage must have a name");
 				});
 
 				return toolMessage.getResponses()
@@ -475,8 +473,16 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		Set<String> enabledToolsToUse = new HashSet<>();
 
 		if (prompt.getOptions() != null) {
-			OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-					ChatOptions.class, OpenAiChatOptions.class);
+			OpenAiChatOptions updatedRuntimeOptions = null;
+
+			if (prompt.getOptions() instanceof FunctionCallingOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(((FunctionCallingOptions) prompt.getOptions()),
+						FunctionCallingOptions.class, OpenAiChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof OpenAiChatOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						OpenAiChatOptions.class);
+			}
 
 			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 

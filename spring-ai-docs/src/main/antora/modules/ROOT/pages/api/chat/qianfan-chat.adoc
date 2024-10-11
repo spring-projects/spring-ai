@@ -124,7 +124,7 @@ ChatResponse response = chatClient.call(
         "Generate the names of 5 famous pirates.",
         QianFanChatOptions.builder()
             .withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-            .withTemperature(0.5f)
+            .withTemperature(0.5)
         .build()
     ));
 ----
@@ -208,7 +208,7 @@ var qianFanApi = new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv(
 
 var chatClient = new QianFanChatModel(qianFanApi, QianFanChatOptions.builder()
                 .withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-                .withTemperature(0.4f)
+                .withTemperature(0.4)
                 .withMaxTokens(200)
                 .build());
 
@@ -241,11 +241,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = qianFanApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7f, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = qianFanApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7f, true));
+        new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-qianfan/src/main/java/org/springframework/ai/qianfan/api/QianFanApi.java[QianFanApi.java]'s JavaDoc for further information.

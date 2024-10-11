@@ -41,6 +41,7 @@ import java.util.List;
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @author Wei Jiang
  * @since 1.0.0
  */
@@ -146,10 +147,10 @@ public class Anthropic3ChatBedrockApi extends
 	public record AnthropicChatRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("system") String system,
-			@JsonProperty("temperature") Float temperature,
+			@JsonProperty("temperature") Double temperature,
 			@JsonProperty("max_tokens") Integer maxTokens,
 			@JsonProperty("top_k") Integer topK,
-			@JsonProperty("top_p") Float topP,
+			@JsonProperty("top_p") Double topP,
 			@JsonProperty("stop_sequences") List<String> stopSequences,
 			@JsonProperty("anthropic_version") String anthropicVersion) {
 
@@ -160,10 +161,10 @@ public class Anthropic3ChatBedrockApi extends
 		public static class Builder {
 			private final List<ChatCompletionMessage> messages;
 			private String system;
-			private Float temperature;// = 0.7f;
+			private Double temperature;// = 0.7;
 			private Integer maxTokens;// = 500;
 			private Integer topK;// = 10;
-			private Float topP;
+			private Double topP;
 			private List<String> stopSequences;
 			private String anthropicVersion;
 
@@ -175,7 +176,7 @@ public class Anthropic3ChatBedrockApi extends
 				this.system = system;
 				return this;
 			}
-			public Builder withTemperature(Float temperature) {
+			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
@@ -190,7 +191,7 @@ public class Anthropic3ChatBedrockApi extends
 				return this;
 			}
 
-			public Builder withTopP(Float tpoP) {
+			public Builder withTopP(Double tpoP) {
 				this.topP = tpoP;
 				return this;
 			}

@@ -29,25 +29,25 @@ public interface ChatOptions extends ModelOptions {
 	String getModel();
 
 	@Nullable
-	Float getFrequencyPenalty();
+	Double getFrequencyPenalty();
 
 	@Nullable
 	Integer getMaxTokens();
 
 	@Nullable
-	Float getPresencePenalty();
+	Double getPresencePenalty();
 
 	@Nullable
 	List<String> getStopSequences();
 
 	@Nullable
-	Float getTemperature();
+	Double getTemperature();
 
 	@Nullable
 	Integer getTopK();
 
 	@Nullable
-	Float getTopP();
+	Double getTopP();
 
 	ChatOptions copy();
 

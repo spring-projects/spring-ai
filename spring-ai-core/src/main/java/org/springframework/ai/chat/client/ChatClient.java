@@ -26,10 +26,12 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
@@ -74,7 +76,9 @@ public interface ChatClient {
 
 	ChatClientRequestSpec prompt();
 
-	ChatClientPromptRequestSpec prompt(Prompt prompt);
+	ChatClientRequestSpec prompt(String content);
+
+	ChatClientRequestSpec prompt(Prompt prompt);
 
 	/**
 	 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
@@ -157,14 +161,6 @@ public interface ChatClient {
 
 	}
 
-	interface ChatClientPromptRequestSpec {
-
-		CallPromptResponseSpec call();
-
-		StreamPromptResponseSpec stream();
-
-	}
-
 	interface CallPromptResponseSpec {
 
 		String content();
@@ -206,10 +202,17 @@ public interface ChatClient {
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
 
+		<I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.BiFunction<I, ToolContext, O> function);
+
+		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
+
 		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);
+
+		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
 		ChatClientRequestSpec system(String text);
 
@@ -264,7 +267,14 @@ public interface ChatClient {
 
 		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
 
+		<I, O> Builder defaultFunction(String name, String description,
+				java.util.function.BiFunction<I, ToolContext, O> function);
+
 		Builder defaultFunctions(String... functionNames);
+
+		Builder defaultFunctions(FunctionCallback... functionCallbacks);
+
+		Builder defaultToolContext(Map<String, Object> toolContext);
 
 		ChatClient build();
 

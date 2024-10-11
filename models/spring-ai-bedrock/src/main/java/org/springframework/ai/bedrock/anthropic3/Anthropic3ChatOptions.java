@@ -38,7 +38,7 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	 * responses from the generative. This value specifies default to be used by the backend while making the call to
 	 * the generative.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 
 	/**
 	 * Specify the maximum number of tokens to use in the generated response. Note that the models may stop before
@@ -56,7 +56,7 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	 * The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and
 	 * nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.
 	 */
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Double topP;
 
 	/**
 	 * Configure up to four sequences that the generative recognizes. After a stop sequence, the generative stops
@@ -78,7 +78,7 @@ public class Anthropic3ChatOptions implements ChatOptions {
 
 		private final Anthropic3ChatOptions options = new Anthropic3ChatOptions();
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
@@ -93,7 +93,7 @@ public class Anthropic3ChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
@@ -115,11 +115,11 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
@@ -142,11 +142,11 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -175,13 +175,13 @@ public class Anthropic3ChatOptions implements ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 

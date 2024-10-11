@@ -81,7 +81,7 @@ List <Document> documents = List.of(
     new Document("The World is Big and Salvation Lurks Around the Corner"),
     new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
 
-// Add the documents to PGVector
+// Add the documents to Milvus Vector Store
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query

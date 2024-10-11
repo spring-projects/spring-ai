@@ -131,6 +131,13 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-mongodb-atlas-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
         <!-- test dependencies -->
 
         <dependency>
@@ -217,6 +224,13 @@
             <artifactId>milvus</artifactId>
             <optional>true</optional>
         </dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mongodb</artifactId>
+			<version>1.20.2</version>
+			<optional>true</optional>
+		</dependency>
 
         <dependency>
             <groupId>org.testcontainers</groupId>

@@ -16,9 +16,6 @@
 package org.springframework.ai.image;
 
 import org.springframework.ai.model.MutableResponseMetadata;
-import org.springframework.ai.model.ResponseMetadata;
-
-import java.util.HashMap;
 
 /**
  * Represents metadata associated with an image response. It provides additional
@@ -31,10 +28,10 @@ import java.util.HashMap;
  */
 public class ImageResponseMetadata extends MutableResponseMetadata {
 
-	private Long created;
+	private final Long created;
 
 	public ImageResponseMetadata() {
-		this.created = System.currentTimeMillis();
+		this(System.currentTimeMillis());
 	}
 
 	public ImageResponseMetadata(Long created) {

@@ -15,13 +15,18 @@
  */
 package org.springframework.ai.autoconfigure.qianfan;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.qianfan.QianFanChatModel;
 import org.springframework.ai.qianfan.QianFanEmbeddingModel;
 import org.springframework.ai.qianfan.QianFanImageModel;
 import org.springframework.ai.qianfan.api.QianFanApi;
 import org.springframework.ai.qianfan.api.QianFanImageApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -51,13 +56,19 @@ public class QianFanAutoConfiguration {
 			matchIfMissing = true)
 	public QianFanChatModel qianFanChatModel(QianFanConnectionProperties commonProperties,
 			QianFanChatProperties chatProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var qianFanApi = qianFanApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(), chatProperties.getSecretKey(),
 				commonProperties.getSecretKey(), restClientBuilder, responseErrorHandler);
 
-		return new QianFanChatModel(qianFanApi, chatProperties.getOptions(), retryTemplate);
+		var chatModel = new QianFanChatModel(qianFanApi, chatProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+		return chatModel;
 	}
 
 	@Bean
@@ -66,14 +77,21 @@ public class QianFanAutoConfiguration {
 			matchIfMissing = true)
 	public QianFanEmbeddingModel qianFanEmbeddingModel(QianFanConnectionProperties commonProperties,
 			QianFanEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var qianFanApi = qianFanApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				embeddingProperties.getApiKey(), commonProperties.getApiKey(), embeddingProperties.getSecretKey(),
 				commonProperties.getSecretKey(), restClientBuilder, responseErrorHandler);
 
-		return new QianFanEmbeddingModel(qianFanApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate);
+		var embeddingModel = new QianFanEmbeddingModel(qianFanApi, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
+
+		return embeddingModel;
 	}
 
 	@Bean
@@ -82,7 +100,8 @@ public class QianFanAutoConfiguration {
 			matchIfMissing = true)
 	public QianFanImageModel qianFanImageModel(QianFanConnectionProperties commonProperties,
 			QianFanImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -99,7 +118,12 @@ public class QianFanAutoConfiguration {
 
 		var qianFanImageApi = new QianFanImageApi(baseUrl, apiKey, secretKey, restClientBuilder, responseErrorHandler);
 
-		return new QianFanImageModel(qianFanImageApi, imageProperties.getOptions(), retryTemplate);
+		var imageModel = new QianFanImageModel(qianFanImageApi, imageProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(imageModel::setObservationConvention);
+
+		return imageModel;
 	}
 
 	private QianFanApi qianFanApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,

@@ -45,7 +45,7 @@ public class AnthropicApiIT {
 				Role.USER);
 		ResponseEntity<ChatCompletionResponse> response = anthropicApi
 			.chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-					List.of(chatCompletionMessage), null, 100, 0.8f, false));
+					List.of(chatCompletionMessage), null, 100, 0.8, false));
 
 		System.out.println(response);
 		assertThat(response).isNotNull();
@@ -58,9 +58,8 @@ public class AnthropicApiIT {
 		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?")),
 				Role.USER);
 
-		Flux<ChatCompletionResponse> response = anthropicApi
-			.chatCompletionStream(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-					List.of(chatCompletionMessage), null, 100, 0.8f, true));
+		Flux<ChatCompletionResponse> response = anthropicApi.chatCompletionStream(new ChatCompletionRequest(
+				AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(), List.of(chatCompletionMessage), null, 100, 0.8, true));
 
 		assertThat(response).isNotNull();
 

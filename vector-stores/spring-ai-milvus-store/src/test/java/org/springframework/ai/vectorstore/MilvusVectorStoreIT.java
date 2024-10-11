@@ -52,13 +52,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class MilvusVectorStoreIT {
 
 	@Container
-	private static MilvusContainer milvusContainer = new MilvusContainer("milvusdb/milvus:v2.3.8");
+	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);

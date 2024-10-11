@@ -97,11 +97,13 @@ public class QuestionAnswerAdvisorTests {
 
 		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("""
 			Please answer my question XYZ
-			Context information is below.
+			Context information is below, surrounded by ---------------------
+
 			---------------------
 			doc1
 			doc2
 			---------------------
+
 			Given the context and provided history information and not prior knowledge,
 			reply to the user comment. If the answer is not in the context, inform
 			the user that you can't answer the question.

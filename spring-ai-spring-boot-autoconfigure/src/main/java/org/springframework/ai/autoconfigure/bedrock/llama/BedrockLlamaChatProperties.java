@@ -43,7 +43,7 @@ public class BedrockLlamaChatProperties {
 
 	@NestedConfigurationProperty
 	private BedrockLlamaChatOptions options = BedrockLlamaChatOptions.builder()
-		.withTemperature(0.7f)
+		.withTemperature(0.7)
 		.withMaxGenLen(300)
 		.build();
 

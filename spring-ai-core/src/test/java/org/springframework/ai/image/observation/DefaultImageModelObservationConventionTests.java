@@ -23,6 +23,7 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.image.observation.ImageModelObservationDocumentation.HighCardinalityKeyNames;
 
 /**
  * Unit tests for {@link DefaultImageModelObservationConvention}.
@@ -104,7 +105,7 @@ class DefaultImageModelObservationConventionTests {
 	}
 
 	@Test
-	void shouldHaveNoneKeyValuesWhenMissing() {
+	void shouldNotHaveKeyValuesWhenEmptyValues() {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
 			.provider("superprovider")
@@ -113,10 +114,12 @@ class DefaultImageModelObservationConventionTests {
 
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
 			.contains(KeyValue.of(AiObservationAttributes.REQUEST_MODEL.value(), KeyValue.NONE_VALUE));
-		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_RESPONSE_FORMAT.value(), KeyValue.NONE_VALUE),
-				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_SIZE.value(), KeyValue.NONE_VALUE),
-				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_STYLE.value(), KeyValue.NONE_VALUE));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),
+					HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
+					HighCardinalityKeyNames.REQUEST_IMAGE_STYLE.asString());
 	}
 
 	private ImagePrompt generateImagePrompt() {

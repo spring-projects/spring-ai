@@ -48,7 +48,7 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi) {
 		this(chatApi,
 				AnthropicChatOptions.builder()
-					.withTemperature(0.8f)
+					.withTemperature(0.8)
 					.withMaxTokensToSample(500)
 					.withTopK(10)
 					.withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)

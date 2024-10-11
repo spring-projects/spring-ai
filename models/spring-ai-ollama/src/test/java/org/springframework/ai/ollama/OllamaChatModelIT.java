@@ -86,7 +86,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
 		// portable/generic options
-		var portableOptions = ChatOptionsBuilder.builder().withTemperature(0.7f).build();
+		var portableOptions = ChatOptionsBuilder.builder().withTemperature(0.7).build();
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage), portableOptions);
 
@@ -240,7 +240,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatModel(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
+			return new OllamaChatModel(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9));
 		}
 
 	}

@@ -25,15 +25,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
-import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
@@ -43,6 +44,7 @@ import io.micrometer.observation.ObservationRegistry;
  * Unit tests for {@link DefaultChatClientObservationConvention}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 class DefaultChatClientObservationConventionTests {
@@ -57,7 +59,7 @@ class DefaultChatClientObservationConventionTests {
 	@BeforeEach
 	public void beforeEach() {
 		request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null);
+				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of());
 	}
 
 	@Test
@@ -67,14 +69,21 @@ class DefaultChatClientObservationConventionTests {
 
 	@Test
 	void shouldHaveContextualName() {
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withStream(true)
+			.build();
 
-		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("spring_ai chat_client");
+		assertThat(this.observationConvention.getContextualName(observationContext))
+			.isEqualTo("%s %s".formatted(AiProvider.SPRING_AI.value(), SpringAiKind.CHAT_CLIENT.value()));
 	}
 
 	@Test
 	void supportsOnlyChatClientObservationContext() {
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withStream(true)
+			.build();
 
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
@@ -82,7 +91,10 @@ class DefaultChatClientObservationConventionTests {
 
 	@Test
 	void shouldHaveRequiredKeyValues() {
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withStream(true)
+			.build();
 
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "chat_client"),
@@ -94,6 +106,11 @@ class DefaultChatClientObservationConventionTests {
 			@Override
 			public String getName() {
 				return name;
+			}
+
+			@Override
+			public int getOrder() {
+				return 0;
 			}
 
 			@Override
@@ -138,37 +155,27 @@ class DefaultChatClientObservationConventionTests {
 
 	@Test
 	void shouldHaveOptionalKeyValues() {
-
 		var request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(),
 				List.of(dummyFunction("functionCallback1"), dummyFunction("functionCallback2")), List.of(),
 				List.of("function1", "function2"), List.of(), null,
 				List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")), Map.of("advParam1", "advisorParam1Value"),
-				ObservationRegistry.NOOP, null);
+				ObservationRegistry.NOOP, null, Map.of());
 
-		ChatClientObservationContext observationContext = new ChatClientObservationContext(request, "json", true);
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.withRequest(request)
+			.withFormat("json")
+			.withStream(true)
+			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(), "[\"advisor1\",\"advisor2\"]"),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(),
+						"[\"advisor1\", \"advisor2\", \"CallAroundAdvisor\", \"StreamAroundAdvisor\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),
 						"[\"advParam1\":\"advisorParam1Value\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(),
-						"[\"function1\",\"function2\"]"),
+						"[\"function1\", \"function2\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS.asString(),
-						"[\"functionCallback1\",\"functionCallback2\"]"));
-	}
-
-	static class TestUsage implements Usage {
-
-		@Override
-		public Long getPromptTokens() {
-			return 1000L;
-		}
-
-		@Override
-		public Long getGenerationTokens() {
-			return 500L;
-		}
-
+						"[\"functionCallback1\", \"functionCallback2\"]"));
 	}
 
 }

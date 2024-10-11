@@ -131,7 +131,7 @@ public class MistralAiApiToolFunctionCallIT {
 				}
 			}
 
-			var functionResponseRequest = new ChatCompletionRequest(messages, MISTRAL_AI_CHAT_MODEL, 0.8f);
+			var functionResponseRequest = new ChatCompletionRequest(messages, MISTRAL_AI_CHAT_MODEL, 0.8);
 
 			ResponseEntity<ChatCompletion> chatCompletion2 = completionApi
 				.chatCompletionEntity(functionResponseRequest);

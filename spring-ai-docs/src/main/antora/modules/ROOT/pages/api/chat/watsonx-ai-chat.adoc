@@ -44,11 +44,11 @@ The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you c
 |====
 | Property | Description | Default
 
-| spring.ai.watsonx.ai.base-url         | The URL to connect to             |  https://us-south.ml.cloud.ibm.com
-| spring.ai.watsonx.ai.stream-endpoint  | The streaming endpoint            |  generation/stream?version=2023-05-29
-| spring.ai.watsonx.ai.text-endpoint    | The text endpoint                 |  generation/text?version=2023-05-29
-| spring.ai.watsonx.ai.project-id       | The project ID                    |  -
-| spring.ai.watsonx.ai.iam-token        | The IBM Cloud account IAM token   |  -
+| spring.ai.watsonx.ai.base-url             | The URL to connect to             |  https://us-south.ml.cloud.ibm.com
+| spring.ai.watsonx.ai.stream-endpoint      | The streaming endpoint            |  ml/v1/text/generation_stream?version=2023-05-29
+| spring.ai.watsonx.ai.text-endpoint        | The text endpoint                 |  ml/v1/text/generation?version=2023-05-29
+| spring.ai.watsonx.ai.project-id           | The project ID                    |  -
+| spring.ai.watsonx.ai.iam-token            | The IBM Cloud account IAM token   |  -
 |====
 
 ==== Configuration Properties

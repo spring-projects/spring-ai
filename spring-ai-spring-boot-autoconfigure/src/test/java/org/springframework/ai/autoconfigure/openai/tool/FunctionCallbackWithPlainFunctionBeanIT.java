@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.openai.tool;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,7 +33,10 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
@@ -52,6 +57,39 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
+
+	@Test
+	void functionCallTest2() {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+			.run(context -> {
+
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				ChatClient chatClient = ChatClient.builder(chatModel).build();
+
+				String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
+					.functions("weatherFunctionWithContext")
+					.toolContext(Map.of("sessionId", "123"))
+					.call()
+					.content();
+				System.out.println(content);
+
+				// Test weatherFunction
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+						OpenAiChatOptions.builder()
+							.withFunction("weatherFunctionWithContext")
+							.withToolContext(Map.of("sessionId", "123"))
+							.build()));
+
+				logger.info("Response: {}", response);
+
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+
+			});
+	}
 
 	@Test
 	void functionCallTest() {
@@ -91,15 +129,19 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			// @formatter:off
-			String content = ChatClient.builder(chatModel).build().prompt()
-				.functions("weatherFunction")
-				.user("What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'")
-				.stream().content()
-				.collectList().block().stream().collect(Collectors.joining());
-			// @formatter:on
+				// Test weatherFunction
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris?");
 
-				logger.info("Response: {}", content);
+				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+					.withFunction("weatherFunction")
+					.build();
+
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+
+				logger.info("Response: {}", response.getResult().getOutput().getContent());
+
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 			});
 	}
 
@@ -153,6 +195,14 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Configuration
 	static class Config {
+
+		@Bean
+		@Description("Get the weather in location")
+		public BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response> weatherFunctionWithContext() {
+			return (request, context) -> {
+				return new MockWeatherService().apply(request);
+			};
+		}
 
 		@Bean
 		@Description("Get the weather in location")

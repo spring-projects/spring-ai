@@ -28,6 +28,7 @@ import org.springframework.util.Assert;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -53,7 +54,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	 * make the output more random, while lower values like 0.2 will make it more focused
 	 * and deterministic. We generally recommend altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the
@@ -61,7 +62,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	 * only the tokens comprising the top 10% probability mass are considered. We
 	 * generally recommend altering this or temperature but not both.
 	 */
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Double topP;
 
 	/**
 	 * How many chat completion choices to generate for each input message. Note that you
@@ -75,14 +76,14 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	 * they appear in the text so far, increasing the model's likelihood to talk about new
 	 * topics.
 	 */
-	private @JsonProperty("presence_penalty") Float presencePenalty;
+	private @JsonProperty("presence_penalty") Double presencePenalty;
 
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their
 	 * existing frequency in the text so far, decreasing the model's likelihood to repeat
 	 * the same line verbatim.
 	 */
-	private @JsonProperty("frequency_penalty") Float frequencyPenalty;
+	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
 
 	/**
 	 * Up to 5 sequences where the API will stop generating further tokens.
@@ -137,6 +138,13 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	 */
 	private @JsonProperty("user") String user;
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
@@ -182,12 +190,12 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -197,12 +205,12 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			return this;
 		}
 
-		public Builder withPresencePenalty(Float presencePenalty) {
+		public Builder withPresencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Float frequencyPenalty) {
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
@@ -244,6 +252,21 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			return this;
 		}
 
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
 		public MoonshotChatOptions build() {
 			return this.options;
 		}
@@ -260,11 +283,11 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	}
 
 	@Override
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Float frequencyPenalty) {
+	public void setFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
@@ -286,11 +309,11 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	}
 
 	@Override
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Float presencePenalty) {
+	public void setPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
@@ -314,20 +337,20 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -346,6 +369,25 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	}
 
 	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
 	public MoonshotChatOptions copy() {
 		return builder().withModel(this.model)
 			.withMaxTokens(this.maxTokens)
@@ -360,6 +402,8 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			.withToolChoice(this.toolChoice)
 			.withFunctionCallbacks(this.functionCallbacks)
 			.withFunctions(this.functions)
+			.withProxyToolCalls(this.proxyToolCalls)
+			.withToolContext(this.toolContext)
 			.build();
 	}
 
@@ -376,6 +420,8 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
 		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
 		result = prime * result + ((user == null) ? 0 : user.hashCode());
+		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
+		result = prime * result + ((toolContext == null) ? 0 : toolContext.hashCode());
 		return result;
 	}
 
@@ -440,6 +486,16 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 			return other.user == null;
 		}
 		else if (!this.user.equals(other.user))
+			return false;
+		if (this.proxyToolCalls == null) {
+			return other.proxyToolCalls == null;
+		}
+		else if (!this.proxyToolCalls.equals(other.proxyToolCalls))
+			return false;
+		if (this.toolContext == null) {
+			return other.toolContext == null;
+		}
+		else if (!this.toolContext.equals(other.toolContext))
 			return false;
 		return true;
 	}

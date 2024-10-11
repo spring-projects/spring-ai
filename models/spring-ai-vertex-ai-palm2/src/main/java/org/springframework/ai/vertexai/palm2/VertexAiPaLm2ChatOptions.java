@@ -39,7 +39,7 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 	 * generative. This value specifies default to be used by the backend while making the
 	 * call to the generative.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 
 	/**
 	 * The number of generated response messages to return. This value must be between [1,
@@ -52,7 +52,7 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 	 * generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the
 	 * smallest set of tokens whose probability sum is at least topP.
 	 */
-	private @JsonProperty("topP") Float topP;
+	private @JsonProperty("topP") Double topP;
 
 	/**
 	 * The maximum number of tokens to consider when sampling. The generative uses
@@ -70,7 +70,7 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 
 		private VertexAiPaLm2ChatOptions options = new VertexAiPaLm2ChatOptions();
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
@@ -80,7 +80,7 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -97,11 +97,11 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
@@ -114,11 +114,11 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -151,13 +151,13 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 

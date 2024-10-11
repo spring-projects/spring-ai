@@ -35,7 +35,7 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	private static final Float DEFAULT_TOP_P = 1.0f;
+	private static final Double DEFAULT_TOP_P = 1.0;
 
 	private static final Boolean IS_ENABLED = false;
 
@@ -51,7 +51,7 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 	@NestedConfigurationProperty
 	private MistralAiChatOptions options = MistralAiChatOptions.builder()
 		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.withTemperature(DEFAULT_TEMPERATURE)
 		.withSafePrompt(!IS_ENABLED)
 		.withTopP(DEFAULT_TOP_P)
 		.build();

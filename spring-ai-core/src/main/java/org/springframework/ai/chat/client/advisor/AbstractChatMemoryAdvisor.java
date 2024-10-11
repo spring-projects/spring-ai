@@ -17,19 +17,29 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
+import java.util.function.Function;
 
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.util.Assert;
+import org.stringtemplate.v4.compiler.CodeGenerator.includeExpr_return;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Abstract class that serves as a base for chat memory advisors.
  *
  * @param <T> the type of the chat memory.
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
-public abstract class AbstractChatMemoryAdvisor<T> implements RequestAdvisor, ResponseAdvisor {
+public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	public static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
@@ -45,11 +55,22 @@ public abstract class AbstractChatMemoryAdvisor<T> implements RequestAdvisor, Re
 
 	protected final int defaultChatMemoryRetrieveSize;
 
-	public AbstractChatMemoryAdvisor(T chatMemory) {
-		this(chatMemory, DEFAULT_CHAT_MEMORY_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE);
+	private final boolean protectFromBlocking;
+
+	private final int order;
+
+	protected AbstractChatMemoryAdvisor(T chatMemory) {
+		this(chatMemory, DEFAULT_CHAT_MEMORY_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE, true);
 	}
 
-	public AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize) {
+	protected AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize,
+			boolean protectFromBlocking) {
+		this(chatMemory, defaultConversationId, defaultChatMemoryRetrieveSize, protectFromBlocking,
+				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	}
+
+	protected AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize,
+			boolean protectFromBlocking, int order) {
 
 		Assert.notNull(chatMemory, "The chatMemory must not be null!");
 		Assert.hasText(defaultConversationId, "The conversationId must not be empty!");
@@ -58,6 +79,8 @@ public abstract class AbstractChatMemoryAdvisor<T> implements RequestAdvisor, Re
 		this.chatMemoryStore = chatMemory;
 		this.defaultConversationId = defaultConversationId;
 		this.defaultChatMemoryRetrieveSize = defaultChatMemoryRetrieveSize;
+		this.protectFromBlocking = protectFromBlocking;
+		this.order = order;
 	}
 
 	@Override
@@ -66,8 +89,12 @@ public abstract class AbstractChatMemoryAdvisor<T> implements RequestAdvisor, Re
 	}
 
 	@Override
-	public StreamResponseMode getStreamResponseMode() {
-		return StreamResponseMode.AGGREGATE;
+	public int getOrder() {
+		// by default the (Ordered.HIGHEST_PRECEDENCE + 1000) value ensures this order has
+		// lower priority (e.g. precedences) than the internal Spring AI advisors. It
+		// leaves room (1000 slots) for the user to plug in their own advisors with higher
+		// priority.
+		return this.order;
 	}
 
 	protected T getChatMemoryStore() {
@@ -84,6 +111,60 @@ public abstract class AbstractChatMemoryAdvisor<T> implements RequestAdvisor, Re
 		return context.containsKey(CHAT_MEMORY_RETRIEVE_SIZE_KEY)
 				? Integer.parseInt(context.get(CHAT_MEMORY_RETRIEVE_SIZE_KEY).toString())
 				: this.defaultChatMemoryRetrieveSize;
+	}
+
+	protected Flux<AdvisedResponse> doNextWithProtectFromBlockingBefore(AdvisedRequest advisedRequest,
+			StreamAroundAdvisorChain chain, Function<AdvisedRequest, AdvisedRequest> beforeAdvise) {
+
+		// This can be executed by both blocking and non-blocking Threads
+		// E.g. a command line or Tomcat blocking Thread implementation
+		// or by a WebFlux dispatch in a non-blocking manner.
+		return (this.protectFromBlocking) ?
+		// @formatter:off
+			Mono.just(advisedRequest)
+				.publishOn(Schedulers.boundedElastic())
+				.map(beforeAdvise)
+				.flatMapMany(request -> chain.nextAroundStream(request))
+			: chain.nextAroundStream(beforeAdvise.apply(advisedRequest));
+	}
+
+	public static abstract class AbstractBuilder<T> {
+		
+		protected String conversationId = DEFAULT_CHAT_MEMORY_CONVERSATION_ID;
+
+		protected int chatMemoryRetrieveSize = DEFAULT_CHAT_MEMORY_RESPONSE_SIZE;
+
+		protected boolean protectFromBlocking = true;
+
+		protected int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
+
+		protected T chatMemory;
+
+		protected AbstractBuilder(T chatMemory) {
+			this.chatMemory = chatMemory;
+		}
+
+		public AbstractBuilder withConversationId(String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
+		public AbstractBuilder withChatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
+			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
+			return this;
+		}
+
+		public AbstractBuilder withProtectFromBlocking(boolean protectFromBlocking) {
+			this.protectFromBlocking = protectFromBlocking;
+			return this;
+		}
+
+		public AbstractBuilder withOrder(int order) {
+			this.order = order;
+			return this;
+		}
+
+		abstract public <T> AbstractChatMemoryAdvisor<T> build();
 	}
 
 }

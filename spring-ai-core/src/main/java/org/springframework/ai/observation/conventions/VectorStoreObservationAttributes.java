@@ -56,6 +56,13 @@ public enum VectorStoreObservationAttributes {
 	 */
 	DB_SYSTEM("db.system"),
 
+	// DB Search
+
+	/**
+	 * The metric used in similarity search.
+	 */
+	DB_SEARCH_SIMILARITY_METRIC("db.search.similarity_metric"),
+
 	// DB Vector
 
 	/**
@@ -67,11 +74,6 @@ public enum VectorStoreObservationAttributes {
 	 * The name field as of the vector (e.g. a field name).
 	 */
 	DB_VECTOR_FIELD_NAME("db.vector.field_name"),
-
-	/**
-	 * The model used for the embedding.
-	 */
-	DB_VECTOR_MODEL("db.vector.model"),
 
 	/**
 	 * The content of the search query being executed.
@@ -98,12 +100,7 @@ public enum VectorStoreObservationAttributes {
 	/**
 	 * The top-k most similar vectors returned by a query.
 	 */
-	DB_VECTOR_QUERY_TOP_K("db.vector.query.top_k"),
-
-	/**
-	 * The metric used in similarity search.
-	 */
-	DB_VECTOR_SIMILARITY_METRIC("db.vector.similarity_metric");
+	DB_VECTOR_QUERY_TOP_K("db.vector.query.top_k");
 
 	private final String value;
 

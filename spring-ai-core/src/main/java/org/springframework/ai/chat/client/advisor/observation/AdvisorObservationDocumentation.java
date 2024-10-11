@@ -27,7 +27,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
 public enum AdvisorObservationDocumentation implements ObservationDocumentation {
 
 	/**
-	 * AI Chat Client observations
+	 * AI Advisor observations
 	 */
 	AI_ADVISOR {
 		@Override
@@ -65,23 +65,32 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 		ADVISOR_TYPE {
 			@Override
 			public String asString() {
-				return "spring.ai.chat.client.advisor.type";
+				return "spring.ai.advisor.type";
 			}
-		};
+		}
 
 	}
 
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**
-		 * Chat Model name.
+		 * Advisor name.
 		 */
 		ADVISOR_NAME {
 			@Override
 			public String asString() {
-				return "spring.ai.chat.client.advisor.name";
+				return "spring.ai.advisor.name";
 			}
-		};
+		},
+		/**
+		 * Advisor order in the advisor chain.
+		 */
+		ADVISOR_ORDER {
+			@Override
+			public String asString() {
+				return "spring.ai.advisor.order";
+			}
+		}
 
 	}
 

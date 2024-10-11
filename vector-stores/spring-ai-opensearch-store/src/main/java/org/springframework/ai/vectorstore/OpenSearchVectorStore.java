@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import org.opensearch.client.json.JsonData;
@@ -30,7 +31,10 @@ import org.opensearch.client.transport.endpoints.BooleanResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -56,6 +60,7 @@ import java.util.stream.Collectors;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author inpink
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -91,6 +96,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
 		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536,
@@ -104,12 +111,13 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			String mappingJson, boolean initializeSchema) {
-		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null);
+		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -124,6 +132,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		// https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
 		this.similarityFunction = COSINE_SIMILARITY_FUNCTION;
 		this.initializeSchema = initializeSchema;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	public OpenSearchVectorStore withSimilarityFunction(String similarityFunction) {
@@ -133,12 +142,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (Document document : documents) {
-			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().length == 0) {
-				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
-				document.setEmbedding(this.embeddingModel.embed(document));
-			}
 			bulkRequestBuilder
 				.operations(op -> op.index(idx -> idx.index(this.index).id(document.getId()).document(document)));
 		}
@@ -173,6 +179,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			Filter.Expression filterExpression) {
 		return similaritySearch(new org.opensearch.client.opensearch.core.SearchRequest.Builder()
 			.query(getOpenSearchSimilarityQuery(embedding, filterExpression))
+			.index(this.index)
 			.sort(sortOptionsBuilder -> sortOptionsBuilder
 				.score(scoreSortBuilder -> scoreSortBuilder.order(SortOrder.Desc)))
 			.size(topK)

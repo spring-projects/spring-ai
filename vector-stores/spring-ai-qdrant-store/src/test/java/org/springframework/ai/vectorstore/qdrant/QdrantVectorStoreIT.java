@@ -60,7 +60,7 @@ public class QdrantVectorStoreIT {
 	private static final int EMBEDDING_DIMENSION = 1024;
 
 	@Container
-	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
+	static QdrantContainer qdrantContainer = new QdrantContainer(QdrantImage.DEFAULT_IMAGE);
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",

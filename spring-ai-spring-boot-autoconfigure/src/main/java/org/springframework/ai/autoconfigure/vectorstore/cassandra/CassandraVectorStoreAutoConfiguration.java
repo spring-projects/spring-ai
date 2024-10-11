@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 
 import java.time.Duration;
@@ -22,7 +23,9 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.CassandraVectorStore;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -38,6 +41,7 @@ import org.springframework.context.annotation.Bean;
 /**
  * @author Mick Semb Wever
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 1.0.0
  */
 @AutoConfiguration(after = CassandraAutoConfiguration.class)
@@ -46,10 +50,17 @@ import org.springframework.context.annotation.Bean;
 public class CassandraVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy batchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public CassandraVectorStore vectorStore(EmbeddingModel embeddingModel, CassandraVectorStoreProperties properties,
 			CqlSession cqlSession, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
 		var builder = CassandraVectorStoreConfig.builder().withCqlSession(cqlSession);
 
@@ -69,7 +80,7 @@ public class CassandraVectorStoreAutoConfiguration {
 
 		return new CassandraVectorStore(builder.build(), embeddingModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
+				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
 	}
 
 	@Bean

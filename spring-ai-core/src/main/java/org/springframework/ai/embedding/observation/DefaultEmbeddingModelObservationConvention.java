@@ -33,16 +33,6 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 	private static final KeyValue RESPONSE_MODEL_NONE = KeyValue
 		.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL, KeyValue.NONE_VALUE);
 
-	private static final KeyValue REQUEST_EMBEDDING_DIMENSION_NONE = KeyValue.of(
-			EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS,
-			KeyValue.NONE_VALUE);
-
-	private static final KeyValue USAGE_INPUT_TOKENS_NONE = KeyValue
-		.of(EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS, KeyValue.NONE_VALUE);
-
-	private static final KeyValue USAGE_TOTAL_TOKENS_NONE = KeyValue
-		.of(EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS, KeyValue.NONE_VALUE);
-
 	public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
 	@Override
@@ -94,40 +84,48 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(EmbeddingModelObservationContext context) {
-		return KeyValues.of(requestEmbeddingDimension(context), usageInputTokens(context), usageTotalTokens(context));
+		var keyValues = KeyValues.empty();
+		// Request
+		keyValues = requestEmbeddingDimension(keyValues, context);
+		// Response
+		keyValues = usageInputTokens(keyValues, context);
+		keyValues = usageTotalTokens(keyValues, context);
+		return keyValues;
 	}
 
 	// Request
 
-	protected KeyValue requestEmbeddingDimension(EmbeddingModelObservationContext context) {
+	protected KeyValues requestEmbeddingDimension(KeyValues keyValues, EmbeddingModelObservationContext context) {
 		if (context.getRequestOptions().getDimensions() != null) {
-			return KeyValue.of(
-					EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS,
-					String.valueOf(context.getRequestOptions().getDimensions()));
+			return keyValues
+				.and(EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS
+					.asString(), String.valueOf(context.getRequestOptions().getDimensions()));
 		}
-		return REQUEST_EMBEDDING_DIMENSION_NONE;
+		return keyValues;
 	}
 
 	// Response
 
-	protected KeyValue usageInputTokens(EmbeddingModelObservationContext context) {
+	protected KeyValues usageInputTokens(KeyValues keyValues, EmbeddingModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& context.getResponse().getMetadata().getUsage() != null
 				&& context.getResponse().getMetadata().getUsage().getPromptTokens() != null) {
-			return KeyValue.of(EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS,
+			return keyValues.and(
+					EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getPromptTokens()));
 		}
-		return USAGE_INPUT_TOKENS_NONE;
+		return keyValues;
 	}
 
-	protected KeyValue usageTotalTokens(EmbeddingModelObservationContext context) {
+	protected KeyValues usageTotalTokens(KeyValues keyValues, EmbeddingModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& context.getResponse().getMetadata().getUsage() != null
 				&& context.getResponse().getMetadata().getUsage().getTotalTokens() != null) {
-			return KeyValue.of(EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS,
+			return keyValues.and(
+					EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getTotalTokens()));
 		}
-		return USAGE_TOTAL_TOKENS_NONE;
+		return keyValues;
 	}
 
 }

@@ -96,8 +96,8 @@ public class MistralAiRetryTests {
 
 		chatModel = new MistralAiChatModel(mistralAiApi,
 				MistralAiChatOptions.builder()
-					.withTemperature(0.7f)
-					.withTopP(1f)
+					.withTemperature(0.7)
+					.withTopP(1.0)
 					.withSafePrompt(false)
 					.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 					.build(),

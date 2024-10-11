@@ -50,7 +50,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt(List<Message> messages) {
-		this.messages = messages;
+		this(messages, null);
 	}
 
 	public Prompt(String contents, ChatOptions chatOptions) {

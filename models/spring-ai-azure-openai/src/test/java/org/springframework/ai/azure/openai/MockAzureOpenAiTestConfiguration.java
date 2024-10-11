@@ -41,7 +41,7 @@ import okhttp3.mockwebserver.MockWebServer;
  *
  * @author John Blum
  * @see org.springframework.boot.SpringBootConfiguration
- * @see org.springframework.ai.test.config.MockAiTestConfiguration
+ * @see org.springframework.ai.azure.openai.MockAiTestConfiguration
  * @since 0.7.0
  */
 @SpringBootConfiguration
@@ -51,15 +51,15 @@ import okhttp3.mockwebserver.MockWebServer;
 public class MockAzureOpenAiTestConfiguration {
 
 	@Bean
-	OpenAIClient microsoftAzureOpenAiClient(MockWebServer webServer) {
+	OpenAIClientBuilder microsoftAzureOpenAiClient(MockWebServer webServer) {
 
 		HttpUrl baseUrl = webServer.url(MockAiTestConfiguration.SPRING_AI_API_PATH);
 
-		return new OpenAIClientBuilder().endpoint(baseUrl.toString()).buildClient();
+		return new OpenAIClientBuilder().endpoint(baseUrl.toString());
 	}
 
 	@Bean
-	AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient microsoftAzureOpenAiClient) {
+	AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder microsoftAzureOpenAiClient) {
 		return new AzureOpenAiChatModel(microsoftAzureOpenAiClient);
 	}
 

@@ -18,32 +18,42 @@ package org.springframework.ai.autoconfigure.vertexai.gemini;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
+import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * Auto-configuration for Vertex AI Gemini Chat.
  *
  * @author Christian Tzolov
  * @author Soby Chacko
- * @since 0.8.0
+ * @author Mark Pollack
+ * @since 1.0.0
  */
+@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatModel.class })
 @EnableConfigurationProperties({ VertexAiGeminiChatProperties.class, VertexAiGeminiConnectionProperties.class })
+@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class })
 public class VertexAiGeminiAutoConfiguration {
 
 	@Bean
@@ -79,12 +89,17 @@ public class VertexAiGeminiAutoConfiguration {
 	@ConditionalOnProperty(prefix = VertexAiGeminiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public VertexAiGeminiChatModel vertexAiGeminiChat(VertexAI vertexAi, VertexAiGeminiChatProperties chatProperties,
-			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context) {
+			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context, RetryTemplate retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
 
-		return new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(), functionCallbackContext,
-				toolFunctionCallbacks);
+		VertexAiGeminiChatModel chatModel = new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(),
+				functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+		return chatModel;
 	}
 
 	/**

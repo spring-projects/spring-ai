@@ -1,0 +1,65 @@
+diff --git a/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/OllamaChatModel.java b/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/OllamaChatModel.java
+index c6d689e6..6168ea55 100644
+--- a/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/OllamaChatModel.java
++++ b/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/OllamaChatModel.java
+@@ -211,13 +211,18 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
+ 
+ 			Flux<ChatResponse> chatResponse = ollamaResponse.map(chunk -> {
+ 				String content = (chunk.message() != null) ? chunk.message().content() : "";
+-				List<AssistantMessage.ToolCall> toolCalls = chunk.message().toolCalls() == null ? List.of()
+-						: chunk.message()
+-							.toolCalls()
+-							.stream()
+-							.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+-									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+-							.toList();
++
++				List<AssistantMessage.ToolCall> toolCalls = List.of();
++
++				// Added null checks to prevent NPE when accessing tool calls
++				if (chunk.message() != null && chunk.message().toolCalls() != null) {
++					toolCalls = chunk.message()
++						.toolCalls()
++						.stream()
++						.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
++								ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
++						.toList();
++				}
+ 
+ 				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
+ 
+diff --git a/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatModelMultimodalIT.java b/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatModelMultimodalIT.java
+index f58552f8..4dffc7d2 100644
+--- a/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatModelMultimodalIT.java
++++ b/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatModelMultimodalIT.java
+@@ -40,6 +40,7 @@ import java.io.IOException;
+ import java.util.List;
+ 
+ import static org.assertj.core.api.Assertions.assertThat;
++import static org.junit.Assert.assertThrows;
+ 
+ @SpringBootTest
+ @Testcontainers
+@@ -67,6 +68,18 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
+ 	@Autowired
+ 	private OllamaChatModel chatModel;
+ 
++	@Test
++	void unsupportedMediaType() throws IOException {
++
++		var imageData = new ClassPathResource("/norway.webp");
++
++		var userMessage = new UserMessage("Explain what do you see on this picture?",
++				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
++
++		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt(List.of(userMessage))));
++
++	}
++
+ 	@Test
+ 	void multiModalityTest() throws IOException {
+ 
+diff --git a/models/spring-ai-ollama/src/test/resources/norway.webp b/models/spring-ai-ollama/src/test/resources/norway.webp
+new file mode 100644
+index 00000000..0da983e2
+Binary files /dev/null and b/models/spring-ai-ollama/src/test/resources/norway.webp differ

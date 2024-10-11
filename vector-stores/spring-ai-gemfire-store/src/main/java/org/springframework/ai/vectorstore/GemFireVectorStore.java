@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -26,7 +27,10 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -75,6 +79,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	/**
 	 * Configures and initializes a GemFireVectorStore instance based on the provided
 	 * configuration.
@@ -84,7 +90,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	 */
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
-		this(config, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null);
+		this(config, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	/**
@@ -99,7 +106,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	 * observing operations
 	 */
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema,
-			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -118,6 +126,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			.build(config.sslEnabled ? "s" : "", config.host, config.port)
 			.toString();
 		this.client = WebClient.create(base);
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	// Create Index Parameters
@@ -404,13 +413,11 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
-			// Compute and assign an embedding to the document.
-			document.setEmbedding(this.embeddingModel.embed(document));
-			float[] floatVector = document.getEmbedding();
-			return new UploadRequest.Embedding(document.getId(), floatVector, DOCUMENT_FIELD, document.getContent(),
-					document.getMetadata());
-		}).toList());
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		UploadRequest upload = new UploadRequest(documents.stream()
+			.map(document -> new UploadRequest.Embedding(document.getId(), document.getEmbedding(), DOCUMENT_FIELD,
+					document.getContent(), document.getMetadata()))
+			.toList());
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		String embeddingsJson = null;

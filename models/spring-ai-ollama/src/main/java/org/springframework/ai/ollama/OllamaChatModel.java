@@ -41,6 +41,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
@@ -162,7 +163,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 			});
 
-		if (response != null && isToolCall(response, Set.of("stop"))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
+				&& isToolCall(response, Set.of("stop"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -209,13 +211,18 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 			Flux<ChatResponse> chatResponse = ollamaResponse.map(chunk -> {
 				String content = (chunk.message() != null) ? chunk.message().content() : "";
-				List<AssistantMessage.ToolCall> toolCalls = chunk.message().toolCalls() == null ? List.of()
-						: chunk.message()
-							.toolCalls()
-							.stream()
-							.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
-									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
-							.toList();
+
+				List<AssistantMessage.ToolCall> toolCalls = List.of();
+
+				// Added null checks to prevent NPE when accessing tool calls
+				if (chunk.message() != null && chunk.message().toolCalls() != null) {
+					toolCalls = chunk.message()
+						.toolCalls()
+						.stream()
+						.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+								ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+						.toList();
+				}
 
 				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
 
@@ -296,8 +303,14 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		// runtime options
 		OllamaOptions runtimeOptions = null;
 		if (prompt.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					OllamaOptions.class);
+			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
+						OllamaOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						OllamaOptions.class);
+			}
 			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(runtimeOptions));
 		}
 

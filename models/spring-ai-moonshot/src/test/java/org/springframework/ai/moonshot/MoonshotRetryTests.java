@@ -85,8 +85,8 @@ public class MoonshotRetryTests {
 
 		chatModel = new MoonshotChatModel(moonshotApi,
 				MoonshotChatOptions.builder()
-					.withTemperature(0.7f)
-					.withTopP(1f)
+					.withTemperature(0.7)
+					.withTopP(1.0)
 					.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_32K.getValue())
 					.build(),
 				null, retryTemplate);
@@ -145,7 +145,7 @@ public class MoonshotRetryTests {
 	public void moonshotChatStreamNonTransientError() {
 		when(moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
 	}
 
 }

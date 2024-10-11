@@ -34,7 +34,7 @@ public class BedrockUsage implements Usage {
 	private final AmazonBedrockInvocationMetrics usage;
 
 	protected BedrockUsage(AmazonBedrockInvocationMetrics usage) {
-		Assert.notNull(usage, "OpenAI Usage must not be null");
+		Assert.notNull(usage, "Bedrock Usage must not be null");
 		this.usage = usage;
 	}
 

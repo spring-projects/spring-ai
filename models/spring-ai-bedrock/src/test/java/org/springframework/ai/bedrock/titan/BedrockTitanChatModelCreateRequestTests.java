@@ -43,8 +43,8 @@ public class BedrockTitanChatModelCreateRequestTests {
 
 		var model = new BedrockTitanChatModel(api,
 				BedrockTitanChatOptions.builder()
-					.withTemperature(66.6f)
-					.withTopP(0.66f)
+					.withTemperature(66.6)
+					.withTopP(0.66)
 					.withMaxTokenCount(666)
 					.withStopSequences(List.of("stop1", "stop2"))
 					.build());
@@ -52,15 +52,15 @@ public class BedrockTitanChatModelCreateRequestTests {
 		var request = model.createRequest(new Prompt("Test message content"));
 
 		assertThat(request.inputText()).isNotEmpty();
-		assertThat(request.textGenerationConfig().temperature()).isEqualTo(66.6f);
-		assertThat(request.textGenerationConfig().topP()).isEqualTo(0.66f);
+		assertThat(request.textGenerationConfig().temperature()).isEqualTo(66.6);
+		assertThat(request.textGenerationConfig().topP()).isEqualTo(0.66);
 		assertThat(request.textGenerationConfig().maxTokenCount()).isEqualTo(666);
 		assertThat(request.textGenerationConfig().stopSequences()).containsExactly("stop1", "stop2");
 
 		request = model.createRequest(new Prompt("Test message content",
 				BedrockTitanChatOptions.builder()
-					.withTemperature(99.9f)
-					.withTopP(0.99f)
+					.withTemperature(99.9)
+					.withTopP(0.99)
 					.withMaxTokenCount(999)
 					.withStopSequences(List.of("stop3", "stop4"))
 					.build()
@@ -68,8 +68,8 @@ public class BedrockTitanChatModelCreateRequestTests {
 		));
 
 		assertThat(request.inputText()).isNotEmpty();
-		assertThat(request.textGenerationConfig().temperature()).isEqualTo(99.9f);
-		assertThat(request.textGenerationConfig().topP()).isEqualTo(0.99f);
+		assertThat(request.textGenerationConfig().temperature()).isEqualTo(99.9);
+		assertThat(request.textGenerationConfig().topP()).isEqualTo(0.99);
 		assertThat(request.textGenerationConfig().maxTokenCount()).isEqualTo(999);
 		assertThat(request.textGenerationConfig().stopSequences()).containsExactly("stop3", "stop4");
 	}

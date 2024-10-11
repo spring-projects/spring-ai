@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -67,13 +68,13 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	void observationForChatOperation() {
 		var options = OllamaOptions.builder()
 			.withModel(OllamaModel.MISTRAL.getName())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withNumPredict(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -91,13 +92,13 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	void observationForStreamingChatOperation() {
 		var options = OllamaOptions.builder()
 			.withModel(OllamaModel.MISTRAL.getName())
-			.withFrequencyPenalty(0f)
+			.withFrequencyPenalty(0.0)
 			.withNumPredict(2048)
-			.withPresencePenalty(0f)
+			.withPresencePenalty(0.0)
 			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
+			.withTemperature(0.7)
 			.withTopK(1)
-			.withTopP(1f)
+			.withTopP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -141,7 +142,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), "1")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.RESPONSE_ID.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"stop\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))

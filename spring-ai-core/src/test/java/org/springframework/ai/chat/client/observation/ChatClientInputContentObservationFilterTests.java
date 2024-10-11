@@ -33,9 +33,10 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
 /**
- * Unit tests for {@link ChatClientImportContentObservationFilter}.
+ * Unit tests for {@link ChatClientInputContentObservationFilter}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 class ChatClientInputContentObservationFilterTests {
@@ -55,14 +56,14 @@ class ChatClientInputContentObservationFilterTests {
 
 	@Test
 	void whenEmptyInputContentThenReturnOriginalContext() {
-
 		ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 		ChatClientObservationConvention customObservationConvention = null;
 
 		var request = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), observationRegistry, customObservationConvention);
+				List.of(), List.of(), null, List.of(), Map.of(), observationRegistry, customObservationConvention,
+				Map.of());
 
-		var expectedContext = new ChatClientObservationContext(request, "", false);
+		var expectedContext = ChatClientObservationContext.builder().withRequest(request).build();
 
 		var actualContext = observationFilter.map(expectedContext);
 
@@ -71,15 +72,14 @@ class ChatClientInputContentObservationFilterTests {
 
 	@Test
 	void whenWithTextThenAugmentContext() {
-
 		ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 		ChatClientObservationConvention customObservationConvention = null;
 
 		var request = new DefaultChatClientRequestSpec(chatModel, "sample user text", Map.of("up1", "upv1"),
 				"sample system text", Map.of("sp1", "sp1v"), List.of(), List.of(), List.of(), List.of(), null,
-				List.of(), Map.of(), observationRegistry, customObservationConvention);
+				List.of(), Map.of(), observationRegistry, customObservationConvention, Map.of());
 
-		var originalContext = new ChatClientObservationContext(request, "", false);
+		var originalContext = ChatClientObservationContext.builder().withRequest(request).build();
 
 		var augmentedContext = observationFilter.map(originalContext);
 

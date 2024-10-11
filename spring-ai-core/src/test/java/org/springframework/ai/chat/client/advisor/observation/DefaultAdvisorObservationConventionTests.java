@@ -23,11 +23,13 @@ import org.springframework.ai.chat.client.advisor.observation.AdvisorObservation
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
+import org.springframework.ai.observation.conventions.SpringAiKind;
 
 /**
  * Unit tests for {@link DefaultAdvisorObservationConvention}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 class DefaultAdvisorObservationConventionTests {
 
@@ -42,17 +44,16 @@ class DefaultAdvisorObservationConventionTests {
 	void contextualName() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.BEFORE)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
-		assertThat(this.observationConvention.getContextualName(observationContext))
-			.isEqualTo("chat_client_advisor my_name_before");
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("my_name");
 	}
 
 	@Test
 	void supportsAdvisorObservationContext() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.BEFORE)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
@@ -62,22 +63,25 @@ class DefaultAdvisorObservationConventionTests {
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AFTER)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(), "AFTER"),
-				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "chat_client_advisor"));
+				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(),
+						AdvisorObservationContext.Type.AROUND.name()),
+				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), SpringAiKind.ADVISOR.value()));
 	}
 
 	@Test
 	void shouldHaveKeyValuesWhenDefinedAndResponse() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AFTER)
+			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
+			.withOrder(678)
 			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
-			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"));
+			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"))
+			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_ORDER.asString(), "678"));
 	}
 
 }

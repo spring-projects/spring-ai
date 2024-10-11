@@ -117,7 +117,7 @@ public class MiniMaxApiToolFunctionCallIT {
 		}
 
 		var functionResponseRequest = new ChatCompletionRequest(messages,
-				org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_Chat.getValue(), 0.5F);
+				org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_Chat.getValue(), 0.5);
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = miniMaxApi.chatCompletionEntity(functionResponseRequest);
 

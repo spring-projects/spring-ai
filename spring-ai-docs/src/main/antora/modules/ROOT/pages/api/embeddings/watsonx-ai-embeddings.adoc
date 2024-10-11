@@ -1,0 +1,115 @@
+= watsonx.ai Embeddings
+
+With https://www.ibm.com/products/watsonx-ai[Watsonx.ai] you can run various Large Language Models (LLMs) and generate embeddings from them.
+Spring AI supports the Watsonx.ai text embeddings with `WatsonxAiEmbeddingModel`.
+
+An embedding is a vector (list) of floating point numbers.
+The distance between two vectors measures their relatedness.
+Small distances suggest high relatedness and large distances suggest low relatedness.
+
+== Prerequisites
+
+You first need to have a SaaS instance of watsonx.ai (as well as an IBM Cloud account).
+
+Refer to https://eu-de.dataplatform.cloud.ibm.com/registration/stepone?context=wx&preselect_region=true[free-trial] to try watsonx.ai for free
+
+TIP: More info can be found https://www.ibm.com/products/watsonx-ai/info/trial[here]
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories. Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Watsonx.ai Embedding Model.
+To enable it add the following dependency to your Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-watsonx-ai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+The `spring.ai.watsonx.embedding.options.*` properties are used to configure the default options used for all embedding requests.
+
+=== Embedding Properties
+
+The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you connect to watsonx.ai.
+
+[cols="4,3,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.watsonx.ai.base-url             | The URL to connect to             |  https://us-south.ml.cloud.ibm.com
+| spring.ai.watsonx.ai.embedding-endpoint   | The text endpoint                 |  ml/v1/text/embeddings?version=2023-05-29
+| spring.ai.watsonx.ai.project-id           | The project ID                    |  -
+| spring.ai.watsonx.ai.iam-token            | The IBM Cloud account IAM token   |  -
+|====
+
+The prefix `spring.ai.watsonx.embedding.options` is the property prefix that configures the `EmbeddingModel` implementation for Watsonx.ai.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.watsonx.ai.embedding.enabled       | Enable Watsonx.ai embedding model | true
+| spring.ai.watsonx.ai.embedding.options.model | The embedding model to be used    | ibm/slate-30m-english-rtrvr
+|====
+
+
+== Runtime Options [[embedding-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-watsonx/src/main/java/org/springframework/ai/watsonx/api/WatsonxAiEmbeddingOptions.java[WatsonxAiEmbeddingOptions.java] provides the Watsonx.ai configurations, such as the model to use.
+
+The default options can be configured using the `spring.ai.watsonx.embedding.options` properties as well.
+
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingModel.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        WatsonxAiEmbeddingOptions.create()
+            .withModel("Different-Embedding-Model-Deployment-Name"))
+);
+----
+
+== Sample Controller
+
+This will create an `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingModel` implementation.
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingModel embeddingModel;
+
+    @Autowired
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
+
+    @GetMapping("/ai/embedding")
+    public ResponseEntity<Embedding> embedding(@RequestParam String text) {
+        EmbeddingResponse response = this.embeddingModel.embedForResponse(List.of(text));
+        return ResponseEntity.ok(response.getResult());
+    }
+}
+----

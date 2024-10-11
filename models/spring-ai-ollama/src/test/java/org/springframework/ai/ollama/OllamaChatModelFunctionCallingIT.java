@@ -137,7 +137,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatModel(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
+			return new OllamaChatModel(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9));
 		}
 
 	}

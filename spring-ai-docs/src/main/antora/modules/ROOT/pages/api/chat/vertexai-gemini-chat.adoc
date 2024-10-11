@@ -78,6 +78,7 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 | spring.ai.vertex.ai.gemini.chat.options.frequencyPenalty |  | -
 | spring.ai.vertex.ai.gemini.chat.options.presencePenalty |  | -
 | spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
+| spring.ai.vertex.ai.gemini.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 
 |====
 
@@ -97,13 +98,13 @@ For example to override the default temperature for a specific request:
 ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
-        VertexAiPaLm2ChatOptions.builder()
+        VertexAiGeminiChatOptions.builder()
             .withTemperature(0.4)
         .build()
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiChatPaLm2Options` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
+TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
 https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 == Function Calling
@@ -140,7 +141,7 @@ ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-palm2-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-gemini-spring-boot-starter` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi chat model:
 

@@ -157,9 +157,9 @@ class BedrockAi21Jurassic2ChatModelIT {
 				Ai21Jurassic2ChatBedrockApi jurassic2ChatBedrockApi) {
 			return new BedrockAi21Jurassic2ChatModel(jurassic2ChatBedrockApi,
 					BedrockAi21Jurassic2ChatOptions.builder()
-						.withTemperature(0.5f)
+						.withTemperature(0.5)
 						.withMaxTokens(100)
-						.withTopP(0.9f)
+						.withTopP(0.9)
 						.build());
 		}
 

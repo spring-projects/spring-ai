@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,9 +80,9 @@ public class AzureVectorStoreIT {
 
 			vectorStore.add(documents);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
-			}, hasSize(1));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
+						hasSize(1));
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 
@@ -97,9 +97,8 @@ public class AzureVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
-			}, hasSize(0));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
 		});
 	}
 
@@ -206,9 +205,7 @@ public class AzureVectorStoreIT {
 
 			SearchRequest springSearchRequest = SearchRequest.query("Spring").withTopK(5);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(springSearchRequest);
-			}, hasSize(1));
+			Awaitility.await().until(() -> vectorStore.similaritySearch(springSearchRequest), hasSize(1));
 
 			List<Document> results = vectorStore.similaritySearch(springSearchRequest);
 
@@ -227,9 +224,9 @@ public class AzureVectorStoreIT {
 
 			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent();
-			}, equalTo("The World is Big and Salvation Lurks Around the Corner"));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
+						equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
 			results = vectorStore.similaritySearch(fooBarSearchRequest);
 
@@ -242,9 +239,7 @@ public class AzureVectorStoreIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(List.of(document.getId()));
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(fooBarSearchRequest);
-			}, hasSize(0));
+			Awaitility.await().until(() -> vectorStore.similaritySearch(fooBarSearchRequest), hasSize(0));
 
 		});
 	}
@@ -258,10 +253,10 @@ public class AzureVectorStoreIT {
 
 			vectorStore.add(documents);
 
-			Awaitility.await().until(() -> {
-				return vectorStore
-					.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll());
-			}, hasSize(3));
+			Awaitility.await()
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll()),
+						hasSize(3));
 
 			List<Document> fullResult = vectorStore
 				.similaritySearch(SearchRequest.query("Depression").withTopK(5).withSimilarityThresholdAll());
@@ -284,9 +279,8 @@ public class AzureVectorStoreIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
-			}, hasSize(0));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
 		});
 	}
 

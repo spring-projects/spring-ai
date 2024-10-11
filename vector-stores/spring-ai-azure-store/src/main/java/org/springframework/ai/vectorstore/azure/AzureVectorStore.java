@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.azure;
 
 import java.util.ArrayList;
@@ -25,7 +26,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -73,6 +77,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Thomas Vitale
+ * @author Soby Chacko
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -115,6 +120,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	private String indexName = DEFAULT_INDEX_NAME;
 
 	private final boolean initializeSchema;
+
+	private final BatchingStrategy batchingStrategy;
 
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
@@ -175,7 +182,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 */
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema, List<MetadataField> filterMetadataFields) {
-		this(searchIndexClient, embeddingModel, initializeSchema, filterMetadataFields, ObservationRegistry.NOOP, null);
+		this(searchIndexClient, embeddingModel, initializeSchema, filterMetadataFields, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
 	}
 
 	/**
@@ -191,7 +199,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 */
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema, List<MetadataField> filterMetadataFields, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
 		super(observationRegistry, customObservationConvention);
 
@@ -204,6 +212,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		this.embeddingModel = embeddingModel;
 		this.filterMetadataFields = filterMetadataFields;
 		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	/**
@@ -243,11 +252,12 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return; // nothing to do;
 		}
 
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		final var searchDocuments = documents.stream().map(document -> {
-			final var embeddings = this.embeddingModel.embed(document);
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
-			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings);
+			searchDocument.put(EMBEDDING_FIELD_NAME, document.getEmbedding());
 			searchDocument.put(CONTENT_FIELD_NAME, document.getContent());
 			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
 

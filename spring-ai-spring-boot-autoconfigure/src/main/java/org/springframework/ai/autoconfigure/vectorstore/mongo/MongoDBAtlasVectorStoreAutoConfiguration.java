@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.MongoDBAtlasVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -38,6 +41,7 @@ import java.util.Arrays;
  * @author Eddú Meléndez
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Ignacio López
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -46,10 +50,17 @@ import java.util.Arrays;
 public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy batchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBAtlasVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
 		var builder = MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder();
 
@@ -62,11 +73,14 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 		if (StringUtils.hasText(properties.getIndexName())) {
 			builder.withVectorIndexName(properties.getIndexName());
 		}
+		if (!properties.getMetadataFieldsToFilter().isEmpty()) {
+			builder.withMetadataFieldsToFilter(properties.getMetadataFieldsToFilter());
+		}
 		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = builder.build();
 
 		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config, properties.isInitializeSchema(),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
+				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
 	}
 
 	@Bean

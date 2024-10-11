@@ -73,9 +73,9 @@ public class ImageMessage {
 
 ==== ImageOptions
 
-Represents the options that can be passed to the Image generation model. The `ImageOptions` class extends the `ModelOptions` interface and is used to define few portable options that can be passed to the AI model.
+Represents the options that can be passed to the Image generation model. The `ImageOptions` interface extends the `ModelOptions` interface and is used to define few portable options that can be passed to the AI model.
 
-The `ImageOptions` class is defined as follows:
+The `ImageOptions` interface is defined as follows:
 
 [source,java]
 ----
@@ -97,12 +97,12 @@ public interface ImageOptions extends ModelOptions {
 Additionally, every model specific ImageModel implementation can have its own options that can be passed to the AI model. For example, the OpenAI Image Generation model has its own options like `quality`, `style`, etc.
 
 
-This is a powerful feature that allows developers to use model specific options when starting the application and then override them with at runtime using the `ImagePrompt`.
+This is a powerful feature that allows developers to use model specific options when starting the application and then override them at runtime using the `ImagePrompt`.
 
 
 === ImageResponse
 
-The structure of the `ChatResponse` class is as follows:
+The structure of the `ImageResponse` class is as follows:
 
 [source,java]
 ----
@@ -130,7 +130,7 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageResponse.java[ImageResponse] class holds the AI Model's output, with each `ImageGeneration` instance containing one of potentially multiple outputs resulting from a single prompt.
 
-The `ImageResponse` class also carries a `ImageResponseMetadata` metadata about the AI Model's response.
+The `ImageResponse` class also carries a `ImageResponseMetadata` object holding metadata about the AI Model's response.
 
 === ImageGeneration
 
@@ -160,7 +160,10 @@ public class ImageGeneration implements ModelResult<Image> {
 `ImageModel` implementations are provided for the following Model providers:
 
 * xref:api/image/openai-image.adoc[OpenAI Image Generation]
+* xref:api/image/azure-openai-image.adoc[Azure OpenAI Image Generation]
+* xref:api/image/qianfan-image.adoc[QianFan Image Generation]
 * xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
+* xref:api/image/zhipuai-image.adoc[ZhiPuAI Image Generation]
 
 == API Docs
 

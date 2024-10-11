@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.azure.openai;
 
-import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
@@ -262,17 +261,16 @@ class AzureOpenAiChatModelIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClient openAIClient() {
+		public OpenAIClientBuilder openAIClientBuilder() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
 				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
 				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-				.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS))
-				.buildClient();
+				.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS));
 		}
 
 		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiChatModel(openAIClient,
+		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
+			return new AzureOpenAiChatModel(openAIClientBuilder,
 					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build());
 
 		}

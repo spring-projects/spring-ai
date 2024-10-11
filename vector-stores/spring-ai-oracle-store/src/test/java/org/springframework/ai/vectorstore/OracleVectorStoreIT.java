@@ -43,9 +43,8 @@ import static org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARC
 public class OracleVectorStoreIT {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer("gvenzl/oracle-free:23-slim")
-		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
-				"/container-entrypoint-initdb.d/initialize.sql");
+	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE).withCopyFileToContainer(
+			MountableFile.forClasspathResource("/initialize.sql"), "/container-entrypoint-initdb.d/initialize.sql");
 
 	final List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),

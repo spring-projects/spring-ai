@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -48,8 +49,8 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	private @JsonProperty("metadata") ChatCompletionRequest.Metadata metadata;
 	private @JsonProperty("stop_sequences") List<String> stopSequences;
-	private @JsonProperty("temperature") Float temperature;
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("temperature") Double temperature;
+	private @JsonProperty("top_p") Double topP;
 	private @JsonProperty("top_k") Integer topK;
 
 	/**
@@ -77,6 +78,13 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
+
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -112,12 +120,12 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
@@ -141,6 +149,21 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -186,20 +209,20 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -236,14 +259,33 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
+	}
+
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
 	}
 
 	@Override
@@ -261,6 +303,8 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 			.withTopK(fromOptions.getTopK())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
 	}
 

@@ -18,6 +18,8 @@ package org.springframework.ai.mistralai;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -52,7 +54,7 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * make the output more random, while lower values like 0.2 will make it more focused
 	 * and deterministic. We generally recommend altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("temperature") Double temperature;
 
 	/**
 	 * Nucleus sampling, where the model considers the results of the tokens with top_p
@@ -60,7 +62,7 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * mass are considered. We generally recommend altering this or temperature but not
 	 * both.
 	 */
-	private @JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Double topP;
 
 	/**
 	 * The maximum number of tokens to generate in the completion. The token count of your
@@ -135,6 +137,13 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
+	@JsonIgnore
+	private Boolean proxyToolCalls;
+
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, Object> toolContext;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -173,12 +182,12 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Float topP) {
+		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
@@ -212,6 +221,21 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
 			return this;
 		}
 
@@ -299,20 +323,20 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	}
 
 	@Override
-	public Float getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Float temperature) {
+	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Float getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Float topP) {
+	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
@@ -340,13 +364,13 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 
 	@Override
 	@JsonIgnore
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 
@@ -354,6 +378,25 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	@JsonIgnore
 	public Integer getTopK() {
 		return null;
+	}
+
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
 	}
 
 	@Override
@@ -374,7 +417,38 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 			.withToolChoice(fromOptions.getToolChoice())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
 			.build();
+	}
+
+	@Override
+	public int hashCode() {
+
+		return Objects.hash(model, temperature, topP, maxTokens, safePrompt, randomSeed, responseFormat, stop, tools,
+				toolChoice, functionCallbacks, functions, proxyToolCalls, toolContext);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+
+		MistralAiChatOptions other = (MistralAiChatOptions) obj;
+
+		return Objects.equals(this.model, other.model) && Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.maxTokens, other.maxTokens)
+				&& Objects.equals(this.safePrompt, other.safePrompt)
+				&& Objects.equals(this.randomSeed, other.randomSeed)
+				&& Objects.equals(this.responseFormat, other.responseFormat) && Objects.equals(this.stop, other.stop)
+				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
+				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
+				&& Objects.equals(this.functions, other.functions)
+				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
+				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
 }

@@ -53,6 +53,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -70,6 +71,7 @@ import reactor.core.publisher.Mono;
  * @author luocongqiu
  * @author Mariusz Bernacki
  * @author Thomas Vitale
+ * @author Claudio Silva Junior
  * @since 1.0.0
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -82,12 +84,12 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	public static final Integer DEFAULT_MAX_TOKENS = 500;
 
-	public static final Float DEFAULT_TEMPERATURE = 0.8f;
+	public static final Double DEFAULT_TEMPERATURE = 0.8;
 
 	/**
 	 * The lower-level API for the Anthropic service.
 	 */
-	public final AnthropicApi anthropicApi;
+	private final AnthropicApi anthropicApi;
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -225,7 +227,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				return chatResponse;
 			});
 
-		if (response != null && this.isToolCall(response, Set.of("tool_use"))) {
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
+				&& this.isToolCall(response, Set.of("tool_use"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
 		}
@@ -256,7 +259,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse);
 
-				if (this.isToolCall(chatResponse, Set.of("tool_use"))) {
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = handleToolCalls(prompt, chatResponse);
 					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 				}
@@ -291,6 +294,12 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
+
+		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
+			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
+					ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
+			allGenerations.add(generation);
+		}
 
 		List<ContentBlock> toolToUseList = chatCompletion.content()
 			.stream()
@@ -405,8 +414,15 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				systemPrompt, this.defaultOptions.getMaxTokens(), this.defaultOptions.getTemperature(), stream);
 
 		if (prompt.getOptions() != null) {
-			AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-					ChatOptions.class, AnthropicChatOptions.class);
+			AnthropicChatOptions updatedRuntimeOptions;
+			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions,
+						FunctionCallingOptions.class, AnthropicChatOptions.class);
+			}
+			else {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						AnthropicChatOptions.class);
+			}
 
 			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
