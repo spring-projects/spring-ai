@@ -32,6 +32,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.partitionKeyPath=/id")
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.metadataFields=country,year,city")
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThoughput=1000")
+		.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorDimensions=384")
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.endpoint=" + System.getenv("AZURE_COSMOSDB_ENDPOINT"))
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.key=" + System.getenv("AZURE_COSMOSDB_KEY"))
 		.withUserConfiguration(Config.class);
@@ -108,27 +109,35 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		vectorStore.add(List.of(document1, document2, document3, document4));
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
-			.withTopK(10)
-			.withFilterExpression((b.in("country", "UK", "NL")).build()));
+				.withTopK(10)
+				.withFilterExpression((b.in("country", "UK", "NL")).build()));
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
 
 		List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("The World")
-			.withTopK(10)
-			.withFilterExpression(
-					b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build()));
+				.withTopK(10)
+				.withFilterExpression(
+						b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build()));
 
 		assertThat(results2).hasSize(1);
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
 
+		List<Document> results3 = vectorStore.similaritySearch(SearchRequest.query("The World")
+				.withTopK(10)
+				.withFilterExpression(
+						b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
+
+		assertThat(results3).hasSize(1);
+		assertThat(results3).extracting(Document::getId).containsExactlyInAnyOrder("4");
+
 		vectorStore.delete(List.of(document1.getId(), document2.getId(), document3.getId(), document4.getId()));
 
 		// Perform a similarity search again
-		List<Document> results3 = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(1));
+		List<Document> results4 = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(1));
 
 		// Verify the search results
-		assertThat(results3).isEmpty();
+		assertThat(results4).isEmpty();
 	}
 
 	@Configuration(proxyBeanMethods = false)

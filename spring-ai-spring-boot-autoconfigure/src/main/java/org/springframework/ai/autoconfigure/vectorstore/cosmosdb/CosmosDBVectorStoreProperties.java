@@ -16,6 +16,8 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private int vectorStoreThoughput = 400;
 
+	private long vectorDimensions = 1536;
+
 	private String partitionKeyPath;
 
 	private String endpoint;
@@ -78,4 +80,11 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 		this.partitionKeyPath = partitionKeyPath;
 	}
 
+	public long getVectorDimensions() {
+		return vectorDimensions;
+	}
+
+	public void setVectorDimensions(long vectorDimensions) {
+		this.vectorDimensions = vectorDimensions;
+	}
 }
