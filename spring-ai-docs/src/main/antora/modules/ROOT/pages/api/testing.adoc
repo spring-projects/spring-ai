@@ -194,6 +194,7 @@ Here is an example of a JUnit test that performs a RAG query over a PDF document
 
 [source,java]
 ----
+@Test
 void testEvaluation() {
     String userText = "Why is the sky blue?";
 
