@@ -15,15 +15,19 @@ These abstractions have multiple implementations, enabling easy component swappi
 
 Spring AI provides the following features:
 
-* Support for all major Model providers such as OpenAI, Microsoft, Amazon, Google, and Hugging Face.
-* Supported Model types are Chat, Text to Image, Audio Transcription, Text to Speech, Moderation, and more on the way.
+* Support for all major Model providers such as Anthropic, Azure OpenAI, Amazon Bedrock, Google, HuggingFace, Mistral, Oracle, Stability AI, Watson, Minimax, Moonshot, QianFan, ZhiPu AI, PostgresML, and ONXX Transformers.
+* Supported Model types are Chat, Embedding, Text to Image, Audio Transcription, Text to Speech, and Moderation. Multimodal models are also supported.
 * Portable API across AI providers for all models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
-* Mapping of AI Model output to POJOs.
+* Spring Boot Auto Configuration for all models, simplifying setup and integration.
+* AOT (Ahead-Of-Time) native image support for improved performance and reduced startup times.
+* Enhanced observability leveraging Spring ecosystem features, providing insights into AI-related operations. Spring AI offers metrics and tracing capabilities for core components including ChatClient, ChatModel, EmbeddingModel, ImageModel, and VectorStore.
+* Structured Output to enable mapping of AI Model output to POJOs.
+* Function calling support.
 * Support for all major Vector Database providers such as Apache Cassandra, Azure Vector Search, Chroma, Milvus, MongoDB Atlas, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate.
 * Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
-* Function calling.
-* Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
-* ETL framework for Data Engineering.
+* ETL framework for Data Engineering to load data into Vector Stores.
+* Evaluation Testing support for AI applications, allowing assessment of generated content to prevent hallucinated responses. This includes the ability to use AI models for self-evaluation, with the flexibility to choose the most suitable model for evaluation purposes.
+* Spring Boot autoconfiguration for establishing connections to model services or vector stores running via Testcontainers or Docker Compose.
 
 This feature set lets you implement common use cases such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
 
