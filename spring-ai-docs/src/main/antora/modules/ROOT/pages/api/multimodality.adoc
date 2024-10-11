@@ -1,23 +1,21 @@
 [[Multimodality]]
 = Multimodality API
 
+// image::orbis-sensualium-pictus2.jpg[Orbis Sensualium Pictus, align="center"]
+
+> "All things that are naturally connected ought to be taught in combination" - John Amos Comenius, "Orbis Sensualium Pictus", 1658
+
 Humans  process knowledge, simultaneously across multiple modes of data inputs.
 The way we learn, our experiences are all multimodal.
 We don't have just vision, just audio and just text.
 
-These foundational principles of learning were articulated by the father of modern education link:https://en.wikipedia.org/wiki/John_Amos_Comenius[John Amos Comenius], in his work, "Orbis Sensualium Pictus", dating back to 1658.
-
-image::orbis-sensualium-pictus2.jpg[Orbis Sensualium Pictus, align="center"]
-
-> "All things that are naturally connected ought to be taught in combination"
-
-Contrary to those principles, in the past, our approach to Machine Learning was often focused on specialized models tailored to process a single modality.
+Contrary to those principles, the Machine Learning was often focused on specialized models tailored to process a single modality.
 For instance, we developed audio models for tasks like text-to-speech or speech-to-text, and computer vision models for tasks such as object detection and classification.
 
 However, a new wave of multimodal large language models starts to emerge.
-Examples include OpenAI's GPT-4 Vision, Google's Vertex AI Gemini Pro Vision, Anthropic's Claude3, and open source offerings LLaVA and balklava are able to accept multiple inputs, including text images, audio and video and generate text responses by integrating these inputs.
+Examples include OpenAI's GPT-4o , Google's Vertex AI Gemini 1.5, Anthropic's Claude3, and open source offerings Llama3.2, LLaVA and Balklava are able to accept multiple inputs, including text images, audio and video and generate text responses by integrating these inputs.
 
-The multimodal large language model (LLM) features enable the models to process and generate text in conjunction with other modalities such as images, audio, or video.
+NOTE: The multimodal large language model (LLM) features enable the models to process and generate text in conjunction with other modalities such as images, audio, or video.
 
 == Spring AI Multimodality
 
@@ -68,7 +66,7 @@ and produce a response like:
 Spring AI provides multimodal support for the following chat models:
 
 * xref:api/chat/openai-chat.adoc#_multimodal[OpenAI (e.g. GPT-4 and GPT-4o models)]
-* xref:api/chat/ollama-chat.adoc#_multimodal[Ollama (e.g. LlaVa and Baklava models)]
+* xref:api/chat/ollama-chat.adoc#_multimodal[Ollama (e.g. LlaVa, Baklava, Llama3.2 models)]
 * xref:api/chat/vertexai-gemini-chat.adoc#_multimodal[Vertex AI Gemini (e.g. gemini-1.5-pro-001, gemini-1.5-flash-001 models)]
 * xref:api/chat/anthropic-chat.adoc#_multimodal[Anthropic Claude 3]
 * xref:api/chat/bedrock/bedrock-anthropic3.adoc#_multimodal[AWS Bedrock Anthropic Claude 3]

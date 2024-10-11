@@ -97,7 +97,7 @@
 * xref:observabilty/index.adoc[]
 * xref:api/functions.adoc[Function Calling]
 * xref:api/multimodality.adoc[Multimodality]
-* xref:api/testing.adoc[]
+* xref:api/testing.adoc[LLM Evaluation]
 * xref:api/structured-output-converter.adoc[Structured Output]
 
 * Service Connections
