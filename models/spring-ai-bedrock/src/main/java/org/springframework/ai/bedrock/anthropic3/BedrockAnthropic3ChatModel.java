@@ -91,7 +91,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
 			.withId(response.id())
 			.withModel(response.model())
-			.withUsage(extractUsage(response))
+			.withUsage(extractUsage(response.usage()))
 			.build();
 
 		return new ChatResponse(generations, metadata);
@@ -124,17 +124,17 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		});
 	}
 
-	private Usage extractUsage(AnthropicChatResponse response) {
+	private Usage extractUsage(Anthropic3ChatBedrockApi.AnthropicUsage usage) {
 		return new Usage() {
 
 			@Override
 			public Long getPromptTokens() {
-				return response.usage().inputTokens().longValue();
+				return usage.inputTokens().longValue();
 			}
 
 			@Override
 			public Long getGenerationTokens() {
-				return response.usage().outputTokens().longValue();
+				return usage.outputTokens().longValue();
 			}
 		};
 	}
