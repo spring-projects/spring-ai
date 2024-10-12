@@ -45,9 +45,9 @@ class PgVectorChatMemoryIT {
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues(
 				// JdbcTemplate configuration
-				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
-						postgresContainer.getMappedPort(5432), "postgres"),
-				"app.datasource.username=postgres", "app.datasource.password=postgres",
+				String.format("app.datasource.url=%s", postgresContainer.getJdbcUrl()),
+				String.format("app.datasource.username=%s", postgresContainer.getUsername()),
+				String.format("app.datasource.password=%s", postgresContainer.getPassword()),
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	static String schemaName = "public_test";

@@ -35,10 +35,10 @@ class PgVectorChatMemoryAutoConfigurationIT {
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withPropertyValues("spring.ai.chat.memory.pgvector.schemaName=test_autoconfigure",
 				// JdbcTemplate configuration
-				String.format("spring.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
-						postgresContainer.getMappedPort(5432), postgresContainer.getDatabaseName()),
-				"spring.datasource.username=" + postgresContainer.getUsername(),
-				"spring.datasource.password=" + postgresContainer.getPassword());
+				String.format("spring.datasource.url=%s", postgresContainer.getJdbcUrl()),
+				String.format("spring.datasource.username=%s", postgresContainer.getUsername()),
+				String.format("spring.datasource.password=%s", postgresContainer.getPassword()),
+				"spring.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	@Test
 	void addGetAndClear_shouldAllExecute() {
