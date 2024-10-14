@@ -767,7 +767,11 @@ public class OllamaApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingsResponse(
 			@JsonProperty("model") String model,
-			@JsonProperty("embeddings") List<float[]> embeddings) {
+			@JsonProperty("embeddings") List<float[]> embeddings,
+			@JsonProperty("total_duration") Long totalDuration,
+			@JsonProperty("load_duration") Long loadDuration,
+			@JsonProperty("prompt_eval_count") Integer promptEvalCount) {
+		
 	}
 
 	/**

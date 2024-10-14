@@ -33,6 +33,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.metadata.OllamaEmbeddingUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -125,7 +126,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 					.toList();
 
 				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
-						new EmptyUsage());
+						OllamaEmbeddingUsage.from(response));
 
 				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 

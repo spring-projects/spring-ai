@@ -15,6 +15,11 @@
  */
 package org.springframework.ai.ollama;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,7 +29,6 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApiIT;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -32,23 +36,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @SpringBootTest
 @DisabledIf("isDisabled")
 @Testcontainers
 class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.MISTRAL.getName();
+	private static final String MODEL = "mxbai-embed-large";
 
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
-
-	// @Container
-	// static OllamaContainer ollamaContainer = new
-	// OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	static String baseUrl = "http://localhost:11434";
 
@@ -75,8 +70,10 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo(MODEL);
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
 
-		assertThat(embeddingModel.dimensions()).isEqualTo(4096);
+		assertThat(embeddingModel.dimensions()).isEqualTo(1024);
 	}
 
 	@SpringBootConfiguration

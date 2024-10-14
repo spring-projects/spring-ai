@@ -16,39 +16,40 @@
 package org.springframework.ai.ollama.metadata;
 
 import java.util.Optional;
+
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.util.Assert;
 
 /**
- * {@link Usage} implementation for {@literal Ollama}
+ * {@link Usage} implementation for {@literal Ollama} embeddings.
  *
  * @see Usage
- * @author Fu Cheng
+ * @author Christian Tzolov
  */
-public class OllamaUsage implements Usage {
+public class OllamaEmbeddingUsage implements Usage {
 
 	protected static final String AI_USAGE_STRING = "{ promptTokens: %1$d, generationTokens: %2$d, totalTokens: %3$d }";
 
-	public static OllamaUsage from(OllamaApi.ChatResponse response) {
-		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
-		return new OllamaUsage(response);
+	public static OllamaEmbeddingUsage from(EmbeddingsResponse response) {
+		Assert.notNull(response, "OllamaApi.EmbeddingsResponse must not be null");
+		return new OllamaEmbeddingUsage(response);
 	}
 
-	private final OllamaApi.ChatResponse response;
+	private Long promptTokens;
 
-	public OllamaUsage(OllamaApi.ChatResponse response) {
-		this.response = response;
+	public OllamaEmbeddingUsage(EmbeddingsResponse response) {
+		this.promptTokens = Optional.ofNullable(response.promptEvalCount()).map(Integer::longValue).orElse(0L);
 	}
 
 	@Override
 	public Long getPromptTokens() {
-		return Optional.ofNullable(response.promptEvalCount()).map(Integer::longValue).orElse(0L);
+		return this.promptTokens;
 	}
 
 	@Override
 	public Long getGenerationTokens() {
-		return Optional.ofNullable(response.evalCount()).map(Integer::longValue).orElse(0L);
+		return 0L;
 	}
 
 	@Override

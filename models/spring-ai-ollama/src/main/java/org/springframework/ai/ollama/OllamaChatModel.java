@@ -48,7 +48,7 @@ import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
 import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.ai.ollama.metadata.OllamaUsage;
+import org.springframework.ai.ollama.metadata.OllamaChatUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -177,7 +177,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	public static ChatResponseMetadata from(OllamaApi.ChatResponse response) {
 		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
 		return ChatResponseMetadata.builder()
-			.withUsage(OllamaUsage.from(response))
+			.withUsage(OllamaChatUsage.from(response))
 			.withModel(response.model())
 			.withKeyValue("created-at", response.createdAt())
 			.withKeyValue("eval-duration", response.evalDuration())

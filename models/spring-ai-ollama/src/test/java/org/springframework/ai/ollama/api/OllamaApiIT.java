@@ -146,6 +146,11 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response).isNotNull();
 		assertThat(response.embeddings()).hasSize(1);
 		assertThat(response.embeddings().get(0)).hasSize(3200);
+		assertThat(response.model()).isEqualTo(MODEL);
+		assertThat(response.promptEvalCount()).isEqualTo(5);
+		assertThat(response.loadDuration()).isGreaterThan(1);
+		assertThat(response.totalDuration()).isGreaterThan(1);
+
 	}
 
 }
