@@ -234,7 +234,7 @@ When calling the application endpoint via curl, the result is:
 [source,bash]
 ----
 ❯ curl localhost:8080/ai/simple
-{"generation":"Why did the pirate go to the comedy club? To hear some arrr-rated jokes! Arrr, matey!"}
+{"completion":"Why did the pirate go to the comedy club? To hear some arrr-rated jokes! Arrr, matey!"}
 ----
 
 === Default System Text with parameters
