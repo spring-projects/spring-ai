@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.ollama;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
@@ -40,7 +39,6 @@ import org.springframework.context.annotation.Bean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,25 +52,13 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
 
-	private static final String MODEL = OllamaModel.MISTRAL.getName();
-
-	static String baseUrl = "http://localhost:11434";
-
-	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL);
-		logger.info(MODEL + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
-	}
+	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
 
 	@Autowired
 	ChatModel chatModel;
 
 	@Test
 	void functionCallTest() {
-
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return temperatures in Celsius.");
 
@@ -97,7 +83,6 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamFunctionCallTest() {
-
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return temperatures in Celsius.");
 
@@ -132,7 +117,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return new OllamaApi(baseUrl);
+			return buildOllamaApiWithModel(MODEL);
 		}
 
 		@Bean

@@ -19,11 +19,9 @@ import java.io.IOException;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Container;
+import org.junit.jupiter.api.condition.DisabledIf;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -31,7 +29,6 @@ import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.testcontainers.ollama.OllamaContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,26 +37,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @since 0.8.0
  */
-@Disabled("For manual smoke testing only.")
 @Testcontainers
-public class OllamaEmbeddingAutoConfigurationIT {
+@DisabledIf("isDisabled")
+public class OllamaEmbeddingAutoConfigurationIT extends BaseOllamaIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OllamaEmbeddingAutoConfigurationIT.class);
+	private static final String MODEL_NAME = OllamaModel.NOMIC_EMBED_TEXT.getName();
 
-	private static final String MODEL_NAME = "orca-mini";
-
-	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.IMAGE);
-
-	static String baseUrl = "http://localhost:11434";
+	static String baseUrl;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
-		logger.info(MODEL_NAME + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+		baseUrl = buildConnectionWithModel(MODEL_NAME);
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -75,7 +63,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 			EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
 			assertThat(embeddingResponse.getResults()).hasSize(1);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingModel.dimensions()).isEqualTo(3200);
+			assertThat(embeddingModel.dimensions()).isEqualTo(768);
 		});
 	}
 

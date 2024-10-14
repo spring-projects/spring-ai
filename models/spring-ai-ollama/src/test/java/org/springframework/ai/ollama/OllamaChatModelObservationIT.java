@@ -34,7 +34,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -53,6 +52,8 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
 @DisabledIf("isDisabled")
 public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
+	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
+
 	@Autowired
 	TestObservationRegistry observationRegistry;
 
@@ -67,7 +68,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	@Test
 	void observationForChatOperation() {
 		var options = OllamaOptions.builder()
-			.withModel(OllamaModel.MISTRAL.getName())
+			.withModel(MODEL)
 			.withFrequencyPenalty(0.0)
 			.withNumPredict(2048)
 			.withPresencePenalty(0.0)
@@ -91,7 +92,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = OllamaOptions.builder()
-			.withModel(OllamaModel.MISTRAL.getName())
+			.withModel(MODEL)
 			.withFrequencyPenalty(0.0)
 			.withNumPredict(2048)
 			.withPresencePenalty(0.0)
@@ -128,11 +129,11 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + OllamaModel.MISTRAL.getName())
+			.hasContextualNameEqualTo("chat " + MODEL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OLLAMA.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), OllamaModel.MISTRAL.getName())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), MODEL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
@@ -164,7 +165,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi openAiApi() {
-			return new OllamaApi();
+			return buildOllamaApiWithModel(MODEL);
 		}
 
 		@Bean

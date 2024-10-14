@@ -18,8 +18,6 @@ package org.springframework.ai.ollama.api;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
@@ -46,27 +44,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisabledIf("isDisabled")
 public class OllamaApiIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.ORCA_MINI.getName();
-
-	private static final Logger logger = LoggerFactory.getLogger(OllamaApiIT.class);
+	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
 
 	static OllamaApi ollamaApi;
 
-	static String baseUrl = "http://localhost:11434";
-
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL);
-		logger.info(MODEL + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
-		ollamaApi = new OllamaApi(baseUrl);
+		ollamaApi = buildOllamaApiWithModel(MODEL);
 	}
 
 	@Test
 	public void generation() {
-
 		var request = GenerateRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
 			.withModel(MODEL)
@@ -78,13 +66,12 @@ public class OllamaApiIT extends BaseOllamaIT {
 		System.out.println(response);
 
 		assertThat(response).isNotNull();
-		assertThat(response.model()).isEqualTo(response.model());
+		assertThat(response.model()).contains(MODEL);
 		assertThat(response.response()).contains("Sofia");
 	}
 
 	@Test
 	public void chat() {
-
 		var request = ChatRequest.builder(MODEL)
 			.withStream(false)
 			.withMessages(List.of(
@@ -103,7 +90,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 		System.out.println(response);
 
 		assertThat(response).isNotNull();
-		assertThat(response.model()).isEqualTo(response.model());
+		assertThat(response.model()).contains(MODEL);
 		assertThat(response.done()).isTrue();
 		assertThat(response.message().role()).isEqualTo(Role.ASSISTANT);
 		assertThat(response.message().content()).contains("Sofia");
@@ -111,7 +98,6 @@ public class OllamaApiIT extends BaseOllamaIT {
 
 	@Test
 	public void streamingChat() {
-
 		var request = ChatRequest.builder(MODEL)
 			.withStream(true)
 			.withMessages(List.of(Message.builder(Role.USER)
@@ -125,7 +111,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 		List<ChatResponse> responses = response.collectList().block();
 		System.out.println(responses);
 
-		assertThat(response).isNotNull();
+		assertThat(responses).isNotNull();
 		assertThat(responses.stream()
 			.filter(r -> r.message() != null)
 			.map(r -> r.message().content())
@@ -138,19 +124,17 @@ public class OllamaApiIT extends BaseOllamaIT {
 
 	@Test
 	public void embedText() {
-
 		EmbeddingsRequest request = new EmbeddingsRequest(MODEL, "I like to eat apples");
 
 		EmbeddingsResponse response = ollamaApi.embed(request);
 
 		assertThat(response).isNotNull();
 		assertThat(response.embeddings()).hasSize(1);
-		assertThat(response.embeddings().get(0)).hasSize(3200);
+		assertThat(response.embeddings().get(0)).hasSize(3072);
 		assertThat(response.model()).isEqualTo(MODEL);
 		assertThat(response.promptEvalCount()).isEqualTo(5);
 		assertThat(response.loadDuration()).isGreaterThan(1);
 		assertThat(response.totalDuration()).isGreaterThan(1);
-
 	}
 
 }
