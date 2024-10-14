@@ -125,6 +125,11 @@ public class ChatResponse implements ModelResponse<Generation> {
 
 		public Builder from(ChatResponse other) {
 			this.generations = other.generations;
+			this.chatResponseMetadataBuilder.withModel(other.chatResponseMetadata.getModel());
+			this.chatResponseMetadataBuilder.withId(other.chatResponseMetadata.getId());
+			this.chatResponseMetadataBuilder.withRateLimit(other.chatResponseMetadata.getRateLimit());
+			this.chatResponseMetadataBuilder.withUsage(other.chatResponseMetadata.getUsage());
+			this.chatResponseMetadataBuilder.withPromptMetadata(other.chatResponseMetadata.getPromptMetadata());
 			Set<Map.Entry<String, Object>> entries = other.chatResponseMetadata.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
 				this.chatResponseMetadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
