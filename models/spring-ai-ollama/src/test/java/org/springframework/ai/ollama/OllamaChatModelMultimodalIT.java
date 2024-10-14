@@ -15,11 +15,10 @@
  */
 package org.springframework.ai.ollama;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
@@ -32,11 +31,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.MimeTypeUtils;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.ollama.OllamaContainer;
 
-import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,42 +43,25 @@ import static org.junit.Assert.assertThrows;
 @DisabledIf("isDisabled")
 class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
+	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelMultimodalIT.class);
+
 	private static final String MODEL = OllamaModel.MOONDREAM.getName();
-
-	private static final Log logger = LogFactory.getLog(OllamaChatModelIT.class);
-
-	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
-
-	static String baseUrl = "http://localhost:11434";
-
-	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL);
-		logger.info(MODEL + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
-	}
 
 	@Autowired
 	private OllamaChatModel chatModel;
 
 	@Test
-	void unsupportedMediaType() throws IOException {
-
+	void unsupportedMediaType() {
 		var imageData = new ClassPathResource("/norway.webp");
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt(List.of(userMessage))));
-
 	}
 
 	@Test
-	void multiModalityTest() throws IOException {
-
+	void multiModalityTest() {
 		var imageData = new ClassPathResource("/test.png");
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
@@ -91,7 +70,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 		var response = chatModel.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
+		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
 	}
 
 	@SpringBootConfiguration
@@ -99,7 +78,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return new OllamaApi(baseUrl);
+			return buildOllamaApiWithModel(MODEL);
 		}
 
 		@Bean

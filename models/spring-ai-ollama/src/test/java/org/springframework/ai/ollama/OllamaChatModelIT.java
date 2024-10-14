@@ -15,9 +15,6 @@
  */
 package org.springframework.ai.ollama;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -43,8 +40,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,20 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisabledIf("isDisabled")
 class OllamaChatModelIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.MISTRAL.getName();
-
-	private static final Log logger = LogFactory.getLog(OllamaChatModelIT.class);
-
-	static String baseUrl = "http://localhost:11434";
-
-	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL);
-		logger.info(MODEL + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
-	}
+	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
 
 	@Autowired
 	private OllamaChatModel chatModel;
@@ -88,7 +70,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		// portable/generic options
 		var portableOptions = ChatOptionsBuilder.builder().withTemperature(0.7).build();
 
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage), portableOptions);
+		Prompt prompt = new Prompt(List.of(systemMessage, userMessage), portableOptions);
 
 		ChatResponse response = chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
@@ -96,14 +78,12 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		// ollama specific options
 		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
 
-		response = chatModel.call(new Prompt(List.of(userMessage, systemMessage), ollamaOptions));
+		response = chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
-
 	}
 
 	@Test
 	void testMessageHistory() {
-
 		Message systemMessage = new SystemPromptTemplate("""
 				You are a helpful AI assistant. Your name is {name}.
 				You are an AI assistant that helps people find information.
@@ -114,16 +94,16 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
 
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
 		ChatResponse response = chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Bonny");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
 
-		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
-				new UserMessage("Repeat the last assistant message.")));
+		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Hello"), response.getResult().getOutput(),
+				new UserMessage("Tell me just the names of those pirates.")));
 		response = chatModel.call(promptWithMessageHistory);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Bonny");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
 	}
 
 	@Test
@@ -163,19 +143,20 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		String format = outputConverter.getFormat();
 		String template = """
-				Remove Markdown code blocks from the output.
-				Provide me a List of {subject}
+				For each letter in the RGB color scheme, tell me what it stands for.
+				Example: R -> Red.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		Generation generation = chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
-		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
-
+		assertThat(result).isNotNull();
+		assertThat((String) result.get("R")).containsIgnoringCase("red");
+		assertThat((String) result.get("G")).containsIgnoringCase("green");
+		assertThat((String) result.get("B")).containsIgnoringCase("blue");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
@@ -183,12 +164,11 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	@Test
 	void beanOutputConverterRecords() {
-
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputConverter.getFormat();
 		String template = """
-				Generate the filmography of 5 movies for Tom Hanks.
+				Consider the filmography of Tom Hanks and tell me 5 of his movies.
 				{format}
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
@@ -202,14 +182,12 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	@Test
 	void beanStreamOutputConverterRecords() {
-
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputConverter.getFormat();
 		String template = """
-				Generate the filmography of 5 movies for Tom Hanks.
+				Consider the filmography of Tom Hanks and tell me 5 of his movies.
 				{format}
-				Remove Markdown code blocks from the output.
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
@@ -235,7 +213,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return new OllamaApi(baseUrl);
+			return buildOllamaApiWithModel(MODEL);
 		}
 
 		@Bean

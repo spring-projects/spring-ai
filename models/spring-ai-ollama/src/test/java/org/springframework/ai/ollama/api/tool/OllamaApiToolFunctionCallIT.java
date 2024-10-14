@@ -40,34 +40,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Testcontainers
 @DisabledIf("isDisabled")
 public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.MISTRAL.getName();
+	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
 
-	static String baseUrl = "http://localhost:11434";
+	static OllamaApi ollamaApi;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL);
-		logger.info(MODEL + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+		ollamaApi = buildOllamaApiWithModel(MODEL);
 	}
 
 	@SuppressWarnings("null")
 	@Test
 	public void toolFunctionCall() {
-
-		OllamaApi completionApi = new OllamaApi(baseUrl);
-
 		// Step 1: send the conversation and available functions to the model
 		var message = Message.builder(Role.USER)
 			// .withContent("What's the weather like in San Francisco, Tokyo, and Paris?
@@ -100,7 +94,7 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 			.withTools(List.of(functionTool))
 			.build();
 
-		ChatResponse chatCompletion = completionApi.chat(chatCompletionRequest);
+		ChatResponse chatCompletion = ollamaApi.chat(chatCompletionRequest);
 
 		assertThat(chatCompletion).isNotNull();
 		assertThat(chatCompletion.message()).isNotNull();
@@ -134,7 +128,7 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
 		var functionResponseRequest = OllamaApi.ChatRequest.builder(MODEL).withMessages(messages).build();
 
-		ChatResponse chatCompletion2 = completionApi.chat(functionResponseRequest);
+		ChatResponse chatCompletion2 = ollamaApi.chat(functionResponseRequest);
 
 		logger.info("Final response: " + chatCompletion2);
 

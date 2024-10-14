@@ -29,7 +29,9 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
@@ -805,6 +807,160 @@ public class OllamaApi {
 			.retrieve()
 			.onStatus(this.responseErrorHandler)
 			.body(EmbeddingResponse.class);
+	}
+
+	// --------------------------------------------------------------------------
+	// Models
+	// --------------------------------------------------------------------------
+
+	@JsonInclude(Include.NON_NULL)
+	public record Model(
+			@JsonProperty("name") String name,
+			@JsonProperty("model") String model,
+			@JsonProperty("modified_at") Instant modifiedAt,
+			@JsonProperty("size") Long size,
+			@JsonProperty("digest") String digest,
+			@JsonProperty("details") Details details
+	) {
+		@JsonInclude(Include.NON_NULL)
+		public record Details(
+				@JsonProperty("parent_model") String parentModel,
+				@JsonProperty("format") String format,
+				@JsonProperty("family") String family,
+				@JsonProperty("families") List<String> families,
+				@JsonProperty("parameter_size") String parameterSize,
+				@JsonProperty("quantization_level") String quantizationLevel
+		) {}
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record ListModelResponse(
+			@JsonProperty("models") List<Model> models
+	) {}
+
+	/**
+	 * List models that are available locally on the machine where Ollama is running.
+	 */
+	public ListModelResponse listModels() {
+		return this.restClient.get()
+				.uri("/api/tags")
+				.retrieve()
+				.onStatus(this.responseErrorHandler)
+				.body(ListModelResponse.class);
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record ShowModelRequest(
+			@JsonProperty("model") String model,
+			@JsonProperty("system") String system,
+			@JsonProperty("verbose") Boolean verbose,
+			@JsonProperty("options") Map<String, Object> options
+	) {
+		public ShowModelRequest(String model) {
+			this(model, null, null, null);
+		}
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record ShowModelResponse(
+			@JsonProperty("license") String license,
+			@JsonProperty("modelfile") String modelfile,
+			@JsonProperty("parameters") String parameters,
+			@JsonProperty("template") String template,
+			@JsonProperty("system") String system,
+			@JsonProperty("details") Model.Details details,
+			@JsonProperty("messages") List<Message> messages,
+			@JsonProperty("model_info") Map<String, Object> modelInfo,
+			@JsonProperty("projector_info") Map<String, Object> projectorInfo,
+			@JsonProperty("modified_at") Instant modifiedAt
+	) {}
+
+	/**
+	 * Show information about a model available locally on the machine where Ollama is running.
+	 */
+	public ShowModelResponse showModel(ShowModelRequest showModelRequest) {
+		return this.restClient.post()
+				.uri("/api/show")
+				.body(showModelRequest)
+				.retrieve()
+				.onStatus(this.responseErrorHandler)
+				.body(ShowModelResponse.class);
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record CopyModelRequest(
+			@JsonProperty("source") String source,
+			@JsonProperty("destination") String destination
+	) {}
+
+	/**
+     * Copy a model. Creates a model with another name from an existing model.
+     */
+	public ResponseEntity<Void> copyModel(CopyModelRequest copyModelRequest) {
+		return this.restClient.post()
+				.uri("/api/copy")
+				.body(copyModelRequest)
+				.retrieve()
+				.onStatus(this.responseErrorHandler)
+				.toBodilessEntity();
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record DeleteModelRequest(
+			@JsonProperty("model") String model
+	) {}
+
+	/**
+	 * Delete a model and its data.
+	 */
+	public ResponseEntity<Void> deleteModel(DeleteModelRequest deleteModelRequest) {
+		return this.restClient.method(HttpMethod.DELETE)
+				.uri("/api/delete")
+				.body(deleteModelRequest)
+				.retrieve()
+				.onStatus(this.responseErrorHandler)
+				.toBodilessEntity();
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record PullModelRequest(
+			@JsonProperty("model") String model,
+			@JsonProperty("insecure") Boolean insecure,
+			@JsonProperty("username") String username,
+			@JsonProperty("password") String password,
+			@JsonProperty("stream") Boolean stream
+	) {
+		public PullModelRequest {
+			if (stream != null && stream) {
+				logger.warn("Streaming when pulling models is not supported yet");
+			}
+			stream = false;
+		}
+
+		public PullModelRequest(String model) {
+			this(model, null, null, null, null);
+		}
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record ProgressResponse(
+			@JsonProperty("status") String status,
+			@JsonProperty("digest") String digest,
+			@JsonProperty("total") Long total,
+			@JsonProperty("completed") Long completed
+	) {}
+
+	/**
+	 * Download a model from the Ollama library. Cancelled pulls are resumed from where they left off,
+	 * and multiple calls will share the same download progress.
+	 */
+	public ProgressResponse pullModel(PullModelRequest pullModelRequest) {
+		return this.restClient.post()
+				.uri("/api/pull")
+				.body(pullModelRequest)
+				.retrieve()
+				.onStatus(this.responseErrorHandler)
+				.body(ProgressResponse.class);
 	}
 
 }

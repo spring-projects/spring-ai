@@ -21,13 +21,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT;
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration;
-import org.springframework.ai.autoconfigure.ollama.OllamaImage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -38,37 +39,29 @@ import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.ollama.OllamaContainer;
 
 import reactor.core.publisher.Flux;
 
-@Disabled("For manual smoke testing only.")
 @Testcontainers
-public class FunctionCallbackWrapperIT {
+@DisabledIf("isDisabled")
+public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 
-	private static final Log logger = LogFactory.getLog(FunctionCallbackWrapperIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWrapperIT.class);
 
-	private static String MODEL_NAME = "mistral";
+	private static final String MODEL_NAME = OllamaModel.LLAMA3_2.getName();
 
-	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.IMAGE);
-
-	static String baseUrl = "http://localhost:11434";
+	static String baseUrl;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
-		logger.info(MODEL_NAME + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+		baseUrl = buildConnectionWithModel(MODEL_NAME);
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
@@ -96,7 +89,6 @@ public class FunctionCallbackWrapperIT {
 			logger.info("Response: " + response);
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
-
 		});
 	}
 

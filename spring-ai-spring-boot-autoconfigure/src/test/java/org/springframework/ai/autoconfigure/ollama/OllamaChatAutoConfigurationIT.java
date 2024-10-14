@@ -18,69 +18,42 @@ package org.springframework.ai.autoconfigure.ollama;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.model.Image;
 
 import reactor.core.publisher.Flux;
 
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  * @since 0.8.0
  */
-@Disabled("For manual smoke testing only.")
 @Testcontainers
-public class OllamaChatAutoConfigurationIT {
+@DisabledIf("isDisabled")
+public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 
-	private static final Log logger = LogFactory.getLog(OllamaChatAutoConfigurationIT.class);
+	private static final String MODEL_NAME = OllamaModel.LLAMA3_2.getName();
 
-	private static final String MODEL_NAME = "mistral";
-
-	private static final String OLLAMA_WITH_MODEL = "%s-%s".formatted(MODEL_NAME, OllamaImage.IMAGE);
-
-	private static OllamaContainer ollamaContainer;
-
-	static {
-		ollamaContainer = new OllamaContainer(OllamaDockerImageName.image());
-		ollamaContainer.start();
-		createImage(ollamaContainer, OLLAMA_WITH_MODEL);
-	}
-
-	static String baseUrl = "http://localhost:11434";
+	static String baseUrl;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
-		logger.info(MODEL_NAME + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+		baseUrl = buildConnectionWithModel(MODEL_NAME);
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
@@ -92,22 +65,14 @@ public class OllamaChatAutoConfigurationIT {
 				// @formatter:on
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
-	private final Message systemMessage = new SystemPromptTemplate("""
-			You are a helpful AI assistant. Your name is {name}.
-			You are an AI assistant that helps people find information.
-			Your name is {name}
-			You should reply to the user's request with your name and also in the style of a {voice}.
-			""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
-
-	private final UserMessage userMessage = new UserMessage(
-			"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+	private final UserMessage userMessage = new UserMessage("What's the capital of Denmark?");
 
 	@Test
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+			ChatResponse response = chatModel.call(new Prompt(userMessage));
+			assertThat(response.getResult().getOutput().getContent()).contains("Copenhagen");
 		});
 	}
 
@@ -117,7 +82,7 @@ public class OllamaChatAutoConfigurationIT {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(userMessage));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(1);
@@ -129,7 +94,7 @@ public class OllamaChatAutoConfigurationIT {
 				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
 
-			assertThat(stitchedResponseContent).contains("Blackbeard");
+			assertThat(stitchedResponseContent).contains("Copenhagen");
 		});
 	}
 
@@ -149,74 +114,6 @@ public class OllamaChatAutoConfigurationIT {
 			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(OllamaChatModel.class)).isNotEmpty();
 		});
-	}
-
-	static class OllamaContainer extends GenericContainer<OllamaContainer> {
-
-		private final DockerImageName dockerImageName;
-
-		OllamaContainer(DockerImageName image) {
-			super(image);
-			this.dockerImageName = image;
-			withExposedPorts(11434);
-			withImagePullPolicy(dockerImageName -> !dockerImageName.getUnversionedPart().startsWith(MODEL_NAME));
-		}
-
-		@Override
-		protected void containerIsStarted(InspectContainerResponse containerInfo) {
-			if (!this.dockerImageName.getVersionPart().endsWith(MODEL_NAME)) {
-				try {
-					execInContainer("ollama", "pull", MODEL_NAME);
-				}
-				catch (IOException | InterruptedException e) {
-					throw new RuntimeException("Error pulling orca-mini model", e);
-				}
-			}
-		}
-
-	}
-
-	public static void createImage(GenericContainer<?> container, String localImageName) {
-		DockerImageName dockerImageName = DockerImageName.parse(container.getDockerImageName());
-		if (!dockerImageName.equals(DockerImageName.parse(localImageName))) {
-			DockerClient dockerClient = DockerClientFactory.instance().client();
-			List<Image> images = dockerClient.listImagesCmd().withReferenceFilter(localImageName).exec();
-			if (images.isEmpty()) {
-				DockerImageName imageModel = DockerImageName.parse(localImageName);
-				dockerClient.commitCmd(container.getContainerId())
-					.withRepository(imageModel.getUnversionedPart())
-					.withLabels(Collections.singletonMap("org.testcontainers.sessionId", ""))
-					.withTag(imageModel.getVersionPart())
-					.exec();
-			}
-		}
-	}
-
-	public static class OllamaDockerImageName {
-
-		private final String baseImage;
-
-		private final String localImageName;
-
-		OllamaDockerImageName(String baseImage, String localImageName) {
-			this.baseImage = baseImage;
-			this.localImageName = localImageName;
-		}
-
-		public static DockerImageName image() {
-			return new OllamaDockerImageName(OllamaImage.IMAGE, OLLAMA_WITH_MODEL).resolve();
-		}
-
-		private DockerImageName resolve() {
-			var dockerImageName = DockerImageName.parse(this.baseImage);
-			var dockerClient = DockerClientFactory.instance().client();
-			var images = dockerClient.listImagesCmd().withReferenceFilter(this.localImageName).exec();
-			if (images.isEmpty()) {
-				return dockerImageName;
-			}
-			return DockerImageName.parse(this.localImageName);
-		}
-
 	}
 
 }
