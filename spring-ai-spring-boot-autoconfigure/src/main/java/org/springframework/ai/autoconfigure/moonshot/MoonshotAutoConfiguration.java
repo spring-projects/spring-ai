@@ -52,14 +52,15 @@ public class MoonshotAutoConfiguration {
 	@ConditionalOnProperty(prefix = MoonshotChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MoonshotChatModel moonshotChatModel(MoonshotCommonProperties commonProperties,
-			MoonshotChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			MoonshotChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var moonshotApi = moonshotApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
-				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder, responseErrorHandler);
+				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var chatModel = new MoonshotChatModel(moonshotApi, chatProperties.getOptions(), functionCallbackContext,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));

@@ -17,14 +17,10 @@ package org.springframework.ai.openai.api;
 
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.function.Consumer;
 
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -36,6 +32,11 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -71,13 +72,14 @@ public class OpenAiAudioApi {
 	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(headers -> {
-			headers.setBearerAuth(openAiToken);
-		}).defaultStatusHandler(responseErrorHandler).build();
+		Consumer<HttpHeaders> authHeaders = h -> h.setBearerAuth(openAiToken);
 
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(headers -> {
-			headers.setBearerAuth(openAiToken);
-		}).defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken)).build();
+		this.restClient = restClientBuilder.baseUrl(baseUrl)
+			.defaultHeaders(authHeaders)
+			.defaultStatusHandler(responseErrorHandler)
+			.build();
+
+		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(authHeaders).build();
 	}
 
 	/**
@@ -108,23 +110,18 @@ public class OpenAiAudioApi {
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		// @formatter:off
-		this.restClient = restClientBuilder
-			.baseUrl(baseUrl)
-			.defaultHeaders(h -> {
-				h.setBearerAuth(apiKey);
-				h.addAll(headers);
-			})
-			.defaultStatusHandler(responseErrorHandler).build();
+		Consumer<HttpHeaders> authHeaders = h -> {
+			h.setBearerAuth(apiKey);
+			h.addAll(headers);
+			// h.setContentType(MediaType.APPLICATION_JSON);
+		};
 
-		this.webClient = webClientBuilder
-			.baseUrl(baseUrl)
-			.defaultHeaders(h -> {
-				h.setBearerAuth(apiKey);
-				h.addAll(headers);
-			})
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey)).build();
-		// @formatter:on
+		this.restClient = restClientBuilder.baseUrl(baseUrl)
+			.defaultHeaders(authHeaders)
+			.defaultStatusHandler(responseErrorHandler)
+			.build();
+
+		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(authHeaders).build();
 	}
 
 	/**

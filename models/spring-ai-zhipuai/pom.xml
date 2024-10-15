@@ -21,7 +21,6 @@
     </scm>
 
     <dependencies>
-
         <!-- production dependencies -->
         <dependency>
             <groupId>org.springframework.ai</groupId>

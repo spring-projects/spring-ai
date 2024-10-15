@@ -57,11 +57,12 @@ public class AnthropicAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public AnthropicApi anthropicApi(AnthropicConnectionProperties connectionProperties,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
 		return new AnthropicApi(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
-				connectionProperties.getVersion(), restClientBuilder, webClientBuilder, responseErrorHandler,
+				connectionProperties.getVersion(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler,
 				connectionProperties.getBetaVersion());
 	}
 

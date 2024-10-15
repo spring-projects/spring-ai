@@ -61,15 +61,10 @@ public class OpenAiModerationApi {
 
 		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(openAiToken);
-			headers.setContentType(MediaType.APPLICATION_JSON);
-		};
-
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(jsonContentHeaders)
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
+		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> {
+			h.setBearerAuth(openAiToken);
+			h.setContentType(MediaType.APPLICATION_JSON);
+		}).defaultStatusHandler(responseErrorHandler).build();
 	}
 
 	// @formatter:off

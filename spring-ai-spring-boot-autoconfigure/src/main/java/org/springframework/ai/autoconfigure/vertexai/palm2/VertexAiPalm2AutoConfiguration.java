@@ -19,6 +19,7 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.vertexai.palm2.VertexAiPaLm2ChatModel;
 import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingModel;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -42,10 +43,11 @@ public class VertexAiPalm2AutoConfiguration {
 	@ConditionalOnMissingBean
 	public VertexAiPaLm2Api vertexAiApi(VertexAiPalm2ConnectionProperties connectionProperties,
 			VertexAiPalm2EmbeddingProperties embeddingAiProperties, VertexAiPlam2ChatProperties chatProperties,
-			RestClient.Builder restClientBuilder) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider) {
 
 		return new VertexAiPaLm2Api(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
-				chatProperties.getModel(), embeddingAiProperties.getModel(), restClientBuilder);
+				chatProperties.getModel(), embeddingAiProperties.getModel(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder));
 	}
 
 	@Bean

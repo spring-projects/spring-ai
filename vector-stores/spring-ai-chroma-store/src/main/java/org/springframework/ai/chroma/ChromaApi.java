@@ -69,10 +69,10 @@ public class ChromaApi {
 	}
 
 	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
-		Consumer<HttpHeaders> defaultHeaders = headers -> {
-			headers.setContentType(MediaType.APPLICATION_JSON);
-		};
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
+
+		this.restClient = restClientBuilder.baseUrl(baseUrl)
+			.defaultHeaders(h -> h.setContentType(MediaType.APPLICATION_JSON))
+			.build();
 		this.objectMapper = objectMapper;
 	}
 

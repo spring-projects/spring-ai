@@ -53,7 +53,7 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 	private static String TEST_API_KEY = "sk-1234567890";
 
 	@Autowired
-	private OpenAiAudioTranscriptionModel openAiTranscriptionClient;
+	private OpenAiAudioTranscriptionModel openAiTranscriptionModel;
 
 	@Autowired
 	private MockRestServiceServer server;
@@ -72,7 +72,7 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile);
 
-		AudioTranscriptionResponse response = this.openAiTranscriptionClient.call(transcriptionRequest);
+		AudioTranscriptionResponse response = this.openAiTranscriptionModel.call(transcriptionRequest);
 
 		assertThat(response).isNotNull();
 

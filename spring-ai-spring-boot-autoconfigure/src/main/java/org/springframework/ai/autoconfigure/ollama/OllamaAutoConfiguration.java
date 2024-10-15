@@ -62,9 +62,12 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder) {
-		return new OllamaApi(connectionDetails.getBaseUrl(), restClientBuilder, webClientBuilder);
+	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider) {
+		return new OllamaApi(connectionDetails.getBaseUrl(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder));
 	}
 
 	@Bean
