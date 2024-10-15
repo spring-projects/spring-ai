@@ -138,7 +138,7 @@ Below is a simple code example extracted from https://github.com/spring-projects
 ----
 byte[] data = new ClassPathResource("/vertex-test.png").getContentAsByteArray();
 
-var userMessage = new UserMessage("Explain what do you see o this picture?",
+var userMessage = new UserMessage("Explain what do you see on this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)));
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
