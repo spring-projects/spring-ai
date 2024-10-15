@@ -73,7 +73,7 @@ then the `spring.ai.azure.openai.chat.options.deployment-name` is treathed as an
 ==== Access the OpenAI Model
 
 You can configure the client to use directly `OpenAI` instead of the `Azure OpenAI` deployed models. 
-For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` instead of `spring.ai.azure.openai.api-key=<Yur Azure OpenAi Key>`.
+For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` instead of `spring.ai.azure.openai.api-key=<Your Azure OpenAi Key>`.
 
 === Add Repositories and BOM
 
