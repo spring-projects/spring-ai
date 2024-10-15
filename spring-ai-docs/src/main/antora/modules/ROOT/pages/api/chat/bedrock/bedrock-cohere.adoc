@@ -229,7 +229,7 @@ CohereChatBedrockApi cohereChatApi = new CohereChatBedrockApi(
 	Duration.ofMillis(1000L));
 
 var request = CohereChatRequest
-	.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
+	.builder("What is the capital of Bulgaria and what is the size? What is the national anthem?")
 	.withStream(false)
 	.withTemperature(0.5)
 	.withTopP(0.8)
