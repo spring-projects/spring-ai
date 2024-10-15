@@ -37,7 +37,7 @@ public class BaseOllamaIT {
 	public static String buildConnectionWithModel(String model) throws IOException, InterruptedException {
 		var baseUrl = "http://localhost:11434";
 		if (useTestcontainers) {
-			baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+			baseUrl = ollamaContainer.getEndpoint();
 
 			logger.info("Start pulling the '{}' model. The operation can take several minutes...", model);
 			ollamaContainer.execInContainer("ollama", "pull", model);
