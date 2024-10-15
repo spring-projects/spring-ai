@@ -101,7 +101,7 @@ You can use the following properties in your Spring Boot configuration to custom
 
 |`spring.ai.vectorstore.azure.url`|
 |`spring.ai.vectorstore.azure.api-key`|
-|`spring.ai.vectorstore.azure.initialze-schema`|false
+|`spring.ai.vectorstore.azure.initialize-schema`|false
 |`spring.ai.vectorstore.azure.index-name`|spring_ai_azure_vector_store
 |`spring.ai.vectorstore.azure.default-top-k`|4
 |`spring.ai.vectorstore.azure.default-similarity-threshold`|0.0
