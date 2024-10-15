@@ -15,29 +15,33 @@
  */
 package org.springframework.ai.minimax.api;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 // @formatter:off
 /**
@@ -98,15 +102,20 @@ public class MiniMaxApi {
 	 */
 	public MiniMaxApi(String baseUrl, String miniMaxToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
+		Consumer<HttpHeaders> authHeaders = (headers) -> {
+			headers.setBearerAuth(miniMaxToken);
+			headers.setContentType(MediaType.APPLICATION_JSON);
+		};
+
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders(miniMaxToken))
+				.defaultHeaders(authHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = WebClient.builder()
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders(miniMaxToken))
+				.defaultHeaders(authHeaders)
 				.build();
 	}
 

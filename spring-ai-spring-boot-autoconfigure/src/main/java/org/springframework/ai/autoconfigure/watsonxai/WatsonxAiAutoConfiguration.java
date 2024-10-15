@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.watsonxai;
 import org.springframework.ai.watsonx.WatsonxAiChatModel;
 import org.springframework.ai.watsonx.WatsonxAiEmbeddingModel;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -45,10 +46,11 @@ public class WatsonxAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WatsonxAiApi watsonxApi(WatsonxAiConnectionProperties properties, RestClient.Builder restClientBuilder) {
+	public WatsonxAiApi watsonxApi(WatsonxAiConnectionProperties properties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider) {
 		return new WatsonxAiApi(properties.getBaseUrl(), properties.getStreamEndpoint(), properties.getTextEndpoint(),
 				properties.getEmbeddingEndpoint(), properties.getProjectId(), properties.getIAMToken(),
-				restClientBuilder);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder));
 	}
 
 	@Bean

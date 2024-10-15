@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 		"spring.ai.vectorstore.mongodb.initialize-schema=true",
 		"spring.ai.vectorstore.mongodb.collection-name=test_collection",
 		"spring.ai.vectorstore.mongodb.index-name=text_index" })
-class MongoDbAtlasLocalContainerConnectionDetailsFactoryTest {
+class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection

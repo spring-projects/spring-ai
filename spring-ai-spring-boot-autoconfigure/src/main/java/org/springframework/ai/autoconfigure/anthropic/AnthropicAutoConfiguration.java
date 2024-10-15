@@ -17,7 +17,6 @@ package org.springframework.ai.autoconfigure.anthropic;
 
 import java.util.List;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
@@ -40,6 +39,8 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
@@ -57,11 +58,12 @@ public class AnthropicAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public AnthropicApi anthropicApi(AnthropicConnectionProperties connectionProperties,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
 		return new AnthropicApi(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
-				connectionProperties.getVersion(), restClientBuilder, webClientBuilder, responseErrorHandler,
+				connectionProperties.getVersion(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler,
 				connectionProperties.getBetaVersion());
 	}
 

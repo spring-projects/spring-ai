@@ -18,6 +18,7 @@ package org.springframework.ai.openai.api;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.springframework.ai.model.ChatModelDescription;
@@ -26,6 +27,7 @@ import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -154,22 +156,19 @@ public class OpenAiApi {
 		this.completionsPath = completionsPath;
 		this.embeddingsPath = embeddingsPath;
 		// @formatter:off
+		Consumer<HttpHeaders> finalHeaders = h -> {
+			h.setBearerAuth(apiKey);
+			h.setContentType(MediaType.APPLICATION_JSON);
+			h.addAll(headers);
+		};
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(h -> {
-				h.setBearerAuth(apiKey);
-				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
-			})
+			.defaultHeaders(finalHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
 		this.webClient = webClientBuilder
 			.baseUrl(baseUrl)
-			.defaultHeaders(h -> {
-				h.setBearerAuth(apiKey);
-				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
-			})
+			.defaultHeaders(finalHeaders)
 			.build();// @formatter:on
 	}
 

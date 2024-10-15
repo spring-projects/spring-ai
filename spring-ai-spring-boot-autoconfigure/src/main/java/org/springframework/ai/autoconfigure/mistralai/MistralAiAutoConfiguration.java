@@ -17,7 +17,6 @@ package org.springframework.ai.autoconfigure.mistralai;
 
 import java.util.List;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -43,6 +42,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * @author Ricken Bazolo
  * @author Christian Tzolov
@@ -62,14 +63,14 @@ public class MistralAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = MistralAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MistralAiEmbeddingModel mistralAiEmbeddingModel(MistralAiCommonProperties commonProperties,
-			MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			MistralAiEmbeddingProperties embeddingProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var mistralAiApi = mistralAiApi(embeddingProperties.getApiKey(), commonProperties.getApiKey(),
-				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder,
-				responseErrorHandler);
+				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var embeddingModel = new MistralAiEmbeddingModel(mistralAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate,
@@ -85,14 +86,15 @@ public class MistralAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = MistralAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MistralAiChatModel mistralAiChatModel(MistralAiCommonProperties commonProperties,
-			MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			MistralAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
-				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder, responseErrorHandler);
+				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var chatModel = new MistralAiChatModel(mistralAiApi, chatProperties.getOptions(), functionCallbackContext,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));

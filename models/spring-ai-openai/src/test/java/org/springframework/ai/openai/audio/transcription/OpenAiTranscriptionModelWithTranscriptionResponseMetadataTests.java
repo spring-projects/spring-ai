@@ -15,6 +15,14 @@
  */
 package org.springframework.ai.openai.audio.transcription;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
+import java.time.Duration;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.audio.transcription.AudioTranscriptionMetadata;
@@ -38,12 +46,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
-
 /**
  * @author Michael Lavelle
  */
@@ -53,7 +55,7 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 	private static String TEST_API_KEY = "sk-1234567890";
 
 	@Autowired
-	private OpenAiAudioTranscriptionModel openAiTranscriptionClient;
+	private OpenAiAudioTranscriptionModel openAiTranscriptionModel;
 
 	@Autowired
 	private MockRestServiceServer server;
@@ -72,7 +74,7 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile);
 
-		AudioTranscriptionResponse response = this.openAiTranscriptionClient.call(transcriptionRequest);
+		AudioTranscriptionResponse response = this.openAiTranscriptionModel.call(transcriptionRequest);
 
 		assertThat(response).isNotNull();
 

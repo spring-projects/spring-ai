@@ -15,7 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.minimax;
 
-import io.micrometer.observation.ObservationRegistry;
+import java.util.List;
+
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -35,15 +36,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Geng Rong
@@ -59,14 +56,15 @@ public class MiniMaxAutoConfiguration {
 	@ConditionalOnProperty(prefix = MiniMaxChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MiniMaxChatModel miniMaxChatModel(MiniMaxConnectionProperties commonProperties,
-			MiniMaxChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			MiniMaxChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var miniMaxApi = miniMaxApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
+				chatProperties.getApiKey(), commonProperties.getApiKey(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), functionCallbackContext,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
@@ -80,13 +78,14 @@ public class MiniMaxAutoConfiguration {
 	@ConditionalOnProperty(prefix = MiniMaxEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MiniMaxEmbeddingModel miniMaxEmbeddingModel(MiniMaxConnectionProperties commonProperties,
-			MiniMaxEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			MiniMaxEmbeddingProperties embeddingProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var miniMaxApi = miniMaxApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
+				embeddingProperties.getApiKey(), commonProperties.getApiKey(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var embeddingModel = new MiniMaxEmbeddingModel(miniMaxApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate,

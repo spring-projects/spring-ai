@@ -30,7 +30,7 @@
 
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
+			<artifactId>spring-webflux</artifactId>
 		</dependency>
 
 		<!-- TESTING -->

@@ -15,7 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.zhipuai;
 
-import io.micrometer.observation.ObservationRegistry;
+import java.util.List;
+
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -41,7 +42,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Geng Rong
@@ -57,14 +58,15 @@ public class ZhiPuAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = ZhiPuAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public ZhiPuAiChatModel zhiPuAiChatModel(ZhiPuAiConnectionProperties commonProperties,
-			ZhiPuAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			ZhiPuAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var zhiPuAiApi = zhiPuAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
+				chatProperties.getApiKey(), commonProperties.getApiKey(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var chatModel = new ZhiPuAiChatModel(zhiPuAiApi, chatProperties.getOptions(), functionCallbackContext,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));

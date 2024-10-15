@@ -78,14 +78,15 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = OpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OpenAiChatModel openAiChatModel(OpenAiConnectionProperties commonProperties,
-			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
+			OpenAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		var openAiApi = openAiApi(chatProperties, commonProperties, restClientBuilder, webClientBuilder,
-				responseErrorHandler, "chat");
+		var openAiApi = openAiApi(chatProperties, commonProperties,
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "chat");
 
 		var chatModel = new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackContext,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
@@ -100,13 +101,14 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiConnectionProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var openAiApi = openAiApi(embeddingProperties, commonProperties, restClientBuilder, webClientBuilder,
-				responseErrorHandler, "embedding");
+		var openAiApi = openAiApi(embeddingProperties, commonProperties,
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "embedding");
 
 		var embeddingModel = new OpenAiEmbeddingModel(openAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate,
@@ -146,14 +148,15 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OpenAiImageModel openAiImageModel(OpenAiConnectionProperties commonProperties,
-			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			OpenAiImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
 		var openAiImageApi = new OpenAiImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				restClientBuilder, responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var imageModel = new OpenAiImageModel(openAiImageApi, imageProperties.getOptions(), retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
@@ -169,14 +172,15 @@ public class OpenAiAutoConfiguration {
 			havingValue = "true", matchIfMissing = true)
 	public OpenAiAudioTranscriptionModel openAiAudioTranscriptionModel(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties, RetryTemplate retryTemplate,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, transcriptionProperties,
 				"transcription");
 
 		var openAiAudioApi = new OpenAiAudioApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				restClientBuilder, webClientBuilder, responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		return new OpenAiAudioTranscriptionModel(openAiAudioApi, transcriptionProperties.getOptions(), retryTemplate);
 
@@ -186,13 +190,13 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiModerationModel openAiModerationClient(OpenAiConnectionProperties commonProperties,
 			OpenAiModerationProperties moderationProperties, RetryTemplate retryTemplate,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, moderationProperties,
 				"moderation");
 
-		var openAiModerationApi = new OpenAiModerationApi(resolved.baseUrl, resolved.apiKey(), restClientBuilder,
-				responseErrorHandler);
+		var openAiModerationApi = new OpenAiModerationApi(resolved.baseUrl, resolved.apiKey(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		return new OpenAiModerationModel(openAiModerationApi, retryTemplate)
 			.withDefaultOptions(moderationProperties.getOptions());
@@ -204,14 +208,15 @@ public class OpenAiAutoConfiguration {
 			matchIfMissing = true)
 	public OpenAiAudioSpeechModel openAiAudioSpeechClient(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties, RetryTemplate retryTemplate,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, speechProperties,
 				"speach");
 
 		var openAiAudioApi = new OpenAiAudioApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				restClientBuilder, webClientBuilder, responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
 	}

@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.stabilityai;
 
 import org.springframework.ai.stabilityai.StabilityAiImageModel;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,6 +27,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 
 /**
  * @author Mark Pollack
@@ -40,7 +42,7 @@ public class StabilityAiImageAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public StabilityAiApi stabilityAiApi(StabilityAiConnectionProperties commonProperties,
-			StabilityAiImageProperties imageProperties) {
+			StabilityAiImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider) {
 
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -51,7 +53,8 @@ public class StabilityAiImageAutoConfiguration {
 		Assert.hasText(apiKey, "StabilityAI API key must be set");
 		Assert.hasText(baseUrl, "StabilityAI base URL must be set");
 
-		return new StabilityAiApi(apiKey, imageProperties.getOptions().getModel(), baseUrl);
+		return new StabilityAiApi(apiKey, imageProperties.getOptions().getModel(), baseUrl,
+				restClientBuilderProvider.getIfAvailable(RestClient::builder));
 	}
 
 	@Bean

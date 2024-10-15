@@ -17,7 +17,6 @@ package org.springframework.ai.autoconfigure.ollama;
 
 import java.util.List;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -38,6 +37,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Ollama Chat Client.
@@ -62,9 +63,12 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder) {
-		return new OllamaApi(connectionDetails.getBaseUrl(), restClientBuilder, webClientBuilder);
+	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider) {
+		return new OllamaApi(connectionDetails.getBaseUrl(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder));
 	}
 
 	@Bean

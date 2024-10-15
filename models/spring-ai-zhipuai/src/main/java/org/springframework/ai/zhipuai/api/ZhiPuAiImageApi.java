@@ -15,16 +15,18 @@
  */
 package org.springframework.ai.zhipuai.api;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+import java.util.function.Consumer;
+
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.util.api.ApiUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * ZhiPuAI Image API.
@@ -68,10 +70,10 @@ public class ZhiPuAiImageApi {
 	public ZhiPuAiImageApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(zhiPuAiToken))
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
+		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> {
+			h.setBearerAuth(zhiPuAiToken);
+			// h.setContentType(MediaType.APPLICATION_JSON);
+		}).defaultStatusHandler(responseErrorHandler).build();
 	}
 
 	/**
