@@ -10,7 +10,7 @@ public class BaseOllamaIT {
 	private static final Logger logger = LoggerFactory.getLogger(BaseOllamaIT.class);
 
 	// Toggle for running tests locally on native Ollama for a faster feedback loop.
-	private static final boolean useTestcontainers = false;
+	private static final boolean useTestcontainers = true;
 
 	public static final OllamaContainer ollamaContainer;
 
@@ -30,13 +30,13 @@ public class BaseOllamaIT {
 	 * to the file ".testcontainers.properties" located in your home directory
 	 */
 	public static boolean isDisabled() {
-		return false;
+		return true;
 	}
 
 	public static OllamaApi buildOllamaApiWithModel(String model) {
 		var baseUrl = "http://localhost:11434";
 		if (useTestcontainers) {
-			baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+			baseUrl = ollamaContainer.getEndpoint();
 		}
 		var ollamaApi = new OllamaApi(baseUrl);
 
