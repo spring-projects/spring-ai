@@ -15,7 +15,7 @@ These abstractions have multiple implementations, enabling easy component swappi
 
 Spring AI provides the following features:
 
-* Support for all major Model providers such as Anthropic, Azure OpenAI, Amazon Bedrock, Google, HuggingFace, Mistral, Oracle, Stability AI, Watson, Minimax, Moonshot, QianFan, ZhiPu AI, PostgresML, and ONXX Transformers.
+* Support for all major Model providers such as Anthropic, Azure OpenAI, Amazon Bedrock, Google, HuggingFace, Mistral, Oracle, Stability AI, Watson, Minimax, Moonshot, QianFan, ZhiPu AI, PostgresML, and ONNX Transformers.
 * Supported Model types are Chat, Embedding, Text to Image, Audio Transcription, Text to Speech, and Moderation. Multimodal models are also supported.
 * Portable API across AI providers for all models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
 * Spring Boot Auto Configuration for all models, simplifying setup and integration.
