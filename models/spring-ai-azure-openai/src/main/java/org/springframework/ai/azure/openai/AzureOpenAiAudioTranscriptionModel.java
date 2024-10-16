@@ -29,8 +29,8 @@ import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.StructuredResponse.Word;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiAudioTranscriptionResponseMetadata;
-import org.springframework.ai.model.Model;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.TranscriptionModel;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -45,7 +45,7 @@ import java.util.List;
  *
  * @author Piotr Olaszewski
  */
-public class AzureOpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPrompt, AudioTranscriptionResponse> {
+public class AzureOpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 	private static final List<AudioTranscriptionFormat> JSON_FORMATS = List.of(AudioTranscriptionFormat.JSON,
 			AudioTranscriptionFormat.VERBOSE_JSON);
