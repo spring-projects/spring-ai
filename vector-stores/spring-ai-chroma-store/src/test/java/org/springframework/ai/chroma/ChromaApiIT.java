@@ -56,6 +56,14 @@ public class ChromaApiIT {
 	}
 
 	@Test
+	public void testClientWithMetadata() {
+		Map<String, Object> metadata = Map.of("hnsw:space", "cosine", "hnsw:M", 5);
+		var newCollection = chroma.createCollection(new ChromaApi.CreateCollectionRequest("TestCollection", metadata));
+		assertThat(newCollection).isNotNull();
+		assertThat(newCollection.name()).isEqualTo("TestCollection");
+	}
+
+	@Test
 	public void testClient() {
 		var newCollection = chroma.createCollection(new ChromaApi.CreateCollectionRequest("TestCollection"));
 		assertThat(newCollection).isNotNull();
