@@ -53,19 +53,20 @@ It includes the Ollama request (advanced) parameters such as the `model`, `keep-
 
 Here are the advanced request parameter for the Ollama embedding model:
 
-[cols="3,6,1"]
+[cols="4,5,1"]
 |====
 | Property | Description | Default
 | spring.ai.ollama.embedding.enabled      | Enables the Ollama embedding model auto-configuration. | true
 | spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. 
 You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mistral
+| spring.ai.ollama.embedding.options.pull-missing-model | Automatically pull missing models from Ollama repository | false
 | spring.ai.ollama.embedding.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 | spring.ai.ollama.embedding.options.truncate  | Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.  | true
 |====
 
 The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
 
-[cols="3,6,1"]
+[cols="4,5,1"]
 |====
 | Property | Description | Default
 | spring.ai.ollama.embedding.options.numa              | Whether to use NUMA.                                           | false
@@ -122,6 +123,30 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
             .withtTuncates(false)
             .build());
 ----
+
+=== Auto-pulling Models
+
+The `pullMissingModel` option allows you to automatically download and use models that are not currently available on your local Ollama instance. 
+This feature is particularly useful when working with different models or when deploying your application to new environments.
+
+To enable auto-pulling of missing models, you can set the `pullMissingModel` option to `true` in your `OllamaOptions`:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingModel
+    .call(new EmbeddingRequest(List.of("Hello World", "Something else"),
+            OllamaOptions.builder()
+                .withModel("all-minilm:latest")
+                .withPullMissingModel(true)
+                .withTruncate(false)
+                .build()));
+----
+
+You can also configure this option using the following property: `spring.ai.ollama.embedding.options.pull-missing-model=true`
+
+When `pullMissingModel` is set to `true`, the system will attempt to download the specified model if it's not already available locally. This process may take some time depending on the size of the model and your internet connection speed.
+
+CAUTION: Be aware that enabling this option may lead to unexpected delays in your application if it needs to download large model files. It's recommended to pre-download commonly used models in production environments.
 
 == Sample Controller
 

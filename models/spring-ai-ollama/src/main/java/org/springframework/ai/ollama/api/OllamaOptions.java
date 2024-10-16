@@ -304,6 +304,9 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
+	@JsonIgnore
+	private boolean pullMissingModel;
+
 	public static OllamaOptions builder() {
 		return new OllamaOptions();
 	}
@@ -513,6 +516,11 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		else {
 			this.toolContext.putAll(toolContext);
 		}		
+		return this;
+	}
+
+	public OllamaOptions withPullMissingModel(boolean pullMissingModel) {
+		this.pullMissingModel = pullMissingModel;
 		return this;
 	}
 
@@ -856,6 +864,14 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.toolContext = toolContext;
 	}
 
+	public Boolean isPullMissingModel() {
+		return this.pullMissingModel;
+	}
+
+	public void setPullMissingModel(boolean pullMissingModel) {
+		this.pullMissingModel = pullMissingModel;
+	}
+
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -926,7 +942,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withFunctions(fromOptions.getFunctions())
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withToolContext(fromOptions.getToolContext());
+			.withToolContext(fromOptions.getToolContext())
+			.withPullMissingModel(fromOptions.isPullMissingModel());
 	}
 	// @formatter:on
 
@@ -956,7 +973,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
 				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions)
-				&& Objects.equals(toolContext, that.toolContext);
+				&& Objects.equals(toolContext, that.toolContext)
+				&& Objects.equals(pullMissingModel, that.pullMissingModel);
 	}
 
 	@Override
@@ -967,7 +985,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
 				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
-				this.toolContext);
+				this.toolContext, this.pullMissingModel);
 	}
 
 }

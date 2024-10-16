@@ -11,8 +11,6 @@ Check the xref:_openai_api_compatibility[OpenAI API compatibility] section to le
 You first need to run Ollama on your local machine.
 Refer to the official Ollama project link:https://github.com/ollama/ollama[README] to get started running models on your local machine.
 
-NOTE: Running `ollama pull mistral` will download a 4.1GB model artifact.
-
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Spring Milestone and Snapshot repositories. 
@@ -66,6 +64,7 @@ Here are the advanced request parameter for the Ollama chat model:
 
 | spring.ai.ollama.chat.enabled      | Enable Ollama chat model. | true
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
+| spring.ai.ollama.chat.options.pull-missing-model | Automatically pull missing models from Ollama repository | false
 | spring.ai.ollama.chat.options.format  | The format to return a response in. Currently, the only accepted value is `json` | -
 | spring.ai.ollama.chat.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 |====
@@ -132,6 +131,27 @@ ChatResponse response = chatModel.call(
 ----
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+=== Auto-pulling Models
+
+The `pullMissingModel` option allows you to automatically download and use models that are not currently available on your local Ollama instance. 
+This feature is particularly useful when working with different models or when deploying your application to new environments.
+
+To enable auto-pulling of missing models, you can set the `pullMissingModel` option to `true` in your `OllamaOptions`:
+
+[source,java]
+----
+OllamaOptions options = OllamaOptions.builder()
+    .withModel("all-minilm:latest")
+    .withPullMissingModel(true)
+    .build();
+----
+
+You can also configure this option using the following property: `spring.ai.ollama.chat.options.pull-missing-model=true`
+
+When `pullMissingModel` is set to `true`, the system will attempt to download the specified model if it's not already available locally. This process may take some time depending on the size of the model and your internet connection speed.
+
+CAUTION: Be aware that enabling this option may lead to unexpected delays in your application if it needs to download large model files. It's recommended to pre-download commonly used models in production environments.
 
 == Function Calling
 

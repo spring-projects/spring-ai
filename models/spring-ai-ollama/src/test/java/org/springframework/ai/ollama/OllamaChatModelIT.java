@@ -17,6 +17,7 @@ package org.springframework.ai.ollama;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -32,6 +33,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.api.OllamaModelPuller;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -55,6 +57,26 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	@Autowired
 	private OllamaChatModel chatModel;
+
+	@Autowired
+	private OllamaApi ollamaApi;
+
+	@Test
+	void autoPullModelTest() {
+		var puller = new OllamaModelPuller(ollamaApi);
+		puller.deleteModel("tinyllama");
+
+		assertThat(puller.isModelAvailable("tinyllama")).isFalse();
+
+		String joke = ChatClient.create(chatModel)
+			.prompt("Tell me a joke")
+			.options(OllamaOptions.builder().withModel("tinyllama").withPullMissingModel(true).build())
+			.call()
+			.content();
+
+		assertThat(joke).isNotEmpty();
+		assertThat(puller.isModelAvailable("tinyllamaf")).isFalse();
+	}
 
 	@Test
 	void roleTest() {

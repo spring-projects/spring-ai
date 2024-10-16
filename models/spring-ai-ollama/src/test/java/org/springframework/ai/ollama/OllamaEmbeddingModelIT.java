@@ -20,7 +20,9 @@ import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaApi.DeleteModelRequest;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.api.OllamaModelPuller;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -42,6 +44,9 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 	@Autowired
 	private OllamaEmbeddingModel embeddingModel;
 
+	@Autowired
+	private OllamaApi ollamaApi;
+
 	@Test
 	void embeddings() {
 		assertThat(embeddingModel).isNotNull();
@@ -53,6 +58,37 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo(MODEL);
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
+
+		assertThat(embeddingModel.dimensions()).isEqualTo(768);
+	}
+
+	@Test
+	void autoPullModel() {
+		assertThat(embeddingModel).isNotNull();
+
+		var puller = new OllamaModelPuller(ollamaApi);
+		puller.deleteModel("all-minilm:latest");
+
+		assertThat(puller.isModelAvailable("all-minilm")).isFalse();
+
+		EmbeddingResponse embeddingResponse = embeddingModel
+			.call(new EmbeddingRequest(List.of("Hello World", "Something else"),
+					OllamaOptions.builder()
+						.withModel("all-minilm:latest")
+						.withPullMissingModel(true)
+						.withTruncate(false)
+						.build()));
+
+		assertThat(puller.isModelAvailable("all-minilm:latest")).isTrue();
+
+		assertThat(embeddingResponse.getResults()).hasSize(2);
+		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("all-minilm:latest");
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
 

@@ -32,6 +32,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
+import org.springframework.ai.ollama.api.OllamaModelPuller;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.metadata.OllamaEmbeddingUsage;
 import org.springframework.util.Assert;
@@ -75,6 +76,8 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	private final OllamaModelPuller modelPuller;
+
 	public OllamaEmbeddingModel(OllamaApi ollamaApi) {
 		this(ollamaApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
 	}
@@ -92,6 +95,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		this.ollamaApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
+		this.modelPuller = new OllamaModelPuller(ollamaApi);
 	}
 
 	@Override
@@ -149,11 +153,20 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
+		mergedOptions.setPullMissingModel(this.defaultOptions.isPullMissingModel());
+		if (runtimeOptions != null && runtimeOptions.isPullMissingModel() != null) {
+			mergedOptions.setPullMissingModel(runtimeOptions.isPullMissingModel());
+		}
+
 		// Override the model.
 		if (!StringUtils.hasText(mergedOptions.getModel())) {
 			throw new IllegalArgumentException("Model is not set!");
 		}
 		String model = mergedOptions.getModel();
+
+		if (mergedOptions.isPullMissingModel()) {
+			this.modelPuller.pullModel(model, true);
+		}
 
 		return new OllamaApi.EmbeddingsRequest(model, inputContent, DurationParser.parse(mergedOptions.getKeepAlive()),
 				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());

@@ -47,6 +47,7 @@ import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
+import org.springframework.ai.ollama.api.OllamaModelPuller;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.metadata.OllamaChatUsage;
 import org.springframework.util.Assert;
@@ -92,6 +93,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	private final OllamaModelPuller modelPuller;
+
 	public OllamaChatModel(OllamaApi ollamaApi) {
 		this(ollamaApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
 	}
@@ -120,10 +123,12 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		this.chatApi = chatApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
+		this.modelPuller = new OllamaModelPuller(chatApi);
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+
 		OllamaApi.ChatRequest request = ollamaChatRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -319,6 +324,11 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
+		mergedOptions.setPullMissingModel(this.defaultOptions.isPullMissingModel());
+		if (runtimeOptions != null && runtimeOptions.isPullMissingModel() != null) {
+			mergedOptions.setPullMissingModel(runtimeOptions.isPullMissingModel());
+		}
+
 		// Override the model.
 		if (!StringUtils.hasText(mergedOptions.getModel())) {
 			throw new IllegalArgumentException("Model is not set!");
@@ -341,6 +351,10 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 			requestBuilder.withTools(this.getFunctionTools(functionsForThisRequest));
+		}
+
+		if (mergedOptions.isPullMissingModel()) {
+			this.modelPuller.pullModel(mergedOptions.getModel(), true);
 		}
 
 		return requestBuilder.build();
