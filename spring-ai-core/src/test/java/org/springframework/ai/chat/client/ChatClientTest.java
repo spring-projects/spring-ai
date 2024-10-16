@@ -468,7 +468,8 @@ public class ChatClientTest {
 		when(chatModel.call(promptCaptor.capture()))
 			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		var media = new Media(MimeTypeUtils.IMAGE_JPEG, new DefaultResourceLoader().getResource("classpath:/bikes.json"));
+		var media = new Media(MimeTypeUtils.IMAGE_JPEG,
+				new DefaultResourceLoader().getResource("classpath:/bikes.json"));
 
 		UserMessage message = new UserMessage("User prompt", List.of(media));
 		Prompt prompt = new Prompt(message);

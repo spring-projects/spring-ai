@@ -116,7 +116,7 @@ public class MoonshotRetryTests {
 	@Test
 	public void moonshotChatNonTransientError() {
 		when(moonshotApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("text")));
 	}
 
@@ -144,7 +144,7 @@ public class MoonshotRetryTests {
 	@Test
 	public void moonshotChatStreamNonTransientError() {
 		when(moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
 	}
 

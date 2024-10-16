@@ -130,7 +130,7 @@ public class VertexAiGeminiRetryTests {
 	public void vertexAiGeminiChatNonTransientError() throws Exception {
 		// Set up the mock GenerativeModel to throw a non-transient RuntimeException
 		when(mockGenerativeModel.generateContent(any(List.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 
 		// Assert that a RuntimeException is thrown when calling the chat model
 		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("test prompt")));

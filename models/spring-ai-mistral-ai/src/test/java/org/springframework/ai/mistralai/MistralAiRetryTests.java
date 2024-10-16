@@ -131,7 +131,7 @@ public class MistralAiRetryTests {
 	@Test
 	public void mistralAiChatNonTransientError() {
 		when(mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("text")));
 	}
 
@@ -161,7 +161,7 @@ public class MistralAiRetryTests {
 	@Disabled("Currently stream() does not implement retry")
 	public void mistralAiChatStreamNonTransientError() {
 		when(mistralAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
 	}
 
@@ -188,9 +188,9 @@ public class MistralAiRetryTests {
 	@Test
 	public void mistralAiEmbeddingNonTransientError() {
 		when(mistralAiApi.embeddings(isA(EmbeddingRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> embeddingModel
-				.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}
 
 }

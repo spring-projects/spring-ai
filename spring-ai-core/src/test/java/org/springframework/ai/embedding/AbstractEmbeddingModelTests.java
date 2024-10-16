@@ -87,7 +87,7 @@ public class AbstractEmbeddingModelTests {
 
 	@Test
 	public void testUnknownModelDimension() {
-		when(embeddingModel.embed(eq("Hello world!"))).thenReturn(new float[]{0.1f, 0.1f, 0.1f});
+		when(embeddingModel.embed(eq("Hello world!"))).thenReturn(new float[] { 0.1f, 0.1f, 0.1f });
 		assertThat(AbstractEmbeddingModel.dimensions(embeddingModel, "unknown_model", "Hello world!")).isEqualTo(3);
 	}
 

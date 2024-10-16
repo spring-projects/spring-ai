@@ -120,11 +120,11 @@ public class MiniMaxRetryTests {
 	}
 
 	@Test
-    public void miniMaxChatNonTransientError() {
-        when(miniMaxApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-                .thenThrow(new RuntimeException("Non Transient Error"));
-        assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("text")));
-    }
+	public void miniMaxChatNonTransientError() {
+		when(miniMaxApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.thenThrow(new RuntimeException("Non Transient Error"));
+		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("text")));
+	}
 
 	@Test
 	public void miniMaxChatStreamTransientError() {
@@ -148,11 +148,11 @@ public class MiniMaxRetryTests {
 	}
 
 	@Test
-    public void miniMaxChatStreamNonTransientError() {
-        when(miniMaxApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-                .thenThrow(new RuntimeException("Non Transient Error"));
-        assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
-    }
+	public void miniMaxChatStreamNonTransientError() {
+		when(miniMaxApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.thenThrow(new RuntimeException("Non Transient Error"));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
+	}
 
 	@Test
 	public void miniMaxEmbeddingTransientError() {
@@ -174,11 +174,10 @@ public class MiniMaxRetryTests {
 	}
 
 	@Test
-    public void miniMaxEmbeddingNonTransientError() {
-        when(miniMaxApi.embeddings(isA(EmbeddingRequest.class)))
-                .thenThrow(new RuntimeException("Non Transient Error"));
-        assertThrows(RuntimeException.class, () -> embeddingModel
-                .call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
-    }
+	public void miniMaxEmbeddingNonTransientError() {
+		when(miniMaxApi.embeddings(isA(EmbeddingRequest.class))).thenThrow(new RuntimeException("Non Transient Error"));
+		assertThrows(RuntimeException.class, () -> embeddingModel
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
+	}
 
 }

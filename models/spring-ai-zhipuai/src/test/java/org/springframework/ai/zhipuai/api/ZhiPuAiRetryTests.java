@@ -135,7 +135,7 @@ public class ZhiPuAiRetryTests {
 	@Test
 	public void zhiPuAiChatNonTransientError() {
 		when(zhiPuAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("text")));
 	}
 
@@ -163,7 +163,7 @@ public class ZhiPuAiRetryTests {
 	@Test
 	public void zhiPuAiChatStreamNonTransientError() {
 		when(zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+			.thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).collectList().block());
 	}
 
@@ -189,10 +189,9 @@ public class ZhiPuAiRetryTests {
 
 	@Test
 	public void zhiPuAiEmbeddingNonTransientError() {
-		when(zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+		when(zhiPuAiApi.embeddings(isA(EmbeddingRequest.class))).thenThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> embeddingModel
-				.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}
 
 	@Test
@@ -216,7 +215,7 @@ public class ZhiPuAiRetryTests {
 	@Test
 	public void zhiPuAiImageNonTransientError() {
 		when(zhiPuAiImageApi.createImage(isA(ZhiPuAiImageRequest.class)))
-				.thenThrow(new RuntimeException("Transient Error 1"));
+			.thenThrow(new RuntimeException("Transient Error 1"));
 		assertThrows(RuntimeException.class,
 				() -> imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
 	}

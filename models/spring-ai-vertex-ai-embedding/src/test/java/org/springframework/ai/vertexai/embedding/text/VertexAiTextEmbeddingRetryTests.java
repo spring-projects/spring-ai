@@ -148,12 +148,11 @@ public class VertexAiTextEmbeddingRetryTests {
 	@Test
 	public void vertexAiEmbeddingNonTransientError() {
 		// Setup the mock PredictionServiceClient to throw a non-transient error
-		when(mockPredictionServiceClient.predict(any()))
-				.thenThrow(new RuntimeException("Non Transient Error"));
+		when(mockPredictionServiceClient.predict(any())).thenThrow(new RuntimeException("Non Transient Error"));
 
 		// Assert that a RuntimeException is thrown and not retried
-		assertThrows(RuntimeException.class, () -> embeddingModel
-				.call(new EmbeddingRequest(List.of("text1", "text2"), null)));
+		assertThrows(RuntimeException.class,
+				() -> embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), null)));
 
 		// Verify that predict was called only once (no retries for non-transient errors)
 		verify(mockPredictionServiceClient, times(1)).predict(any());
