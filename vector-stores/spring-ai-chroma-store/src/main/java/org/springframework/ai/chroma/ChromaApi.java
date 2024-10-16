@@ -106,7 +106,7 @@ public class ChromaApi {
 	 * @param name The name of the collection.
 	 * @param metadata Metadata associated with the collection.
 	 */
-	public record Collection(String id, String name, Map<String, String> metadata) {
+	public record Collection(String id, String name, Map<String, Object> metadata) {
 	}
 
 	/**
@@ -115,7 +115,7 @@ public class ChromaApi {
 	 * @param name The name of the collection to create.
 	 * @param metadata Optional metadata to associate with the collection.
 	 */
-	public record CreateCollectionRequest(String name, Map<String, String> metadata) {
+	public record CreateCollectionRequest(String name, Map<String, Object> metadata) {
 		public CreateCollectionRequest(String name) {
 			this(name, new HashMap<>(Map.of("hnsw:space", "cosine")));
 		}
