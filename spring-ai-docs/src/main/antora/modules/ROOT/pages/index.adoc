@@ -6,9 +6,10 @@ The `Spring AI` project aims to streamline the development of applications that 
 The project draws inspiration from notable Python projects, such as LangChain and LlamaIndex, but Spring AI is not a direct port of those projects.
 The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
 
-At its core, Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
+> At its core, Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
 
-image::spring-ai-integrationproblem.png[Integration Problem, width=300, align="center"]
+// image::spring-ai-integrationproblem.png[Integration Problem, width=300, align="center"]
+image::spring-ai-integration-diagram.svg[Integration Problem, width=500, align="center"]
 
 Spring AI provides abstractions that serve as the foundation for developing AI applications.
 These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.
