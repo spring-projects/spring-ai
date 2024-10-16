@@ -17,7 +17,6 @@ package org.springframework.ai.autoconfigure.anthropic;
 
 import java.util.List;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
@@ -39,6 +38,8 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Christian Tzolov

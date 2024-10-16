@@ -17,7 +17,6 @@ package org.springframework.ai.autoconfigure.mistralai;
 
 import java.util.List;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -42,6 +41,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Ricken Bazolo
