@@ -218,7 +218,7 @@ public class OpenAiAutoConfiguration {
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
-		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
+		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean

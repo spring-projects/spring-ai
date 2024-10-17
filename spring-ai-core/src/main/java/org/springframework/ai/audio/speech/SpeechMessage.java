@@ -13,43 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.audio.speech;
+package org.springframework.ai.audio.speech;
+
+import org.springframework.util.Assert;
 
 import java.util.Objects;
 
 /**
  * The {@link SpeechMessage} class represents a single text message to be converted to
- * speech by the OpenAI TTS API.
+ * speech.
  *
  * @author Ahmed Yousri
+ * @author Thomas Vitale
  * @since 1.0.0-M1
  */
 public class SpeechMessage {
 
-	private String text;
+	private final String text;
 
-	/**
-	 * Constructs a new {@link SpeechMessage} object with the given text.
-	 * @param text the text to be converted to speech
-	 */
 	public SpeechMessage(String text) {
+		Assert.hasText(text, "text cannot be null or empty");
 		this.text = text;
 	}
 
-	/**
-	 * Returns the text of this speech message.
-	 * @return the text of this speech message
-	 */
 	public String getText() {
 		return text;
 	}
 
-	/**
-	 * Sets the text of this speech message.
-	 * @param text the new text for this speech message
-	 */
-	public void setText(String text) {
-		this.text = text;
+	@Override
+	public String toString() {
+		return "SpeechMessage{" + "text='" + text + "'}";
 	}
 
 	@Override

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.audio.speech;
+package org.springframework.ai.audio.speech;
 
 import org.springframework.ai.model.StreamingModel;
 import reactor.core.publisher.Flux;
 
 /**
- * The {@link StreamingSpeechModel} interface provides a way to interact with the OpenAI
- * Text-to-Speech (TTS) API using a streaming approach, allowing you to receive the
- * generated audio in a real-time fashion.
+ * API for interacting with AI models specialized in speech synthesis, converting textual
+ * input into lifelike spoken audio which is streamed in a real-time fashion.
  *
  * @author Ahmed Yousri
+ * @author Thomas Vitale
  * @since 1.0.0-M1
  */
 @FunctionalInterface
@@ -36,7 +36,7 @@ public interface StreamingSpeechModel extends StreamingModel<SpeechPrompt, Speec
 	 * @return a Flux of audio bytes representing the generated speech
 	 */
 	default Flux<byte[]> stream(String message) {
-		SpeechPrompt prompt = new SpeechPrompt(message);
+		SpeechPrompt prompt = SpeechPrompt.builder().withMessage(message).build();
 		return stream(prompt).map(SpeechResponse::getResult).map(Speech::getOutput);
 	}
 
