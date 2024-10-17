@@ -10,7 +10,7 @@ public class BaseOllamaIT {
 	private static final Logger logger = LoggerFactory.getLogger(BaseOllamaIT.class);
 
 	// Toggle for running tests locally on native Ollama for a faster feedback loop.
-	private static final boolean useTestcontainers = false;
+	private static final boolean useTestcontainers = true;
 
 	public static final OllamaContainer ollamaContainer;
 

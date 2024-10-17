@@ -1,22 +1,19 @@
 = Ollama Chat
 
 With https://ollama.ai/[Ollama] you can run various Large Language Models (LLMs) locally and generate text from them.
-Spring AI supports the Ollama text generation capabilities with the `OllamaChatModel` API.
+Spring AI supports the Ollama chat completion capabilities with the `OllamaChatModel` API.
 
 TIP: Ollama offers an OpenAI API compatible endpoint as well. 
-Check the xref:_openai_api_compatibility[OpenAI API compatibility] section to learn how to use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] project to talk to an Ollama server.
+The xref:_openai_api_compatibility[OpenAI API compatibility] section explains how to use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] to connect to an Ollama server.
 
 == Prerequisites
 
-You first need to run Ollama on your local machine.
-Refer to the official Ollama project link:https://github.com/ollama/ollama[README] to get started running models on your local machine.
+You first need to xref:https://ollama.com/download[Download and install Ollama] on your local machine.
 
-=== Add Repositories and BOM
+Also you can pull the models you want to use from the xref:https://ollama.com/library[Ollama model repository]: `ollama pull <desired model name>`.
+Alternatively, you can enable the `pullMissingModel` option to automatically download missing models: xref:auto-pulling-models[Auto-pulling Models].
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories. 
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
-
-To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+TIP: you can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF HuggingFace Models] 
 
 == Auto-configuration
 
@@ -132,6 +129,7 @@ ChatResponse response = chatModel.call(
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
+[[auto-pulling-models]]
 === Auto-pulling Models
 
 The `pullMissingModel` option allows you to automatically download and use models that are not currently available on your local Ollama instance. 
@@ -146,6 +144,8 @@ OllamaOptions options = OllamaOptions.builder()
     .withPullMissingModel(true)
     .build();
 ----
+
+TIP: you can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF HuggingFace Models] 
 
 You can also configure this option using the following property: `spring.ai.ollama.chat.options.pull-missing-model=true`
 

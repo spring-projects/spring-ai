@@ -55,7 +55,7 @@ public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWrapperIT.class);
 
-	private static final String MODEL_NAME = OllamaModel.LLAMA3_2.getName();
+	private static final String MODEL_NAME = OllamaModel.LLAMA3_1.getName();
 
 	static String baseUrl;
 

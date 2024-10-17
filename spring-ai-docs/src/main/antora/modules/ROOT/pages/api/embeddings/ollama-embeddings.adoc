@@ -5,12 +5,16 @@ An embedding is a vector (list) of floating point numbers.
 The distance between two vectors measures their relatedness.
 Small distances suggest high relatedness and large distances suggest low relatedness.
 
-The `OllamaEmbeddingModel` implementation lerverages the Ollama https://github.com/ollama/ollama/blob/main/docs/api.md#generate-embeddings[Embeddings API] endpoint.
+The `OllamaEmbeddingModel` implementation leverages the Ollama https://github.com/ollama/ollama/blob/main/docs/api.md#generate-embeddings[Embeddings API] endpoint.
+
+TIP: you can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF HuggingFace Models] 
 
 == Prerequisites
 
-You first need to run Ollama on your local machine.
-Refer to the official Ollama project link:https://github.com/ollama/ollama[README] to get started running models on your local machine.
+You first need to xref:https://ollama.com/download[Download and install Ollama] on your local machine.
+
+Also you can pull the models you want to use from the https://ollama.com/search?c=embedding[Ollama Embedding Models]: `ollama pull <selected embedding model name>`.
+Alternatively, you can enable the `pullMissingModel` option to automatically download missing models: xref:auto-pulling-models[Auto-pulling Models].
 
 == Auto-configuration
 
@@ -124,6 +128,7 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
             .build());
 ----
 
+[[auto-pulling-models]]
 === Auto-pulling Models
 
 The `pullMissingModel` option allows you to automatically download and use models that are not currently available on your local Ollama instance. 
@@ -141,6 +146,8 @@ EmbeddingResponse embeddingResponse = embeddingModel
                 .withTruncate(false)
                 .build()));
 ----
+
+TIP: you can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF HuggingFace Models] 
 
 You can also configure this option using the following property: `spring.ai.ollama.embedding.options.pull-missing-model=true`
 

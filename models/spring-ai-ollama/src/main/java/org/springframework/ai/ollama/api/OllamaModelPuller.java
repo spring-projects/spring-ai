@@ -35,8 +35,15 @@ public class OllamaModelPuller {
 
 	private OllamaApi ollamaApi;
 
+	private final long pullRetryTimeoutMs;
+
 	public OllamaModelPuller(OllamaApi ollamaApi) {
+		this(ollamaApi, 5000);
+	}
+
+	public OllamaModelPuller(OllamaApi ollamaApi, long retryTimeoutMs) {
 		this.ollamaApi = ollamaApi;
+		this.pullRetryTimeoutMs = retryTimeoutMs;
 	}
 
 	public boolean isModelAvailable(String modelName) {
@@ -56,35 +63,24 @@ public class OllamaModelPuller {
 		return this.ollamaApi.deleteModel(new DeleteModelRequest(modelName)).getStatusCode().equals(HttpStatus.OK);
 	}
 
-	public String pullModel(String modelName, boolean reTry) {
+	public String pullModel(String modelName, boolean enablePullRetry) {
 		String status = "";
 		do {
 			logger.info("Start Pulling model: {}", modelName);
 			var progress = this.ollamaApi.pullModel(new PullModelRequest(modelName));
 			status = progress.status();
 			logger.info("Pulling model: {} - Status: {}", modelName, status);
+
 			try {
-				Thread.sleep(5000);
+				Thread.sleep(this.pullRetryTimeoutMs);
 			}
 			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-		while (reTry && !status.equals("success"));
+		while (enablePullRetry && !status.equals("success"));
+
 		return status;
-	}
-
-	public static void main(String[] args) {
-
-		var utils = new OllamaModelPuller(new OllamaApi());
-
-		System.out.println(utils.isModelAvailable("orca-mini:latest"));
-
-		String model = "hf.co/bartowski/Llama-3.2-3B-Instruct-GGUF:Q8_0";
-
-		if (!utils.isModelAvailable(model)) {
-			utils.pullModel(model, true);
-		}
 	}
 
 }
