@@ -17,7 +17,6 @@ package org.springframework.ai.autoconfigure.ollama.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,7 +35,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -50,12 +48,12 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
-	private static final String MODEL_NAME = OllamaModel.LLAMA3_1.getName();
+	private static final String MODEL_NAME = "qwen2.5:3b";
 
 	static String baseUrl;
 
 	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
+	public static void beforeAll() {
 		baseUrl = buildConnectionWithModel(MODEL_NAME);
 	}
 
@@ -75,12 +73,13 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
 			UserMessage userMessage = new UserMessage(
-					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
+					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
+					.withDescription(
+							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 					.withResponseConverter((response) -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
@@ -100,12 +99,14 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
+					.withDescription(
+							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 					.withResponseConverter((response) -> "" + response.temp() + response.unit())
 					.build()))
 				.build();

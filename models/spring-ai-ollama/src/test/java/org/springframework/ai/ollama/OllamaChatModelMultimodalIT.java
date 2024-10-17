@@ -45,7 +45,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelMultimodalIT.class);
 
-	private static final String MODEL = OllamaModel.MOONDREAM.getName();
+	private static final String MODEL = "llava-phi3";
 
 	@Autowired
 	private OllamaChatModel chatModel;
@@ -54,7 +54,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 	void unsupportedMediaType() {
 		var imageData = new ClassPathResource("/norway.webp");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
+		var userMessage = new UserMessage("Explain what do you see in this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt(List.of(userMessage))));
@@ -64,7 +64,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 	void multiModalityTest() {
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
+		var userMessage = new UserMessage("Explain what do you see in this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		var response = chatModel.call(new Prompt(List.of(userMessage)));
@@ -83,7 +83,10 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatModel(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9));
+			return OllamaChatModel.builder()
+				.withOllamaApi(ollamaApi)
+				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
+				.build();
 		}
 
 	}
