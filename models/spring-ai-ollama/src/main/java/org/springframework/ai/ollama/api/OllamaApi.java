@@ -27,7 +27,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -501,7 +500,6 @@ public class OllamaApi {
 			 * Create a tool of type 'function' and the given function definition.
 			 * @param function function definition.
 			 */
-			@ConstructorBinding
 			public Tool(Function function) {
 				this(Type.FUNCTION, function);
 			}
@@ -537,7 +535,6 @@ public class OllamaApi {
 				 * @param name tool function name.
 				 * @param jsonSchema tool function schema as json.
 				 */
-				@ConstructorBinding
 				public Function(String description, String name, String jsonSchema) {
 					this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 				}
