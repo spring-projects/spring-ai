@@ -24,6 +24,7 @@ import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -51,7 +52,7 @@ import io.micrometer.observation.ObservationRegistry;
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
-		OllamaConnectionProperties.class })
+		OllamaConnectionProperties.class, OllamaInitializationProperties.class })
 @ImportAutoConfiguration(classes = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class })
 public class OllamaAutoConfiguration {
 
@@ -76,11 +77,18 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			OllamaInitializationProperties initProperties, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackContext functionCallbackContext, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
-		var chatModel = new OllamaChatModel(ollamaApi, properties.getOptions(), functionCallbackContext,
-				toolFunctionCallbacks, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var chatModel = OllamaChatModel.builder()
+			.withOllamaApi(ollamaApi)
+			.withDefaultOptions(properties.getOptions())
+			.withFunctionCallbackContext(functionCallbackContext)
+			.withToolFunctionCallbacks(toolFunctionCallbacks)
+			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.withModelManagementOptions(new ModelManagementOptions(initProperties.getPullModelStrategy(),
+					initProperties.getTimeout(), initProperties.getMaxRetries()))
+			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
@@ -92,10 +100,15 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnProperty(prefix = OllamaEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingProperties properties,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			OllamaInitializationProperties initProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
-		var embeddingModel = new OllamaEmbeddingModel(ollamaApi, properties.getOptions(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.withOllamaApi(ollamaApi)
+			.withDefaultOptions(properties.getOptions())
+			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.withModelManagementOptions(new ModelManagementOptions(initProperties.getPullModelStrategy(),
+					initProperties.getTimeout(), initProperties.getMaxRetries()))
+			.build();
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 

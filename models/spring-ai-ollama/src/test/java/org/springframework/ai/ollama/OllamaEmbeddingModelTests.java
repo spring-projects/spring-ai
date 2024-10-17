@@ -39,6 +39,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -62,7 +63,10 @@ public class OllamaEmbeddingModelTests {
 		// Tests default options
 		var defaultOptions = OllamaOptions.builder().withModel("DEFAULT_MODEL").build();
 
-		var embeddingModel = new OllamaEmbeddingModel(ollamaApi, defaultOptions);
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.withOllamaApi(ollamaApi)
+			.withDefaultOptions(defaultOptions)
+			.build();
 
 		EmbeddingResponse response = embeddingModel.call(
 				new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptionsBuilder.builder().build()));

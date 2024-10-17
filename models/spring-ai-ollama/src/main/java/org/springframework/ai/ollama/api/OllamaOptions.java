@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
@@ -304,8 +305,11 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
+	/**
+	 * Strategy for pulling models at run-time.
+	 */
 	@JsonIgnore
-	private boolean pullMissingModel;
+	private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
 
 	public static OllamaOptions builder() {
 		return new OllamaOptions();
@@ -519,8 +523,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return this;
 	}
 
-	public OllamaOptions withPullMissingModel(boolean pullMissingModel) {
-		this.pullMissingModel = pullMissingModel;
+	public OllamaOptions withPullModelStrategy(PullModelStrategy pullModelStrategy) {
+		this.pullModelStrategy = pullModelStrategy;
 		return this;
 	}
 
@@ -864,12 +868,12 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.toolContext = toolContext;
 	}
 
-	public Boolean isPullMissingModel() {
-		return this.pullMissingModel;
+	public PullModelStrategy getPullModelStrategy() {
+		return this.pullModelStrategy;
 	}
 
-	public void setPullMissingModel(boolean pullMissingModel) {
-		this.pullMissingModel = pullMissingModel;
+	public void setPullModelStrategy(PullModelStrategy pullModelStrategy) {
+		this.pullModelStrategy = pullModelStrategy;
 	}
 
 	/**
@@ -943,7 +947,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withToolContext(fromOptions.getToolContext())
-			.withPullMissingModel(fromOptions.isPullMissingModel());
+			.withPullModelStrategy(fromOptions.getPullModelStrategy());
 	}
 	// @formatter:on
 
@@ -974,7 +978,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
 				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions)
 				&& Objects.equals(toolContext, that.toolContext)
-				&& Objects.equals(pullMissingModel, that.pullMissingModel);
+				&& Objects.equals(pullModelStrategy, that.pullModelStrategy);
 	}
 
 	@Override
@@ -985,7 +989,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
 				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
-				this.toolContext, this.pullMissingModel);
+				this.toolContext, this.pullModelStrategy);
 	}
 
 }

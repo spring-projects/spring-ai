@@ -1,13 +1,11 @@
 package org.springframework.ai.ollama;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.management.OllamaModelManager;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.testcontainers.ollama.OllamaContainer;
 
 public class BaseOllamaIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(BaseOllamaIT.class);
 
 	// Toggle for running tests locally on native Ollama for a faster feedback loop.
 	private static final boolean useTestcontainers = true;
@@ -46,9 +44,8 @@ public class BaseOllamaIT {
 	}
 
 	public static void ensureModelIsPresent(OllamaApi ollamaApi, String model) {
-		logger.info("Start pulling the '{}' model. The operation can take several minutes...", model);
-		ollamaApi.pullModel(new OllamaApi.PullModelRequest(model));
-		logger.info("Completed pulling the '{}' model", model);
+		var ollamaModelManager = new OllamaModelManager(ollamaApi);
+		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
 	}
 
 }
