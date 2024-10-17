@@ -1,6 +1,6 @@
 = Anthropic Function Calling
 
-TIP: Starting of Jul 1th, 2024, streaming function calling and Tool use is supporetd. 
+TIP: Starting of Jul 1st, 2024, streaming function calling and Tool use is supported. 
 
 You can register custom Java functions with the `AnthropicChatModel` and have the Anthropic models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
