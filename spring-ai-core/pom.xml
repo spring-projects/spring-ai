@@ -59,6 +59,12 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-function-context</artifactId>
 			<version>${spring-cloud-function-context.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-autoconfigure</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- production dependencies -->

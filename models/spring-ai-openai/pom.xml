@@ -51,12 +51,6 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
-		<!-- NOTE: Required only by the @ConstructorBinding. -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot</artifactId>
-		</dependency>
-
 		<dependency>
 			<groupId>io.rest-assured</groupId>
 			<artifactId>json-path</artifactId>
