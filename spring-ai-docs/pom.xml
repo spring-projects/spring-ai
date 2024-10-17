@@ -20,11 +20,11 @@
 				<configuration>
 					<playbook>src/main/antora/antora-playbook.yml</playbook>
 					<packages>
-						<package>@antora/atlas-extension@1.0.0-alpha.1</package>
+						<package>@antora/atlas-extension@1.0.0-alpha.2</package>
 						<package>@antora/collector-extension@1.0.0-alpha.3</package>
-						<package>@asciidoctor/tabs@1.0.0-beta.3</package>
-						<package>@springio/antora-extensions@1.10.0</package>
-						<package>@springio/asciidoctor-extensions@1.0.0-alpha.9</package>
+						<package>@asciidoctor/tabs@1.0.0-beta.6</package>
+						<package>@springio/antora-extensions@1.14.2</package>
+						<package>@springio/asciidoctor-extensions@1.0.0-alpha.10</package>
 						<package>@djencks/asciidoctor-mathjax@0.0.9</package>
 					</packages>
 				</configuration>
