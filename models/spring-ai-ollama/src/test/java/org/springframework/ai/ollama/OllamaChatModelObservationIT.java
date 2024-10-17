@@ -24,7 +24,6 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -169,9 +168,11 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 		}
 
 		@Bean
-		public OllamaChatModel openAiChatModel(OllamaApi openAiApi, TestObservationRegistry observationRegistry) {
-			return new OllamaChatModel(openAiApi, OllamaOptions.create(), new FunctionCallbackContext(), List.of(),
-					observationRegistry);
+		public OllamaChatModel openAiChatModel(OllamaApi ollamaApi, TestObservationRegistry observationRegistry) {
+			return OllamaChatModel.builder()
+				.withOllamaApi(ollamaApi)
+				.withObservationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

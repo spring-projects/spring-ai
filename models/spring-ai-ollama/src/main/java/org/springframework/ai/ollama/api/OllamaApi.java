@@ -879,6 +879,7 @@ public class OllamaApi {
 	 * Show information about a model available locally on the machine where Ollama is running.
 	 */
 	public ShowModelResponse showModel(ShowModelRequest showModelRequest) {
+		Assert.notNull(showModelRequest, "showModelRequest must not be null");
 		return this.restClient.post()
 				.uri("/api/show")
 				.body(showModelRequest)
@@ -897,6 +898,7 @@ public class OllamaApi {
      * Copy a model. Creates a model with another name from an existing model.
      */
 	public ResponseEntity<Void> copyModel(CopyModelRequest copyModelRequest) {
+		Assert.notNull(copyModelRequest, "copyModelRequest must not be null");
 		return this.restClient.post()
 				.uri("/api/copy")
 				.body(copyModelRequest)
@@ -914,6 +916,7 @@ public class OllamaApi {
 	 * Delete a model and its data.
 	 */
 	public ResponseEntity<Void> deleteModel(DeleteModelRequest deleteModelRequest) {
+		Assert.notNull(deleteModelRequest, "deleteModelRequest must not be null");
 		return this.restClient.method(HttpMethod.DELETE)
 				.uri("/api/delete")
 				.body(deleteModelRequest)
@@ -925,20 +928,20 @@ public class OllamaApi {
 	@JsonInclude(Include.NON_NULL)
 	public record PullModelRequest(
 			@JsonProperty("model") String model,
-			@JsonProperty("insecure") Boolean insecure,
+			@JsonProperty("insecure") boolean insecure,
 			@JsonProperty("username") String username,
 			@JsonProperty("password") String password,
-			@JsonProperty("stream") Boolean stream
+			@JsonProperty("stream") boolean stream
 	) {
 		public PullModelRequest {
-			if (stream != null && stream) {
-				logger.warn("Streaming when pulling models is not supported yet");
+			if (!stream) {
+				logger.warn("Enforcing streaming of the model pull request");
 			}
-			stream = false;
+			stream = true;
 		}
 
 		public PullModelRequest(String model) {
-			this(model, null, null, null, null);
+			this(model, false, null, null, true);
 		}
 	}
 
@@ -954,13 +957,15 @@ public class OllamaApi {
 	 * Download a model from the Ollama library. Cancelled pulls are resumed from where they left off,
 	 * and multiple calls will share the same download progress.
 	 */
-	public ProgressResponse pullModel(PullModelRequest pullModelRequest) {
-		return this.restClient.post()
+	public Flux<ProgressResponse> pullModel(PullModelRequest pullModelRequest) {
+		Assert.notNull(pullModelRequest, "pullModelRequest must not be null");
+		Assert.isTrue(pullModelRequest.stream(), "Request must set the stream property to true.");
+
+		return this.webClient.post()
 				.uri("/api/pull")
-				.body(pullModelRequest)
+				.bodyValue(pullModelRequest)
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
-				.body(ProgressResponse.class);
+				.bodyToFlux(ProgressResponse.class);
 	}
 
 }

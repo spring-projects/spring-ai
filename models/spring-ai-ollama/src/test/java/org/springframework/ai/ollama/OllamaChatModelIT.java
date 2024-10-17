@@ -33,8 +33,9 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaModelPuller;
+import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -63,19 +64,24 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	@Test
 	void autoPullModelTest() {
-		var puller = new OllamaModelPuller(ollamaApi);
-		puller.deleteModel("tinyllama");
-
-		assertThat(puller.isModelAvailable("tinyllama")).isFalse();
+		var modelManager = new OllamaModelManager(ollamaApi);
+		var model = "tinyllama";
+		modelManager.deleteModel(model);
+		assertThat(modelManager.isModelAvailable(model)).isFalse();
 
 		String joke = ChatClient.create(chatModel)
 			.prompt("Tell me a joke")
-			.options(OllamaOptions.builder().withModel("tinyllama").withPullMissingModel(true).build())
+			.options(OllamaOptions.builder()
+				.withModel(model)
+				.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
+				.build())
 			.call()
 			.content();
 
 		assertThat(joke).isNotEmpty();
-		assertThat(puller.isModelAvailable("tinyllamaf")).isFalse();
+		assertThat(modelManager.isModelAvailable(model)).isTrue();
+
+		modelManager.deleteModel(model);
 	}
 
 	@Test
@@ -240,7 +246,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatModel(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9));
+			return OllamaChatModel.builder()
+				.withOllamaApi(ollamaApi)
+				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
+				.build();
 		}
 
 	}

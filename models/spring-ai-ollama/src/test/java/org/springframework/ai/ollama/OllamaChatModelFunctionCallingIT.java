@@ -52,7 +52,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
 
-	private static final String MODEL = OllamaModel.LLAMA3_1.getName();
+	private static final String MODEL = "qwen2.5:3b";
 
 	@Autowired
 	ChatModel chatModel;
@@ -60,7 +60,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 	@Test
 	void functionCallTest() {
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Return temperatures in Celsius.");
+				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -68,7 +68,8 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 			.withModel(MODEL)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
+				.withDescription(
+						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.withResponseConverter((response) -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
@@ -84,7 +85,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 	@Test
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Return temperatures in Celsius.");
+				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -92,7 +93,8 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 			.withModel(MODEL)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
+				.withDescription(
+						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.withResponseConverter((response) -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
@@ -122,7 +124,10 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatModel(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9));
+			return OllamaChatModel.builder()
+				.withOllamaApi(ollamaApi)
+				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
+				.build();
 		}
 
 	}

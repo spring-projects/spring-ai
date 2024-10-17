@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -84,8 +85,14 @@ public class OllamaApiModelsIT extends BaseOllamaIT {
 		assertThat(listModelResponse.models().stream().anyMatch(model -> model.name().contains(MODEL))).isFalse();
 
 		var pullModelRequest = new OllamaApi.PullModelRequest(MODEL);
-		var progressResponse = ollamaApi.pullModel(pullModelRequest);
-		assertThat(progressResponse.status()).contains("success");
+		var progressResponses = ollamaApi.pullModel(pullModelRequest)
+			.timeout(Duration.ofMinutes(5))
+			.collectList()
+			.block();
+
+		assertThat(progressResponses).isNotNull();
+		assertThat(progressResponses.get(progressResponses.size() - 1))
+			.isEqualTo(new OllamaApi.ProgressResponse("success", null, null, null));
 
 		listModelResponse = ollamaApi.listModels();
 		assertThat(listModelResponse.models().stream().anyMatch(model -> model.name().contains(MODEL))).isTrue();

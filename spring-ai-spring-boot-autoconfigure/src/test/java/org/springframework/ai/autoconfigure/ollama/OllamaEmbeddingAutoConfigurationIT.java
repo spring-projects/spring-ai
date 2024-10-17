@@ -21,9 +21,10 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -65,6 +66,23 @@ public class OllamaEmbeddingAutoConfigurationIT extends BaseOllamaIT {
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingModel.dimensions()).isEqualTo(768);
 		});
+	}
+
+	@Test
+	public void embeddingWithPull() {
+		contextRunner.withPropertyValues("spring.ai.ollama.init.pull-model-strategy=when_missing")
+			.withPropertyValues("spring.ai.ollama.embedding.options.model=all-minilm")
+			.run(context -> {
+				var model = "all-minilm";
+				OllamaApi ollamaApi = context.getBean(OllamaApi.class);
+				var modelManager = new OllamaModelManager(ollamaApi);
+				assertThat(modelManager.isModelAvailable(model)).isTrue();
+
+				OllamaEmbeddingModel embeddingModel = context.getBean(OllamaEmbeddingModel.class);
+				EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				modelManager.deleteModel(model);
+			});
 	}
 
 	@Test

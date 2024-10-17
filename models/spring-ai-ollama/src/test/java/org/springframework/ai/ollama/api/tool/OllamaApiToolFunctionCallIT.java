@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisabledIf("isDisabled")
 public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.LLAMA3_1.getName();
+	private static final String MODEL = "qwen2.5:3b";
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaApiToolFunctionCallIT.class);
 
@@ -64,11 +64,13 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 	public void toolFunctionCall() {
 		// Step 1: send the conversation and available functions to the model
 		var message = Message.builder(Role.USER)
-			.withContent("What's the weather like in San Francisco, Tokyo, and Paris? Return temperature in Celsius.")
+			.withContent(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return a list with the temperature in Celsius for each of the three locations.")
 			.build();
 
 		var functionTool = new OllamaApi.ChatRequest.Tool(new OllamaApi.ChatRequest.Tool.Function("getCurrentWeather",
-				"Get the weather in location like city names.", ModelOptionsUtils.jsonToMap("""
+				"Find the current weather conditions, forecasts, and temperatures for a location, like a city or state.",
+				ModelOptionsUtils.jsonToMap("""
 						{
 							"type": "object",
 							"properties": {

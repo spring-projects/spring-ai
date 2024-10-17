@@ -47,8 +47,10 @@ import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
-import org.springframework.ai.ollama.api.OllamaModelPuller;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
+import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.ollama.metadata.OllamaChatUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -59,10 +61,9 @@ import reactor.core.publisher.Flux;
 /**
  * {@link ChatModel} implementation for {@literal Ollama}. Ollama allows developers to run
  * large language models and generate embeddings locally. It supports open-source models
- * available on [Ollama AI Library](<a href="https://ollama.ai/library">...</a>). - Llama
- * 2 (7B parameters, 3.8GB size) - Mistral (7B parameters, 4.1GB size) Please refer to the
- * <a href="https://ollama.ai/">official Ollama website</a> for the most up-to-date
- * information on available models.
+ * available on [Ollama AI Library](<a href="https://ollama.ai/library">...</a>) and on
+ * Hugging Face. Please refer to the <a href="https://ollama.ai/">official Ollama
+ * website</a> for the most up-to-date information on available models.
  *
  * @author Christian Tzolov
  * @author luocongqiu
@@ -73,57 +74,33 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
-	/**
-	 * Low-level Ollama API library.
-	 */
 	private final OllamaApi chatApi;
 
-	/**
-	 * Default options to be used for all chat requests.
-	 */
 	private final OllamaOptions defaultOptions;
 
-	/**
-	 * Observation registry used for instrumentation.
-	 */
 	private final ObservationRegistry observationRegistry;
 
-	/**
-	 * Conventions to use for generating observations.
-	 */
+	private final OllamaModelManager modelManager;
+
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	private final OllamaModelPuller modelPuller;
-
-	public OllamaChatModel(OllamaApi ollamaApi) {
-		this(ollamaApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
-	}
-
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions) {
-		this(ollamaApi, defaultOptions, null);
-	}
-
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
-			FunctionCallbackContext functionCallbackContext) {
-		this(ollamaApi, defaultOptions, functionCallbackContext, List.of());
-	}
-
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
-		this(ollamaApi, defaultOptions, functionCallbackContext, toolFunctionCallbacks, ObservationRegistry.NOOP);
-	}
-
-	public OllamaChatModel(OllamaApi chatApi, OllamaOptions defaultOptions,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
-			ObservationRegistry observationRegistry) {
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		super(functionCallbackContext, defaultOptions, toolFunctionCallbacks);
-		Assert.notNull(chatApi, "ollamaApi must not be null");
+		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
-		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
-		this.chatApi = chatApi;
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+		Assert.notNull(observationRegistry, "modelManagementOptions must not be null");
+		this.chatApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
-		this.modelPuller = new OllamaModelPuller(chatApi);
+		this.modelManager = new OllamaModelManager(chatApi, modelManagementOptions);
+		initializeModelIfEnabled(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -324,9 +301,9 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
-		mergedOptions.setPullMissingModel(this.defaultOptions.isPullMissingModel());
-		if (runtimeOptions != null && runtimeOptions.isPullMissingModel() != null) {
-			mergedOptions.setPullMissingModel(runtimeOptions.isPullMissingModel());
+		mergedOptions.setPullModelStrategy(this.defaultOptions.getPullModelStrategy());
+		if (runtimeOptions != null && runtimeOptions.getPullModelStrategy() != null) {
+			mergedOptions.setPullModelStrategy(runtimeOptions.getPullModelStrategy());
 		}
 
 		// Override the model.
@@ -353,9 +330,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			requestBuilder.withTools(this.getFunctionTools(functionsForThisRequest));
 		}
 
-		if (mergedOptions.isPullMissingModel()) {
-			this.modelPuller.pullModel(mergedOptions.getModel(), true);
-		}
+		initializeModelIfEnabled(mergedOptions.getModel(), mergedOptions.getPullModelStrategy());
 
 		return requestBuilder.build();
 	}
@@ -401,12 +376,75 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	}
 
 	/**
+	 * Pull the given model into Ollama based on the specified strategy.
+	 */
+	private void initializeModelIfEnabled(String model, PullModelStrategy pullModelStrategy) {
+		if (!PullModelStrategy.NEVER.equals(pullModelStrategy)) {
+			this.modelManager.pullModel(model, pullModelStrategy);
+		}
+	}
+
+	/**
 	 * Use the provided convention for reporting observation data
 	 * @param observationConvention The provided convention
 	 */
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	public static class Builder {
+
+		private OllamaApi ollamaApi;
+
+		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
+
+		private FunctionCallbackContext functionCallbackContext;
+
+		private List<FunctionCallback> toolFunctionCallbacks = List.of();
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private ModelManagementOptions modelManagementOptions = ModelManagementOptions.defaults();
+
+		private Builder() {
+		}
+
+		public Builder withOllamaApi(OllamaApi ollamaApi) {
+			this.ollamaApi = ollamaApi;
+			return this;
+		}
+
+		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder withFunctionCallbackContext(FunctionCallbackContext functionCallbackContext) {
+			this.functionCallbackContext = functionCallbackContext;
+			return this;
+		}
+
+		public Builder withToolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
+			this.toolFunctionCallbacks = toolFunctionCallbacks;
+			return this;
+		}
+
+		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
+			this.modelManagementOptions = modelManagementOptions;
+			return this;
+		}
+
+		public OllamaChatModel build() {
+			return new OllamaChatModel(ollamaApi, defaultOptions, functionCallbackContext, toolFunctionCallbacks,
+					observationRegistry, modelManagementOptions);
+		}
+
 	}
 
 }

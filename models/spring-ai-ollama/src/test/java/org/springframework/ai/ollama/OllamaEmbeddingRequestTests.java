@@ -29,8 +29,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaEmbeddingRequestTests {
 
-	OllamaEmbeddingModel embeddingModel = new OllamaEmbeddingModel(new OllamaApi(),
-			new OllamaOptions().withModel("DEFAULT_MODEL").withMainGPU(11).withUseMMap(true).withNumGPU(1));
+	OllamaEmbeddingModel embeddingModel = OllamaEmbeddingModel.builder()
+		.withOllamaApi(new OllamaApi())
+		.withDefaultOptions(
+				OllamaOptions.create().withModel("DEFAULT_MODEL").withMainGPU(11).withUseMMap(true).withNumGPU(1))
+		.build();
 
 	@Test
 	public void ollamaEmbeddingRequestDefaultOptions() {

@@ -22,7 +22,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.*;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
@@ -32,24 +31,20 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
-import org.springframework.ai.ollama.api.OllamaModelPuller;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
+import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.ollama.metadata.OllamaEmbeddingUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link EmbeddingModel} implementation for {@literal Ollama}.
- *
- * Ollama allows developers to run large language models and generate embeddings locally.
- * It supports open-source models available on [Ollama AI
- * Library](https://ollama.ai/library).
- *
- * Examples of models supported: - Llama 2 (7B parameters, 3.8GB size) - Mistral (7B
- * parameters, 4.1GB size)
- *
- * Please refer to the <a href="https://ollama.ai/">official Ollama website</a> for the
- * most up-to-date information on available models.
+ * {@link EmbeddingModel} implementation for {@literal Ollama}. Ollama allows developers
+ * to run large language models and generate embeddings locally. It supports open-source
+ * models available on [Ollama AI Library](<a href="https://ollama.ai/library">...</a>)
+ * and on Hugging Face. Please refer to the <a href="https://ollama.ai/">official Ollama
+ * website</a> for the most up-to-date information on available models.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
@@ -61,41 +56,31 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OllamaApi ollamaApi;
 
-	/**
-	 * Default options to be used for all chat requests.
-	 */
 	private final OllamaOptions defaultOptions;
 
-	/**
-	 * Observation registry used for instrumentation.
-	 */
 	private final ObservationRegistry observationRegistry;
 
-	/**
-	 * Conventions to use for generating observations.
-	 */
+	private final OllamaModelManager modelManager;
+
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	private final OllamaModelPuller modelPuller;
-
-	public OllamaEmbeddingModel(OllamaApi ollamaApi) {
-		this(ollamaApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
-	}
-
-	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions) {
-		this(ollamaApi, defaultOptions, ObservationRegistry.NOOP);
-	}
-
 	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
-			ObservationRegistry observationRegistry) {
-		Assert.notNull(ollamaApi, "openAiApi must not be null");
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "options must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
 
 		this.ollamaApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
-		this.modelPuller = new OllamaModelPuller(ollamaApi);
+		this.modelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
+
+		initializeModelIfEnabled(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -153,9 +138,9 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
-		mergedOptions.setPullMissingModel(this.defaultOptions.isPullMissingModel());
-		if (runtimeOptions != null && runtimeOptions.isPullMissingModel() != null) {
-			mergedOptions.setPullMissingModel(runtimeOptions.isPullMissingModel());
+		mergedOptions.setPullModelStrategy(this.defaultOptions.getPullModelStrategy());
+		if (runtimeOptions != null && runtimeOptions.getPullModelStrategy() != null) {
+			mergedOptions.setPullModelStrategy(runtimeOptions.getPullModelStrategy());
 		}
 
 		// Override the model.
@@ -164,9 +149,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		}
 		String model = mergedOptions.getModel();
 
-		if (mergedOptions.isPullMissingModel()) {
-			this.modelPuller.pullModel(model, true);
-		}
+		initializeModelIfEnabled(mergedOptions.getModel(), mergedOptions.getPullModelStrategy());
 
 		return new OllamaApi.EmbeddingsRequest(model, inputContent, DurationParser.parse(mergedOptions.getKeepAlive()),
 				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());
@@ -174,6 +157,15 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingOptions buildRequestOptions(OllamaApi.EmbeddingsRequest request) {
 		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
+	}
+
+	/**
+	 * Pull the given model into Ollama based on the specified strategy.
+	 */
+	private void initializeModelIfEnabled(String model, PullModelStrategy pullModelStrategy) {
+		if (!PullModelStrategy.NEVER.equals(pullModelStrategy)) {
+			this.modelManager.pullModel(model, pullModelStrategy);
+		}
 	}
 
 	/**
@@ -212,6 +204,45 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			else {
 				throw new IllegalArgumentException("Invalid duration format: " + input);
 			}
+		}
+
+	}
+
+	public static class Builder {
+
+		private OllamaApi ollamaApi;
+
+		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private ModelManagementOptions modelManagementOptions = ModelManagementOptions.defaults();
+
+		private Builder() {
+		}
+
+		public Builder withOllamaApi(OllamaApi ollamaApi) {
+			this.ollamaApi = ollamaApi;
+			return this;
+		}
+
+		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
+			this.modelManagementOptions = modelManagementOptions;
+			return this;
+		}
+
+		public OllamaEmbeddingModel build() {
+			return new OllamaEmbeddingModel(ollamaApi, defaultOptions, observationRegistry, modelManagementOptions);
 		}
 
 	}

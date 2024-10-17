@@ -30,7 +30,9 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -96,6 +98,23 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 
 			assertThat(stitchedResponseContent).contains("Copenhagen");
 		});
+	}
+
+	@Test
+	public void chatCompletionWithPull() {
+		contextRunner.withPropertyValues("spring.ai.ollama.init.pull-model-strategy=when_missing")
+			.withPropertyValues("spring.ai.ollama.chat.options.model=tinyllama")
+			.run(context -> {
+				var model = "tinyllama";
+				OllamaApi ollamaApi = context.getBean(OllamaApi.class);
+				var modelManager = new OllamaModelManager(ollamaApi);
+				assertThat(modelManager.isModelAvailable(model)).isTrue();
+
+				OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+				ChatResponse response = chatModel.call(new Prompt(userMessage));
+				assertThat(response.getResult().getOutput().getContent()).contains("Copenhagen");
+				modelManager.deleteModel(model);
+			});
 	}
 
 	@Test

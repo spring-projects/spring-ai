@@ -20,10 +20,10 @@ import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaApi.DeleteModelRequest;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaModelPuller;
+import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -66,33 +66,35 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 	@Test
 	void autoPullModel() {
+		var model = "all-minilm";
 		assertThat(embeddingModel).isNotNull();
 
-		var puller = new OllamaModelPuller(ollamaApi);
-		puller.deleteModel("all-minilm:latest");
-
-		assertThat(puller.isModelAvailable("all-minilm")).isFalse();
+		var modelManager = new OllamaModelManager(ollamaApi);
+		modelManager.deleteModel(model);
+		assertThat(modelManager.isModelAvailable(model)).isFalse();
 
 		EmbeddingResponse embeddingResponse = embeddingModel
 			.call(new EmbeddingRequest(List.of("Hello World", "Something else"),
 					OllamaOptions.builder()
-						.withModel("all-minilm:latest")
-						.withPullMissingModel(true)
+						.withModel(model)
+						.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
 						.withTruncate(false)
 						.build()));
 
-		assertThat(puller.isModelAvailable("all-minilm:latest")).isTrue();
+		assertThat(modelManager.isModelAvailable(model)).isTrue();
 
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("all-minilm:latest");
+		assertThat(embeddingResponse.getMetadata().getModel()).contains(model);
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
 
 		assertThat(embeddingModel.dimensions()).isEqualTo(768);
+
+		modelManager.deleteModel(model);
 	}
 
 	@SpringBootConfiguration
@@ -105,7 +107,10 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
-			return new OllamaEmbeddingModel(ollamaApi, OllamaOptions.create().withModel(MODEL));
+			return OllamaEmbeddingModel.builder()
+				.withOllamaApi(ollamaApi)
+				.withDefaultOptions(OllamaOptions.create().withModel(MODEL))
+				.build();
 		}
 
 	}

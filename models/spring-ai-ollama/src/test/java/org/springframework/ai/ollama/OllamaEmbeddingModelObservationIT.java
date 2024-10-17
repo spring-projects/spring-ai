@@ -103,9 +103,12 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 		}
 
 		@Bean
-		public OllamaEmbeddingModel openAiEmbeddingModel(OllamaApi openAiApi,
+		public OllamaEmbeddingModel openAiEmbeddingModel(OllamaApi ollamaApi,
 				TestObservationRegistry observationRegistry) {
-			return new OllamaEmbeddingModel(openAiApi, OllamaOptions.builder().build(), observationRegistry);
+			return OllamaEmbeddingModel.builder()
+				.withOllamaApi(ollamaApi)
+				.withObservationRegistry(observationRegistry)
+				.build();
 		}
 
 	}
