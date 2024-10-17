@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.vectorstore;
 
 import com.azure.cosmos.*;
@@ -24,6 +40,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * @author Theo van Kraay
+ * @since 1.0.0
+ */
+
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(CosmosDBVectorStore.class);
@@ -45,7 +66,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		cosmosClient.createDatabaseIfNotExists(properties.getDatabaseName()).block();
 
 		initializeContainer(properties.getContainerName(), properties.getDatabaseName(),
-				properties.getVectorStoreThoughput(), properties.getVectorDimensions(), properties.getPartitionKeyPath());
+				properties.getVectorStoreThoughput(), properties.getVectorDimensions(),
+				properties.getPartitionKeyPath());
 
 		this.embeddingModel = embeddingModel;
 
@@ -142,76 +164,78 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	@Override
 	public void doAdd(List<Document> documents) {
 
-		// Create a list to hold both the CosmosItemOperation and the corresponding document ID
-		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream()
-				.map(doc -> {
-					CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
-							mapCosmosDocument(doc, this.embeddingModel.embed(doc.getContent())), new PartitionKey(doc.getId()));
-					return new ImmutablePair<>(doc.getId(), operation);  // Pair the document ID with the operation
-				})
-				.collect(Collectors.toList());
+		// Create a list to hold both the CosmosItemOperation and the corresponding
+		// document ID
+		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
+			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
+					mapCosmosDocument(doc, this.embeddingModel.embed(doc.getContent())), new PartitionKey(doc.getId()));
+			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
+																// with the operation
+		}).collect(Collectors.toList());
 
 		try {
 			// Extract just the CosmosItemOperations from the pairs
 			List<CosmosItemOperation> itemOperations = itemOperationsWithIds.stream()
-					.map(ImmutablePair::getValue)
-					.collect(Collectors.toList());
+				.map(ImmutablePair::getValue)
+				.collect(Collectors.toList());
 
-			container.executeBulkOperations(Flux.fromIterable(itemOperations))
-					.doOnNext(response -> {
-						if (response != null && response.getResponse() != null) {
-							int statusCode = response.getResponse().getStatusCode();
-							if (statusCode == 409) {
-								// Retrieve the ID associated with the failed operation
-								String documentId = itemOperationsWithIds.stream()
-										.filter(pair -> pair.getValue().equals(response.getOperation()))
-										.findFirst()
-										.map(ImmutablePair::getKey)
-										.orElse("Unknown ID");  // Fallback if the ID can't be found
+			container.executeBulkOperations(Flux.fromIterable(itemOperations)).doOnNext(response -> {
+				if (response != null && response.getResponse() != null) {
+					int statusCode = response.getResponse().getStatusCode();
+					if (statusCode == 409) {
+						// Retrieve the ID associated with the failed operation
+						String documentId = itemOperationsWithIds.stream()
+							.filter(pair -> pair.getValue().equals(response.getOperation()))
+							.findFirst()
+							.map(ImmutablePair::getKey)
+							.orElse("Unknown ID"); // Fallback if the ID can't be found
 
-								String errorMessage = String.format("Duplicate document id: %s", documentId);
-								logger.error(errorMessage);
-								throw new RuntimeException(errorMessage);  // Throw an exception for status code 409
-							} else {
-								logger.info("Document added with status: {}", statusCode);
-							}
-						} else {
-							logger.warn("Received a null response or null status code for a document operation.");
-						}
-					})
-					.doOnError(error -> logger.error("Error adding document: {}", error.getMessage()))
-					.doOnComplete(() -> logger.info("Bulk operation completed successfully."))
-					.blockLast();  // Block until the last item of the Flux is processed
-		} catch (Exception e) {
+						String errorMessage = String.format("Duplicate document id: %s", documentId);
+						logger.error(errorMessage);
+						throw new RuntimeException(errorMessage); // Throw an exception
+																	// for status code 409
+					}
+					else {
+						logger.info("Document added with status: {}", statusCode);
+					}
+				}
+				else {
+					logger.warn("Received a null response or null status code for a document operation.");
+				}
+			})
+				.doOnError(error -> logger.error("Error adding document: {}", error.getMessage()))
+				.doOnComplete(() -> logger.info("Bulk operation completed successfully."))
+				.blockLast(); // Block until the last item of the Flux is processed
+		}
+		catch (Exception e) {
 			logger.error("Exception occurred during bulk add operation: {}", e.getMessage(), e);
-			throw e;  // Rethrow the exception after logging
+			throw e; // Rethrow the exception after logging
 		}
 	}
-
-
 
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		try {
 			// Convert the list of IDs into bulk delete operations
 			List<CosmosItemOperation> itemOperations = idList.stream()
-					.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
-					.collect(Collectors.toList());
+				.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
+				.collect(Collectors.toList());
 
-			// Execute bulk delete operations synchronously by using blockLast() on the Flux
+			// Execute bulk delete operations synchronously by using blockLast() on the
+			// Flux
 			container.executeBulkOperations(Flux.fromIterable(itemOperations))
-					.doOnNext(response -> logger.info("Document deleted with status: {}",
-							response.getResponse().getStatusCode()))
-					.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
-					.blockLast(); // This will block until all operations have finished
+				.doOnNext(response -> logger.info("Document deleted with status: {}",
+						response.getResponse().getStatusCode()))
+				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
+				.blockLast(); // This will block until all operations have finished
 
 			return Optional.of(true);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Exception while deleting documents: {}", e.getMessage());
 			return Optional.of(false);
 		}
 	}
-
 
 	@Override
 	public List<Document> similaritySearch(String query) {

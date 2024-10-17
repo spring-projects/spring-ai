@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.vectorstore;
 
 import com.azure.cosmos.CosmosAsyncClient;
@@ -21,6 +37,11 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * @author Theo van Kraay
+ * @since 1.0.0
+ */
 
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
@@ -48,11 +69,10 @@ public class CosmosDBVectorStoreIT {
 		// Add the document to the vector store
 		vectorStore.add(List.of(document1, document2));
 
-		//create duplicate docs and assert that second one throws exception
+		// create duplicate docs and assert that second one throws exception
 		Document document3 = new Document(document1.getId(), "Sample content3", Map.of("key3", "value3"));
-		assertThatThrownBy(() -> vectorStore.add(List.of(document3)))
-				.isInstanceOf(Exception.class)
-				.hasMessageContaining("Duplicate document id: " + document1.getId());
+		assertThatThrownBy(() -> vectorStore.add(List.of(document3))).isInstanceOf(Exception.class)
+			.hasMessageContaining("Duplicate document id: " + document1.getId());
 
 		// Perform a similarity search
 		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sample content").withTopK(1));
@@ -69,7 +89,6 @@ public class CosmosDBVectorStoreIT {
 
 		// Verify the search results
 		assertThat(results2).isEmpty();
-
 
 	}
 
@@ -125,8 +144,7 @@ public class CosmosDBVectorStoreIT {
 
 		List<Document> results3 = vectorStore.similaritySearch(SearchRequest.query("The World")
 			.withTopK(10)
-			.withFilterExpression(
-					b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
+			.withFilterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
 
 		assertThat(results3).hasSize(1);
 		assertThat(results3).extracting(Document::getId).containsExactlyInAnyOrder("4");

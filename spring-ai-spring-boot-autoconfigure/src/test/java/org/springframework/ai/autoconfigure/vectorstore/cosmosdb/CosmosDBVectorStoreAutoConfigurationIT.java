@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 - 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.autoconfigure.vectorstore.cosmosdb;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -18,8 +34,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * @author Theo van Kraay
+ * @since 1.0.0
+ */
 
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
@@ -109,24 +129,23 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		vectorStore.add(List.of(document1, document2, document3, document4));
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(10)
-				.withFilterExpression((b.in("country", "UK", "NL")).build()));
+			.withTopK(10)
+			.withFilterExpression((b.in("country", "UK", "NL")).build()));
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
 
 		List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(10)
-				.withFilterExpression(
-						b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build()));
+			.withTopK(10)
+			.withFilterExpression(
+					b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build()));
 
 		assertThat(results2).hasSize(1);
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
 
 		List<Document> results3 = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(10)
-				.withFilterExpression(
-						b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
+			.withTopK(10)
+			.withFilterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
 
 		assertThat(results3).hasSize(1);
 		assertThat(results3).extracting(Document::getId).containsExactlyInAnyOrder("4");

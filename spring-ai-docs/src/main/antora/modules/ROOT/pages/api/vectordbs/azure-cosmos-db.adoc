@@ -4,11 +4,16 @@ This section walks you through setting up `CosmosDBVectorStore` to store documen
 
 == What is Azure Cosmos DB?
 
-link:https://azure.microsoft.com/en-us/services/cosmos-db/[Azure Cosmos DB] is Microsoft's globally distributed cloud-native database service designed for mission-critical applications. It offers high availability, low latency, and the ability to scale horizontally to meet modern application demands. It was built from the ground up with global distribution, fine-grained multi-tenancy, and horizontal scalability at its core. It is a foundational service in Azure, used by most of Microsoft’s mission critical applications at global scale, including Teams, Skype, Xbox Live, Office 365, Bing, Azure Active Directory, Azure Portal, Microsoft Store, and many others. It is also used by thousands of external customers including OpenAI for ChatGPT and other mission-critical AI applications that require elastic scale, turnkey global distribution, and low latency and high availability across the planet.
+link:https://azure.microsoft.com/en-us/services/cosmos-db/[Azure Cosmos DB] is Microsoft's globally distributed cloud-native database service designed for mission-critical applications.
+It offers high availability, low latency, and the ability to scale horizontally to meet modern application demands.
+It was built from the ground up with global distribution, fine-grained multi-tenancy, and horizontal scalability at its core.
+It is a foundational service in Azure, used by most of Microsoft’s mission critical applications at global scale, including Teams, Skype, Xbox Live, Office 365, Bing, Azure Active Directory, Azure Portal, Microsoft Store, and many others.
+It is also used by thousands of external customers including OpenAI for ChatGPT and other mission-critical AI applications that require elastic scale, turnkey global distribution, and low latency and high availability across the planet.
 
 == What is DiskANN?
 
-DiskANN (Disk-based Approximate Nearest Neighbor Search) is an innovative technology used in Azure Cosmos DB to enhance the performance of vector searches. It enables efficient and scalable similarity searches across high-dimensional data by indexing embeddings stored in Cosmos DB.
+DiskANN (Disk-based Approximate Nearest Neighbor Search) is an innovative technology used in Azure Cosmos DB to enhance the performance of vector searches.
+It enables efficient and scalable similarity searches across high-dimensional data by indexing embeddings stored in Cosmos DB.
 
 DiskANN provides the following benefits:
 
@@ -111,7 +116,8 @@ The following configuration properties are available for the Cosmos DB vector st
 
 == Complex Searches with Filters
 
-You can perform more complex searches using filters in the Cosmos DB vector store. Below is a sample demonstrating how to use filters in your search queries.
+You can perform more complex searches using filters in the Cosmos DB vector store.
+Below is a sample demonstrating how to use filters in your search queries.
 
 [source,java]
 ----
