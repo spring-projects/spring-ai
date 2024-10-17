@@ -32,7 +32,6 @@ import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -546,7 +545,6 @@ public class OpenAiApi {
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
-		@ConstructorBinding
 		public FunctionTool(Function function) {
 			this(Type.FUNCTION, function);
 		}
@@ -583,7 +581,6 @@ public class OpenAiApi {
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
 			 */
-			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
@@ -792,7 +789,6 @@ public class OpenAiApi {
 				this(type, "custom_schema", schema, true);
 			}
 
-			@ConstructorBinding
 			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
 				this(type, StringUtils.hasText(schema)? new JsonSchema(name, schema, strict): null);
 			}

@@ -33,7 +33,6 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -322,7 +321,6 @@ public class ZhiPuAiApi {
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
-		@ConstructorBinding
 		public FunctionTool(Function function) {
 			this(Type.FUNCTION, function);
 		}
@@ -359,7 +357,6 @@ public class ZhiPuAiApi {
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
 			 */
-			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}

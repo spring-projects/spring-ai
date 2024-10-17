@@ -22,17 +22,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.util.Assert;
+
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.util.Assert;
 
 /**
  * The configuration information for a chat completions request. Completions support a
@@ -145,7 +144,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * default. Use the enableFunctions to set the functions from the registry to be used
 	 * by the ChatModel chat completion requests.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
@@ -160,7 +158,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * functions is set in a prompt options, then the enabled functions are only active
 	 * for the duration of this prompt execution.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
@@ -194,11 +191,9 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * If provided, the configuration options for available Azure OpenAI chat
 	 * enhancements.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private AzureChatEnhancementConfiguration enhancements;
 
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 

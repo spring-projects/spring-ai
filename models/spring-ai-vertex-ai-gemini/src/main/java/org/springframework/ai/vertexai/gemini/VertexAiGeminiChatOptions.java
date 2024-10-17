@@ -32,7 +32,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -96,7 +95,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
@@ -109,7 +107,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
@@ -122,7 +119,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
