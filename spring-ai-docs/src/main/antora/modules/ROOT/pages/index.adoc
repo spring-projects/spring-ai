@@ -9,7 +9,8 @@ The project was founded with the belief that the next wave of Generative AI appl
 
 NOTE: Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
 
-image::spring-ai-integration-diagram2.svg[Integration Problem, width=500, align="center"]
+// image::spring-ai-integration-diagram2.svg[Integration Problem, width=500, align="center"]
+image::spring-ai-integration-diagram2.svg[Interactive,500,opts=interactive]
 
 Spring AI provides abstractions that serve as the foundation for developing AI applications.
 These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.

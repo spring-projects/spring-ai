@@ -5,6 +5,7 @@
 ** xref:api/advisors.adoc[Advisors]
 * xref:api/index.adoc[AI Models]
 ** xref:api/chatmodel.adoc[Chat Models]
+*** xref:api/chat/comparison.adoc[Chat Models Comparison]
 *** xref:api/bedrock-chat.adoc[Amazon Bedrock]
 **** xref:api/chat/bedrock/bedrock-anthropic3.adoc[Anthropic3]
 **** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic2]
@@ -91,7 +92,7 @@
 ** xref:api/vectordbs/typesense.adoc[]
 ** xref:api/vectordbs/weaviate.adoc[]
 
-* xref:observabilty/index.adoc[]
+* xref:observability/index.adoc[]
 * xref:api/prompt.adoc[]
 * xref:api/structured-output-converter.adoc[Structured Output]
 * xref:api/functions.adoc[Function Calling]

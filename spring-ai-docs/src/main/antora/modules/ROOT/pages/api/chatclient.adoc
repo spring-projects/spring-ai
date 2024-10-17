@@ -488,7 +488,7 @@ public class CustomerSupportAssistant {
 The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the `ChatClient`.
 This can be useful for debugging and monitoring your AI interactions.
 
-TIP: Spring AI supports observability for LLM and vector store interactions. Refer to the xref:observabilty/index.adoc[Observability] guide for more information.
+TIP: Spring AI supports observability for LLM and vector store interactions. Refer to the xref:observability/index.adoc[Observability] guide for more information.
 
 To enable logging, add the `SimpleLoggerAdvisor` to the advisor chain when creating your ChatClient.
 It's recommended to add it toward the end of the chain:

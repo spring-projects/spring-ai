@@ -11,6 +11,8 @@ This design aligns with Spring's philosophy of modularity and interchangeability
 Also with the help of companion classes like `Prompt` for input encapsulation and `ChatResponse` for output handling, the Chat Model API unifies the communication with AI Models.
 It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
 
+You can find more about available implementations in the xref:api/chatmodel.adoc#_available_implementations[Available Implementations] section as well as detailed comparison in the xref:api/chat/comparison.adoc[Chat Models Comparison] section.
+
 == API Overview
 
 This section provides a guide to the Spring AI Chat Model API interface and associated classes.

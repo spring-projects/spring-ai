@@ -58,7 +58,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Anthropic chat model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -77,7 +77,7 @@ NOTE: currently the retry policies are not applicable for the streaming API.
 
 The prefix `spring.ai.anthropic` is used as the property prefix that lets you connect to Anthropic.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -92,7 +92,7 @@ the output tokens limit is increased from `4096` to `8192` tokens (for claude-3-
 
 The prefix `spring.ai.anthropic.chat` is the property prefix that lets you configure the chat model implementation for Anthropic.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

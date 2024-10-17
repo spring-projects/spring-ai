@@ -1,4 +1,4 @@
-<= MiniMax Chat
+= MiniMax Chat
 
 Spring AI supports the various AI language models from MiniMax. You can interact with MiniMax language models and create a multilingual conversational assistant based on MiniMax models.
 
