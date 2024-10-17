@@ -40,7 +40,7 @@ dependencies {
 
 The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you connect to watsonx.ai.
 
-[cols="4,3,3"]
+[cols="4,3,3", stripes=even]
 |====
 | Property | Description | Default
 
@@ -55,7 +55,7 @@ The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you c
 
 The prefix `spring.ai.watsonx.ai.chat` is the property prefix that lets you configure the chat model implementation for Watsonx.AI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

@@ -55,7 +55,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the QianFan Chat client.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -72,7 +72,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.qianfan` is used as the property prefix that lets you connect to QianFan.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -85,7 +85,7 @@ The prefix `spring.ai.qianfan` is used as the property prefix that lets you conn
 
 The prefix `spring.ai.qianfan.chat` is the property prefix that lets you configure the chat client implementation for QianFan.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

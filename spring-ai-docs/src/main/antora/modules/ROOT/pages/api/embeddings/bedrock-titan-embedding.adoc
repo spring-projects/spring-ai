@@ -60,7 +60,7 @@ export SPRING_AI_BEDROCK_TITAN_EMBEDDING_ENABLED=true
 
 The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
 
-[cols="3,4,1"]
+[cols="3,4,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -71,7 +71,7 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 
 The prefix `spring.ai.bedrock.titan.embedding` (defined in `BedrockTitanEmbeddingProperties`) is the property prefix that configures the embedding model implementation for Titan.
 
-[cols="3,4,1"]
+[cols="3,4,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.bedrock.titan.embedding.enabled              | Enable or disable support for Titan  embedding | false

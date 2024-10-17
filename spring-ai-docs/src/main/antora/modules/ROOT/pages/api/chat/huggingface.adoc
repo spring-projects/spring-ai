@@ -52,7 +52,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.huggingface` is the property prefix that lets you configure the chat model implementation for Hugging Face.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.huggingface.chat.api-key    | API Key to authenticate with the Inference Endpoint.  |  -

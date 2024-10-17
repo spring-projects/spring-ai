@@ -62,7 +62,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that lets you connect to VertexAI Embedding API.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -74,7 +74,7 @@ The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that l
 
 The prefix `spring.ai.vertex.ai.embedding.multimodal` is the property prefix that lets you configure the embedding model implementation for VertexAI Multimodal Embedding.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -117,8 +117,8 @@ Next, create a `VertexAiMultimodalEmbeddingModel` and use it for embeddings gene
 
 [source,java]
 ----
-VertexAiEmbeddigConnectionDetails connectionDetails = 
-    VertexAiEmbeddigConnectionDetails.builder()
+VertexAiEmbeddingConnectionDetails connectionDetails = 
+    VertexAiEmbeddingConnectionDetails.builder()
         .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
         .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
         .build();

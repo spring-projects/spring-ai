@@ -57,7 +57,7 @@ It includes the Ollama request (advanced) parameters such as the `model`, `keep-
 
 Here are the advanced request parameter for the Ollama embedding model:
 
-[cols="4,5,1"]
+[cols="4,5,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.ollama.embedding.enabled      | Enables the Ollama embedding model auto-configuration. | true
@@ -70,7 +70,7 @@ You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] typ
 
 The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
 
-[cols="4,5,1"]
+[cols="4,5,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.ollama.embedding.options.numa              | Whether to use NUMA.                                           | false

@@ -43,7 +43,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.ollama` is the property prefix to configure the connection to Ollama.
 
-[cols="3,6,1"]
+[cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -55,7 +55,7 @@ It includes the Ollama request (advanced) parameters such as the `model`, `keep-
 
 Here are the advanced request parameter for the Ollama chat model:
 
-[cols="3,6,1"]
+[cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -68,7 +68,7 @@ Here are the advanced request parameter for the Ollama chat model:
 
 The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on the link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama Types Defaults].
 
-[cols="3,6,1"]
+[cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false

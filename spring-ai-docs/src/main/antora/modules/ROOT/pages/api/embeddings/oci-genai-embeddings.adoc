@@ -40,7 +40,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.oci.genai` is the property prefix to configure the connection to OCI GenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -60,7 +60,7 @@ The prefix `spring.ai.oci.genai` is the property prefix to configure the connect
 
 The prefix `spring.ai.oci.genai.embedding` is the property prefix that configures the `EmbeddingModel` implementation for OCI GenAI
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

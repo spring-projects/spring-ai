@@ -69,7 +69,7 @@ The prefix `spring.ai.vertex.ai` is used as the property prefix that lets you co
 
 The prefix `spring.ai.vertex.ai.embedding` is the property prefix that lets you configure the embedding model implementation for VertexAI Chat.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

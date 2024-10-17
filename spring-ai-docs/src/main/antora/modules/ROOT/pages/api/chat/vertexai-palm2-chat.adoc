@@ -58,7 +58,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.vertex.ai` is used as the property prefix that lets you connect to VertexAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -68,7 +68,7 @@ The prefix `spring.ai.vertex.ai` is used as the property prefix that lets you co
 
 The prefix `spring.ai.vertex.ai.chat` is the property prefix that lets you configure the chat model implementation for VertexAI Chat.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

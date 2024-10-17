@@ -53,7 +53,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Mistral AI Embedding model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -70,7 +70,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.mistralai` is used as the property prefix that lets you connect to MistralAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -82,7 +82,7 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 
 The prefix `spring.ai.mistralai.embedding` is property prefix that configures the `EmbeddingModel` implementation for MistralAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

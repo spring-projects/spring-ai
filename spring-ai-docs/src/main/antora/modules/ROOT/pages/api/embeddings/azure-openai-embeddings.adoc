@@ -85,7 +85,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.azure.openai` is the property prefix to configure the connection to Azure OpenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -99,7 +99,7 @@ With this configuraiton the `spring.ai.azure.openai.embedding.options.deployment
 
 The prefix `spring.ai.azure.openai.embedding` is the property prefix that configures the `EmbeddingModel` implementation for Azure OpenAI
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 

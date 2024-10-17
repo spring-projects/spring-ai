@@ -46,7 +46,7 @@ Use the `spring.ai.postgresml.embedding.options.*` properties to configure your 
 
 The prefix `spring.ai.postgresml.embedding` is property prefix that configures the `EmbeddingModel` implementation for PostgresML embeddings.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.postgresml.embedding.enabled | Enable PostgresML embedding model.  | true
