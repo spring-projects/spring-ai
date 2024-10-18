@@ -110,7 +110,7 @@ It is a best practice to annotate the request object with information such that 
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanIT.java[PaymentStatusBeanIT.java] demonstrates this approach.
 
-TIP: The Mistral AI link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanOpenAiIT[PaymentStatusBeanOpenAiIT] implements the same function using the OpenAI API.
+TIP: The Mistral AI link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanOpenAiIT.java[PaymentStatusBeanOpenAiIT] implements the same function using the OpenAI API.
 Mistral AI is almost identical to OpenAI in this regard.
 
 ==== FunctionCallback Wrapper
