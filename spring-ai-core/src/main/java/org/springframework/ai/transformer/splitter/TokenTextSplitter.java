@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
 /**
  * @author Raphael Yu
  * @author Christian Tzolov
+ * @author Ricken Bazolo
  */
 public class TokenTextSplitter extends TextSplitter {
 
@@ -36,30 +37,41 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private final Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
 
+	private final static int DEFAULT_CHUNK_SIZE = 800;
+
+	private final static int MIN_CHUNK_SIZE_CHARS = 350;
+
+	private final static int MIN_CHUNK_LENGTH_TO_EMBED = 5;
+
+	private final static int MAX_NUM_CHUNKS = 10000;
+
+	private final static boolean KEEP_SEPARATOR = true;
+
 	// The target size of each text chunk in tokens
-	private int defaultChunkSize = 800;
+	private final int chunkSize;
 
 	// The minimum size of each text chunk in characters
-	private int minChunkSizeChars = 350;
+	private final int minChunkSizeChars;
 
 	// Discard chunks shorter than this
-	private int minChunkLengthToEmbed = 5;
+	private final int minChunkLengthToEmbed;
 
 	// The maximum number of chunks to generate from a text
-	private int maxNumChunks = 10000;
+	private final int maxNumChunks;
 
-	private boolean keepSeparator = true;
+	private final boolean keepSeparator;
 
 	public TokenTextSplitter() {
+		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, KEEP_SEPARATOR);
 	}
 
 	public TokenTextSplitter(boolean keepSeparator) {
-		this.keepSeparator = keepSeparator;
+		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, keepSeparator);
 	}
 
-	public TokenTextSplitter(int defaultChunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
+	public TokenTextSplitter(int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
 			boolean keepSeparator) {
-		this.defaultChunkSize = defaultChunkSize;
+		this.chunkSize = chunkSize;
 		this.minChunkSizeChars = minChunkSizeChars;
 		this.minChunkLengthToEmbed = minChunkLengthToEmbed;
 		this.maxNumChunks = maxNumChunks;
@@ -68,7 +80,7 @@ public class TokenTextSplitter extends TextSplitter {
 
 	@Override
 	protected List<String> splitText(String text) {
-		return doSplit(text, this.defaultChunkSize);
+		return doSplit(text, this.chunkSize);
 	}
 
 	protected List<String> doSplit(String text, int chunkSize) {
@@ -131,6 +143,57 @@ public class TokenTextSplitter extends TextSplitter {
 		var tokensIntArray = new IntArrayList(tokens.size());
 		tokens.forEach(tokensIntArray::add);
 		return this.encoding.decode(tokensIntArray);
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private int chunkSize;
+
+		private int minChunkSizeChars;
+
+		private int minChunkLengthToEmbed;
+
+		private int maxNumChunks;
+
+		private boolean keepSeparator;
+
+		private Builder() {
+		}
+
+		public Builder withChunkSize(int chunkSize) {
+			this.chunkSize = chunkSize;
+			return this;
+		}
+
+		public Builder withMinChunkSizeChars(int minChunkSizeChars) {
+			this.minChunkSizeChars = minChunkSizeChars;
+			return this;
+		}
+
+		public Builder withMinChunkLengthToEmbed(int minChunkLengthToEmbed) {
+			this.minChunkLengthToEmbed = minChunkLengthToEmbed;
+			return this;
+		}
+
+		public Builder withMaxNumChunks(int maxNumChunks) {
+			this.maxNumChunks = maxNumChunks;
+			return this;
+		}
+
+		public Builder withKeepSeparator(boolean keepSeparator) {
+			this.keepSeparator = keepSeparator;
+			return this;
+		}
+
+		public TokenTextSplitter build() {
+			return new TokenTextSplitter(this.chunkSize, this.minChunkSizeChars, this.minChunkLengthToEmbed,
+					this.maxNumChunks, this.keepSeparator);
+		}
+
 	}
 
 }
