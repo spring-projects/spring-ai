@@ -101,7 +101,7 @@ Next, you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties 
 For more information, refer to the documentation below for each supported model.
 
 * xref:api/chat/bedrock/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic 2 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
-* xref:api/chat/bedrock/bedrock-anthropic3.adoc[Spring AI Bedrock Anthropic 3 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-anthropic3.adoc[Spring AI Bedrock Anthropic 3 Chat]: `spring.ai.bedrock.anthropic3.chat.enabled=true`
 * xref:api/chat/bedrock/bedrock-llama.adoc[Spring AI Bedrock Llama Chat]: `spring.ai.bedrock.llama.chat.enabled=true`
 * xref:api/chat/bedrock/bedrock-cohere.adoc[Spring AI Bedrock Cohere Chat]: `spring.ai.bedrock.cohere.chat.enabled=true`
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
