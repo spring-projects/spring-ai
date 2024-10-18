@@ -1,7 +1,13 @@
 [[upgrade-notes]]
 = Upgrading Notes
 
-== Upgrading to 1.0.0.RC1
+== Upgrading to 1.0.0.M4
+
+* The `SpeechModel` API, previously living in the `spring-ai-openai` module, has been generalized
+and consolidated in the `spring-ai-core` module, ready for supporting more implementations.
+As a consequence, the `OpenAiSpeechModel` implementation has been refactored to implement the new APIs.
+
+== Upgrading to 1.0.0.M3
 
 * The type of the portable chat options (`frequencyPenalty`, `presencePenalty`, `temperature`, `topP`) has been changed from `Float` to `Double`.
 

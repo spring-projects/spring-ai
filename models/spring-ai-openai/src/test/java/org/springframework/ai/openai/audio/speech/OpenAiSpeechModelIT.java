@@ -18,6 +18,9 @@ package org.springframework.ai.openai.audio.speech;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.audio.speech.SpeechPrompt;
+import org.springframework.ai.audio.speech.SpeechResponse;
+import org.springframework.ai.audio.speech.SpeechResponseMetadata;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -48,7 +51,6 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	void shouldProduceAudioBytesDirectlyFromMessage() {
 		byte[] audioBytes = speechModel.call("Today is a wonderful day to build something people love!");
 		assertThat(audioBytes).hasSizeGreaterThan(0);
-
 	}
 
 	@Test
@@ -59,14 +61,18 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
 			.build();
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
+
+		SpeechPrompt speechPrompt = SpeechPrompt.builder()
+			.withMessage("Today is a wonderful day to build something people love!")
+			.withSpeechOptions(speechOptions)
+			.build();
+
 		SpeechResponse response = speechModel.call(speechPrompt);
+
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(audioBytes).hasSizeGreaterThan(0);
-
 	}
 
 	@Test
@@ -77,20 +83,24 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
 			.build();
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
-		SpeechResponse response = speechModel.call(speechPrompt);
-		OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
-		assertThat(metadata).isNotNull();
-		assertThat(metadata.getRateLimit()).isNotNull();
-		assertThat(metadata.getRateLimit().getRequestsLimit()).isPositive();
-		assertThat(metadata.getRateLimit().getRequestsLimit()).isPositive();
 
+		SpeechPrompt speechPrompt = SpeechPrompt.builder()
+			.withMessage("Today is a wonderful day to build something people love!")
+			.withSpeechOptions(speechOptions)
+			.build();
+
+		SpeechResponse response = speechModel.call(speechPrompt);
+
+		SpeechResponseMetadata metadata = response.getMetadata();
+		assertThat(metadata).isNotNull();
+		assertThat(metadata).isInstanceOf(OpenAiAudioSpeechResponseMetadata.class);
+		assertThat(((OpenAiAudioSpeechResponseMetadata) metadata).getRateLimit()).isNotNull();
+		assertThat(((OpenAiAudioSpeechResponseMetadata) metadata).getRateLimit().getRequestsLimit()).isPositive();
+		assertThat(((OpenAiAudioSpeechResponseMetadata) metadata).getRateLimit().getRequestsLimit()).isPositive();
 	}
 
 	@Test
 	void shouldStreamNonEmptyResponsesForValidSpeechPrompts() {
-
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 			.withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
 			.withSpeed(SPEED)
@@ -98,10 +108,14 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
 			.build();
 
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
+		SpeechPrompt speechPrompt = SpeechPrompt.builder()
+			.withMessage("Today is a wonderful day to build something people love!")
+			.withSpeechOptions(speechOptions)
+			.build();
+
 		Flux<SpeechResponse> responseFlux = speechModel.stream(speechPrompt);
 		assertThat(responseFlux).isNotNull();
+
 		List<SpeechResponse> responses = responseFlux.collectList().block();
 		assertThat(responses).isNotNull();
 		responses.forEach(response -> {

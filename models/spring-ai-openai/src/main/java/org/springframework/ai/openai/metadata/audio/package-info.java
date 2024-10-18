@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,9 @@
  * limitations under the License.
  */
 
+@NonNullApi
+@NonNullFields
 package org.springframework.ai.openai.metadata.audio;
 
-import org.springframework.ai.model.ResultMetadata;
-
-public interface OpenAiAudioSpeechMetadata extends ResultMetadata {
-
-	OpenAiAudioSpeechMetadata NULL = OpenAiAudioSpeechMetadata.create();
-
-	/**
-	 * Factory method used to construct a new {@link OpenAiAudioSpeechMetadata}
-	 * @return a new {@link OpenAiAudioSpeechMetadata}
-	 */
-	static OpenAiAudioSpeechMetadata create() {
-		return new OpenAiAudioSpeechMetadata() {
-		};
-	}
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.audio.speech;
+package org.springframework.ai.audio.speech;
 
 import org.springframework.ai.model.Model;
 
 /**
- * The {@link SpeechModel} interface provides a way to interact with the OpenAI
- * Text-to-Speech (TTS) API. It allows you to convert text input into lifelike spoken
- * audio.
+ * API for interacting with AI models specialized in speech synthesis, converting textual
+ * input into lifelike spoken audio.
  *
  * @author Ahmed Yousri
- * @since 1.0.0-M1
+ * @author Thomas Vitale
+ * @since 1.0.0
  */
 @FunctionalInterface
 public interface SpeechModel extends Model<SpeechPrompt, SpeechResponse> {
@@ -35,16 +35,16 @@ public interface SpeechModel extends Model<SpeechPrompt, SpeechResponse> {
 	 * @return the resulting audio bytes
 	 */
 	default byte[] call(String message) {
-		SpeechPrompt prompt = new SpeechPrompt(message);
+		SpeechPrompt prompt = SpeechPrompt.builder().withMessage(message).build();
 		return call(prompt).getResult().getOutput();
 	}
 
 	/**
-	 * Sends a speech request to the OpenAI TTS API and returns the resulting speech
-	 * response.
-	 * @param request the speech prompt containing the input text and other parameters
+	 * Sends a speech request to the AI model and returns the resulting speech response.
+	 * @param speechPrompt the speech prompt containing the input text and other
+	 * parameters
 	 * @return the speech response containing the generated audio
 	 */
-	SpeechResponse call(SpeechPrompt request);
+	SpeechResponse call(SpeechPrompt speechPrompt);
 
 }
