@@ -73,7 +73,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-huggingface</artifactId>
-			<version>${project.parent.version}</version>
+			<version>1.0.0.M1</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -387,8 +387,15 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- test dependencies -->
+		<!-- Azure Cosmos DB vector store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
 
+		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
@@ -515,6 +522,12 @@
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
+			<artifactId>azure</artifactId>
+			<version>1.20.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
 			<artifactId>weaviate</artifactId>
 			<scope>test</scope>
 		</dependency>
@@ -545,7 +558,6 @@
 			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
 
 </project>
