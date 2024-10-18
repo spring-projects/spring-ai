@@ -40,6 +40,8 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
+	private int order;
+
 	public static final Function<AdvisedRequest, String> DEFAULT_REQUEST_TO_STRING = (request) -> {
 		return request.toString();
 	};
@@ -53,13 +55,18 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 	private final Function<ChatResponse, String> responseToString;
 
 	public SimpleLoggerAdvisor() {
-		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING);
+		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING, 0);
+	}
+
+	public SimpleLoggerAdvisor(int order) {
+		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING, order);
 	}
 
 	public SimpleLoggerAdvisor(Function<AdvisedRequest, String> requestToString,
-			Function<ChatResponse, String> responseToString) {
+			Function<ChatResponse, String> responseToString, int order) {
 		this.requestToString = requestToString;
 		this.responseToString = responseToString;
+		this.order = order;
 	}
 
 	@Override
@@ -69,7 +76,7 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 
 	@Override
 	public int getOrder() {
-		return 0;
+		return this.order;
 	}
 
 	private AdvisedRequest before(AdvisedRequest request) {
