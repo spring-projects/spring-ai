@@ -89,6 +89,14 @@ public class SimpleLoggerAdvisorTests {
 		validate(content, output);
 	}
 
+	@Test
+	public void loggingOrder() {
+
+		var loggerAdvisor = new SimpleLoggerAdvisor(1);
+
+		assertThat(loggerAdvisor.getOrder()).isEqualTo(1);
+	}
+
 	private void validate(String content, CapturedOutput output) {
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
