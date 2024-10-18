@@ -38,6 +38,7 @@ import org.springframework.util.CollectionUtils;
  * It can merge the streamed ChatCompletionChunk in case of function calling message.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 public class OpenAiStreamFunctionCallingHelper {
@@ -57,6 +58,7 @@ public class OpenAiStreamFunctionCallingHelper {
 		String id = (current.id() != null ? current.id() : previous.id());
 		Long created = (current.created() != null ? current.created() : previous.created());
 		String model = (current.model() != null ? current.model() : previous.model());
+		String serviceTier = (current.serviceTier() != null ? current.serviceTier() : previous.serviceTier());
 		String systemFingerprint = (current.systemFingerprint() != null ? current.systemFingerprint()
 				: previous.systemFingerprint());
 		String object = (current.object() != null ? current.object() : previous.object());
@@ -67,7 +69,7 @@ public class OpenAiStreamFunctionCallingHelper {
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object, usage);
+		return new ChatCompletionChunk(id, chunkChoices, created, model, serviceTier, systemFingerprint, object, usage);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
@@ -93,6 +95,8 @@ public class OpenAiStreamFunctionCallingHelper {
 		String name = (current.name() != null ? current.name() : previous.name());
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
 		String refusal = (current.refusal() != null ? current.refusal() : previous.refusal());
+		ChatCompletionMessage.AudioOutput audioOutput = (current.audioOutput() != null ? current.audioOutput()
+				: previous.audioOutput());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -122,7 +126,7 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
@@ -197,7 +201,7 @@ public class OpenAiStreamFunctionCallingHelper {
 					chunkChoice.logprobs()))
 			.toList();
 
-		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
+		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
 				chunk.systemFingerprint(), "chat.completion", null);
 	}
 

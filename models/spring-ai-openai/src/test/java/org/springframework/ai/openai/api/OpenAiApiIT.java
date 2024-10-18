@@ -16,12 +16,8 @@
 
 package org.springframework.ai.openai.api;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
@@ -29,12 +25,19 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.Embedding;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
+import reactor.core.publisher.Flux;
+
+import java.io.IOException;
+import java.util.Base64;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiApiIT {
@@ -69,6 +72,50 @@ public class OpenAiApiIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getBody().data()).hasSize(1);
 		assertThat(response.getBody().data().get(0).embedding()).hasSize(1536);
+	}
+
+	@Test
+	void inputAudio() throws IOException {
+		var audioData = new ClassPathResource("speech1.mp3").getContentAsByteArray();
+		List<ChatCompletionMessage.MediaContent> content = List
+			.of(new ChatCompletionMessage.MediaContent("What is this recording about?"),
+					new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.InputAudio(
+							Base64.getEncoder().encodeToString(audioData),
+							ChatCompletionMessage.MediaContent.InputAudio.Format.MP3)));
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(content, Role.USER);
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
+				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), 0.0);
+		ResponseEntity<ChatCompletion> response = openAiApi.chatCompletionEntity(chatCompletionRequest);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+
+		assertThat(response.getBody().usage().promptTokensDetails().audioTokens()).isGreaterThan(0);
+		assertThat(response.getBody().usage().completionTokenDetails().audioTokens()).isEqualTo(0);
+
+		assertThat(response.getBody().choices().get(0).message().content()).containsIgnoringCase("hobbits");
+	}
+
+	@Test
+	void outputAudio() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
+				"What is the magic spell to make objects fly?", Role.USER);
+		ChatCompletionRequest.AudioParameters audioParameters = new ChatCompletionRequest.AudioParameters(
+				ChatCompletionRequest.AudioParameters.Voice.NOVA,
+				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
+				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters);
+		ResponseEntity<ChatCompletion> response = openAiApi.chatCompletionEntity(chatCompletionRequest);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+
+		assertThat(response.getBody().usage().promptTokensDetails().audioTokens()).isEqualTo(0);
+		assertThat(response.getBody().usage().completionTokenDetails().audioTokens()).isGreaterThan(0);
+
+		assertThat(response.getBody().choices().get(0).message().audioOutput().data()).isNotNull();
+		assertThat(response.getBody().choices().get(0).message().audioOutput().transcript())
+			.containsIgnoringCase("leviosa");
 	}
 
 }

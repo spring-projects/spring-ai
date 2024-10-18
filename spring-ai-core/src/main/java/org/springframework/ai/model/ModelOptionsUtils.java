@@ -125,6 +125,20 @@ public abstract class ModelOptionsUtils {
 	}
 
 	/**
+	 * Converts the given object to a JSON string.
+	 * @param object the object to convert to a JSON string.
+	 * @return the JSON string.
+	 */
+	public static String toJsonStringPrettyPrinter(Object object) {
+		try {
+			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
 	 * Merges the source object into the target object and returns an object represented
 	 * by the given class. The JSON property names are used to match the fields to merge.
 	 * The source non-null values override the target values with the same field name. The
@@ -361,8 +375,8 @@ public abstract class ModelOptionsUtils {
 		}
 
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
-		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
-			// version of it).
+		// Required for OpenAPI 3.0 (at least Vertex AI version of it).
+		if (toUpperCaseTypeValues) {
 			toUpperCaseTypeValues(node);
 		}
 

@@ -433,6 +433,42 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(content).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	void multiModalityInputAudio(String modelName) {
+		var audioResource = new ClassPathResource("speech1.mp3");
+		var userMessage = new UserMessage("What is this recording about?",
+				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
+
+		ChatResponse response = chatModel
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+
+		logger.info(response.getResult().getOutput().getContent());
+		assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("hobbits");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	void streamingMultiModalityInputAudio(String modelName) {
+		var audioResource = new ClassPathResource("speech1.mp3");
+		var userMessage = new UserMessage("What is this recording about?",
+				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
+
+		Flux<ChatResponse> response = chatModel
+			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+
+		String content = response.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+		assertThat(content).containsIgnoringCase("hobbits");
+	}
+
 	@Test
 	void validateCallResponseMetadata() {
 		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getName();

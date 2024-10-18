@@ -48,6 +48,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -64,12 +65,12 @@ public class MessageTypeContentTests {
 	@Captor
 	ArgumentCaptor<MultiValueMap<String, String>> headersCaptor;
 
-	Flux<ChatCompletionChunk> fluxResponse = Flux
-		.generate(() -> new ChatCompletionChunk("id", List.of(), 0L, "model", "fp", "object", null), (state, sink) -> {
-			sink.next(state);
-			sink.complete();
-			return state;
-		});
+	Flux<ChatCompletionChunk> fluxResponse = Flux.generate(
+			() -> new ChatCompletionChunk("id", List.of(), 0l, "model", null, "fp", "object", null), (state, sink) -> {
+				sink.next(state);
+				sink.complete();
+				return state;
+			});
 
 	@BeforeEach
 	public void beforeEach() {
