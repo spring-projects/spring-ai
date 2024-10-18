@@ -281,8 +281,6 @@ public class PineconeVectorStoreIT {
 
 			return PineconeVectorStoreConfig.builder()
 				.withApiKey(System.getenv("PINECONE_API_KEY"))
-				.withEnvironment(PINECONE_ENVIRONMENT)
-				.withProjectId(PINECONE_PROJECT_ID)
 				.withIndexName(PINECONE_INDEX_NAME)
 				.withNamespace(PINECONE_NAMESPACE)
 				.withContentFieldName(CUSTOM_CONTENT_FIELD_NAME)
