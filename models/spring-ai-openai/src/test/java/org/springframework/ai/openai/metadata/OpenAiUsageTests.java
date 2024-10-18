@@ -56,7 +56,7 @@ class OpenAiUsageTests {
 
 	@Test
 	void whenCompletionTokenDetailsIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null);
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null);
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getTotalTokens()).isEqualTo(300);
 		assertThat(usage.getReasoningTokens()).isEqualTo(0);
@@ -65,7 +65,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenReasoningTokensIsNull() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
-				new OpenAiApi.Usage.CompletionTokenDetails(null));
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null), null);
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getReasoningTokens()).isEqualTo(0);
 	}
@@ -73,7 +73,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenCompletionTokenDetailsIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
-				new OpenAiApi.Usage.CompletionTokenDetails(50));
+				new OpenAiApi.Usage.CompletionTokenDetails(null, 50), null);
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getReasoningTokens()).isEqualTo(50);
 	}

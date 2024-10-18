@@ -75,6 +75,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -141,7 +142,7 @@ public class OpenAiRetryTests {
 		var choice = new ChatCompletion.Choice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", List.of(choice), 666l, "model", null, null,
-				new OpenAiApi.Usage(10, 10, 10));
+				null, new OpenAiApi.Usage(10, 10, 10));
 
 		when(openAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class), any()))
 			.thenThrow(new TransientAiException("Transient Error 1"))
@@ -170,7 +171,7 @@ public class OpenAiRetryTests {
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666l, "model", null,
-				null, null);
+				null, null, null);
 
 		when(openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 			.thenThrow(new TransientAiException("Transient Error 1"))
