@@ -168,7 +168,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AzureOpenAiChatOptions.builder()
-            .withModel("gpt-4-o")
+            .withDeploymentName("gpt-4-o")
             .withTemperature(0.4)
         .build()
     ));
@@ -198,7 +198,7 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 ----
 URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 String response = ChatClient.create(chatModel).prompt()
-        .options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt4o").build())
+        .options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
         .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
         .call()
         .content();
