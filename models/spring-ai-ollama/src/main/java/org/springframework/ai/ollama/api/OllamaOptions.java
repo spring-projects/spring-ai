@@ -309,7 +309,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * Strategy for pulling models at run-time.
 	 */
 	@JsonIgnore
-	private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
+	private PullModelStrategy pullModelStrategy;
 
 	public static OllamaOptions builder() {
 		return new OllamaOptions();

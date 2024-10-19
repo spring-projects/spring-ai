@@ -163,7 +163,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
 	private void initializeModelIfEnabled(String model, PullModelStrategy pullModelStrategy) {
-		if (!PullModelStrategy.NEVER.equals(pullModelStrategy)) {
+		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
 			this.modelManager.pullModel(model, pullModelStrategy);
 		}
 	}

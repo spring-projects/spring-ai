@@ -48,6 +48,10 @@ public class OllamaModelManager {
 	public OllamaModelManager(OllamaApi ollamaApi, ModelManagementOptions options) {
 		this.ollamaApi = ollamaApi;
 		this.options = options;
+
+		if (!CollectionUtils.isEmpty(options.additionalModels())) {
+			options.additionalModels().forEach(this::pullModel);
+		}
 	}
 
 	public boolean isModelAvailable(String modelName) {

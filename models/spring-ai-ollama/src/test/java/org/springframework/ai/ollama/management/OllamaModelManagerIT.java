@@ -23,6 +23,8 @@ import org.springframework.ai.ollama.api.OllamaModel;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,6 +75,23 @@ class OllamaModelManagerIT extends BaseOllamaIT {
 
 		model = "all-minilm:latest";
 		modelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
+		isModelAvailable = modelManager.isModelAvailable(model);
+		assertThat(isModelAvailable).isTrue();
+
+		modelManager.deleteModel(model);
+		isModelAvailable = modelManager.isModelAvailable(model);
+		assertThat(isModelAvailable).isFalse();
+	}
+
+	@Test
+	public void pullAdditionalModels() {
+		var model = "all-minilm";
+		var isModelAvailable = modelManager.isModelAvailable(model);
+		assertThat(isModelAvailable).isFalse();
+
+		new OllamaModelManager(buildOllamaApi(),
+				new ModelManagementOptions(PullModelStrategy.WHEN_MISSING, List.of(model), Duration.ofMinutes(5), 0));
+
 		isModelAvailable = modelManager.isModelAvailable(model);
 		assertThat(isModelAvailable).isTrue();
 

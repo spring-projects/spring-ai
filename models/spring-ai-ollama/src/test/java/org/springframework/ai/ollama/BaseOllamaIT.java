@@ -3,6 +3,7 @@ package org.springframework.ai.ollama;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.util.StringUtils;
 import org.testcontainers.ollama.OllamaContainer;
 
 public class BaseOllamaIT {
@@ -31,6 +32,10 @@ public class BaseOllamaIT {
 		return false;
 	}
 
+	public static OllamaApi buildOllamaApi() {
+		return buildOllamaApiWithModel(null);
+	}
+
 	public static OllamaApi buildOllamaApiWithModel(String model) {
 		var baseUrl = "http://localhost:11434";
 		if (useTestcontainers) {
@@ -38,7 +43,9 @@ public class BaseOllamaIT {
 		}
 		var ollamaApi = new OllamaApi(baseUrl);
 
-		ensureModelIsPresent(ollamaApi, model);
+		if (StringUtils.hasText(model)) {
+			ensureModelIsPresent(ollamaApi, model);
+		}
 
 		return ollamaApi;
 	}
