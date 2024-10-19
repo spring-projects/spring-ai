@@ -143,9 +143,25 @@ public interface ChatOptions extends ModelOptions {
 
 Additionally, every model specific ChatModel/StreamingChatModel implementation can have its own options that can be passed to the AI model. For example, the OpenAI Chat Completion model has its own options like `logitBias`, `seed`, and `user`.
 
-This is a powerful feature that allows developers to use model-specific options when starting the application and then override them at runtime using the `Prompt` request:
+This is a powerful feature that allows developers to use model-specific options when starting the application and then override them at runtime using the `Prompt` request.
+
+Spring AI provides a sophisticated system for configuring and using Chat Models. 
+It allows for default configurations to be set at start-up, while also providing the flexibility to override these settings on a per-request basis. 
+This approach enables developers to easily work with different AI models and adjust parameters as needed, all within a consistent interface provided by the Spring AI framework.
+
+Following flow diagram illustrates how Spring AI handles the configuration and execution of Chat Models, combining start-up and runtime options:
 
 image::chat-options-flow.jpg[align="center", width="800px"]
+
+1. Start-up Configuration - The ChatModel/StreamingChatModel is initialized with "Start-Up" Chat Options.
+These options are set during the ChatModel initialization and are meant to provide default configurations.
+2. Runtime Configuration - For each request, the Prompt can contain a Runtime Chat Options: These can override the start-up options.
+3. Option Merging Process - The "Merge Options" step combines the start-up and runtime options.
+If runtime options are provided, they take precedence over the start-up options.
+4. Input Processing - The "Convert Input" step transforms the input instructions into native, model-specific formats.
+5. Output Processing - The "Convert Output" step transforms the model's response into a standardized `ChatResponse` format.
+
+The separation of start-up and runtime options allows for both global configurations and request-specific adjustments.
 
 [[ChatResponse]]
 === ChatResponse
@@ -197,9 +213,9 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 == Available Implementations
 
-The `ChatModel` and `StreamingChatModel` implementations are provided for the following Model providers:
+This diagram illustrates the unified interfaces, `ChatModel` and `StreamingChatModel`, are used for interacting with various AI chat models from different providers, allowing easy integration and switching between different AI services while maintaining a consistent API for the client application.
 
-image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
+image::spring-ai-chat-completions-clients.jpg[align="center", width="1000px"]
 
 * xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming & function-calling support)
@@ -216,11 +232,15 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 * xref:api/chat/mistralai-chat.adoc[Mistral AI Chat Completion] (streaming & function-calling support)
 * xref:api/chat/anthropic-chat.adoc[Anthropic Chat Completion] (streaming & function-calling support)
 
+TIP: Find a detailed comparison of the available Chat Models in the xref:api/chat/comparison.adoc[Chat Models Comparison] section.
+
 == Chat Model API
 
-The Spring AI Chat Model API is built on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations. The following class diagram illustrates the main classes and interfaces of the Spring AI Chat Model API.
+The Spring AI Chat Model API is built on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations.
+This allows an easy integration and switching between different AI services while maintaining a consistent API for the client application.
+The following class diagram illustrates the main classes and interfaces of the Spring AI Chat Model API.
 
-image::spring-ai-chat-api.jpg[align="center", width="900px"]
+image::spring-ai-chat-api.jpg[align="center", width="1000px"]
 
 // == Best Practices
 //
