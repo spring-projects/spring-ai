@@ -29,7 +29,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -57,12 +60,15 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	private final CosmosDBVectorStoreConfig properties;
 
+	private final BatchingStrategy batchingStrategy;
+
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
 			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel) {
 		super(observationRegistry, customObservationConvention);
 		this.cosmosClient = cosmosClient;
 		this.properties = properties;
+		this.batchingStrategy = new TokenCountBatchingStrategy();
 		cosmosClient.createDatabaseIfNotExists(properties.getDatabaseName()).block();
 
 		initializeContainer(properties.getContainerName(), properties.getDatabaseName(),
@@ -164,11 +170,14 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	@Override
 	public void doAdd(List<Document> documents) {
 
+		// Batch the documents based on the batching strategy
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID
 		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
 			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
-					mapCosmosDocument(doc, this.embeddingModel.embed(doc.getContent())), new PartitionKey(doc.getId()));
+					mapCosmosDocument(doc, doc.getEmbedding()), new PartitionKey(doc.getId()));
 			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
 																// with the operation
 		}).collect(Collectors.toList());
