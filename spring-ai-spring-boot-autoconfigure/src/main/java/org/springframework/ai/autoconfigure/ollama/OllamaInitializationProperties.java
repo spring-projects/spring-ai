@@ -19,6 +19,7 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Ollama initialization configuration properties.
@@ -35,6 +36,16 @@ public class OllamaInitializationProperties {
 	 * Whether to pull models at startup-time and how.
 	 */
 	private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
+
+	/**
+	 * Chat models initialization settings.
+	 */
+	private final ModelTypeInit chat = new ModelTypeInit();
+
+	/**
+	 * Embedding models initialization settings.
+	 */
+	private final ModelTypeInit embedding = new ModelTypeInit();
 
 	/**
 	 * How long to wait for a model to be pulled.
@@ -54,6 +65,14 @@ public class OllamaInitializationProperties {
 		this.pullModelStrategy = pullModelStrategy;
 	}
 
+	public ModelTypeInit getChat() {
+		return chat;
+	}
+
+	public ModelTypeInit getEmbedding() {
+		return embedding;
+	}
+
 	public Duration getTimeout() {
 		return timeout;
 	}
@@ -68,6 +87,37 @@ public class OllamaInitializationProperties {
 
 	public void setMaxRetries(int maxRetries) {
 		this.maxRetries = maxRetries;
+	}
+
+	public static class ModelTypeInit {
+
+		/**
+		 * Include this type of models in the initialization task.
+		 */
+		private boolean include = true;
+
+		/**
+		 * Additional models to initialize besides the ones configured via default
+		 * properties.
+		 */
+		private List<String> additionalModels = List.of();
+
+		public boolean isInclude() {
+			return include;
+		}
+
+		public void setInclude(boolean include) {
+			this.include = include;
+		}
+
+		public List<String> getAdditionalModels() {
+			return additionalModels;
+		}
+
+		public void setAdditionalModels(List<String> additionalModels) {
+			this.additionalModels = additionalModels;
+		}
+
 	}
 
 }

@@ -51,8 +51,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(Include.NON_NULL)
 public class OllamaOptions implements FunctionCallingOptions, ChatOptions, EmbeddingOptions {
 
-	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
-
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
 	// Following fields are options which must be set when the model is loaded into
@@ -309,7 +307,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * Strategy for pulling models at run-time.
 	 */
 	@JsonIgnore
-	private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
+	private PullModelStrategy pullModelStrategy;
 
 	public static OllamaOptions builder() {
 		return new OllamaOptions();

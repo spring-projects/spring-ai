@@ -43,6 +43,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
@@ -379,7 +380,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
 	private void initializeModelIfEnabled(String model, PullModelStrategy pullModelStrategy) {
-		if (!PullModelStrategy.NEVER.equals(pullModelStrategy)) {
+		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
 			this.modelManager.pullModel(model, pullModelStrategy);
 		}
 	}
@@ -397,7 +398,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
+		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaModel.MISTRAL.id());
 
 		private FunctionCallbackContext functionCallbackContext;
 

@@ -25,6 +25,7 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -80,14 +81,18 @@ public class OllamaAutoConfiguration {
 			OllamaInitializationProperties initProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+		var chatModelPullStrategy = initProperties.getChat().isInclude() ? initProperties.getPullModelStrategy()
+				: PullModelStrategy.NEVER;
+
 		var chatModel = OllamaChatModel.builder()
 			.withOllamaApi(ollamaApi)
 			.withDefaultOptions(properties.getOptions())
 			.withFunctionCallbackContext(functionCallbackContext)
 			.withToolFunctionCallbacks(toolFunctionCallbacks)
 			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withModelManagementOptions(new ModelManagementOptions(initProperties.getPullModelStrategy(),
-					initProperties.getTimeout(), initProperties.getMaxRetries()))
+			.withModelManagementOptions(
+					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),
+							initProperties.getTimeout(), initProperties.getMaxRetries()))
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
@@ -102,12 +107,16 @@ public class OllamaAutoConfiguration {
 	public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingProperties properties,
 			OllamaInitializationProperties initProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
+		var embeddingModelPullStrategy = initProperties.getEmbedding().isInclude()
+				? initProperties.getPullModelStrategy() : PullModelStrategy.NEVER;
+
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.withOllamaApi(ollamaApi)
 			.withDefaultOptions(properties.getOptions())
 			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withModelManagementOptions(new ModelManagementOptions(initProperties.getPullModelStrategy(),
-					initProperties.getTimeout(), initProperties.getMaxRetries()))
+			.withModelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
+					initProperties.getEmbedding().getAdditionalModels(), initProperties.getTimeout(),
+					initProperties.getMaxRetries()))
 			.build();
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);

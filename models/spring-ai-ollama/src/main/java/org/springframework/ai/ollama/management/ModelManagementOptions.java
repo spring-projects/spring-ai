@@ -16,6 +16,7 @@
 package org.springframework.ai.ollama.management;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Options for managing models in Ollama.
@@ -23,8 +24,9 @@ import java.time.Duration;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record ModelManagementOptions(PullModelStrategy pullModelStrategy, Duration timeout, Integer maxRetries) {
+public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<String> additionalModels,
+		Duration timeout, Integer maxRetries) {
 	public static ModelManagementOptions defaults() {
-		return new ModelManagementOptions(PullModelStrategy.NEVER, Duration.ofMinutes(5), 0);
+		return new ModelManagementOptions(PullModelStrategy.NEVER, List.of(), Duration.ofMinutes(5), 0);
 	}
 }

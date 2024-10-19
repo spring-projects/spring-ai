@@ -121,7 +121,12 @@ public enum OllamaModel implements ChatModelDescription {
 	/**
 	 * A high-performing open embedding model with a large token context window.
 	 */
-	NOMIC_EMBED_TEXT("nomic-embed-text");
+	NOMIC_EMBED_TEXT("nomic-embed-text"),
+
+	/**
+	 * State-of-the-art large embedding model from mixedbread.ai
+	 */
+	MXBAI_EMBED_LARGE("mxbai-embed-large");
 
 	private final String id;
 

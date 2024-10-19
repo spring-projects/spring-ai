@@ -30,6 +30,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
@@ -163,7 +164,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
 	private void initializeModelIfEnabled(String model, PullModelStrategy pullModelStrategy) {
-		if (!PullModelStrategy.NEVER.equals(pullModelStrategy)) {
+		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
 			this.modelManager.pullModel(model, pullModelStrategy);
 		}
 	}
@@ -212,7 +213,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
+		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaModel.MXBAI_EMBED_LARGE.id());
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 

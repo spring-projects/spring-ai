@@ -72,6 +72,8 @@ Here are the properties for initializing the Ollama integration and xref:auto-pu
 | spring.ai.ollama.init.pull-model-strategy | Whether to pull models at startup-time and how. | `never`
 | spring.ai.ollama.init.timeout | How long to wait for a model to be pulled. | `5m`
 | spring.ai.ollama.init.max-retries | Maximum number of retries for the model pull operation. | `0`
+| spring.ai.ollama.init.chat.include | Include this type of models in the initialization task. | `true`
+| spring.ai.ollama.init.chat.additional-models | Additional models to initialize besides the ones configured via default properties. | `[]`
 |====
 
 === Chat Properties
@@ -188,6 +190,34 @@ spring:
 
 CAUTION: The application will not complete its initialization until all the models become available in Ollama. Depending on the model size and the speed of the Internet connection, your application might be slow at starting up.
 
+You can also initialize additional models at startup time, useful for those models used dynamically at runtime.
+
+[source,yaml]
+----
+spring:
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: always
+        chat:
+          additional-models:
+            - llama3.2
+            - qwen2.5
+----
+
+If you want to apply the pulling strategy only to other types of models, you can exclude the chat models from the initialization task.
+
+[source,yaml]
+----
+spring:
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: always
+        chat:
+          include: false
+----
+
 === Pulling models at runtime
 
 To enable auto-pulling of models at runtime, you can configure the `pullModelStrategy` option in your `OllamaOptions`:
@@ -205,7 +235,7 @@ ChatResponse response = chatModel.call(new Prompt(
 
 You can also configure this option using the following property: `spring.ai.ollama.chat.options.pull-model-strategy=always`.
 
-CAUTION: The time to process an incoming request might incur unexpected delays, waiting for the needed model to become available in Ollama. Depending on the model size and the speed of the Internet connection, your application might be slow at processing requests.
+CAUTION: The time to process an incoming request might incur unexpected delays, waiting for the needed model to become available in Ollama. Depending on the model size and the speed of the Internet connection, your application might be slow at processing requests. You might want to initialize these models at startup time instead, using the `spring.ai.ollama.init.chat.additional-models` property.
 
 == Function Calling
 
