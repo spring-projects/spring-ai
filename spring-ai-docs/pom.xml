@@ -13,23 +13,29 @@
     <build>
         <plugins>
 			<plugin>
-				<groupId>io.spring.maven.antora</groupId>
+				<groupId>org.antora</groupId>
 				<artifactId>antora-maven-plugin</artifactId>
-				<version>${io.spring.maven.antora-version}</version>
+				<version>1.0.0-alpha.4</version>
 				<extensions>true</extensions>
 				<configuration>
+					<options>
+						<option>--to-dir=target/antora/site</option>
+						<option>--stacktrace</option>
+						<option>--fetch</option>
+					</options>
 					<playbook>src/main/antora/antora-playbook.yml</playbook>
 					<packages>
+						<package>@antora/cli@3.2.0-alpha.6</package>
 						<package>@antora/atlas-extension@1.0.0-alpha.2</package>
-						<package>@antora/collector-extension@1.0.0-alpha.3</package>
+						<package>@antora/collector-extension@1.0.0-beta.1</package>
 						<package>@asciidoctor/tabs@1.0.0-beta.6</package>
 						<package>@springio/antora-extensions@1.14.2</package>
-						<package>@springio/asciidoctor-extensions@1.0.0-alpha.10</package>
+						<package>@springio/asciidoctor-extensions@1.0.0-alpha.12</package>
 						<package>@djencks/asciidoctor-mathjax@0.0.9</package>
 					</packages>
 				</configuration>
 			</plugin>
-			<plugin>
+			<!-- <plugin>
 				<groupId>io.spring.maven.antora</groupId>
 				<artifactId>antora-component-version-maven-plugin</artifactId>
 				<version>${io.spring.maven.antora-version}</version>
@@ -40,7 +46,7 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin> -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>

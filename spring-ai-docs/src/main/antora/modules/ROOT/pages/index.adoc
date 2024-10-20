@@ -1,6 +1,6 @@
 [[introduction]]
 
-image::spring_ai_logo_with_text.svg[Integration Problem, width=400, align="left"]
+image::spring_ai_logo_with_text.svg[Integration Problem, width=300, align="left"]
 
 The `Spring AI` project aims to streamline the development of applications that incorporate artificial intelligence functionality without unnecessary complexity.
 
@@ -9,8 +9,7 @@ The project was founded with the belief that the next wave of Generative AI appl
 
 NOTE: Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
 
-// image::spring-ai-integration-diagram2.svg[Integration Problem, width=500, align="center"]
-image::spring-ai-integration-diagram2.svg[Interactive,500,opts=interactive]
+image::spring-ai-integration-diagram-3.svg[Interactive,500,opts=interactive]
 
 Spring AI provides abstractions that serve as the foundation for developing AI applications.
 These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.

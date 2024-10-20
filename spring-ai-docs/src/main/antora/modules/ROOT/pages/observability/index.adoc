@@ -13,9 +13,10 @@ The `spring.ai.chat.client` observations are recorded when a ChatClient `call()`
 They measure the time spent performing the invocation and propagate the related tracing information.
 
 .Low Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.operation.name` | Always `framework`.
 |`gen_ai.system` | Always `spring_ai`.
 |`spring.ai.chat.client.stream` | Is the chat model response a stream - `true or false`
@@ -23,9 +24,10 @@ They measure the time spent performing the invocation and propagate the related 
 |===
 
 .High Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`spring.ai.chat.client.advisor.params` | Map of advisor parameters.
 |`spring.ai.chat.client.advisors` | List of configured chat client advisors.
 |`spring.ai.chat.client.system.params` |Chat client system parameters. Optional.
@@ -43,9 +45,10 @@ For those reasons, it is not exported by default.
 
 Spring AI supports exporting input data as span attributes across all tracing backends.
 
-[cols="6,3,1"]
+[cols="6,3,1", stripes=even]
 |====
 | Property | Description | Default
+
 | `spring.ai.chat.client.observations.include-input` |  Whether to include the input content in the observations. | `false`
 |====
 
@@ -57,9 +60,10 @@ The `spring.ai.advisor` observations are recorded when a call or stream around a
 They measure the time spent in the advisor (including the time spend on the inner advisors) and propagate the related tracing information.
 
 .Low Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.operation.name` | Always `framework`.
 |`gen_ai.system` | Always `spring_ai`.
 |`spring.ai.advisor.type` | Where the advisor applies it's logic in the request processing, one of `BEFORE`, `AFTER`, or `AROUND`.
@@ -67,9 +71,10 @@ They measure the time spent in the advisor (including the time spend on the inne
 |===
 
 .High Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`spring.ai.advisor.name`| Name of the advisor.
 |`spring.ai.advisor.order`| Advisor order in the advisor chain.
 |===
@@ -87,9 +92,10 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 
 
 .Low Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.operation.name` | The name of the operation being performed.
 |`gen_ai.system` | The model provider as identified by the client instrumentation.
 |`gen_ai.request.model` | The name of the model a request is being made to.
@@ -97,9 +103,10 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |===
 
 .High Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.request.frequency_penalty` | The frequency penalty setting for the model request.
 |`gen_ai.request.max_tokens` | The maximum number of tokens the model generates for a request.
 |`gen_ai.request.presence_penalty` | The presence penalty setting for the model request.
@@ -120,9 +127,10 @@ NOTE: For measuring user tokens, the previous table lists the values present in 
 Use the metric name `gen_ai.client.token.usage` that is provided by the `ChatModel`.
 
 .Events
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.content.prompt` | Event including the content of the chat prompt. Optional.
 |`gen_ai.content.completion` | Event including the content of the chat completion. Optional.
 |===
@@ -137,9 +145,10 @@ whereas data is exported as span attributes if you use an OpenZipkin tracing bac
 
 Furthermore, Spring AI supports logging chat prompt and completion data, useful for troubleshooting scenarios.
 
-[cols="6,3,1"]
+[cols="6,3,1", stripes=even]
 |====
 | Property | Description | Default
+
 | `spring.ai.chat.observations.include-prompt` | Include the prompt content in observations. `true` or `false` | `false`
 | `spring.ai.chat.observations.include-completion` | Include the completion content in observations. `true` or `false` | `false`
 | `spring.ai.chat.observations.include-error-logging` | Include error logging in observations. `true` or `false` | `false`
@@ -159,9 +168,10 @@ They measure the time spent on method completion and propagate the related traci
 IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
 
 .Low Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.operation.name` | The name of the operation being performed.
 |`gen_ai.system` | The model provider as identified by the client instrumentation.
 |`gen_ai.request.model` | The name of the model a request is being made to.
@@ -169,9 +179,10 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |===
 
 .High Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.request.embedding.dimensions` | The number of dimensions the resulting output embeddings have.
 |`gen_ai.usage.input_tokens` | The number of tokens used in the model input.
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
@@ -193,9 +204,10 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 
 
 .Low Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.operation.name`| The name of the operation being performed.
 |`gen_ai.system`| The model provider as identified by the client instrumentation.
 |`gen_ai.request.model`| The name of the model a request is being made to.
@@ -204,6 +216,7 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 .High Cardinality Keys
 |===
 |Name | Description
+
 |`gen_ai.request.image.response_format` | The format in which the generated image is returned.
 |`gen_ai.request.image.size` | The size of the image to generate.
 |`gen_ai.request.image.style` | The style of the image to generate.
@@ -219,9 +232,10 @@ NOTE: For measuring user tokens, the previous table lists the values present in 
 Use the metric name `gen_ai.client.token.usage` that is provided by the `ImageModel`.
 
 .Events
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`gen_ai.content.prompt` | Event including the content of the image prompt. Optional.
 |===
 
@@ -233,9 +247,10 @@ For those reasons, it is not exported by default.
 Spring AI supports exporting image prompt data as span events if you use an OpenTelemetry tracing backend,
 whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
 
-[cols="6,3,1"]
+[cols="6,3,1", stripes=even]
 |===
 | Property | Description | Default
+
 | `spring.ai.image.observations.include-prompt` | `true` or `false` | `false`
 |===
 
@@ -249,18 +264,20 @@ The `db.vector.client.operation` observations are recorded when interacting with
 They measure the time spent on the `query`, `add` and `remove` operations and propagate the related tracing information.
 
 .Low Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`db.operation.name` | The name of the operation or command being executed. One of `add`, `delete`, or `query`.
 |`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `hana`, `simple`.
 |`spring.ai.kind` | The kind of framework API in Spring AI: `vector_store`.
 |===
 
 .High Cardinality Keys
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`db.collection.name` | The name of a collection (table, container) within the database.
 |`db.namespace` | The name of the database, fully qualified within the server address and port.
 |`db.record.id` | The record identifier if present.
@@ -275,9 +292,10 @@ They measure the time spent on the `query`, `add` and `remove` operations and pr
 |===
 
 .Events
-[cols="a,a"]
+[cols="a,a", stripes=even]
 |===
 |Name | Description
+
 |`db.vector.content.query.response` | Event including the vector search response data. Optional.
 |===
 
@@ -289,9 +307,10 @@ For those reasons, it is not exported by default.
 Spring AI supports exporting vector search response data as span events if you use an OpenTelemetry tracing backend,
 whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
 
-[cols="6,3,1"]
+[cols="6,3,1", stripes=even]
 |===
 | Property | Description | Default
+
 | `spring.ai.vectorstore.observations.include-query-response` | `true` or `false` | `false`
 |===
 
