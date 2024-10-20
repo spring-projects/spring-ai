@@ -32,6 +32,8 @@ asciidoc:
   extensions:
   - '@asciidoctor/tabs'
   - '@springio/asciidoctor-extensions'
+  - '@springio/asciidoctor-extensions/javadoc-extension'
+  - '@springio/asciidoctor-extensions/include-code-extension'
   - '@djencks/asciidoctor-mathjax'
 urls:
   latest_version_segment_strategy: redirect:to
@@ -40,7 +42,7 @@ urls:
 ui:
   supplemental_files: ./supplemental-ui
   bundle:
-    url: https://github.com/spring-io/antora-ui-spring/releases/download/v0.4.7/ui-bundle.zip
+    url: https://github.com/spring-io/antora-ui-spring/releases/download/v0.4.17/ui-bundle.zip
     snapshot: true
 runtime:
   log:

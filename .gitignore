@@ -20,4 +20,4 @@ node/
 package-lock.json
 package.json
 build/
-
+.vscode/
