@@ -16,6 +16,7 @@
 // @formatter:off
 package org.springframework.ai.bedrock.jurassic2.api;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 
@@ -108,6 +109,21 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 									ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new Ai21Jurassic2ChatBedrockApi instance.
+	 *
+	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 * @param endpointOverride The endpoint to use.
+	 */
+	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+									   ObjectMapper objectMapper, Duration timeout, URI endpointOverride) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout, endpointOverride);
 	}
 
 	/**
