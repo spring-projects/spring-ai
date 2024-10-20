@@ -40,7 +40,6 @@
 						<option>--fetch</option>
 					</options>					
 					<packages>
-						<package>@antora/cli@3.2.0-alpha.6</package>
 						<package>@antora/atlas-extension@1.0.0-alpha.2</package>
 						<package>@antora/collector-extension@1.0.0-beta.1</package>
 						<package>@asciidoctor/tabs@1.0.0-beta.6</package>
