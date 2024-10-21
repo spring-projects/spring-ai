@@ -6,4 +6,4 @@
 
 [OpenAI Transcription Generation](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/audio/transcriptions/openai-transcriptions.html)
 
-[OpenAI Text-to-Speech (TTS)](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/audio/speech/openai-speech.html)
+[OpenAI Text-to-Speech (TTS)](https://docs.spring.io/spring-ai/reference/api/audio/speech/openai-speech.html)
