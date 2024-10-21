@@ -77,7 +77,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 
-		initializeModelIfEnabled(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
 	}
 
 	public static Builder builder() {
@@ -139,18 +139,11 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
-		mergedOptions.setPullModelStrategy(this.defaultOptions.getPullModelStrategy());
-		if (runtimeOptions != null && runtimeOptions.getPullModelStrategy() != null) {
-			mergedOptions.setPullModelStrategy(runtimeOptions.getPullModelStrategy());
-		}
-
 		// Override the model.
 		if (!StringUtils.hasText(mergedOptions.getModel())) {
 			throw new IllegalArgumentException("Model is not set!");
 		}
 		String model = mergedOptions.getModel();
-
-		initializeModelIfEnabled(mergedOptions.getModel(), mergedOptions.getPullModelStrategy());
 
 		return new OllamaApi.EmbeddingsRequest(model, inputContent, DurationParser.parse(mergedOptions.getKeepAlive()),
 				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());
@@ -163,7 +156,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	/**
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
-	private void initializeModelIfEnabled(String model, PullModelStrategy pullModelStrategy) {
+	private void initializeModel(String model, PullModelStrategy pullModelStrategy) {
 		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
 			this.modelManager.pullModel(model, pullModelStrategy);
 		}

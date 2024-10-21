@@ -7,8 +7,6 @@ Small distances suggest high relatedness and large distances suggest low related
 
 The `OllamaEmbeddingModel` implementation leverages the Ollama https://github.com/ollama/ollama/blob/main/docs/api.md#generate-embeddings[Embeddings API] endpoint.
 
-TIP: you can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF HuggingFace Models] 
-
 == Prerequisites
 
 You first need access to an Ollama instance. There are a few options, including the following:
@@ -36,8 +34,12 @@ Alternatively, you can enable the option to download automatically any needed mo
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Model.
-To enable it add the following dependency to your Maven `pom.xml` file:
+To enable it add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -46,14 +48,15 @@ To enable it add the following dependency to your Maven `pom.xml` file:
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 Spring AI artifacts are published in Spring Milestone and Snapshot repositories. Refer to the Repositories section to add these repositories to your build system.
@@ -95,7 +98,6 @@ Here are the advanced request parameter for the Ollama embedding model:
 You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mistral
 | spring.ai.ollama.embedding.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 | spring.ai.ollama.embedding.options.truncate  | Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.  | true
-| spring.ai.ollama.embedding.options.pull-model-strategy |  Strategy for pulling models at run-time. | `never`
 |====
 
 The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
@@ -161,23 +163,21 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
 [[auto-pulling-models]]
 == Auto-pulling Models
 
-Spring AI Ollama can automatically pull models when not available in your Ollama instance.
-This feature is particularly useful when working with different models or when deploying your application to new environments.
+Spring AI Ollama can automatically pull models when they are not available in your Ollama instance.
+This feature is particularly useful for development and testing as well as for deploying your applications to new environments.
 
-TIP: you can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
+TIP: You can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
 
 There are three strategies for pulling models:
 
-* `always` (defined in `PullModelStrategy.ALWAYS`). Always pull the model, even if it's already available. Useful to ensure you're using the latest version of that model.
-* `when_missing` (defined in `PullModelStrategy.WHEN_MISSING`). Only pull the model if it's not already available. It might be an older version of the model.
-* `never` (defined in `PullModelStrategy.NEVER`). Never pull the model.
+* `always` (defined in `PullModelStrategy.ALWAYS`): Always pull the model, even if it's already available. Useful to ensure you're using the latest version of the model.
+* `when_missing` (defined in `PullModelStrategy.WHEN_MISSING`): Only pull the model if it's not already available. This may result in using an older version of the model.
+* `never` (defined in `PullModelStrategy.NEVER`): Never pull the model automatically.
 
-CAUTION: Due to the unexpected delays while downloading models, this feature is not recommended for production environments. Instead, consider to assess and pre-download the necessary models in advance.
-
-=== Pulling models at startup time
+CAUTION: Due to potential delays while downloading models, automatic pulling is not recommended for production environments. Instead, consider assessing and pre-downloading the necessary models in advance.
 
 All models defined via configuration properties and default options can be automatically pulled at startup time.
-You can configure strategy, timeout, and max number of retries via configuration properties.
+You can configure the pull strategy, timeout, and maximum number of retries using configuration properties:
 
 [source,yaml]
 ----
@@ -190,9 +190,9 @@ spring:
         max-retries: 1
 ----
 
-CAUTION: The application will not complete its initialization until all the models become available in Ollama. Depending on the model size and the speed of the Internet connection, your application might be slow at starting up.
+CAUTION: The application will not complete its initialization until all specified models are available in Ollama. Depending on the model size and internet connection speed, this may significantly slow down your application's startup time.
 
-You can also initialize additional models at startup time, useful for those models used dynamically at runtime.
+You can initialize additional models at startup, which is useful for models used dynamically at runtime:
 
 [source,yaml]
 ----
@@ -207,7 +207,7 @@ spring:
             - nomic-embed-text
 ----
 
-If you want to apply the pulling strategy only to other types of models, you can exclude the embedding models from the initialization task.
+If you want to apply the pulling strategy only to specific types of models, you can exclude embedding models from the initialization task:
 
 [source,yaml]
 ----
@@ -220,23 +220,7 @@ spring:
           include: false
 ----
 
-=== Pulling models at runtime
-
-To enable auto-pulling of models at runtime, you can configure the `pullModelStrategy` option in your `OllamaOptions`:
-
-[source,java]
-----
-EmbeddingResponse embeddingResponse = embeddingModel
-    .call(new EmbeddingRequest(List.of("Hello World", "Something else"),
-            OllamaOptions.builder()
-                .withModel("all-minilm")
-                .withPullModelStrategy(PullModelStrategy.ALWAYS)
-                .build()));
-----
-
-You can also configure this option using the following property: `spring.ai.ollama.embedding.options.pull-model-strategy=always`.
-
-CAUTION: The time to process an incoming request might incur unexpected delays, waiting for the needed model to become available in Ollama. Depending on the model size and the speed of the Internet connection, your application might be slow at processing requests. You might want to initialize these models at startup time instead, using the `spring.ai.ollama.init.embedding.additional-models` property.
+This configuration will apply the pulling strategy to all models except embedding models.
 
 == Sample Controller
 
@@ -266,8 +250,12 @@ public class EmbeddingController {
 == Manual Configuration
 
 If you are not using Spring Boot, you can manually configure the `OllamaEmbeddingModel`.
-For this add the spring-ai-ollama dependency to your project’s Maven pom.xml file:
+For this add the spring-ai-ollama dependency to your project’s Maven pom.xml or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -276,14 +264,15 @@ For this add the spring-ai-ollama dependency to your project’s Maven pom.xml f
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-ollama'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 

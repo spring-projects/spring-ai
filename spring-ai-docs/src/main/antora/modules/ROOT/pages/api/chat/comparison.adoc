@@ -2,7 +2,7 @@
 
 // :YES: image::yes.svg[width=16]
 // :NO: image::no.svg[width=12]
-// [%autowidth]
+
 
 This table compares various Chat Models supported by Spring AI, detailing their capabilities:
 
@@ -39,6 +39,5 @@ This table compares various Chat Models supported by Spring AI, detailing their 
 | xref::api/chat/bedrock/bedrock-llama.adoc[Amazon Bedrock/Llama]  | text ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] 
 | xref::api/chat/bedrock/bedrock-titan.adoc[Amazon Bedrock/Titan]  | text ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] 
 | xref::api/chat/bedrock/bedrock-anthropic3.adoc[Amazon Bedrock/Anthropic 3]  | text ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] 
-
 |====
 

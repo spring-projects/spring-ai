@@ -15,17 +15,17 @@
  */
 package org.springframework.ai.ollama.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.time.Duration;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.http.HttpStatus;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.io.IOException;
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for the Ollama APIs to manage models.
@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisabledIf("isDisabled")
 public class OllamaApiModelsIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
+	private static final String MODEL = "all-minilm";
 
 	static OllamaApi ollamaApi;
 
@@ -60,7 +60,7 @@ public class OllamaApiModelsIT extends BaseOllamaIT {
 		var showModelResponse = ollamaApi.showModel(showModelRequest);
 
 		assertThat(showModelResponse).isNotNull();
-		assertThat(showModelResponse.details().family()).isEqualTo("nomic-bert");
+		assertThat(showModelResponse.details().family()).isEqualTo("bert");
 	}
 
 	@Test

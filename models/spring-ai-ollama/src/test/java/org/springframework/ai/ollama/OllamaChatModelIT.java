@@ -33,6 +33,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -56,6 +57,8 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
 
+	private static final String ADDITIONAL_MODEL = "tinyllama";
+
 	@Autowired
 	private OllamaChatModel chatModel;
 
@@ -65,23 +68,17 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	@Test
 	void autoPullModelTest() {
 		var modelManager = new OllamaModelManager(ollamaApi);
-		var model = "tinyllama";
-		modelManager.deleteModel(model);
-		assertThat(modelManager.isModelAvailable(model)).isFalse();
+		assertThat(modelManager.isModelAvailable(ADDITIONAL_MODEL)).isTrue();
 
 		String joke = ChatClient.create(chatModel)
 			.prompt("Tell me a joke")
-			.options(OllamaOptions.builder()
-				.withModel(model)
-				.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
-				.build())
+			.options(OllamaOptions.builder().withModel(ADDITIONAL_MODEL).build())
 			.call()
 			.content();
 
 		assertThat(joke).isNotEmpty();
-		assertThat(modelManager.isModelAvailable(model)).isTrue();
 
-		modelManager.deleteModel(model);
+		modelManager.deleteModel(ADDITIONAL_MODEL);
 	}
 
 	@Test
@@ -249,6 +246,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 			return OllamaChatModel.builder()
 				.withOllamaApi(ollamaApi)
 				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
+				.withModelManagementOptions(ModelManagementOptions.builder()
+					.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
+					.withAdditionalModels(List.of(ADDITIONAL_MODEL))
+					.build())
 				.build();
 		}
 
