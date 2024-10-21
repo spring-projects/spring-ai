@@ -1,7 +1,7 @@
 package org.springframework.ai.model;
 
-import io.micrometer.common.lang.NonNull;
-import io.micrometer.common.lang.Nullable;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
