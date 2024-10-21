@@ -21,6 +21,7 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -40,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
+
+	private static final String ADDITIONAL_MODEL = "all-minilm";
 
 	@Autowired
 	private OllamaEmbeddingModel embeddingModel;
@@ -65,36 +68,29 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 	}
 
 	@Test
-	void autoPullModel() {
+	void autoPullModelAtStartupTime() {
 		var model = "all-minilm";
 		assertThat(embeddingModel).isNotNull();
 
 		var modelManager = new OllamaModelManager(ollamaApi);
-		modelManager.deleteModel(model);
-		assertThat(modelManager.isModelAvailable(model)).isFalse();
+		assertThat(modelManager.isModelAvailable(ADDITIONAL_MODEL)).isTrue();
 
 		EmbeddingResponse embeddingResponse = embeddingModel
 			.call(new EmbeddingRequest(List.of("Hello World", "Something else"),
-					OllamaOptions.builder()
-						.withModel(model)
-						.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
-						.withTruncate(false)
-						.build()));
-
-		assertThat(modelManager.isModelAvailable(model)).isTrue();
+					OllamaOptions.builder().withModel(model).withTruncate(false).build()));
 
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-		assertThat(embeddingResponse.getMetadata().getModel()).contains(model);
+		assertThat(embeddingResponse.getMetadata().getModel()).contains(ADDITIONAL_MODEL);
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
 
 		assertThat(embeddingModel.dimensions()).isEqualTo(768);
 
-		modelManager.deleteModel(model);
+		modelManager.deleteModel(ADDITIONAL_MODEL);
 	}
 
 	@SpringBootConfiguration
@@ -110,6 +106,10 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 			return OllamaEmbeddingModel.builder()
 				.withOllamaApi(ollamaApi)
 				.withDefaultOptions(OllamaOptions.create().withModel(MODEL))
+				.withModelManagementOptions(ModelManagementOptions.builder()
+					.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
+					.withAdditionalModels(List.of(ADDITIONAL_MODEL))
+					.build())
 				.build();
 		}
 

@@ -26,7 +26,49 @@ import java.util.List;
  */
 public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<String> additionalModels,
 		Duration timeout, Integer maxRetries) {
+
 	public static ModelManagementOptions defaults() {
 		return new ModelManagementOptions(PullModelStrategy.NEVER, List.of(), Duration.ofMinutes(5), 0);
 	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
+
+		private List<String> additionalModels = List.of();
+
+		private Duration timeout = Duration.ofMinutes(5);
+
+		private Integer maxRetries = 0;
+
+		public Builder withPullModelStrategy(PullModelStrategy pullModelStrategy) {
+			this.pullModelStrategy = pullModelStrategy;
+			return this;
+		}
+
+		public Builder withAdditionalModels(List<String> additionalModels) {
+			this.additionalModels = additionalModels;
+			return this;
+		}
+
+		public Builder withTimeout(Duration timeout) {
+			this.timeout = timeout;
+			return this;
+		}
+
+		public Builder withMaxRetries(Integer maxRetries) {
+			this.maxRetries = maxRetries;
+			return this;
+		}
+
+		public ModelManagementOptions build() {
+			return new ModelManagementOptions(pullModelStrategy, additionalModels, timeout, maxRetries);
+		}
+
+	}
+
 }

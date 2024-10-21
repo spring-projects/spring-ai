@@ -28,7 +28,6 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
@@ -303,12 +302,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
-	/**
-	 * Strategy for pulling models at run-time.
-	 */
-	@JsonIgnore
-	private PullModelStrategy pullModelStrategy;
-
 	public static OllamaOptions builder() {
 		return new OllamaOptions();
 	}
@@ -518,11 +511,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		else {
 			this.toolContext.putAll(toolContext);
 		}		
-		return this;
-	}
-
-	public OllamaOptions withPullModelStrategy(PullModelStrategy pullModelStrategy) {
-		this.pullModelStrategy = pullModelStrategy;
 		return this;
 	}
 
@@ -866,14 +854,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.toolContext = toolContext;
 	}
 
-	public PullModelStrategy getPullModelStrategy() {
-		return this.pullModelStrategy;
-	}
-
-	public void setPullModelStrategy(PullModelStrategy pullModelStrategy) {
-		this.pullModelStrategy = pullModelStrategy;
-	}
-
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -944,8 +924,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withFunctions(fromOptions.getFunctions())
 			.withProxyToolCalls(fromOptions.getProxyToolCalls())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withToolContext(fromOptions.getToolContext())
-			.withPullModelStrategy(fromOptions.getPullModelStrategy());
+			.withToolContext(fromOptions.getToolContext());
 	}
 	// @formatter:on
 
@@ -975,8 +954,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
 				&& Objects.equals(functionCallbacks, that.functionCallbacks)
 				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions)
-				&& Objects.equals(toolContext, that.toolContext)
-				&& Objects.equals(pullModelStrategy, that.pullModelStrategy);
+				&& Objects.equals(toolContext, that.toolContext);
 	}
 
 	@Override
@@ -987,7 +965,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
 				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
-				this.toolContext, this.pullModelStrategy);
+				this.toolContext);
 	}
 
 }

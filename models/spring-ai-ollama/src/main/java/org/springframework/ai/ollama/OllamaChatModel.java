@@ -97,7 +97,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(chatApi, modelManagementOptions);
-		initializeModelIfEnabled(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
 	}
 
 	public static Builder builder() {
@@ -302,11 +302,6 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
-		mergedOptions.setPullModelStrategy(this.defaultOptions.getPullModelStrategy());
-		if (runtimeOptions != null && runtimeOptions.getPullModelStrategy() != null) {
-			mergedOptions.setPullModelStrategy(runtimeOptions.getPullModelStrategy());
-		}
-
 		// Override the model.
 		if (!StringUtils.hasText(mergedOptions.getModel())) {
 			throw new IllegalArgumentException("Model is not set!");
@@ -330,8 +325,6 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 			requestBuilder.withTools(this.getFunctionTools(functionsForThisRequest));
 		}
-
-		initializeModelIfEnabled(mergedOptions.getModel(), mergedOptions.getPullModelStrategy());
 
 		return requestBuilder.build();
 	}
@@ -379,7 +372,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	/**
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
-	private void initializeModelIfEnabled(String model, PullModelStrategy pullModelStrategy) {
+	private void initializeModel(String model, PullModelStrategy pullModelStrategy) {
 		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
 			this.modelManager.pullModel(model, pullModelStrategy);
 		}
