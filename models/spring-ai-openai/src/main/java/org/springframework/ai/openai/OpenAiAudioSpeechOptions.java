@@ -18,7 +18,7 @@ package org.springframework.ai.openai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.model.ModelOptions;
+import org.springframework.ai.audio.speech.SpeechOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
 
@@ -27,10 +27,11 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
  *
  * @author Ahmed Yousri
  * @author Hyunjoon Choi
- * @since 1.0.0-M1
+ * @author Thomas Vitale
+ * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class OpenAiAudioSpeechOptions implements ModelOptions {
+public class OpenAiAudioSpeechOptions implements SpeechOptions {
 
 	/**
 	 * ID of the model to use for generating the audio. One of the available TTS models:
@@ -105,6 +106,7 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return model;
 	}
