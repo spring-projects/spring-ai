@@ -34,6 +34,7 @@ public enum VectorStoreProvider {
 	AZURE("azure"),
 	CASSANDRA("cassandra"),
 	CHROMA("chroma"),
+	COSMOSDB("cosmosdb"),
 	ELASTICSEARCH("elasticsearch"),
 	GEMFIRE("gemfire"),
 	HANA("hana"),

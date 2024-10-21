@@ -387,6 +387,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Azure Cosmos DB vector store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- test dependencies -->
 
 		<dependency>

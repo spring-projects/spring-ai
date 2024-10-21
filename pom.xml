@@ -27,6 +27,7 @@
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
 
+		<module>vector-stores/spring-ai-azure-cosmos-db-store</module>
 		<module>vector-stores/spring-ai-azure-store</module>
 		<module>vector-stores/spring-ai-cassandra-store</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
