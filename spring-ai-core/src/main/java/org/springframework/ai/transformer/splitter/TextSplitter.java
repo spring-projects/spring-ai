@@ -87,8 +87,12 @@ public abstract class TextSplitter implements DocumentTransformer {
 			for (String chunk : chunks) {
 				// only primitive values are in here -
 				Map<String, Object> metadataCopy = metadata.entrySet()
-					.stream()
-					.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+						.stream()
+						.filter(e -> e.getKey() != null && e.getValue() != null)
+						.collect(Collectors.toMap(
+								Map.Entry::getKey,
+								Map.Entry::getValue
+						));
 				Document newDoc = new Document(chunk, metadataCopy);
 
 				if (this.copyContentFormatter) {
