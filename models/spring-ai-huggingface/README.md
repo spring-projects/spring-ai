@@ -1,2 +1,2 @@
-[Hugging Face Chat Documentation](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/chat/huggingface.html)
+[Hugging Face Chat Documentation](https://docs.spring.io/spring-ai/reference/api/chat/huggingface.html)
 

@@ -314,7 +314,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
 		String response = ChatClient.create(chatModel).prompt()
@@ -334,7 +334,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void streamingMultiModalityImageUrl() throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(chatModel).prompt()

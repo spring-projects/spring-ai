@@ -320,9 +320,9 @@ class GroqWithOpenAiChatModelIT {
 	@ValueSource(strings = { "llama3-70b-8192" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?", List
-			.of(new Media(MimeTypeUtils.IMAGE_PNG,
-					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
+						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
 
 		ChatResponse response = chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
@@ -336,9 +336,9 @@ class GroqWithOpenAiChatModelIT {
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?", List
-			.of(new Media(MimeTypeUtils.IMAGE_PNG,
-					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
+						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
 
 		Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage)));
 

@@ -506,7 +506,7 @@ public class ChatClientTest {
 		var options = FunctionCallingOptions.builder().build();
 		when(chatModel.getDefaultOptions()).thenReturn(options);
 
-		var url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+		var url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
 		ChatClient client = ChatClient.builder(chatModel)
@@ -533,7 +533,7 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG);
 		assertThat(userMessage.getMedia().iterator().next().getData())
-			.isEqualTo("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+			.isEqualTo("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		FunctionCallingOptions runtieOptions = (FunctionCallingOptions) promptCaptor.getValue().getOptions();
 

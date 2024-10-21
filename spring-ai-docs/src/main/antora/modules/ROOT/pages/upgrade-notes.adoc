@@ -32,7 +32,7 @@ On our march to release 1.0.0 M1 we have made several breaking changes.  Apologi
 
 === ChatClient changes
 
-A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done do support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/1.0.0-SNAPSHOT/api/) for more information on the Fluent API, proper reference documentation is coming shortly.
+A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done do support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/api) for more information on the Fluent API, proper reference documentation is coming shortly.
 
 We renamed the 'old' `ModelClient` to `Model` and renamed implementing classes, for example `ImageClient` was renamed to `ImageModel`.  The `Model` implementation represent the portability layer that converts between the Spring AI API and the underlying AI Model API.
 
