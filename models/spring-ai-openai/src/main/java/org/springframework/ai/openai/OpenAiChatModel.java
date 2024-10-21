@@ -48,6 +48,7 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -69,6 +70,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
@@ -408,7 +410,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					chunkChoice.logprobs()))
 			.toList();
 
-		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
+		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
 				chunk.systemFingerprint(), "chat.completion", chunk.usage());
 	}
 
@@ -425,11 +427,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						List<MediaContent> contentList = new ArrayList<>(
 								List.of(new MediaContent(message.getContent())));
 
-						contentList.addAll(userMessage.getMedia()
-							.stream()
-							.map(media -> new MediaContent(new MediaContent.ImageUrl(
-									this.fromMediaData(media.getMimeType(), media.getData()))))
-							.toList());
+						contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
 
 						content = contentList;
 					}
@@ -448,7 +446,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					}).toList();
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -460,7 +458,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null))
+							tr.id(), null, null, null))
 					.toList();
 			}
 			else {
@@ -510,6 +508,29 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 
 		return request;
+	}
+
+	private MediaContent mapToMediaContent(Media media) {
+		var mimeType = media.getMimeType();
+		if (MimeTypeUtils.parseMimeType("audio/mp3").equals(mimeType)) {
+			return new MediaContent(
+					new MediaContent.InputAudio(fromAudioData(media.getData()), MediaContent.InputAudio.Format.MP3));
+		}
+		if (MimeTypeUtils.parseMimeType("audio/wav").equals(mimeType)) {
+			return new MediaContent(
+					new MediaContent.InputAudio(fromAudioData(media.getData()), MediaContent.InputAudio.Format.WAV));
+		}
+		else {
+			return new MediaContent(
+					new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData())));
+		}
+	}
+
+	private String fromAudioData(Object audioData) {
+		if (audioData instanceof byte[] bytes) {
+			return Base64.getEncoder().encodeToString(bytes);
+		}
+		throw new IllegalArgumentException("Unsupported audio data type: " + audioData.getClass().getSimpleName());
 	}
 
 	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
