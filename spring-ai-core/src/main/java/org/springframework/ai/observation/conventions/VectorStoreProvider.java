@@ -16,15 +16,16 @@
 package org.springframework.ai.observation.conventions;
 
 /**
- * Collection of systems providing vector store functionality. Based on the OpenTelemetry
+ * Collection of systems providing vector store functionality. Based on the
+ * OpenTelemetry
  * Semantic Conventions for Vector Databases.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
  * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/database">DB
- * Semantic Conventions</a>.
+ *      "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/database">DB
+ *      Semantic Conventions</a>.
  */
 public enum VectorStoreProvider {
 
@@ -34,6 +35,7 @@ public enum VectorStoreProvider {
 	AZURE("azure"),
 	CASSANDRA("cassandra"),
 	CHROMA("chroma"),
+	COSMOSDB("cosmosdb"),
 	ELASTICSEARCH("elasticsearch"),
 	GEMFIRE("gemfire"),
 	HANA("hana"),
