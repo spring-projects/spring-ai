@@ -21,6 +21,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.DeleteModelRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ListModelResponse;
 import org.springframework.ai.ollama.api.OllamaApi.PullModelRequest;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import reactor.util.retry.Retry;
 
@@ -55,12 +56,26 @@ public class OllamaModelManager {
 	}
 
 	public boolean isModelAvailable(String modelName) {
+		Assert.hasText(modelName, "modelName must not be empty");
 		ListModelResponse listModelResponse = ollamaApi.listModels();
 		if (!CollectionUtils.isEmpty(listModelResponse.models())) {
-			// Not an equality check to support the implicit ":latest" tag.
-			return listModelResponse.models().stream().anyMatch(m -> m.name().contains(modelName));
+			var normalizedModelName = normalizeModelName(modelName);
+			return listModelResponse.models().stream().anyMatch(m -> m.name().equals(normalizedModelName));
 		}
 		return false;
+	}
+
+	/**
+	 * If the name follows the format "<string>:<string>", leave it as is. If the name
+	 * follows the format "<string>" and doesn't include any ":" sign, then add ":latest"
+	 * as a suffix.
+	 */
+	private String normalizeModelName(String modelName) {
+		var modelNameWithoutSpaces = modelName.trim();
+		if (modelNameWithoutSpaces.contains(":")) {
+			return modelNameWithoutSpaces;
+		}
+		return modelNameWithoutSpaces + ":latest";
 	}
 
 	public void deleteModel(String modelName) {
