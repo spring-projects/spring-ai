@@ -39,14 +39,14 @@
 						<option>--stacktrace</option>
 						<option>--fetch</option>
 					</options>					
-					<packages>
+					<!-- <packages>
 						<package>@antora/atlas-extension@1.0.0-alpha.2</package>
 						<package>@antora/collector-extension@1.0.0-beta.1</package>
 						<package>@asciidoctor/tabs@1.0.0-beta.6</package>
 						<package>@springio/antora-extensions@1.14.2</package>
 						<package>@springio/asciidoctor-extensions@1.0.0-alpha.12</package>
 						<package>@djencks/asciidoctor-mathjax@0.0.9</package>
-					</packages>
+					</packages> -->
 				</configuration>
 			</plugin>
 		</plugins>
