@@ -16,19 +16,25 @@ These abstractions have multiple implementations, enabling easy component swappi
 
 Spring AI provides the following features:
 
-* Support for all major Model providers such as Anthropic, Azure OpenAI, Amazon Bedrock, Google, HuggingFace, Mistral, Oracle, Stability AI, Watson, Minimax, Moonshot, QianFan, ZhiPu AI, PostgresML, and ONNX Transformers.
-* Supported Model types are Chat, Embedding, Text to Image, Audio Transcription, Text to Speech, and Moderation. Multimodal models are also supported.
-* Portable API across AI providers for all models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
-* Spring Boot Auto Configuration for all models, simplifying setup and integration.
-* AOT (Ahead-Of-Time) native image support for improved performance and reduced startup times.
-* Enhanced observability leveraging Spring ecosystem features, providing insights into AI-related operations. Spring AI offers metrics and tracing capabilities for core components including ChatClient, ChatModel, EmbeddingModel, ImageModel, and VectorStore.
-* Structured Output to enable mapping of AI Model output to POJOs.
-* Function calling support.
-* Support for all major Vector Database providers such as Apache Cassandra, Azure Vector Search, Chroma, Milvus, MongoDB Atlas, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate.
-* Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
-* ETL framework for Data Engineering to load data into Vector Stores.
-* Evaluation Testing support for AI applications, allowing assessment of generated content to prevent hallucinated responses. This includes the ability to use AI models for self-evaluation, with the flexibility to choose the most suitable model for evaluation purposes.
-* Spring Boot autoconfiguration for establishing connections to model services or vector stores running via Testcontainers or Docker Compose.
+* Portable API support across AI providers for Chat, text-to-image, and Embedding models. Both synchronous and streaming API options are supported. Access to model-specific features is also available.
+* Support for all major xref:api/index.adoc[AI Model providers] such as Anthropic, OpenAI, Microsoft, Amazon, Google, and Ollama. Supported model types include:
+** xref:api/chatmodel.adoc[Chat Completion]
+** xref:api/embeddings.adoc[Embedding]
+** xref:api/imageclient.adoc[Text to Image]
+** xref:api/audio/transcriptions.adoc[Audio Transcription]
+** xref:api/audio/speech.adoc[Text to Speech]
+** xref:api/moderation[Moderation]
+* xref:api/structured-output-converter.adoc[Structured Outputs] - Mapping of AI Model output to POJOs.
+* Support for all major xref:api/vectordbs.adoc[Vector Database providers] such as Apache Cassandra, Azure Vector Search, Chroma, Milvus, MongoDB Atlas, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate.
+* Portable API across Vector Store providers, including a novel SQL-like metadata filter API.
+* xref:api/functions.adoc[Tools/Function Calling] - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
+* xref:observability/index.adoc[Observability] - Provides insights into AI-related operations.
+* Document injection xref:api/etl-pipeline.adoc[ETL framework] for Data Engineering.
+* xref:api/testing.adoc[AI Model Evaluation] - Utilities to help evaluate generated content and protect against hallucinated response.
+* Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
+* xref:api/chatclient.adoc[ChatClient API] - Fluent API for communicating with AI Chat Models, idiomatically similar to the WebClient and RestClient APIs.
+* xref:api/advisors.adoc[Advisors API] - Encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases.
+* Support for xref:api/chatclient.adoc#_chat_memory[Chat Conversation Memory] and xref:api/chatclient.adoc#_retrieval_augmented_generation[Retrieval Augmented Generation (RAG)].
 
 This feature set lets you implement common use cases such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
 
