@@ -18,9 +18,13 @@ If you prefer to add the dependency snippets by hand, follow the directions in t
 
 To use the Milestone and Snapshot version, you need to add references to the Spring Milestone and/or Snapshot repositories in your build file.
 
-For Maven, add the following repository definitions as needed:
+Add the following repository definitions to your Maven or Gradle build file:
 
-[source,xml]
+[tabs]
+======
+Maven::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
 ----
   <repositories>
     <repository>
@@ -42,9 +46,9 @@ For Maven, add the following repository definitions as needed:
   </repositories>
 ----
 
-For Gradle, add the following repository definitions as needed:
-
-[source,groovy]
+Gradle::
++
+[source,groovy,indent=0,subs="verbatim,quotes"]
 ----
 repositories {
   mavenCentral()
@@ -52,7 +56,7 @@ repositories {
   maven { url 'https://repo.spring.io/snapshot' }
 }
 ----
-
+======
 
 [[dependency-management]]
 == Dependency Management
@@ -62,9 +66,13 @@ Using the BOM from your application’s build script avoids the need for you to 
 Instead, the version of the BOM you’re using determines the utilized dependency versions.
 It also ensures that you’re using supported and tested versions of the dependencies by default, unless you choose to override them.
 
-If you’re a Maven user, you can use the BOM by adding the following to your pom.xml file -
+Add the BOM to your project:
 
-[source,xml]
+[tabs]
+======
+Maven::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
 ----
 <dependencyManagement>
     <dependencies>
@@ -79,11 +87,9 @@ If you’re a Maven user, you can use the BOM by adding the following to your po
 </dependencyManagement>
 ----
 
-Gradle users can also use the Spring AI BOM by leveraging Gradle (5.0+) native support for declaring dependency constraints using a Maven BOM.
-This is implemented by adding a 'platform' dependency handler method to the dependencies section of your Gradle build script.
-As shown in the snippet below this can then be followed by version-less declarations of the Starter Dependencies for the one or more spring-ai modules you wish to use, e.g. spring-ai-openai.
-
-[source,gradle]
+Gradle::
++
+[source,groovy,indent=0,subs="verbatim,quotes"]
 ----
 dependencies {
   implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
@@ -91,6 +97,10 @@ dependencies {
   implementation 'org.springframework.ai:spring-ai-openai'
 }
 ----
+Gradle users can also use the Spring AI BOM by leveraging Gradle (5.0+) native support for declaring dependency constraints using a Maven BOM.
+This is implemented by adding a 'platform' dependency handler method to the dependencies section of your Gradle build script.
+As shown in the snippet below this can then be followed by version-less declarations of the Starter Dependencies for the one or more spring-ai modules you wish to use, e.g. spring-ai-openai.
+======
 
 [[add-dependencies]]
 == Add dependencies for specific components

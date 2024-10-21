@@ -82,6 +82,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 You can use the following properties in your Spring Boot configuration to customize the Apache Cassandra vector store.
 
+[stripes=even]
 |===
 |Property|Default value
 

@@ -108,6 +108,7 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sprin
 
 You can use the following properties in your Spring Boot configuration to customize the vector store.
 
+[stripes=even]
 |===
 |Property| Description | Default value
 

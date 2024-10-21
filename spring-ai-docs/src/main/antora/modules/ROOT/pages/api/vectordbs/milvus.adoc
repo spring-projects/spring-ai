@@ -165,7 +165,7 @@ NOTE: These filter expressions are converted into the equivalent Milvus filters.
 
 You can use the following properties in your Spring Boot configuration to customize the Milvus vector store.
 
-[cols="4,5,1"]
+[cols="4,5,1",stripes=even]
 |===
 |Property| Description | Default value
 

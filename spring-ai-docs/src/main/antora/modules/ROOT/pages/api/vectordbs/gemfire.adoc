@@ -39,6 +39,7 @@ dependencies {
 
 You can use the following properties in your Spring Boot configuration to further configure the `GemFireVectorStore`.
 
+[stripes=even]
 |===
 |Property|Default value
 

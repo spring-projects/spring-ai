@@ -16,8 +16,12 @@ A running Elasticsearch instance. The following options are available:
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Elasticsearch Vector Store.
-To enable it, add the following dependency to your project's Maven `pom.xml` file:
+To enable it, add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -26,28 +30,46 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-elasticsearch-store-spring-boot-starter'
 }
 ----
-NOTE: For spring-boot versions pre 3.3.0 it's necessary to explicitly add the elasticsearch-java dependency with version > 8.13.3, otherwise the older version used will be incompatible with the queries performed:
-```
+======
+
+[NOTE]
+--
+For spring-boot versions pre 3.3.0 it's necessary to explicitly add the elasticsearch-java dependency with version > 8.13.3, otherwise the older version used will be incompatible with the queries performed:
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
 <dependency>
     <groupId>co.elastic.clients</groupId>
     <artifactId>elasticsearch-java</artifactId>
     <version>8.13.3</version>
 </dependency>
-```
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'co.elastic.clients:elasticsearch-java:8.13.3'
+}
+----
+======
+--
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
-
-
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 Alternatively you can opt-out the initialization and create the index manually using the Elasticsearch client, which can be useful if the index needs advanced mapping or additional configuration.
@@ -122,6 +144,7 @@ Spring Boot's auto-configuration feature for the Elasticsearch RestClient will c
 
 The Spring Boot properties starting with `spring.elasticsearch.*` are used to configure the Elasticsearch client:
 
+[stripes=even]
 |===
 |Property | Description | Default Value
 
@@ -139,6 +162,7 @@ The Spring Boot properties starting with `spring.elasticsearch.*` are used to co
 
 Properties starting with the `spring.ai.vectorstore.elasticsearch.*` prefix are used to configure `ElasticsearchVectorStore`.
 
+[stripes=even]
 |===
 |Property | Description | Default Value
 

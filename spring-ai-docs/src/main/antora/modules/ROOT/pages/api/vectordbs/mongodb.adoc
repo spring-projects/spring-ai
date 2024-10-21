@@ -123,7 +123,7 @@ spring.ai.vectorstore.mongodb.indexName=vector_index
 spring.ai.vectorstore.mongodb.metadata-fields-to-filter=foo
 ----
 
-
+[stripes=even]
 |===
 |Property| Description | Default value
 

@@ -110,7 +110,7 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sprin
 
 You can use the following properties in your Spring Boot configuration to customize the weaviate vector store.
 
-[cols="3,5,1"]
+[cols="3,5,1",stripes=even]
 |===
 |Property| Description | Default value
 

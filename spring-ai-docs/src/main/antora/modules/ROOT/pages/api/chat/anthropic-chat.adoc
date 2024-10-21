@@ -31,8 +31,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Anthropic Chat Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` file:
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -41,14 +45,15 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-anthropic-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 

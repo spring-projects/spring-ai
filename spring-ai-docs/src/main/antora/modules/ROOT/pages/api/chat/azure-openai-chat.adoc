@@ -26,7 +26,6 @@ export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT AZURE KEY HERE>
 export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 ----
 
-
 === OpenAI Key
 
 To authenticate with the OpenAI service (not Azure), provide an OpenAI API key. This will automatically set the endpoint to https://api.openai.com/v1.
@@ -85,8 +84,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Chat Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -95,14 +98,15 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
