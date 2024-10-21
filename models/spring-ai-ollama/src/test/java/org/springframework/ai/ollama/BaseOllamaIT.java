@@ -11,11 +11,13 @@ public class BaseOllamaIT {
 	// Toggle for running tests locally on native Ollama for a faster feedback loop.
 	private static final boolean useTestcontainers = true;
 
-	public static final OllamaContainer ollamaContainer;
+	public static OllamaContainer ollamaContainer;
 
 	static {
-		ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE).withReuse(true);
-		ollamaContainer.start();
+		if (useTestcontainers) {
+			ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE).withReuse(true);
+			ollamaContainer.start();
+		}
 	}
 
 	/**
