@@ -45,9 +45,9 @@ jobs:
         docs-ssh-key: ${{ secrets.DOCS_SSH_KEY }}
         docs-ssh-host-key: ${{ secrets.DOCS_SSH_HOST_KEY }}
         site-path: target/antora/site
-    # - name: Bust Cloudflare Cache
-    #   uses: spring-io/spring-doc-actions/bust-cloudflare-antora-cache@v0.0.18
-    #   with:
-    #     context-root: spring-ai
-    #     cloudflare-zone-id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-    #     cloudflare-cache-token: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
+    - name: Bust Cloudflare Cache
+      uses: spring-io/spring-doc-actions/bust-cloudflare-antora-cache@v0.0.18
+      with:
+        context-root: spring-ai
+        cloudflare-zone-id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        cloudflare-cache-token: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
