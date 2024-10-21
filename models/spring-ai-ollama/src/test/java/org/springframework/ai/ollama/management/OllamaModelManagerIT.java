@@ -63,24 +63,77 @@ class OllamaModelManagerIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void pullAndDeleteModel() {
-		var model = "all-minilm";
-		modelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
-		var isModelAvailable = modelManager.isModelAvailable(model);
-		assertThat(isModelAvailable).isTrue();
+	public void pullAndDeleteModelFromOllama() {
+		// Pull model with explicit version.
+		var modelWithExplicitVersion = "all-minilm:33m";
+		modelManager.deleteModel(modelWithExplicitVersion);
+		modelManager.pullModel(modelWithExplicitVersion, PullModelStrategy.WHEN_MISSING);
+		var isModelWithExplicitVersionAvailable = modelManager.isModelAvailable(modelWithExplicitVersion);
+		assertThat(isModelWithExplicitVersionAvailable).isTrue();
 
-		modelManager.deleteModel(model);
-		isModelAvailable = modelManager.isModelAvailable(model);
-		assertThat(isModelAvailable).isFalse();
+		// Pull same model without version, which should pull the "latest" version.
+		var modelWithoutVersion = "all-minilm";
+		modelManager.deleteModel(modelWithoutVersion);
+		var isModelWithoutVersionAvailable = modelManager.isModelAvailable(modelWithoutVersion);
+		assertThat(isModelWithoutVersionAvailable).isFalse();
+		isModelWithExplicitVersionAvailable = modelManager.isModelAvailable(modelWithExplicitVersion);
+		assertThat(isModelWithExplicitVersionAvailable).isTrue();
 
-		model = "all-minilm:latest";
-		modelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
-		isModelAvailable = modelManager.isModelAvailable(model);
-		assertThat(isModelAvailable).isTrue();
+		modelManager.pullModel(modelWithoutVersion, PullModelStrategy.WHEN_MISSING);
+		isModelWithoutVersionAvailable = modelManager.isModelAvailable(modelWithoutVersion);
+		assertThat(isModelWithoutVersionAvailable).isTrue();
 
-		modelManager.deleteModel(model);
-		isModelAvailable = modelManager.isModelAvailable(model);
-		assertThat(isModelAvailable).isFalse();
+		// Pull model with ":latest" suffix, with has the same effect as pulling the model
+		// without version.
+		var modelWithLatestVersion = "all-minilm:latest";
+		var isModelWithLatestVersionAvailable = modelManager.isModelAvailable(modelWithLatestVersion);
+		assertThat(isModelWithLatestVersionAvailable).isTrue();
+
+		// Final clean-up.
+		modelManager.deleteModel(modelWithExplicitVersion);
+		isModelWithExplicitVersionAvailable = modelManager.isModelAvailable(modelWithExplicitVersion);
+		assertThat(isModelWithExplicitVersionAvailable).isFalse();
+
+		modelManager.deleteModel(modelWithLatestVersion);
+		isModelWithLatestVersionAvailable = modelManager.isModelAvailable(modelWithLatestVersion);
+		assertThat(isModelWithLatestVersionAvailable).isFalse();
+	}
+
+	@Test
+	public void pullAndDeleteModelFromHuggingFace() {
+		// Pull model with explicit version.
+		var modelWithExplicitVersion = "hf.co/SanctumAI/Llama-3.2-1B-Instruct-GGUF:Q3_K_S";
+		modelManager.deleteModel(modelWithExplicitVersion);
+		modelManager.pullModel(modelWithExplicitVersion, PullModelStrategy.WHEN_MISSING);
+		var isModelWithExplicitVersionAvailable = modelManager.isModelAvailable(modelWithExplicitVersion);
+		assertThat(isModelWithExplicitVersionAvailable).isTrue();
+
+		// Pull same model without version, which should pull the "latest" version.
+		var modelWithoutVersion = "hf.co/SanctumAI/Llama-3.2-1B-Instruct-GGUF";
+		modelManager.deleteModel(modelWithoutVersion);
+		var isModelWithoutVersionAvailable = modelManager.isModelAvailable(modelWithoutVersion);
+		assertThat(isModelWithoutVersionAvailable).isFalse();
+		isModelWithExplicitVersionAvailable = modelManager.isModelAvailable(modelWithExplicitVersion);
+		assertThat(isModelWithExplicitVersionAvailable).isTrue();
+
+		modelManager.pullModel(modelWithoutVersion, PullModelStrategy.WHEN_MISSING);
+		isModelWithoutVersionAvailable = modelManager.isModelAvailable(modelWithoutVersion);
+		assertThat(isModelWithoutVersionAvailable).isTrue();
+
+		// Pull model with ":latest" suffix, with has the same effect as pulling the model
+		// without version.
+		var modelWithLatestVersion = "hf.co/SanctumAI/Llama-3.2-1B-Instruct-GGUF:latest";
+		var isModelWithLatestVersionAvailable = modelManager.isModelAvailable(modelWithLatestVersion);
+		assertThat(isModelWithLatestVersionAvailable).isTrue();
+
+		// Final clean-up.
+		modelManager.deleteModel(modelWithExplicitVersion);
+		isModelWithExplicitVersionAvailable = modelManager.isModelAvailable(modelWithExplicitVersion);
+		assertThat(isModelWithExplicitVersionAvailable).isFalse();
+
+		modelManager.deleteModel(modelWithLatestVersion);
+		isModelWithLatestVersionAvailable = modelManager.isModelAvailable(modelWithLatestVersion);
+		assertThat(isModelWithLatestVersionAvailable).isFalse();
 	}
 
 	@Test
