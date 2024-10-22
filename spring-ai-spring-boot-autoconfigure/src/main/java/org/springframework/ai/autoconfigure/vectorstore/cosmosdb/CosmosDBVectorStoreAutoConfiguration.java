@@ -17,7 +17,10 @@
 package org.springframework.ai.autoconfigure.vectorstore.cosmosdb;
 
 import com.azure.cosmos.CosmosClientBuilder;
+
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.CosmosDBVectorStore;
 import org.springframework.ai.vectorstore.CosmosDBVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -32,9 +35,9 @@ import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Theo van Kraay
+ * @author Soby Chacko
  * @since 1.0.0
  */
-
 @AutoConfiguration
 @ConditionalOnClass({ CosmosDBVectorStore.class, EmbeddingModel.class, CosmosAsyncClient.class })
 @EnableConfigurationProperties(CosmosDBVectorStoreProperties.class)
@@ -54,11 +57,17 @@ public class CosmosDBVectorStoreAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy batchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public CosmosDBVectorStore cosmosDBVectorStore(ObservationRegistry observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			CosmosDBVectorStoreProperties properties, CosmosAsyncClient cosmosAsyncClient,
-			EmbeddingModel embeddingModel) {
+			EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
 
 		CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
 		config.setDatabaseName(properties.getDatabaseName());
@@ -67,7 +76,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
 		config.setVectorStoreThoughput(properties.getVectorStoreThoughput());
 		config.setVectorDimensions(properties.getVectorDimensions());
 		return new CosmosDBVectorStore(observationRegistry, customObservationConvention.getIfAvailable(),
-				cosmosAsyncClient, config, embeddingModel);
+				cosmosAsyncClient, config, embeddingModel, batchingStrategy);
 	}
 
 }

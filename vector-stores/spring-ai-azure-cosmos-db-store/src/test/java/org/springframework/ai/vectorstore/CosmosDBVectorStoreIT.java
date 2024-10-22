@@ -42,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Theo van Kraay
  * @since 1.0.0
  */
-
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
 public class CosmosDBVectorStoreIT {

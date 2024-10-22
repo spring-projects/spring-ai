@@ -45,9 +45,9 @@ import java.util.stream.IntStream;
 
 /**
  * @author Theo van Kraay
+ * @author Soby Chacko
  * @since 1.0.0
  */
-
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(CosmosDBVectorStore.class);
@@ -65,10 +65,17 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
 			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel) {
+		this(observationRegistry, customObservationConvention, cosmosClient, properties, embeddingModel,
+				new TokenCountBatchingStrategy());
+	}
+
+	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
+			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
 		super(observationRegistry, customObservationConvention);
 		this.cosmosClient = cosmosClient;
 		this.properties = properties;
-		this.batchingStrategy = new TokenCountBatchingStrategy();
+		this.batchingStrategy = batchingStrategy;
 		cosmosClient.createDatabaseIfNotExists(properties.getDatabaseName()).block();
 
 		initializeContainer(properties.getContainerName(), properties.getDatabaseName(),
@@ -76,7 +83,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				properties.getPartitionKeyPath());
 
 		this.embeddingModel = embeddingModel;
-
 	}
 
 	private void initializeContainer(String containerName, String databaseName, int vectorStoreThoughput,
@@ -94,9 +100,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		PartitionKeyDefinition subpartitionKeyDefinition = new PartitionKeyDefinition();
 		List<String> pathsfromCommaSeparatedList = new ArrayList<String>();
 		String[] subpartitionKeyPaths = partitionKeyPath.split(",");
-		for (String path : subpartitionKeyPaths) {
-			pathsfromCommaSeparatedList.add(path);
-		}
+		Collections.addAll(pathsfromCommaSeparatedList, subpartitionKeyPaths);
 		if (subpartitionKeyPaths.length > 1) {
 			subpartitionKeyDefinition.setPaths(pathsfromCommaSeparatedList);
 			subpartitionKeyDefinition.setKind(PartitionKind.MULTI_HASH);
@@ -180,7 +184,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.getCreateItemOperation(mapCosmosDocument(doc, doc.getEmbedding()), new PartitionKey(doc.getId()));
 			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
 																// with the operation
-		}).collect(Collectors.toList());
+		}).toList();
 
 		try {
 			// Extract just the CosmosItemOperations from the pairs
