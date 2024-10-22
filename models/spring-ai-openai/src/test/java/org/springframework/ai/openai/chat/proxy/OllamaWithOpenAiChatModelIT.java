@@ -77,7 +77,7 @@ class OllamaWithOpenAiChatModelIT {
 	private static final String DEFAULT_OLLAMA_MODEL = "mistral";
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.3.9");
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.3.14");
 
 	static String baseUrl = "http://localhost:11434";
 
@@ -86,6 +86,7 @@ class OllamaWithOpenAiChatModelIT {
 		logger.info("Start pulling the '" + DEFAULT_OLLAMA_MODEL + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", DEFAULT_OLLAMA_MODEL);
 		ollamaContainer.execInContainer("ollama", "pull", "llava");
+		ollamaContainer.execInContainer("ollama", "pull", "llama3.2:1b");
 		logger.info(DEFAULT_OLLAMA_MODEL + " pulling competed!");
 
 		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
@@ -260,8 +261,9 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
-	@Test
-	void functionCallTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "llama3.2:1b" })
+	void functionCallTest(String modelName) {
 
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
