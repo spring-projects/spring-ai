@@ -161,30 +161,30 @@ public class TokenTextSplitter extends TextSplitter {
 
 		private boolean keepSeparator;
 
-		public Builder() {
+		private Builder() {
 		}
 
-		public Builder chunkSize(int chunkSize) {
+		public Builder withChunkSize(int chunkSize) {
 			this.chunkSize = chunkSize;
 			return this;
 		}
 
-		public Builder minChunkSizeChars(int minChunkSizeChars) {
+		public Builder withMinChunkSizeChars(int minChunkSizeChars) {
 			this.minChunkSizeChars = minChunkSizeChars;
 			return this;
 		}
 
-		public Builder minChunkLengthToEmbed(int minChunkLengthToEmbed) {
+		public Builder withMinChunkLengthToEmbed(int minChunkLengthToEmbed) {
 			this.minChunkLengthToEmbed = minChunkLengthToEmbed;
 			return this;
 		}
 
-		public Builder maxNumChunks(int maxNumChunks) {
+		public Builder withMaxNumChunks(int maxNumChunks) {
 			this.maxNumChunks = maxNumChunks;
 			return this;
 		}
 
-		public Builder keepSeparator(boolean keepSeparator) {
+		public Builder withKeepSeparator(boolean keepSeparator) {
 			this.keepSeparator = keepSeparator;
 			return this;
 		}
