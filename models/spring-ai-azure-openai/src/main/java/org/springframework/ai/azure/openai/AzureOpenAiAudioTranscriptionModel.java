@@ -23,10 +23,8 @@ import com.azure.core.http.rest.Response;
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
+import org.springframework.ai.audio.transcription.metadata.StructuredResponse;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.GranularityType;
-import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.StructuredResponse;
-import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.StructuredResponse.Segment;
-import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.StructuredResponse.Word;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.model.Model;
@@ -37,6 +35,8 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.springframework.ai.audio.transcription.metadata.StructuredResponse.*;
 
 /**
  * AzureOpenAI audio transcription client implementation for backed by
