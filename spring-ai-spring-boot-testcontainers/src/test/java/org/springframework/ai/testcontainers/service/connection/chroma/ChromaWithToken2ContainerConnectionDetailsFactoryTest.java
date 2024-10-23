@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.testcontainers.service.connection.chroma;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoConfiguration;
 import org.springframework.ai.document.Document;
@@ -86,6 +87,11 @@ class ChromaWithToken2ContainerConnectionDetailsFactoryTest {
 	@Configuration(proxyBeanMethods = false)
 	@ImportAutoConfiguration(ChromaVectorStoreAutoConfiguration.class)
 	static class Config {
+
+		@Bean
+		public ObjectMapper objectMapper() {
+			return new ObjectMapper();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -32,6 +33,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -62,6 +64,7 @@ import reactor.util.annotation.NonNull;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  */
 public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -80,6 +83,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
+
+	private final ObjectMapper objectMapper;
 
 	/**
 	 * Configures and initializes a GemFireVectorStore instance based on the provided
@@ -127,6 +132,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			.toString();
 		this.client = WebClient.create(base);
 		this.batchingStrategy = batchingStrategy;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
 	// Create Index Parameters
@@ -419,10 +425,9 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 					document.getContent(), document.getMetadata()))
 			.toList());
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		String embeddingsJson = null;
 		try {
-			String embeddingString = objectMapper.writeValueAsString(upload);
+			String embeddingString = this.objectMapper.writeValueAsString(upload);
 			embeddingsJson = embeddingString.substring("{\"embeddings\":".length());
 		}
 		catch (JsonProcessingException e) {
@@ -498,8 +503,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		createRequest.setVectorSimilarityFunction(vectorSimilarityFunction);
 		createRequest.setFields(fields);
 
-		ObjectMapper objectMapper = new ObjectMapper();
-		String index = objectMapper.writeValueAsString(createRequest);
+		String index = this.objectMapper.writeValueAsString(createRequest);
 
 		client.post()
 			.contentType(MediaType.APPLICATION_JSON)

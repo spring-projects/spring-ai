@@ -50,9 +50,9 @@ public class BedrockTitanChatAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public TitanChatBedrockApi titanChatBedrockApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockTitanChatProperties properties,
-			BedrockAwsConnectionProperties awsProperties) {
+			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
 		return new TitanChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
+				objectMapper, awsProperties.getTimeout());
 	}
 
 	@Bean

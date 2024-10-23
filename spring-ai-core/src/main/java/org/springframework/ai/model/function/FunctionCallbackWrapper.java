@@ -21,18 +21,22 @@ import java.util.function.Function;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 /**
  * Note that the underlying function is responsible for converting the output into format
  * that can be consumed by the Model. The default implementation converts the output into
  * String before sending it to the Model. Provide a custom function responseConverter
  * implementation to override this.
+ * 
+ * @author Christian Tzolov
+ * @author Sebastien Deleuze
  *
  */
 public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
@@ -90,10 +94,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 		private String inputTypeSchema;
 
-		private ObjectMapper objectMapper = new ObjectMapper()
-			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.registerModule(new JavaTimeModule());
+		private ObjectMapper objectMapper;
 
 		public Builder<I, O> withName(String name) {
 			Assert.hasText(name, "Name must not be empty");
@@ -142,7 +143,14 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			Assert.hasText(this.name, "Name must not be empty");
 			Assert.hasText(this.description, "Description must not be empty");
 			Assert.notNull(this.responseConverter, "ResponseConverter must not be null");
-			Assert.notNull(this.objectMapper, "ObjectMapper must not be null");
+
+			if (this.objectMapper == null) {
+				this.objectMapper = JsonMapper.builder()
+					.addModules(JacksonUtils.instantiateAvailableModules())
+					.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+					.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+					.build();
+			}
 
 			if (this.inputType == null) {
 				if (this.function != null) {

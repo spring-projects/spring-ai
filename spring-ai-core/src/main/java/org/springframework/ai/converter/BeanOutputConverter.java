@@ -21,8 +21,11 @@ import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_
 import java.lang.reflect.Type;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 
@@ -34,7 +37,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
@@ -54,6 +56,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonOption;
  * @author Sebastian Ullrich
  * @author Kirk Lund
  * @author Josh Long
+ * @author Sebastien Deleuze
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
@@ -65,12 +68,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/**
 	 * The target class type reference to which the output will be converted.
 	 */
-	@SuppressWarnings({ "FieldMayBeFinal" })
-	private TypeReference<T> typeRef;
+	private final TypeReference<T> typeRef;
 
 	/** The object mapper used for deserialization and other JSON operations. */
-	@SuppressWarnings("FieldMayBeFinal")
-	private ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
 
 	/**
 	 * Constructor to initialize with the target type's class.
@@ -149,7 +150,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.typeRef.getType());
-		ObjectWriter objectWriter = new ObjectMapper().writer(new DefaultPrettyPrinter()
+		ObjectWriter objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter()
 			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
@@ -201,10 +202,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @return Configured object mapper.
 	 */
 	protected ObjectMapper getObjectMapper() {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.registerModule(new JavaTimeModule());
-		return mapper;
+		return JsonMapper.builder()
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			.build();
 	}
 
 	/**

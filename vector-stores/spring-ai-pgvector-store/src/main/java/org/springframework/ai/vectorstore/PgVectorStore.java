@@ -17,6 +17,7 @@ package org.springframework.ai.vectorstore;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.pgvector.PGvector;
 import io.micrometer.observation.ObservationRegistry;
 import org.postgresql.util.PGobject;
@@ -29,6 +30,7 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -60,6 +62,7 @@ import java.util.UUID;
  * @author Muthukumaran Navaneethakrishnan
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -100,7 +103,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final PgDistanceType distanceType;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
 
 	private final boolean removeExistingVectorStoreTable;
 
@@ -153,6 +156,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			BatchingStrategy batchingStrategy, int maxDocumentBatchSize) {
 
 		super(observationRegistry, customObservationConvention);
+
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		this.vectorTableName = (null == vectorTableName || vectorTableName.isEmpty()) ? DEFAULT_TABLE_NAME
 				: vectorTableName.trim();
@@ -231,7 +236,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private String toJson(Map<String, Object> map) {
 		try {
-			return objectMapper.writeValueAsString(map);
+			return this.objectMapper.writeValueAsString(map);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

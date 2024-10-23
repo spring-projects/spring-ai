@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
@@ -38,10 +36,6 @@ public abstract class HanaVectorEntity {
 	protected String _id;
 
 	public HanaVectorEntity() {
-	}
-
-	public String toJson() throws JsonProcessingException {
-		return new ObjectMapper().writeValueAsString(this);
 	}
 
 	public String get_id() {

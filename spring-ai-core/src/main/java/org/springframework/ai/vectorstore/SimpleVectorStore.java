@@ -32,12 +32,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -64,10 +66,13 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Dingmeng Xue
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
+
+	private final ObjectMapper objectMapper;
 
 	protected Map<String, Document> store = new ConcurrentHashMap<>();
 
@@ -84,6 +89,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.embeddingModel = embeddingModel;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
 	@Override
@@ -172,9 +178,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	public void load(File file) {
 		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
 		};
-		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			Map<String, Document> deserializedMap = objectMapper.readValue(file, typeRef);
+			Map<String, Document> deserializedMap = this.objectMapper.readValue(file, typeRef);
 			this.store = deserializedMap;
 		}
 		catch (IOException ex) {
@@ -189,9 +194,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	public void load(Resource resource) {
 		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
 		};
-		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			Map<String, Document> deserializedMap = objectMapper.readValue(resource.getInputStream(), typeRef);
+			Map<String, Document> deserializedMap = this.objectMapper.readValue(resource.getInputStream(), typeRef);
 			this.store = deserializedMap;
 		}
 		catch (IOException ex) {
@@ -200,8 +204,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	private String getVectorDbAsJson() {
-		ObjectMapper objectMapper = new ObjectMapper();
-		ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
+		ObjectWriter objectWriter = this.objectMapper.writerWithDefaultPrettyPrinter();
 		String json;
 		try {
 			json = objectWriter.writeValueAsString(this.store);

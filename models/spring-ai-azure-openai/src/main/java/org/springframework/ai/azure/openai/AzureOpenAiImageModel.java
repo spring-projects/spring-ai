@@ -10,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageGenerationMetadata;
@@ -22,6 +22,7 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
 import java.util.List;
@@ -33,6 +34,7 @@ import static java.lang.String.format;
  * {@link OpenAIClient}.
  *
  * @author Benoit Moussaud
+ * @author Sebastien Deleuze
  * @see ImageModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -47,6 +49,8 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private final AzureOpenAiImageOptions defaultOptions;
 
+	private final ObjectMapper objectMapper;
+
 	public AzureOpenAiImageModel(OpenAIClient openAIClient) {
 		this(openAIClient, AzureOpenAiImageOptions.builder().withDeploymentName(DEFAULT_DEPLOYMENT_NAME).build());
 	}
@@ -56,6 +60,11 @@ public class AzureOpenAiImageModel implements ImageModel {
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
 		this.defaultOptions = options;
+		this.objectMapper = JsonMapper.builder()
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.build();
 	}
 
 	public AzureOpenAiImageOptions getDefaultOptions() {
@@ -88,11 +97,8 @@ public class AzureOpenAiImageModel implements ImageModel {
 	}
 
 	private String toPrettyJson(Object object) {
-		ObjectMapper objectMapper = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.registerModule(new JavaTimeModule());
 		try {
-			return objectMapper.writeValueAsString(object);
+			return this.objectMapper.writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			return "JsonProcessingException:" + e + " [" + object.toString() + "]";
