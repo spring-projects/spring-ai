@@ -52,9 +52,10 @@ public class BedrockLlamaChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public LlamaChatBedrockApi llamaApi(AwsCredentialsProvider credentialsProvider, AwsRegionProvider regionProvider,
-			BedrockLlamaChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
+			BedrockLlamaChatProperties properties, BedrockAwsConnectionProperties awsProperties,
+			ObjectMapper objectMapper) {
 		return new LlamaChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
+				objectMapper, awsProperties.getTimeout());
 	}
 
 	@Bean

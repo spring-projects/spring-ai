@@ -52,9 +52,9 @@ public class BedrockAnthropicChatAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public AnthropicChatBedrockApi anthropicApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockAnthropicChatProperties properties,
-			BedrockAwsConnectionProperties awsProperties) {
+			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
 		return new AnthropicChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
+				objectMapper, awsProperties.getTimeout());
 	}
 
 	@Bean

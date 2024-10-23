@@ -51,9 +51,9 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockTitanEmbeddingProperties properties,
-			BedrockAwsConnectionProperties awsProperties) {
+			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
 		return new TitanEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
+				objectMapper, awsProperties.getTimeout());
 	}
 
 	@Bean

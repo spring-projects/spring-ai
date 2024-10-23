@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
@@ -29,6 +30,8 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 
 import java.util.Map;
 import java.util.Objects;
+
+import org.springframework.ai.util.JacksonUtils;
 
 import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
 import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12;
@@ -91,7 +94,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.clazz);
-		ObjectWriter objectWriter = new ObjectMapper().writer(new DefaultPrettyPrinter()
+		ObjectWriter objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter()
 			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
@@ -142,9 +145,10 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	 * @return Configured object mapper.
 	 */
 	protected ObjectMapper getObjectMapper() {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		return mapper;
+		return JsonMapper.builder()
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			.build();
 	}
 
 	/**

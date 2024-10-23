@@ -25,7 +25,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
@@ -116,6 +118,8 @@ public class VertexAiPaLm2Api {
 
 	private final String embeddingModel;
 
+	private final ObjectMapper objectMapper;
+
 	/**
 	 * Create a new chat completion api.
 	 * @param apiKey vertex apiKey.
@@ -138,6 +142,7 @@ public class VertexAiPaLm2Api {
 		this.chatModel = model;
 		this.embeddingModel = embeddingModel;
 		this.apiKey = apiKey;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -154,7 +159,7 @@ public class VertexAiPaLm2Api {
 			public void handleError(ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
 					throw new RuntimeException(String.format("%s - %s", response.getStatusCode().value(),
-							new ObjectMapper().readValue(response.getBody(), ResponseError.class)));
+							objectMapper.readValue(response.getBody(), ResponseError.class)));
 				}
 			}
 		};

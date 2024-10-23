@@ -50,9 +50,9 @@ public class BedrockCohereChatAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public CohereChatBedrockApi cohereChatApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockCohereChatProperties properties,
-			BedrockAwsConnectionProperties awsProperties) {
+			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
 		return new CohereChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
+				objectMapper, awsProperties.getTimeout());
 	}
 
 	@Bean

@@ -54,12 +54,13 @@ public class ChromaVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ChromaApi chromaApi(ChromaApiProperties apiProperties,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ChromaConnectionDetails connectionDetails) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ChromaConnectionDetails connectionDetails,
+			ObjectMapper objectMapper) {
 
 		String chromaUrl = String.format("%s:%s", connectionDetails.getHost(), connectionDetails.getPort());
 
 		var chromaApi = new ChromaApi(chromaUrl, restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				new ObjectMapper());
+				objectMapper);
 
 		if (StringUtils.hasText(connectionDetails.getKeyToken())) {
 			chromaApi.withKeyToken(connectionDetails.getKeyToken());
