@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.model.function;
 
-import java.util.Map;
-
 import org.springframework.ai.chat.model.ToolContext;
 
 /**

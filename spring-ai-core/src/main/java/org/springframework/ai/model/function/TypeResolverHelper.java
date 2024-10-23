@@ -130,7 +130,14 @@ public abstract class TypeResolverHelper {
 
 		// Resolves: https://github.com/spring-projects/spring-ai/issues/726
 		if (!(functionType instanceof ParameterizedType)) {
-			functionType = FunctionTypeUtils.discoverFunctionTypeFromClass(FunctionTypeUtils.getRawType(functionType));
+			Class<?> functionalClass = FunctionTypeUtils.getRawType(functionType);
+			// Resolves: https://github.com/spring-projects/spring-ai/issues/1576
+			if (BiFunction.class.isAssignableFrom(functionalClass)) {
+				functionType = TypeResolver.reify(BiFunction.class, (Class<BiFunction<?, ?, ?>>) functionalClass);
+			}
+			else {
+				functionType = FunctionTypeUtils.discoverFunctionTypeFromClass(functionalClass);
+			}
 		}
 
 		var argumentType = functionType instanceof ParameterizedType
