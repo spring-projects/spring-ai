@@ -168,7 +168,7 @@ public class CosmosDBVectorStoreIT {
 			config.setDatabaseName("test-database");
 			config.setContainerName("test-container");
 			config.setMetadataFields("country,year,city");
-			config.setVectorStoreThoughput(1000);
+			config.setVectorStoreThroughput(1000);
 			return new CosmosDBVectorStore(null, convention, cosmosClient, config, embeddingModel);
 
 		}

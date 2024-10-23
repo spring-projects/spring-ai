@@ -35,7 +35,7 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String metadataFields;
 
-	private int vectorStoreThoughput = 400;
+	private int vectorStoreThroughput = 400;
 
 	private long vectorDimensions = 1536;
 
@@ -45,16 +45,16 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String key;
 
-	public int getVectorStoreThoughput() {
-		return vectorStoreThoughput;
+	public int getVectorStoreThroughput() {
+		return this.vectorStoreThroughput;
 	}
 
-	public void setVectorStoreThoughput(int vectorStoreThoughput) {
-		this.vectorStoreThoughput = vectorStoreThoughput;
+	public void setVectorStoreThroughput(int vectorStoreThroughput) {
+		this.vectorStoreThroughput = vectorStoreThroughput;
 	}
 
 	public String getMetadataFields() {
-		return metadataFields;
+		return this.metadataFields;
 	}
 
 	public void setMetadataFields(String metadataFields) {
@@ -62,7 +62,7 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getEndpoint() {
-		return endpoint;
+		return this.endpoint;
 	}
 
 	public void setEndpoint(String endpoint) {
@@ -70,7 +70,7 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getKey() {
-		return key;
+		return this.key;
 	}
 
 	public void setKey(String key) {
@@ -78,7 +78,7 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getDatabaseName() {
-		return databaseName;
+		return this.databaseName;
 	}
 
 	public void setDatabaseName(String databaseName) {
@@ -86,7 +86,7 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getContainerName() {
-		return containerName;
+		return this.containerName;
 	}
 
 	public void setContainerName(String containerName) {
@@ -94,7 +94,7 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getPartitionKeyPath() {
-		return partitionKeyPath;
+		return this.partitionKeyPath;
 	}
 
 	public void setPartitionKeyPath(String partitionKeyPath) {
@@ -102,7 +102,7 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public long getVectorDimensions() {
-		return vectorDimensions;
+		return this.vectorDimensions;
 	}
 
 	public void setVectorDimensions(long vectorDimensions) {

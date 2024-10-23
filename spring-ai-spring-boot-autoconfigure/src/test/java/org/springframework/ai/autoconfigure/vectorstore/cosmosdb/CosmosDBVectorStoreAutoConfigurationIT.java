@@ -51,7 +51,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.containerName=test-container")
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.partitionKeyPath=/id")
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.metadataFields=country,year,city")
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThoughput=1000")
+		.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThroughput=1000")
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorDimensions=384")
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.endpoint=" + System.getenv("AZURE_COSMOSDB_ENDPOINT"))
 		.withPropertyValues("spring.ai.vectorstore.cosmosdb.key=" + System.getenv("AZURE_COSMOSDB_KEY"))

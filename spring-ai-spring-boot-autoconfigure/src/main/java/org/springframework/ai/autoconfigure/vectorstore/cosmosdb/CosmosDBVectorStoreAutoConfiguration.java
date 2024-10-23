@@ -73,7 +73,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
 		config.setDatabaseName(properties.getDatabaseName());
 		config.setContainerName(properties.getContainerName());
 		config.setMetadataFields(properties.getMetadataFields());
-		config.setVectorStoreThoughput(properties.getVectorStoreThoughput());
+		config.setVectorStoreThroughput(properties.getVectorStoreThroughput());
 		config.setVectorDimensions(properties.getVectorDimensions());
 		return new CosmosDBVectorStore(observationRegistry, customObservationConvention.getIfAvailable(),
 				cosmosAsyncClient, config, embeddingModel, batchingStrategy);

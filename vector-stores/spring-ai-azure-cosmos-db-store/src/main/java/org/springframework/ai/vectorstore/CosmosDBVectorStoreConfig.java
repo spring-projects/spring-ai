@@ -37,18 +37,18 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 
 	private String metadataFields;
 
-	private int vectorStoreThoughput = 400;
+	private int vectorStoreThroughput = 400;
 
 	private long vectorDimensions = 1536;
 
 	private List<String> metadataFieldsList;
 
-	public int getVectorStoreThoughput() {
-		return vectorStoreThoughput;
+	public int getVectorStoreThroughput() {
+		return this.vectorStoreThroughput;
 	}
 
-	public void setVectorStoreThoughput(int vectorStoreThoughput) {
-		this.vectorStoreThoughput = vectorStoreThoughput;
+	public void setVectorStoreThroughput(int vectorStoreThroughput) {
+		this.vectorStoreThroughput = vectorStoreThroughput;
 	}
 
 	public void setMetadataFields(String metadataFields) {
@@ -57,15 +57,15 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	public String getMetadataFields() {
-		return metadataFields;
+		return this.metadataFields;
 	}
 
 	public List<String> getMetadataFieldsList() {
-		return metadataFieldsList;
+		return this.metadataFieldsList;
 	}
 
 	public String getEndpoint() {
-		return endpoint;
+		return this.endpoint;
 	}
 
 	public void setEndpoint(String endpoint) {
@@ -73,7 +73,7 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	public String getKey() {
-		return key;
+		return this.key;
 	}
 
 	public void setKey(String key) {
@@ -81,7 +81,7 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	public String getContainerName() {
-		return containerName;
+		return this.containerName;
 	}
 
 	public void setContainerName(String containerName) {
@@ -89,7 +89,7 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	public String getDatabaseName() {
-		return databaseName;
+		return this.databaseName;
 	}
 
 	public void setDatabaseName(String databaseName) {
@@ -97,7 +97,7 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	public String getPartitionKeyPath() {
-		return partitionKeyPath;
+		return this.partitionKeyPath;
 	}
 
 	public void setPartitionKeyPath(String partitionKeyPath) {
@@ -110,7 +110,7 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	public long getVectorDimensions() {
-		return vectorDimensions;
+		return this.vectorDimensions;
 	}
 
 	public void setVectorDimensions(long vectorDimensions) {

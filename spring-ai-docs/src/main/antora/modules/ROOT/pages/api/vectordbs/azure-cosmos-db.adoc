@@ -101,17 +101,19 @@ Add the following dependency to your Maven project:
 
 The following configuration properties are available for the Cosmos DB vector store:
 
-|===========================
+[stripes=even]
+|===
 | Property | Description
+
 | spring.ai.vectorstore.cosmosdb.databaseName | The name of the Cosmos DB database to use.
 | spring.ai.vectorstore.cosmosdb.containerName | The name of the Cosmos DB container to use.
 | spring.ai.vectorstore.cosmosdb.partitionKeyPath | The path for the partition key.
 | spring.ai.vectorstore.cosmosdb.metadataFields | Comma-separated list of metadata fields.
-| spring.ai.vectorstore.cosmosdb.vectorStoreThoughput | The throughput for the vector store.
+| spring.ai.vectorstore.cosmosdb.vectorStoreThroughput | The throughput for the vector store.
 | spring.ai.vectorstore.cosmosdb.vectorDimensions | The number of dimensions for the vectors.
 | spring.ai.vectorstore.cosmosdb.endpoint | The endpoint for the Cosmos DB.
 | spring.ai.vectorstore.cosmosdb.key | The key for the Cosmos DB.
-|===========================
+|===
 
 
 == Complex Searches with Filters
@@ -205,7 +207,7 @@ public class DemoApplication implements CommandLineRunner {
         config.setDatabaseName("spring-ai-sample");
         config.setContainerName("container");
         config.setMetadataFields("country,city");
-        config.setVectorStoreThoughput(400);
+        config.setVectorStoreThroughput(400);
 
         CosmosAsyncClient cosmosClient = new CosmosClientBuilder()
                 .endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))

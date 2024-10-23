@@ -16,16 +16,15 @@
 
 package org.springframework.ai.vectorstore;
 
-import com.azure.cosmos.*;
-import com.azure.cosmos.implementation.guava25.collect.ImmutableList;
-import com.azure.cosmos.models.*;
-import com.azure.cosmos.util.CosmosPagedFlux;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.micrometer.observation.ObservationRegistry;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -38,10 +37,38 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+
+import com.azure.cosmos.CosmosAsyncClient;
+import com.azure.cosmos.CosmosAsyncContainer;
+import com.azure.cosmos.CosmosAsyncDatabase;
+import com.azure.cosmos.implementation.guava25.collect.ImmutableList;
+import com.azure.cosmos.models.CosmosBulkOperations;
+import com.azure.cosmos.models.CosmosContainerProperties;
+import com.azure.cosmos.models.CosmosItemOperation;
+import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.CosmosVectorDataType;
+import com.azure.cosmos.models.CosmosVectorDistanceFunction;
+import com.azure.cosmos.models.CosmosVectorEmbedding;
+import com.azure.cosmos.models.CosmosVectorEmbeddingPolicy;
+import com.azure.cosmos.models.CosmosVectorIndexSpec;
+import com.azure.cosmos.models.CosmosVectorIndexType;
+import com.azure.cosmos.models.ExcludedPath;
+import com.azure.cosmos.models.IncludedPath;
+import com.azure.cosmos.models.IndexingMode;
+import com.azure.cosmos.models.IndexingPolicy;
+import com.azure.cosmos.models.PartitionKey;
+import com.azure.cosmos.models.PartitionKeyDefinition;
+import com.azure.cosmos.models.PartitionKind;
+import com.azure.cosmos.models.SqlParameter;
+import com.azure.cosmos.models.SqlQuerySpec;
+import com.azure.cosmos.models.ThroughputProperties;
+import com.azure.cosmos.util.CosmosPagedFlux;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import io.micrometer.observation.ObservationRegistry;
 import reactor.core.publisher.Flux;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author Theo van Kraay
@@ -79,38 +106,38 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		cosmosClient.createDatabaseIfNotExists(properties.getDatabaseName()).block();
 
 		initializeContainer(properties.getContainerName(), properties.getDatabaseName(),
-				properties.getVectorStoreThoughput(), properties.getVectorDimensions(),
+				properties.getVectorStoreThroughput(), properties.getVectorDimensions(),
 				properties.getPartitionKeyPath());
 
 		this.embeddingModel = embeddingModel;
 	}
 
-	private void initializeContainer(String containerName, String databaseName, int vectorStoreThoughput,
+	private void initializeContainer(String containerName, String databaseName, int vectorStoreThroughput,
 			long vectorDimensions, String partitionKeyPath) {
 
 		// Set defaults if not provided
-		if (vectorStoreThoughput == 0) {
-			vectorStoreThoughput = 400;
+		if (vectorStoreThroughput == 0) {
+			vectorStoreThroughput = 400;
 		}
 		if (partitionKeyPath == null) {
 			partitionKeyPath = "/id";
 		}
 
 		// handle hierarchical partition key
-		PartitionKeyDefinition subpartitionKeyDefinition = new PartitionKeyDefinition();
-		List<String> pathsfromCommaSeparatedList = new ArrayList<String>();
-		String[] subpartitionKeyPaths = partitionKeyPath.split(",");
-		Collections.addAll(pathsfromCommaSeparatedList, subpartitionKeyPaths);
-		if (subpartitionKeyPaths.length > 1) {
-			subpartitionKeyDefinition.setPaths(pathsfromCommaSeparatedList);
-			subpartitionKeyDefinition.setKind(PartitionKind.MULTI_HASH);
+		PartitionKeyDefinition subPartitionKeyDefinition = new PartitionKeyDefinition();
+		List<String> pathsFromCommaSeparatedList = new ArrayList<String>();
+		String[] subPartitionKeyPaths = partitionKeyPath.split(",");
+		Collections.addAll(pathsFromCommaSeparatedList, subPartitionKeyPaths);
+		if (subPartitionKeyPaths.length > 1) {
+			subPartitionKeyDefinition.setPaths(pathsFromCommaSeparatedList);
+			subPartitionKeyDefinition.setKind(PartitionKind.MULTI_HASH);
 		}
 		else {
-			subpartitionKeyDefinition.setPaths(Collections.singletonList(partitionKeyPath));
-			subpartitionKeyDefinition.setKind(PartitionKind.HASH);
+			subPartitionKeyDefinition.setPaths(Collections.singletonList(partitionKeyPath));
+			subPartitionKeyDefinition.setKind(PartitionKind.HASH);
 		}
 		CosmosContainerProperties collectionDefinition = new CosmosContainerProperties(containerName,
-				subpartitionKeyDefinition);
+				subPartitionKeyDefinition);
 		// Set vector embedding policy
 		CosmosVectorEmbeddingPolicy embeddingPolicy = new CosmosVectorEmbeddingPolicy();
 		CosmosVectorEmbedding embedding = new CosmosVectorEmbedding();
@@ -135,16 +162,16 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		indexingPolicy.setVectorIndexes(List.of(cosmosVectorIndexSpec));
 		collectionDefinition.setIndexingPolicy(indexingPolicy);
 
-		ThroughputProperties throughputProperties = ThroughputProperties.createManualThroughput(vectorStoreThoughput);
-		CosmosAsyncDatabase cosmosAsyncDatabase = cosmosClient.getDatabase(databaseName);
+		ThroughputProperties throughputProperties = ThroughputProperties.createManualThroughput(vectorStoreThroughput);
+		CosmosAsyncDatabase cosmosAsyncDatabase = this.cosmosClient.getDatabase(databaseName);
 		cosmosAsyncDatabase.createContainerIfNotExists(collectionDefinition, throughputProperties).block();
 		this.container = cosmosAsyncDatabase.getContainer(containerName);
 	}
 
 	@Override
 	public void close() {
-		if (cosmosClient != null) {
-			cosmosClient.close();
+		if (this.cosmosClient != null) {
+			this.cosmosClient.close();
 			logger.info("Cosmos DB client closed successfully.");
 		}
 	}
@@ -192,7 +219,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.map(ImmutablePair::getValue)
 				.collect(Collectors.toList());
 
-			container.executeBulkOperations(Flux.fromIterable(itemOperations)).doOnNext(response -> {
+			this.container.executeBulkOperations(Flux.fromIterable(itemOperations)).doOnNext(response -> {
 				if (response != null && response.getResponse() != null) {
 					int statusCode = response.getResponse().getStatusCode();
 					if (statusCode == 409) {
@@ -236,7 +263,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 			// Execute bulk delete operations synchronously by using blockLast() on the
 			// Flux
-			container.executeBulkOperations(Flux.fromIterable(itemOperations))
+			this.container.executeBulkOperations(Flux.fromIterable(itemOperations))
 				.doOnNext(response -> logger.info("Document deleted with status: {}",
 						response.getResponse().getStatusCode()))
 				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
@@ -279,9 +306,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		Filter.Expression filterExpression = request.getFilterExpression();
 		if (filterExpression != null) {
 			CosmosDBFilterExpressionConverter filterExpressionConverter = new CosmosDBFilterExpressionConverter(
-					properties.getMetadataFieldsList()); // Use the expression directly as
-															// it handles the "metadata"
-															// fields internally
+					this.properties.getMetadataFieldsList()); // Use the expression
+																// directly as
+																// it handles the
+																// "metadata"
+																// fields internally
 			String filterQuery = filterExpressionConverter.convertExpression(filterExpression);
 			queryBuilder.append(" AND ").append(filterQuery);
 		}
@@ -297,7 +326,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(query, parameters);
 		CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
 
-		CosmosPagedFlux<JsonNode> pagedFlux = container.queryItems(sqlQuerySpec, options, JsonNode.class);
+		CosmosPagedFlux<JsonNode> pagedFlux = this.container.queryItems(sqlQuerySpec, options, JsonNode.class);
 
 		logger.info("Executing similarity search query: {}", query);
 		try {
@@ -322,9 +351,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.COSMOSDB.value(), operationName)
-			.withCollectionName(container.getId())
+			.withCollectionName(this.container.getId())
 			.withDimensions(this.embeddingModel.dimensions())
-			.withNamespace(container.getDatabase().getId())
+			.withNamespace(this.container.getDatabase().getId())
 			.withSimilarityMetric("cosine");
 	}
 

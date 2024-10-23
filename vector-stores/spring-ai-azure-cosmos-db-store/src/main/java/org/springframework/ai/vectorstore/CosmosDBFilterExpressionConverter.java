@@ -16,10 +16,8 @@
 
 package org.springframework.ai.vectorstore;
 
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
-import org.springframework.ai.vectorstore.filter.Filter.Key;
-import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 
 import java.util.Collection;
 import java.util.Map;
@@ -27,8 +25,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
  * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into
