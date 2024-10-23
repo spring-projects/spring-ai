@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -103,6 +104,15 @@ public class OpenAiApi {
 	private final WebClient webClient;
 
 	private OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
+
+	// @formatter:off
+	private Function<String, ChatCompletionChunk> parser =
+		content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class);
+
+	public void setParser(Function<String, ChatCompletionChunk> parser) {
+		this.parser = parser;
+	}
+	// @formatter:on
 
 	/**
 	 * Create a new chat completion api.
@@ -240,7 +250,7 @@ public class OpenAiApi {
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.map(parser)
 			// Detect is the chunk is part of a streaming function call.
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
