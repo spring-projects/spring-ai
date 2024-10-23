@@ -467,7 +467,11 @@ public class Anthropic3ChatBedrockApi extends
 		/**
 		 * anthropic.claude-3-5-sonnet-20240620-v1:0
 		 */
-		CLAUDE_V3_5_SONNET("anthropic.claude-3-5-sonnet-20240620-v1:0");
+		CLAUDE_V3_5_SONNET("anthropic.claude-3-5-sonnet-20240620-v1:0"),
+		/**
+		 * anthropic.claude-3-5-sonnet-20241022-v2:0
+		 */
+		CLAUDE_V3_5_SONNET_V2("anthropic.claude-3-5-sonnet-20241022-v2:0");
 
 		private final String id;
 
