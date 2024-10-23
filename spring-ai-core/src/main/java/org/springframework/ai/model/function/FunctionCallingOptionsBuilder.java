@@ -61,7 +61,9 @@ public class FunctionCallingOptionsBuilder {
 
 	public FunctionCallingOptionsBuilder withFunction(String function) {
 		Assert.notNull(function, "Function must not be null");
-		this.options.getFunctions().add(function);
+		var set = new HashSet<>(this.options.getFunctions());
+		set.add(function);
+		this.options.setFunctions(set);
 		return this;
 	}
 
@@ -131,7 +133,7 @@ public class FunctionCallingOptionsBuilder {
 		return this.options;
 	}
 
-	public static class PortableFunctionCallingOptions implements FunctionCallingOptions, ChatOptions {
+	public static class PortableFunctionCallingOptions implements FunctionCallingOptions {
 
 		private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
