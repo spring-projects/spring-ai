@@ -103,7 +103,6 @@ class BedrockTitanChatModelIT {
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
 
-	// @Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
@@ -123,7 +122,6 @@ class BedrockTitanChatModelIT {
 		assertThat(list).hasSize(5);
 	}
 
-	// @Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void mapOutputConverter() {
 		MapOutputConverter outputConverter = new MapOutputConverter();
@@ -148,7 +146,7 @@ class BedrockTitanChatModelIT {
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
+	@Disabled("TODO: Fix the converter instructions to return the correct format")
 	@Test
 	void beanOutputConverterRecords() {
 
@@ -169,7 +167,7 @@ class BedrockTitanChatModelIT {
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
+	@Disabled("TODO: Fix the converter instructions to return the correct format")
 	@Test
 	void beanStreamOutputConverterRecords() {
 

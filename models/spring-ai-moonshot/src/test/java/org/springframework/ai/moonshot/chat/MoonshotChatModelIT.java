@@ -122,7 +122,7 @@ public class MoonshotChatModelIT {
 	}
 
 	@Test
-	void beanOutputParser() {
+	void beanOutputConverter() {
 
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
@@ -143,7 +143,7 @@ public class MoonshotChatModelIT {
 	}
 
 	@Test
-	void beanOutputParserRecords() {
+	void beanOutputConverterRecords() {
 
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
@@ -170,7 +170,7 @@ public class MoonshotChatModelIT {
 	}
 
 	@Test
-	void beanStreamOutputParserRecords() {
+	void beanStreamOutputConverterRecords() {
 
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 

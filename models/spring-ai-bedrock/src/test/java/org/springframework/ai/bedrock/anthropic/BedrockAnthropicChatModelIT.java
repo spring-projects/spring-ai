@@ -111,9 +111,9 @@ class BedrockAnthropicChatModelIT {
 	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputConverter outputParser = new ListOutputConverter(conversionService);
+		ListOutputConverter converter = new ListOutputConverter(conversionService);
 
-		String format = outputParser.getFormat();
+		String format = converter.getFormat();
 		String template = """
 				List five {subject}
 				{format}
@@ -123,7 +123,7 @@ class BedrockAnthropicChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputParser.convert(generation.getOutput().getContent());
+		List<String> list = converter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 	}
 

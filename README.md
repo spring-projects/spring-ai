@@ -43,7 +43,6 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 
 Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/reference/getting-started.html) for instruction on adding your dependencies.
 
-
 ## Cloning the repo
 
 This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2).
