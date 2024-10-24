@@ -69,6 +69,10 @@ class BeanOutputConverterTest {
 			return this.someString;
 		}
 
+		public void setSomeString(String someString) {
+			this.someString = someString;
+		}
+
 	}
 
 	static class TestClassWithDateProperty {
@@ -85,6 +89,10 @@ class BeanOutputConverterTest {
 
 		LocalDate getSomeString() {
 			return this.someString;
+		}
+
+		public void setSomeString(LocalDate someString) {
+			this.someString = someString;
 		}
 
 	}
