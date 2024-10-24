@@ -23,6 +23,8 @@ import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 
@@ -146,6 +148,11 @@ public class ChromaVectorStoreAutoConfigurationIT {
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new TransformersEmbeddingModel();
+		}
+
+		@Bean
+		public ObjectMapper objectMapper() {
+			return new ObjectMapper();
 		}
 
 	}
