@@ -82,6 +82,7 @@
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
+		<module>models/spring-ai-bedrock-converse</module>
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
@@ -102,6 +103,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-aws-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-converse</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
@@ -201,6 +203,7 @@
 		<postgresql.version>42.7.2</postgresql.version>
 		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>
 		<milvus.version>2.3.5</milvus.version>
+		<oracle.free.version>1.19.8</oracle.free.version>
 		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
 		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
@@ -297,6 +300,7 @@
 								checkstyle.build.directory=${project.build.directory}
 								checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
 								checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
+								checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
 							</propertyExpansion>
 							<consoleOutput>true</consoleOutput>
 							<failsOnError>${maven-checkstyle-plugin.failsOnError}

@@ -43,6 +43,7 @@ public enum AiProvider {
 	ZHIPUAI("zhipuai"),
 	SPRING_AI("spring_ai"),
 	VERTEX_AI("vertex_ai"),
+	BEDROCK_CONVERSE("bedrock_converse"),
 	ONNX("onnx");
 
 	private final String value;

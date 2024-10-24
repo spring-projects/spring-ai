@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 // NOTE: works only with US location. Use VPN if you are outside US.
 @EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".*")
+@Disabled("Disabled due to the PALM API being decommissioned by Google.")
 public class VertexAiPaLm2AutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(VertexAiPaLm2AutoConfigurationIT.class);

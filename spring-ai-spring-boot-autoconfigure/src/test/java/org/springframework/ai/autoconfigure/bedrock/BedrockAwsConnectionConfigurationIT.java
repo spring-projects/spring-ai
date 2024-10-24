@@ -17,7 +17,6 @@
 package org.springframework.ai.autoconfigure.bedrock;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -27,7 +26,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
@@ -35,18 +33,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Wei Jiang
- * @since 0.8.1
+ * @author Mark Pollack
+ * @since 1.0.0
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class BedrockAwsConnectionConfigurationIT {
 
 	@Test
 	public void autoConfigureAWSCredentialAndRegionProvider() {
-		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
-					"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
-					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id())
+		BedrockTestUtils.getContextRunner()
 			.withConfiguration(AutoConfigurations.of(TestAutoConfiguration.class))
 			.run(context -> {
 				var awsCredentialsProvider = context.getBean(AwsCredentialsProvider.class);
@@ -66,10 +61,7 @@ public class BedrockAwsConnectionConfigurationIT {
 
 	@Test
 	public void autoConfigureWithCustomAWSCredentialAndRegionProvider() {
-		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
-					"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
-					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id())
+		BedrockTestUtils.getContextRunner()
 			.withConfiguration(AutoConfigurations.of(TestAutoConfiguration.class,
 					CustomAwsCredentialsProviderAndAwsRegionProviderAutoConfiguration.class))
 			.run(context -> {
