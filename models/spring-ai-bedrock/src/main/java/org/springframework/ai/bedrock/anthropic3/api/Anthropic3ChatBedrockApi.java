@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 
@@ -112,6 +113,21 @@ public class Anthropic3ChatBedrockApi extends
 	public Anthropic3ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 * @param endpointOverride The endpoint to use.
+	 */
+	public Anthropic3ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+									ObjectMapper objectMapper, Duration timeout, URI endpointOverride) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout, endpointOverride);
 	}
 
 	// https://github.com/build-on-aws/amazon-bedrock-java-examples/blob/main/example_code/bedrock-runtime/src/main/java/aws/community/examples/InvokeBedrockStreamingAsync.java
