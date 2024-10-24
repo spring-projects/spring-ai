@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.image;
 
 import java.util.List;
@@ -67,7 +68,7 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	 */
 	@Override
 	public List<ImageGeneration> getResults() {
-		return imageGenerations;
+		return this.imageGenerations;
 	}
 
 	/**
@@ -78,7 +79,7 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 		if (CollectionUtils.isEmpty(this.imageGenerations)) {
 			return null;
 		}
-		return imageGenerations.get(0);
+		return this.imageGenerations.get(0);
 	}
 
 	/**
@@ -87,28 +88,30 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	 */
 	@Override
 	public ImageResponseMetadata getMetadata() {
-		return imageResponseMetadata;
+		return this.imageResponseMetadata;
 	}
 
 	@Override
 	public String toString() {
-		return "ImageResponse [" + "imageResponseMetadata=" + imageResponseMetadata + ", imageGenerations="
-				+ imageGenerations + "]";
+		return "ImageResponse [" + "imageResponseMetadata=" + this.imageResponseMetadata + ", imageGenerations="
+				+ this.imageGenerations + "]";
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ImageResponse that))
+		}
+		if (!(o instanceof ImageResponse that)) {
 			return false;
-		return Objects.equals(imageResponseMetadata, that.imageResponseMetadata)
-				&& Objects.equals(imageGenerations, that.imageGenerations);
+		}
+		return Objects.equals(this.imageResponseMetadata, that.imageResponseMetadata)
+				&& Objects.equals(this.imageGenerations, that.imageGenerations);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(imageResponseMetadata, imageGenerations);
+		return Objects.hash(this.imageResponseMetadata, this.imageGenerations);
 	}
 
 }

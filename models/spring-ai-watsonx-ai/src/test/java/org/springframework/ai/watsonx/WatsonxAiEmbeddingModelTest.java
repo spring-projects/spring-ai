@@ -1,6 +1,26 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.watsonx;
 
+import java.util.Date;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
@@ -9,9 +29,6 @@ import org.springframework.ai.watsonx.api.WatsonxAiEmbeddingResponse;
 import org.springframework.ai.watsonx.api.WatsonxAiEmbeddingResults;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Date;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -19,13 +36,13 @@ import static org.mockito.Mockito.when;
 
 public class WatsonxAiEmbeddingModelTest {
 
-	private WatsonxAiApi watsonxAiApiMock;
-
 	private final WatsonxAiEmbeddingModel embeddingModel;
+
+	private WatsonxAiApi watsonxAiApiMock;
 
 	public WatsonxAiEmbeddingModelTest() {
 		this.watsonxAiApiMock = mock(WatsonxAiApi.class);
-		this.embeddingModel = new WatsonxAiEmbeddingModel(watsonxAiApiMock);
+		this.embeddingModel = new WatsonxAiEmbeddingModel(this.watsonxAiApiMock);
 	}
 
 	@Test
@@ -34,7 +51,7 @@ public class WatsonxAiEmbeddingModelTest {
 		List<String> inputs = List.of("test");
 		WatsonxAiEmbeddingOptions options = WatsonxAiEmbeddingOptions.create().withModel(MODEL);
 
-		WatsonxAiEmbeddingRequest request = embeddingModel.watsonxAiEmbeddingRequest(inputs, options);
+		WatsonxAiEmbeddingRequest request = this.embeddingModel.watsonxAiEmbeddingRequest(inputs, options);
 
 		assertThat(request.getModel()).isEqualTo(MODEL);
 		assertThat(request.getInputs().size()).isEqualTo(inputs.size());
@@ -46,7 +63,7 @@ public class WatsonxAiEmbeddingModelTest {
 		List<String> inputs = List.of("test");
 		WatsonxAiEmbeddingOptions options = WatsonxAiEmbeddingOptions.create().withModel(MODEL);
 
-		WatsonxAiEmbeddingRequest request = embeddingModel.watsonxAiEmbeddingRequest(inputs, options);
+		WatsonxAiEmbeddingRequest request = this.embeddingModel.watsonxAiEmbeddingRequest(inputs, options);
 
 		assertThat(request.getModel()).isEqualTo(WatsonxAiEmbeddingOptions.DEFAULT_MODEL);
 		assertThat(request.getInputs().size()).isEqualTo(inputs.size());
@@ -55,7 +72,8 @@ public class WatsonxAiEmbeddingModelTest {
 	@Test
 	void createRequestWithNoOptions() {
 		List<String> inputs = List.of("test");
-		WatsonxAiEmbeddingRequest request = embeddingModel.watsonxAiEmbeddingRequest(inputs, EmbeddingOptions.EMPTY);
+		WatsonxAiEmbeddingRequest request = this.embeddingModel.watsonxAiEmbeddingRequest(inputs,
+				EmbeddingOptions.EMPTY);
 
 		assertThat(request.getModel()).isEqualTo(WatsonxAiEmbeddingOptions.DEFAULT_MODEL);
 		assertThat(request.getInputs().size()).isEqualTo(inputs.size());
@@ -73,14 +91,14 @@ public class WatsonxAiEmbeddingModelTest {
 				inputTokenCount);
 
 		ResponseEntity<WatsonxAiEmbeddingResponse> mockResponseEntity = ResponseEntity.ok(mockResponse);
-		when(watsonxAiApiMock.embeddings(any(WatsonxAiEmbeddingRequest.class))).thenReturn(mockResponseEntity);
+		when(this.watsonxAiApiMock.embeddings(any(WatsonxAiEmbeddingRequest.class))).thenReturn(mockResponseEntity);
 
-		assertThat(embeddingModel).isNotNull();
+		assertThat(this.embeddingModel).isNotNull();
 
-		EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
+		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-		assertThat(embeddingModel.dimensions()).isEqualTo(2);
+		assertThat(this.embeddingModel.dimensions()).isEqualTo(2);
 	}
 
 }

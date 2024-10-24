@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,27 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.model.EmbeddingUtils;
-import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
@@ -63,8 +42,28 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
-
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Uses Azure Cognitive Search as a backing vector store. Documents can be preloaded into
@@ -81,13 +80,13 @@ import io.micrometer.observation.ObservationRegistry;
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	public static final String DEFAULT_INDEX_NAME = "spring_ai_azure_vector_store";
+
 	private static final Logger logger = LoggerFactory.getLogger(AzureVectorStore.class);
 
 	private static final String SPRING_AI_VECTOR_CONFIG = "spring-ai-vector-config";
 
 	private static final String SPRING_AI_VECTOR_PROFILE = "spring-ai-vector-profile";
-
-	public static final String DEFAULT_INDEX_NAME = "spring_ai_azure_vector_store";
 
 	private static final String ID_FIELD_NAME = "id";
 
@@ -109,15 +108,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	private final EmbeddingModel embeddingModel;
 
-	private SearchClient searchClient;
-
 	private final FilterExpressionConverter filterExpressionConverter;
-
-	private int defaultTopK = DEFAULT_TOP_K;
-
-	private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
-
-	private String indexName = DEFAULT_INDEX_NAME;
 
 	private final boolean initializeSchema;
 
@@ -134,32 +125,13 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 */
 	private final List<MetadataField> filterMetadataFields;
 
-	public record MetadataField(String name, SearchFieldDataType fieldType) {
+	private SearchClient searchClient;
 
-		public static MetadataField text(String name) {
-			return new MetadataField(name, SearchFieldDataType.STRING);
-		}
+	private int defaultTopK = DEFAULT_TOP_K;
 
-		public static MetadataField int32(String name) {
-			return new MetadataField(name, SearchFieldDataType.INT32);
-		}
+	private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
 
-		public static MetadataField int64(String name) {
-			return new MetadataField(name, SearchFieldDataType.INT64);
-		}
-
-		public static MetadataField decimal(String name) {
-			return new MetadataField(name, SearchFieldDataType.DOUBLE);
-		}
-
-		public static MetadataField bool(String name) {
-			return new MetadataField(name, SearchFieldDataType.BOOLEAN);
-		}
-
-		public static MetadataField date(String name) {
-			return new MetadataField(name, SearchFieldDataType.DATE_TIME_OFFSET);
-		}
-	}
+	private String indexName = DEFAULT_INDEX_NAME;
 
 	/**
 	 * Constructs a new AzureCognitiveSearchVectorStore.
@@ -320,7 +292,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		Assert.notNull(request, "The search request must not be null.");
 
-		var searchEmbedding = embeddingModel.embed(request.getQuery());
+		var searchEmbedding = this.embeddingModel.embed(request.getQuery());
 
 		final var vectorQuery = new VectorizedQuery(EmbeddingUtils.toList(searchEmbedding))
 			.setKNearestNeighborsCount(request.getTopK())
@@ -336,7 +308,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			searchOptions.setFilter(oDataFilter);
 		}
 
-		final var searchResults = searchClient.search(null, searchOptions, Context.NONE);
+		final var searchResults = this.searchClient.search(null, searchOptions, Context.NONE);
 
 		return searchResults.stream()
 			.filter(result -> result.getScore() >= request.getSimilarityThreshold())
@@ -346,6 +318,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 				Map<String, Object> metadata = (StringUtils.hasText(entry.metadata()))
 						? JSONObject.parseObject(entry.metadata(), new TypeReference<Map<String, Object>>() {
+
 						}) : Map.of();
 
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - (float) result.getScore());
@@ -357,12 +330,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 			})
 			.collect(Collectors.toList());
-	}
-
-	/**
-	 * Internal data structure for retrieving and storing documents.
-	 */
-	private record AzureSearchDocument(String id, String content, List<Float> embedding, String metadata) {
 	}
 
 	@Override
@@ -424,6 +391,41 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.withCollectionName(this.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withSimilarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null);
+	}
+
+	public record MetadataField(String name, SearchFieldDataType fieldType) {
+
+		public static MetadataField text(String name) {
+			return new MetadataField(name, SearchFieldDataType.STRING);
+		}
+
+		public static MetadataField int32(String name) {
+			return new MetadataField(name, SearchFieldDataType.INT32);
+		}
+
+		public static MetadataField int64(String name) {
+			return new MetadataField(name, SearchFieldDataType.INT64);
+		}
+
+		public static MetadataField decimal(String name) {
+			return new MetadataField(name, SearchFieldDataType.DOUBLE);
+		}
+
+		public static MetadataField bool(String name) {
+			return new MetadataField(name, SearchFieldDataType.BOOLEAN);
+		}
+
+		public static MetadataField date(String name) {
+			return new MetadataField(name, SearchFieldDataType.DATE_TIME_OFFSET);
+		}
+
+	}
+
+	/**
+	 * Internal data structure for retrieving and storing documents.
+	 */
+	private record AzureSearchDocument(String id, String content, List<Float> embedding, String metadata) {
+
 	}
 
 }

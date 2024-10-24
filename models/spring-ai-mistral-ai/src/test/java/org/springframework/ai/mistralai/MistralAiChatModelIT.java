@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mistralai;
 
 import java.util.ArrayList;
@@ -27,13 +28,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -66,9 +67,6 @@ class MistralAiChatModelIT {
 	@Autowired
 	protected StreamingChatModel streamingChatModel;
 
-	@Value("classpath:/prompts/system-message.st")
-	private Resource systemResource;
-
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
 
@@ -81,16 +79,19 @@ class MistralAiChatModelIT {
 	@Value("classpath:/prompts/eval/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
 
+	@Value("classpath:/prompts/system-message.st")
+	private Resource systemResource;
+
 	@Test
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		// NOTE: Mistral expects the system message to be before the user message or will
 		// fail with 400 error.
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 	}
@@ -126,14 +127,11 @@ class MistralAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Test
@@ -148,7 +146,7 @@ class MistralAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
@@ -169,7 +167,7 @@ class MistralAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = streamingChatModel.stream(prompt)
+		String generationTextFromStream = this.streamingChatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -202,7 +200,7 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
@@ -225,7 +223,7 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = streamingChatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
 			.block()
@@ -238,6 +236,10 @@ class MistralAiChatModelIT {
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("10.0", "10");
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 }

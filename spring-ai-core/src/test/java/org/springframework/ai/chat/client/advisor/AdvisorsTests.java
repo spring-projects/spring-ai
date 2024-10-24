@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +27,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -44,7 +42,9 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Christian Tzolov
@@ -58,76 +58,6 @@ public class AdvisorsTests {
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;
 
-	public class MockAroundAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
-
-		public AdvisedRequest advisedRequest;
-
-		public AdvisedResponse advisedResponse;
-
-		public List<AdvisedResponse> aroundAdvisedResponses = new ArrayList<>();
-
-		private final String name;
-
-		private final int order;
-
-		public MockAroundAdvisor(String name, int order) {
-			this.name = name;
-			this.order = order;
-		}
-
-		@Override
-		public String getName() {
-			return name;
-		}
-
-		@Override
-		public int getOrder() {
-			return order;
-		}
-
-		@Override
-		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-
-			this.advisedRequest = advisedRequest.updateContext(context -> {
-				context.put("aroundCallBefore" + getName(), "AROUND_CALL_BEFORE " + getName());
-				context.put("lastBefore", getName());
-				return context;
-			});
-
-			AdvisedResponse advisedResponse = this.advisedResponse = chain.nextAroundCall(this.advisedRequest);
-
-			this.advisedResponse = advisedResponse.updateContext(context -> {
-				context.put("aroundCallAfter" + name, "AROUND_CALL_AFTER " + name);
-				context.put("lastAfter", name);
-				return context;
-			});
-
-			return this.advisedResponse;
-		}
-
-		@Override
-		public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-
-			this.advisedRequest = advisedRequest.updateContext(context -> {
-				context.put("aroundStreamBefore" + name, "AROUND_STREAM_BEFORE " + name);
-				context.put("lastBefore", name);
-				return context;
-			});
-
-			Flux<AdvisedResponse> advisedResponseStream = chain.nextAroundStream(this.advisedRequest);
-
-			return advisedResponseStream.map(advisedResponse -> {
-				return advisedResponse.updateContext(context -> {
-					context.put("aroundStreamAfter" + name, "AROUND_STREAM_AFTER " + name);
-					context.put("lastAfter", name);
-					return context;
-				});
-			}).doOnNext(ar -> this.aroundAdvisedResponses.add(ar));
-
-		}
-
-	}
-
 	@Test
 	public void callAdvisorsContextPropagation() {
 
@@ -136,10 +66,10 @@ public class AdvisorsTests {
 		var mockAroundAdvisor1 = new MockAroundAdvisor("Advisor1", 0);
 		var mockAroundAdvisor2 = new MockAroundAdvisor("Advisor2", 1);
 
-		when(chatModel.call(promptCaptor.capture()))
-			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))));
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))));
 
-		var chatClient = ChatClient.builder(chatModel)
+		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
 			.defaultAdvisors(mockAroundAdvisor1)
 			.build();
@@ -164,7 +94,7 @@ public class AdvisorsTests {
 			.containsEntry("lastBefore", "Advisor2") // inner
 			.containsEntry("lastAfter", "Advisor1"); // outer
 
-		verify(chatModel).call(promptCaptor.capture());
+		verify(this.chatModel).call(this.promptCaptor.capture());
 	}
 
 	@Test
@@ -173,11 +103,11 @@ public class AdvisorsTests {
 		var mockAroundAdvisor1 = new MockAroundAdvisor("Advisor1", 0);
 		var mockAroundAdvisor2 = new MockAroundAdvisor("Advisor2", 1);
 
-		when(chatModel.stream(promptCaptor.capture()))
-			.thenReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello")))),
+		given(this.chatModel.stream(this.promptCaptor.capture()))
+			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello")))),
 					new ChatResponse(List.of(new Generation(new AssistantMessage(" John"))))));
 
-		var chatClient = ChatClient.builder(chatModel)
+		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
 			.defaultAdvisors(mockAroundAdvisor1)
 			.build();
@@ -198,18 +128,89 @@ public class AdvisorsTests {
 		// AROUND
 		assertThat(mockAroundAdvisor1.aroundAdvisedResponses).isNotEmpty();
 
-		mockAroundAdvisor1.aroundAdvisedResponses.stream().forEach(advisedResponse -> {
-			assertThat(advisedResponse.adviseContext()).containsEntry("key1", "value1")
+		mockAroundAdvisor1.aroundAdvisedResponses.stream()
+			.forEach(advisedResponse -> assertThat(advisedResponse.adviseContext()).containsEntry("key1", "value1")
 				.containsEntry("key2", "value2")
 				.containsEntry("aroundStreamBeforeAdvisor1", "AROUND_STREAM_BEFORE Advisor1")
 				.containsEntry("aroundStreamAfterAdvisor1", "AROUND_STREAM_AFTER Advisor1")
 				.containsEntry("aroundStreamBeforeAdvisor2", "AROUND_STREAM_BEFORE Advisor2")
 				.containsEntry("aroundStreamAfterAdvisor2", "AROUND_STREAM_AFTER Advisor2")
 				.containsEntry("lastBefore", "Advisor2") // inner
-				.containsEntry("lastAfter", "Advisor1"); // outer
-		});
+				.containsEntry("lastAfter", "Advisor1") // outer
+			);
 
-		verify(chatModel).stream(promptCaptor.capture());
+		verify(this.chatModel).stream(this.promptCaptor.capture());
+	}
+
+	public class MockAroundAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+
+		private final String name;
+
+		private final int order;
+
+		public AdvisedRequest advisedRequest;
+
+		public AdvisedResponse advisedResponse;
+
+		public List<AdvisedResponse> aroundAdvisedResponses = new ArrayList<>();
+
+		public MockAroundAdvisor(String name, int order) {
+			this.name = name;
+			this.order = order;
+		}
+
+		@Override
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		public int getOrder() {
+			return this.order;
+		}
+
+		@Override
+		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+
+			this.advisedRequest = advisedRequest.updateContext(context -> {
+				context.put("aroundCallBefore" + getName(), "AROUND_CALL_BEFORE " + getName());
+				context.put("lastBefore", getName());
+				return context;
+			});
+
+			this.advisedResponse = chain.nextAroundCall(this.advisedRequest);
+			AdvisedResponse advisedResponse = this.advisedResponse;
+
+			this.advisedResponse = advisedResponse.updateContext(context -> {
+				context.put("aroundCallAfter" + this.name, "AROUND_CALL_AFTER " + this.name);
+				context.put("lastAfter", this.name);
+				return context;
+			});
+
+			return this.advisedResponse;
+		}
+
+		@Override
+		public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+
+			this.advisedRequest = advisedRequest.updateContext(context -> {
+				context.put("aroundStreamBefore" + this.name, "AROUND_STREAM_BEFORE " + this.name);
+				context.put("lastBefore", this.name);
+				return context;
+			});
+
+			Flux<AdvisedResponse> advisedResponseStream = chain.nextAroundStream(this.advisedRequest);
+
+			return advisedResponseStream.map(advisedResponse -> {
+				return advisedResponse.updateContext(context -> {
+					context.put("aroundStreamAfter" + this.name, "AROUND_STREAM_AFTER " + this.name);
+					context.put("lastAfter", this.name);
+					return context;
+				});
+			}).doOnNext(ar -> this.aroundAdvisedResponses.add(ar));
+
+		}
+
 	}
 
 }

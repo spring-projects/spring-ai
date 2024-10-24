@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -35,8 +37,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-
-import reactor.core.publisher.Flux;
 
 /**
  * Memory is retrieved from a VectorStore added into the prompt's system text.
@@ -97,6 +97,10 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			int chatHistoryWindowSize, String systemTextAdvise, int order) {
 		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.systemTextAdvise = systemTextAdvise;
+	}
+
+	public static Builder builder(VectorStore chatMemory) {
+		return new Builder(chatMemory);
 	}
 
 	@Override
@@ -183,10 +187,6 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.toList();
 
 		return docs;
-	}
-
-	public static Builder builder(VectorStore chatMemory) {
-		return new Builder(chatMemory);
 	}
 
 	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<VectorStore> {

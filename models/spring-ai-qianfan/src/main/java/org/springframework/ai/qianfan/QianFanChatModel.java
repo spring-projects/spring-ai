@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.qianfan;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyUsage;
@@ -48,12 +56,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal QianFan}
@@ -72,14 +74,14 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	/**
-	 * The default options used for the chat completion requests.
-	 */
-	private final QianFanChatOptions defaultOptions;
-
-	/**
 	 * The retry template used to retry the QianFan API calls.
 	 */
 	public final RetryTemplate retryTemplate;
+
+	/**
+	 * The default options used for the chat completion requests.
+	 */
+	private final QianFanChatOptions defaultOptions;
 
 	/**
 	 * Low-level access to the QianFan API.

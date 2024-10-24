@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader;
 
 import org.springframework.util.StringUtils;
@@ -32,19 +33,19 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  */
-public class ExtractedTextFormatter {
+public final class ExtractedTextFormatter {
 
 	/** Flag indicating if the text should be left-aligned */
-	private boolean leftAlignment;
+	private final boolean leftAlignment;
 
 	/** Number of top pages to skip before performing delete operations */
-	private int numberOfTopPagesToSkipBeforeDelete;
+	private final int numberOfTopPagesToSkipBeforeDelete;
 
 	/** Number of top text lines to delete from a page */
-	private int numberOfTopTextLinesToDelete;
+	private final int numberOfTopTextLinesToDelete;
 
 	/** Number of bottom text lines to delete from a page */
-	private int numberOfBottomTextLinesToDelete;
+	private final int numberOfBottomTextLinesToDelete;
 
 	/**
 	 * Private constructor to initialize the formatter from the builder.
@@ -71,6 +72,82 @@ public class ExtractedTextFormatter {
 	 */
 	public static ExtractedTextFormatter defaults() {
 		return new Builder().build();
+	}
+
+	/**
+	 * Replaces multiple, adjacent blank lines into a single blank line.
+	 * @param pageText text to adjust the blank lines for.
+	 * @return Returns the same text but with blank lines trimmed.
+	 */
+	public static String trimAdjacentBlankLines(String pageText) {
+		return pageText.replaceAll("(?m)(^ *\n)", "\n").replaceAll("(?m)^$([\r\n]+?)(^$[\r\n]+?^)+", "$1");
+	}
+
+	/**
+	 * @param pageText text to align.
+	 * @return Returns the same text but aligned to the left side.
+	 */
+	public static String alignToLeft(String pageText) {
+		return pageText.replaceAll("(?m)(^ *| +(?= |$))", "").replaceAll("(?m)^$(	?)(^$[\r\n]+?^)+", "$1");
+	}
+
+	/**
+	 * Removes the specified number of lines from the bottom part of the text.
+	 * @param pageText Text to remove lines from.
+	 * @param numberOfLines Number of lines to remove.
+	 * @return Returns the text striped from last lines.
+	 */
+	public static String deleteBottomTextLines(String pageText, int numberOfLines) {
+		if (!StringUtils.hasText(pageText)) {
+			return pageText;
+		}
+
+		int lineCount = 0;
+		int truncateIndex = pageText.length();
+		int nextTruncateIndex = truncateIndex;
+		while (lineCount < numberOfLines && nextTruncateIndex >= 0) {
+			nextTruncateIndex = pageText.lastIndexOf(System.lineSeparator(), truncateIndex - 1);
+			truncateIndex = nextTruncateIndex < 0 ? truncateIndex : nextTruncateIndex;
+			lineCount++;
+		}
+		return pageText.substring(0, truncateIndex);
+	}
+
+	/**
+	 * Removes a specified number of lines from the top part of the given text.
+	 *
+	 * <p>
+	 * This method takes a text and trims it by removing a certain number of lines from
+	 * the top. If the provided text is null or contains only whitespace, it will be
+	 * returned as is. If the number of lines to remove exceeds the actual number of lines
+	 * in the text, the result will be an empty string.
+	 * </p>
+	 *
+	 * <p>
+	 * The method identifies lines based on the system's line separator, making it
+	 * compatible with different platforms.
+	 * </p>
+	 * @param pageText The text from which the top lines need to be removed. If this is
+	 * null, empty, or consists only of whitespace, it will be returned unchanged.
+	 * @param numberOfLines The number of lines to remove from the top of the text. If
+	 * this exceeds the actual number of lines in the text, an empty string will be
+	 * returned.
+	 * @return The text with the specified number of lines removed from the top.
+	 */
+	public static String deleteTopTextLines(String pageText, int numberOfLines) {
+		if (!StringUtils.hasText(pageText)) {
+			return pageText;
+		}
+		int lineCount = 0;
+
+		int truncateIndex = 0;
+		int nextTruncateIndex = truncateIndex;
+		while (lineCount < numberOfLines && nextTruncateIndex >= 0) {
+			nextTruncateIndex = pageText.indexOf(System.lineSeparator(), truncateIndex + 1);
+			truncateIndex = nextTruncateIndex < 0 ? truncateIndex : nextTruncateIndex;
+			lineCount++;
+		}
+		return pageText.substring(truncateIndex);
 	}
 
 	/**
@@ -126,7 +203,7 @@ public class ExtractedTextFormatter {
 	 * <li>Number of top text lines to delete to 0</li>
 	 * <li>Number of bottom text lines to delete to 0</li>
 	 * </ul>
-	 * 
+	 *
 	 *
 	 * <p>
 	 * After configuring the builder, calling the {@link #build()} method will return a
@@ -207,82 +284,6 @@ public class ExtractedTextFormatter {
 			return new ExtractedTextFormatter(this);
 		}
 
-	}
-
-	/**
-	 * Replaces multiple, adjacent blank lines into a single blank line.
-	 * @param pageText text to adjust the blank lines for.
-	 * @return Returns the same text but with blank lines trimmed.
-	 */
-	public static String trimAdjacentBlankLines(String pageText) {
-		return pageText.replaceAll("(?m)(^ *\n)", "\n").replaceAll("(?m)^$([\r\n]+?)(^$[\r\n]+?^)+", "$1");
-	}
-
-	/**
-	 * @param pageText text to align.
-	 * @return Returns the same text but aligned to the left side.
-	 */
-	public static String alignToLeft(String pageText) {
-		return pageText.replaceAll("(?m)(^ *| +(?= |$))", "").replaceAll("(?m)^$(	?)(^$[\r\n]+?^)+", "$1");
-	}
-
-	/**
-	 * Removes the specified number of lines from the bottom part of the text.
-	 * @param pageText Text to remove lines from.
-	 * @param numberOfLines Number of lines to remove.
-	 * @return Returns the text striped from last lines.
-	 */
-	public static String deleteBottomTextLines(String pageText, int numberOfLines) {
-		if (!StringUtils.hasText(pageText)) {
-			return pageText;
-		}
-
-		int lineCount = 0;
-		int truncateIndex = pageText.length();
-		int nextTruncateIndex = truncateIndex;
-		while (lineCount < numberOfLines && nextTruncateIndex >= 0) {
-			nextTruncateIndex = pageText.lastIndexOf(System.lineSeparator(), truncateIndex - 1);
-			truncateIndex = nextTruncateIndex < 0 ? truncateIndex : nextTruncateIndex;
-			lineCount++;
-		}
-		return pageText.substring(0, truncateIndex);
-	}
-
-	/**
-	 * Removes a specified number of lines from the top part of the given text.
-	 *
-	 * <p>
-	 * This method takes a text and trims it by removing a certain number of lines from
-	 * the top. If the provided text is null or contains only whitespace, it will be
-	 * returned as is. If the number of lines to remove exceeds the actual number of lines
-	 * in the text, the result will be an empty string.
-	 * </p>
-	 *
-	 * <p>
-	 * The method identifies lines based on the system's line separator, making it
-	 * compatible with different platforms.
-	 * </p>
-	 * @param pageText The text from which the top lines need to be removed. If this is
-	 * null, empty, or consists only of whitespace, it will be returned unchanged.
-	 * @param numberOfLines The number of lines to remove from the top of the text. If
-	 * this exceeds the actual number of lines in the text, an empty string will be
-	 * returned.
-	 * @return The text with the specified number of lines removed from the top.
-	 */
-	public static String deleteTopTextLines(String pageText, int numberOfLines) {
-		if (!StringUtils.hasText(pageText)) {
-			return pageText;
-		}
-		int lineCount = 0;
-
-		int truncateIndex = 0;
-		int nextTruncateIndex = truncateIndex;
-		while (lineCount < numberOfLines && nextTruncateIndex >= 0) {
-			nextTruncateIndex = pageText.indexOf(System.lineSeparator(), truncateIndex + 1);
-			truncateIndex = nextTruncateIndex < 0 ? truncateIndex : nextTruncateIndex;
-			lineCount++;
-		}
-		return pageText.substring(truncateIndex, pageText.length());
 	}
 
 }

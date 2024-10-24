@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.openai.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -27,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -46,7 +46,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.chat.proxy;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.openai.chat.proxy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -54,7 +55,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
@@ -81,10 +82,10 @@ class NvidiaWithOpenAiChatModelIT {
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 	}
@@ -93,10 +94,10 @@ class NvidiaWithOpenAiChatModelIT {
 	void streamRoleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		Flux<ChatResponse> flux = chatModel.stream(prompt);
+		Flux<ChatResponse> flux = this.chatModel.stream(prompt);
 
 		List<ChatResponse> responses = flux.collectList().block();
 		assertThat(responses.size()).isGreaterThan(1);
@@ -162,7 +163,7 @@ class NvidiaWithOpenAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -181,13 +182,10 @@ class NvidiaWithOpenAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(actorsFilms.getActor()).isNotEmpty();
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Test
@@ -202,7 +200,7 @@ class NvidiaWithOpenAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
@@ -223,7 +221,7 @@ class NvidiaWithOpenAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatModel.stream(prompt)
+		String generationTextFromStream = this.chatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -255,7 +253,7 @@ class NvidiaWithOpenAiChatModelIT {
 				.build()))
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
@@ -278,7 +276,7 @@ class NvidiaWithOpenAiChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
 			.block()
@@ -296,7 +294,7 @@ class NvidiaWithOpenAiChatModelIT {
 	@Test
 	void validateCallResponseMetadata() {
 		// @formatter:off
-		ChatResponse response = ChatClient.create(chatModel).prompt()
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(OpenAiChatOptions.builder().withModel(DEFAULT_NVIDIA_MODEL).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
@@ -309,6 +307,10 @@ class NvidiaWithOpenAiChatModelIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 	@SpringBootConfiguration

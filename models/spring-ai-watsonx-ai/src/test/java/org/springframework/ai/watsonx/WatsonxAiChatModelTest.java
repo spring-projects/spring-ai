@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.watsonx;
 
 import java.util.Date;
@@ -25,10 +26,10 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
@@ -57,7 +58,7 @@ public class WatsonxAiChatModelTest {
 		Prompt prompt = new Prompt("Test message", options);
 
 		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-			WatsonxAiChatRequest request = chatModel.request(prompt);
+			WatsonxAiChatRequest request = this.chatModel.request(prompt);
 		});
 	}
 
@@ -71,7 +72,7 @@ public class WatsonxAiChatModelTest {
 			.build();
 		Prompt prompt = new Prompt(msg, modelOptions);
 
-		WatsonxAiChatRequest request = chatModel.request(prompt);
+		WatsonxAiChatRequest request = this.chatModel.request(prompt);
 
 		Assert.assertEquals(request.getModelId(), "meta-llama/llama-2-70b-chat");
 		assertThat(request.getParameters().get("decoding_method")).isEqualTo("greedy");
@@ -105,7 +106,7 @@ public class WatsonxAiChatModelTest {
 
 		Prompt prompt = new Prompt(msg, modelOptions);
 
-		WatsonxAiChatRequest request = chatModel.request(prompt);
+		WatsonxAiChatRequest request = this.chatModel.request(prompt);
 
 		Assert.assertEquals(request.getModelId(), "meta-llama/llama-2-70b-chat");
 		assertThat(request.getParameters().get("decoding_method")).isEqualTo("sample");
@@ -139,7 +140,7 @@ public class WatsonxAiChatModelTest {
 
 		Prompt prompt = new Prompt(msg, modelOptions);
 
-		WatsonxAiChatRequest request = chatModel.request(prompt);
+		WatsonxAiChatRequest request = this.chatModel.request(prompt);
 
 		Assert.assertEquals(request.getModelId(), "meta-llama/llama-2-70b-chat");
 		assertThat(request.getInput()).isEqualTo(msg);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.zhipuai;
+
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -64,16 +76,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal ZhiPuAI}
@@ -92,14 +94,14 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	/**
-	 * The default options used for the chat completion requests.
-	 */
-	private final ZhiPuAiChatOptions defaultOptions;
-
-	/**
 	 * The retry template used to retry the ZhiPuAI API calls.
 	 */
 	public final RetryTemplate retryTemplate;
+
+	/**
+	 * The default options used for the chat completion requests.
+	 */
+	private final ZhiPuAiChatOptions defaultOptions;
 
 	/**
 	 * Low-level access to the ZhiPuAI API.
@@ -174,6 +176,21 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
+	}
+
+	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
+				: choice.message()
+					.toolCalls()
+					.stream()
+					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+							toolCall.function().name(), toolCall.function().arguments()))
+					.toList();
+
+		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		return new Generation(assistantMessage, generationMetadata);
 	}
 
 	@Override
@@ -316,21 +333,6 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 			.withKeyValue("created", result.created() != null ? result.created() : 0L)
 			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
-	}
-
-	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
-		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
-					.stream()
-					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-							toolCall.function().name(), toolCall.function().arguments()))
-					.toList();
-
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
-		return new Generation(assistantMessage, generationMetadata);
 	}
 
 	/**

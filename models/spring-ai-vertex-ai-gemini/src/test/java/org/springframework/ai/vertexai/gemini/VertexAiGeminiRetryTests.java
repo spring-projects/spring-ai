@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,9 @@
 
 package org.springframework.ai.vertexai.gemini;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.*;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Candidate;
@@ -32,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.retry.RetryUtils;
@@ -41,11 +41,10 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Mark Pollack
@@ -53,25 +52,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
 public class VertexAiGeminiRetryTests {
-
-	private static class TestRetryListener implements RetryListener {
-
-		int onErrorRetryCount = 0;
-
-		int onSuccessRetryCount = 0;
-
-		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			onSuccessRetryCount = context.getRetryCount();
-		}
-
-		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			onErrorRetryCount = context.getRetryCount();
-		}
-
-	}
 
 	private TestRetryListener retryListener;
 
@@ -87,19 +67,19 @@ public class VertexAiGeminiRetryTests {
 
 	@BeforeEach
 	public void setUp() {
-		retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
-		retryListener = new TestRetryListener();
-		retryTemplate.registerListener(retryListener);
+		this.retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+		this.retryListener = new TestRetryListener();
+		this.retryTemplate.registerListener(this.retryListener);
 
-		chatModel = new TestVertexAiGeminiChatModel(vertexAI,
+		this.chatModel = new TestVertexAiGeminiChatModel(this.vertexAI,
 				VertexAiGeminiChatOptions.builder()
 					.withTemperature(0.7)
 					.withTopP(1.0)
 					.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
 					.build(),
-				null, Collections.emptyList(), retryTemplate);
+				null, Collections.emptyList(), this.retryTemplate);
 
-		chatModel.setMockGenerativeModel(mockGenerativeModel);
+		this.chatModel.setMockGenerativeModel(this.mockGenerativeModel);
 	}
 
 	@Test
@@ -111,29 +91,48 @@ public class VertexAiGeminiRetryTests {
 				.build())
 			.build();
 
-		when(mockGenerativeModel.generateContent(any(List.class)))
+		when(this.mockGenerativeModel.generateContent(any(List.class)))
 			.thenThrow(new TransientAiException("Transient Error 1"))
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(mockedResponse);
 
 		// Call the chat model
-		ChatResponse result = chatModel.call(new Prompt("test prompt"));
+		ChatResponse result = this.chatModel.call(new Prompt("test prompt"));
 
 		// Assertions
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getContent()).isEqualTo("Response");
-		assertThat(retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
 	@Test
 	public void vertexAiGeminiChatNonTransientError() throws Exception {
 		// Set up the mock GenerativeModel to throw a non-transient RuntimeException
-		when(mockGenerativeModel.generateContent(any(List.class)))
+		when(this.mockGenerativeModel.generateContent(any(List.class)))
 			.thenThrow(new RuntimeException("Non Transient Error"));
 
 		// Assert that a RuntimeException is thrown when calling the chat model
-		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("test prompt")));
+		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("test prompt")));
+	}
+
+	private static class TestRetryListener implements RetryListener {
+
+		int onErrorRetryCount = 0;
+
+		int onSuccessRetryCount = 0;
+
+		@Override
+		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
+			this.onSuccessRetryCount = context.getRetryCount();
+		}
+
+		@Override
+		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
+				Throwable throwable) {
+			this.onErrorRetryCount = context.getRetryCount();
+		}
+
 	}
 
 }

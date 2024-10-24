@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.moderation;
 
 import java.util.Objects;
@@ -10,29 +26,29 @@ import java.util.Objects;
  * @author Ahmed Yousri
  * @since 1.0.0
  */
-public class Categories {
+public final class Categories {
 
-	private boolean sexual;
+	private final boolean sexual;
 
-	private boolean hate;
+	private final boolean hate;
 
-	private boolean harassment;
+	private final boolean harassment;
 
-	private boolean selfHarm;
+	private final boolean selfHarm;
 
-	private boolean sexualMinors;
+	private final boolean sexualMinors;
 
-	private boolean hateThreatening;
+	private final boolean hateThreatening;
 
-	private boolean violenceGraphic;
+	private final boolean violenceGraphic;
 
-	private boolean selfHarmIntent;
+	private final boolean selfHarmIntent;
 
-	private boolean selfHarmInstructions;
+	private final boolean selfHarmInstructions;
 
-	private boolean harassmentThreatening;
+	private final boolean harassmentThreatening;
 
-	private boolean violence;
+	private final boolean violence;
 
 	private Categories(Builder builder) {
 		this.sexual = builder.sexual;
@@ -48,52 +64,84 @@ public class Categories {
 		this.violence = builder.violence;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public boolean isSexual() {
-		return sexual;
+		return this.sexual;
 	}
 
 	public boolean isHate() {
-		return hate;
+		return this.hate;
 	}
 
 	public boolean isHarassment() {
-		return harassment;
+		return this.harassment;
 	}
 
 	public boolean isSelfHarm() {
-		return selfHarm;
+		return this.selfHarm;
 	}
 
 	public boolean isSexualMinors() {
-		return sexualMinors;
+		return this.sexualMinors;
 	}
 
 	public boolean isHateThreatening() {
-		return hateThreatening;
+		return this.hateThreatening;
 	}
 
 	public boolean isViolenceGraphic() {
-		return violenceGraphic;
+		return this.violenceGraphic;
 	}
 
 	public boolean isSelfHarmIntent() {
-		return selfHarmIntent;
+		return this.selfHarmIntent;
 	}
 
 	public boolean isSelfHarmInstructions() {
-		return selfHarmInstructions;
+		return this.selfHarmInstructions;
 	}
 
 	public boolean isHarassmentThreatening() {
-		return harassmentThreatening;
+		return this.harassmentThreatening;
 	}
 
 	public boolean isViolence() {
-		return violence;
+		return this.violence;
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof Categories)) {
+			return false;
+		}
+		Categories that = (Categories) o;
+		return this.sexual == that.sexual && this.hate == that.hate && this.harassment == that.harassment
+				&& this.selfHarm == that.selfHarm && this.sexualMinors == that.sexualMinors
+				&& this.hateThreatening == that.hateThreatening && this.violenceGraphic == that.violenceGraphic
+				&& this.selfHarmIntent == that.selfHarmIntent && this.selfHarmInstructions == that.selfHarmInstructions
+				&& this.harassmentThreatening == that.harassmentThreatening && this.violence == that.violence;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.sexual, this.hate, this.harassment, this.selfHarm, this.sexualMinors,
+				this.hateThreatening, this.violenceGraphic, this.selfHarmIntent, this.selfHarmInstructions,
+				this.harassmentThreatening, this.violence);
+	}
+
+	@Override
+	public String toString() {
+		return "Categories{" + "sexual=" + this.sexual + ", hate=" + this.hate + ", harassment=" + this.harassment
+				+ ", selfHarm=" + this.selfHarm + ", sexualMinors=" + this.sexualMinors + ", hateThreatening="
+				+ this.hateThreatening + ", violenceGraphic=" + this.violenceGraphic + ", selfHarmIntent="
+				+ this.selfHarmIntent + ", selfHarmInstructions=" + this.selfHarmInstructions
+				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence + '}';
 	}
 
 	public static class Builder {
@@ -179,35 +227,6 @@ public class Categories {
 			return new Categories(this);
 		}
 
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof Categories))
-			return false;
-		Categories that = (Categories) o;
-		return sexual == that.sexual && hate == that.hate && harassment == that.harassment && selfHarm == that.selfHarm
-				&& sexualMinors == that.sexualMinors && hateThreatening == that.hateThreatening
-				&& violenceGraphic == that.violenceGraphic && selfHarmIntent == that.selfHarmIntent
-				&& selfHarmInstructions == that.selfHarmInstructions
-				&& harassmentThreatening == that.harassmentThreatening && violence == that.violence;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(sexual, hate, harassment, selfHarm, sexualMinors, hateThreatening, violenceGraphic,
-				selfHarmIntent, selfHarmInstructions, harassmentThreatening, violence);
-	}
-
-	@Override
-	public String toString() {
-		return "Categories{" + "sexual=" + sexual + ", hate=" + hate + ", harassment=" + harassment + ", selfHarm="
-				+ selfHarm + ", sexualMinors=" + sexualMinors + ", hateThreatening=" + hateThreatening
-				+ ", violenceGraphic=" + violenceGraphic + ", selfHarmIntent=" + selfHarmIntent
-				+ ", selfHarmInstructions=" + selfHarmInstructions + ", harassmentThreatening=" + harassmentThreatening
-				+ ", violence=" + violence + '}';
 	}
 
 }

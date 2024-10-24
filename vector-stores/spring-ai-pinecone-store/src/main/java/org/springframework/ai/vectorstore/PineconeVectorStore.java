@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
+import com.google.protobuf.util.JsonFormat;
+import io.micrometer.observation.ObservationRegistry;
+import io.pinecone.PineconeClient;
+import io.pinecone.PineconeClientConfig;
+import io.pinecone.PineconeConnection;
+import io.pinecone.PineconeConnectionConfig;
+import io.pinecone.proto.DeleteRequest;
+import io.pinecone.proto.QueryRequest;
+import io.pinecone.proto.QueryResponse;
+import io.pinecone.proto.UpsertRequest;
+import io.pinecone.proto.Vector;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -35,23 +51,6 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationCont
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Struct;
-import com.google.protobuf.Value;
-import com.google.protobuf.util.JsonFormat;
-
-import io.micrometer.observation.ObservationRegistry;
-import io.pinecone.PineconeClient;
-import io.pinecone.PineconeClientConfig;
-import io.pinecone.PineconeConnection;
-import io.pinecone.PineconeConnectionConfig;
-import io.pinecone.proto.DeleteRequest;
-import io.pinecone.proto.QueryRequest;
-import io.pinecone.proto.QueryResponse;
-import io.pinecone.proto.UpsertRequest;
-import io.pinecone.proto.Vector;
 
 /**
  * A VectorStore implementation backed by Pinecone, a cloud-based vector database. This
@@ -85,180 +84,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private final ObjectMapper objectMapper;
 
 	private final BatchingStrategy batchingStrategy;
-
-	/**
-	 * Configuration class for the PineconeVectorStore.
-	 */
-	public static final class PineconeVectorStoreConfig {
-
-		// The free tier (gcp-starter) doesn't support Namespaces.
-		// Leave the namespace empty (e.g. "") for the free tier.
-		private final String namespace;
-
-		private final String contentFieldName;
-
-		private final String distanceMetadataFieldName;
-
-		private final PineconeConnectionConfig connectionConfig;
-
-		private final PineconeClientConfig clientConfig;
-
-		// private final int defaultSimilarityTopK;
-
-		/**
-		 * Constructor using the builder.
-		 * @param builder The configuration builder.
-		 */
-		/**
-		 * Constructor using the builder.
-		 * @param builder The configuration builder.
-		 */
-		public PineconeVectorStoreConfig(Builder builder) {
-			this.namespace = builder.namespace;
-			this.contentFieldName = builder.contentFieldName;
-			this.distanceMetadataFieldName = builder.distanceMetadataFieldName;
-
-			// this.defaultSimilarityTopK = builder.defaultSimilarityTopK;
-			this.connectionConfig = new PineconeConnectionConfig().withIndexName(builder.indexName);
-			this.clientConfig = new PineconeClientConfig().withApiKey(builder.apiKey)
-				.withEnvironment(builder.environment)
-				.withProjectName(builder.projectId)
-				.withApiKey(builder.apiKey)
-				.withServerSideTimeoutSec((int) builder.serverSideTimeout.toSeconds());
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		public static Builder builder() {
-			return new Builder();
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		public static PineconeVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		public static class Builder {
-
-			private String apiKey;
-
-			private String projectId;
-
-			private String environment;
-
-			private String indexName;
-
-			// The free-tier (gcp-starter) doesn't support Namespaces!
-			private String namespace = "";
-
-			private String contentFieldName = CONTENT_FIELD_NAME;
-
-			private String distanceMetadataFieldName = DISTANCE_METADATA_FIELD_NAME;
-
-			/**
-			 * Optional server-side timeout in seconds for all operations. Default: 20
-			 * seconds.
-			 */
-			private Duration serverSideTimeout = Duration.ofSeconds(20);
-
-			private Builder() {
-			}
-
-			/**
-			 * Pinecone api key.
-			 * @param apiKey key to use.
-			 * @return this builder.
-			 */
-			public Builder withApiKey(String apiKey) {
-				this.apiKey = apiKey;
-				return this;
-			}
-
-			/**
-			 * Pinecone project id.
-			 * @param projectId Project id to use.
-			 * @return this builder.
-			 */
-			public Builder withProjectId(String projectId) {
-				this.projectId = projectId;
-				return this;
-			}
-
-			/**
-			 * Pinecone environment name.
-			 * @param environment Environment name (e.g. gcp-starter).
-			 * @return this builder.
-			 */
-			public Builder withEnvironment(String environment) {
-				this.environment = environment;
-				return this;
-			}
-
-			/**
-			 * Pinecone index name.
-			 * @param indexName Pinecone index name to use.
-			 * @return this builder.
-			 */
-			public Builder withIndexName(String indexName) {
-				this.indexName = indexName;
-				return this;
-			}
-
-			/**
-			 * Pinecone Namespace. The free-tier (gcp-starter) doesn't support Namespaces.
-			 * For free-tier leave the namespace empty.
-			 * @param namespace Pinecone namespace to use.
-			 * @return this builder.
-			 */
-			public Builder withNamespace(String namespace) {
-				this.namespace = namespace;
-				return this;
-			}
-
-			/**
-			 * Content field name.
-			 * @param contentFieldName content field name to use.
-			 * @return this builder.
-			 */
-			public Builder withContentFieldName(String contentFieldName) {
-				this.contentFieldName = contentFieldName;
-				return this;
-			}
-
-			/**
-			 * Distance metadata field name.
-			 * @param distanceMetadataFieldName distance metadata field name to use.
-			 * @return this builder.
-			 */
-			public Builder withDistanceMetadataFieldName(String distanceMetadataFieldName) {
-				this.distanceMetadataFieldName = distanceMetadataFieldName;
-				return this;
-			}
-
-			/**
-			 * Pinecone server side timeout.
-			 * @param serverSideTimeout server timeout to use.
-			 * @return this builder.
-			 */
-			public Builder withServerSideTimeout(Duration serverSideTimeout) {
-				this.serverSideTimeout = serverSideTimeout;
-				return this;
-			}
-
-			/**
-			 * {@return the immutable configuration}
-			 */
-			public PineconeVectorStoreConfig build() {
-				return new PineconeVectorStoreConfig(this);
-			}
-
-		}
-
-	}
 
 	/**
 	 * Constructs a new PineconeVectorStore.
@@ -442,6 +267,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		try {
 			String json = JsonFormat.printer().print(metadataStruct);
 			Map<String, Object> metadata = this.objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+
 			});
 			metadata.remove(this.pineconeContentFieldName);
 			return metadata;
@@ -459,6 +285,180 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			.withDimensions(this.embeddingModel.dimensions())
 			.withNamespace(this.pineconeNamespace)
 			.withFieldName(this.pineconeContentFieldName);
+	}
+
+	/**
+	 * Configuration class for the PineconeVectorStore.
+	 */
+	public static final class PineconeVectorStoreConfig {
+
+		// The free tier (gcp-starter) doesn't support Namespaces.
+		// Leave the namespace empty (e.g. "") for the free tier.
+		private final String namespace;
+
+		private final String contentFieldName;
+
+		private final String distanceMetadataFieldName;
+
+		private final PineconeConnectionConfig connectionConfig;
+
+		private final PineconeClientConfig clientConfig;
+
+		// private final int defaultSimilarityTopK;
+
+		/**
+		 * Constructor using the builder.
+		 * @param builder The configuration builder.
+		 */
+		/**
+		 * Constructor using the builder.
+		 * @param builder The configuration builder.
+		 */
+		public PineconeVectorStoreConfig(Builder builder) {
+			this.namespace = builder.namespace;
+			this.contentFieldName = builder.contentFieldName;
+			this.distanceMetadataFieldName = builder.distanceMetadataFieldName;
+
+			// this.defaultSimilarityTopK = builder.defaultSimilarityTopK;
+			this.connectionConfig = new PineconeConnectionConfig().withIndexName(builder.indexName);
+			this.clientConfig = new PineconeClientConfig().withApiKey(builder.apiKey)
+				.withEnvironment(builder.environment)
+				.withProjectName(builder.projectId)
+				.withApiKey(builder.apiKey)
+				.withServerSideTimeoutSec((int) builder.serverSideTimeout.toSeconds());
+		}
+
+		/**
+		 * Start building a new configuration.
+		 * @return The entry point for creating a new configuration.
+		 */
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		/**
+		 * {@return the default config}
+		 */
+		public static PineconeVectorStoreConfig defaultConfig() {
+			return builder().build();
+		}
+
+		public static class Builder {
+
+			private String apiKey;
+
+			private String projectId;
+
+			private String environment;
+
+			private String indexName;
+
+			// The free-tier (gcp-starter) doesn't support Namespaces!
+			private String namespace = "";
+
+			private String contentFieldName = CONTENT_FIELD_NAME;
+
+			private String distanceMetadataFieldName = DISTANCE_METADATA_FIELD_NAME;
+
+			/**
+			 * Optional server-side timeout in seconds for all operations. Default: 20
+			 * seconds.
+			 */
+			private Duration serverSideTimeout = Duration.ofSeconds(20);
+
+			private Builder() {
+			}
+
+			/**
+			 * Pinecone api key.
+			 * @param apiKey key to use.
+			 * @return this builder.
+			 */
+			public Builder withApiKey(String apiKey) {
+				this.apiKey = apiKey;
+				return this;
+			}
+
+			/**
+			 * Pinecone project id.
+			 * @param projectId Project id to use.
+			 * @return this builder.
+			 */
+			public Builder withProjectId(String projectId) {
+				this.projectId = projectId;
+				return this;
+			}
+
+			/**
+			 * Pinecone environment name.
+			 * @param environment Environment name (e.g. gcp-starter).
+			 * @return this builder.
+			 */
+			public Builder withEnvironment(String environment) {
+				this.environment = environment;
+				return this;
+			}
+
+			/**
+			 * Pinecone index name.
+			 * @param indexName Pinecone index name to use.
+			 * @return this builder.
+			 */
+			public Builder withIndexName(String indexName) {
+				this.indexName = indexName;
+				return this;
+			}
+
+			/**
+			 * Pinecone Namespace. The free-tier (gcp-starter) doesn't support Namespaces.
+			 * For free-tier leave the namespace empty.
+			 * @param namespace Pinecone namespace to use.
+			 * @return this builder.
+			 */
+			public Builder withNamespace(String namespace) {
+				this.namespace = namespace;
+				return this;
+			}
+
+			/**
+			 * Content field name.
+			 * @param contentFieldName content field name to use.
+			 * @return this builder.
+			 */
+			public Builder withContentFieldName(String contentFieldName) {
+				this.contentFieldName = contentFieldName;
+				return this;
+			}
+
+			/**
+			 * Distance metadata field name.
+			 * @param distanceMetadataFieldName distance metadata field name to use.
+			 * @return this builder.
+			 */
+			public Builder withDistanceMetadataFieldName(String distanceMetadataFieldName) {
+				this.distanceMetadataFieldName = distanceMetadataFieldName;
+				return this;
+			}
+
+			/**
+			 * Pinecone server side timeout.
+			 * @param serverSideTimeout server timeout to use.
+			 * @return this builder.
+			 */
+			public Builder withServerSideTimeout(Duration serverSideTimeout) {
+				this.serverSideTimeout = serverSideTimeout;
+				return this;
+			}
+
+			/**
+			 * {@return the immutable configuration}
+			 */
+			public PineconeVectorStoreConfig build() {
+				return new PineconeVectorStoreConfig(this);
+			}
+
+		}
+
 	}
 
 }

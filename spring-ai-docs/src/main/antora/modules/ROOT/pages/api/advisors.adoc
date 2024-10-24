@@ -18,7 +18,7 @@ var chatClient = ChatClient.builder(chatModel)
     )
     .build();
 
-String response = chatClient.prompt()
+String response = this.chatClient.prompt()
     // Set advisor parameters at runtime
     .advisors(advisor -> advisor.param("chat_memory_conversation_id", "678") 
             .param("chat_memory_response_size", 100)) 

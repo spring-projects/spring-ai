@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.transformer;
 
 import java.io.IOException;
@@ -73,7 +74,7 @@ public class MetadataTransformerIT {
 	@Test
 	public void testKeywordExtractor() {
 
-		var updatedDocuments = keywordMetadataEnricher.apply(List.of(document1, document2));
+		var updatedDocuments = this.keywordMetadataEnricher.apply(List.of(this.document1, this.document2));
 
 		List<Map<String, Object>> keywords = updatedDocuments.stream().map(d -> d.getMetadata()).toList();
 
@@ -91,7 +92,7 @@ public class MetadataTransformerIT {
 	@Test
 	public void testSummaryExtractor() {
 
-		var updatedDocuments = summaryMetadataEnricher.apply(List.of(document1, document2));
+		var updatedDocuments = this.summaryMetadataEnricher.apply(List.of(this.document1, this.document2));
 
 		List<Map<String, Object>> summaries = updatedDocuments.stream().map(d -> d.getMetadata()).toList();
 
@@ -115,34 +116,34 @@ public class MetadataTransformerIT {
 	@Test
 	public void testContentFormatEnricher() {
 
-		assertThat(((DefaultContentFormatter) document1.getContentFormatter()).getExcludedEmbedMetadataKeys())
+		assertThat(((DefaultContentFormatter) this.document1.getContentFormatter()).getExcludedEmbedMetadataKeys())
 			.doesNotContain("NewEmbedKey");
-		assertThat(((DefaultContentFormatter) document1.getContentFormatter()).getExcludedInferenceMetadataKeys())
+		assertThat(((DefaultContentFormatter) this.document1.getContentFormatter()).getExcludedInferenceMetadataKeys())
 			.doesNotContain("NewInferenceKey");
 
-		assertThat(((DefaultContentFormatter) document2.getContentFormatter()).getExcludedEmbedMetadataKeys())
+		assertThat(((DefaultContentFormatter) this.document2.getContentFormatter()).getExcludedEmbedMetadataKeys())
 			.doesNotContain("NewEmbedKey");
-		assertThat(((DefaultContentFormatter) document2.getContentFormatter()).getExcludedInferenceMetadataKeys())
+		assertThat(((DefaultContentFormatter) this.document2.getContentFormatter()).getExcludedInferenceMetadataKeys())
 			.doesNotContain("NewInferenceKey");
 
-		List<Document> enrichedDocuments = contentFormatTransformer.apply(List.of(document1, document2));
+		List<Document> enrichedDocuments = this.contentFormatTransformer.apply(List.of(this.document1, this.document2));
 
 		assertThat(enrichedDocuments.size()).isEqualTo(2);
 		var doc1 = enrichedDocuments.get(0);
 		var doc2 = enrichedDocuments.get(1);
 
-		assertThat(doc1).isEqualTo(document1);
-		assertThat(doc2).isEqualTo(document2);
+		assertThat(doc1).isEqualTo(this.document1);
+		assertThat(doc2).isEqualTo(this.document2);
 
 		assertThat(((DefaultContentFormatter) doc1.getContentFormatter()).getTextTemplate())
-			.isSameAs(defaultContentFormatter.getTextTemplate());
+			.isSameAs(this.defaultContentFormatter.getTextTemplate());
 		assertThat(((DefaultContentFormatter) doc1.getContentFormatter()).getExcludedEmbedMetadataKeys())
 			.contains("NewEmbedKey");
 		assertThat(((DefaultContentFormatter) doc1.getContentFormatter()).getExcludedInferenceMetadataKeys())
 			.contains("NewInferenceKey");
 
 		assertThat(((DefaultContentFormatter) doc2.getContentFormatter()).getTextTemplate())
-			.isSameAs(defaultContentFormatter.getTextTemplate());
+			.isSameAs(this.defaultContentFormatter.getTextTemplate());
 		assertThat(((DefaultContentFormatter) doc2.getContentFormatter()).getExcludedEmbedMetadataKeys())
 			.contains("NewEmbedKey");
 		assertThat(((DefaultContentFormatter) doc2.getContentFormatter()).getExcludedInferenceMetadataKeys())

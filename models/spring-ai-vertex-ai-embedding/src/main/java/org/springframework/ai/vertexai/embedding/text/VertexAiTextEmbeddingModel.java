@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.embedding.text;
 
 import java.io.IOException;
@@ -21,6 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.google.cloud.aiplatform.v1.EndpointName;
+import com.google.cloud.aiplatform.v1.PredictRequest;
+import com.google.cloud.aiplatform.v1.PredictResponse;
+import com.google.cloud.aiplatform.v1.PredictionServiceClient;
+import com.google.protobuf.Value;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
@@ -46,14 +54,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import com.google.cloud.aiplatform.v1.EndpointName;
-import com.google.cloud.aiplatform.v1.PredictRequest;
-import com.google.cloud.aiplatform.v1.PredictResponse;
-import com.google.cloud.aiplatform.v1.PredictionServiceClient;
-import com.google.protobuf.Value;
-
-import io.micrometer.observation.ObservationRegistry;
-
 /**
  * A class representing a Vertex AI Text Embedding Model.
  *
@@ -64,6 +64,11 @@ import io.micrometer.observation.ObservationRegistry;
 public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+
+	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
+		.of(VertexAiTextEmbeddingModelName.values())
+		.collect(Collectors.toMap(VertexAiTextEmbeddingModelName::getName,
+				VertexAiTextEmbeddingModelName::getDimensions));
 
 	public final VertexAiTextEmbeddingOptions defaultOptions;
 
@@ -131,7 +136,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 				PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
 						finalOptions);
 
-				PredictResponse embeddingResponse = retryTemplate
+				PredictResponse embeddingResponse = this.retryTemplate
 					.execute(context -> getPredictResponse(client, predictRequestBuilder));
 
 				int index = 0;
@@ -227,11 +232,6 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	public int dimensions() {
 		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), super.dimensions());
 	}
-
-	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
-		.of(VertexAiTextEmbeddingModelName.values())
-		.collect(Collectors.toMap(VertexAiTextEmbeddingModelName::getName,
-				VertexAiTextEmbeddingModelName::getDimensions));
 
 	/**
 	 * Use the provided convention for reporting observation data

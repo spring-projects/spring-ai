@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.qianfan.api.auth;
 
 /**
@@ -31,35 +47,35 @@ public class QianFanAccessToken {
 		this.sessionKey = accessTokenResponse.sessionKey();
 		this.sessionSecret = accessTokenResponse.sessionSecret();
 		this.scope = accessTokenResponse.scope();
-		this.refreshTime = getCurrentTimeInSeconds() + (long) ((double) expiresIn * FRACTION_OF_TIME_TO_LIVE);
+		this.refreshTime = getCurrentTimeInSeconds() + (long) ((double) this.expiresIn * FRACTION_OF_TIME_TO_LIVE);
 	}
 
 	public String getAccessToken() {
-		return accessToken;
+		return this.accessToken;
 	}
 
 	public String getRefreshToken() {
-		return refreshToken;
+		return this.refreshToken;
 	}
 
 	public Long getExpiresIn() {
-		return expiresIn;
+		return this.expiresIn;
 	}
 
 	public String getSessionKey() {
-		return sessionKey;
+		return this.sessionKey;
 	}
 
 	public String getSessionSecret() {
-		return sessionSecret;
+		return this.sessionSecret;
 	}
 
 	public Long getRefreshTime() {
-		return refreshTime;
+		return this.refreshTime;
 	}
 
 	public String getScope() {
-		return scope;
+		return this.scope;
 	}
 
 	public synchronized boolean needsRefresh() {

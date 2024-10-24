@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader.pdf.config;
 
 import java.io.IOException;
@@ -40,34 +41,6 @@ import org.springframework.util.CollectionUtils;
 public class ParagraphManager {
 
 	/**
-	 * Represents a document paragraph metadata and hierarchy.
-	 *
-	 * @param parent Parent paragraph that will contain a children paragraphs.
-	 * @param title Paragraph title as it appears in the PDF document.
-	 * @param level The TOC deepness level for this paragraph. The root is at level 0.
-	 * @param startPageNumber The page number in the PDF where this paragraph begins.
-	 * @param endPageNumber The page number in the PDF where this paragraph ends.
-	 * @param children Sub-paragraphs for this paragraph.
-	 */
-	public record Paragraph(Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
-			int position, List<Paragraph> children) {
-
-		public Paragraph(Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
-				int position) {
-			this(parent, title, level, startPageNumber, endPageNumber, position, new ArrayList<>());
-		}
-
-		@Override
-		public String toString() {
-			String indent = (level < 0) ? "" : new String(new char[level * 2]).replace('\0', ' ');
-
-			return indent + " " + level + ") " + title + " [" + startPageNumber + "," + endPageNumber + "], children = "
-					+ children.size() + ", pos = " + position;
-		}
-
-	}
-
-	/**
 	 * Root of the paragraphs tree.
 	 */
 	private final Paragraph rootParagraph;
@@ -90,7 +63,7 @@ public class ParagraphManager {
 					new Paragraph(null, "root", -1, 1, this.document.getNumberOfPages(), 0),
 					this.document.getDocumentCatalog().getDocumentOutline(), 0);
 
-			printParagraph(rootParagraph, System.out);
+			printParagraph(this.rootParagraph, System.out);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -201,6 +174,34 @@ public class ParagraphManager {
 		}
 
 		return resultList;
+	}
+
+	/**
+	 * Represents a document paragraph metadata and hierarchy.
+	 *
+	 * @param parent Parent paragraph that will contain a children paragraphs.
+	 * @param title Paragraph title as it appears in the PDF document.
+	 * @param level The TOC deepness level for this paragraph. The root is at level 0.
+	 * @param startPageNumber The page number in the PDF where this paragraph begins.
+	 * @param endPageNumber The page number in the PDF where this paragraph ends.
+	 * @param children Sub-paragraphs for this paragraph.
+	 */
+	public record Paragraph(Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
+			int position, List<Paragraph> children) {
+
+		public Paragraph(Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
+				int position) {
+			this(parent, title, level, startPageNumber, endPageNumber, position, new ArrayList<>());
+		}
+
+		@Override
+		public String toString() {
+			String indent = (this.level < 0) ? "" : new String(new char[this.level * 2]).replace('\0', ' ');
+
+			return indent + " " + this.level + ") " + this.title + " [" + this.startPageNumber + ","
+					+ this.endPageNumber + "], children = " + this.children.size() + ", pos = " + this.position;
+		}
+
 	}
 
 }

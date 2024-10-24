@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.minimax.api;
 
 import java.util.List;
@@ -20,6 +21,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -34,14 +42,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 // @formatter:off
 /**
@@ -61,6 +61,8 @@ public class MiniMaxApi {
 	private final RestClient restClient;
 
 	private final WebClient webClient;
+
+	private final MiniMaxStreamFunctionCallingHelper chunkMerger = new MiniMaxStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api with default base URL.
@@ -119,6 +121,99 @@ public class MiniMaxApi {
 				.build();
 	}
 
+	public static  String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
+		return content.stream()
+				.filter(c -> "text".equals(c.type()))
+				.map(ChatCompletionMessage.MediaContent::text)
+				.reduce("", (a, b) -> a + b);
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+				.uri("/v1/text/chatcompletion_v2")
+				.body(chatRequest)
+				.retrieve()
+				.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request. Must have the stream property set to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
+		return this.webClient.post()
+				.uri("/v1/text/chatcompletion_v2")
+				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+				.retrieve()
+				.bodyToFlux(String.class)
+				.takeUntil(SSE_DONE_PREDICATE)
+				.filter(SSE_DONE_PREDICATE.negate())
+				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+				.map(chunk -> {
+					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+						isInsideTool.set(true);
+					}
+					return chunk;
+				})
+				.windowUntil(chunk -> {
+					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+						isInsideTool.set(false);
+						return true;
+					}
+					return !isInsideTool.get();
+				})
+				.concatMapIterable(window -> {
+					Mono<ChatCompletionChunk> monoChunk = window.reduce(
+							new ChatCompletionChunk(null, null, null, null, null, null),
+							(previous, current) -> this.chunkMerger.merge(previous, current));
+					return List.of(monoChunk);
+				})
+				.flatMap(mono -> mono);
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 *
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns {@link EmbeddingList}.
+	 *
+	 */
+	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		// Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single
+		// request, pass an array of strings or array of token arrays.
+		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
+
+		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
+
+		return this.restClient.post()
+				.uri("/v1/embeddings")
+				.body(embeddingRequest)
+				.retrieve()
+				.toEntity(new ParameterizedTypeReference<>() {
+		});
+	}
+
 	/**
 	 * MiniMax Chat Completion Models:
 	 * <a href="https://www.minimaxi.com/document/algorithm-concept">MiniMax Model</a>.
@@ -141,11 +236,90 @@ public class MiniMaxApi {
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
 		}
 
 		@Override
 		public String getName() {
+			return this.value;
+		}
+	}
+
+	/**
+	 * The reason the model stopped generating tokens.
+	 */
+	public enum ChatCompletionFinishReason {
+		/**
+		 * The model hit a natural stop point or a provided stop sequence.
+		 */
+		@JsonProperty("stop") STOP,
+		/**
+		 * The maximum number of tokens specified in the request was reached.
+		 */
+		@JsonProperty("length") LENGTH,
+		/**
+		 * The content was omitted due to a flag from our content filters.
+		 */
+		@JsonProperty("content_filter") CONTENT_FILTER,
+		/**
+		 * The model called a tool.
+		 */
+		@JsonProperty("tool_calls") TOOL_CALLS,
+		/**
+		 * (deprecated) The model called a function.
+		 */
+		@JsonProperty("function_call") FUNCTION_CALL,
+		/**
+		 * Only for compatibility with Mistral AI API.
+		 */
+		@JsonProperty("tool_call") TOOL_CALL
+	}
+
+	/**
+	 * MiniMax Embeddings Models:
+	 * <a href="https://www.minimaxi.com/document/guides/Embeddings">Embeddings</a>.
+	 */
+	public enum EmbeddingModel {
+
+		/**
+		 * DIMENSION: 1536
+		 */
+		Embo_01("embo-01");
+
+		public final String  value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+	}
+
+	/**
+	 * MiniMax Embeddings Types
+	 */
+	public enum EmbeddingType {
+
+		/**
+		 * DB, used to generate vectors and store them in the library (as retrieved text)
+		 */
+		DB("db"),
+
+		/**
+		 * Query, used to generate vectors for queries (when used as retrieval text)
+		 */
+		Query("query");
+
+		@JsonValue
+		public final String value;
+
+		EmbeddingType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
 			return this.value;
 		}
 	}
@@ -383,6 +557,15 @@ public class MiniMaxApi {
 			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
 
 		/**
+		 * Create a chat completion message with the given content and role. All other fields are null.
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 */
+		public ChatCompletionMessage(Object content, Role role) {
+			this(content, role, null, null, null);
+		}
+
+		/**
 		 * Get message content as String.
 		 */
 		public String content() {
@@ -393,15 +576,6 @@ public class MiniMaxApi {
 				return text;
 			}
 			throw new IllegalStateException("The content is not a string!");
-		}
-
-		/**
-		 * Create a chat completion message with the given content and role. All other fields are null.
-		 * @param content The contents of the message.
-		 * @param role The role of the author of this message.
-		 */
-		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
 		}
 
 		/**
@@ -442,22 +616,6 @@ public class MiniMaxApi {
 			@JsonProperty("image_url") ImageUrl imageUrl) {
 
 			/**
-			 * @param url Either a URL of the image or the base64 encoded image data.
-			 * The base64 encoded image data must have a special prefix in the following format:
-			 * "data:{mimetype};base64,{base64-encoded-image-data}".
-			 * @param detail Specifies the detail level of the image.
-			 */
-			@JsonInclude(Include.NON_NULL)
-			public record ImageUrl(
-				@JsonProperty("url") String url,
-				@JsonProperty("detail") String detail) {
-
-				public ImageUrl(String url) {
-					this(url, null);
-				}
-			}
-
-			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
@@ -471,6 +629,22 @@ public class MiniMaxApi {
 			 */
 			public MediaContent(ImageUrl imageUrl) {
 				this("image_url", null, imageUrl);
+			}
+
+			/**
+			 * @param url Either a URL of the image or the base64 encoded image data.
+			 * The base64 encoded image data must have a special prefix in the following format:
+			 * "data:{mimetype};base64,{base64-encoded-image-data}".
+			 * @param detail Specifies the detail level of the image.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record ImageUrl(
+				@JsonProperty("url") String url,
+				@JsonProperty("detail") String detail) {
+
+				public ImageUrl(String url) {
+					this(url, null);
+				}
 			}
 		}
 		/**
@@ -499,43 +673,6 @@ public class MiniMaxApi {
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
 		}
-	}
-
-	public static  String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
-		return content.stream()
-				.filter(c -> "text".equals(c.type()))
-				.map(ChatCompletionMessage.MediaContent::text)
-				.reduce("", (a, b) -> a + b);
-	}
-
-	/**
-	 * The reason the model stopped generating tokens.
-	 */
-	public enum ChatCompletionFinishReason {
-		/**
-		 * The model hit a natural stop point or a provided stop sequence.
-		 */
-		@JsonProperty("stop") STOP,
-		/**
-		 * The maximum number of tokens specified in the request was reached.
-		 */
-		@JsonProperty("length") LENGTH,
-		/**
-		 * The content was omitted due to a flag from our content filters.
-		 */
-		@JsonProperty("content_filter") CONTENT_FILTER,
-		/**
-		 * The model called a tool.
-		 */
-		@JsonProperty("tool_calls") TOOL_CALLS,
-		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call") FUNCTION_CALL,
-		/**
-		 * Only for compatibility with Mistral AI API.
-		 */
-		@JsonProperty("tool_call") TOOL_CALL
 	}
 
 	/**
@@ -690,118 +827,6 @@ public class MiniMaxApi {
 	}
 
 	/**
-	 * Creates a model response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-				.uri("/v1/text/chatcompletion_v2")
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(ChatCompletion.class);
-	}
-
-	private final MiniMaxStreamFunctionCallingHelper chunkMerger = new MiniMaxStreamFunctionCallingHelper();
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request. Must have the stream property set to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		return this.webClient.post()
-				.uri("/v1/text/chatcompletion_v2")
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(String.class)
-				.takeUntil(SSE_DONE_PREDICATE)
-				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-				.map(chunk -> {
-					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-						isInsideTool.set(true);
-					}
-					return chunk;
-				})
-				.windowUntil(chunk -> {
-					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-						isInsideTool.set(false);
-						return true;
-					}
-					return !isInsideTool.get();
-				})
-				.concatMapIterable(window -> {
-					Mono<ChatCompletionChunk> monoChunk = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
-							(previous, current) -> this.chunkMerger.merge(previous, current));
-					return List.of(monoChunk);
-				})
-				.flatMap(mono -> mono);
-	}
-
-	/**
-	 * MiniMax Embeddings Models:
-	 * <a href="https://www.minimaxi.com/document/guides/Embeddings">Embeddings</a>.
-	 */
-	public enum EmbeddingModel {
-
-		/**
-		 * DIMENSION: 1536
-		 */
-		Embo_01("embo-01");
-
-		public final String  value;
-
-		EmbeddingModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
-	 * MiniMax Embeddings Types
-	 */
-	public enum EmbeddingType {
-
-		/**
-		 * DB, used to generate vectors and store them in the library (as retrieved text)
-		 */
-		DB("db"),
-
-		/**
-		 * Query, used to generate vectors for queries (when used as retrieval text)
-		 */
-		Query("query");
-
-		@JsonValue
-		public final String value;
-
-		EmbeddingType(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
 	 * Creates an embedding vector representing the input text.
 	 *
 	 * @param texts Input text to embed, encoded as a string or array of tokens.
@@ -888,31 +913,6 @@ public class MiniMaxApi {
 			@JsonProperty("vectors") List<float[]> vectors,
 			@JsonProperty("model") String model,
 			@JsonProperty("total_tokens") Integer totalTokens) {
-	}
-
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 *
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns {@link EmbeddingList}.
-	 *
-	 */
-	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		// Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single
-		// request, pass an array of strings or array of token arrays.
-		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
-
-		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
-
-		return this.restClient.post()
-				.uri("/v1/embeddings")
-				.body(embeddingRequest)
-				.retrieve()
-				.toEntity(new ParameterizedTypeReference<>() {
-		});
 	}
 
 }

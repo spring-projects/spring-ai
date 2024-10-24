@@ -1,23 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-// Generated from org/springframework/ai/vectorstore/filter/antlr4/Filters.g4 by ANTLR 4.13.1
-package org.springframework.ai.vectorstore.filter.antlr4;
-
-/*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,128 +14,40 @@ package org.springframework.ai.vectorstore.filter.antlr4;
  * limitations under the License.
  */
 
+package org.springframework.ai.vectorstore.filter.antlr4;
+
+// Generated from org/springframework/ai/vectorstore/filter/antlr4/Filters.g4 by ANTLR 4.13.1
+
 // ############################################################
 // # NOTE: This is ANTLR4 auto-generated code. Do not modify! #
 // ############################################################
 
-import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.RuntimeMetaData;
+import org.antlr.v4.runtime.Vocabulary;
+import org.antlr.v4.runtime.VocabularyImpl;
+import org.antlr.v4.runtime.atn.ATN;
+import org.antlr.v4.runtime.atn.ATNDeserializer;
+import org.antlr.v4.runtime.atn.LexerATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.dfa.DFA;
 
 @SuppressWarnings({ "all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape" })
 public class FiltersLexer extends Lexer {
-
-	static {
-		RuntimeMetaData.checkVersion("4.13.1", RuntimeMetaData.VERSION);
-	}
-
-	protected static final DFA[] _decisionToDFA;
-
-	protected static final PredictionContextCache _sharedContextCache = new PredictionContextCache();
 
 	public static final int WHERE = 1, DOT = 2, COMMA = 3, LEFT_SQUARE_BRACKETS = 4, RIGHT_SQUARE_BRACKETS = 5,
 			LEFT_PARENTHESIS = 6, RIGHT_PARENTHESIS = 7, EQUALS = 8, MINUS = 9, PLUS = 10, GT = 11, GE = 12, LT = 13,
 			LE = 14, NE = 15, AND = 16, OR = 17, IN = 18, NIN = 19, NOT = 20, BOOLEAN_VALUE = 21, QUOTED_STRING = 22,
 			INTEGER_VALUE = 23, DECIMAL_VALUE = 24, IDENTIFIER = 25, WS = 26;
 
-	public static String[] channelNames = { "DEFAULT_TOKEN_CHANNEL", "HIDDEN" };
-
-	public static String[] modeNames = { "DEFAULT_MODE" };
-
-	private static String[] makeRuleNames() {
-		return new String[] { "WHERE", "DOT", "COMMA", "LEFT_SQUARE_BRACKETS", "RIGHT_SQUARE_BRACKETS",
-				"LEFT_PARENTHESIS", "RIGHT_PARENTHESIS", "EQUALS", "MINUS", "PLUS", "GT", "GE", "LT", "LE", "NE", "AND",
-				"OR", "IN", "NIN", "NOT", "BOOLEAN_VALUE", "QUOTED_STRING", "INTEGER_VALUE", "DECIMAL_VALUE",
-				"IDENTIFIER", "DECIMAL_DIGITS", "DIGIT", "LETTER", "WS" };
-	}
-
 	public static final String[] ruleNames = makeRuleNames();
-
-	private static String[] makeLiteralNames() {
-		return new String[] { null, null, "'.'", "','", "'['", "']'", "'('", "')'", "'=='", "'-'", "'+'", "'>'", "'>='",
-				"'<'", "'<='", "'!='" };
-	}
-
-	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-
-	private static String[] makeSymbolicNames() {
-		return new String[] { null, "WHERE", "DOT", "COMMA", "LEFT_SQUARE_BRACKETS", "RIGHT_SQUARE_BRACKETS",
-				"LEFT_PARENTHESIS", "RIGHT_PARENTHESIS", "EQUALS", "MINUS", "PLUS", "GT", "GE", "LT", "LE", "NE", "AND",
-				"OR", "IN", "NIN", "NOT", "BOOLEAN_VALUE", "QUOTED_STRING", "INTEGER_VALUE", "DECIMAL_VALUE",
-				"IDENTIFIER", "WS" };
-	}
-
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-
-	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	/**
 	 * @deprecated Use {@link #VOCABULARY} instead.
 	 */
 	@Deprecated
 	public static final String[] tokenNames;
-	static {
-		tokenNames = new String[_SYMBOLIC_NAMES.length];
-		for (int i = 0; i < tokenNames.length; i++) {
-			tokenNames[i] = VOCABULARY.getLiteralName(i);
-			if (tokenNames[i] == null) {
-				tokenNames[i] = VOCABULARY.getSymbolicName(i);
-			}
-
-			if (tokenNames[i] == null) {
-				tokenNames[i] = "<INVALID>";
-			}
-		}
-	}
-
-	@Override
-	@Deprecated
-	public String[] getTokenNames() {
-		return tokenNames;
-	}
-
-	@Override
-
-	public Vocabulary getVocabulary() {
-		return VOCABULARY;
-	}
-
-	public FiltersLexer(CharStream input) {
-		super(input);
-		_interp = new LexerATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
-	}
-
-	@Override
-	public String getGrammarFileName() {
-		return "Filters.g4";
-	}
-
-	@Override
-	public String[] getRuleNames() {
-		return ruleNames;
-	}
-
-	@Override
-	public String getSerializedATN() {
-		return _serializedATN;
-	}
-
-	@Override
-	public String[] getChannelNames() {
-		return channelNames;
-	}
-
-	@Override
-	public String[] getModeNames() {
-		return modeNames;
-	}
-
-	@Override
-	public ATN getATN() {
-		return _ATN;
-	}
 
 	public static final String _serializedATN = "\u0004\u0000\u001a\u00e5\u0006\uffff\uffff\u0002\u0000\u0007\u0000\u0002"
 			+ "\u0001\u0007\u0001\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002"
@@ -307,6 +201,105 @@ public class FiltersLexer extends Lexer {
 			+ "\u00cf\u00d6\u00d8\u00e1\u0001\u0000\u0001\u0000";
 
 	public static final ATN _ATN = new ATNDeserializer().deserialize(_serializedATN.toCharArray());
+
+	protected static final DFA[] _decisionToDFA;
+
+	protected static final PredictionContextCache _sharedContextCache = new PredictionContextCache();
+
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+
+	public static String[] channelNames = { "DEFAULT_TOKEN_CHANNEL", "HIDDEN" };
+
+	public static String[] modeNames = { "DEFAULT_MODE" };
+
+	public FiltersLexer(CharStream input) {
+		super(input);
+		_interp = new LexerATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
+	}
+
+	private static String[] makeRuleNames() {
+		return new String[] { "WHERE", "DOT", "COMMA", "LEFT_SQUARE_BRACKETS", "RIGHT_SQUARE_BRACKETS",
+				"LEFT_PARENTHESIS", "RIGHT_PARENTHESIS", "EQUALS", "MINUS", "PLUS", "GT", "GE", "LT", "LE", "NE", "AND",
+				"OR", "IN", "NIN", "NOT", "BOOLEAN_VALUE", "QUOTED_STRING", "INTEGER_VALUE", "DECIMAL_VALUE",
+				"IDENTIFIER", "DECIMAL_DIGITS", "DIGIT", "LETTER", "WS" };
+	}
+
+	private static String[] makeLiteralNames() {
+		return new String[] { null, null, "'.'", "','", "'['", "']'", "'('", "')'", "'=='", "'-'", "'+'", "'>'", "'>='",
+				"'<'", "'<='", "'!='" };
+	}
+
+	private static String[] makeSymbolicNames() {
+		return new String[] { null, "WHERE", "DOT", "COMMA", "LEFT_SQUARE_BRACKETS", "RIGHT_SQUARE_BRACKETS",
+				"LEFT_PARENTHESIS", "RIGHT_PARENTHESIS", "EQUALS", "MINUS", "PLUS", "GT", "GE", "LT", "LE", "NE", "AND",
+				"OR", "IN", "NIN", "NOT", "BOOLEAN_VALUE", "QUOTED_STRING", "INTEGER_VALUE", "DECIMAL_VALUE",
+				"IDENTIFIER", "WS" };
+	}
+
+	@Override
+	@Deprecated
+	public String[] getTokenNames() {
+		return tokenNames;
+	}
+
+	@Override
+
+	public Vocabulary getVocabulary() {
+		return VOCABULARY;
+	}
+
+	@Override
+	public String getGrammarFileName() {
+		return "Filters.g4";
+	}
+
+	@Override
+	public String[] getRuleNames() {
+		return ruleNames;
+	}
+
+	@Override
+	public String getSerializedATN() {
+		return _serializedATN;
+	}
+
+	@Override
+	public String[] getChannelNames() {
+		return channelNames;
+	}
+
+	@Override
+	public String[] getModeNames() {
+		return modeNames;
+	}
+
+	@Override
+	public ATN getATN() {
+		return _ATN;
+	}
+
+	static {
+		RuntimeMetaData.checkVersion("4.13.1", RuntimeMetaData.VERSION);
+	}
+
+	static {
+		tokenNames = new String[_SYMBOLIC_NAMES.length];
+		for (int i = 0; i < tokenNames.length; i++) {
+			tokenNames[i] = VOCABULARY.getLiteralName(i);
+			if (tokenNames[i] == null) {
+				tokenNames[i] = VOCABULARY.getSymbolicName(i);
+			}
+
+			if (tokenNames[i] == null) {
+				tokenNames[i] = "<INVALID>";
+			}
+		}
+	}
+
 	static {
 		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
 		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {

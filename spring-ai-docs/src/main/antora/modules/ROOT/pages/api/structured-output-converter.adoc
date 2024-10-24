@@ -71,7 +71,7 @@ The format instructions are most often appended to the end of the user input usi
         """; // user input with a "format" placeholder.
     Prompt prompt = new Prompt(
        new PromptTemplate(
-          userInputTemplate,
+			   this.userInputTemplate,
           Map.of(..., "format", outputConverter.getFormat()) // replace the "format" placeholder with the converter's format.
        ).createMessage());
 ----
@@ -124,7 +124,7 @@ or using the low-level `ChatModel` API directly:
 BeanOutputConverter<ActorsFilms> beanOutputConverter =
     new BeanOutputConverter<>(ActorsFilms.class);
 
-String format = beanOutputConverter.getFormat();
+String format = this.beanOutputConverter.getFormat();
 
 String actor = "Tom Hanks";
 
@@ -134,9 +134,9 @@ String template = """
         """;
 
 Generation generation = chatModel.call(
-    new PromptTemplate(template, Map.of("actor", actor, "format", format)).create()).getResult();
+    new PromptTemplate(this.template, Map.of("actor", this.actor, "format", this.format)).create()).getResult();
 
-ActorsFilms actorsFilms = beanOutputConverter.convert(generation.getOutput().getContent());
+ActorsFilms actorsFilms = this.beanOutputConverter.convert(this.generation.getOutput().getContent());
 ----
 
 ==== Generic Bean Types
@@ -159,17 +159,17 @@ or using the low-level `ChatModel` API directly:
 BeanOutputConverter<List<ActorsFilms>> outputConverter = new BeanOutputConverter<>(
         new ParameterizedTypeReference<List<ActorsFilms>>() { });
 
-String format = outputConverter.getFormat();
+String format = this.outputConverter.getFormat();
 String template = """
         Generate the filmography of 5 movies for Tom Hanks and Bill Murray.
         {format}
         """;
 
-Prompt prompt = new PromptTemplate(template, Map.of("format", format)).create();
+Prompt prompt = new PromptTemplate(this.template, Map.of("format", this.format)).create();
 
-Generation generation = chatModel.call(prompt).getResult();
+Generation generation = chatModel.call(this.prompt).getResult();
 
-List<ActorsFilms> actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+List<ActorsFilms> actorsFilms = this.outputConverter.convert(this.generation.getOutput().getContent());
 ----
 
 === Map Output Converter
@@ -191,18 +191,18 @@ or using the low-level `ChatModel` API directly:
 ----
 MapOutputConverter mapOutputConverter = new MapOutputConverter();
 
-String format = mapOutputConverter.getFormat();
+String format = this.mapOutputConverter.getFormat();
 String template = """
         Provide me a List of {subject}
         {format}
         """;
 
-Prompt prompt = new PromptTemplate(template,
-        Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format)).create();
+Prompt prompt = new PromptTemplate(this.template,
+        Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", this.format)).create();
 
-Generation generation = chatModel.call(prompt).getResult();
+Generation generation = chatModel.call(this.prompt).getResult();
 
-Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().getContent());
+Map<String, Object> result = this.mapOutputConverter.convert(this.generation.getOutput().getContent());
 ----
 
 === List Output Converter
@@ -224,18 +224,18 @@ or using the low-level `ChatModel API` directly:
 ----
 ListOutputConverter listOutputConverter = new ListOutputConverter(new DefaultConversionService());
 
-String format = listOutputConverter.getFormat();
+String format = this.listOutputConverter.getFormat();
 String template = """
         List five {subject}
         {format}
         """;
 
-Prompt prompt = new PromptTemplate(template,
-        Map.of("subject", "ice cream flavors", "format", format)).create();
+Prompt prompt = new PromptTemplate(this.template,
+        Map.of("subject", "ice cream flavors", "format", this.format)).create();
 
-Generation generation = this.chatModel.call(prompt).getResult();
+Generation generation = this.chatModel.call(this.prompt).getResult();
 
-List<String> list = listOutputConverter.convert(generation.getOutput().getContent());
+List<String> list = this.listOutputConverter.convert(this.generation.getOutput().getContent());
 ----
 
 == Supported AI Models

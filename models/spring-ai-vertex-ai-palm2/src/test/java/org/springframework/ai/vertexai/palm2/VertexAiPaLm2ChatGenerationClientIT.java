@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.palm2;
 
 import java.util.Arrays;
@@ -22,10 +23,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -59,10 +60,10 @@ class VertexAiPaLm2ChatGenerationClientIT {
 		String name = "Bob";
 		String voice = "pirate";
 		UserMessage userMessage = new UserMessage(request);
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).contains("Bartholomew");
 	}
 
@@ -98,14 +99,11 @@ class VertexAiPaLm2ChatGenerationClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	// @Test
@@ -120,11 +118,15 @@ class VertexAiPaLm2ChatGenerationClientIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 	@SpringBootConfiguration

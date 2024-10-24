@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.chat.observation;
+
+import java.util.List;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.otel.bridge.OtelTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.model.ChatModel;
@@ -44,8 +48,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-
 /**
  * Auto-configuration for Spring AI chat model observations.
  *
@@ -59,6 +61,16 @@ import java.util.List;
 public class ChatObservationAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChatObservationAutoConfiguration.class);
+
+	private static void logPromptContentWarning() {
+		logger.warn(
+				"You have enabled the inclusion of the prompt content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+	}
+
+	private static void logCompletionWarning() {
+		logger.warn(
+				"You have enabled the inclusion of the completion content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -139,16 +151,6 @@ public class ChatObservationAutoConfiguration {
 							AdvisorObservationContext.class, VectorStoreObservationContext.class));
 		}
 
-	}
-
-	private static void logPromptContentWarning() {
-		logger.warn(
-				"You have enabled the inclusion of the prompt content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
-	}
-
-	private static void logCompletionWarning() {
-		logger.warn(
-				"You have enabled the inclusion of the completion content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
 	}
 
 }

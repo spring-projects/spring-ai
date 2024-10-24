@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package org.springframework.ai.autoconfigure.chat.client;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
 import org.springframework.ai.chat.client.observation.ChatClientInputContentObservationFilter;
@@ -32,8 +34,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
-
-import io.micrometer.observation.ObservationRegistry;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link ChatClient}.

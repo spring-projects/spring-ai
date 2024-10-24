@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mistralai;
 
 import java.util.HashSet;
@@ -26,13 +27,20 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -59,9 +67,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 /**
  * Represents a Mistral AI Chat Model.
  *
@@ -74,9 +79,9 @@ import reactor.core.publisher.Mono;
  */
 public class MistralAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -140,6 +145,17 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 		this.observationRegistry = observationRegistry;
 	}
 
+	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result) {
+		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
+		MistralAiUsage usage = MistralAiUsage.from(result.usage());
+		return ChatResponseMetadata.builder()
+			.withId(result.id())
+			.withModel(result.model())
+			.withUsage(usage)
+			.withKeyValue("created", result.created())
+			.build();
+	}
+
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
@@ -156,13 +172,13 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = retryTemplate
+				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
 					.execute(ctx -> this.mistralAiApi.chatCompletionEntity(request));
 
 				ChatCompletion chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					this.logger.warn("No chat completion returned for prompt: {}", prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -213,7 +229,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			Flux<ChatCompletionChunk> completionChunks = retryTemplate
+			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
 				.execute(ctx -> this.mistralAiApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
@@ -250,7 +266,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 						}
 					}
 					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
+						this.logger.error("Error processing chat completion", e);
 						return new ChatResponse(List.of());
 					}
 				}));
@@ -292,17 +308,6 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
 		return new Generation(assistantMessage, generationMetadata);
-	}
-
-	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result) {
-		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
-		MistralAiUsage usage = MistralAiUsage.from(result.usage());
-		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withModel(result.model())
-			.withUsage(usage)
-			.withKeyValue("created", result.created())
-			.build();
 	}
 
 	private ChatCompletion toChatCompletion(ChatCompletionChunk chunk) {

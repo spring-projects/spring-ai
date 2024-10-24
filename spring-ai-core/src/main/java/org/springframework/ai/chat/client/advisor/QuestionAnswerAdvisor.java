@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
@@ -38,10 +42,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
 /**
  * Context for the question is retrieved from a Vector Store and added to the prompt's
  * user text.
@@ -50,6 +50,10 @@ import reactor.core.scheduler.Schedulers;
  * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+
+	public static final String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
+
+	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
 	private static final String DEFAULT_USER_TEXT_ADVISE = """
 
@@ -71,10 +75,6 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	private final String userTextAdvise;
 
 	private final SearchRequest searchRequest;
-
-	public static final String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
-
-	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
 	private final boolean protectFromBlocking;
 
@@ -157,6 +157,10 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		this.userTextAdvise = userTextAdvise;
 		this.protectFromBlocking = protectFromBlocking;
 		this.order = order;
+	}
+
+	public static Builder builder(VectorStore vectorStore) {
+		return new Builder(vectorStore);
 	}
 
 	@Override
@@ -253,7 +257,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	}
 
 	private Predicate<AdvisedResponse> onFinishReason() {
-		return (advisedResponse) -> advisedResponse.response()
+		return advisedResponse -> advisedResponse.response()
 			.getResults()
 			.stream()
 			.filter(result -> result != null && result.getMetadata() != null
@@ -262,11 +266,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 			.isPresent();
 	}
 
-	public static Builder builder(VectorStore vectorStore) {
-		return new Builder(vectorStore);
-	}
-
-	public static class Builder {
+	public static final class Builder {
 
 		private final VectorStore vectorStore;
 

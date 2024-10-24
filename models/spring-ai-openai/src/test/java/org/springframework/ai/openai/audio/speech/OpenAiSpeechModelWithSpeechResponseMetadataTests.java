@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,11 @@
 
 package org.springframework.ai.openai.audio.speech;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -34,12 +37,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
-import java.time.Duration;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
@@ -48,9 +49,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @RestClientTest(OpenAiSpeechModelWithSpeechResponseMetadataTests.Config.class)
 public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
-	private static String TEST_API_KEY = "sk-1234567890";
-
 	private static final Float SPEED = 1.0f;
+
+	private static String TEST_API_KEY = "sk-1234567890";
 
 	@Autowired
 	private OpenAiAudioSpeechModel openAiSpeechClient;
@@ -60,7 +61,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
 	@AfterEach
 	void resetMockServer() {
-		server.reset();
+		this.server.reset();
 	}
 
 	@Test
@@ -77,7 +78,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
-		SpeechResponse response = openAiSpeechClient.call(speechPrompt);
+		SpeechResponse response = this.openAiSpeechClient.call(speechPrompt);
 
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(audioBytes).hasSizeGreaterThan(0);
@@ -110,7 +111,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_RESET_HEADER.getName(), "27h55s451ms");
 		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-		server.expect(requestTo("/v1/audio/speech"))
+		this.server.expect(requestTo("/v1/audio/speech"))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess("Audio bytes as string", MediaType.APPLICATION_OCTET_STREAM).headers(httpHeaders));

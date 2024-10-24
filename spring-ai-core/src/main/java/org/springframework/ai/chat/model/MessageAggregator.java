@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -33,8 +35,6 @@ import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.StringUtils;
-
-import reactor.core.publisher.Flux;
 
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a
@@ -167,9 +167,7 @@ public class MessageAggregator {
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
-		}).doOnError(e -> {
-			logger.error("Aggregation Error", e);
-		});
+		}).doOnError(e -> logger.error("Aggregation Error", e));
 	}
 
 	public record DefaultUsage(long promptTokens, long generationTokens, long totalTokens) implements Usage {
@@ -188,6 +186,7 @@ public class MessageAggregator {
 		public Long getTotalTokens() {
 			return totalTokens();
 		}
+
 	}
 
 }

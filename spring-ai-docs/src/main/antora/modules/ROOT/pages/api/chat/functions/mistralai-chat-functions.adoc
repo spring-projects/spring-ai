@@ -151,7 +151,7 @@ MistralAiChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
+ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
 		MistralAiChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
@@ -178,7 +178,7 @@ var promptOptions = MistralAiChatOptions.builder()
 		new MockWeatherService()))) // function code
 	.build();
 
-ChatResponse response = chatModel.call(new Prompt(userMessage, promptOptions));
+ChatResponse response = this.chatModel.call(new Prompt(this.userMessage, this.promptOptions));
 ----
 
 NOTE: The in-prompt registered functions are enabled by default for the duration of this request.

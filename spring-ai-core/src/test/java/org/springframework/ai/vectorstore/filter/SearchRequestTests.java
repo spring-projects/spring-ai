@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.filter;
 
 import org.junit.jupiter.api.Test;
@@ -67,7 +68,7 @@ public class SearchRequestTests {
 		assertThat(emptyRequest.getQuery()).isEqualTo("New Query");
 	}
 
-	@Test()
+	@Test
 	public void withSimilarityThreshold() {
 		var request = SearchRequest.query("Test").withSimilarityThreshold(0.678);
 		assertThat(request.getSimilarityThreshold()).isEqualTo(0.678);
@@ -75,19 +76,15 @@ public class SearchRequestTests {
 		request.withSimilarityThreshold(0.9);
 		assertThat(request.getSimilarityThreshold()).isEqualTo(0.9);
 
-		assertThatThrownBy(() -> {
-			request.withSimilarityThreshold(-1);
-		}).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> request.withSimilarityThreshold(-1)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Similarity threshold must be in [0,1] range.");
 
-		assertThatThrownBy(() -> {
-			request.withSimilarityThreshold(1.1);
-		}).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> request.withSimilarityThreshold(1.1)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Similarity threshold must be in [0,1] range.");
 
 	}
 
-	@Test()
+	@Test
 	public void withTopK() {
 		var request = SearchRequest.query("Test").withTopK(66);
 		assertThat(request.getTopK()).isEqualTo(66);
@@ -95,13 +92,12 @@ public class SearchRequestTests {
 		request.withTopK(89);
 		assertThat(request.getTopK()).isEqualTo(89);
 
-		assertThatThrownBy(() -> {
-			request.withTopK(-1);
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("TopK should be positive.");
+		assertThatThrownBy(() -> request.withTopK(-1)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("TopK should be positive.");
 
 	}
 
-	@Test()
+	@Test
 	public void withFilterExpression() {
 
 		var request = SearchRequest.query("Test").withFilterExpression("country == 'BG' && year >= 2022");
@@ -128,9 +124,8 @@ public class SearchRequestTests {
 		assertThat(request.getFilterExpression()).isNull();
 		assertThat(request.hasFilterExpression()).isFalse();
 
-		assertThatThrownBy(() -> {
-			request.withFilterExpression("FooBar");
-		}).isInstanceOf(FilterExpressionParseException.class)
+		assertThatThrownBy(() -> request.withFilterExpression("FooBar"))
+			.isInstanceOf(FilterExpressionParseException.class)
 			.hasMessageContaining("Error: no viable alternative at input 'FooBar'");
 
 	}

@@ -15,14 +15,18 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micrometer.observation.ObservationRegistry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.EmbeddingUtils;
@@ -33,11 +37,6 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * The <b>SAP HANA Cloud vector engine</b> offers multiple use cases in AI scenarios.

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,12 @@
 
 package org.springframework.ai.azure.openai;
 
-import com.azure.ai.openai.OpenAIClient;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
-import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 import org.junit.jupiter.api.Test;
@@ -30,10 +32,6 @@ import org.mockito.Mockito;
 
 import org.springframework.ai.chat.prompt.Prompt;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -41,6 +39,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  */
 public class AzureChatCompletionsOptionsTests {
+
+	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
+		return Stream.of(Arguments.of(0.0, 0.0), Arguments.of(0.0, 1.0), Arguments.of(1.0, 0.0), Arguments.of(1.0, 1.0),
+				Arguments.of(1.0, null), Arguments.of(null, 1.0), Arguments.of(null, null));
+	}
 
 	@Test
 	public void createRequestWithChatOptions() {
@@ -130,11 +133,6 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getTopLogprobs()).isEqualTo(4);
 		assertThat(requestOptions.getEnhancements()).isEqualTo(anotherMockAzureChatEnhancementConfiguration);
 		assertThat(requestOptions.getResponseFormat()).isInstanceOf(ChatCompletionsJsonResponseFormat.class);
-	}
-
-	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
-		return Stream.of(Arguments.of(0.0, 0.0), Arguments.of(0.0, 1.0), Arguments.of(1.0, 0.0), Arguments.of(1.0, 1.0),
-				Arguments.of(1.0, null), Arguments.of(null, 1.0), Arguments.of(null, null));
 	}
 
 	@ParameterizedTest

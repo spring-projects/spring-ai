@@ -251,9 +251,9 @@ Below is a straightforward code example excerpted from link:https://github.com/s
 var imageResource = new ClassPathResource("/multimodal.test.png");
 
 var userMessage = new UserMessage("Explain what do you see on this picture?",
-        new Media(MimeTypeUtils.IMAGE_PNG, imageResource));
+        new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
         OllamaOptions.builder().withModel(OllamaModel.LLAVA)).build());
 ----
 
@@ -317,13 +317,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map<String,String> generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 
 }
@@ -369,16 +369,16 @@ Next, create an `OllamaChatModel` instance and use it to send requests for text 
 ----
 var ollamaApi = new OllamaApi();
 
-var chatModel = new OllamaChatModel(ollamaApi,
+var chatModel = new OllamaChatModel(this.ollamaApi,
             OllamaOptions.create()
                 .withModel(OllamaOptions.DEFAULT_MODEL)
                 .withTemperature(0.9));
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -414,7 +414,7 @@ var request = ChatRequest.builder("orca-mini")
     .withOptions(OllamaOptions.create().withTemperature(0.9))
     .build();
 
-ChatResponse response = ollamaApi.chat(request);
+ChatResponse response = this.ollamaApi.chat(this.request);
 
 // Streaming request
 var request2 = ChatRequest.builder("orca-mini")
@@ -425,5 +425,5 @@ var request2 = ChatRequest.builder("orca-mini")
     .withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
     .build();
 
-Flux<ChatResponse> streamingResponse = ollamaApi.streamingChat(request2);
+Flux<ChatResponse> streamingResponse = this.ollamaApi.streamingChat(this.request2);
 ----

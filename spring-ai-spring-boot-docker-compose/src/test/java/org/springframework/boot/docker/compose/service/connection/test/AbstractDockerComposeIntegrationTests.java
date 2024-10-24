@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,14 @@ import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration;
-import org.springframework.boot.testsupport.DisabledIfProcessUnavailable;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringApplicationShutdownHandlers;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
+import org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration;
+import org.springframework.boot.testsupport.DisabledIfProcessUnavailable;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -60,15 +60,15 @@ public abstract class AbstractDockerComposeIntegrationTests {
 
 	private final DockerImageName dockerImageName;
 
+	protected AbstractDockerComposeIntegrationTests(String composeResource, DockerImageName dockerImageName) {
+		this.composeResource = new ClassPathResource(composeResource, getClass());
+		this.dockerImageName = dockerImageName;
+	}
+
 	@AfterAll
 	static void shutDown() {
 		SpringApplicationShutdownHandlers shutdownHandlers = SpringApplication.getShutdownHandlers();
 		((Runnable) shutdownHandlers).run();
-	}
-
-	protected AbstractDockerComposeIntegrationTests(String composeResource, DockerImageName dockerImageName) {
-		this.composeResource = new ClassPathResource(composeResource, getClass());
-		this.dockerImageName = dockerImageName;
 	}
 
 	protected final <T extends ConnectionDetails> T run(Class<T> type) {

@@ -164,13 +164,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", this.chatClient.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return this.chatClient.stream(prompt);
     }
 }
 ----
@@ -206,17 +206,17 @@ Next, create a `QianFanChatModel` and use it for text generations:
 ----
 var qianFanApi = new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
 
-var chatClient = new QianFanChatModel(qianFanApi, QianFanChatOptions.builder()
+var chatClient = new QianFanChatModel(this.qianFanApi, QianFanChatOptions.builder()
                 .withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
                 .withTemperature(0.4)
                 .withMaxTokens(200)
                 .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = this.chatClient.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> streamResponse = chatClient.stream(
+Flux<ChatResponse> streamResponse = this.chatClient.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -240,12 +240,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = qianFanApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, false));
+ResponseEntity<ChatCompletion> response = this.qianFanApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), this.systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = qianFanApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, true));
+Flux<ChatCompletionChunk> streamResponse = this.qianFanApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), this.systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-qianfan/src/main/java/org/springframework/ai/qianfan/api/QianFanApi.java[QianFanApi.java]'s JavaDoc for further information.

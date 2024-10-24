@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,8 +23,16 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import com.zaxxer.hikari.HikariDataSource;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.SpringAiKind;
@@ -48,15 +55,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.zaxxer.hikari.HikariDataSource;
-
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for observation instruAbstractObservationVectorStorementation in
@@ -75,6 +75,16 @@ public class PgVectorStoreObservationIT {
 		.withUsername("postgres")
 		.withPassword("postgres");
 
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(Config.class)
+		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
+
+				// JdbcTemplate configuration
+				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
+						postgresContainer.getMappedPort(5432), "postgres"),
+				"app.datasource.username=postgres", "app.datasource.password=postgres",
+				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
+
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document(getText("classpath:/test/data/time.shelter.txt")),
@@ -90,26 +100,16 @@ public class PgVectorStoreObservationIT {
 		}
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(Config.class)
-		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
-
-				// JdbcTemplate configuration
-				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
-						postgresContainer.getMappedPort(5432), "postgres"),
-				"app.datasource.username=postgres", "app.datasource.password=postgres",
-				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
-
 	@Test
 	void observationVectorStoreAddAndQueryOperations() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			TestObservationRegistryAssert.assertThat(observationRegistry)
 				.doesNotHaveAnyRemainingCurrentObservation()

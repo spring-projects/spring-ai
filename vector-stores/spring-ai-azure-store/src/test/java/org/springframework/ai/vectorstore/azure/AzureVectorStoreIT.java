@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.azure;
 
 import java.io.IOException;
@@ -56,13 +57,13 @@ import static org.hamcrest.Matchers.hasSize;
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_ENDPOINT", matches = ".+")
 public class AzureVectorStoreIT {
 
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(Config.class);
+
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
 			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
-
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(Config.class);
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -71,14 +72,24 @@ public class AzureVectorStoreIT {
 		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
 	}
 
+	private static String getText(String uri) {
+		var resource = new DefaultResourceLoader().getResource(uri);
+		try {
+			return resource.getContentAsString(StandardCharsets.UTF_8);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	@Test
 	public void addAndSearchTest() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
@@ -88,14 +99,14 @@ public class AzureVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
@@ -105,7 +116,7 @@ public class AzureVectorStoreIT {
 	@Test
 	public void searchWithFilters() throws InterruptedException {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
@@ -194,7 +205,7 @@ public class AzureVectorStoreIT {
 	@Test
 	public void documentUpdateTest() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -247,11 +258,11 @@ public class AzureVectorStoreIT {
 	@Test
 	public void searchThresholdTest() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			Awaitility.await()
 				.until(() -> vectorStore
@@ -272,13 +283,13 @@ public class AzureVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
 		});
@@ -307,16 +318,6 @@ public class AzureVectorStoreIT {
 			return new TransformersEmbeddingModel();
 		}
 
-	}
-
-	private static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 }

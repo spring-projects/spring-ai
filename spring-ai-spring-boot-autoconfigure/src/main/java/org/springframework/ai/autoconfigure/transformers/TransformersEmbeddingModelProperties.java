@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.transformers;
 
 import java.io.File;
@@ -42,10 +43,32 @@ public class TransformersEmbeddingModelProperties {
 			"spring-ai-onnx-generative")
 		.getAbsolutePath();
 
+	@NestedConfigurationProperty
+	private final Tokenizer tokenizer = new Tokenizer();
+
+	/**
+	 * Controls caching of remote, large resources to local file system.
+	 */
+	@NestedConfigurationProperty
+	private final Cache cache = new Cache();
+
+	@NestedConfigurationProperty
+	private final Onnx onnx = new Onnx();
+
 	/**
 	 * Enable the Transformer Embedding model.
 	 */
 	private boolean enabled = true;
+
+	/**
+	 * Specifies what parts of the {@link Document}'s content and metadata will be used
+	 * for computing the embeddings. Applicable for the
+	 * {@link TransformersEmbeddingModel#embed(Document)} method only. Has no effect on
+	 * the {@link TransformersEmbeddingModel#embed(String)} or
+	 * {@link TransformersEmbeddingModel#embed(List)}. Defaults to
+	 * {@link MetadataMode#NONE}.
+	 */
+	private MetadataMode metadataMode = MetadataMode.NONE;
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -53,6 +76,26 @@ public class TransformersEmbeddingModelProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public Cache getCache() {
+		return this.cache;
+	}
+
+	public Onnx getOnnx() {
+		return this.onnx;
+	}
+
+	public Tokenizer getTokenizer() {
+		return this.tokenizer;
+	}
+
+	public MetadataMode getMetadataMode() {
+		return this.metadataMode;
+	}
+
+	public void setMetadataMode(MetadataMode metadataMode) {
+		this.metadataMode = metadataMode;
 	}
 
 	/**
@@ -93,9 +136,6 @@ public class TransformersEmbeddingModelProperties {
 
 	}
 
-	@NestedConfigurationProperty
-	private final Tokenizer tokenizer = new Tokenizer();
-
 	public static class Cache {
 
 		/**
@@ -126,16 +166,6 @@ public class TransformersEmbeddingModelProperties {
 			this.directory = directory;
 		}
 
-	}
-
-	/**
-	 * Controls caching of remote, large resources to local file system.
-	 */
-	@NestedConfigurationProperty
-	private final Cache cache = new Cache();
-
-	public Cache getCache() {
-		return this.cache;
 	}
 
 	public static class Onnx {
@@ -184,35 +214,6 @@ public class TransformersEmbeddingModelProperties {
 			this.modelOutputName = modelOutputName;
 		}
 
-	}
-
-	@NestedConfigurationProperty
-	private final Onnx onnx = new Onnx();
-
-	public Onnx getOnnx() {
-		return this.onnx;
-	}
-
-	/**
-	 * Specifies what parts of the {@link Document}'s content and metadata will be used
-	 * for computing the embeddings. Applicable for the
-	 * {@link TransformersEmbeddingModel#embed(Document)} method only. Has no effect on
-	 * the {@link TransformersEmbeddingModel#embed(String)} or
-	 * {@link TransformersEmbeddingModel#embed(List)}. Defaults to
-	 * {@link MetadataMode#NONE}.
-	 */
-	private MetadataMode metadataMode = MetadataMode.NONE;
-
-	public Tokenizer getTokenizer() {
-		return this.tokenizer;
-	}
-
-	public MetadataMode getMetadataMode() {
-		return this.metadataMode;
-	}
-
-	public void setMetadataMode(MetadataMode metadataMode) {
-		this.metadataMode = metadataMode;
 	}
 
 }

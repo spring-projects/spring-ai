@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
@@ -31,6 +39,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -48,21 +60,11 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistryAssert;
-import static org.hamcrest.Matchers.greaterThan;;
+;
 
 /**
  * @author Christian Tzolov
@@ -92,15 +94,15 @@ public class ElasticsearchVectorStoreObservationIT {
 		}
 	}
 
-	private ApplicationContextRunner getContextRunner() {
-		return new ApplicationContextRunner().withUserConfiguration(Config.class);
-	}
-
 	@BeforeAll
 	public static void beforeAll() {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
 		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
+	}
+
+	private ApplicationContextRunner getContextRunner() {
+		return new ApplicationContextRunner().withUserConfiguration(Config.class);
 	}
 
 	@BeforeEach
@@ -124,7 +126,7 @@ public class ElasticsearchVectorStoreObservationIT {
 
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			TestObservationRegistryAssert.assertThat(observationRegistry)
 				.doesNotHaveAnyRemainingCurrentObservation()

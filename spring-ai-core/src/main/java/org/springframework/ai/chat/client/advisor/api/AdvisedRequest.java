@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -32,6 +31,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.util.CollectionUtils;
@@ -63,12 +63,6 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors,
 		Map<String, Object> advisorParams, Map<String, Object> adviseContext, Map<String, Object> toolContext) {
 
-	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
-		return from(this)
-			.withAdviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
-			.build();
-	}
-
 	public static Builder from(AdvisedRequest from) {
 		Builder builder = new Builder();
 		builder.chatModel = from.chatModel;
@@ -93,7 +87,59 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		return new Builder();
 	}
 
+	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
+		return from(this)
+			.withAdviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
+			.build();
+	}
+
+	public Prompt toPrompt() {
+
+		var messages = new ArrayList<Message>(this.messages());
+
+		String processedSystemText = this.systemText();
+		if (StringUtils.hasText(processedSystemText)) {
+			if (!CollectionUtils.isEmpty(this.systemParams())) {
+				processedSystemText = new PromptTemplate(processedSystemText, this.systemParams()).render();
+			}
+			messages.add(new SystemMessage(processedSystemText));
+		}
+
+		String formatParam = (String) this.adviseContext().get("formatParam");
+
+		var processedUserText = StringUtils.hasText(formatParam)
+				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
+
+		if (StringUtils.hasText(processedUserText)) {
+
+			Map<String, Object> userParams = new HashMap<>(this.userParams());
+			if (StringUtils.hasText(formatParam)) {
+				userParams.put("spring_ai_soc_format", formatParam);
+			}
+			if (!CollectionUtils.isEmpty(userParams)) {
+				processedUserText = new PromptTemplate(processedUserText, userParams).render();
+			}
+			messages.add(new UserMessage(processedUserText, this.media()));
+		}
+
+		if (this.chatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+			if (!this.functionNames().isEmpty()) {
+				functionCallingOptions.setFunctions(new HashSet<>(this.functionNames()));
+			}
+			if (!this.functionCallbacks().isEmpty()) {
+				functionCallingOptions.setFunctionCallbacks(this.functionCallbacks());
+			}
+			if (!CollectionUtils.isEmpty(this.toolContext())) {
+				functionCallingOptions.setToolContext(this.toolContext());
+			}
+		}
+
+		return new Prompt(messages, this.chatOptions());
+	}
+
 	public static class Builder {
+
+		public Map<String, Object> toolContext = Map.of();
 
 		private ChatModel chatModel;
 
@@ -120,8 +166,6 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		private Map<String, Object> advisorParams = Map.of();
 
 		private Map<String, Object> adviseContext = Map.of();
-
-		public Map<String, Object> toolContext = Map.of();
 
 		public Builder withChatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;
@@ -194,55 +238,11 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		}
 
 		public AdvisedRequest build() {
-			return new AdvisedRequest(chatModel, this.userText, this.systemText, this.chatOptions, this.media,
+			return new AdvisedRequest(this.chatModel, this.userText, this.systemText, this.chatOptions, this.media,
 					this.functionNames, this.functionCallbacks, this.messages, this.userParams, this.systemParams,
 					this.advisors, this.advisorParams, this.adviseContext, this.toolContext);
 		}
 
-	}
-
-	public Prompt toPrompt() {
-
-		var messages = new ArrayList<Message>(this.messages());
-
-		String processedSystemText = this.systemText();
-		if (StringUtils.hasText(processedSystemText)) {
-			if (!CollectionUtils.isEmpty(this.systemParams())) {
-				processedSystemText = new PromptTemplate(processedSystemText, this.systemParams()).render();
-			}
-			messages.add(new SystemMessage(processedSystemText));
-		}
-
-		String formatParam = (String) this.adviseContext().get("formatParam");
-
-		var processedUserText = StringUtils.hasText(formatParam)
-				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
-
-		if (StringUtils.hasText(processedUserText)) {
-
-			Map<String, Object> userParams = new HashMap<>(this.userParams());
-			if (StringUtils.hasText(formatParam)) {
-				userParams.put("spring_ai_soc_format", formatParam);
-			}
-			if (!CollectionUtils.isEmpty(userParams)) {
-				processedUserText = new PromptTemplate(processedUserText, userParams).render();
-			}
-			messages.add(new UserMessage(processedUserText, this.media()));
-		}
-
-		if (this.chatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-			if (!this.functionNames().isEmpty()) {
-				functionCallingOptions.setFunctions(new HashSet<>(this.functionNames()));
-			}
-			if (!this.functionCallbacks().isEmpty()) {
-				functionCallingOptions.setFunctionCallbacks(this.functionCallbacks());
-			}
-			if (!CollectionUtils.isEmpty(this.toolContext())) {
-				functionCallingOptions.setToolContext(this.toolContext());
-			}
-		}
-
-		return new Prompt(messages, this.chatOptions());
 	}
 
 }

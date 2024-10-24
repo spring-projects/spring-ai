@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -24,22 +30,17 @@ import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-
 /**
  * Note that the underlying function is responsible for converting the output into format
  * that can be consumed by the Model. The default implementation converts the output into
  * String before sending it to the Model. Provide a custom function responseConverter
  * implementation to override this.
- * 
+ *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
  *
  */
-public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
+public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
 
 	private final BiFunction<I, ToolContext, O> biFunction;
 
@@ -50,11 +51,6 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 		this.biFunction = function;
 	}
 
-	@Override
-	public O apply(I input, ToolContext context) {
-		return this.biFunction.apply(input, context);
-	}
-
 	public static <I, O> Builder<I, O> builder(BiFunction<I, ToolContext, O> biFunction) {
 		return new Builder<>(biFunction);
 	}
@@ -63,7 +59,16 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 		return new Builder<>(function);
 	}
 
+	@Override
+	public O apply(I input, ToolContext context) {
+		return this.biFunction.apply(input, context);
+	}
+
 	public static class Builder<I, O> {
+
+		private final BiFunction<I, ToolContext, O> biFunction;
+
+		private final Function<I, O> function;
 
 		private String name;
 
@@ -71,11 +76,14 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 		private Class<I> inputType;
 
-		private final BiFunction<I, ToolContext, O> biFunction;
-
-		private final Function<I, O> function;
-
 		private SchemaType schemaType = SchemaType.JSON_SCHEMA;
+
+		// By default the response is converted to a JSON string.
+		private Function<O, String> responseConverter = ModelOptionsUtils::toJsonString;
+
+		private String inputTypeSchema;
+
+		private ObjectMapper objectMapper;
 
 		public Builder(BiFunction<I, ToolContext, O> biFunction) {
 			Assert.notNull(biFunction, "Function must not be null");
@@ -89,12 +97,16 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			this.function = function;
 		}
 
-		// By default the response is converted to a JSON string.
-		private Function<O, String> responseConverter = ModelOptionsUtils::toJsonString;
+		@SuppressWarnings("unchecked")
+		private static <I, O> Class<I> resolveInputType(BiFunction<I, ToolContext, O> biFunction) {
+			return (Class<I>) TypeResolverHelper
+				.getBiFunctionInputClass((Class<BiFunction<I, ToolContext, O>>) biFunction.getClass());
+		}
 
-		private String inputTypeSchema;
-
-		private ObjectMapper objectMapper;
+		@SuppressWarnings("unchecked")
+		private static <I, O> Class<I> resolveInputType(Function<I, O> function) {
+			return (Class<I>) TypeResolverHelper.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
+		}
 
 		public Builder<I, O> withName(String name) {
 			Assert.hasText(name, "Name must not be empty");
@@ -171,17 +183,6 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 			return new FunctionCallbackWrapper<>(this.name, this.description, this.inputTypeSchema, this.inputType,
 					this.responseConverter, this.objectMapper, finalBiFunction);
-		}
-
-		@SuppressWarnings("unchecked")
-		private static <I, O> Class<I> resolveInputType(BiFunction<I, ToolContext, O> biFunction) {
-			return (Class<I>) TypeResolverHelper
-				.getBiFunctionInputClass((Class<BiFunction<I, ToolContext, O>>) biFunction.getClass());
-		}
-
-		@SuppressWarnings("unchecked")
-		private static <I, O> Class<I> resolveInputType(Function<I, O> function) {
-			return (Class<I>) TypeResolverHelper.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
 		}
 
 	}

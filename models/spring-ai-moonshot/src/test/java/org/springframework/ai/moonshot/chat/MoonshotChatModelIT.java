@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.moonshot.chat;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -38,11 +45,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,10 +70,10 @@ public class MoonshotChatModelIT {
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 	}
@@ -114,7 +116,7 @@ public class MoonshotChatModelIT {
 					"numbers": [1, 2, 3]
 					}""", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -133,13 +135,10 @@ public class MoonshotChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Test
@@ -161,7 +160,7 @@ public class MoonshotChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
@@ -184,7 +183,7 @@ public class MoonshotChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = streamingChatModel.stream(prompt)
+		String generationTextFromStream = this.streamingChatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -198,6 +197,10 @@ public class MoonshotChatModelIT {
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 }

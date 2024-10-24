@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.llama;
+
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -21,8 +24,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-
-import java.util.List;
 
 /**
  * @author Christian Tzolov
@@ -52,29 +53,11 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private BedrockLlamaChatOptions options = new BedrockLlamaChatOptions();
-
-		public Builder withTemperature(Double temperature) {
-			this.options.setTemperature(temperature);
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.setTopP(topP);
-			return this;
-		}
-
-		public Builder withMaxGenLen(Integer maxGenLen) {
-			this.options.setMaxGenLen(maxGenLen);
-			return this;
-		}
-
-		public BedrockLlamaChatOptions build() {
-			return this.options;
-		}
-
+	public static BedrockLlamaChatOptions fromOptions(BedrockLlamaChatOptions fromOptions) {
+		return builder().withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withMaxGenLen(fromOptions.getMaxGenLen())
+			.build();
 	}
 
 	@Override
@@ -149,11 +132,29 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 		return fromOptions(this);
 	}
 
-	public static BedrockLlamaChatOptions fromOptions(BedrockLlamaChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withMaxGenLen(fromOptions.getMaxGenLen())
-			.build();
+	public static class Builder {
+
+		private BedrockLlamaChatOptions options = new BedrockLlamaChatOptions();
+
+		public Builder withTemperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder withTopP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder withMaxGenLen(Integer maxGenLen) {
+			this.options.setMaxGenLen(maxGenLen);
+			return this;
+		}
+
+		public BedrockLlamaChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

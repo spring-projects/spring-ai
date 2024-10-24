@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.titan;
 
 import java.util.ArrayList;
@@ -50,12 +51,6 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final TitanEmbeddingBedrockApi embeddingApi;
 
-	public enum InputType {
-
-		TEXT, IMAGE
-
-	}
-
 	/**
 	 * Titan Embedding API input types. Could be either text or image (encoded in base64).
 	 */
@@ -83,7 +78,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 		if (request.getInstructions().size() != 1) {
-			logger.warn(
+			this.logger.warn(
 					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
 		}
 
@@ -113,12 +108,18 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	public int dimensions() {
 		if (this.inputType == InputType.IMAGE) {
 			if (this.embeddingDimensions.get() < 0) {
-				this.embeddingDimensions.set(dimensions(this, embeddingApi.getModelId(),
+				this.embeddingDimensions.set(dimensions(this, this.embeddingApi.getModelId(),
 						// small base64 encoded image
 						"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
 			}
 		}
 		return super.dimensions();
+
+	}
+
+	public enum InputType {
+
+		TEXT, IMAGE
 
 	}
 

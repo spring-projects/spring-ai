@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.util.List;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import org.springframework.stereotype.Repository;
 
 /**
  * @author Rahul Mittal
@@ -40,7 +42,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
 				VALUES(:_id, TO_REAL_VECTOR(:embedding), :content)
 				""", tableName);
 
-		entityManager.createNativeQuery(sql)
+		this.entityManager.createNativeQuery(sql)
 			.setParameter("_id", id)
 			.setParameter("embedding", embedding)
 			.setParameter("content", content)
@@ -54,7 +56,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
 				DELETE FROM %s WHERE _ID IN (:ids)
 				""", tableName);
 
-		return entityManager.createNativeQuery(sql).setParameter("ids", idList).executeUpdate();
+		return this.entityManager.createNativeQuery(sql).setParameter("ids", idList).executeUpdate();
 	}
 
 	@Override
@@ -64,7 +66,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
 				DELETE FROM %s
 				""", tableName);
 
-		return entityManager.createNativeQuery(sql).executeUpdate();
+		return this.entityManager.createNativeQuery(sql).executeUpdate();
 	}
 
 	@Override
@@ -74,7 +76,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
 				ORDER BY COSINE_SIMILARITY(EMBEDDING, TO_REAL_VECTOR(:queryEmbedding)) DESC
 				""", tableName);
 
-		return entityManager.createNativeQuery(sql, CricketWorldCup.class)
+		return this.entityManager.createNativeQuery(sql, CricketWorldCup.class)
 			.setParameter("topK", topK)
 			.setParameter("queryEmbedding", queryEmbedding)
 			.getResultList();

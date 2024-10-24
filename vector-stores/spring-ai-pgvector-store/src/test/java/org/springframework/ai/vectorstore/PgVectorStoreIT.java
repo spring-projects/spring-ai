@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,12 +27,17 @@ import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.Assert;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -53,11 +57,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.zaxxer.hikari.HikariDataSource;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Muthukumaran Navaneethakrishnan
@@ -74,6 +75,16 @@ public class PgVectorStoreIT {
 		.withUsername("postgres")
 		.withPassword("postgres");
 
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(TestApplication.class)
+		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
+
+				// JdbcTemplate configuration
+				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
+						postgresContainer.getMappedPort(5432), "postgres"),
+				"app.datasource.username=postgres", "app.datasource.password=postgres",
+				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
+
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document(getText("classpath:/test/data/time.shelter.txt")),
@@ -89,48 +100,9 @@ public class PgVectorStoreIT {
 		}
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
-
-				// JdbcTemplate configuration
-				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
-						postgresContainer.getMappedPort(5432), "postgres"),
-				"app.datasource.username=postgres", "app.datasource.password=postgres",
-				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
-
 	private static void dropTable(ApplicationContext context) {
 		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
 		jdbcTemplate.execute("DROP TABLE IF EXISTS vector_store");
-	}
-
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "COSINE_DISTANCE", "EUCLIDEAN_DISTANCE", "NEGATIVE_INNER_PRODUCT" })
-	public void addAndSearch(String distanceType) {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
-			.run(context -> {
-
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-
-				vectorStore.add(documents);
-
-				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
-
-				assertThat(results).hasSize(1);
-				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
-
-				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
-
-				List<Document> results2 = vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
-				assertThat(results2).hasSize(0);
-
-				dropTable(context);
-			});
 	}
 
 	static Stream<Arguments> provideFilters() {
@@ -141,11 +113,60 @@ public class PgVectorStoreIT {
 		);
 	}
 
+	private static boolean isSortedByDistance(List<Document> docs) {
+
+		List<Float> distances = docs.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+
+		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
+			return true;
+		}
+
+		Iterator<Float> iter = distances.iterator();
+		Float current, previous = iter.next();
+		while (iter.hasNext()) {
+			current = iter.next();
+			if (previous > current) {
+				return false;
+			}
+			previous = current;
+		}
+		return true;
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "COSINE_DISTANCE", "EUCLIDEAN_DISTANCE", "NEGATIVE_INNER_PRODUCT" })
+	public void addAndSearch(String distanceType) {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(this.documents);
+
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+
+				// Remove all documents from the store
+				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+
+				List<Document> results2 = vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+				assertThat(results2).hasSize(0);
+
+				dropTable(context);
+			});
+	}
+
 	@ParameterizedTest(name = "Filter expression {0} should return {1} records ")
 	@MethodSource("provideFilters")
 	public void searchWithInFilter(String expression, Integer expectedRecords) {
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE")
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE")
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -177,7 +198,7 @@ public class PgVectorStoreIT {
 	@ValueSource(strings = { "COSINE_DISTANCE", "EUCLIDEAN_DISTANCE", "NEGATIVE_INNER_PRODUCT" })
 	public void searchWithFilters(String distanceType) {
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -251,7 +272,7 @@ public class PgVectorStoreIT {
 	@ValueSource(strings = { "COSINE_DISTANCE", "EUCLIDEAN_DISTANCE", "NEGATIVE_INNER_PRODUCT" })
 	public void documentUpdate(String distanceType) {
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -292,12 +313,12 @@ public class PgVectorStoreIT {
 	// @ValueSource(strings = { "COSINE_DISTANCE" })
 	public void searchWithThreshold(String distanceType) {
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-				vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
 				List<Document> fullResult = vectorStore
 					.similaritySearch(SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThresholdAll());
@@ -317,30 +338,10 @@ public class PgVectorStoreIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());
 
 				dropTable(context);
 			});
-	}
-
-	private static boolean isSortedByDistance(List<Document> docs) {
-
-		List<Float> distances = docs.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
-
-		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
-			return true;
-		}
-
-		Iterator<Float> iter = distances.iterator();
-		Float current, previous = iter.next();
-		while (iter.hasNext()) {
-			current = iter.next();
-			if (previous > current) {
-				return false;
-			}
-			previous = current;
-		}
-		return true;
 	}
 
 	@SpringBootConfiguration
@@ -353,7 +354,7 @@ public class PgVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			return new PgVectorStore(jdbcTemplate, embeddingModel, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
-					distanceType, true, PgIndexType.HNSW, true);
+					this.distanceType, true, PgIndexType.HNSW, true);
 		}
 
 		@Bean

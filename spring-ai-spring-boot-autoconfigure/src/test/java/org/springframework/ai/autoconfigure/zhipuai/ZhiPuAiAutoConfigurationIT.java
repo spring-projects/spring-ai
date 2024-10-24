@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.zhipuai;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -32,10 +38,6 @@ import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +56,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
@@ -64,7 +66,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
@@ -78,7 +80,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			ZhiPuAiEmbeddingModel embeddingModel = context.getBean(ZhiPuAiEmbeddingModel.class);
 
 			EmbeddingResponse embeddingResponse = embeddingModel
@@ -95,7 +97,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		contextRunner.withPropertyValues("spring.ai.zhipuai.image.options.size=1024x1024").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.zhipuai.image.options.size=1024x1024").run(context -> {
 			ZhiPuAiImageModel ImageModel = context.getBean(ZhiPuAiImageModel.class);
 			ImageResponse imageResponse = ImageModel.call(new ImagePrompt("forest"));
 			assertThat(imageResponse.getResults()).hasSize(1);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.zhipuai;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
@@ -26,12 +34,6 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * ZhiPuAiChatOptions represents the options for the ZhiPuAiChat model.
@@ -137,6 +139,309 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return new Builder();
 	}
 
+	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
+		return ZhiPuAiChatOptions.builder()
+			.withModel(fromOptions.getModel())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withStop(fromOptions.getStop())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withTools(fromOptions.getTools())
+			.withToolChoice(fromOptions.getToolChoice())
+			.withUser(fromOptions.getUser())
+			.withRequestId(fromOptions.getRequestId())
+			.withDoSample(fromOptions.getDoSample())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
+			.build();
+	}
+
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	@Override
+	public Integer getMaxTokens() {
+		return this.maxTokens;
+	}
+
+	public void setMaxTokens(Integer maxTokens) {
+		this.maxTokens = maxTokens;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
+	}
+
+	public List<String> getStop() {
+		return this.stop;
+	}
+
+	public void setStop(List<String> stop) {
+		this.stop = stop;
+	}
+
+	@Override
+	public Double getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	@Override
+	public Double getTopP() {
+		return this.topP;
+	}
+
+	public void setTopP(Double topP) {
+		this.topP = topP;
+	}
+
+	public List<FunctionTool> getTools() {
+		return this.tools;
+	}
+
+	public void setTools(List<FunctionTool> tools) {
+		this.tools = tools;
+	}
+
+	public String getToolChoice() {
+		return this.toolChoice;
+	}
+
+	public void setToolChoice(String toolChoice) {
+		this.toolChoice = toolChoice;
+	}
+
+	public String getUser() {
+		return this.user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public String getRequestId() {
+		return this.requestId;
+	}
+
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
+	}
+
+	public Boolean getDoSample() {
+		return this.doSample;
+	}
+
+	public void setDoSample(Boolean doSample) {
+		this.doSample = doSample;
+	}
+
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return this.functions;
+	}
+
+	public void setFunctions(Set<String> functionNames) {
+		this.functions = functionNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public Double getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Double getPresencePenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
+	}
+
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
+		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
+		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
+		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
+		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
+		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
+		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
+		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
+		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
+		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		ZhiPuAiChatOptions other = (ZhiPuAiChatOptions) obj;
+		if (this.model == null) {
+			if (other.model != null) {
+				return false;
+			}
+		}
+		else if (!this.model.equals(other.model)) {
+			return false;
+		}
+		if (this.maxTokens == null) {
+			if (other.maxTokens != null) {
+				return false;
+			}
+		}
+		else if (!this.maxTokens.equals(other.maxTokens)) {
+			return false;
+		}
+		if (this.stop == null) {
+			if (other.stop != null) {
+				return false;
+			}
+		}
+		else if (!this.stop.equals(other.stop)) {
+			return false;
+		}
+		if (this.temperature == null) {
+			if (other.temperature != null) {
+				return false;
+			}
+		}
+		else if (!this.temperature.equals(other.temperature)) {
+			return false;
+		}
+		if (this.topP == null) {
+			if (other.topP != null) {
+				return false;
+			}
+		}
+		else if (!this.topP.equals(other.topP)) {
+			return false;
+		}
+		if (this.tools == null) {
+			if (other.tools != null) {
+				return false;
+			}
+		}
+		else if (!this.tools.equals(other.tools)) {
+			return false;
+		}
+		if (this.toolChoice == null) {
+			if (other.toolChoice != null) {
+				return false;
+			}
+		}
+		else if (!this.toolChoice.equals(other.toolChoice)) {
+			return false;
+		}
+		if (this.user == null) {
+			if (other.user != null) {
+				return false;
+			}
+		}
+		else if (!this.user.equals(other.user)) {
+			return false;
+		}
+		if (this.requestId == null) {
+			if (other.requestId != null) {
+				return false;
+			}
+		}
+		else if (!this.requestId.equals(other.requestId)) {
+			return false;
+		}
+		if (this.doSample == null) {
+			if (other.doSample != null) {
+				return false;
+			}
+		}
+		else if (!this.doSample.equals(other.doSample)) {
+			return false;
+		}
+		if (this.proxyToolCalls == null) {
+			if (other.proxyToolCalls != null) {
+				return false;
+			}
+		}
+		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
+			return false;
+		}
+		if (this.toolContext == null) {
+			if (other.toolContext != null) {
+				return false;
+			}
+		}
+		else if (!this.toolContext.equals(other.toolContext)) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public ZhiPuAiChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static class Builder {
 
 		protected ZhiPuAiChatOptions options;
@@ -235,282 +540,6 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this.options;
 		}
 
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	@Override
-	public Integer getMaxTokens() {
-		return this.maxTokens;
-	}
-
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
-	@Override
-	@JsonIgnore
-	public List<String> getStopSequences() {
-		return getStop();
-	}
-
-	@JsonIgnore
-	public void setStopSequences(List<String> stopSequences) {
-		setStop(stopSequences);
-	}
-
-	public List<String> getStop() {
-		return this.stop;
-	}
-
-	public void setStop(List<String> stop) {
-		this.stop = stop;
-	}
-
-	@Override
-	public Double getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
-
-	@Override
-	public Double getTopP() {
-		return this.topP;
-	}
-
-	public void setTopP(Double topP) {
-		this.topP = topP;
-	}
-
-	public List<FunctionTool> getTools() {
-		return this.tools;
-	}
-
-	public void setTools(List<FunctionTool> tools) {
-		this.tools = tools;
-	}
-
-	public String getToolChoice() {
-		return this.toolChoice;
-	}
-
-	public void setToolChoice(String toolChoice) {
-		this.toolChoice = toolChoice;
-	}
-
-	public String getUser() {
-		return this.user;
-	}
-
-	public void setUser(String user) {
-		this.user = user;
-	}
-
-	public String getRequestId() {
-		return requestId;
-	}
-
-	public void setRequestId(String requestId) {
-		this.requestId = requestId;
-	}
-
-	public Boolean getDoSample() {
-		return doSample;
-	}
-
-	public void setDoSample(Boolean doSample) {
-		this.doSample = doSample;
-	}
-
-	@Override
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
-	}
-
-	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
-	}
-
-	@Override
-	public Set<String> getFunctions() {
-		return functions;
-	}
-
-	public void setFunctions(Set<String> functionNames) {
-		this.functions = functionNames;
-	}
-
-	@Override
-	@JsonIgnore
-	public Double getFrequencyPenalty() {
-		return null;
-	}
-
-	@Override
-	@JsonIgnore
-	public Double getPresencePenalty() {
-		return null;
-	}
-
-	@Override
-	@JsonIgnore
-	public Integer getTopK() {
-		return null;
-	}
-
-	@Override
-	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
-	}
-
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
-	}
-
-	@Override
-	public Map<String, Object> getToolContext() {
-		return this.toolContext;
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((maxTokens == null) ? 0 : maxTokens.hashCode());
-		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
-		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
-		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
-		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
-		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
-		result = prime * result + ((user == null) ? 0 : user.hashCode());
-		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
-		result = prime * result + ((toolContext == null) ? 0 : toolContext.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		ZhiPuAiChatOptions other = (ZhiPuAiChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null)
-				return false;
-		}
-		else if (!this.maxTokens.equals(other.maxTokens))
-			return false;
-		if (this.stop == null) {
-			if (other.stop != null)
-				return false;
-		}
-		else if (!stop.equals(other.stop))
-			return false;
-		if (this.temperature == null) {
-			if (other.temperature != null)
-				return false;
-		}
-		else if (!this.temperature.equals(other.temperature))
-			return false;
-		if (this.topP == null) {
-			if (other.topP != null)
-				return false;
-		}
-		else if (!topP.equals(other.topP))
-			return false;
-		if (this.tools == null) {
-			if (other.tools != null)
-				return false;
-		}
-		else if (!tools.equals(other.tools))
-			return false;
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null)
-				return false;
-		}
-		else if (!toolChoice.equals(other.toolChoice))
-			return false;
-		if (this.user == null) {
-			if (other.user != null)
-				return false;
-		}
-		else if (!this.user.equals(other.user))
-			return false;
-		if (this.requestId == null) {
-			if (other.requestId != null)
-				return false;
-		}
-		else if (!this.requestId.equals(other.requestId))
-			return false;
-		if (this.doSample == null) {
-			if (other.doSample != null)
-				return false;
-		}
-		else if (!this.doSample.equals(other.doSample))
-			return false;
-		if (this.proxyToolCalls == null) {
-			if (other.proxyToolCalls != null)
-				return false;
-		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls))
-			return false;
-		if (this.toolContext == null) {
-			if (other.toolContext != null)
-				return false;
-		}
-		else if (!this.toolContext.equals(other.toolContext))
-			return false;
-		return true;
-	}
-
-	@Override
-	public ZhiPuAiChatOptions copy() {
-		return fromOptions(this);
-	}
-
-	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
-		return ZhiPuAiChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withUser(fromOptions.getUser())
-			.withRequestId(fromOptions.getRequestId())
-			.withDoSample(fromOptions.getDoSample())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
-			.build();
 	}
 
 }

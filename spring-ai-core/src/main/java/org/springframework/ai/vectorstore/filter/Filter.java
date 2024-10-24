@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.filter;
 
 /**
@@ -65,32 +66,6 @@ package org.springframework.ai.vectorstore.filter;
 public class Filter {
 
 	/**
-	 * Mark interface representing the supported expression types: {@link Key},
-	 * {@link Value}, {@link Expression} and {@link Group}.
-	 */
-	public interface Operand {
-
-	}
-
-	/**
-	 * String identifier representing an expression key. (e.g. the country in the country
-	 * == "NL" expression).
-	 *
-	 * @param key expression key
-	 */
-	public record Key(String key) implements Operand {
-	}
-
-	/**
-	 * Represents expression value constant or constant array. Support Numeric, Boolean
-	 * and String data types.
-	 *
-	 * @param value value constant or constant array
-	 */
-	public record Value(Object value) implements Operand {
-	}
-
-	/**
 	 * Filter expression operations. <br/>
 	 *
 	 * - EQ, NE, GT, GTE, LT, LTE operations supports "Key ExprType Value"
@@ -108,6 +83,34 @@ public class Filter {
 	}
 
 	/**
+	 * Mark interface representing the supported expression types: {@link Key},
+	 * {@link Value}, {@link Expression} and {@link Group}.
+	 */
+	public interface Operand {
+
+	}
+
+	/**
+	 * String identifier representing an expression key. (e.g. the country in the country
+	 * == "NL" expression).
+	 *
+	 * @param key expression key
+	 */
+	public record Key(String key) implements Operand {
+
+	}
+
+	/**
+	 * Represents expression value constant or constant array. Support Numeric, Boolean
+	 * and String data types.
+	 *
+	 * @param value value constant or constant array
+	 */
+	public record Value(Object value) implements Operand {
+
+	}
+
+	/**
 	 * Triple that represents and filter boolean expression as
 	 * <code>left type right</code>.
 	 *
@@ -120,9 +123,11 @@ public class Filter {
 	 * be another {@link Expression}.
 	 */
 	public record Expression(ExpressionType type, Operand left, Operand right) implements Operand {
+
 		public Expression(ExpressionType type, Operand operand) {
 			this(type, operand, null);
 		}
+
 	}
 
 	/**
@@ -132,6 +137,7 @@ public class Filter {
 	 * @param content Inner expression to be evaluated as a part of the group.
 	 */
 	public record Group(Expression content) implements Operand {
+
 	}
 
 }

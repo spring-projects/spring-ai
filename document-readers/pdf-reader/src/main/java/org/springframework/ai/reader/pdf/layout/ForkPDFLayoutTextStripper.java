@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -180,8 +180,9 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 			double height = textPosition.getHeight();
 			int numberOfLines = (int) (Math.floor(textYPosition - previousTextYPosition) / height);
 			numberOfLines = Math.max(1, numberOfLines - 1); // exclude current new line
-			if (DEBUG)
+			if (DEBUG) {
 				System.out.println(height + " " + numberOfLines);
+			}
 			return numberOfLines;
 		}
 		else {
@@ -191,7 +192,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 
 	private TextLine addNewLine() {
 		TextLine textLine = new TextLine(this.getCurrentPageWidth());
-		textLineList.add(textLine);
+		this.textLineList.add(textLine);
 		return textLine;
 	}
 
@@ -248,7 +249,7 @@ class TextLine {
 	}
 
 	public String getLine() {
-		return line;
+		return this.line;
 	}
 
 	private int computeIndexForCharacter(final Character character) {
@@ -313,7 +314,7 @@ class TextLine {
 
 	private void completeLineWithSpaces() {
 		for (int i = 0; i < this.getLineLength(); ++i) {
-			line += SPACE_CHARACTER;
+			this.line += SPACE_CHARACTER;
 		}
 	}
 
@@ -350,8 +351,9 @@ class Character {
 		this.isFirstCharacterOfAWord = isFirstCharacterOfAWord;
 		this.isCharacterAtTheBeginningOfNewLine = isCharacterAtTheBeginningOfNewLine;
 		this.isCharacterCloseToPreviousWord = isCharacterPartOfASentence;
-		if (ForkPDFLayoutTextStripper.DEBUG)
+		if (ForkPDFLayoutTextStripper.DEBUG) {
 			System.out.println(this.toString());
+		}
 	}
 
 	public char getCharacterValue() {
@@ -384,14 +386,14 @@ class Character {
 
 	public String toString() {
 		String toString = "";
-		toString += index;
+		toString += this.index;
 		toString += " ";
-		toString += characterValue;
-		toString += " isCharacterPartOfPreviousWord=" + isCharacterPartOfPreviousWord;
-		toString += " isFirstCharacterOfAWord=" + isFirstCharacterOfAWord;
-		toString += " isCharacterAtTheBeginningOfNewLine=" + isCharacterAtTheBeginningOfNewLine;
-		toString += " isCharacterPartOfASentence=" + isCharacterCloseToPreviousWord;
-		toString += " isCharacterCloseToPreviousWord=" + isCharacterCloseToPreviousWord;
+		toString += this.characterValue;
+		toString += " isCharacterPartOfPreviousWord=" + this.isCharacterPartOfPreviousWord;
+		toString += " isFirstCharacterOfAWord=" + this.isFirstCharacterOfAWord;
+		toString += " isCharacterAtTheBeginningOfNewLine=" + this.isCharacterAtTheBeginningOfNewLine;
+		toString += " isCharacterPartOfASentence=" + this.isCharacterCloseToPreviousWord;
+		toString += " isCharacterCloseToPreviousWord=" + this.isCharacterCloseToPreviousWord;
 		return toString;
 	}
 
@@ -424,12 +426,12 @@ class CharacterFactory {
 		this.isCharacterCloseToPreviousWord = this.isCharacterCloseToPreviousWord(textPosition);
 		char character = this.getCharacterFromTextPosition(textPosition);
 		int index = (int) textPosition.getX() / ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT;
-		return new Character(character, index, isCharacterPartOfPreviousWord, isFirstCharacterOfAWord,
-				isCharacterAtTheBeginningOfNewLine, isCharacterCloseToPreviousWord);
+		return new Character(character, index, this.isCharacterPartOfPreviousWord, this.isFirstCharacterOfAWord,
+				this.isCharacterAtTheBeginningOfNewLine, this.isCharacterCloseToPreviousWord);
 	}
 
 	private boolean isCharacterAtTheBeginningOfNewLine(final TextPosition textPosition) {
-		if (!firstCharacterOfLineFound) {
+		if (!this.firstCharacterOfLineFound) {
 			return true;
 		}
 		TextPosition previousTextPosition = this.getPreviousTextPosition();
@@ -438,18 +440,18 @@ class CharacterFactory {
 	}
 
 	private boolean isFirstCharacterOfAWord(final TextPosition textPosition) {
-		if (!firstCharacterOfLineFound) {
+		if (!this.firstCharacterOfLineFound) {
 			return true;
 		}
-		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(previousTextPosition, textPosition);
+		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(this.previousTextPosition, textPosition);
 		return (numberOfSpaces > 1) || this.isCharacterAtTheBeginningOfNewLine(textPosition);
 	}
 
 	private boolean isCharacterCloseToPreviousWord(final TextPosition textPosition) {
-		if (!firstCharacterOfLineFound) {
+		if (!this.firstCharacterOfLineFound) {
 			return false;
 		}
-		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(previousTextPosition, textPosition);
+		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(this.previousTextPosition, textPosition);
 		return (numberOfSpaces > 1 && numberOfSpaces <= ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT);
 	}
 

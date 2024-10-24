@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.ai.model.Content;
 import org.springframework.ai.model.MediaContent;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Returns a new list of content (e.g list of messages of list of documents) that is a

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,27 @@
 
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.moderation.*;
+import org.springframework.ai.moderation.Categories;
+import org.springframework.ai.moderation.CategoryScores;
+import org.springframework.ai.moderation.Generation;
+import org.springframework.ai.moderation.Moderation;
+import org.springframework.ai.moderation.ModerationModel;
+import org.springframework.ai.moderation.ModerationOptions;
+import org.springframework.ai.moderation.ModerationPrompt;
+import org.springframework.ai.moderation.ModerationResponse;
+import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * OpenAiModerationModel is a class that implements the ModerationModel interface. It
@@ -40,11 +49,11 @@ public class OpenAiModerationModel implements ModerationModel {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private OpenAiModerationOptions defaultOptions;
-
 	private final OpenAiModerationApi openAiModerationApi;
 
 	private final RetryTemplate retryTemplate;
+
+	private OpenAiModerationOptions defaultOptions;
 
 	public OpenAiModerationModel(OpenAiModerationApi openAiModerationApi) {
 		this(openAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE);
@@ -97,7 +106,7 @@ public class OpenAiModerationModel implements ModerationModel {
 			OpenAiModerationApi.OpenAiModerationRequest openAiModerationRequest) {
 		OpenAiModerationApi.OpenAiModerationResponse moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
-			logger.warn("No moderation response returned for request: {}", openAiModerationRequest);
+			this.logger.warn("No moderation response returned for request: {}", openAiModerationRequest);
 			return new ModerationResponse(new Generation());
 		}
 

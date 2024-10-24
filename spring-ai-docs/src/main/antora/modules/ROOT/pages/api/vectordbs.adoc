@@ -167,7 +167,7 @@ Additionally, `TokenCountBatchingStrategy` provides flexibility by allowing you 
 ----
 TokenCountEstimator customEstimator = new YourCustomTokenCountEstimator();
 TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(
-    customEstimator,
+		this.customEstimator,
     8000,  // maxInputTokenCount
     0.1,   // reservePercentage
     Document.DEFAULT_CONTENT_FORMATTER,
@@ -256,7 +256,7 @@ Later, when a user question is passed into the AI model, a similarity search is 
 
 ```java
    String question = <question from user>
-   List<Document> similarDocuments = store.similaritySearch(question);
+   List<Document> similarDocuments = store.similaritySearch(this.question);
 ```
 
 Additional options can be passed into the `similaritySearch` method to define how many documents to retrieve and a threshold of the similarity search.
@@ -282,7 +282,7 @@ A simple example is as follows:
 [source, java]
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
-Expression expression = b.eq("country", "BG").build();
+Expression expression = this.b.eq("country", "BG").build();
 ----
 
 You can build up sophisticated expressions by using the following operators:

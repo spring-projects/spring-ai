@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.titan.api;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -27,7 +27,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
-import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
 import org.springframework.util.Assert;
@@ -81,6 +80,42 @@ public class TitanEmbeddingBedrockApi extends
 	public TitanEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	@Override
+	public TitanEmbeddingResponse embedding(TitanEmbeddingRequest request) {
+		return this.internalInvocation(request, TitanEmbeddingResponse.class);
+	}
+
+	/**
+	 * Titan Embedding model ids.
+	 */
+	public enum TitanEmbeddingModel {
+		/**
+		 * amazon.titan-embed-image-v1
+		 */
+		TITAN_EMBED_IMAGE_V1("amazon.titan-embed-image-v1"),
+		/**
+		 * amazon.titan-embed-text-v1
+		 */
+		TITAN_EMBED_TEXT_V1("amazon.titan-embed-text-v1"),
+		/**
+		 * amazon.titan-embed-text-v2
+		 */
+		TITAN_EMBED_TEXT_V2("amazon.titan-embed-text-v2:0");;
+
+		private final String id;
+
+		TitanEmbeddingModel(String value) {
+			this.id = value;
+		}
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return this.id;
+		}
 	}
 
 	/**
@@ -143,44 +178,8 @@ public class TitanEmbeddingBedrockApi extends
 			@JsonProperty("inputTextTokenCount") Integer inputTextTokenCount,
 			@JsonProperty("embeddingsByType") Map<String, Object> embeddingsByType,
 			@JsonProperty("message") Object message) {
-		
-			
-	}
 
-	/**
-	 * Titan Embedding model ids.
-	 */
-	public enum TitanEmbeddingModel {
-		/**
-		 * amazon.titan-embed-image-v1
-		 */
-		TITAN_EMBED_IMAGE_V1("amazon.titan-embed-image-v1"),
-		/**
-		 * amazon.titan-embed-text-v1
-		 */
-		TITAN_EMBED_TEXT_V1("amazon.titan-embed-text-v1"),
-		/**
-		 * amazon.titan-embed-text-v2
-		 */
-		TITAN_EMBED_TEXT_V2("amazon.titan-embed-text-v2:0");;
 
-		private final String id;
-
-		/**
-		 * @return The model id.
-		 */
-		public String id() {
-			return id;
-		}
-
-		TitanEmbeddingModel(String value) {
-			this.id = value;
-		}
-	}
-
-	@Override
-	public TitanEmbeddingResponse embedding(TitanEmbeddingRequest request) {
-		return this.internalInvocation(request, TitanEmbeddingResponse.class);
 	}
 }
 // @formatter:on

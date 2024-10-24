@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.oci.genai;
 
 import java.nio.file.Paths;
@@ -26,26 +27,9 @@ import org.springframework.util.StringUtils;
 @ConfigurationProperties(OCIConnectionProperties.CONFIG_PREFIX)
 public class OCIConnectionProperties {
 
-	private static final String DEFAULT_PROFILE = "DEFAULT";
-
 	public static final String CONFIG_PREFIX = "spring.ai.oci.genai";
 
-	public enum AuthenticationType {
-
-		FILE("file"), INSTANCE_PRINCIPAL("instance-principal"), WORKLOAD_IDENTITY("workload-identity"),
-		SIMPLE("simple");
-
-		private final String authType;
-
-		AuthenticationType(String authType) {
-			this.authType = authType;
-		}
-
-		public String getAuthType() {
-			return this.authType;
-		}
-
-	}
+	private static final String DEFAULT_PROFILE = "DEFAULT";
 
 	private AuthenticationType authenticationType = AuthenticationType.FILE;
 
@@ -68,7 +52,7 @@ public class OCIConnectionProperties {
 	private String endpoint;
 
 	public String getRegion() {
-		return region;
+		return this.region;
 	}
 
 	public void setRegion(String region) {
@@ -76,7 +60,7 @@ public class OCIConnectionProperties {
 	}
 
 	public String getPassPhrase() {
-		return passPhrase;
+		return this.passPhrase;
 	}
 
 	public void setPassPhrase(String passPhrase) {
@@ -84,7 +68,7 @@ public class OCIConnectionProperties {
 	}
 
 	public String getPrivateKey() {
-		return privateKey;
+		return this.privateKey;
 	}
 
 	public void setPrivateKey(String privateKey) {
@@ -92,7 +76,7 @@ public class OCIConnectionProperties {
 	}
 
 	public String getFingerprint() {
-		return fingerprint;
+		return this.fingerprint;
 	}
 
 	public void setFingerprint(String fingerprint) {
@@ -100,7 +84,7 @@ public class OCIConnectionProperties {
 	}
 
 	public String getUserId() {
-		return userId;
+		return this.userId;
 	}
 
 	public void setUserId(String userId) {
@@ -108,7 +92,7 @@ public class OCIConnectionProperties {
 	}
 
 	public String getTenantId() {
-		return tenantId;
+		return this.tenantId;
 	}
 
 	public void setTenantId(String tenantId) {
@@ -116,7 +100,7 @@ public class OCIConnectionProperties {
 	}
 
 	public String getFile() {
-		return file;
+		return this.file;
 	}
 
 	public void setFile(String file) {
@@ -124,7 +108,7 @@ public class OCIConnectionProperties {
 	}
 
 	public String getProfile() {
-		return StringUtils.hasText(profile) ? profile : DEFAULT_PROFILE;
+		return StringUtils.hasText(this.profile) ? this.profile : DEFAULT_PROFILE;
 	}
 
 	public void setProfile(String profile) {
@@ -132,7 +116,7 @@ public class OCIConnectionProperties {
 	}
 
 	public AuthenticationType getAuthenticationType() {
-		return authenticationType;
+		return this.authenticationType;
 	}
 
 	public void setAuthenticationType(AuthenticationType authenticationType) {
@@ -140,11 +124,28 @@ public class OCIConnectionProperties {
 	}
 
 	public String getEndpoint() {
-		return endpoint;
+		return this.endpoint;
 	}
 
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
+	}
+
+	public enum AuthenticationType {
+
+		FILE("file"), INSTANCE_PRINCIPAL("instance-principal"), WORKLOAD_IDENTITY("workload-identity"),
+		SIMPLE("simple");
+
+		private final String authType;
+
+		AuthenticationType(String authType) {
+			this.authType = authType;
+		}
+
+		public String getAuthType() {
+			return this.authType;
+		}
+
 	}
 
 }

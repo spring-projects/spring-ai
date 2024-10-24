@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ChatModel;
+
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.document.Document;
@@ -32,13 +41,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * @author Rahul Mittal
@@ -74,7 +76,7 @@ public class CricketWorldCupHanaController {
 		Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
 		List<Document> documents = splitter.apply(reader.get());
 		logger.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
-		hanaCloudVectorStore.accept(documents);
+		this.hanaCloudVectorStore.accept(documents);
 		return ResponseEntity.ok()
 			.body(String.format("%d documents created from pdf file: %s", documents.size(), pdf.getFilename()));
 	}
@@ -88,7 +90,7 @@ public class CricketWorldCupHanaController {
 
 		var userMessage = new UserMessage(message);
 		Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
-		String generation = chatModel.call(prompt).getResult().getOutput().getContent();
+		String generation = this.chatModel.call(prompt).getResult().getOutput().getContent();
 		logger.info("Generation: {}", generation);
 		return Map.of("generation", generation);
 	}

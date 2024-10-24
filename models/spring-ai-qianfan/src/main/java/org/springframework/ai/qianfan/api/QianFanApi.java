@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.qianfan.api;
+
+import java.util.List;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.qianfan.api.auth.AuthApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
@@ -27,11 +34,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.function.Predicate;
 
 // @formatter:off
 /**
@@ -126,6 +128,70 @@ public class QianFanApi extends AuthApi {
 	}
 
 	/**
+	 * Creates a model response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
+				.body(chatRequest)
+				.retrieve()
+				.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		return this.webClient.post()
+				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
+				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+				.retrieve()
+				.bodyToFlux(ChatCompletionChunk.class)
+				.takeUntil(SSE_DONE_PREDICATE);
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
+	 */
+	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		// Input text to embed, encoded as a string or array of tokens. To embed multiple
+		// inputs in a single
+		// request, pass an array of strings or array of token arrays.
+		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
+
+		// The input must not an empty string, and any array must be 16 dimensions or
+		// less.
+		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
+		Assert.isTrue(embeddingRequest.texts().size() <= 16, "The list must be 16 dimensions or less");
+
+		return this.restClient.post()
+				.uri("/v1/wenxinworkshop/embeddings/{model}?access_token={token}", embeddingRequest.model, getAccessToken())
+				.body(embeddingRequest)
+				.retrieve()
+				.toEntity(new ParameterizedTypeReference<>() {
+
+				});
+	}
+
+	/**
 	 * QianFan Chat Completion Models:
 	 * <a href="https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu#%E5%AF%B9%E8%AF%9Dchat">QianFan Model</a>.
 	 */
@@ -157,7 +223,44 @@ public class QianFanApi extends AuthApi {
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
+		}
+	}
+
+	/**
+	 * QianFan Embeddings Models:
+	 * <a href="https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu#%E5%90%91%E9%87%8Fembeddings">Embeddings</a>.
+	 */
+	public enum EmbeddingModel {
+
+		/**
+		 * DIMENSION: 384
+		 */
+		EMBEDDING_V1("embedding-v1"),
+
+		/**
+		 * DIMENSION: 1024
+		 */
+		BGE_LARGE_ZH("bge_large_zh"),
+
+		/**
+		 * DIMENSION: 1024
+		 */
+		BGE_LARGE_EN("bge_large_en"),
+
+		/**
+		 * DIMENSION: 1024
+		 */
+		TAO_8K("tao_8k");
+
+		public final String  value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
 		}
 	}
 
@@ -349,79 +452,6 @@ public class QianFanApi extends AuthApi {
 	}
 
 	/**
-	 * Creates a model response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(ChatCompletion.class);
-	}
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		return this.webClient.post()
-				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(ChatCompletionChunk.class)
-				.takeUntil(SSE_DONE_PREDICATE);
-	}
-
-	/**
-	 * QianFan Embeddings Models:
-	 * <a href="https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu#%E5%90%91%E9%87%8Fembeddings">Embeddings</a>.
-	 */
-	public enum EmbeddingModel {
-
-		/**
-		 * DIMENSION: 384
-		 */
-		EMBEDDING_V1("embedding-v1"),
-
-		/**
-		 * DIMENSION: 1024
-		 */
-		BGE_LARGE_ZH("bge_large_zh"),
-
-		/**
-		 * DIMENSION: 1024
-		 */
-		BGE_LARGE_EN("bge_large_en"),
-
-		/**
-		 * DIMENSION: 1024
-		 */
-		TAO_8K("tao_8k");
-
-		public final String  value;
-
-		EmbeddingModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
 	 * Creates an embedding vector representing the input text.
 	 *
 	 * @param texts Input text to embed, encoded as a string or array of tokens.
@@ -502,6 +532,7 @@ public class QianFanApi extends AuthApi {
 		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
+
 	}
 
 	/**
@@ -522,33 +553,6 @@ public class QianFanApi extends AuthApi {
 			@JsonProperty("error_msg") String errorNsg,
 			@JsonProperty("usage") Usage usage) {
 		// @formatter:on
-	}
-
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
-	 */
-	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		// Input text to embed, encoded as a string or array of tokens. To embed multiple
-		// inputs in a single
-		// request, pass an array of strings or array of token arrays.
-		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
-
-		// The input must not an empty string, and any array must be 16 dimensions or
-		// less.
-		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
-		Assert.isTrue(embeddingRequest.texts().size() <= 16, "The list must be 16 dimensions or less");
-
-		return this.restClient.post()
-			.uri("/v1/wenxinworkshop/embeddings/{model}?access_token={token}", embeddingRequest.model, getAccessToken())
-			.body(embeddingRequest)
-			.retrieve()
-			.toEntity(new ParameterizedTypeReference<>() {
-			});
 	}
 
 }

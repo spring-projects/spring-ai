@@ -197,13 +197,13 @@ var openAIClient = OpenAIClientBuilder()
 		.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
 		.buildClient();
 
-var embeddingModel = new AzureOpenAiEmbeddingModel(openAIClient)
+var embeddingModel = new AzureOpenAiEmbeddingModel(this.openAIClient)
     .withDefaultOptions(AzureOpenAiEmbeddingOptions.builder()
         .withModel("text-embedding-ada-002")
         .withUser("user-6")
         .build());
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
