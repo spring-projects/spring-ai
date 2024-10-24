@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.anthropic;
 
 import java.util.ArrayList;
@@ -28,6 +29,9 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
@@ -42,7 +46,11 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -61,9 +69,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 /**
  * The {@link ChatModel} implementation for the Anthropic service.
  *
@@ -76,15 +81,20 @@ import reactor.core.publisher.Mono;
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
-
-	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
-
 	public static final String DEFAULT_MODEL_NAME = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue();
 
 	public static final Integer DEFAULT_MAX_TOKENS = 500;
 
 	public static final Double DEFAULT_TEMPERATURE = 0.8;
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
+
+	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	/**
+	 * The retry template used to retry the OpenAI API calls.
+	 */
+	public final RetryTemplate retryTemplate;
 
 	/**
 	 * The lower-level API for the Anthropic service.
@@ -95,11 +105,6 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * The default options used for the chat completion requests.
 	 */
 	private final AnthropicChatOptions defaultOptions;
-
-	/**
-	 * The retry template used to retry the OpenAI API calls.
-	 */
-	public final RetryTemplate retryTemplate;
 
 	/**
 	 * Observation registry used for instrumentation.

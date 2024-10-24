@@ -172,9 +172,9 @@ var cohereEmbeddingApi =new CohereEmbeddingBedrockApi(
 		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
 
 
-var embeddingModel = new BedrockCohereEmbeddingModel(cohereEmbeddingApi);
+var embeddingModel = new BedrockCohereEmbeddingModel(this.cohereEmbeddingApi);
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
@@ -202,7 +202,7 @@ CohereEmbeddingRequest request = new CohereEmbeddingRequest(
 		CohereEmbeddingRequest.InputType.search_document,
 		CohereEmbeddingRequest.Truncate.NONE);
 
-CohereEmbeddingResponse response = api.embedding(request);
+CohereEmbeddingResponse response = this.api.embedding(this.request);
 ----
 
 

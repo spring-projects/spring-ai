@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.moonshot.api;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
@@ -29,14 +39,6 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import static org.springframework.ai.moonshot.api.MoonshotConstants.DEFAULT_BASE_URL;
 
@@ -100,6 +102,147 @@ public class MoonshotApi {
 			.build();
 
 		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+			.uri("/v1/chat/completions")
+			.body(chatRequest)
+			.retrieve()
+			.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
+		return this.webClient.post()
+			.uri("/v1/chat/completions")
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			// cancels the flux stream after the "[DONE]" is received.
+			.takeUntil(SSE_DONE_PREDICATE)
+			// filters out the "[DONE]" message.
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			// Detect is the chunk is part of a streaming function call.
+			.map(chunk -> {
+				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			// Group all chunks belonging to the same function call.
+			// Flux<ChatCompletionChunk> -> Flux<Flux<ChatCompletionChunk>>
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			// Merging the window chunks into a single chunk.
+			// Reduce the inner Flux<ChatCompletionChunk> window into a single
+			// Mono<ChatCompletionChunk>,
+			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
+			.concatMapIterable(window -> {
+				Mono<ChatCompletionChunk> monoChunk = window.reduce(
+						new ChatCompletionChunk(null, null, null, null, null),
+						(previous, current) -> this.chunkMerger.merge(previous, current));
+				return List.of(monoChunk);
+			})
+			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
+			.flatMap(mono -> mono);
+	}
+
+	/**
+	 * The reason the model stopped generating tokens.
+	 */
+	public enum ChatCompletionFinishReason {
+
+		/**
+		 * The model hit a natural stop point or a provided stop sequence.
+		 */
+		@JsonProperty("stop")
+		STOP,
+		/**
+		 * The maximum number of tokens specified in the request was reached.
+		 */
+		@JsonProperty("length")
+		LENGTH,
+		/**
+		 * The content was omitted due to a flag from our content filters.
+		 */
+		@JsonProperty("content_filter")
+		CONTENT_FILTER,
+		/**
+		 * The model called a tool.
+		 */
+		@JsonProperty("tool_calls")
+		TOOL_CALLS,
+		/**
+		 * (deprecated) The model called a function.
+		 */
+		@JsonProperty("function_call")
+		FUNCTION_CALL,
+		/**
+		 * Only for compatibility with Mistral AI API.
+		 */
+		@JsonProperty("tool_call")
+		TOOL_CALL
+
+	}
+
+	/**
+	 * Moonshot Chat Completion Models:
+	 *
+	 * <ul>
+	 * <li><b>MOONSHOT_V1_8K</b> - moonshot-v1-8k</li>
+	 * <li><b>MOONSHOT_V1_32K</b> - moonshot-v1-32k</li>
+	 * <li><b>MOONSHOT_V1_128K</b> - moonshot-v1-128k</li>
+	 * </ul>
+	 */
+	public enum ChatModel implements ChatModelDescription {
+
+		// @formatter:off
+        MOONSHOT_V1_8K("moonshot-v1-8k"),
+        MOONSHOT_V1_32K("moonshot-v1-32k"),
+        MOONSHOT_V1_128K("moonshot-v1-128k");
+		 // @formatter:on
+
+		private final String value;
+
+		ChatModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		@Override
+		public String getName() {
+			return this.value;
+		}
+
 	}
 
 	/**
@@ -252,6 +395,7 @@ public class MoonshotApi {
 			}
 
 		}
+
 	}
 
 	/**
@@ -276,6 +420,16 @@ public class MoonshotApi {
 	) {
 
 		/**
+		 * Create a chat completion message with the given content and role. All other
+		 * fields are null.
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 */
+		public ChatCompletionMessage(Object content, Role role) {
+			this(content, role, null, null, null);
+		}
+
+		/**
 		 * Get message content as String.
 		 */
 		public String content() {
@@ -286,16 +440,6 @@ public class MoonshotApi {
 				return text;
 			}
 			throw new IllegalStateException("The content is not a string!");
-		}
-
-		/**
-		 * Create a chat completion message with the given content and role. All other
-		 * fields are null.
-		 * @param content The contents of the message.
-		 * @param role The role of the author of this message.
-		 */
-		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
 		}
 
 		/**
@@ -340,6 +484,7 @@ public class MoonshotApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function) {
+
 		}
 
 		/**
@@ -352,44 +497,8 @@ public class MoonshotApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
+
 		}
-	}
-
-	/**
-	 * The reason the model stopped generating tokens.
-	 */
-	public enum ChatCompletionFinishReason {
-
-		/**
-		 * The model hit a natural stop point or a provided stop sequence.
-		 */
-		@JsonProperty("stop")
-		STOP,
-		/**
-		 * The maximum number of tokens specified in the request was reached.
-		 */
-		@JsonProperty("length")
-		LENGTH,
-		/**
-		 * The content was omitted due to a flag from our content filters.
-		 */
-		@JsonProperty("content_filter")
-		CONTENT_FILTER,
-		/**
-		 * The model called a tool.
-		 */
-		@JsonProperty("tool_calls")
-		TOOL_CALLS,
-		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call")
-		FUNCTION_CALL,
-		/**
-		 * Only for compatibility with Mistral AI API.
-		 */
-		@JsonProperty("tool_call")
-		TOOL_CALL
 
 	}
 
@@ -431,6 +540,7 @@ public class MoonshotApi {
 			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
 			 // @formatter:on
 		}
+
 	}
 
 	/**
@@ -471,39 +581,7 @@ public class MoonshotApi {
 			@JsonProperty("usage") Usage usage
 		// @formatter:on
 		) {
-		}
-	}
 
-	/**
-	 * Moonshot Chat Completion Models:
-	 *
-	 * <ul>
-	 * <li><b>MOONSHOT_V1_8K</b> - moonshot-v1-8k</li>
-	 * <li><b>MOONSHOT_V1_32K</b> - moonshot-v1-32k</li>
-	 * <li><b>MOONSHOT_V1_128K</b> - moonshot-v1-128k</li>
-	 * </ul>
-	 */
-	public enum ChatModel implements ChatModelDescription {
-
-		// @formatter:off
-        MOONSHOT_V1_8K("moonshot-v1-8k"),
-        MOONSHOT_V1_32K("moonshot-v1-32k"),
-        MOONSHOT_V1_128K("moonshot-v1-128k");
-		 // @formatter:on
-
-		private final String value;
-
-		ChatModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return this.value;
-		}
-
-		@Override
-		public String getName() {
-			return this.value;
 		}
 
 	}
@@ -564,76 +642,9 @@ public class MoonshotApi {
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
+
 		}
-	}
 
-	/**
-	 * Creates a model response for the given chat conversation.
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
-	 * and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-			.uri("/v1/chat/completions")
-			.body(chatRequest)
-			.retrieve()
-			.toEntity(ChatCompletion.class);
-	}
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		return this.webClient.post()
-			.uri("/v1/chat/completions")
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-			.retrieve()
-			.bodyToFlux(String.class)
-			// cancels the flux stream after the "[DONE]" is received.
-			.takeUntil(SSE_DONE_PREDICATE)
-			// filters out the "[DONE]" message.
-			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-			// Detect is the chunk is part of a streaming function call.
-			.map(chunk -> {
-				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-					isInsideTool.set(true);
-				}
-				return chunk;
-			})
-			// Group all chunks belonging to the same function call.
-			// Flux<ChatCompletionChunk> -> Flux<Flux<ChatCompletionChunk>>
-			.windowUntil(chunk -> {
-				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-					isInsideTool.set(false);
-					return true;
-				}
-				return !isInsideTool.get();
-			})
-			// Merging the window chunks into a single chunk.
-			// Reduce the inner Flux<ChatCompletionChunk> window into a single
-			// Mono<ChatCompletionChunk>,
-			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
-			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
-				return List.of(monoChunk);
-			})
-			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
-			.flatMap(mono -> mono);
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.io.File;
@@ -32,9 +33,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -44,13 +51,6 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.core.io.Resource;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
-import io.micrometer.observation.ObservationRegistry;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -177,6 +177,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	 */
 	public void load(File file) {
 		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
+
 		};
 		try {
 			Map<String, Document> deserializedMap = this.objectMapper.readValue(file, typeRef);
@@ -193,6 +194,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	 */
 	public void load(Resource resource) {
 		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
+
 		};
 		try {
 			Map<String, Document> deserializedMap = this.objectMapper.readValue(resource.getInputStream(), typeRef);
@@ -219,6 +221,15 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		return this.embeddingModel.embed(query);
 	}
 
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName("in-memory-map")
+			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+	}
+
 	public static class Similarity {
 
 		private String key;
@@ -232,7 +243,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	}
 
-	public class EmbeddingMath {
+	public final class EmbeddingMath {
 
 		private EmbeddingMath() {
 			throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
@@ -274,15 +285,6 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 			return dotProduct(vector, vector);
 		}
 
-	}
-
-	@Override
-	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-
-		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName("in-memory-map")
-			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 }

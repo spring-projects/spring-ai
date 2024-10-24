@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,17 @@
 
 package org.springframework.ai.minimax.api;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
@@ -30,10 +35,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.minimax.api.MiniMaxApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,6 +49,15 @@ public class MiniMaxApiToolFunctionCallIT {
 	MockWeatherService weatherService = new MockWeatherService();
 
 	MiniMaxApi miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
+
+	private static <T> T fromJson(String json, Class<T> targetClass) {
+		try {
+			return new ObjectMapper().readValue(json, targetClass);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@SuppressWarnings("null")
 	@Test
@@ -89,7 +99,7 @@ public class MiniMaxApiToolFunctionCallIT {
 				org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_Chat.getValue(), List.of(functionTool),
 				ToolChoiceBuilder.AUTO);
 
-		ResponseEntity<ChatCompletion> chatCompletion = miniMaxApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletion> chatCompletion = this.miniMaxApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(chatCompletion.getBody()).isNotNull();
 		assertThat(chatCompletion.getBody().choices()).isNotEmpty();
@@ -108,7 +118,7 @@ public class MiniMaxApiToolFunctionCallIT {
 				MockWeatherService.Request weatherRequest = fromJson(toolCall.function().arguments(),
 						MockWeatherService.Request.class);
 
-				MockWeatherService.Response weatherResponse = weatherService.apply(weatherRequest);
+				MockWeatherService.Response weatherResponse = this.weatherService.apply(weatherRequest);
 
 				// extend conversation with function response.
 				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
@@ -119,9 +129,9 @@ public class MiniMaxApiToolFunctionCallIT {
 		var functionResponseRequest = new ChatCompletionRequest(messages,
 				org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_Chat.getValue(), 0.5);
 
-		ResponseEntity<ChatCompletion> chatCompletion2 = miniMaxApi.chatCompletionEntity(functionResponseRequest);
+		ResponseEntity<ChatCompletion> chatCompletion2 = this.miniMaxApi.chatCompletionEntity(functionResponseRequest);
 
-		logger.info("Final response: " + chatCompletion2.getBody());
+		this.logger.info("Final response: " + chatCompletion2.getBody());
 
 		assertThat(Objects.requireNonNull(chatCompletion2.getBody()).choices()).isNotEmpty();
 
@@ -146,7 +156,7 @@ public class MiniMaxApiToolFunctionCallIT {
 				org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(),
 				List.of(functionTool), ToolChoiceBuilder.AUTO);
 
-		ResponseEntity<ChatCompletion> chatCompletion = miniMaxApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletion> chatCompletion = this.miniMaxApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(chatCompletion.getBody()).isNotNull();
 		assertThat(chatCompletion.getBody().choices()).isNotEmpty();
@@ -156,15 +166,6 @@ public class MiniMaxApiToolFunctionCallIT {
 
 		assertThat(assistantMessage.role()).isEqualTo(Role.ASSISTANT);
 		assertThat(assistantMessage.content()).contains("40");
-	}
-
-	private static <T> T fromJson(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 }

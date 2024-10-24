@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.ollama.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.autoconfigure.ollama.tool;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT;
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -38,15 +40,13 @@ import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @DisabledIf("isDisabled")
@@ -58,11 +58,6 @@ public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 
 	static String baseUrl;
 
-	@BeforeAll
-	public static void beforeAll() {
-		baseUrl = buildConnectionWithModel(MODEL_NAME);
-	}
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
 				"spring.ai.ollama.baseUrl=" + baseUrl,
@@ -73,9 +68,14 @@ public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
+	@BeforeAll
+	public static void beforeAll() {
+		baseUrl = buildConnectionWithModel(MODEL_NAME);
+	}
+
 	@Test
 	void functionCallTest() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
@@ -94,7 +94,7 @@ public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamFunctionCallTest() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
@@ -120,7 +120,7 @@ public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 

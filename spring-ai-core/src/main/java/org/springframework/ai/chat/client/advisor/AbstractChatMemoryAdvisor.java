@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,10 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.Map;
 import java.util.function.Function;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -26,11 +30,6 @@ import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.util.Assert;
-import org.stringtemplate.v4.compiler.CodeGenerator.includeExpr_return;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 /**
  * Abstract class that serves as a base for chat memory advisors.
@@ -129,7 +128,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 	}
 
 	public static abstract class AbstractBuilder<T> {
-		
+
 		protected String conversationId = DEFAULT_CHAT_MEMORY_CONVERSATION_ID;
 
 		protected int chatMemoryRetrieveSize = DEFAULT_CHAT_MEMORY_RESPONSE_SIZE;

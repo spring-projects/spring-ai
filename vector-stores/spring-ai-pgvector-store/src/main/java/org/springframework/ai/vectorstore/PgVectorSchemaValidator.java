@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -64,7 +66,7 @@ public class PgVectorSchemaValidator {
 		String sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
-			jdbcTemplate.queryForObject(sql, Integer.class, schemaName, tableName);
+			this.jdbcTemplate.queryForObject(sql, Integer.class, schemaName, tableName);
 			return true;
 		}
 		catch (DataAccessException e) {
@@ -100,7 +102,7 @@ public class PgVectorSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT column_name, data_type FROM information_schema.columns "
 					+ "WHERE table_schema = ? AND table_name = ?";
-			List<Map<String, Object>> columns = jdbcTemplate.queryForList(query,
+			List<Map<String, Object>> columns = this.jdbcTemplate.queryForList(query,
 					new Object[] { schemaName, tableName });
 
 			if (columns.isEmpty()) {

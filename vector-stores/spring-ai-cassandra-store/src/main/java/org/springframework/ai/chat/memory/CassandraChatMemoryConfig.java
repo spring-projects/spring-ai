@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.memory;
+
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -32,41 +40,16 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.cassandra.SchemaUtil;
-
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
 
 /**
  * @author Mick Semb Wever
  * @since 1.0.0
  */
 public final class CassandraChatMemoryConfig {
-
-	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryConfig.class);
-
-	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys) {
-	}
-
-	public record SchemaColumn(String name, DataType type) {
-
-		public GenericType<Object> javaType() {
-			return CodecRegistry.DEFAULT.codecFor(type).getJavaType();
-		}
-	}
-
-	/** Given a string sessionId, return the value for each primary key column. */
-	public interface SessionIdToPrimaryKeysTranslator extends Function<String, List<Object>> {
-
-	}
 
 	public static final String DEFAULT_KEYSPACE_NAME = "springframework";
 
@@ -82,6 +65,8 @@ public final class CassandraChatMemoryConfig {
 
 	public static final String DEFAULT_USER_COLUMN_NAME = "user";
 
+	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryConfig.class);
+
 	final CqlSession session;
 
 	final Schema schema;
@@ -90,15 +75,11 @@ public final class CassandraChatMemoryConfig {
 
 	final String userColumn;
 
+	final SessionIdToPrimaryKeysTranslator primaryKeyTranslator;
+
 	private final Integer timeToLiveSeconds;
 
 	private final boolean disallowSchemaChanges;
-
-	final SessionIdToPrimaryKeysTranslator primaryKeyTranslator;
-
-	public static Builder builder() {
-		return new Builder();
-	}
 
 	private CassandraChatMemoryConfig(Builder builder) {
 		this.session = builder.session;
@@ -110,6 +91,10 @@ public final class CassandraChatMemoryConfig {
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	SchemaColumn getPrimaryKeyColumn(int index) {
 		return index < this.schema.partitionKeys().size() ? this.schema.partitionKeys().get(index)
 				: this.schema.clusteringKeys().get(index - this.schema.partitionKeys().size());
@@ -119,6 +104,113 @@ public final class CassandraChatMemoryConfig {
 	void dropKeyspace() {
 		Preconditions.checkState(this.schema.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
 		this.session.execute(SchemaBuilder.dropKeyspace(this.schema.keyspace).ifExists().build());
+	}
+
+	void ensureSchemaExists() {
+		if (!this.disallowSchemaChanges) {
+			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
+			ensureTableExists();
+			ensureTableColumnsExist();
+			SchemaUtil.checkSchemaAgreement(this.session);
+		}
+		else {
+			checkSchemaValid();
+		}
+	}
+
+	void checkSchemaValid() {
+
+		Preconditions.checkState(this.session.getMetadata().getKeyspace(this.schema.keyspace).isPresent(),
+				"keyspace %s does not exist", this.schema.keyspace);
+
+		Preconditions.checkState(this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
+			.get()
+			.getTable(this.schema.table)
+			.isPresent(), "table %s does not exist");
+
+		TableMetadata tableMetadata = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
+			.get()
+			.getTable(this.schema.table)
+			.get();
+
+		Preconditions.checkState(tableMetadata.getColumn(this.assistantColumn).isPresent(), "column %s does not exist",
+				this.assistantColumn);
+
+		Preconditions.checkState(tableMetadata.getColumn(this.userColumn).isPresent(), "column %s does not exist",
+				this.userColumn);
+	}
+
+	private void ensureTableExists() {
+		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).get().getTable(this.schema.table).isEmpty()) {
+			CreateTable createTable = null;
+
+			CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
+				.ifNotExists();
+
+			for (SchemaColumn partitionKey : this.schema.partitionKeys) {
+				createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
+						partitionKey.type);
+			}
+			for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
+				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
+			}
+
+			String lastClusteringColumn = this.schema.clusteringKeys.get(this.schema.clusteringKeys.size() - 1).name();
+
+			CreateTableWithOptions createTableWithOptions = createTable.withColumn(this.userColumn, DataTypes.TEXT)
+				.withClusteringOrder(lastClusteringColumn, ClusteringOrder.DESC)
+				// TODO replace w/ SchemaBuilder.unifiedCompactionStrategy() is available
+				.withOption("compaction", Map.of("class", "UnifiedCompactionStrategy"));
+
+			if (null != this.timeToLiveSeconds) {
+				createTableWithOptions = createTableWithOptions.withDefaultTimeToLiveSeconds(this.timeToLiveSeconds);
+			}
+			this.session.execute(createTableWithOptions.build());
+		}
+	}
+
+	private void ensureTableColumnsExist() {
+
+		TableMetadata tableMetadata = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace())
+			.get()
+			.getTable(this.schema.table())
+			.get();
+
+		boolean addAssistantColumn = tableMetadata.getColumn(this.assistantColumn).isEmpty();
+		boolean addUserColumn = tableMetadata.getColumn(this.userColumn).isEmpty();
+
+		if (addAssistantColumn || addUserColumn) {
+			AlterTableAddColumn alterTable = SchemaBuilder.alterTable(this.schema.keyspace(), this.schema.table());
+			if (addAssistantColumn) {
+				alterTable = alterTable.addColumn(this.assistantColumn, DataTypes.TEXT);
+			}
+			if (addUserColumn) {
+				alterTable = alterTable.addColumn(this.userColumn, DataTypes.TEXT);
+			}
+			SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
+			logger.debug("Executing {}", stmt.getQuery());
+			this.session.execute(stmt);
+		}
+	}
+
+	/** Given a string sessionId, return the value for each primary key column. */
+	public interface SessionIdToPrimaryKeysTranslator extends Function<String, List<Object>> {
+
+	}
+
+	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys) {
+
+	}
+
+	public record SchemaColumn(String name, DataType type) {
+
+		public GenericType<Object> javaType() {
+			return CodecRegistry.DEFAULT.codecFor(this.type).getJavaType();
+		}
+
 	}
 
 	public static class Builder {
@@ -226,107 +318,19 @@ public final class CassandraChatMemoryConfig {
 
 		public CassandraChatMemoryConfig build() {
 
-			int primaryKeyColumns = partitionKeys.size() + clusteringKeys.size();
+			int primaryKeyColumns = this.partitionKeys.size() + this.clusteringKeys.size();
 			int primaryKeysToBind = this.primaryKeyTranslator.apply(UUID.randomUUID().toString()).size();
 
 			Preconditions.checkArgument(primaryKeyColumns == primaryKeysToBind + 1,
 					"The primaryKeyTranslator must always return one less element than the number of primary keys in total. The last clustering key remains undefined, expecting to be the timestamp for messages within sessionId. The sessionId can map to any primary key column (though it should map to a partition key column).");
 
 			Preconditions.checkArgument(
-					clusteringKeys.get(clusteringKeys.size() - 1).name().equals(DEFAULT_EXCHANGE_ID_NAME),
+					this.clusteringKeys.get(this.clusteringKeys.size() - 1).name().equals(DEFAULT_EXCHANGE_ID_NAME),
 					"last clustering key must be the exchangeIdColumn");
 
 			return new CassandraChatMemoryConfig(this);
 		}
 
-	}
-
-	void ensureSchemaExists() {
-		if (!disallowSchemaChanges) {
-			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
-			ensureTableExists();
-			ensureTableColumnsExist();
-			SchemaUtil.checkSchemaAgreement(this.session);
-		}
-		else {
-			checkSchemaValid();
-		}
-	}
-
-	void checkSchemaValid() {
-
-		Preconditions.checkState(session.getMetadata().getKeyspace(this.schema.keyspace).isPresent(),
-				"keyspace %s does not exist", this.schema.keyspace);
-
-		Preconditions.checkState(
-				session.getMetadata().getKeyspace(this.schema.keyspace).get().getTable(this.schema.table).isPresent(),
-				"table %s does not exist");
-
-		TableMetadata tableMetadata = session.getMetadata()
-			.getKeyspace(this.schema.keyspace)
-			.get()
-			.getTable(this.schema.table)
-			.get();
-
-		Preconditions.checkState(tableMetadata.getColumn(this.assistantColumn).isPresent(), "column %s does not exist",
-				this.assistantColumn);
-
-		Preconditions.checkState(tableMetadata.getColumn(this.userColumn).isPresent(), "column %s does not exist",
-				this.userColumn);
-	}
-
-	private void ensureTableExists() {
-		if (session.getMetadata().getKeyspace(schema.keyspace).get().getTable(this.schema.table).isEmpty()) {
-			CreateTable createTable = null;
-
-			CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
-				.ifNotExists();
-
-			for (SchemaColumn partitionKey : this.schema.partitionKeys) {
-				createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
-						partitionKey.type);
-			}
-			for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
-				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
-			}
-
-			String lastClusteringColumn = this.schema.clusteringKeys.get(this.schema.clusteringKeys.size() - 1).name();
-
-			CreateTableWithOptions createTableWithOptions = createTable.withColumn(this.userColumn, DataTypes.TEXT)
-				.withClusteringOrder(lastClusteringColumn, ClusteringOrder.DESC)
-				// TODO replace w/ SchemaBuilder.unifiedCompactionStrategy() is available
-				.withOption("compaction", Map.of("class", "UnifiedCompactionStrategy"));
-
-			if (null != this.timeToLiveSeconds) {
-				createTableWithOptions = createTableWithOptions.withDefaultTimeToLiveSeconds(this.timeToLiveSeconds);
-			}
-			this.session.execute(createTableWithOptions.build());
-		}
-	}
-
-	private void ensureTableColumnsExist() {
-
-		TableMetadata tableMetadata = this.session.getMetadata()
-			.getKeyspace(this.schema.keyspace())
-			.get()
-			.getTable(this.schema.table())
-			.get();
-
-		boolean addAssistantColumn = tableMetadata.getColumn(this.assistantColumn).isEmpty();
-		boolean addUserColumn = tableMetadata.getColumn(this.userColumn).isEmpty();
-
-		if (addAssistantColumn || addUserColumn) {
-			AlterTableAddColumn alterTable = SchemaBuilder.alterTable(this.schema.keyspace(), this.schema.table());
-			if (addAssistantColumn) {
-				alterTable = alterTable.addColumn(this.assistantColumn, DataTypes.TEXT);
-			}
-			if (addUserColumn) {
-				alterTable = alterTable.addColumn(this.userColumn, DataTypes.TEXT);
-			}
-			SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
-			logger.debug("Executing {}", stmt.getQuery());
-			this.session.execute(stmt);
-		}
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
 import java.util.Map;
 
-import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
@@ -48,24 +48,24 @@ public class WeaviateVectorStoreProperties {
 
 	private Map<String, String> headers = Map.of();
 
+	public String getScheme() {
+		return this.scheme;
+	}
+
 	public void setScheme(String scheme) {
 		this.scheme = scheme;
 	}
 
-	public String getScheme() {
-		return scheme;
+	public String getHost() {
+		return this.host;
 	}
 
 	public void setHost(String host) {
 		this.host = host;
 	}
 
-	public String getHost() {
-		return host;
-	}
-
 	public String getApiKey() {
-		return apiKey;
+		return this.apiKey;
 	}
 
 	public void setApiKey(String apiKey) {
@@ -73,7 +73,7 @@ public class WeaviateVectorStoreProperties {
 	}
 
 	public String getObjectClass() {
-		return objectClass;
+		return this.objectClass;
 	}
 
 	public void setObjectClass(String indexName) {
@@ -81,7 +81,7 @@ public class WeaviateVectorStoreProperties {
 	}
 
 	public ConsistentLevel getConsistencyLevel() {
-		return consistencyLevel;
+		return this.consistencyLevel;
 	}
 
 	public void setConsistencyLevel(ConsistentLevel consistencyLevel) {
@@ -89,7 +89,7 @@ public class WeaviateVectorStoreProperties {
 	}
 
 	public Map<String, String> getHeaders() {
-		return headers;
+		return this.headers;
 	}
 
 	public void setHeaders(Map<String, String> headers) {
@@ -97,7 +97,7 @@ public class WeaviateVectorStoreProperties {
 	}
 
 	public Map<String, MetadataField.Type> getFilterField() {
-		return filterField;
+		return this.filterField;
 	}
 
 	public void setFilterField(Map<String, MetadataField.Type> filterMetadataFields) {

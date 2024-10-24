@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.observation.tracing;
 
-import io.micrometer.tracing.handler.TracingObservationHandler;
-import io.opentelemetry.api.trace.Span;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.observation.ChatModelObservationContext;
-import org.springframework.ai.model.Content;
-import org.springframework.lang.Nullable;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
+package org.springframework.ai.observation.tracing;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+
+import io.micrometer.tracing.handler.TracingObservationHandler;
+import io.opentelemetry.api.trace.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.lang.Nullable;
 
 /**
  * Utilities to prepare and process traces for observability.
@@ -39,6 +37,9 @@ import java.util.StringJoiner;
 public final class TracingHelper {
 
 	private static final Logger logger = LoggerFactory.getLogger(TracingHelper.class);
+
+	private TracingHelper() {
+	}
 
 	@Nullable
 	public static Span extractOtelSpan(@Nullable TracingObservationHandler.TracingContext tracingContext) {

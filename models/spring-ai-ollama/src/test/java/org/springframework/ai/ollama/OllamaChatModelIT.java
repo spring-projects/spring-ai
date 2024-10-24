@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.ollama;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -33,20 +40,15 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,10 +69,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	@Test
 	void autoPullModelTest() {
-		var modelManager = new OllamaModelManager(ollamaApi);
+		var modelManager = new OllamaModelManager(this.ollamaApi);
 		assertThat(modelManager.isModelAvailable(ADDITIONAL_MODEL)).isTrue();
 
-		String joke = ChatClient.create(chatModel)
+		String joke = ChatClient.create(this.chatModel)
 			.prompt("Tell me a joke")
 			.options(OllamaOptions.builder().withModel(ADDITIONAL_MODEL).build())
 			.call()
@@ -97,13 +99,13 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage), portableOptions);
 
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 
 		// ollama specific options
 		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
 
-		response = chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
+		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
 
@@ -121,12 +123,12 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Hello"), response.getResult().getOutput(),
 				new UserMessage("Tell me just the names of those pirates.")));
-		response = chatModel.call(promptWithMessageHistory);
+		response = this.chatModel.call(promptWithMessageHistory);
 
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
 	}
@@ -134,7 +136,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	@Test
 	void usageTest() {
 		Prompt prompt = new Prompt("Tell me a joke");
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		Usage usage = response.getMetadata().getUsage();
 
 		assertThat(usage).isNotNull();
@@ -175,16 +177,13 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result).isNotNull();
 		assertThat((String) result.get("R")).containsIgnoringCase("red");
 		assertThat((String) result.get("G")).containsIgnoringCase("green");
 		assertThat((String) result.get("B")).containsIgnoringCase("blue");
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Test
@@ -198,7 +197,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
@@ -217,7 +216,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatModel.stream(prompt)
+		String generationTextFromStream = this.chatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -231,6 +230,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 	@SpringBootConfiguration

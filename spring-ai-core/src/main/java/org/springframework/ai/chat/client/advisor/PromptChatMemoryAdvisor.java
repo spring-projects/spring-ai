@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -32,8 +34,6 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.model.Content;
-
-import reactor.core.publisher.Flux;
 
 /**
  * Memory is retrieved added into the prompt's system text.
@@ -75,6 +75,10 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			String systemTextAdvise, int order) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.systemTextAdvise = systemTextAdvise;
+	}
+
+	public static Builder builder(ChatMemory chatMemory) {
+		return new Builder(chatMemory);
 	}
 
 	@Override
@@ -138,10 +142,6 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			.toList();
 
 		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
-	}
-
-	public static Builder builder(ChatMemory chatMemory) {
-		return new Builder(chatMemory);
 	}
 
 	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory> {

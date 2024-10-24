@@ -119,7 +119,7 @@ public class MyClass {
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 
-        var results = chatModel.call(prompt);
+        var results = this.chatModel.call(prompt);
 
         var generatedText = results.getResult().getOutput().getContent();
 
@@ -135,7 +135,7 @@ public class MyClass {
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 
-        var results = chatModel.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
+        var results = this.chatModel.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
 
         var generatedText = results.stream()
             .map(generation -> generation.getResult().getOutput().getContent())

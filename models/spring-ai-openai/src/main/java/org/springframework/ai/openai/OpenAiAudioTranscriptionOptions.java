@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.GranularityType;
@@ -56,6 +58,102 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public String getLanguage() {
+		return this.language;
+	}
+
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+
+	public String getPrompt() {
+		return this.prompt;
+	}
+
+	public void setPrompt(String prompt) {
+		this.prompt = prompt;
+	}
+
+	public Float getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(Float temperature) {
+		this.temperature = temperature;
+	}
+
+	public TranscriptResponseFormat getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(TranscriptResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+
+	public GranularityType getGranularityType() {
+		return this.granularityType;
+	}
+
+	public void setGranularityType(GranularityType granularityType) {
+		this.granularityType = granularityType;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
+		result = prime * result + ((this.prompt == null) ? 0 : this.prompt.hashCode());
+		result = prime * result + ((this.language == null) ? 0 : this.language.hashCode());
+		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		OpenAiAudioTranscriptionOptions other = (OpenAiAudioTranscriptionOptions) obj;
+		if (this.model == null) {
+			if (other.model != null)
+				return false;
+		}
+		else if (!this.model.equals(other.model))
+			return false;
+		if (this.prompt == null) {
+			if (other.prompt != null)
+				return false;
+		}
+		else if (!this.prompt.equals(other.prompt))
+			return false;
+		if (this.language == null) {
+			if (other.language != null)
+				return false;
+		}
+		else if (!this.language.equals(other.language))
+			return false;
+		if (this.responseFormat == null) {
+			if (other.responseFormat != null)
+				return false;
+		}
+		else if (!this.responseFormat.equals(other.responseFormat))
+			return false;
+		return true;
 	}
 
 	public static class Builder {
@@ -104,102 +202,5 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 			return this.options;
 		}
 
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public String getLanguage() {
-		return this.language;
-	}
-
-	public void setLanguage(String language) {
-		this.language = language;
-	}
-
-	public String getPrompt() {
-		return this.prompt;
-	}
-
-	public void setPrompt(String prompt) {
-		this.prompt = prompt;
-	}
-
-	public Float getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-
-	public TranscriptResponseFormat getResponseFormat() {
-		return this.responseFormat;
-	}
-
-	public void setResponseFormat(TranscriptResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	public GranularityType getGranularityType() {
-		return this.granularityType;
-	}
-
-	public void setGranularityType(GranularityType granularityType) {
-		this.granularityType = granularityType;
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((prompt == null) ? 0 : prompt.hashCode());
-		result = prime * result + ((language == null) ? 0 : language.hashCode());
-		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		OpenAiAudioTranscriptionOptions other = (OpenAiAudioTranscriptionOptions) obj;
-		if (this.model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (this.prompt == null) {
-			if (other.prompt != null)
-				return false;
-		}
-		else if (!this.prompt.equals(other.prompt))
-			return false;
-		if (this.language == null) {
-			if (other.language != null)
-				return false;
-		}
-		else if (!this.language.equals(other.language))
-			return false;
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null)
-				return false;
-		}
-		else if (!this.responseFormat.equals(other.responseFormat))
-			return false;
-		return true;
 	}
 }

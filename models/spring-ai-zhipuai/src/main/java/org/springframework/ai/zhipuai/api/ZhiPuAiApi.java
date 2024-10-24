@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.zhipuai.api;
 
 import java.util.Arrays;
@@ -22,6 +23,12 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -36,13 +43,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 // @formatter:off
 /**
@@ -62,6 +62,8 @@ public class ZhiPuAiApi {
 	private final RestClient restClient;
 
 	private final WebClient webClient;
+
+	private final ZhiPuAiStreamFunctionCallingHelper chunkMerger = new ZhiPuAiStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api with default base URL.
@@ -120,6 +122,111 @@ public class ZhiPuAiApi {
 				.build();
 	}
 
+	public static  String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
+		return content.stream()
+				.filter(c -> "text".equals(c.type()))
+				.map(ChatCompletionMessage.MediaContent::text)
+				.reduce("", (a, b) -> a + b);
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+				.uri("/v4/chat/completions")
+				.body(chatRequest)
+				.retrieve()
+				.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request. Must have the stream property set to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
+		return this.webClient.post()
+				.uri("/v4/chat/completions")
+				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+				.retrieve()
+				.bodyToFlux(String.class)
+				.takeUntil(SSE_DONE_PREDICATE)
+				.filter(SSE_DONE_PREDICATE.negate())
+				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+				.map(chunk -> {
+					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+						isInsideTool.set(true);
+					}
+					return chunk;
+				})
+				.windowUntil(chunk -> {
+					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+						isInsideTool.set(false);
+						return true;
+					}
+					return !isInsideTool.get();
+				})
+				.concatMapIterable(window -> {
+					Mono<ChatCompletionChunk> monoChunk = window.reduce(
+							new ChatCompletionChunk(null, null, null, null, null, null),
+							this.chunkMerger::merge);
+					return List.of(monoChunk);
+				})
+				.flatMap(mono -> mono);
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 *
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
+	 * @param <T> Type of the entity in the data list. Can be a {@link String} or {@link List} of tokens (e.g.
+	 * Integers). For embedding multiple inputs in a single request, You can pass a {@link List} of {@link String} or
+	 * {@link List} of {@link List} of tokens. For example:
+	 *
+	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
+	 */
+	public <T> ResponseEntity<EmbeddingList<Embedding>> embeddings(EmbeddingRequest<T> embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		// Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single
+		// request, pass an array of strings or array of token arrays.
+		Assert.notNull(embeddingRequest.input(), "The input can not be null.");
+		Assert.isTrue(embeddingRequest.input() instanceof String || embeddingRequest.input() instanceof List,
+				"The input must be either a String, or a List of Strings or List of List of integers.");
+
+		if (embeddingRequest.input() instanceof List list) {
+			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
+			Assert.isTrue(list.size() <= 512, "The list must be 512 dimensions or less");
+			Assert.isTrue(list.get(0) instanceof String || list.get(0) instanceof Integer
+					|| list.get(0) instanceof List,
+					"The input must be either a String, or a List of Strings or list of list of integers.");
+		}
+
+		return this.restClient.post()
+				.uri("/v4/embeddings")
+				.body(embeddingRequest)
+				.retrieve()
+				.toEntity(new ParameterizedTypeReference<>() {
+		});
+	}
+
 	/**
 	 * ZhiPuAI Chat Completion Models:
 	 * <a href="https://open.bigmodel.cn/dev/howuse/model">ZhiPuAI Model</a>.
@@ -139,11 +246,63 @@ public class ZhiPuAiApi {
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
 		}
 
 		@Override
 		public String getName() {
+			return this.value;
+		}
+	}
+
+	/**
+	 * The reason the model stopped generating tokens.
+	 */
+	public enum ChatCompletionFinishReason {
+		/**
+		 * The model hit a natural stop point or a provided stop sequence.
+		 */
+		@JsonProperty("stop") STOP,
+		/**
+		 * The maximum number of tokens specified in the request was reached.
+		 */
+		@JsonProperty("length") LENGTH,
+		/**
+		 * The content was omitted due to a flag from our content filters.
+		 */
+		@JsonProperty("content_filter") CONTENT_FILTER,
+		/**
+		 * The model called a tool.
+		 */
+		@JsonProperty("tool_calls") TOOL_CALLS,
+		/**
+		 * (deprecated) The model called a function.
+		 */
+		@JsonProperty("function_call") FUNCTION_CALL,
+		/**
+		 * Only for compatibility with Mistral AI API.
+		 */
+		@JsonProperty("tool_call") TOOL_CALL
+	}
+
+	/**
+	 * ZhiPuAI Embeddings Models:
+	 * <a href="https://open.bigmodel.cn/dev/api#text_embedding">Embeddings</a>.
+	 */
+	public enum EmbeddingModel {
+
+		/**
+		 * DIMENSION: 1024
+		 */
+		Embedding_2("Embedding-2");
+
+		public final String  value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
 			return this.value;
 		}
 	}
@@ -356,6 +515,15 @@ public class ZhiPuAiApi {
 			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
 
 		/**
+		 * Create a chat completion message with the given content and role. All other fields are null.
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 */
+		public ChatCompletionMessage(Object content, Role role) {
+			this(content, role, null, null, null);
+		}
+
+		/**
 		 * Get message content as String.
 		 */
 		public String content() {
@@ -366,15 +534,6 @@ public class ZhiPuAiApi {
 				return text;
 			}
 			throw new IllegalStateException("The content is not a string!");
-		}
-
-		/**
-		 * Create a chat completion message with the given content and role. All other fields are null.
-		 * @param content The contents of the message.
-		 * @param role The role of the author of this message.
-		 */
-		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
 		}
 
 		/**
@@ -416,22 +575,6 @@ public class ZhiPuAiApi {
 			@JsonProperty("image_url") ImageUrl imageUrl) {
 
 			/**
-			 * @param url Either a URL of the image or the base64 encoded image data.
-			 * The base64 encoded image data must have a special prefix in the following format:
-			 * "data:{mimetype};base64,{base64-encoded-image-data}".
-			 * @param detail Specifies the detail level of the image.
-			 */
-			@JsonInclude(Include.NON_NULL)
-			public record ImageUrl(
-				@JsonProperty("url") String url,
-				@JsonProperty("detail") String detail) {
-
-				public ImageUrl(String url) {
-					this(url, null);
-				}
-			}
-
-			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
@@ -445,6 +588,22 @@ public class ZhiPuAiApi {
 			 */
 			public MediaContent(ImageUrl imageUrl) {
 				this("image_url", null, imageUrl);
+			}
+
+			/**
+			 * @param url Either a URL of the image or the base64 encoded image data.
+			 * The base64 encoded image data must have a special prefix in the following format:
+			 * "data:{mimetype};base64,{base64-encoded-image-data}".
+			 * @param detail Specifies the detail level of the image.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record ImageUrl(
+				@JsonProperty("url") String url,
+				@JsonProperty("detail") String detail) {
+
+				public ImageUrl(String url) {
+					this(url, null);
+				}
 			}
 		}
 		/**
@@ -473,43 +632,6 @@ public class ZhiPuAiApi {
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
 		}
-	}
-
-	public static  String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
-		return content.stream()
-				.filter(c -> "text".equals(c.type()))
-				.map(ChatCompletionMessage.MediaContent::text)
-				.reduce("", (a, b) -> a + b);
-	}
-
-	/**
-	 * The reason the model stopped generating tokens.
-	 */
-	public enum ChatCompletionFinishReason {
-		/**
-		 * The model hit a natural stop point or a provided stop sequence.
-		 */
-		@JsonProperty("stop") STOP,
-		/**
-		 * The maximum number of tokens specified in the request was reached.
-		 */
-		@JsonProperty("length") LENGTH,
-		/**
-		 * The content was omitted due to a flag from our content filters.
-		 */
-		@JsonProperty("content_filter") CONTENT_FILTER,
-		/**
-		 * The model called a tool.
-		 */
-		@JsonProperty("tool_calls") TOOL_CALLS,
-		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call") FUNCTION_CALL,
-		/**
-		 * Only for compatibility with Mistral AI API.
-		 */
-		@JsonProperty("tool_call") TOOL_CALL
 	}
 
 	/**
@@ -656,91 +778,6 @@ public class ZhiPuAiApi {
 	}
 
 	/**
-	 * Creates a model response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-				.uri("/v4/chat/completions")
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(ChatCompletion.class);
-	}
-
-	private final ZhiPuAiStreamFunctionCallingHelper chunkMerger = new ZhiPuAiStreamFunctionCallingHelper();
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request. Must have the stream property set to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		return this.webClient.post()
-				.uri("/v4/chat/completions")
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(String.class)
-				.takeUntil(SSE_DONE_PREDICATE)
-				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-				.map(chunk -> {
-					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-						isInsideTool.set(true);
-					}
-					return chunk;
-				})
-				.windowUntil(chunk -> {
-					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-						isInsideTool.set(false);
-						return true;
-					}
-					return !isInsideTool.get();
-				})
-				.concatMapIterable(window -> {
-					Mono<ChatCompletionChunk> monoChunk = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
-							this.chunkMerger::merge);
-					return List.of(monoChunk);
-				})
-				.flatMap(mono -> mono);
-	}
-
-	/**
-	 * ZhiPuAI Embeddings Models:
-	 * <a href="https://open.bigmodel.cn/dev/api#text_embedding">Embeddings</a>.
-	 */
-	public enum EmbeddingModel {
-
-		/**
-		 * DIMENSION: 1024
-		 */
-		Embedding_2("Embedding-2");
-
-		public final String  value;
-
-		EmbeddingModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
 	 * Represents an embedding vector returned by embedding endpoint.
 	 *
 	 * @param index The index of the embedding in the list of embeddings.
@@ -765,20 +802,20 @@ public class ZhiPuAiApi {
 		@Override public boolean equals(Object o) {
     		if (this == o) return true;
     		if (!(o instanceof Embedding embedding1)) return false;
-    		return Objects.equals(index, embedding1.index) && Arrays.equals(embedding, embedding1.embedding) && Objects.equals(object, embedding1.object);
+    		return Objects.equals(this.index, embedding1.index) && Arrays.equals(this.embedding, embedding1.embedding) && Objects.equals(this.object, embedding1.object);
 		}
 		@Override
 		public int hashCode() {
-			int result = Objects.hash(index, object);
-			result = 31 * result + Arrays.hashCode(embedding);
+			int result = Objects.hash(this.index, this.object);
+			result = 31 * result + Arrays.hashCode(this.embedding);
 			return result;
 		}
 
 		@Override public String toString() {
 			return "Embedding{" +
-					"index=" + index +
-					", embedding=" + Arrays.toString(embedding) +
-					", object='" + object + '\'' +
+					"index=" + this.index +
+					", embedding=" + Arrays.toString(this.embedding) +
+					", object='" + this.object + '\'' +
 					'}';
 		}
 	}
@@ -819,43 +856,6 @@ public class ZhiPuAiApi {
 			@JsonProperty("data") List<T> data,
 			@JsonProperty("model") String model,
 			@JsonProperty("usage") Usage usage) {
-	}
-
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 *
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
-	 * @param <T> Type of the entity in the data list. Can be a {@link String} or {@link List} of tokens (e.g.
-	 * Integers). For embedding multiple inputs in a single request, You can pass a {@link List} of {@link String} or
-	 * {@link List} of {@link List} of tokens. For example:
-	 *
-	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
-	 */
-	public <T> ResponseEntity<EmbeddingList<Embedding>> embeddings(EmbeddingRequest<T> embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		// Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single
-		// request, pass an array of strings or array of token arrays.
-		Assert.notNull(embeddingRequest.input(), "The input can not be null.");
-		Assert.isTrue(embeddingRequest.input() instanceof String || embeddingRequest.input() instanceof List,
-				"The input must be either a String, or a List of Strings or List of List of integers.");
-
-		if (embeddingRequest.input() instanceof List list) {
-			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
-			Assert.isTrue(list.size() <= 512, "The list must be 512 dimensions or less");
-			Assert.isTrue(list.get(0) instanceof String || list.get(0) instanceof Integer
-					|| list.get(0) instanceof List,
-					"The input must be either a String, or a List of Strings or list of list of integers.");
-		}
-
-		return this.restClient.post()
-				.uri("/v4/embeddings")
-				.body(embeddingRequest)
-				.retrieve()
-				.toEntity(new ParameterizedTypeReference<>() {
-		});
 	}
 
 }

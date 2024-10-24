@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.function;
 
 import java.util.ArrayList;
@@ -185,7 +186,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public String getModel() {
-			return model;
+			return this.model;
 		}
 
 		public void setModel(String model) {
@@ -194,7 +195,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getFrequencyPenalty() {
-			return frequencyPenalty;
+			return this.frequencyPenalty;
 		}
 
 		public void setFrequencyPenalty(Double frequencyPenalty) {
@@ -203,7 +204,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Integer getMaxTokens() {
-			return maxTokens;
+			return this.maxTokens;
 		}
 
 		public void setMaxTokens(Integer maxTokens) {
@@ -212,7 +213,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getPresencePenalty() {
-			return presencePenalty;
+			return this.presencePenalty;
 		}
 
 		public void setPresencePenalty(Double presencePenalty) {
@@ -221,7 +222,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public List<String> getStopSequences() {
-			return stopSequences;
+			return this.stopSequences;
 		}
 
 		public void setStopSequences(List<String> stopSequences) {
@@ -230,7 +231,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getTemperature() {
-			return temperature;
+			return this.temperature;
 		}
 
 		public void setTemperature(Double temperature) {
@@ -239,7 +240,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Integer getTopK() {
-			return topK;
+			return this.topK;
 		}
 
 		public void setTopK(Integer topK) {
@@ -248,7 +249,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getTopP() {
-			return topP;
+			return this.topP;
 		}
 
 		public void setTopP(Double topP) {
@@ -257,7 +258,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Boolean getProxyToolCalls() {
-			return proxyToolCalls;
+			return this.proxyToolCalls;
 		}
 
 		public void setProxyToolCalls(Boolean proxyToolCalls) {

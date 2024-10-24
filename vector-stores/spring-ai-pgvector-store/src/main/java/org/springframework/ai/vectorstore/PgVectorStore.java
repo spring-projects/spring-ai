@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +33,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -44,15 +55,6 @@ import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
 /**
  * Uses the "vector_store" table to store the Spring AI vector data. The table and the
  * vector index will be auto-created if not available.
@@ -67,8 +69,6 @@ import java.util.UUID;
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
-
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
@@ -81,9 +81,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static final boolean DEFAULT_SCHEMA_VALIDATION = false;
 
-	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
-
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
+
+	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
+
+	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
+			VectorStoreSimilarityMetric.EUCLIDEAN, PgDistanceType.NEGATIVE_INNER_PRODUCT,
+			VectorStoreSimilarityMetric.DOT);
+
+	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
 	private final String vectorTableName;
 
@@ -183,7 +190,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	public PgDistanceType getDistanceType() {
-		return distanceType;
+		return this.distanceType;
 	}
 
 	@Override
@@ -208,6 +215,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
 
 		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 
@@ -247,7 +255,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public Optional<Boolean> doDelete(List<String> idList) {
 		int updateCount = 0;
 		for (String id : idList) {
-			int count = jdbcTemplate.update("DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?",
+			int count = this.jdbcTemplate.update("DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?",
 					UUID.fromString(id));
 			updateCount = updateCount + count;
 		}
@@ -281,6 +289,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.jdbcTemplate.query(
 				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + getFullyQualifiedTableName(),
 				new RowMapper<Double>() {
+
 					@Override
 					@Nullable
 					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -381,6 +390,23 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 					+ OPENAI_EMBEDDING_DIMENSION_SIZE, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
+			.withCollectionName(this.vectorTableName)
+			.withDimensions(this.embeddingDimensions())
+			.withNamespace(this.schemaName)
+			.withSimilarityMetric(getSimilarityMetric());
+	}
+
+	private String getSimilarityMetric() {
+		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.getDistanceType())) {
+			return this.getDistanceType().name();
+		}
+		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 	/**
@@ -492,7 +518,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 			String source = pgObject.getValue();
 			try {
-				return (Map<String, Object>) objectMapper.readValue(source, Map.class);
+				return (Map<String, Object>) this.objectMapper.readValue(source, Map.class);
 			}
 			catch (JsonProcessingException e) {
 				throw new RuntimeException(e);
@@ -609,28 +635,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 					this.maxDocumentBatchSize);
 		}
 
-	}
-
-	@Override
-	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-
-		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
-			.withCollectionName(this.vectorTableName)
-			.withDimensions(this.embeddingDimensions())
-			.withNamespace(this.schemaName)
-			.withSimilarityMetric(getSimilarityMetric());
-	}
-
-	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
-			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
-			VectorStoreSimilarityMetric.EUCLIDEAN, PgDistanceType.NEGATIVE_INNER_PRODUCT,
-			VectorStoreSimilarityMetric.DOT);
-
-	private String getSimilarityMetric() {
-		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.getDistanceType())) {
-			return this.getDistanceType().name();
-		}
-		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 }

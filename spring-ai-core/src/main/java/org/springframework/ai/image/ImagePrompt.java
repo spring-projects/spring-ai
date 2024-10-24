@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.image;
 
-import org.springframework.ai.model.ModelRequest;
+package org.springframework.ai.image;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import org.springframework.ai.model.ModelRequest;
 
 public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 
@@ -50,31 +51,34 @@ public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 
 	@Override
 	public List<ImageMessage> getInstructions() {
-		return messages;
+		return this.messages;
 	}
 
 	@Override
 	public ImageOptions getOptions() {
-		return imageModelOptions;
+		return this.imageModelOptions;
 	}
 
 	@Override
 	public String toString() {
-		return "NewImagePrompt{" + "messages=" + messages + ", imageModelOptions=" + imageModelOptions + '}';
+		return "NewImagePrompt{" + "messages=" + this.messages + ", imageModelOptions=" + this.imageModelOptions + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ImagePrompt that))
+		}
+		if (!(o instanceof ImagePrompt that)) {
 			return false;
-		return Objects.equals(messages, that.messages) && Objects.equals(imageModelOptions, that.imageModelOptions);
+		}
+		return Objects.equals(this.messages, that.messages)
+				&& Objects.equals(this.imageModelOptions, that.imageModelOptions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(messages, imageModelOptions);
+		return Objects.hash(this.messages, this.imageModelOptions);
 	}
 
 }

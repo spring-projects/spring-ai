@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.huggingface;
 
 import java.util.ArrayList;
@@ -25,15 +26,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.huggingface.api.TextGenerationInferenceApi;
 import org.springframework.ai.huggingface.invoker.ApiClient;
 import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
 import org.springframework.ai.huggingface.model.GenerateParameters;
 import org.springframework.ai.huggingface.model.GenerateRequest;
 import org.springframework.ai.huggingface.model.GenerateResponse;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * An implementation of {@link ChatModel} that interfaces with HuggingFace Inference
@@ -92,14 +93,15 @@ public class HuggingfaceChatModel implements ChatModel {
 		generateRequest.setInputs(prompt.getContents());
 		GenerateParameters generateParameters = new GenerateParameters();
 		// TODO - need to expose API to set parameters per call.
-		generateParameters.setMaxNewTokens(maxNewTokens);
+		generateParameters.setMaxNewTokens(this.maxNewTokens);
 		generateRequest.setParameters(generateParameters);
 		GenerateResponse generateResponse = this.textGenApi.generate(generateRequest);
 		String generatedText = generateResponse.getGeneratedText();
 		List<Generation> generations = new ArrayList<>();
 		AllOfGenerateResponseDetails allOfGenerateResponseDetails = generateResponse.getDetails();
-		Map<String, Object> detailsMap = objectMapper.convertValue(allOfGenerateResponseDetails,
+		Map<String, Object> detailsMap = this.objectMapper.convertValue(allOfGenerateResponseDetails,
 				new TypeReference<Map<String, Object>>() {
+
 				});
 		Generation generation = new Generation(generatedText, detailsMap);
 		generations.add(generation);
@@ -111,7 +113,7 @@ public class HuggingfaceChatModel implements ChatModel {
 	 * @return The maximum number of new tokens.
 	 */
 	public int getMaxNewTokens() {
-		return maxNewTokens;
+		return this.maxNewTokens;
 	}
 
 	/**

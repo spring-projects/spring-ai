@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.stabilityai.api;
 
 import java.util.List;
@@ -73,8 +74,8 @@ public class StabilityAiApi {
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(apiKey);
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON)); // base64 in JSON +
-																	// metadata or return
-																	// image in bytes.
+			// metadata or return
+			// image in bytes.
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -82,6 +83,15 @@ public class StabilityAiApi {
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 			.build();
+	}
+
+	public GenerateImageResponse generateImage(GenerateImageRequest request) {
+		Assert.notNull(request, "The request body can not be null.");
+		return this.restClient.post()
+			.uri("/generation/{model}/text-to-image", this.model)
+			.body(request)
+			.retrieve()
+			.body(GenerateImageResponse.class);
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -92,13 +102,13 @@ public class StabilityAiApi {
 			@JsonProperty("seed") Long seed, @JsonProperty("steps") Integer steps,
 			@JsonProperty("style_present") String stylePreset) {
 
+		public static Builder builder() {
+			return new Builder();
+		}
+
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record TextPrompts(@JsonProperty("text") String text, @JsonProperty("weight") Float weight) {
 
-		}
-
-		public static Builder builder() {
-			return new Builder();
 		}
 
 		public static class Builder {
@@ -178,28 +188,23 @@ public class StabilityAiApi {
 			}
 
 			public GenerateImageRequest build() {
-				return new GenerateImageRequest(textPrompts, height, width, cfgScale, clipGuidancePreset, sampler,
-						samples, seed, steps, stylePreset);
+				return new GenerateImageRequest(this.textPrompts, this.height, this.width, this.cfgScale,
+						this.clipGuidancePreset, this.sampler, this.samples, this.seed, this.steps, this.stylePreset);
 			}
 
 		}
+
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record GenerateImageResponse(@JsonProperty("result") String result,
 			@JsonProperty("artifacts") List<Artifacts> artifacts) {
+
 		public record Artifacts(@JsonProperty("seed") long seed, @JsonProperty("base64") String base64,
 				@JsonProperty("finishReason") String finishReason) {
-		}
-	}
 
-	public GenerateImageResponse generateImage(GenerateImageRequest request) {
-		Assert.notNull(request, "The request body can not be null.");
-		return this.restClient.post()
-			.uri("/generation/{model}/text-to-image", this.model)
-			.body(request)
-			.retrieve()
-			.body(GenerateImageResponse.class);
+		}
+
 	}
 
 }

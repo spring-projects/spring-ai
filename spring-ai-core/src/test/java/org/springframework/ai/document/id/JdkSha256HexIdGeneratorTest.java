@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.document.id;
 
 import java.nio.charset.Charset;
@@ -28,8 +29,8 @@ public class JdkSha256HexIdGeneratorTest {
 
 	@Test
 	void messageDigestReturnsDistinctInstances() {
-		final MessageDigest md1 = testee.getMessageDigest();
-		final MessageDigest md2 = testee.getMessageDigest();
+		final MessageDigest md1 = this.testee.getMessageDigest();
+		final MessageDigest md2 = this.testee.getMessageDigest();
 
 		Assertions.assertThat(md1 != md2).isTrue();
 
@@ -45,10 +46,10 @@ public class JdkSha256HexIdGeneratorTest {
 		final String updateString2 = "md2_update";
 		final Charset charset = StandardCharsets.UTF_8;
 
-		final byte[] md1BytesFirstTry = testee.getMessageDigest().digest(updateString1.getBytes(charset));
-		final byte[] md2BytesFirstTry = testee.getMessageDigest().digest(updateString2.getBytes(charset));
-		final byte[] md1BytesSecondTry = testee.getMessageDigest().digest(updateString1.getBytes(charset));
-		final byte[] md2BytesSecondTry = testee.getMessageDigest().digest(updateString2.getBytes(charset));
+		final byte[] md1BytesFirstTry = this.testee.getMessageDigest().digest(updateString1.getBytes(charset));
+		final byte[] md2BytesFirstTry = this.testee.getMessageDigest().digest(updateString2.getBytes(charset));
+		final byte[] md1BytesSecondTry = this.testee.getMessageDigest().digest(updateString1.getBytes(charset));
+		final byte[] md2BytesSecondTry = this.testee.getMessageDigest().digest(updateString2.getBytes(charset));
 
 		Assertions.assertThat(md1BytesFirstTry).isNotEqualTo(md2BytesFirstTry);
 

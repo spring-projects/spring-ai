@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,8 @@ package org.springframework.ai.openai;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
@@ -33,7 +35,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-import reactor.core.publisher.Flux;
 
 /**
  * OpenAI audio speech client implementation for backed by {@link OpenAiAudioApi}.
@@ -46,18 +47,18 @@ import reactor.core.publisher.Flux;
  */
 public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel {
 
+	/**
+	 * The speed of the default voice synthesis.
+	 * @see OpenAiAudioSpeechOptions
+	 */
+	private static final Float SPEED = 1.0f;
+
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * The default options used for the audio completion requests.
 	 */
 	private final OpenAiAudioSpeechOptions defaultOptions;
-
-	/**
-	 * The speed of the default voice synthesis.
-	 * @see OpenAiAudioSpeechOptions
-	 */
-	private static final Float SPEED = 1.0f;
 
 	/**
 	 * The retry template used to retry the OpenAI Audio API calls.
@@ -131,7 +132,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 		var speech = speechEntity.getBody();
 
 		if (speech == null) {
-			logger.warn("No speech response returned for speechRequest: {}", speechRequest);
+			this.logger.warn("No speech response returned for speechRequest: {}", speechRequest);
 			return new SpeechResponse(new Speech(new byte[0]));
 		}
 

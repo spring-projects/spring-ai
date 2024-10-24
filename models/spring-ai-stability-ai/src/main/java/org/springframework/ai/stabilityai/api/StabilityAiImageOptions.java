@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.stabilityai.api;
+
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.stabilityai.StyleEnum;
-
-import java.util.Objects;
 
 /**
  * StabilityAiImageOptions is an interface that extends ImageOptions. It provides
@@ -288,88 +290,9 @@ public class StabilityAiImageOptions implements ImageOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private final StabilityAiImageOptions options;
-
-		private Builder() {
-			this.options = new StabilityAiImageOptions();
-		}
-
-		public Builder withN(Integer n) {
-			options.setN(n);
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			options.setModel(model);
-			return this;
-		}
-
-		public Builder withWidth(Integer width) {
-			options.setWidth(width);
-			return this;
-		}
-
-		public Builder withHeight(Integer height) {
-			options.setHeight(height);
-			return this;
-		}
-
-		public Builder withResponseFormat(String responseFormat) {
-			options.setResponseFormat(responseFormat);
-			return this;
-		}
-
-		public Builder withCfgScale(Float cfgScale) {
-			options.setCfgScale(cfgScale);
-			return this;
-		}
-
-		public Builder withClipGuidancePreset(String clipGuidancePreset) {
-			options.setClipGuidancePreset(clipGuidancePreset);
-			return this;
-		}
-
-		public Builder withSampler(String sampler) {
-			options.setSampler(sampler);
-			return this;
-		}
-
-		public Builder withSeed(Long seed) {
-			options.setSeed(seed);
-			return this;
-		}
-
-		public Builder withSteps(Integer steps) {
-			options.setSteps(steps);
-			return this;
-		}
-
-		public Builder withSamples(Integer samples) {
-			options.setN(samples);
-			return this;
-		}
-
-		public Builder withStylePreset(String stylePreset) {
-			options.setStylePreset(stylePreset);
-			return this;
-		}
-
-		public Builder withStylePreset(StyleEnum styleEnum) {
-			options.setStylePreset(styleEnum.toString());
-			return this;
-		}
-
-		public StabilityAiImageOptions build() {
-			return options;
-		}
-
-	}
-
 	@Override
 	public Integer getN() {
-		return n;
+		return this.n;
 	}
 
 	public void setN(Integer n) {
@@ -378,7 +301,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -387,7 +310,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 
 	@Override
 	public Integer getWidth() {
-		return width;
+		return this.width;
 	}
 
 	public void setWidth(Integer width) {
@@ -396,7 +319,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 
 	@Override
 	public Integer getHeight() {
-		return height;
+		return this.height;
 	}
 
 	public void setHeight(Integer height) {
@@ -405,7 +328,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
-		return responseFormat;
+		return this.responseFormat;
 	}
 
 	public void setResponseFormat(String responseFormat) {
@@ -413,7 +336,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	public Float getCfgScale() {
-		return cfgScale;
+		return this.cfgScale;
 	}
 
 	public void setCfgScale(Float cfgScale) {
@@ -421,7 +344,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	public String getClipGuidancePreset() {
-		return clipGuidancePreset;
+		return this.clipGuidancePreset;
 	}
 
 	public void setClipGuidancePreset(String clipGuidancePreset) {
@@ -429,7 +352,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	public String getSampler() {
-		return sampler;
+		return this.sampler;
 	}
 
 	public void setSampler(String sampler) {
@@ -437,7 +360,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	public Long getSeed() {
-		return seed;
+		return this.seed;
 	}
 
 	public void setSeed(Long seed) {
@@ -445,7 +368,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	public Integer getSteps() {
-		return steps;
+		return this.steps;
 	}
 
 	public void setSteps(Integer steps) {
@@ -464,7 +387,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	public String getStylePreset() {
-		return stylePreset;
+		return this.stylePreset;
 	}
 
 	public void setStylePreset(String stylePreset) {
@@ -473,30 +396,113 @@ public class StabilityAiImageOptions implements ImageOptions {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof StabilityAiImageOptions that))
+		}
+		if (!(o instanceof StabilityAiImageOptions that)) {
 			return false;
-		return Objects.equals(n, that.n) && Objects.equals(model, that.model) && Objects.equals(width, that.width)
-				&& Objects.equals(height, that.height) && Objects.equals(responseFormat, that.responseFormat)
-				&& Objects.equals(cfgScale, that.cfgScale)
-				&& Objects.equals(clipGuidancePreset, that.clipGuidancePreset) && Objects.equals(sampler, that.sampler)
-				&& Objects.equals(seed, that.seed) && Objects.equals(steps, that.steps)
-				&& Objects.equals(stylePreset, that.stylePreset);
+		}
+		return Objects.equals(this.n, that.n) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.width, that.width) && Objects.equals(this.height, that.height)
+				&& Objects.equals(this.responseFormat, that.responseFormat)
+				&& Objects.equals(this.cfgScale, that.cfgScale)
+				&& Objects.equals(this.clipGuidancePreset, that.clipGuidancePreset)
+				&& Objects.equals(this.sampler, that.sampler) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.steps, that.steps) && Objects.equals(this.stylePreset, that.stylePreset);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(n, model, width, height, responseFormat, cfgScale, clipGuidancePreset, sampler, seed, steps,
-				stylePreset);
+		return Objects.hash(this.n, this.model, this.width, this.height, this.responseFormat, this.cfgScale,
+				this.clipGuidancePreset, this.sampler, this.seed, this.steps, this.stylePreset);
 	}
 
 	@Override
 	public String toString() {
-		return "StabilityAiImageOptions{" + "n=" + n + ", model='" + model + '\'' + ", width=" + width + ", height="
-				+ height + ", responseFormat='" + responseFormat + '\'' + ", cfgScale=" + cfgScale
-				+ ", clipGuidancePreset='" + clipGuidancePreset + '\'' + ", sampler='" + sampler + '\'' + ", seed="
-				+ seed + ", steps=" + steps + ", stylePreset='" + stylePreset + '\'' + '}';
+		return "StabilityAiImageOptions{" + "n=" + this.n + ", model='" + this.model + '\'' + ", width=" + this.width
+				+ ", height=" + this.height + ", responseFormat='" + this.responseFormat + '\'' + ", cfgScale="
+				+ this.cfgScale + ", clipGuidancePreset='" + this.clipGuidancePreset + '\'' + ", sampler='"
+				+ this.sampler + '\'' + ", seed=" + this.seed + ", steps=" + this.steps + ", stylePreset='"
+				+ this.stylePreset + '\'' + '}';
+	}
+
+	public static class Builder {
+
+		private final StabilityAiImageOptions options;
+
+		private Builder() {
+			this.options = new StabilityAiImageOptions();
+		}
+
+		public Builder withN(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder withWidth(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder withHeight(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder withResponseFormat(String responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder withCfgScale(Float cfgScale) {
+			this.options.setCfgScale(cfgScale);
+			return this;
+		}
+
+		public Builder withClipGuidancePreset(String clipGuidancePreset) {
+			this.options.setClipGuidancePreset(clipGuidancePreset);
+			return this;
+		}
+
+		public Builder withSampler(String sampler) {
+			this.options.setSampler(sampler);
+			return this;
+		}
+
+		public Builder withSeed(Long seed) {
+			this.options.setSeed(seed);
+			return this;
+		}
+
+		public Builder withSteps(Integer steps) {
+			this.options.setSteps(steps);
+			return this;
+		}
+
+		public Builder withSamples(Integer samples) {
+			this.options.setN(samples);
+			return this;
+		}
+
+		public Builder withStylePreset(String stylePreset) {
+			this.options.setStylePreset(stylePreset);
+			return this;
+		}
+
+		public Builder withStylePreset(StyleEnum styleEnum) {
+			this.options.setStylePreset(styleEnum.toString());
+			return this;
+		}
+
+		public StabilityAiImageOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

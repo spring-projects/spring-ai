@@ -143,13 +143,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -190,18 +190,18 @@ TitanChatBedrockApi titanApi = new TitanChatBedrockApi(
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockTitanChatModel chatModel = new BedrockTitanChatModel(titanApi,
+BedrockTitanChatModel chatModel = new BedrockTitanChatModel(this.titanApi,
     BedrockTitanChatOptions.builder()
         .withTemperature(0.6)
         .withTopP(0.8)
         .withMaxTokenCount(100)
     .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -229,11 +229,11 @@ TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names 
 	.withStopSequences(List.of("|"))
 	.build();
 
-TitanChatResponse response = titanBedrockApi.chatCompletion(titanChatRequest);
+TitanChatResponse response = this.titanBedrockApi.chatCompletion(this.titanChatRequest);
 
-Flux<TitanChatResponseChunk> response = titanBedrockApi.chatCompletionStream(titanChatRequest);
+Flux<TitanChatResponseChunk> response = this.titanBedrockApi.chatCompletionStream(this.titanChatRequest);
 
-List<TitanChatResponseChunk> results = response.collectList().block();
+List<TitanChatResponseChunk> results = this.response.collectList().block();
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/api/TitanChatBedrockApi.java[TitanChatBedrockApi]'s JavaDoc for further information.

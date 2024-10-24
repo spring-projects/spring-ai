@@ -183,12 +183,12 @@ Next, create an `ZhiPuAiEmbeddingModel` instance and use it to compute the simil
 ----
 var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
-var embeddingModel = new ZhiPuAiEmbeddingModel(zhiPuAiApi)
+var embeddingModel = new ZhiPuAiEmbeddingModel(this.zhiPuAiApi)
     .withDefaultOptions(ZhiPuAiChatOptions.build()
         .withModel("embedding-2")
         .build());
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

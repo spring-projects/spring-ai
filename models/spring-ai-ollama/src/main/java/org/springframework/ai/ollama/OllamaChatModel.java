@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.ollama;
 
 import java.util.Base64;
@@ -24,13 +25,19 @@ import java.util.Set;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -43,21 +50,19 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
+import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.ollama.metadata.OllamaChatUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import reactor.core.publisher.Flux;
 
 /**
  * {@link ChatModel} implementation for {@literal Ollama}. Ollama allows developers to run
@@ -96,12 +101,28 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		this.chatApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
-		this.modelManager = new OllamaModelManager(chatApi, modelManagementOptions);
+		this.modelManager = new OllamaModelManager(this.chatApi, modelManagementOptions);
 		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
 	}
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	public static ChatResponseMetadata from(OllamaApi.ChatResponse response) {
+		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
+		return ChatResponseMetadata.builder()
+			.withUsage(OllamaChatUsage.from(response))
+			.withModel(response.model())
+			.withKeyValue("created-at", response.createdAt())
+			.withKeyValue("eval-duration", response.evalDuration())
+			.withKeyValue("eval-count", response.evalCount())
+			.withKeyValue("load-duration", response.loadDuration())
+			.withKeyValue("eval-duration", response.promptEvalDuration())
+			.withKeyValue("eval-count", response.promptEvalCount())
+			.withKeyValue("total-duration", response.totalDuration())
+			.withKeyValue("done", response.done())
+			.build();
 	}
 
 	@Override
@@ -155,22 +176,6 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 
 		return response;
-	}
-
-	public static ChatResponseMetadata from(OllamaApi.ChatResponse response) {
-		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
-		return ChatResponseMetadata.builder()
-			.withUsage(OllamaChatUsage.from(response))
-			.withModel(response.model())
-			.withKeyValue("created-at", response.createdAt())
-			.withKeyValue("eval-duration", response.evalDuration())
-			.withKeyValue("eval-count", response.evalCount())
-			.withKeyValue("load-duration", response.loadDuration())
-			.withKeyValue("eval-duration", response.promptEvalDuration())
-			.withKeyValue("eval-count", response.promptEvalCount())
-			.withKeyValue("total-duration", response.totalDuration())
-			.withKeyValue("done", response.done())
-			.build();
 	}
 
 	@Override
@@ -435,8 +440,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 
 		public OllamaChatModel build() {
-			return new OllamaChatModel(ollamaApi, defaultOptions, functionCallbackContext, toolFunctionCallbacks,
-					observationRegistry, modelManagementOptions);
+			return new OllamaChatModel(this.ollamaApi, this.defaultOptions, this.functionCallbackContext,
+					this.toolFunctionCallbacks, this.observationRegistry, this.modelManagementOptions);
 		}
 
 	}

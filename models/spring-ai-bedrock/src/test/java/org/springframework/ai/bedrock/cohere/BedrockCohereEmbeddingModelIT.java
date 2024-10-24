@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.cohere;
 
 import java.time.Duration;
@@ -46,17 +47,17 @@ class BedrockCohereEmbeddingModelIT {
 
 	@Test
 	void singleEmbedding() {
-		assertThat(embeddingModel).isNotNull();
-		EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
+		assertThat(this.embeddingModel).isNotNull();
+		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-		assertThat(embeddingModel.dimensions()).isEqualTo(1024);
+		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
 	}
 
 	@Test
 	void batchEmbedding() {
-		assertThat(embeddingModel).isNotNull();
-		EmbeddingResponse embeddingResponse = embeddingModel
+		assertThat(this.embeddingModel).isNotNull();
+		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
@@ -64,13 +65,13 @@ class BedrockCohereEmbeddingModelIT {
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-		assertThat(embeddingModel.dimensions()).isEqualTo(1024);
+		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
 	}
 
 	@Test
 	void embeddingWthOptions() {
-		assertThat(embeddingModel).isNotNull();
-		EmbeddingResponse embeddingResponse = embeddingModel
+		assertThat(this.embeddingModel).isNotNull();
+		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.call(new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
 					BedrockCohereEmbeddingOptions.builder().withInputType(InputType.SEARCH_DOCUMENT).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
@@ -79,7 +80,7 @@ class BedrockCohereEmbeddingModelIT {
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-		assertThat(embeddingModel.dimensions()).isEqualTo(1024);
+		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
 	}
 
 	@SpringBootConfiguration

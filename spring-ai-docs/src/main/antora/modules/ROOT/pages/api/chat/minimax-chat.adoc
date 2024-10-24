@@ -161,13 +161,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -203,17 +203,17 @@ Next, create a `MiniMaxChatModel` and use it for text generations:
 ----
 var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
-var chatModel = new MiniMaxChatModel(miniMaxApi, MiniMaxChatOptions.builder()
+var chatModel = new MiniMaxChatModel(this.miniMaxApi, MiniMaxChatOptions.builder()
                 .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
                 .withTemperature(0.4)
                 .withMaxTokens(200)
                 .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> streamResponse = chatModel.stream(
+Flux<ChatResponse> streamResponse = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -235,12 +235,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = miniMaxApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, false));
+ResponseEntity<ChatCompletion> response = this.miniMaxApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = miniMaxApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, true));
+Flux<ChatCompletionChunk> streamResponse = this.miniMaxApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/api/MiniMaxApi.java[MiniMaxApi.java]'s JavaDoc for further information.
@@ -259,21 +259,21 @@ Here is a simple snippet how to use the web search:
 UserMessage userMessage = new UserMessage(
         "How many gold medals has the United States won in total at the 2024 Olympics?");
 
-List<Message> messages = new ArrayList<>(List.of(userMessage));
+List<Message> messages = new ArrayList<>(List.of(this.userMessage));
 
 List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 MiniMaxChatOptions options = MiniMaxChatOptions.builder()
     .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
-    .withTools(functionTool)
+    .withTools(this.functionTool)
     .build();
 
 
 // Sync request
-ChatResponse response = chatModel.call(new Prompt(messages, options));
+ChatResponse response = chatModel.call(new Prompt(this.messages, this.options));
 
 // Streaming request
-Flux<ChatResponse> streamResponse = chatModel.stream(new Prompt(messages, options));
+Flux<ChatResponse> streamResponse = chatModel.stream(new Prompt(this.messages, this.options));
 ----
 
 ==== MiniMaxApi Samples

@@ -1,32 +1,32 @@
 /*
-* Copyright 2024 - 2024 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.vertexai.embedding;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.List;
-
-import org.springframework.util.Assert;
-import org.springframework.util.MimeType;
-import org.springframework.util.StringUtils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
+
+import org.springframework.util.Assert;
+import org.springframework.util.MimeType;
+import org.springframework.util.StringUtils;
 
 /**
  * Utility class for constructing parameter objects for Vertex AI embedding requests.
@@ -35,6 +35,39 @@ import com.google.protobuf.util.JsonFormat;
  * @since 1.0.0
  */
 public abstract class VertexAiEmbeddingUtils {
+
+	public static Value valueOf(boolean n) {
+		return Value.newBuilder().setBoolValue(n).build();
+	}
+
+	public static Value valueOf(String s) {
+		return Value.newBuilder().setStringValue(s).build();
+	}
+
+	public static Value valueOf(int n) {
+		return Value.newBuilder().setNumberValue(n).build();
+	}
+
+	public static Value valueOf(Struct struct) {
+		return Value.newBuilder().setStructValue(struct).build();
+	}
+
+	// Convert a Json string to a protobuf.Value
+	public static Value jsonToValue(String json) throws InvalidProtocolBufferException {
+		Value.Builder builder = Value.newBuilder();
+		JsonFormat.parser().merge(json, builder);
+		return builder.build();
+	}
+
+	public static float[] toVector(Value value) {
+		float[] floats = new float[value.getListValue().getValuesList().size()];
+		int index = 0;
+		for (Value v : value.getListValue().getValuesList()) {
+			double d = v.getNumberValue();
+			floats[index++] = Double.valueOf(d).floatValue();
+		}
+		return floats;
+	}
 
 	//////////////////////////////////////////////////////
 	// Text Only
@@ -402,39 +435,6 @@ public abstract class VertexAiEmbeddingUtils {
 			return videoBuilder.build();
 		}
 
-	}
-
-	public static Value valueOf(boolean n) {
-		return Value.newBuilder().setBoolValue(n).build();
-	}
-
-	public static Value valueOf(String s) {
-		return Value.newBuilder().setStringValue(s).build();
-	}
-
-	public static Value valueOf(int n) {
-		return Value.newBuilder().setNumberValue(n).build();
-	}
-
-	public static Value valueOf(Struct struct) {
-		return Value.newBuilder().setStructValue(struct).build();
-	}
-
-	// Convert a Json string to a protobuf.Value
-	public static Value jsonToValue(String json) throws InvalidProtocolBufferException {
-		Value.Builder builder = Value.newBuilder();
-		JsonFormat.parser().merge(json, builder);
-		return builder.build();
-	}
-
-	public static float[] toVector(Value value) {
-		float[] floats = new float[value.getListValue().getValuesList().size()];
-		int index = 0;
-		for (Value v : value.getListValue().getValuesList()) {
-			double d = v.getNumberValue();
-			floats[index++] = Double.valueOf(d).floatValue();
-		}
-		return floats;
 	}
 
 }

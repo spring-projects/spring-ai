@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.retry;
 
 import java.time.Duration;
@@ -59,52 +60,6 @@ public class SpringAiRetryProperties {
 	 */
 	private List<Integer> onHttpCodes = new ArrayList<>();
 
-	/**
-	 * Exponential Backoff properties.
-	 */
-	public static class Backoff {
-
-		/**
-		 * Initial sleep duration.
-		 */
-		private Duration initialInterval = Duration.ofMillis(2000);
-
-		/**
-		 * Backoff interval multiplier.
-		 */
-		private int multiplier = 5;
-
-		/**
-		 * Maximum backoff duration.
-		 */
-		private Duration maxInterval = Duration.ofMillis(3 * 60000);
-
-		public Duration getInitialInterval() {
-			return initialInterval;
-		}
-
-		public void setInitialInterval(Duration initialInterval) {
-			this.initialInterval = initialInterval;
-		}
-
-		public int getMultiplier() {
-			return multiplier;
-		}
-
-		public void setMultiplier(int multiplier) {
-			this.multiplier = multiplier;
-		}
-
-		public Duration getMaxInterval() {
-			return maxInterval;
-		}
-
-		public void setMaxInterval(Duration maxInterval) {
-			this.maxInterval = maxInterval;
-		}
-
-	}
-
 	public int getMaxAttempts() {
 		return this.maxAttempts;
 	}
@@ -139,6 +94,52 @@ public class SpringAiRetryProperties {
 
 	public void setOnHttpCodes(List<Integer> onHttpCodes) {
 		this.onHttpCodes = onHttpCodes;
+	}
+
+	/**
+	 * Exponential Backoff properties.
+	 */
+	public static class Backoff {
+
+		/**
+		 * Initial sleep duration.
+		 */
+		private Duration initialInterval = Duration.ofMillis(2000);
+
+		/**
+		 * Backoff interval multiplier.
+		 */
+		private int multiplier = 5;
+
+		/**
+		 * Maximum backoff duration.
+		 */
+		private Duration maxInterval = Duration.ofMillis(3 * 60000);
+
+		public Duration getInitialInterval() {
+			return this.initialInterval;
+		}
+
+		public void setInitialInterval(Duration initialInterval) {
+			this.initialInterval = initialInterval;
+		}
+
+		public int getMultiplier() {
+			return this.multiplier;
+		}
+
+		public void setMultiplier(int multiplier) {
+			this.multiplier = multiplier;
+		}
+
+		public Duration getMaxInterval() {
+			return this.maxInterval;
+		}
+
+		public void setMaxInterval(Duration maxInterval) {
+			this.maxInterval = maxInterval;
+		}
+
 	}
 
 }

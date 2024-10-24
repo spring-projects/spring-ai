@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.api;
 
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
@@ -27,9 +31,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * OpenAI Image API.
@@ -95,6 +96,17 @@ public class OpenAiImageApi {
 		// @formatter:on
 	}
 
+	public ResponseEntity<OpenAiImageResponse> createImage(OpenAiImageRequest openAiImageRequest) {
+		Assert.notNull(openAiImageRequest, "Image request cannot be null.");
+		Assert.hasLength(openAiImageRequest.prompt(), "Prompt cannot be empty.");
+
+		return this.restClient.post()
+			.uri("v1/images/generations")
+			.body(openAiImageRequest)
+			.retrieve()
+			.toEntity(OpenAiImageResponse.class);
+	}
+
 	/**
 	 * OpenAI Image API model.
 	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
@@ -147,24 +159,12 @@ public class OpenAiImageApi {
 		@JsonProperty("created") Long created,
 		@JsonProperty("data") List<Data> data) {
 	}
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record Data(
-		@JsonProperty("url") String url,
-		@JsonProperty("b64_json") String b64Json,
-		@JsonProperty("revised_prompt") String revisedPrompt) {
-	}
 	// @formatter:onn
 
-	public ResponseEntity<OpenAiImageResponse> createImage(OpenAiImageRequest openAiImageRequest) {
-		Assert.notNull(openAiImageRequest, "Image request cannot be null.");
-		Assert.hasLength(openAiImageRequest.prompt(), "Prompt cannot be empty.");
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record Data(@JsonProperty("url") String url, @JsonProperty("b64_json") String b64Json,
+			@JsonProperty("revised_prompt") String revisedPrompt) {
 
-		return this.restClient.post()
-			.uri("v1/images/generations")
-			.body(openAiImageRequest)
-			.retrieve()
-			.toEntity(OpenAiImageResponse.class);
 	}
 
 }

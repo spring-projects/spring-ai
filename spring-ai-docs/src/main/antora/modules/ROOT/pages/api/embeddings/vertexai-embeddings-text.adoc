@@ -154,9 +154,9 @@ VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
     .withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
     .build();
 
-var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, options);
+var embeddingModel = new VertexAiTextEmbeddingModel(this.connectionDetails, this.options);
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

@@ -176,7 +176,7 @@ embeddingModel.setTokenizerOptions(Map.of("padding", "true"));
 
 embeddingModel.afterPropertiesSet();
 
-List<List<Double>> embeddings = embeddingModel.embed(List.of("Hello world", "World is big"));
+List<List<Double>> embeddings = this.embeddingModel.embed(List.of("Hello world", "World is big"));
 
 ----
 

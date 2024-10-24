@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.chat.client;
 
 import java.io.IOException;
@@ -62,9 +63,6 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
 
-	record ActorsFilms(String actor, List<String> movies) {
-	}
-
 	@Test
 	@Disabled("Although the Re2 advisor improves the response correctness it is not always guarantied to work.")
 	void re2() {
@@ -79,12 +77,12 @@ class OpenAiChatClientIT extends AbstractIT {
 					""";
 
 		// @formatter:off
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultOptions(OpenAiChatOptions.builder()
 				.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build())
 			.defaultUser(REASON_QUESTION)
 			.build();
-						
+
 		String response = chatClient.prompt()
 				.advisors(new ReReadingAdvisor())
 				.call()
@@ -101,9 +99,9 @@ class OpenAiChatClientIT extends AbstractIT {
 	void call() {
 
 		// @formatter:off
-		ChatResponse response = ChatClient.create(chatModel).prompt()
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.advisors(new SimpleLoggerAdvisor())
-				.system(s -> s.text(systemTextResource)
+				.system(s -> s.text(this.systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
@@ -119,7 +117,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void listOutputConverterString() {
 		// @formatter:off
-		List<String> collection = ChatClient.create(chatModel).prompt()
+		List<String> collection = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
@@ -134,7 +132,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void listOutputConverterBean() {
 
 		// @formatter:off
-		List<ActorsFilms> actorsFilms = ChatClient.create(chatModel).prompt()
+		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
 				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
@@ -151,7 +149,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		var toStringListConverter = new ListOutputConverter(new DefaultConversionService());
 
 		// @formatter:off
-		List<String> flavors = ChatClient.create(chatModel).prompt()
+		List<String> flavors = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("List five {subject}")
 				.param("subject", "ice cream flavors"))
 				.call()
@@ -166,7 +164,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void mapOutputConverter() {
 		// @formatter:off
-		Map<String, Object> result = ChatClient.create(chatModel).prompt()
+		Map<String, Object> result = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
@@ -181,7 +179,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void beanOutputConverter() {
 
 		// @formatter:off
-		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography for a random actor.")
 				.call()
 				.entity(ActorsFilms.class);
@@ -195,7 +193,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void beanOutputConverterRecords() {
 
 		// @formatter:off
-		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks.")
 				.call()
 				.entity(ActorsFilms.class);
@@ -212,7 +210,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
 		// @formatter:off
-		Flux<ChatResponse> chatResponse = ChatClient.create(chatModel)
+		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
 				.options(OpenAiChatOptions.builder().withStreamUsage(true).build())
 				.advisors(new SimpleLoggerAdvisor())
@@ -246,7 +244,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void functionCallTest() {
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
+		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.call()
@@ -262,7 +260,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void defaultFunctionCallTest() {
 
 		// @formatter:off
-		String response = ChatClient.builder(chatModel)
+		String response = ChatClient.builder(this.chatModel)
 				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
 			.build()
@@ -278,7 +276,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void streamFunctionCallTest() {
 
 		// @formatter:off
-		Flux<String> response = ChatClient.create(chatModel).prompt()
+		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.stream()
@@ -296,7 +294,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
+		String response = ChatClient.create(this.chatModel).prompt()
 				.options(OpenAiChatOptions.builder().withModel(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
@@ -317,7 +315,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
+		String response = ChatClient.create(this.chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
 				.options(OpenAiChatOptions.builder().withModel(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
@@ -337,7 +335,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
-		Flux<String> response = ChatClient.create(chatModel).prompt()
+		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
@@ -351,6 +349,10 @@ class OpenAiChatClientIT extends AbstractIT {
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");
+	}
+
+	record ActorsFilms(String actor, List<String> movies) {
+
 	}
 
 }

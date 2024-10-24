@@ -1,9 +1,26 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.chat.model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 
@@ -41,9 +58,9 @@ public class GenerationTests {
 	@Test
 	void testConstructorWithMetadata() {
 		AssistantMessage assistantMessage = new AssistantMessage("Test Assistant Message");
-		Generation generation = new Generation(assistantMessage, mockChatGenerationMetadata1);
+		Generation generation = new Generation(assistantMessage, this.mockChatGenerationMetadata1);
 
-		assertEquals(mockChatGenerationMetadata1, generation.getMetadata());
+		assertEquals(this.mockChatGenerationMetadata1, generation.getMetadata());
 	}
 
 	@Test
@@ -58,10 +75,10 @@ public class GenerationTests {
 	@Test
 	void testGetMetadata_NotNull() {
 		AssistantMessage assistantMessage = new AssistantMessage("Test Assistant Message");
-		Generation generation = new Generation(assistantMessage, mockChatGenerationMetadata1);
+		Generation generation = new Generation(assistantMessage, this.mockChatGenerationMetadata1);
 		ChatGenerationMetadata metadata = generation.getMetadata();
 
-		assertEquals(mockChatGenerationMetadata1, metadata);
+		assertEquals(this.mockChatGenerationMetadata1, metadata);
 	}
 
 	@Test
@@ -86,8 +103,8 @@ public class GenerationTests {
 	void testEquals_SameMetadata() {
 		AssistantMessage assistantMessage1 = new AssistantMessage("Test Assistant Message");
 		AssistantMessage assistantMessage2 = new AssistantMessage("Test Assistant Message");
-		Generation generation1 = new Generation(assistantMessage1, mockChatGenerationMetadata1);
-		Generation generation2 = new Generation(assistantMessage2, mockChatGenerationMetadata1);
+		Generation generation1 = new Generation(assistantMessage1, this.mockChatGenerationMetadata1);
+		Generation generation2 = new Generation(assistantMessage2, this.mockChatGenerationMetadata1);
 
 		assertTrue(generation1.equals(generation2));
 	}
@@ -96,8 +113,8 @@ public class GenerationTests {
 	void testEquals_DifferentMetadata() {
 		AssistantMessage assistantMessage1 = new AssistantMessage("Test Assistant Message");
 		AssistantMessage assistantMessage2 = new AssistantMessage("Test Assistant Message");
-		Generation generation1 = new Generation(assistantMessage1, mockChatGenerationMetadata1);
-		Generation generation2 = new Generation(assistantMessage2, mockChatGenerationMetadata2);
+		Generation generation1 = new Generation(assistantMessage1, this.mockChatGenerationMetadata1);
+		Generation generation2 = new Generation(assistantMessage2, this.mockChatGenerationMetadata2);
 
 		assertFalse(generation1.equals(generation2));
 	}

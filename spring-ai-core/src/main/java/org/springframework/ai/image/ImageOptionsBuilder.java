@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.image;
 
-public class ImageOptionsBuilder {
+public final class ImageOptionsBuilder {
+
+	private final DefaultImageModelOptions options = new DefaultImageModelOptions();
+
+	private ImageOptionsBuilder() {
+
+	}
+
+	public static ImageOptionsBuilder builder() {
+		return new ImageOptionsBuilder();
+	}
+
+	public ImageOptionsBuilder withN(Integer n) {
+		this.options.setN(n);
+		return this;
+	}
+
+	public ImageOptionsBuilder withModel(String model) {
+		this.options.setModel(model);
+		return this;
+	}
+
+	public ImageOptionsBuilder withResponseFormat(String responseFormat) {
+		this.options.setResponseFormat(responseFormat);
+		return this;
+	}
+
+	public ImageOptionsBuilder withWidth(Integer width) {
+		this.options.setWidth(width);
+		return this;
+	}
+
+	public ImageOptionsBuilder withHeight(Integer height) {
+		this.options.setHeight(height);
+		return this;
+	}
+
+	public ImageOptionsBuilder withStyle(String style) {
+		this.options.setStyle(style);
+		return this;
+	}
+
+	public ImageOptions build() {
+		return this.options;
+	}
 
 	private static class DefaultImageModelOptions implements ImageOptions {
 
@@ -33,7 +78,7 @@ public class ImageOptionsBuilder {
 
 		@Override
 		public Integer getN() {
-			return n;
+			return this.n;
 		}
 
 		public void setN(Integer n) {
@@ -42,7 +87,7 @@ public class ImageOptionsBuilder {
 
 		@Override
 		public String getModel() {
-			return model;
+			return this.model;
 		}
 
 		public void setModel(String model) {
@@ -51,7 +96,7 @@ public class ImageOptionsBuilder {
 
 		@Override
 		public String getResponseFormat() {
-			return responseFormat;
+			return this.responseFormat;
 		}
 
 		public void setResponseFormat(String responseFormat) {
@@ -60,7 +105,7 @@ public class ImageOptionsBuilder {
 
 		@Override
 		public Integer getWidth() {
-			return width;
+			return this.width;
 		}
 
 		public void setWidth(Integer width) {
@@ -69,7 +114,7 @@ public class ImageOptionsBuilder {
 
 		@Override
 		public Integer getHeight() {
-			return height;
+			return this.height;
 		}
 
 		public void setHeight(Integer height) {
@@ -78,57 +123,13 @@ public class ImageOptionsBuilder {
 
 		@Override
 		public String getStyle() {
-			return style;
+			return this.style;
 		}
 
 		public void setStyle(String style) {
 			this.style = style;
 		}
 
-	}
-
-	private final DefaultImageModelOptions options = new DefaultImageModelOptions();
-
-	private ImageOptionsBuilder() {
-
-	}
-
-	public static ImageOptionsBuilder builder() {
-		return new ImageOptionsBuilder();
-	}
-
-	public ImageOptionsBuilder withN(Integer n) {
-		options.setN(n);
-		return this;
-	}
-
-	public ImageOptionsBuilder withModel(String model) {
-		options.setModel(model);
-		return this;
-	}
-
-	public ImageOptionsBuilder withResponseFormat(String responseFormat) {
-		options.setResponseFormat(responseFormat);
-		return this;
-	}
-
-	public ImageOptionsBuilder withWidth(Integer width) {
-		options.setWidth(width);
-		return this;
-	}
-
-	public ImageOptionsBuilder withHeight(Integer height) {
-		options.setHeight(height);
-		return this;
-	}
-
-	public ImageOptionsBuilder withStyle(String style) {
-		options.setStyle(style);
-		return this;
-	}
-
-	public ImageOptions build() {
-		return options;
 	}
 
 }

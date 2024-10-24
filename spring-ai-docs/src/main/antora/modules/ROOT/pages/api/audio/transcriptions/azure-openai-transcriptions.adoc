@@ -66,10 +66,10 @@ AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTran
     .withLanguage("en")
     .withPrompt("Ask not this, but ask that")
     .withTemperature(0f)
-    .withResponseFormat(responseFormat)
+    .withResponseFormat(this.responseFormat)
     .build();
-AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
-AudioTranscriptionResponse response = azureOpenAiTranscriptionModel.call(transcriptionRequest);
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, this.transcriptionOptions);
+AudioTranscriptionResponse response = azureOpenAiTranscriptionModel.call(this.transcriptionRequest);
 ----
 
 == Manual Configuration
@@ -104,7 +104,7 @@ var openAIClient = new OpenAIClientBuilder()
     .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
     .buildClient();
 
-var azureOpenAiAudioTranscriptionModel = new AzureOpenAiAudioTranscriptionModel(openAIClient, null);
+var azureOpenAiAudioTranscriptionModel = new AzureOpenAiAudioTranscriptionModel(this.openAIClient, null);
 
 var transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
     .withResponseFormat(TranscriptResponseFormat.TEXT)
@@ -113,6 +113,6 @@ var transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
 
 var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac");
 
-AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
-AudioTranscriptionResponse response = azureOpenAiAudioTranscriptionModel.call(transcriptionRequest);
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(this.audioFile, this.transcriptionOptions);
+AudioTranscriptionResponse response = this.azureOpenAiAudioTranscriptionModel.call(this.transcriptionRequest);
 ----

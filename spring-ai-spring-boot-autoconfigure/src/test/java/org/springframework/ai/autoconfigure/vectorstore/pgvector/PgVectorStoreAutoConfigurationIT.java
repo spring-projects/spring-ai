@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -42,11 +45,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import io.micrometer.observation.tck.TestObservationRegistry;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -60,6 +61,18 @@ public class PgVectorStoreAutoConfigurationIT {
 	@Container
 	@SuppressWarnings("resource")
 	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("pgvector/pgvector:pg16");
+
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(PgVectorStoreAutoConfiguration.class,
+				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
+		.withUserConfiguration(Config.class)
+		.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
+				"spring.ai.vectorstore.pgvector.initialize-schema=true",
+				// JdbcTemplate configuration
+				String.format("spring.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
+						postgresContainer.getMappedPort(5432), postgresContainer.getDatabaseName()),
+				"spring.datasource.username=" + postgresContainer.getUsername(),
+				"spring.datasource.password=" + postgresContainer.getPassword());
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
@@ -76,22 +89,17 @@ public class PgVectorStoreAutoConfigurationIT {
 		}
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(PgVectorStoreAutoConfiguration.class,
-				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
-		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
-				"spring.ai.vectorstore.pgvector.initialize-schema=true",
-				// JdbcTemplate configuration
-				String.format("spring.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
-						postgresContainer.getMappedPort(5432), postgresContainer.getDatabaseName()),
-				"spring.datasource.username=" + postgresContainer.getUsername(),
-				"spring.datasource.password=" + postgresContainer.getPassword());
+	private static boolean isFullyQualifiedTableExists(ApplicationContext context, String schemaName,
+			String tableName) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		String sql = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = ? AND table_name = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, schemaName, tableName);
+	}
 
 	@Test
 	public void addAndSearch() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
@@ -100,7 +108,7 @@ public class PgVectorStoreAutoConfigurationIT {
 					PgVectorStore.DEFAULT_TABLE_NAME))
 				.isTrue();
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.PG_VECTOR,
 					VectorStoreObservationContext.Operation.ADD);
@@ -111,7 +119,7 @@ public class PgVectorStoreAutoConfigurationIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getMetadata()).containsKeys("depression", "distance");
 
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.PG_VECTOR,
@@ -119,7 +127,7 @@ public class PgVectorStoreAutoConfigurationIT {
 			observationRegistry.clear();
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.PG_VECTOR,
 					VectorStoreObservationContext.Operation.DELETE);
@@ -136,7 +144,7 @@ public class PgVectorStoreAutoConfigurationIT {
 		String schemaName = schemaTableName.split(":")[0];
 		String tableName = schemaTableName.split(":")[1];
 
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("spring.ai.vectorstore.pgvector.schema-name=" + schemaName,
 					"spring.ai.vectorstore.pgvector.table-name=" + tableName)
 			.run(context -> {
@@ -150,7 +158,7 @@ public class PgVectorStoreAutoConfigurationIT {
 		String schemaName = schemaTableName.split(":")[0];
 		String tableName = schemaTableName.split(":")[1];
 
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("spring.ai.vectorstore.pgvector.schema-name=" + schemaName,
 					"spring.ai.vectorstore.pgvector.table-name=" + tableName,
 					"spring.ai.vectorstore.pgvector.initialize-schema=false")
@@ -172,13 +180,6 @@ public class PgVectorStoreAutoConfigurationIT {
 			return new TransformersEmbeddingModel();
 		}
 
-	}
-
-	private static boolean isFullyQualifiedTableExists(ApplicationContext context, String schemaName,
-			String tableName) {
-		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
-		String sql = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = ? AND table_name = ?)";
-		return jdbcTemplate.queryForObject(sql, Boolean.class, schemaName, tableName);
 	}
 
 }

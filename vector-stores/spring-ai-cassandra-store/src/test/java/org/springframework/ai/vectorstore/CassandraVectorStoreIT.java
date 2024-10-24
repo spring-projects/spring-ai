@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
@@ -29,11 +30,11 @@ import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.CassandraImage;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.springframework.ai.CassandraImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -84,6 +85,26 @@ class CassandraVectorStoreIT {
 		}
 	}
 
+	private static CassandraVectorStoreConfig.Builder storeBuilder(CqlSession cqlSession) {
+		return CassandraVectorStoreConfig.builder()
+			.withCqlSession(cqlSession)
+			.withKeyspaceName("test_" + CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
+	}
+
+	private static CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
+		CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
+			.addMetadataColumns(metadataFields);
+
+		return createTestStore(context, builder);
+	}
+
+	private static CassandraVectorStore createTestStore(ApplicationContext context,
+			CassandraVectorStoreConfig.Builder builder) {
+		CassandraVectorStoreConfig conf = builder.build();
+		conf.dropKeyspace();
+		return new CassandraVectorStore(conf, context.getBean(EmbeddingModel.class));
+	}
+
 	@Test
 	void ensureBeanGetsCreated() {
 		this.contextRunner.run(context -> {
@@ -96,7 +117,7 @@ class CassandraVectorStoreIT {
 
 	@Test
 	void addAndSearch() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = createTestStore(context, new SchemaColumn("meta1", DataTypes.TEXT),
 					new SchemaColumn("meta2", DataTypes.TEXT))) {
 
@@ -132,7 +153,7 @@ class CassandraVectorStoreIT {
 
 	@Test
 	void addAndSearchReturnEmbeddings() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
 				.returnEmbeddings();
 
@@ -168,7 +189,7 @@ class CassandraVectorStoreIT {
 
 	@Test
 	void searchWithPartitionFilter() throws InterruptedException {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			try (CassandraVectorStore store = createTestStore(context,
 					new SchemaColumn("year", DataTypes.SMALLINT, SchemaColumnTags.INDEXED))) {
@@ -224,7 +245,7 @@ class CassandraVectorStoreIT {
 
 	@Test
 	void unsearchableFilters() throws InterruptedException {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = context.getBean(CassandraVectorStore.class)) {
 
 				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
@@ -251,7 +272,7 @@ class CassandraVectorStoreIT {
 
 	@Test
 	void searchWithFilters() throws InterruptedException {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			try (CassandraVectorStore store = createTestStore(context,
 					new SchemaColumn("country", DataTypes.TEXT, SchemaColumnTags.INDEXED),
@@ -314,7 +335,7 @@ class CassandraVectorStoreIT {
 
 	@Test
 	void documentUpdate() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = context.getBean(CassandraVectorStore.class)) {
 
 				Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
@@ -351,7 +372,7 @@ class CassandraVectorStoreIT {
 
 	@Test
 	void searchWithThreshold() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = context.getBean(CassandraVectorStore.class)) {
 				store.add(documents());
 
@@ -412,26 +433,6 @@ class CassandraVectorStoreIT {
 				.build();
 		}
 
-	}
-
-	private static CassandraVectorStoreConfig.Builder storeBuilder(CqlSession cqlSession) {
-		return CassandraVectorStoreConfig.builder()
-			.withCqlSession(cqlSession)
-			.withKeyspaceName("test_" + CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
-	}
-
-	private static CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
-		CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
-			.addMetadataColumns(metadataFields);
-
-		return createTestStore(context, builder);
-	}
-
-	private static CassandraVectorStore createTestStore(ApplicationContext context,
-			CassandraVectorStoreConfig.Builder builder) {
-		CassandraVectorStoreConfig conf = builder.build();
-		conf.dropKeyspace();
-		return new CassandraVectorStore(conf, context.getBean(EmbeddingModel.class));
 	}
 
 }

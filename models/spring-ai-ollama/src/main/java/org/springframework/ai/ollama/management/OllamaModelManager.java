@@ -1,31 +1,33 @@
 /*
-* Copyright 2024 - 2024 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.ollama.management;
+
+import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.util.retry.Retry;
+
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.DeleteModelRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ListModelResponse;
 import org.springframework.ai.ollama.api.OllamaApi.PullModelRequest;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import reactor.util.retry.Retry;
-
-import java.time.Duration;
 
 /**
  * Manage the lifecycle of models in Ollama.
@@ -57,7 +59,7 @@ public class OllamaModelManager {
 
 	public boolean isModelAvailable(String modelName) {
 		Assert.hasText(modelName, "modelName must not be empty");
-		ListModelResponse listModelResponse = ollamaApi.listModels();
+		ListModelResponse listModelResponse = this.ollamaApi.listModels();
 		if (!CollectionUtils.isEmpty(listModelResponse.models())) {
 			var normalizedModelName = normalizeModelName(modelName);
 			return listModelResponse.models().stream().anyMatch(m -> m.name().equals(normalizedModelName));
@@ -79,17 +81,17 @@ public class OllamaModelManager {
 	}
 
 	public void deleteModel(String modelName) {
-		logger.info("Start deletion of model: {}", modelName);
+		this.logger.info("Start deletion of model: {}", modelName);
 		if (!isModelAvailable(modelName)) {
-			logger.info("Model {} not found", modelName);
+			this.logger.info("Model {} not found", modelName);
 			return;
 		}
 		this.ollamaApi.deleteModel(new DeleteModelRequest(modelName));
-		logger.info("Completed deletion of model: {}", modelName);
+		this.logger.info("Completed deletion of model: {}", modelName);
 	}
 
 	public void pullModel(String modelName) {
-		pullModel(modelName, options.pullModelStrategy());
+		pullModel(modelName, this.options.pullModelStrategy());
 	}
 
 	public void pullModel(String modelName, PullModelStrategy pullModelStrategy) {
@@ -99,27 +101,27 @@ public class OllamaModelManager {
 
 		if (PullModelStrategy.WHEN_MISSING.equals(pullModelStrategy)) {
 			if (isModelAvailable(modelName)) {
-				logger.debug("Model '{}' already available. Skipping pull operation.", modelName);
+				this.logger.debug("Model '{}' already available. Skipping pull operation.", modelName);
 				return;
 			}
 		}
 
 		// @formatter:off
 
-		logger.info("Start pulling model: {}", modelName);
+		this.logger.info("Start pulling model: {}", modelName);
 		this.ollamaApi.pullModel(new PullModelRequest(modelName))
 				.bufferUntilChanged(OllamaApi.ProgressResponse::status)
 				.doOnEach(signal -> {
 					var progressResponses = signal.get();
 					if (!CollectionUtils.isEmpty(progressResponses) && progressResponses.get(progressResponses.size() - 1) != null) {
-						logger.info("Pulling the '{}' model - Status: {}", modelName, progressResponses.get(progressResponses.size() - 1).status());
+						this.logger.info("Pulling the '{}' model - Status: {}", modelName, progressResponses.get(progressResponses.size() - 1).status());
 					}
 				})
 				.takeUntil(progressResponses -> progressResponses.get(0) != null && progressResponses.get(0).status().equals("success"))
-				.timeout(options.timeout())
-				.retryWhen(Retry.backoff(options.maxRetries(), Duration.ofSeconds(5)))
+				.timeout(this.options.timeout())
+				.retryWhen(Retry.backoff(this.options.maxRetries(), Duration.ofSeconds(5)))
 				.blockLast();
-		logger.info("Completed pulling the '{}' model", modelName);
+		this.logger.info("Completed pulling the '{}' model", modelName);
 
 		// @formatter:on
 	}

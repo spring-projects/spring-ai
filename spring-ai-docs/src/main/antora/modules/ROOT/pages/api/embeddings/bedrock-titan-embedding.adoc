@@ -170,9 +170,9 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 var titanEmbeddingApi = new TitanEmbeddingBedrockApi(
 	TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id());
 
-var embeddingModel = new BedrockTitanEmbeddingModel(titanEmbeddingApi);
+var embeddingModel = new BedrockTitanEmbeddingModel(this.titanEmbeddingApi);
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World")); // NOTE titan does not support batch embedding.
 ----
 
@@ -197,7 +197,7 @@ TitanEmbeddingRequest request = TitanEmbeddingRequest.builder()
 	.withInputText("I like to eat apples.")
 	.build();
 
-TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
+TitanEmbeddingResponse response = this.titanEmbedApi.embedding(this.request);
 ----
 
 To embed an image you need to convert it into `base64` format:
@@ -213,8 +213,8 @@ byte[] image = new DefaultResourceLoader()
 
 
 TitanEmbeddingRequest request = TitanEmbeddingRequest.builder()
-	.withInputImage(Base64.getEncoder().encodeToString(image))
+	.withInputImage(Base64.getEncoder().encodeToString(this.image))
 	.build();
 
-TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
+TitanEmbeddingResponse response = this.titanEmbedApi.embedding(this.request);
 ----

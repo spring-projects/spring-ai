@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mistralai;
 
 import java.util.Arrays;
@@ -27,11 +28,8 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -57,14 +55,11 @@ class MistralAiChatClientIT {
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
 
-	record ActorsFilms(String actor, List<String> movies) {
-	}
-
 	@Test
 	void call() {
 		// @formatter:off
-		ChatResponse response = ChatClient.create(chatModel).prompt()
-				.system(s -> s.text(systemTextResource)
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
+				.system(s -> s.text(this.systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
@@ -81,8 +76,8 @@ class MistralAiChatClientIT {
 	void testMessageHistory() {
 
 		// @formatter:off
-		ChatResponse response = ChatClient.create(chatModel).prompt()
-				.system(s -> s.text(systemTextResource)
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
+				.system(s -> s.text(this.systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
@@ -92,7 +87,7 @@ class MistralAiChatClientIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
 
 		// @formatter:off
-		response = ChatClient.create(chatModel).prompt()
+		response = ChatClient.create(this.chatModel).prompt()
 				.messages(List.of(new UserMessage("Dummy"), response.getResult().getOutput()))
 				.user("Repeat the last assistant message.")
 				.call()
@@ -107,7 +102,7 @@ class MistralAiChatClientIT {
 	@Test
 	void listOutputConverterString() {
 		// @formatter:off
-		List<String> collection = ChatClient.create(chatModel).prompt()
+		List<String> collection = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
@@ -122,7 +117,7 @@ class MistralAiChatClientIT {
 	void listOutputConverterBean() {
 
 		// @formatter:off
-		List<ActorsFilms> actorsFilms = ChatClient.create(chatModel).prompt()
+		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
 				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
@@ -139,7 +134,7 @@ class MistralAiChatClientIT {
 		var toStringListConverter = new ListOutputConverter(new DefaultConversionService());
 
 		// @formatter:off
-		List<String> flavors = ChatClient.create(chatModel).prompt()
+		List<String> flavors = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("List 10 {subject}")
 				.param("subject", "ice cream flavors"))
 				.call()
@@ -154,7 +149,7 @@ class MistralAiChatClientIT {
 	@Test
 	void mapOutputConverter() {
 		// @formatter:off
-		Map<String, Object> result = ChatClient.create(chatModel).prompt()
+		Map<String, Object> result = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
@@ -169,7 +164,7 @@ class MistralAiChatClientIT {
 	void beanOutputConverter() {
 
 		// @formatter:off
-		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography for a random actor.")
 				.call()
 				.entity(ActorsFilms.class);
@@ -183,7 +178,7 @@ class MistralAiChatClientIT {
 	void beanOutputConverterRecords() {
 
 		// @formatter:off
-		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks.")
 				.call()
 				.entity(ActorsFilms.class);
@@ -200,7 +195,7 @@ class MistralAiChatClientIT {
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
 		// @formatter:off
-		Flux<String> chatResponse = ChatClient.create(chatModel)
+		Flux<String> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
@@ -226,7 +221,7 @@ class MistralAiChatClientIT {
 	void functionCallTest() {
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
+		String response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).withToolChoice(ToolChoice.AUTO).build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
@@ -245,7 +240,7 @@ class MistralAiChatClientIT {
 	void defaultFunctionCallTest() {
 
 		// @formatter:off
-		String response = ChatClient.builder(chatModel)
+		String response = ChatClient.builder(this.chatModel)
 				.defaultOptions(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
 				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
@@ -264,7 +259,7 @@ class MistralAiChatClientIT {
 	void streamFunctionCallTest() {
 
 		// @formatter:off
-		Flux<String> response = ChatClient.create(chatModel).prompt()
+		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
@@ -284,7 +279,7 @@ class MistralAiChatClientIT {
 	void validateCallResponseMetadata() {
 		String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getName();
 		// @formatter:off
-		ChatResponse response = ChatClient.create(chatModel).prompt()
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().withModel(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
@@ -297,6 +292,10 @@ class MistralAiChatClientIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	record ActorsFilms(String actor, List<String> movies) {
+
 	}
 
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,14 @@
 
 package org.springframework.ai.vectorstore;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import io.micrometer.observation.ObservationRegistry;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -30,6 +38,7 @@ import org.opensearch.client.opensearch.indices.CreateIndexResponse;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -46,15 +55,6 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
-import io.micrometer.observation.ObservationRegistry;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 /**
  * @author Jemin Huh
  * @author Soby Chacko
@@ -66,8 +66,6 @@ import java.util.stream.Collectors;
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
-
-	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
 
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
@@ -82,6 +80,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			}
 			""";
 
+	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
+
 	private final EmbeddingModel embeddingModel;
 
 	private final OpenSearchClient openSearchClient;
@@ -92,11 +92,11 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private final String mappingJson;
 
-	private String similarityFunction;
-
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
+
+	private String similarityFunction;
 
 	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
@@ -245,7 +245,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	}
 
 	private CreateIndexResponse createIndexMapping(String index, String mappingJson) {
-		JsonpMapper jsonpMapper = openSearchClient._transport().jsonpMapper();
+		JsonpMapper jsonpMapper = this.openSearchClient._transport().jsonpMapper();
 		try {
 			return this.openSearchClient.indices()
 				.create(new CreateIndexRequest.Builder().index(index)

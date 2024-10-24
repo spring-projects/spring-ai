@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.prompt;
 
 import java.io.IOException;
@@ -30,21 +31,21 @@ import org.antlr.runtime.TokenStream;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
-import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.Media;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
 public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
-	private ST st;
-
-	private Map<String, Object> dynamicModel = new HashMap<>();
-
 	protected String template;
 
 	protected TemplateFormat templateFormat = TemplateFormat.ST;
+
+	private ST st;
+
+	private Map<String, Object> dynamicModel = new HashMap<>();
 
 	public PromptTemplate(Resource resource) {
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -122,7 +123,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	@Override
 	public String render() {
 		validate(this.dynamicModel);
-		return st.render();
+		return this.st.render();
 	}
 
 	@Override

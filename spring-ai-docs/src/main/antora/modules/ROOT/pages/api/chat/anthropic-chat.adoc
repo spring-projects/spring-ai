@@ -161,9 +161,9 @@ Below is a simple code example extracted from https://github.com/spring-projects
 byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByteArray();
 
 var userMessage = new UserMessage("Explain what do you see on this picture?",
-        List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+        List.of(new Media(MimeTypeUtils.IMAGE_PNG, this.imageData)));
 
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage)));
 
 logger.info(response.getResult().getOutput().getContent());
 ----
@@ -219,13 +219,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -261,18 +261,18 @@ Next, create a `AnthropicChatModel` and use it for text generations:
 ----
 var anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
 
-var chatModel = new AnthropicChatModel(anthropicApi,
+var chatModel = new AnthropicChatModel(this.anthropicApi,
         AnthropicChatOptions.builder()
             .withModel("claude-3-opus-20240229")
             .withTemperature(0.4)
             .withMaxTokens(200)
         .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -300,14 +300,14 @@ AnthropicMessage chatCompletionMessage = new AnthropicMessage(
         List.of(new ContentBlock("Tell me a Joke?")), Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletionResponse> response = anthropicApi
+ResponseEntity<ChatCompletionResponse> response = this.anthropicApi
     .chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-            List.of(chatCompletionMessage), null, 100, 0.8, false));
+            List.of(this.chatCompletionMessage), null, 100, 0.8, false));
 
 // Streaming request
-Flux<StreamResponse> response = anthropicApi
+Flux<StreamResponse> response = this.anthropicApi
     .chatCompletionStream(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-            List.of(chatCompletionMessage), null, 100, 0.8, true));
+            List.of(this.chatCompletionMessage), null, 100, 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/api/AnthropicApi.java[AnthropicApi.java]'s JavaDoc for further information.

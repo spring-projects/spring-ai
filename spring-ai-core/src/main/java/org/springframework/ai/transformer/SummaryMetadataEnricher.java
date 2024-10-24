@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.transformer;
 
 import java.util.ArrayList;
@@ -21,11 +22,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -38,14 +39,6 @@ import org.springframework.util.CollectionUtils;
  */
 public class SummaryMetadataEnricher implements DocumentTransformer {
 
-	private static final String SECTION_SUMMARY_METADATA_KEY = "section_summary";
-
-	private static final String NEXT_SECTION_SUMMARY_METADATA_KEY = "next_section_summary";
-
-	private static final String PREV_SECTION_SUMMARY_METADATA_KEY = "prev_section_summary";
-
-	private static final String CONTEXT_STR_PLACEHOLDER = "context_str";
-
 	public static final String DEFAULT_SUMMARY_EXTRACT_TEMPLATE = """
 			Here is the content of the section:
 			{context_str}
@@ -54,11 +47,13 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 
 			Summary:""";
 
-	public enum SummaryType {
+	private static final String SECTION_SUMMARY_METADATA_KEY = "section_summary";
 
-		PREVIOUS, CURRENT, NEXT
+	private static final String NEXT_SECTION_SUMMARY_METADATA_KEY = "next_section_summary";
 
-	}
+	private static final String PREV_SECTION_SUMMARY_METADATA_KEY = "prev_section_summary";
+
+	private static final String CONTEXT_STR_PLACEHOLDER = "context_str";
 
 	/**
 	 * AI client.
@@ -125,6 +120,12 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 			summaryMetadata.put(SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i));
 		}
 		return summaryMetadata;
+	}
+
+	public enum SummaryType {
+
+		PREVIOUS, CURRENT, NEXT
+
 	}
 
 }

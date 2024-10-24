@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.qianfan;
+
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.qianfan.api.QianFanApi;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-
-import java.util.List;
 
 /**
  * QianFanChatOptions represents the options for performing chat completion using the
@@ -85,62 +87,17 @@ public class QianFanChatOptions implements ChatOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		protected QianFanChatOptions options;
-
-		public Builder() {
-			this.options = new QianFanChatOptions();
-		}
-
-		public Builder(QianFanChatOptions options) {
-			this.options = options;
-		}
-
-		public Builder withModel(String model) {
-			this.options.model = model;
-			return this;
-		}
-
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
-
-		public Builder withMaxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		public Builder withPresencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
-
-		public Builder withResponseFormat(QianFanApi.ChatCompletionRequest.ResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		public Builder withStop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
-		}
-
-		public Builder withTemperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public QianFanChatOptions build() {
-			return this.options;
-		}
-
+	public static QianFanChatOptions fromOptions(QianFanChatOptions fromOptions) {
+		return QianFanChatOptions.builder()
+			.withModel(fromOptions.getModel())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withResponseFormat(fromOptions.getResponseFormat())
+			.withStop(fromOptions.getStop())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.build();
 	}
 
 	@Override
@@ -234,74 +191,93 @@ public class QianFanChatOptions implements ChatOptions {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((frequencyPenalty == null) ? 0 : frequencyPenalty.hashCode());
-		result = prime * result + ((maxTokens == null) ? 0 : maxTokens.hashCode());
-		result = prime * result + ((presencePenalty == null) ? 0 : presencePenalty.hashCode());
-		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
-		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
-		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
-		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
+		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
+		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
+		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
+		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
+		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
+		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
+		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
+		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
 		return result;
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		QianFanChatOptions other = (QianFanChatOptions) obj;
 		if (this.model == null) {
-			if (other.model != null)
+			if (other.model != null) {
 				return false;
+			}
 		}
-		else if (!model.equals(other.model))
+		else if (!this.model.equals(other.model)) {
 			return false;
+		}
 		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null)
+			if (other.frequencyPenalty != null) {
 				return false;
+			}
 		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty))
+		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
 			return false;
+		}
 		if (this.maxTokens == null) {
-			if (other.maxTokens != null)
+			if (other.maxTokens != null) {
 				return false;
+			}
 		}
-		else if (!this.maxTokens.equals(other.maxTokens))
+		else if (!this.maxTokens.equals(other.maxTokens)) {
 			return false;
+		}
 		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null)
+			if (other.presencePenalty != null) {
 				return false;
+			}
 		}
-		else if (!this.presencePenalty.equals(other.presencePenalty))
+		else if (!this.presencePenalty.equals(other.presencePenalty)) {
 			return false;
+		}
 		if (this.responseFormat == null) {
-			if (other.responseFormat != null)
+			if (other.responseFormat != null) {
 				return false;
+			}
 		}
-		else if (!this.responseFormat.equals(other.responseFormat))
+		else if (!this.responseFormat.equals(other.responseFormat)) {
 			return false;
+		}
 		if (this.stop == null) {
-			if (other.stop != null)
+			if (other.stop != null) {
 				return false;
+			}
 		}
-		else if (!stop.equals(other.stop))
+		else if (!this.stop.equals(other.stop)) {
 			return false;
+		}
 		if (this.temperature == null) {
-			if (other.temperature != null)
+			if (other.temperature != null) {
 				return false;
+			}
 		}
-		else if (!this.temperature.equals(other.temperature))
+		else if (!this.temperature.equals(other.temperature)) {
 			return false;
+		}
 		if (this.topP == null) {
-			if (other.topP != null)
+			if (other.topP != null) {
 				return false;
+			}
 		}
-		else if (!topP.equals(other.topP))
+		else if (!this.topP.equals(other.topP)) {
 			return false;
+		}
 		return true;
 	}
 
@@ -310,17 +286,62 @@ public class QianFanChatOptions implements ChatOptions {
 		return fromOptions(this);
 	}
 
-	public static QianFanChatOptions fromOptions(QianFanChatOptions fromOptions) {
-		return QianFanChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.build();
+	public static class Builder {
+
+		protected QianFanChatOptions options;
+
+		public Builder() {
+			this.options = new QianFanChatOptions();
+		}
+
+		public Builder(QianFanChatOptions options) {
+			this.options = options;
+		}
+
+		public Builder withModel(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder withMaxTokens(Integer maxTokens) {
+			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder withPresencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder withResponseFormat(QianFanApi.ChatCompletionRequest.ResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder withStop(List<String> stop) {
+			this.options.stop = stop;
+			return this;
+		}
+
+		public Builder withTemperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder withTopP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public QianFanChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

@@ -1,10 +1,41 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.vectorstore;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.sql.DataSource;
 
 import oracle.jdbc.pool.OracleDataSource;
 import org.junit.Assert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.oracle.OracleContainer;
+import org.testcontainers.utility.MountableFile;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -22,19 +53,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.oracle.OracleContainer;
-import org.testcontainers.utility.MountableFile;
-
-import javax.sql.DataSource;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY;
@@ -51,15 +69,6 @@ public class OracleVectorStoreIT {
 			new Document(getText("classpath:/test/data/time.shelter.txt")),
 			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
-	public static String getText(final String uri) {
-		try {
-			return new DefaultResourceLoader().getResource(uri).getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestClient.class)
 		.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
@@ -70,52 +79,13 @@ public class OracleVectorStoreIT {
 				String.format("app.datasource.password=%s", oracle23aiContainer.getPassword()),
 				"app.datasource.type=oracle.jdbc.pool.OracleDataSource");
 
-	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
-	public static class TestClient {
-
-		@Value("${test.spring.ai.vectorstore.oracle.distanceType}")
-		OracleVectorStore.OracleVectorStoreDistanceType distanceType;
-
-		@Value("${test.spring.ai.vectorstore.oracle.searchAccuracy}")
-		int searchAccuracy;
-
-		@Bean
-		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return new OracleVectorStore(jdbcTemplate, embeddingModel, OracleVectorStore.DEFAULT_TABLE_NAME,
-					OracleVectorStore.OracleVectorStoreIndexType.IVF, distanceType, 384, searchAccuracy, true, true,
-					true);
+	public static String getText(final String uri) {
+		try {
+			return new DefaultResourceLoader().getResource(uri).getContentAsString(StandardCharsets.UTF_8);
 		}
-
-		@Bean
-		public JdbcTemplate myJdbcTemplate(DataSource dataSource) {
-			return new JdbcTemplate(dataSource);
+		catch (IOException e) {
+			throw new RuntimeException(e);
 		}
-
-		@Bean
-		@Primary
-		@ConfigurationProperties("app.datasource")
-		public DataSourceProperties dataSourceProperties() {
-			return new DataSourceProperties();
-		}
-
-		@Bean
-		public OracleDataSource dataSource(DataSourceProperties dataSourceProperties) {
-			return dataSourceProperties.initializeDataSourceBuilder().type(OracleDataSource.class).build();
-		}
-
-		@Bean
-		public EmbeddingModel embeddingModel() {
-			try {
-				TransformersEmbeddingModel tem = new TransformersEmbeddingModel();
-				tem.afterPropertiesSet();
-				return tem;
-			}
-			catch (Exception e) {
-				throw new RuntimeException("Failed initializing embedding model", e);
-			}
-		}
-
 	}
 
 	private static void dropTable(ApplicationContext context, String tableName) {
@@ -123,27 +93,49 @@ public class OracleVectorStoreIT {
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + tableName + " PURGE");
 	}
 
+	private static boolean isSortedByDistance(final List<Document> documents) {
+		final List<Double> distances = documents.stream()
+			.map(doc -> (Double) doc.getMetadata().get("distance"))
+			.toList();
+
+		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
+			return true;
+		}
+
+		Iterator<Double> iter = distances.iterator();
+		Double current;
+		Double previous = iter.next();
+		while (iter.hasNext()) {
+			current = iter.next();
+			if (previous > current) {
+				return false;
+			}
+			previous = current;
+		}
+		return true;
+	}
+
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
 	public void addAndSearch(String distanceType) {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-				vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
 				List<Document> results = vectorStore
 					.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
@@ -157,7 +149,7 @@ public class OracleVectorStoreIT {
 	@CsvSource({ "COSINE,-1", "DOT,-1", "EUCLIDEAN,-1", "EUCLIDEAN_SQUARED,-1", "MANHATTAN,-1", "COSINE,75", "DOT,80",
 			"EUCLIDEAN,60", "EUCLIDEAN_SQUARED,30", "MANHATTAN,42" })
 	public void searchWithFilters(String distanceType, int searchAccuracy) {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + searchAccuracy)
 			.run(context -> {
 
@@ -231,7 +223,7 @@ public class OracleVectorStoreIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
 	public void documentUpdate(String distanceType) {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -270,13 +262,13 @@ public class OracleVectorStoreIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "DOT" })
 	public void searchWithThreshold(String distanceType) {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-				vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
 				List<Document> fullResult = vectorStore
 					.similaritySearch(SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThresholdAll());
@@ -296,32 +288,58 @@ public class OracleVectorStoreIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
 			});
 	}
 
-	private static boolean isSortedByDistance(final List<Document> documents) {
-		final List<Double> distances = documents.stream()
-			.map(doc -> (Double) doc.getMetadata().get("distance"))
-			.toList();
+	@SpringBootConfiguration
+	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	public static class TestClient {
 
-		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
-			return true;
+		@Value("${test.spring.ai.vectorstore.oracle.distanceType}")
+		OracleVectorStore.OracleVectorStoreDistanceType distanceType;
+
+		@Value("${test.spring.ai.vectorstore.oracle.searchAccuracy}")
+		int searchAccuracy;
+
+		@Bean
+		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+			return new OracleVectorStore(jdbcTemplate, embeddingModel, OracleVectorStore.DEFAULT_TABLE_NAME,
+					OracleVectorStore.OracleVectorStoreIndexType.IVF, this.distanceType, 384, this.searchAccuracy, true,
+					true, true);
 		}
 
-		Iterator<Double> iter = distances.iterator();
-		Double current;
-		Double previous = iter.next();
-		while (iter.hasNext()) {
-			current = iter.next();
-			if (previous > current) {
-				return false;
+		@Bean
+		public JdbcTemplate myJdbcTemplate(DataSource dataSource) {
+			return new JdbcTemplate(dataSource);
+		}
+
+		@Bean
+		@Primary
+		@ConfigurationProperties("app.datasource")
+		public DataSourceProperties dataSourceProperties() {
+			return new DataSourceProperties();
+		}
+
+		@Bean
+		public OracleDataSource dataSource(DataSourceProperties dataSourceProperties) {
+			return dataSourceProperties.initializeDataSourceBuilder().type(OracleDataSource.class).build();
+		}
+
+		@Bean
+		public EmbeddingModel embeddingModel() {
+			try {
+				TransformersEmbeddingModel tem = new TransformersEmbeddingModel();
+				tem.afterPropertiesSet();
+				return tem;
 			}
-			previous = current;
+			catch (Exception e) {
+				throw new RuntimeException("Failed initializing embedding model", e);
+			}
 		}
-		return true;
+
 	}
 
 }

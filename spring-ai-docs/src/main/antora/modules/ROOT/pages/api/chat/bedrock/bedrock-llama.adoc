@@ -145,13 +145,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -191,17 +191,17 @@ LlamaChatBedrockApi api = new LlamaChatBedrockApi(LlamaChatModel.LLAMA2_70B_CHAT
 	new ObjectMapper(),
 	Duration.ofMillis(1000L));
 
-BedrockLlamaChatModel chatModel = new BedrockLlamaChatModel(api,
+BedrockLlamaChatModel chatModel = new BedrockLlamaChatModel(this.api,
     BedrockLlamaChatOptions.builder()
         .withTemperature(0.5)
         .withMaxGenLen(100)
         .withTopP(0.9).build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -230,11 +230,11 @@ LlamaChatRequest request = LlamaChatRequest.builder("Hello, my name is")
 		.withMaxGenLen(20)
 		.build();
 
-LlamaChatResponse response = llamaChatApi.chatCompletion(request);
+LlamaChatResponse response = this.llamaChatApi.chatCompletion(this.request);
 
 // Streaming response
-Flux<LlamaChatResponse> responseStream = llamaChatApi.chatCompletionStream(request);
-List<LlamaChatResponse> responses = responseStream.collectList().block();
+Flux<LlamaChatResponse> responseStream = this.llamaChatApi.chatCompletionStream(this.request);
+List<LlamaChatResponse> responses = this.responseStream.collectList().block();
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama/api/LlamaChatBedrockApi.java[LlamaChatBedrockApi.java]'s JavaDoc for further information.

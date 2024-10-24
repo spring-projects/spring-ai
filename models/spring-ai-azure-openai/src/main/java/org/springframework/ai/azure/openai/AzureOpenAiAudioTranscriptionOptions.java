@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
+
+import java.util.List;
 
 import com.azure.ai.openai.models.AudioTranscriptionFormat;
 import com.azure.ai.openai.models.AudioTranscriptionTimestampGranularity;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.util.Assert;
-
-import java.util.List;
 
 /**
  * @author Piotr Olaszewski
@@ -64,6 +66,171 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public String getDeploymentName() {
+		return this.deploymentName;
+	}
+
+	public void setDeploymentName(String deploymentName) {
+		this.deploymentName = deploymentName;
+	}
+
+	public String getLanguage() {
+		return this.language;
+	}
+
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+
+	public String getPrompt() {
+		return this.prompt;
+	}
+
+	public void setPrompt(String prompt) {
+		this.prompt = prompt;
+	}
+
+	public Float getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(Float temperature) {
+		this.temperature = temperature;
+	}
+
+	public TranscriptResponseFormat getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(TranscriptResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+
+	public List<GranularityType> getGranularityType() {
+		return this.granularityType;
+	}
+
+	public void setGranularityType(List<GranularityType> granularityType) {
+		this.granularityType = granularityType;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
+		result = prime * result + ((this.prompt == null) ? 0 : this.prompt.hashCode());
+		result = prime * result + ((this.language == null) ? 0 : this.language.hashCode());
+		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		AzureOpenAiAudioTranscriptionOptions other = (AzureOpenAiAudioTranscriptionOptions) obj;
+		if (this.model == null) {
+			if (other.model != null)
+				return false;
+		}
+		else if (!this.model.equals(other.model))
+			return false;
+		if (this.prompt == null) {
+			if (other.prompt != null)
+				return false;
+		}
+		else if (!this.prompt.equals(other.prompt))
+			return false;
+		if (this.language == null) {
+			if (other.language != null)
+				return false;
+		}
+		else if (!this.language.equals(other.language))
+			return false;
+		if (this.responseFormat == null) {
+			return other.responseFormat==null;
+		}
+		else return this.responseFormat.equals(other.responseFormat);
+	}
+
+	public enum WhisperModel {
+
+		// @formatter:off
+		@JsonProperty("whisper") WHISPER("whisper");
+		// @formatter:on
+
+		public final String value;
+
+		WhisperModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	public enum TranscriptResponseFormat {
+
+		// @formatter:off
+		@JsonProperty("json") JSON(AudioTranscriptionFormat.JSON, StructuredResponse.class),
+		@JsonProperty("text") TEXT(AudioTranscriptionFormat.TEXT, String.class),
+		@JsonProperty("srt") SRT(AudioTranscriptionFormat.SRT, String.class),
+		@JsonProperty("verbose_json") VERBOSE_JSON(AudioTranscriptionFormat.VERBOSE_JSON, StructuredResponse.class),
+		@JsonProperty("vtt") VTT(AudioTranscriptionFormat.VTT, String.class);
+
+		public final AudioTranscriptionFormat value;
+
+		public final Class<?> responseType;
+
+		TranscriptResponseFormat(AudioTranscriptionFormat value, Class<?> responseType) {
+			this.value = value;
+			this.responseType = responseType;
+		}
+
+		public AudioTranscriptionFormat getValue() {
+			return this.value;
+		}
+
+		public Class<?> getResponseType() {
+			return this.responseType;
+		}
+	}
+
+	public enum GranularityType {
+
+		// @formatter:off
+		@JsonProperty("word") WORD(AudioTranscriptionTimestampGranularity.WORD),
+		@JsonProperty("segment") SEGMENT(AudioTranscriptionTimestampGranularity.SEGMENT);
+		// @formatter:on
+
+		public final AudioTranscriptionTimestampGranularity value;
+
+		GranularityType(AudioTranscriptionTimestampGranularity value) {
+			this.value = value;
+		}
+
+		public AudioTranscriptionTimestampGranularity getValue() {
+			return this.value;
+		}
+
 	}
 
 	public static class Builder {
@@ -114,130 +281,10 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		}
 
 		public AzureOpenAiAudioTranscriptionOptions build() {
-			Assert.hasText(options.model, "model must not be empty");
-			Assert.notNull(options.responseFormat, "response_format must not be null");
+			Assert.hasText(this.options.model, "model must not be empty");
+			Assert.notNull(this.options.responseFormat, "response_format must not be null");
 
 			return this.options;
-		}
-
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public String getDeploymentName() {
-		return deploymentName;
-	}
-
-	public void setDeploymentName(String deploymentName) {
-		this.deploymentName = deploymentName;
-	}
-
-	public String getLanguage() {
-		return this.language;
-	}
-
-	public void setLanguage(String language) {
-		this.language = language;
-	}
-
-	public String getPrompt() {
-		return this.prompt;
-	}
-
-	public void setPrompt(String prompt) {
-		this.prompt = prompt;
-	}
-
-	public Float getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-
-	public TranscriptResponseFormat getResponseFormat() {
-		return this.responseFormat;
-	}
-
-	public void setResponseFormat(TranscriptResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	public List<GranularityType> getGranularityType() {
-		return this.granularityType;
-	}
-
-	public void setGranularityType(List<GranularityType> granularityType) {
-		this.granularityType = granularityType;
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((prompt == null) ? 0 : prompt.hashCode());
-		result = prime * result + ((language == null) ? 0 : language.hashCode());
-		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		AzureOpenAiAudioTranscriptionOptions other = (AzureOpenAiAudioTranscriptionOptions) obj;
-		if (this.model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (this.prompt == null) {
-			if (other.prompt != null)
-				return false;
-		}
-		else if (!this.prompt.equals(other.prompt))
-			return false;
-		if (this.language == null) {
-			if (other.language != null)
-				return false;
-		}
-		else if (!this.language.equals(other.language))
-			return false;
-		if (this.responseFormat == null) {
-			return other.responseFormat==null;
-		}
-		else return this.responseFormat.equals(other.responseFormat);
-	}
-
-	public enum WhisperModel {
-
-		// @formatter:off
-		@JsonProperty("whisper") WHISPER("whisper");
-		// @formatter:on
-
-		public final String value;
-
-		WhisperModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
 		}
 
 	}
@@ -307,51 +354,6 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 				@JsonProperty("compression_ratio") Float compressionRatio,
 				@JsonProperty("no_speech_prob") Float noSpeechProb) {
 			// @formatter:on
-		}
-	}
-
-	public enum TranscriptResponseFormat {
-
-		// @formatter:off
-		@JsonProperty("json") JSON(AudioTranscriptionFormat.JSON, StructuredResponse.class),
-		@JsonProperty("text") TEXT(AudioTranscriptionFormat.TEXT, String.class),
-		@JsonProperty("srt") SRT(AudioTranscriptionFormat.SRT, String.class),
-		@JsonProperty("verbose_json") VERBOSE_JSON(AudioTranscriptionFormat.VERBOSE_JSON, StructuredResponse.class),
-		@JsonProperty("vtt") VTT(AudioTranscriptionFormat.VTT, String.class);
-
-		public final AudioTranscriptionFormat value;
-
-		public final Class<?> responseType;
-
-		TranscriptResponseFormat(AudioTranscriptionFormat value, Class<?> responseType) {
-			this.value = value;
-			this.responseType = responseType;
-		}
-
-		public AudioTranscriptionFormat getValue() {
-			return this.value;
-		}
-
-		public Class<?> getResponseType() {
-			return this.responseType;
-		}
-	}
-
-	public enum GranularityType {
-
-		// @formatter:off
-		@JsonProperty("word") WORD(AudioTranscriptionTimestampGranularity.WORD),
-		@JsonProperty("segment") SEGMENT(AudioTranscriptionTimestampGranularity.SEGMENT);
-		// @formatter:on
-
-		public final AudioTranscriptionTimestampGranularity value;
-
-		GranularityType(AudioTranscriptionTimestampGranularity value) {
-			this.value = value;
-		}
-
-		public AudioTranscriptionTimestampGranularity getValue() {
-			return this.value;
 		}
 
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.testcontainers.service.connection.opensearch;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+package org.springframework.ai.testcontainers.service.connection.opensearch;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +24,9 @@ import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -39,8 +40,9 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 @SpringBootTest(properties = {
 		"spring.ai.vectorstore.opensearch.index-name=" + OpenSearchContainerConnectionDetailsFactoryTest.DOCUMENT_INDEX,
@@ -50,13 +52,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class OpenSearchContainerConnectionDetailsFactoryTest {
 
-	@Container
-	@ServiceConnection
-	private static final OpensearchContainer<?> opensearch = new OpensearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
-
 	static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
 	static final String MAPPING_JSON = "{\"properties\":{\"embedding\":{\"type\":\"knn_vector\",\"dimension\":384}}}";
+
+	@Container
+	@ServiceConnection
+	private static final OpensearchContainer<?> opensearch = new OpensearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
 
 	private final List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -69,29 +71,29 @@ class OpenSearchContainerConnectionDetailsFactoryTest {
 	@Test
 	public void addAndSearchTest() {
 
-		vectorStore.add(documents);
+		this.vectorStore.add(this.documents);
 
 		Awaitility.await()
-			.until(() -> vectorStore
+			.until(() -> this.vectorStore
 				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
 					hasSize(1));
 
-		List<Document> results = vectorStore
+		List<Document> results = this.vectorStore
 			.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
-		assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+		assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 		assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 		assertThat(resultDoc.getMetadata()).hasSize(2);
 		assertThat(resultDoc.getMetadata()).containsKey("meta2");
 		assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 		// Remove all documents from the store
-		vectorStore.delete(documents.stream().map(Document::getId).toList());
+		this.vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 		Awaitility.await()
-			.until(() -> vectorStore
+			.until(() -> this.vectorStore
 				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
 					hasSize(0));
 	}

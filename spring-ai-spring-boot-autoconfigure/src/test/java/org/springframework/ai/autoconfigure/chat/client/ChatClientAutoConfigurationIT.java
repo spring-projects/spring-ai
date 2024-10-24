@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.chat.client;
 
 import java.util.List;
@@ -50,28 +51,28 @@ public class ChatClientAutoConfigurationIT {
 
 	@Test
 	void implicitlyEnabled() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(ChatClient.Builder.class)).isNotEmpty();
 		});
 	}
 
 	@Test
 	void explicitlyEnabled() {
-		contextRunner.withPropertyValues("spring.ai.chat.client.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.chat.client.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(ChatClient.Builder.class)).isNotEmpty();
 		});
 	}
 
 	@Test
 	void explicitlyDisabled() {
-		contextRunner.withPropertyValues("spring.ai.chat.client.enabled=false").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.chat.client.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(ChatClient.Builder.class)).isEmpty();
 		});
 	}
 
 	@Test
 	void generate() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			ChatClient.Builder builder = context.getBean(ChatClient.Builder.class);
 
 			assertThat(builder).isNotNull();
@@ -87,7 +88,7 @@ public class ChatClientAutoConfigurationIT {
 
 	@Test
 	void testChatClientCustomizers() {
-		contextRunner.withUserConfiguration(Config.class).run(context -> {
+		this.contextRunner.withUserConfiguration(Config.class).run(context -> {
 
 			ChatClient.Builder builder = context.getBean(ChatClient.Builder.class);
 
@@ -107,6 +108,7 @@ public class ChatClientAutoConfigurationIT {
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {
+
 	}
 
 	@Configuration

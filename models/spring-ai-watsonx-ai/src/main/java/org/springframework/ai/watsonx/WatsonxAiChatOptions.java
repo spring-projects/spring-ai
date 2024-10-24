@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.watsonx;
 
 import java.util.HashMap;
@@ -20,13 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -43,6 +45,9 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 // @formatter:off
 
 public class WatsonxAiChatOptions implements ChatOptions {
+
+    @JsonIgnore
+    private final ObjectMapper mapper = new ObjectMapper();
 
     /**
      * The temperature of the model. Increasing the temperature will
@@ -122,12 +127,41 @@ public class WatsonxAiChatOptions implements ChatOptions {
     @JsonProperty("additional")
     private Map<String, Object> additional = new HashMap<>();
 
-    @JsonIgnore
-    private final ObjectMapper mapper = new ObjectMapper();
+	public static Builder builder() {
+		return new Builder();
+	}
+
+    /**
+     * Filter out the non-supported fields from the options.
+     * @param options The options to filter.
+     * @return The filtered options.
+     */
+    public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
+        return options.entrySet().stream()
+                .filter(e -> !e.getKey().equals("model"))
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    public static WatsonxAiChatOptions fromOptions(WatsonxAiChatOptions fromOptions) {
+        return WatsonxAiChatOptions.builder()
+                .withTemperature(fromOptions.getTemperature())
+                .withTopP(fromOptions.getTopP())
+                .withTopK(fromOptions.getTopK())
+                .withDecodingMethod(fromOptions.getDecodingMethod())
+                .withMaxNewTokens(fromOptions.getMaxNewTokens())
+                .withMinNewTokens(fromOptions.getMinNewTokens())
+                .withStopSequences(fromOptions.getStopSequences())
+                .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
+                .withRandomSeed(fromOptions.getRandomSeed())
+                .withModel(fromOptions.getModel())
+                .withAdditionalProperties(fromOptions.getAdditionalProperties())
+                .build();
+    }
 
 	@Override
     public Double getTemperature() {
-        return temperature;
+        return this.temperature;
     }
 
     public void setTemperature(Double temperature) {
@@ -136,7 +170,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 	@Override
     public Double getTopP() {
-        return topP;
+        return this.topP;
     }
 
     public void setTopP(Double topP) {
@@ -145,7 +179,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 	@Override
     public Integer getTopK() {
-        return topK;
+        return this.topK;
     }
 
     public void setTopK(Integer topK) {
@@ -153,7 +187,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     }
 
     public String getDecodingMethod() {
-        return decodingMethod;
+        return this.decodingMethod;
     }
 
     public void setDecodingMethod(String decodingMethod) {
@@ -172,7 +206,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 	}
 
     public Integer getMaxNewTokens() {
-        return maxNewTokens;
+        return this.maxNewTokens;
     }
 
     public void setMaxNewTokens(Integer maxNewTokens) {
@@ -180,7 +214,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     }
 
     public Integer getMinNewTokens() {
-        return minNewTokens;
+        return this.minNewTokens;
     }
 
     public void setMinNewTokens(Integer minNewTokens) {
@@ -189,7 +223,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 	@Override
 	public List<String> getStopSequences() {
-        return stopSequences;
+        return this.stopSequences;
     }
 
     public void setStopSequences(List<String> stopSequences) {
@@ -208,7 +242,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 	}
 
 	public Double getRepetitionPenalty() {
-        return repetitionPenalty;
+        return this.repetitionPenalty;
     }
 
     public void setRepetitionPenalty(Double repetitionPenalty) {
@@ -216,7 +250,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     }
 
     public Integer getRandomSeed() {
-        return randomSeed;
+        return this.randomSeed;
     }
 
     public void setRandomSeed(Integer randomSeed) {
@@ -225,7 +259,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 	@Override
     public String getModel() {
-        return model;
+        return this.model;
     }
 
     public void setModel(String model) {
@@ -234,7 +268,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
-        return additional.entrySet().stream()
+        return this.additional.entrySet().stream()
                 .collect(Collectors.toMap(
                         entry -> toSnakeCase(entry.getKey()),
                         Map.Entry::getValue
@@ -243,7 +277,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
     @JsonAnySetter
     public void addAdditionalProperty(String key, Object value) {
-        additional.put(key, value);
+        this.additional.put(key, value);
     }
 
 	@Override
@@ -252,9 +286,31 @@ public class WatsonxAiChatOptions implements ChatOptions {
     	return null;
     }
 
-	public static Builder builder() {
-		return new Builder();
-	}
+    /**
+     * Convert the {@link WatsonxAiChatOptions} object to a {@link Map} of key/value pairs.
+     * @return The {@link Map} of key/value pairs.
+     */
+    public Map<String, Object> toMap() {
+        try {
+            var json = this.mapper.writeValueAsString(this);
+            var map = this.mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            map.remove("additional");
+
+            return map;
+        }
+        catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String toSnakeCase(String input) {
+        return input != null ? input.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase() : null;
+    }
+
+    @Override
+    public WatsonxAiChatOptions copy() {
+        return fromOptions(this);
+    }
 
     public static class Builder {
 
@@ -323,60 +379,6 @@ public class WatsonxAiChatOptions implements ChatOptions {
         public WatsonxAiChatOptions build() {
             return this.options;
         }
-    }
-
-    /**
-     * Convert the {@link WatsonxAiChatOptions} object to a {@link Map} of key/value pairs.
-     * @return The {@link Map} of key/value pairs.
-     */
-    public Map<String, Object> toMap() {
-        try {
-            var json = mapper.writeValueAsString(this);
-            var map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
-            map.remove("additional");
-
-            return map;
-        }
-        catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Filter out the non-supported fields from the options.
-     * @param options The options to filter.
-     * @return The filtered options.
-     */
-    public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
-        return options.entrySet().stream()
-                .filter(e -> !e.getKey().equals("model"))
-                .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    private String toSnakeCase(String input) {
-        return input != null ? input.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase() : null;
-    }
-
-    @Override
-    public WatsonxAiChatOptions copy() {
-        return fromOptions(this);
-    }
-
-    public static WatsonxAiChatOptions fromOptions(WatsonxAiChatOptions fromOptions) {
-        return WatsonxAiChatOptions.builder()
-                .withTemperature(fromOptions.getTemperature())
-                .withTopP(fromOptions.getTopP())
-                .withTopK(fromOptions.getTopK())
-                .withDecodingMethod(fromOptions.getDecodingMethod())
-                .withMaxNewTokens(fromOptions.getMaxNewTokens())
-                .withMinNewTokens(fromOptions.getMinNewTokens())
-                .withStopSequences(fromOptions.getStopSequences())
-                .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
-                .withRandomSeed(fromOptions.getRandomSeed())
-                .withModel(fromOptions.getModel())
-                .withAdditionalProperties(fromOptions.getAdditionalProperties())
-                .build();
     }
 
 }

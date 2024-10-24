@@ -43,9 +43,9 @@ var imageResource = new ClassPathResource("/multimodal.test.png");
 
 var userMessage = new UserMessage(
 	"Explain what do you see in this picture?", // content
-	new Media(MimeTypeUtils.IMAGE_PNG, imageResource)); // media
+	new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource)); // media
 
-ChatResponse response = chatModel.call(new Prompt(userMessage));
+ChatResponse response = chatModel.call(new Prompt(this.userMessage));
 ----
 
 or with the fluent xref::api/chatclient.adoc[ChatClient] API:

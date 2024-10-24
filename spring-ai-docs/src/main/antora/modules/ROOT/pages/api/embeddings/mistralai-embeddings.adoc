@@ -184,13 +184,13 @@ Next, create an `MistralAiEmbeddingModel` instance and use it to compute the sim
 ----
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
-var embeddingModel = new MistralAiEmbeddingModel(mistralAiApi,
+var embeddingModel = new MistralAiEmbeddingModel(this.mistralAiApi,
         MistralAiEmbeddingOptions.builder()
                 .withModel("mistral-embed")
                 .withEncodingFormat("float")
                 .build());
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
         .embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

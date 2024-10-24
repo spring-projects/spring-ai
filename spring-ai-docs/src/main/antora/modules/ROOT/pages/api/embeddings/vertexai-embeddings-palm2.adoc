@@ -146,9 +146,9 @@ Next, create a `VertexAiPaLm2EmbeddingModel` and use it for text generations:
 ----
 VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(< YOUR PALM_API_KEY>);
 
-var embeddingModel = new VertexAiPaLm2EmbeddingModel(vertexAiApi);
+var embeddingModel = new VertexAiPaLm2EmbeddingModel(this.vertexAiApi);
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
@@ -169,15 +169,15 @@ VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(< YOUR PALM_API_KEY>);
 // Generate
 var prompt = new MessagePrompt(List.of(new Message("0", "Hello, how are you?")));
 
-GenerateMessageRequest request = new GenerateMessageRequest(prompt);
+GenerateMessageRequest request = new GenerateMessageRequest(this.prompt);
 
-GenerateMessageResponse response = vertexAiApi.generateMessage(request);
+GenerateMessageResponse response = this.vertexAiApi.generateMessage(this.request);
 
 // Embed text
-Embedding embedding = vertexAiApi.embedText("Hello, how are you?");
+Embedding embedding = this.vertexAiApi.embedText("Hello, how are you?");
 
 // Batch embedding
-List<Embedding> embeddings = vertexAiApi.batchEmbedText(List.of("Hello, how are you?", "I am fine, thank you!"));
+List<Embedding> embeddings = this.vertexAiApi.batchEmbedText(List.of("Hello, how are you?", "I am fine, thank you!"));
 ----
 
 

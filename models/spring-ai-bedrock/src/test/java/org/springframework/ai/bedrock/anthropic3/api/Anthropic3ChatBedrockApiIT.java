@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,27 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.anthropic3.api;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatModel;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatRequest;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatResponse;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse.StreamingType;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage.Role;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatModel;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatRequest;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatResponse;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse.StreamingType;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage.Role;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION;
@@ -63,9 +65,9 @@ public class Anthropic3ChatBedrockApiIT {
 			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
-		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
+		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		logger.info("" + response.content());
+		this.logger.info("" + response.content());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content().get(0).text()).isNotEmpty();
@@ -75,7 +77,7 @@ public class Anthropic3ChatBedrockApiIT {
 		assertThat(response.usage().inputTokens()).isGreaterThan(10);
 		assertThat(response.usage().outputTokens()).isGreaterThan(100);
 
-		logger.info("" + response);
+		this.logger.info("" + response);
 	}
 
 	@Test
@@ -103,9 +105,9 @@ public class Anthropic3ChatBedrockApiIT {
 			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
-		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
+		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		logger.info("" + response.content());
+		this.logger.info("" + response.content());
 		assertThat(response).isNotNull();
 		assertThat(response.content().get(0).text()).isNotEmpty();
 		assertThat(response.content().get(0).text()).contains("Blackbeard");
@@ -114,7 +116,7 @@ public class Anthropic3ChatBedrockApiIT {
 		assertThat(response.usage().inputTokens()).isGreaterThan(30);
 		assertThat(response.usage().outputTokens()).isGreaterThan(200);
 
-		logger.info("" + response);
+		this.logger.info("" + response);
 	}
 
 	@Test
@@ -129,7 +131,7 @@ public class Anthropic3ChatBedrockApiIT {
 			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
-		Flux<Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse> responseStream = anthropicChatApi
+		Flux<Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse> responseStream = this.anthropicChatApi
 			.chatCompletionStream(request);
 
 		List<Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse> responses = responseStream.collectList().block();

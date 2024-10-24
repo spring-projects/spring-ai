@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,14 @@
 
 package org.springframework.ai.vectorstore;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.mongodb.MongoCommandException;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -42,9 +43,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 
-import com.mongodb.MongoCommandException;
-
-import io.micrometer.observation.ObservationRegistry;
+import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 /**
  * @author Chris Smith
@@ -119,8 +118,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		}
 
 		// Create the collection if it does not exist
-		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
-			mongoTemplate.createCollection(this.config.collectionName);
+		if (!this.mongoTemplate.collectionExists(this.config.collectionName)) {
+			this.mongoTemplate.createCollection(this.config.collectionName);
 		}
 		// Create search index
 		createSearchIndex();
@@ -128,7 +127,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	private void createSearchIndex() {
 		try {
-			mongoTemplate.executeCommand(createSearchIndexDefinition());
+			this.mongoTemplate.executeCommand(createSearchIndexDefinition());
 		}
 		catch (UncategorizedMongoDbException e) {
 			Throwable cause = e.getCause();
@@ -228,6 +227,15 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			.toList();
 	}
 
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.MONGODB.value(), operationName)
+			.withCollectionName(this.config.collectionName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withFieldName(this.config.pathName);
+	}
+
 	public static class MongoDBVectorStoreConfig {
 
 		private final String collectionName;
@@ -322,15 +330,6 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 		}
 
-	}
-
-	@Override
-	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-
-		return VectorStoreObservationContext.builder(VectorStoreProvider.MONGODB.value(), operationName)
-			.withCollectionName(this.config.collectionName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withFieldName(this.config.pathName);
 	}
 
 }

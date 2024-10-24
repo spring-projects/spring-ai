@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
@@ -58,6 +59,60 @@ public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	private String indexParameters = "{\"nlist\":1024}";
 
+	public String getDatabaseName() {
+		return this.databaseName;
+	}
+
+	public void setDatabaseName(String databaseName) {
+		Assert.hasText(databaseName, "Database name should not be empty.");
+		this.databaseName = databaseName;
+	}
+
+	public String getCollectionName() {
+		return this.collectionName;
+	}
+
+	public void setCollectionName(String collectionName) {
+		Assert.hasText(collectionName, "Collection name should not be empty.");
+		this.collectionName = collectionName;
+	}
+
+	public int getEmbeddingDimension() {
+		return this.embeddingDimension;
+	}
+
+	public void setEmbeddingDimension(int embeddingDimension) {
+		Assert.isTrue(embeddingDimension > 0, "Embedding dimension should be a positive value.");
+		this.embeddingDimension = embeddingDimension;
+	}
+
+	public MilvusIndexType getIndexType() {
+		return this.indexType;
+	}
+
+	public void setIndexType(MilvusIndexType indexType) {
+		Assert.notNull(indexType, "Index type can not be null");
+		this.indexType = indexType;
+	}
+
+	public MilvusMetricType getMetricType() {
+		return this.metricType;
+	}
+
+	public void setMetricType(MilvusMetricType metricType) {
+		Assert.notNull(metricType, "MetricType can not be null");
+		this.metricType = metricType;
+	}
+
+	public String getIndexParameters() {
+		return this.indexParameters;
+	}
+
+	public void setIndexParameters(String indexParameters) {
+		Assert.notNull(indexParameters, "indexParameters can not be null");
+		this.indexParameters = indexParameters;
+	}
+
 	public enum MilvusMetricType {
 
 		/**
@@ -92,60 +147,6 @@ public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
 		INVALID, FLAT, IVF_FLAT, IVF_SQ8, IVF_PQ, HNSW, DISKANN, AUTOINDEX, SCANN, GPU_IVF_FLAT, GPU_IVF_PQ, BIN_FLAT,
 		BIN_IVF_FLAT, TRIE, STL_SORT;
 
-	}
-
-	public String getDatabaseName() {
-		return databaseName;
-	}
-
-	public void setDatabaseName(String databaseName) {
-		Assert.hasText(databaseName, "Database name should not be empty.");
-		this.databaseName = databaseName;
-	}
-
-	public String getCollectionName() {
-		return collectionName;
-	}
-
-	public void setCollectionName(String collectionName) {
-		Assert.hasText(collectionName, "Collection name should not be empty.");
-		this.collectionName = collectionName;
-	}
-
-	public int getEmbeddingDimension() {
-		return embeddingDimension;
-	}
-
-	public void setEmbeddingDimension(int embeddingDimension) {
-		Assert.isTrue(embeddingDimension > 0, "Embedding dimension should be a positive value.");
-		this.embeddingDimension = embeddingDimension;
-	}
-
-	public MilvusIndexType getIndexType() {
-		return indexType;
-	}
-
-	public void setIndexType(MilvusIndexType indexType) {
-		Assert.notNull(indexType, "Index type can not be null");
-		this.indexType = indexType;
-	}
-
-	public MilvusMetricType getMetricType() {
-		return metricType;
-	}
-
-	public void setMetricType(MilvusMetricType metricType) {
-		Assert.notNull(metricType, "MetricType can not be null");
-		this.metricType = metricType;
-	}
-
-	public String getIndexParameters() {
-		return indexParameters;
-	}
-
-	public void setIndexParameters(String indexParameters) {
-		Assert.notNull(indexParameters, "indexParameters can not be null");
-		this.indexParameters = indexParameters;
 	}
 
 }

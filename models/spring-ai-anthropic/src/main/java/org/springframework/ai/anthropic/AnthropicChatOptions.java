@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.anthropic;
 
 import java.util.ArrayList;
@@ -91,91 +92,24 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private final AnthropicChatOptions options = new AnthropicChatOptions();
-
-		public Builder withModel(String model) {
-			this.options.model = model;
-			return this;
-		}
-
-		public Builder withModel(AnthropicApi.ChatModel model) {
-			this.options.model = model.getValue();
-			return this;
-		}
-
-		public Builder withMaxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		public Builder withMetadata(ChatCompletionRequest.Metadata metadata) {
-			this.options.metadata = metadata;
-			return this;
-		}
-
-		public Builder withStopSequences(List<String> stopSequences) {
-			this.options.stopSequences = stopSequences;
-			return this;
-		}
-
-		public Builder withTemperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public Builder withTopK(Integer topK) {
-			this.options.topK = topK;
-			return this;
-		}
-
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
-			return this;
-		}
-
-		public Builder withFunctions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
-			return this;
-		}
-
-		public Builder withFunction(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
-			return this;
-		}
-
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
-			return this;
-		}
-
-		public Builder withToolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
-			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
-			return this;
-		}
-
-		public AnthropicChatOptions build() {
-			return this.options;
-		}
-
+	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
+		return builder().withModel(fromOptions.getModel())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withMetadata(fromOptions.getMetadata())
+			.withStopSequences(fromOptions.getStopSequences())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withTopK(fromOptions.getTopK())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
+			.build();
 	}
 
 	@Override
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -293,19 +227,86 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		return fromOptions(this);
 	}
 
-	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
-		return builder().withModel(fromOptions.getModel())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withMetadata(fromOptions.getMetadata())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTopK(fromOptions.getTopK())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
-			.build();
+	public static class Builder {
+
+		private final AnthropicChatOptions options = new AnthropicChatOptions();
+
+		public Builder withModel(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder withModel(AnthropicApi.ChatModel model) {
+			this.options.model = model.getValue();
+			return this;
+		}
+
+		public Builder withMaxTokens(Integer maxTokens) {
+			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder withMetadata(ChatCompletionRequest.Metadata metadata) {
+			this.options.metadata = metadata;
+			return this;
+		}
+
+		public Builder withStopSequences(List<String> stopSequences) {
+			this.options.stopSequences = stopSequences;
+			return this;
+		}
+
+		public Builder withTemperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder withTopP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder withTopK(Integer topK) {
+			this.options.topK = topK;
+			return this;
+		}
+
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder withFunctions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder withFunction(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		public AnthropicChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

@@ -127,20 +127,20 @@ VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.
     .withModel(VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME)
     .build();
 
-var embeddingModel = new VertexAiMultimodalEmbeddingModel(connectionDetails, options);
+var embeddingModel = new VertexAiMultimodalEmbeddingModel(this.connectionDetails, this.options);
 
 Media imageMedial = new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png"));
 Media videoMedial = new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4"));
 
-var document = new Document("Explain what do you see on this video?", List.of(imageMedial, videoMedial), Map.of());
+var document = new Document("Explain what do you see on this video?", List.of(this.imageMedial, this.videoMedial), Map.of());
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 
-DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(document),
+DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(this.document),
         EmbeddingOptions.EMPTY);
 
-EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(this.embeddingRequest);
 
 assertThat(embeddingResponse.getResults()).hasSize(3);
 ----

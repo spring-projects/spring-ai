@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.openai.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.autoconfigure.openai.tool;
 
 import java.util.stream.Collectors;
 
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -33,6 +33,8 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackWrapper2IT {
@@ -47,7 +49,7 @@ public class FunctionCallbackWrapper2IT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -62,7 +64,7 @@ public class FunctionCallbackWrapper2IT {
 				.call().content();
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+			this.logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});
@@ -70,7 +72,7 @@ public class FunctionCallbackWrapper2IT {
 
 	@Test
 	void streamFunctionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -82,7 +84,7 @@ public class FunctionCallbackWrapper2IT {
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+			this.logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});
