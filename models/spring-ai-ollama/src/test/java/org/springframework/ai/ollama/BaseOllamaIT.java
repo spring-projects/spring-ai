@@ -1,6 +1,9 @@
 package org.springframework.ai.ollama;
 
+import java.time.Duration;
+
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.util.StringUtils;
@@ -53,7 +56,11 @@ public class BaseOllamaIT {
 	}
 
 	public static void ensureModelIsPresent(OllamaApi ollamaApi, String model) {
-		var ollamaModelManager = new OllamaModelManager(ollamaApi);
+		var modelManagementOptions = ModelManagementOptions.builder()
+			.withMaxRetries(2)
+			.withTimeout(Duration.ofMinutes(10))
+			.build();
+		var ollamaModelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
 	}
 
