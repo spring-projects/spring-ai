@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.watsonxai;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -42,7 +43,7 @@ public class WatsonxAiConnectionProperties {
 	private String IAMToken;
 
 	public String getBaseUrl() {
-		return baseUrl;
+		return this.baseUrl;
 	}
 
 	public void setBaseUrl(String baseUrl) {
@@ -50,7 +51,7 @@ public class WatsonxAiConnectionProperties {
 	}
 
 	public String getStreamEndpoint() {
-		return streamEndpoint;
+		return this.streamEndpoint;
 	}
 
 	public void setStreamEndpoint(String streamEndpoint) {
@@ -58,7 +59,7 @@ public class WatsonxAiConnectionProperties {
 	}
 
 	public String getTextEndpoint() {
-		return textEndpoint;
+		return this.textEndpoint;
 	}
 
 	public void setTextEndpoint(String textEndpoint) {
@@ -66,7 +67,7 @@ public class WatsonxAiConnectionProperties {
 	}
 
 	public String getEmbeddingEndpoint() {
-		return embeddingEndpoint;
+		return this.embeddingEndpoint;
 	}
 
 	public void setEmbeddingEndpoint(String embeddingEndpoint) {
@@ -74,7 +75,7 @@ public class WatsonxAiConnectionProperties {
 	}
 
 	public String getProjectId() {
-		return projectId;
+		return this.projectId;
 	}
 
 	public void setProjectId(String projectId) {
@@ -82,7 +83,7 @@ public class WatsonxAiConnectionProperties {
 	}
 
 	public String getIAMToken() {
-		return IAMToken;
+		return this.IAMToken;
 	}
 
 	public void setIAMToken(String IAMToken) {

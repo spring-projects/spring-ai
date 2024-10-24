@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,65 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.prompt;
 
 import java.util.List;
 
-public class ChatOptionsBuilder {
+public final class ChatOptionsBuilder {
+
+	private final DefaultChatOptions options = new DefaultChatOptions();
+
+	private ChatOptionsBuilder() {
+	}
+
+	public static ChatOptionsBuilder builder() {
+		return new ChatOptionsBuilder();
+	}
+
+	public ChatOptionsBuilder withModel(String model) {
+		this.options.setModel(model);
+		return this;
+	}
+
+	public ChatOptionsBuilder withFrequencyPenalty(Double frequencyPenalty) {
+		this.options.setFrequencyPenalty(frequencyPenalty);
+		return this;
+	}
+
+	public ChatOptionsBuilder withMaxTokens(Integer maxTokens) {
+		this.options.setMaxTokens(maxTokens);
+		return this;
+	}
+
+	public ChatOptionsBuilder withPresencePenalty(Double presencePenalty) {
+		this.options.setPresencePenalty(presencePenalty);
+		return this;
+	}
+
+	public ChatOptionsBuilder withStopSequences(List<String> stop) {
+		this.options.setStopSequences(stop);
+		return this;
+	}
+
+	public ChatOptionsBuilder withTemperature(Double temperature) {
+		this.options.setTemperature(temperature);
+		return this;
+	}
+
+	public ChatOptionsBuilder withTopK(Integer topK) {
+		this.options.setTopK(topK);
+		return this;
+	}
+
+	public ChatOptionsBuilder withTopP(Double topP) {
+		this.options.setTopP(topP);
+		return this;
+	}
+
+	public ChatOptions build() {
+		return this.options;
+	}
 
 	private static class DefaultChatOptions implements ChatOptions {
 
@@ -39,7 +93,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public String getModel() {
-			return model;
+			return this.model;
 		}
 
 		public void setModel(String model) {
@@ -48,7 +102,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public Double getFrequencyPenalty() {
-			return frequencyPenalty;
+			return this.frequencyPenalty;
 		}
 
 		public void setFrequencyPenalty(Double frequencyPenalty) {
@@ -57,7 +111,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public Integer getMaxTokens() {
-			return maxTokens;
+			return this.maxTokens;
 		}
 
 		public void setMaxTokens(Integer maxTokens) {
@@ -66,7 +120,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public Double getPresencePenalty() {
-			return presencePenalty;
+			return this.presencePenalty;
 		}
 
 		public void setPresencePenalty(Double presencePenalty) {
@@ -75,7 +129,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public List<String> getStopSequences() {
-			return stopSequences;
+			return this.stopSequences;
 		}
 
 		public void setStopSequences(List<String> stopSequences) {
@@ -84,7 +138,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public Double getTemperature() {
-			return temperature;
+			return this.temperature;
 		}
 
 		public void setTemperature(Double temperature) {
@@ -93,7 +147,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public Integer getTopK() {
-			return topK;
+			return this.topK;
 		}
 
 		public void setTopK(Integer topK) {
@@ -102,7 +156,7 @@ public class ChatOptionsBuilder {
 
 		@Override
 		public Double getTopP() {
-			return topP;
+			return this.topP;
 		}
 
 		public void setTopP(Double topP) {
@@ -122,59 +176,6 @@ public class ChatOptionsBuilder {
 				.build();
 		}
 
-	}
-
-	private final DefaultChatOptions options = new DefaultChatOptions();
-
-	private ChatOptionsBuilder() {
-	}
-
-	public static ChatOptionsBuilder builder() {
-		return new ChatOptionsBuilder();
-	}
-
-	public ChatOptionsBuilder withModel(String model) {
-		options.setModel(model);
-		return this;
-	}
-
-	public ChatOptionsBuilder withFrequencyPenalty(Double frequencyPenalty) {
-		options.setFrequencyPenalty(frequencyPenalty);
-		return this;
-	}
-
-	public ChatOptionsBuilder withMaxTokens(Integer maxTokens) {
-		options.setMaxTokens(maxTokens);
-		return this;
-	}
-
-	public ChatOptionsBuilder withPresencePenalty(Double presencePenalty) {
-		options.setPresencePenalty(presencePenalty);
-		return this;
-	}
-
-	public ChatOptionsBuilder withStopSequences(List<String> stop) {
-		options.setStopSequences(stop);
-		return this;
-	}
-
-	public ChatOptionsBuilder withTemperature(Double temperature) {
-		options.setTemperature(temperature);
-		return this;
-	}
-
-	public ChatOptionsBuilder withTopK(Integer topK) {
-		options.setTopK(topK);
-		return this;
-	}
-
-	public ChatOptionsBuilder withTopP(Double topP) {
-		options.setTopP(topP);
-		return this;
-	}
-
-	public ChatOptions build() {
-		return options;
 	}
 
 }

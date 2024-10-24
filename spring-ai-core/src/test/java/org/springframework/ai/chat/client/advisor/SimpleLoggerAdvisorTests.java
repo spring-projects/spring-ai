@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +25,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -39,7 +38,8 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.context.ActiveProfiles;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
@@ -57,12 +57,12 @@ public class SimpleLoggerAdvisorTests {
 	@Test
 	public void callLogging(CapturedOutput output) {
 
-		when(chatModel.call(promptCaptor.capture()))
-			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))));
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))));
 
 		var loggerAdvisor = new SimpleLoggerAdvisor();
 
-		var chatClient = ChatClient.builder(chatModel).defaultAdvisors(loggerAdvisor).build();
+		var chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(loggerAdvisor).build();
 
 		var content = chatClient.prompt().user("Please answer my question XYZ").call().content();
 
@@ -72,7 +72,7 @@ public class SimpleLoggerAdvisorTests {
 	@Test
 	public void streamLogging(CapturedOutput output) {
 
-		when(chatModel.stream(promptCaptor.capture())).thenReturn(Flux.generate(
+		given(this.chatModel.stream(this.promptCaptor.capture())).willReturn(Flux.generate(
 				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))),
 				(state, sink) -> {
 					sink.next(state);
@@ -82,7 +82,7 @@ public class SimpleLoggerAdvisorTests {
 
 		var loggerAdvisor = new SimpleLoggerAdvisor();
 
-		var chatClient = ChatClient.builder(chatModel).defaultAdvisors(loggerAdvisor).build();
+		var chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(loggerAdvisor).build();
 
 		String content = join(chatClient.prompt().user("Please answer my question XYZ").stream().content());
 
@@ -100,7 +100,7 @@ public class SimpleLoggerAdvisorTests {
 	private void validate(String content, CapturedOutput output) {
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
-		UserMessage userMessage = (UserMessage) promptCaptor.getValue().getInstructions().get(0);
+		UserMessage userMessage = (UserMessage) this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("Please answer my question XYZ");
 
 		assertThat(output.getOut()).contains("request: AdvisedRequest", "userText=Please answer my question XYZ");

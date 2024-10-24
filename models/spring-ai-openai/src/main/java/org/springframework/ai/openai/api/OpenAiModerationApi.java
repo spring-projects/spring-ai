@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.api;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.MediaType;
@@ -21,11 +27,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * OpenAI Moderation API.
@@ -36,9 +37,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class OpenAiModerationApi {
 
-	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
-
 	public static final String DEFAULT_MODERATION_MODEL = "text-moderation-latest";
+
+	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
 
 	private final RestClient restClient;
 
@@ -63,6 +64,17 @@ public class OpenAiModerationApi {
 		}).defaultStatusHandler(responseErrorHandler).build();
 	}
 
+	public ResponseEntity<OpenAiModerationResponse> createModeration(OpenAiModerationRequest openAiModerationRequest) {
+		Assert.notNull(openAiModerationRequest, "Moderation request cannot be null.");
+		Assert.hasLength(openAiModerationRequest.prompt(), "Prompt cannot be empty.");
+
+		return this.restClient.post()
+			.uri("v1/moderations")
+			.body(openAiModerationRequest)
+			.retrieve()
+			.toEntity(OpenAiModerationResponse.class);
+	}
+
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record OpenAiModerationRequest (
@@ -82,6 +94,7 @@ public class OpenAiModerationApi {
 			@JsonProperty("results") OpenAiModerationResult[] results) {
 
 	}
+
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record OpenAiModerationResult(
 			@JsonProperty("flagged") boolean flagged,
@@ -89,6 +102,7 @@ public class OpenAiModerationApi {
 			@JsonProperty("category_scores") CategoryScores categoryScores) {
 
 	}
+
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Categories(
 			@JsonProperty("sexual") boolean sexual,
@@ -119,25 +133,12 @@ public class OpenAiModerationApi {
 			@JsonProperty("violence") double violence) {
 
 	}
-
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record Data(
-		@JsonProperty("url") String url,
-		@JsonProperty("b64_json") String b64Json,
-		@JsonProperty("revised_prompt") String revisedPrompt) {
-	}
 	// @formatter:onn
 
-	public ResponseEntity<OpenAiModerationResponse> createModeration(OpenAiModerationRequest openAiModerationRequest) {
-		Assert.notNull(openAiModerationRequest, "Moderation request cannot be null.");
-		Assert.hasLength(openAiModerationRequest.prompt(), "Prompt cannot be empty.");
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record Data(@JsonProperty("url") String url, @JsonProperty("b64_json") String b64Json,
+			@JsonProperty("revised_prompt") String revisedPrompt) {
 
-		return this.restClient.post()
-			.uri("v1/moderations")
-			.body(openAiModerationRequest)
-			.retrieve()
-			.toEntity(OpenAiModerationResponse.class);
 	}
 
 }

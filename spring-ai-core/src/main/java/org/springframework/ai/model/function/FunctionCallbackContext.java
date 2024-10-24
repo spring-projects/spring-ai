@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.function;
 
 import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.beans.BeansException;
@@ -30,8 +33,6 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
-
-import com.fasterxml.jackson.annotation.JsonClassDescription;
 
 /**
  * A Spring {@link ApplicationContextAware} implementation that provides a way to retrieve
@@ -52,12 +53,6 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 public class FunctionCallbackContext implements ApplicationContextAware {
 
 	private GenericApplicationContext applicationContext;
-
-	public enum SchemaType {
-
-		JSON_SCHEMA, OPEN_API_SCHEMA
-
-	}
 
 	private SchemaType schemaType = SchemaType.JSON_SCHEMA;
 
@@ -94,7 +89,8 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 
 		if (!StringUtils.hasText(functionDescription)) {
 			// Look for a Description annotation on the bean
-			Description descriptionAnnotation = applicationContext.findAnnotationOnBean(beanName, Description.class);
+			Description descriptionAnnotation = this.applicationContext.findAnnotationOnBean(beanName,
+					Description.class);
 
 			if (descriptionAnnotation != null) {
 				functionDescription = descriptionAnnotation.value();
@@ -137,6 +133,12 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 		else {
 			throw new IllegalArgumentException("Bean must be of type Function");
 		}
+	}
+
+	public enum SchemaType {
+
+		JSON_SCHEMA, OPEN_API_SCHEMA
+
 	}
 
 }

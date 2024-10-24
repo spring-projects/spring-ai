@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vertexai.embedding.multimodal;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vertexai.embedding.multimodal;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.model.Media;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -32,6 +32,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = VertexAiMultimodalEmbeddingModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
@@ -49,7 +51,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(new Document("Hello World"),
 				new Document("Hello World2"));
 
-		EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 
 		assertThat(embeddingResponse.getResults().get(0).getMetadata().getModalityType())
@@ -76,7 +78,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 			.as("Total tokens in metadata should be 0")
 			.isEqualTo(0L);
 
-		assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
+		assertThat(this.multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 	}
 
 	@Test
@@ -86,7 +88,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
 
-		EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getMetadata().getModalityType())
@@ -98,18 +100,18 @@ class VertexAiMultimodalEmbeddingModelIT {
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(0);
 
-		assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
+		assertThat(this.multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 	}
 
 	@Test
 	void textMediaEmbedding() {
-		assertThat(multiModelEmbeddingModel).isNotNull();
+		assertThat(this.multiModelEmbeddingModel).isNotNull();
 
 		var document = Document.builder().withMedia(new Media(MimeTypeUtils.TEXT_PLAIN, "Hello World")).build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
 
-		EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getMetadata().getModalityType())
@@ -121,7 +123,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(0);
 
-		assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
+		assertThat(this.multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 	}
 
 	@Test
@@ -133,7 +135,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
 
-		EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
@@ -147,7 +149,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(0);
 
-		assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
+		assertThat(this.multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 	}
 
 	@Test
@@ -159,7 +161,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
 
-		EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
@@ -172,7 +174,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(0);
 
-		assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
+		assertThat(this.multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 	}
 
 	@Test
@@ -186,7 +188,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
 
-		EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(3);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getMetadata().getModalityType())
@@ -206,7 +208,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(0);
 
-		assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
+		assertThat(this.multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 	}
 
 	@SpringBootConfiguration

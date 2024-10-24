@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,19 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
+import com.vmware.gemfire.testcontainers.GemFireCluster;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -41,16 +48,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.PortBinding;
-import com.github.dockerjava.api.model.Ports;
-import com.vmware.gemfire.testcontainers.GemFireCluster;
-
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistryAssert;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 /**
@@ -62,13 +61,21 @@ public class GemFireVectorStoreObservationIT {
 
 	public static final String TEST_INDEX_NAME = "spring-ai-index1";
 
-	private static GemFireCluster gemFireCluster;
-
 	private static final int HTTP_SERVICE_PORT = 9090;
 
 	private static final int LOCATOR_COUNT = 1;
 
 	private static final int SERVER_COUNT = 1;
+
+	private static GemFireCluster gemFireCluster;
+
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(Config.class);
+
+	List<Document> documents = List.of(
+			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+			new Document(getText("classpath:/test/data/time.shelter.txt")),
+			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
 	@AfterAll
 	public static void stopGemFireCluster() {
@@ -92,14 +99,6 @@ public class GemFireVectorStoreObservationIT {
 				String.format("localhost[%d]", gemFireCluster.getLocatorPort()));
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(Config.class);
-
-	List<Document> documents = List.of(
-			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
-			new Document(getText("classpath:/test/data/time.shelter.txt")),
-			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
-
 	public static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);
 		try {
@@ -113,13 +112,13 @@ public class GemFireVectorStoreObservationIT {
 	@Test
 	void observationVectorStoreAddAndQueryOperations() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			TestObservationRegistryAssert.assertThat(observationRegistry)
 				.doesNotHaveAnyRemainingCurrentObservation()

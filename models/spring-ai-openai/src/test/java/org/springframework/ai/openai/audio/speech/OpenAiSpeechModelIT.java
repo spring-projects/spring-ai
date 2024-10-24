@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +16,18 @@
 
 package org.springframework.ai.openai.audio.speech;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.boot.test.context.SpringBootTest;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,7 +39,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 
 	@Test
 	void shouldSuccessfullyStreamAudioBytesForEmptyMessage() {
-		Flux<byte[]> response = speechModel.stream("Today is a wonderful day to build something people love!");
+		Flux<byte[]> response = this.speechModel.stream("Today is a wonderful day to build something people love!");
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
 		System.out.println(response.collectList().block());
@@ -46,7 +47,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 
 	@Test
 	void shouldProduceAudioBytesDirectlyFromMessage() {
-		byte[] audioBytes = speechModel.call("Today is a wonderful day to build something people love!");
+		byte[] audioBytes = this.speechModel.call("Today is a wonderful day to build something people love!");
 		assertThat(audioBytes).hasSizeGreaterThan(0);
 
 	}
@@ -61,7 +62,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.build();
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
-		SpeechResponse response = speechModel.call(speechPrompt);
+		SpeechResponse response = this.speechModel.call(speechPrompt);
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
@@ -79,7 +80,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.build();
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
-		SpeechResponse response = speechModel.call(speechPrompt);
+		SpeechResponse response = this.speechModel.call(speechPrompt);
 		OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
 		assertThat(metadata).isNotNull();
 		assertThat(metadata.getRateLimit()).isNotNull();
@@ -100,7 +101,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
-		Flux<SpeechResponse> responseFlux = speechModel.stream(speechPrompt);
+		Flux<SpeechResponse> responseFlux = this.speechModel.stream(speechPrompt);
 		assertThat(responseFlux).isNotNull();
 		List<SpeechResponse> responses = responseFlux.collectList().block();
 		assertThat(responses).isNotNull();

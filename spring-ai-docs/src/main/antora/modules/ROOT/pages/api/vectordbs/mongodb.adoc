@@ -252,7 +252,7 @@ List<Document> results = vectorStore.similaritySearch(
                 .withQuery("learn how to grow things")
                 .withTopK(2)
                 .withSimilarityThreshold(0.5)
-                .withFilterExpression(b.eq("author", "A").build())
+                .withFilterExpression(this.b.eq("author", "A").build())
 );
 ----
 

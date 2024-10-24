@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai.metadata;
 
 import com.azure.ai.openai.models.EmbeddingsUsage;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
@@ -27,16 +29,16 @@ import org.springframework.util.Assert;
  */
 public class AzureOpenAiEmbeddingUsage implements Usage {
 
-	public static AzureOpenAiEmbeddingUsage from(EmbeddingsUsage usage) {
-		Assert.notNull(usage, "EmbeddingsUsage must not be null");
-		return new AzureOpenAiEmbeddingUsage(usage);
-	}
-
 	private final EmbeddingsUsage usage;
 
 	public AzureOpenAiEmbeddingUsage(EmbeddingsUsage usage) {
 		Assert.notNull(usage, "EmbeddingsUsage must not be null");
 		this.usage = usage;
+	}
+
+	public static AzureOpenAiEmbeddingUsage from(EmbeddingsUsage usage) {
+		Assert.notNull(usage, "EmbeddingsUsage must not be null");
+		return new AzureOpenAiEmbeddingUsage(usage);
 	}
 
 	protected EmbeddingsUsage getUsage() {

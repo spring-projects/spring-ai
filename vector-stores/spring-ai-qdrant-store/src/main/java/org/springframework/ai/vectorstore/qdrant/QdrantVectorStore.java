@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,31 +16,11 @@
 
 package org.springframework.ai.vectorstore.qdrant;
 
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.ValueFactory.value;
-import static io.qdrant.client.VectorsFactory.vectors;
-import static io.qdrant.client.WithPayloadSelectorFactory.enable;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.model.EmbeddingUtils;
-import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.qdrant.client.QdrantClient;
@@ -53,6 +33,25 @@ import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import io.qdrant.client.grpc.Points.UpdateStatus;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+
+import static io.qdrant.client.PointIdFactory.id;
+import static io.qdrant.client.ValueFactory.value;
+import static io.qdrant.client.VectorsFactory.vectors;
+import static io.qdrant.client.WithPayloadSelectorFactory.enable;
 
 /**
  * Qdrant vectorStore implementation. This store supports creating, updating, deleting,
@@ -67,11 +66,11 @@ import io.qdrant.client.grpc.Points.UpdateStatus;
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
+
 	private static final String CONTENT_FIELD_NAME = "doc_content";
 
 	private static final String DISTANCE_FIELD_NAME = "distance";
-
-	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
 	private final EmbeddingModel embeddingModel;
 
@@ -84,68 +83,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
-
-	/**
-	 * Configuration class for the QdrantVectorStore.
-	 *
-	 * @deprecated since 1.0.0 in favor of {@link QdrantVectorStore}.
-	 */
-	@Deprecated(since = "1.0.0", forRemoval = true)
-	public static final class QdrantVectorStoreConfig {
-
-		private final String collectionName;
-
-		/*
-		 * Constructor using the builder.
-		 *
-		 * @param builder The configuration builder.
-		 */
-
-		private QdrantVectorStoreConfig(Builder builder) {
-			this.collectionName = builder.collectionName;
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		public static Builder builder() {
-			return new Builder();
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		public static QdrantVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		public static class Builder {
-
-			private String collectionName;
-
-			private Builder() {
-			}
-
-			/**
-			 * @param collectionName REQUIRED. The name of the collection.
-			 */
-			public Builder withCollectionName(String collectionName) {
-				this.collectionName = collectionName;
-				return this;
-			}
-
-			/**
-			 * {@return the immutable configuration}
-			 */
-			public QdrantVectorStoreConfig build() {
-				Assert.notNull(collectionName, "collectionName cannot be null");
-				return new QdrantVectorStoreConfig(this);
-			}
-
-		}
-
-	}
 
 	/**
 	 * Constructs a new QdrantVectorStore.
@@ -319,8 +256,9 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
-		if (!this.initializeSchema)
+		if (!this.initializeSchema) {
 			return;
+		}
 
 		// Create the collection if it does not exist.
 		if (!isCollectionExists()) {
@@ -347,6 +285,68 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		return VectorStoreObservationContext.builder(VectorStoreProvider.QDRANT.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.collectionName);
+
+	}
+
+	/**
+	 * Configuration class for the QdrantVectorStore.
+	 *
+	 * @deprecated since 1.0.0 in favor of {@link QdrantVectorStore}.
+	 */
+	@Deprecated(since = "1.0.0", forRemoval = true)
+	public static final class QdrantVectorStoreConfig {
+
+		private final String collectionName;
+
+		/*
+		 * Constructor using the builder.
+		 *
+		 * @param builder The configuration builder.
+		 */
+
+		private QdrantVectorStoreConfig(Builder builder) {
+			this.collectionName = builder.collectionName;
+		}
+
+		/**
+		 * Start building a new configuration.
+		 * @return The entry point for creating a new configuration.
+		 */
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		/**
+		 * {@return the default config}
+		 */
+		public static QdrantVectorStoreConfig defaultConfig() {
+			return builder().build();
+		}
+
+		public static class Builder {
+
+			private String collectionName;
+
+			private Builder() {
+			}
+
+			/**
+			 * @param collectionName REQUIRED. The name of the collection.
+			 */
+			public Builder withCollectionName(String collectionName) {
+				this.collectionName = collectionName;
+				return this;
+			}
+
+			/**
+			 * {@return the immutable configuration}
+			 */
+			public QdrantVectorStoreConfig build() {
+				Assert.notNull(this.collectionName, "collectionName cannot be null");
+				return new QdrantVectorStoreConfig(this);
+			}
+
+		}
 
 	}
 

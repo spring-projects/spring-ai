@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,23 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.moonshot;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.moonshot.api.MoonshotApi;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.util.Assert;
+package org.springframework.ai.moonshot;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.moonshot.api.MoonshotApi;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
 /**
  * @author Geng Rong
@@ -145,6 +147,10 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
@@ -157,120 +163,11 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 
 	@Override
 	public Set<String> getFunctions() {
-		return functions;
+		return this.functions;
 	}
 
 	public void setFunctions(Set<String> functionNames) {
 		this.functions = functionNames;
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		protected MoonshotChatOptions options;
-
-		public Builder() {
-			this.options = new MoonshotChatOptions();
-		}
-
-		public Builder(MoonshotChatOptions options) {
-			this.options = options;
-		}
-
-		public Builder withModel(String model) {
-			this.options.model = model;
-			return this;
-		}
-
-		public Builder withMaxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		public Builder withTemperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public Builder withN(Integer n) {
-			this.options.n = n;
-			return this;
-		}
-
-		public Builder withPresencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
-
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
-
-		public Builder withStop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
-		}
-
-		public Builder withUser(String user) {
-			this.options.user = user;
-			return this;
-		}
-
-		public Builder withTools(List<MoonshotApi.FunctionTool> tools) {
-			this.options.tools = tools;
-			return this;
-		}
-
-		public Builder withToolChoice(String toolChoice) {
-			this.options.toolChoice = toolChoice;
-			return this;
-		}
-
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
-			return this;
-		}
-
-		public Builder withFunctions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
-			return this;
-		}
-
-		public Builder withFunction(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
-			return this;
-		}
-
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
-			return this;
-		}
-
-		public Builder withToolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
-			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
-			return this;
-		}
-
-		public MoonshotChatOptions build() {
-			return this.options;
-		}
-
 	}
 
 	@Override
@@ -411,93 +308,220 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((frequencyPenalty == null) ? 0 : frequencyPenalty.hashCode());
-		result = prime * result + ((maxTokens == null) ? 0 : maxTokens.hashCode());
-		result = prime * result + ((n == null) ? 0 : n.hashCode());
-		result = prime * result + ((presencePenalty == null) ? 0 : presencePenalty.hashCode());
-		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
-		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
-		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
-		result = prime * result + ((user == null) ? 0 : user.hashCode());
-		result = prime * result + ((proxyToolCalls == null) ? 0 : proxyToolCalls.hashCode());
-		result = prime * result + ((toolContext == null) ? 0 : toolContext.hashCode());
+		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
+		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
+		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
+		result = prime * result + ((this.n == null) ? 0 : this.n.hashCode());
+		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
+		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
+		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
+		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
+		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
+		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
+		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
 		return result;
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		MoonshotChatOptions other = (MoonshotChatOptions) obj;
 		if (this.model == null) {
-			if (other.model != null)
+			if (other.model != null) {
 				return false;
+			}
 		}
-		else if (!model.equals(other.model))
+		else if (!this.model.equals(other.model)) {
 			return false;
+		}
 		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null)
+			if (other.frequencyPenalty != null) {
 				return false;
+			}
 		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty))
+		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
 			return false;
+		}
 		if (this.maxTokens == null) {
-			if (other.maxTokens != null)
+			if (other.maxTokens != null) {
 				return false;
+			}
 		}
-		else if (!this.maxTokens.equals(other.maxTokens))
+		else if (!this.maxTokens.equals(other.maxTokens)) {
 			return false;
+		}
 		if (this.n == null) {
-			if (other.n != null)
+			if (other.n != null) {
 				return false;
+			}
 		}
-		else if (!this.n.equals(other.n))
+		else if (!this.n.equals(other.n)) {
 			return false;
+		}
 		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null)
+			if (other.presencePenalty != null) {
 				return false;
+			}
 		}
-		else if (!this.presencePenalty.equals(other.presencePenalty))
+		else if (!this.presencePenalty.equals(other.presencePenalty)) {
 			return false;
+		}
 		if (this.stop == null) {
-			if (other.stop != null)
+			if (other.stop != null) {
 				return false;
+			}
 		}
-		else if (!stop.equals(other.stop))
+		else if (!this.stop.equals(other.stop)) {
 			return false;
+		}
 		if (this.temperature == null) {
-			if (other.temperature != null)
+			if (other.temperature != null) {
 				return false;
+			}
 		}
-		else if (!this.temperature.equals(other.temperature))
+		else if (!this.temperature.equals(other.temperature)) {
 			return false;
+		}
 		if (this.topP == null) {
-			if (other.topP != null)
+			if (other.topP != null) {
 				return false;
+			}
 		}
-		else if (!topP.equals(other.topP))
+		else if (!this.topP.equals(other.topP)) {
 			return false;
+		}
 		if (this.user == null) {
 			return other.user == null;
 		}
-		else if (!this.user.equals(other.user))
+		else if (!this.user.equals(other.user)) {
 			return false;
+		}
 		if (this.proxyToolCalls == null) {
 			return other.proxyToolCalls == null;
 		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls))
+		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
 			return false;
+		}
 		if (this.toolContext == null) {
 			return other.toolContext == null;
 		}
-		else if (!this.toolContext.equals(other.toolContext))
+		else if (!this.toolContext.equals(other.toolContext)) {
 			return false;
+		}
 		return true;
+	}
+
+	public static class Builder {
+
+		protected MoonshotChatOptions options;
+
+		public Builder() {
+			this.options = new MoonshotChatOptions();
+		}
+
+		public Builder(MoonshotChatOptions options) {
+			this.options = options;
+		}
+
+		public Builder withModel(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder withMaxTokens(Integer maxTokens) {
+			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder withTemperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder withTopP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder withN(Integer n) {
+			this.options.n = n;
+			return this;
+		}
+
+		public Builder withPresencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder withStop(List<String> stop) {
+			this.options.stop = stop;
+			return this;
+		}
+
+		public Builder withUser(String user) {
+			this.options.user = user;
+			return this;
+		}
+
+		public Builder withTools(List<MoonshotApi.FunctionTool> tools) {
+			this.options.tools = tools;
+			return this;
+		}
+
+		public Builder withToolChoice(String toolChoice) {
+			this.options.toolChoice = toolChoice;
+			return this;
+		}
+
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder withFunctions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder withFunction(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		public MoonshotChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

@@ -81,8 +81,8 @@ OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
     .withModel("text-moderation-latest")
     .build();
 
-ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", moderationOptions);
-ModerationResponse response = openAiModerationModel.call(moderationPrompt);
+ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);
+ModerationResponse response = openAiModerationModel.call(this.moderationPrompt);
 
 // Access the moderation results
 Moderation moderation = moderationResponse.getResult().getOutput();
@@ -97,7 +97,7 @@ for (ModerationResult result : moderation.getResults()) {
     System.out.println("Flagged: " + result.isFlagged());
 
     // Access categories
-    Categories categories = result.getCategories();
+    Categories categories = this.result.getCategories();
     System.out.println("\nCategories:");
     System.out.println("Sexual: " + categories.isSexual());
     System.out.println("Hate: " + categories.isHate());
@@ -112,7 +112,7 @@ for (ModerationResult result : moderation.getResults()) {
     System.out.println("Violence: " + categories.isViolence());
 
     // Access category scores
-    CategoryScores scores = result.getCategoryScores();
+    CategoryScores scores = this.result.getCategoryScores();
     System.out.println("\nCategory Scores:");
     System.out.println("Sexual: " + scores.getSexual());
     System.out.println("Hate: " + scores.getHate());
@@ -158,14 +158,14 @@ Next, create an OpenAiModerationModel:
 ----
 OpenAiModerationApi openAiModerationApi = new OpenAiModerationApi(System.getenv("OPENAI_API_KEY"));
 
-OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(openAiModerationApi);
+OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(this.openAiModerationApi);
 
 OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
     .withModel("text-moderation-latest")
     .build();
 
-ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", moderationOptions);
-ModerationResponse response = openAiModerationModel.call(moderationPrompt);
+ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);
+ModerationResponse response = this.openAiModerationModel.call(this.moderationPrompt);
 ----
 
 == Example Code

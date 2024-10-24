@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.api;
 
 import java.util.List;
@@ -20,6 +21,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -38,13 +45,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * Single class implementation of the
@@ -73,6 +73,8 @@ public class OpenAiApi {
 	private final RestClient restClient;
 
 	private final WebClient webClient;
+
+	private OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api with base URL set to https://api.openai.com
@@ -171,6 +173,155 @@ public class OpenAiApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.build();// @formatter:on
+	}
+
+	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
+		return content.stream()
+			.filter(c -> "text".equals(c.type()))
+			.map(ChatCompletionMessage.MediaContent::text)
+			.reduce("", (a, b) -> a + b);
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
+	 * request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
+			MultiValueMap<String, String> additionalHttpHeader) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
+
+		return this.restClient.post()
+			.uri(this.completionsPath)
+			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.body(chatRequest)
+			.retrieve()
+			.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
+	 * request.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
+			MultiValueMap<String, String> additionalHttpHeader) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
+		return this.webClient.post()
+			.uri(this.completionsPath)
+			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			// cancels the flux stream after the "[DONE]" is received.
+			.takeUntil(SSE_DONE_PREDICATE)
+			// filters out the "[DONE]" message.
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			// Detect is the chunk is part of a streaming function call.
+			.map(chunk -> {
+				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			// Group all chunks belonging to the same function call.
+			// Flux<ChatCompletionChunk> -> Flux<Flux<ChatCompletionChunk>>
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			// Merging the window chunks into a single chunk.
+			// Reduce the inner Flux<ChatCompletionChunk> window into a single
+			// Mono<ChatCompletionChunk>,
+			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
+			.concatMapIterable(window -> {
+				Mono<ChatCompletionChunk> monoChunk = window.reduce(
+						new ChatCompletionChunk(null, null, null, null, null, null, null),
+						(previous, current) -> this.chunkMerger.merge(previous, current));
+				return List.of(monoChunk);
+			})
+			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
+			.flatMap(mono -> mono);
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
+	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
+	 * {@link List} of tokens (e.g. Integers). For embedding multiple inputs in a single
+	 * request, You can pass a {@link List} of {@link String} or {@link List} of
+	 * {@link List} of tokens. For example:
+	 *
+	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
+	 */
+	public <T> ResponseEntity<EmbeddingList<Embedding>> embeddings(EmbeddingRequest<T> embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		// Input text to embed, encoded as a string or array of tokens. To embed multiple
+		// inputs in a single
+		// request, pass an array of strings or array of token arrays.
+		Assert.notNull(embeddingRequest.input(), "The input can not be null.");
+		Assert.isTrue(embeddingRequest.input() instanceof String || embeddingRequest.input() instanceof List,
+				"The input must be either a String, or a List of Strings or List of List of integers.");
+
+		// The input must not exceed the max input tokens for the model (8192 tokens for
+		// text-embedding-ada-002), cannot
+		// be an empty string, and any array must be 2048 dimensions or less.
+		if (embeddingRequest.input() instanceof List list) {
+			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
+			Assert.isTrue(list.size() <= 2048, "The list must be 2048 dimensions or less");
+			Assert.isTrue(
+					list.get(0) instanceof String || list.get(0) instanceof Integer || list.get(0) instanceof List,
+					"The input must be either a String, or a List of Strings or list of list of integers.");
+		}
+
+		return this.restClient.post()
+			.uri(this.embeddingsPath)
+			.body(embeddingRequest)
+			.retrieve()
+			.toEntity(new ParameterizedTypeReference<>() {
+
+			});
 	}
 
 	/**
@@ -296,11 +447,84 @@ public class OpenAiApi {
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
 		}
 
 		@Override
 		public String getName() {
+			return this.value;
+		}
+
+	}
+
+	/**
+	 * The reason the model stopped generating tokens.
+	 */
+	public enum ChatCompletionFinishReason {
+
+		/**
+		 * The model hit a natural stop point or a provided stop sequence.
+		 */
+		@JsonProperty("stop")
+		STOP,
+		/**
+		 * The maximum number of tokens specified in the request was reached.
+		 */
+		@JsonProperty("length")
+		LENGTH,
+		/**
+		 * The content was omitted due to a flag from our content filters.
+		 */
+		@JsonProperty("content_filter")
+		CONTENT_FILTER,
+		/**
+		 * The model called a tool.
+		 */
+		@JsonProperty("tool_calls")
+		TOOL_CALLS,
+		/**
+		 * (deprecated) The model called a function.
+		 */
+		@JsonProperty("function_call")
+		FUNCTION_CALL,
+		/**
+		 * Only for compatibility with Mistral AI API.
+		 */
+		@JsonProperty("tool_call")
+		TOOL_CALL
+
+	}
+
+	/**
+	 * OpenAI Embeddings Models:
+	 * <a href="https://platform.openai.com/docs/models/embeddings">Embeddings</a>.
+	 */
+	public enum EmbeddingModel {
+
+		/**
+		 * Most capable embedding model for both english and non-english tasks. DIMENSION:
+		 * 3072
+		 */
+		TEXT_EMBEDDING_3_LARGE("text-embedding-3-large"),
+
+		/**
+		 * Increased performance over 2nd generation ada embedding model. DIMENSION: 1536
+		 */
+		TEXT_EMBEDDING_3_SMALL("text-embedding-3-small"),
+
+		/**
+		 * Most capable 2nd generation embedding model, replacing 16 first generation
+		 * models. DIMENSION: 1536
+		 */
+		TEXT_EMBEDDING_ADA_002("text-embedding-ada-002");
+
+		public final String value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
 			return this.value;
 		}
 
@@ -523,9 +747,9 @@ public class OpenAiApi {
 		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
 		 */
 		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
-			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, maxCompletionTokens, n, presencePenalty,
-					responseFormat, seed, stop, stream, streamOptions, temperature, topP,
-					tools, toolChoice, parallelToolCalls, user);
+			return new ChatCompletionRequest(this.messages, this.model, this.frequencyPenalty, this.logitBias, this.logprobs, this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty,
+					this.responseFormat, this.seed, this.stop, this.stream, streamOptions, this.temperature, this.topP,
+					this.tools, this.toolChoice, this.parallelToolCalls, this.user);
 		}
 
 		/**
@@ -559,7 +783,20 @@ public class OpenAiApi {
 		public record ResponseFormat(
 				@JsonProperty("type") Type type,
 				@JsonProperty("json_schema") JsonSchema jsonSchema ) {
-			
+
+			public ResponseFormat(Type type) {
+				this(type, (JsonSchema) null);
+			}
+
+			public ResponseFormat(Type type, String schema) {
+				this(type, "custom_schema", schema, true);
+			}
+
+			@ConstructorBinding
+			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
+				this(type, StringUtils.hasText(schema)? new JsonSchema(name, schema, strict): null);
+			}
+
 			public enum Type {
 				/**
 				 * Generates a text response. (default)
@@ -604,19 +841,6 @@ public class OpenAiApi {
 				}
 			}
 
-			public ResponseFormat(Type type) {
-				this(type, (JsonSchema) null);
-			}
-
-			public ResponseFormat(Type type, String schema) {
-				this(type, "custom_schema", schema, true);
-			}
-
-			@ConstructorBinding
-			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
-				this(type, StringUtils.hasText(schema)? new JsonSchema(name, schema, strict): null);
-			}
-
 		}
 
 		/**
@@ -659,6 +883,16 @@ public class OpenAiApi {
 			@JsonProperty("refusal") String refusal) {// @formatter:on
 
 		/**
+		 * Create a chat completion message with the given content and role. All other
+		 * fields are null.
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 */
+		public ChatCompletionMessage(Object content, Role role) {
+			this(content, role, null, null, null, null);
+		}
+
+		/**
 		 * Get message content as String.
 		 */
 		public String content() {
@@ -669,16 +903,6 @@ public class OpenAiApi {
 				return text;
 			}
 			throw new IllegalStateException("The content is not a string!");
-		}
-
-		/**
-		 * Create a chat completion message with the given content and role. All other
-		 * fields are null.
-		 * @param content The contents of the message.
-		 * @param role The role of the author of this message.
-		 */
-		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null);
 		}
 
 		/**
@@ -725,19 +949,6 @@ public class OpenAiApi {
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl) {
 // @formatter:on
-			/**
-			 * @param url Either a URL of the image or the base64 encoded image data. The
-			 * base64 encoded image data must have a special prefix in the following
-			 * format: "data:{mimetype};base64,{base64-encoded-image-data}".
-			 * @param detail Specifies the detail level of the image.
-			 */
-			@JsonInclude(Include.NON_NULL)
-			public record ImageUrl(@JsonProperty("url") String url, @JsonProperty("detail") String detail) {
-
-				public ImageUrl(String url) {
-					this(url, null);
-				}
-			}
 
 			/**
 			 * Shortcut constructor for a text content.
@@ -754,6 +965,22 @@ public class OpenAiApi {
 			public MediaContent(ImageUrl imageUrl) {
 				this("image_url", null, imageUrl);
 			}
+
+			/**
+			 * @param url Either a URL of the image or the base64 encoded image data. The
+			 * base64 encoded image data must have a special prefix in the following
+			 * format: "data:{mimetype};base64,{base64-encoded-image-data}".
+			 * @param detail Specifies the detail level of the image.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record ImageUrl(@JsonProperty("url") String url, @JsonProperty("detail") String detail) {
+
+				public ImageUrl(String url) {
+					this(url, null);
+				}
+
+			}
+
 		}
 
 		/**
@@ -777,6 +1004,7 @@ public class OpenAiApi {
 			public ToolCall(String id, String type, ChatCompletionFunction function) {
 				this(null, id, type, function);
 			}
+
 		}
 
 		/**
@@ -791,50 +1019,6 @@ public class OpenAiApi {
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {// @formatter:on
 		}
-	}
-
-	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
-		return content.stream()
-			.filter(c -> "text".equals(c.type()))
-			.map(ChatCompletionMessage.MediaContent::text)
-			.reduce("", (a, b) -> a + b);
-	}
-
-	/**
-	 * The reason the model stopped generating tokens.
-	 */
-	public enum ChatCompletionFinishReason {
-
-		/**
-		 * The model hit a natural stop point or a provided stop sequence.
-		 */
-		@JsonProperty("stop")
-		STOP,
-		/**
-		 * The maximum number of tokens specified in the request was reached.
-		 */
-		@JsonProperty("length")
-		LENGTH,
-		/**
-		 * The content was omitted due to a flag from our content filters.
-		 */
-		@JsonProperty("content_filter")
-		CONTENT_FILTER,
-		/**
-		 * The model called a tool.
-		 */
-		@JsonProperty("tool_calls")
-		TOOL_CALLS,
-		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call")
-		FUNCTION_CALL,
-		/**
-		 * Only for compatibility with Mistral AI API.
-		 */
-		@JsonProperty("tool_call")
-		TOOL_CALL
 
 	}
 
@@ -880,6 +1064,7 @@ public class OpenAiApi {
 				@JsonProperty("logprobs") LogProbs logprobs) {// @formatter:on
 
 		}
+
 	}
 
 	/**
@@ -928,8 +1113,12 @@ public class OpenAiApi {
 					@JsonProperty("logprob") Float logprob,
 					@JsonProperty("bytes") List<Integer> probBytes) {// @formatter:on
 			}
+
 		}
+
 	}
+
+	// Embeddings API
 
 	/**
 	 * Usage statistics for the completion request.
@@ -1018,144 +1207,6 @@ public class OpenAiApi {
 				@JsonProperty("delta") ChatCompletionMessage delta,
 				@JsonProperty("logprobs") LogProbs logprobs) {// @formatter:on
 		}
-	}
-
-	/**
-	 * Creates a model response for the given chat conversation.
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
-	 * and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
-	}
-
-	/**
-	 * Creates a model response for the given chat conversation.
-	 * @param chatRequest The chat completion request.
-	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
-	 * request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
-	 * and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
-
-		return this.restClient.post()
-			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
-			.body(chatRequest)
-			.retrieve()
-			.toEntity(ChatCompletion.class);
-	}
-
-	private OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
-	}
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
-	 * request.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		return this.webClient.post()
-			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-			.retrieve()
-			.bodyToFlux(String.class)
-			// cancels the flux stream after the "[DONE]" is received.
-			.takeUntil(SSE_DONE_PREDICATE)
-			// filters out the "[DONE]" message.
-			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-			// Detect is the chunk is part of a streaming function call.
-			.map(chunk -> {
-				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-					isInsideTool.set(true);
-				}
-				return chunk;
-			})
-			// Group all chunks belonging to the same function call.
-			// Flux<ChatCompletionChunk> -> Flux<Flux<ChatCompletionChunk>>
-			.windowUntil(chunk -> {
-				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-					isInsideTool.set(false);
-					return true;
-				}
-				return !isInsideTool.get();
-			})
-			// Merging the window chunks into a single chunk.
-			// Reduce the inner Flux<ChatCompletionChunk> window into a single
-			// Mono<ChatCompletionChunk>,
-			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
-			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
-				return List.of(monoChunk);
-			})
-			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
-			.flatMap(mono -> mono);
-	}
-
-	// Embeddings API
-
-	/**
-	 * OpenAI Embeddings Models:
-	 * <a href="https://platform.openai.com/docs/models/embeddings">Embeddings</a>.
-	 */
-	public enum EmbeddingModel {
-
-		/**
-		 * Most capable embedding model for both english and non-english tasks. DIMENSION:
-		 * 3072
-		 */
-		TEXT_EMBEDDING_3_LARGE("text-embedding-3-large"),
-
-		/**
-		 * Increased performance over 2nd generation ada embedding model. DIMENSION: 1536
-		 */
-		TEXT_EMBEDDING_3_SMALL("text-embedding-3-small"),
-
-		/**
-		 * Most capable 2nd generation embedding model, replacing 16 first generation
-		 * models. DIMENSION: 1536
-		 */
-		TEXT_EMBEDDING_ADA_002("text-embedding-ada-002");
-
-		public final String value;
-
-		EmbeddingModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
 
 	}
 
@@ -1183,6 +1234,7 @@ public class OpenAiApi {
 		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
+
 	}
 
 	/**
@@ -1227,6 +1279,7 @@ public class OpenAiApi {
 		public EmbeddingRequest(T input) {
 			this(input, DEFAULT_EMBEDDING_MODEL);
 		}
+
 	}
 
 	/**
@@ -1244,47 +1297,6 @@ public class OpenAiApi {
 			@JsonProperty("data") List<T> data,
 			@JsonProperty("model") String model,
 			@JsonProperty("usage") Usage usage) {// @formatter:on
-	}
-
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
-	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
-	 * {@link List} of tokens (e.g. Integers). For embedding multiple inputs in a single
-	 * request, You can pass a {@link List} of {@link String} or {@link List} of
-	 * {@link List} of tokens. For example:
-	 *
-	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
-	 */
-	public <T> ResponseEntity<EmbeddingList<Embedding>> embeddings(EmbeddingRequest<T> embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		// Input text to embed, encoded as a string or array of tokens. To embed multiple
-		// inputs in a single
-		// request, pass an array of strings or array of token arrays.
-		Assert.notNull(embeddingRequest.input(), "The input can not be null.");
-		Assert.isTrue(embeddingRequest.input() instanceof String || embeddingRequest.input() instanceof List,
-				"The input must be either a String, or a List of Strings or List of List of integers.");
-
-		// The input must not exceed the max input tokens for the model (8192 tokens for
-		// text-embedding-ada-002), cannot
-		// be an empty string, and any array must be 2048 dimensions or less.
-		if (embeddingRequest.input() instanceof List list) {
-			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
-			Assert.isTrue(list.size() <= 2048, "The list must be 2048 dimensions or less");
-			Assert.isTrue(
-					list.get(0) instanceof String || list.get(0) instanceof Integer || list.get(0) instanceof List,
-					"The input must be either a String, or a List of Strings or list of list of integers.");
-		}
-
-		return this.restClient.post()
-			.uri(this.embeddingsPath)
-			.body(embeddingRequest)
-			.retrieve()
-			.toEntity(new ParameterizedTypeReference<>() {
-			});
 	}
 
 }

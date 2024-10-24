@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +31,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -42,6 +40,10 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 /**
  * @author Geet Rawat
@@ -53,13 +55,21 @@ public class GemFireVectorStoreIT {
 
 	public static final String INDEX_NAME = "spring-ai-index1";
 
-	private static GemFireCluster gemFireCluster;
-
 	private static final int HTTP_SERVICE_PORT = 9090;
 
 	private static final int LOCATOR_COUNT = 1;
 
 	private static final int SERVER_COUNT = 1;
+
+	private static GemFireCluster gemFireCluster;
+
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(TestApplication.class);
+
+	List<Document> documents = List.of(
+			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
 	@AfterAll
 	public static void stopGemFireCluster() {
@@ -83,11 +93,6 @@ public class GemFireVectorStoreIT {
 				String.format("localhost[%d]", gemFireCluster.getLocatorPort()));
 	}
 
-	List<Document> documents = List.of(
-			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
-			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
-			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
-
 	public static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);
 		try {
@@ -98,15 +103,12 @@ public class GemFireVectorStoreIT {
 		}
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class);
-
 	@Test
 	public void addAndDeleteEmbeddingTest() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-			vectorStore.add(documents);
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.add(this.documents);
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await()
 				.atMost(1, MINUTES)
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(3)),
@@ -116,9 +118,9 @@ public class GemFireVectorStoreIT {
 
 	@Test
 	public void addAndSearchTest() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			Awaitility.await()
 				.atMost(1, MINUTES)
@@ -127,7 +129,7 @@ public class GemFireVectorStoreIT {
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(5));
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939)" + " was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
@@ -137,7 +139,7 @@ public class GemFireVectorStoreIT {
 
 	@Test
 	public void documentUpdateTest() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
@@ -175,9 +177,9 @@ public class GemFireVectorStoreIT {
 	@Test
 	public void searchThresholdTest() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			Awaitility.await()
 				.atMost(1, MINUTES)
@@ -198,7 +200,7 @@ public class GemFireVectorStoreIT {
 			assertThat(results).hasSize(1);
 
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression " + "(1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");

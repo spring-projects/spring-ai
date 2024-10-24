@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -35,11 +38,9 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import io.micrometer.observation.tck.TestObservationRegistry;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 /**
  * @author Pablo Sanchidrian Herrera
@@ -57,18 +58,18 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors")
 		.withStartupTimeout(Duration.ofSeconds(100));
 
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(TypesenseVectorStoreAutoConfiguration.class))
+		.withUserConfiguration(Config.class);
+
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
 			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(TypesenseVectorStoreAutoConfiguration.class))
-		.withUserConfiguration(Config.class);
-
 	@Test
 	public void addAndSearch() {
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("spring.ai.vectorstore.typesense.embeddingDimension=384",
 					"spring.ai.vectorstore.typesense.collectionName=myTestCollection",
 					"spring.ai.vectorstore.typesense.initialize-schema=true",
@@ -80,7 +81,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
-				vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.TYPESENSE,
 						VectorStoreObservationContext.Operation.ADD);
@@ -90,7 +91,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).hasSize(2);
@@ -100,7 +101,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.TYPESENSE,
 						VectorStoreObservationContext.Operation.DELETE);

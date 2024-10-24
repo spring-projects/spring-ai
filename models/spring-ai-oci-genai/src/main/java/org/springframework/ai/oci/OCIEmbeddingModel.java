@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.oci;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import com.oracle.bmc.generativeaiinference.model.OnDemandServingMode;
 import com.oracle.bmc.generativeaiinference.model.ServingMode;
 import com.oracle.bmc.generativeaiinference.requests.EmbedTextRequest;
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -83,7 +85,7 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
-		OCIEmbeddingOptions runtimeOptions = mergeOptions(request.getOptions(), options);
+		OCIEmbeddingOptions runtimeOptions = mergeOptions(request.getOptions(), this.options);
 		List<EmbedTextRequest> embedTextRequests = createRequests(request.getInstructions(), runtimeOptions);
 
 		EmbeddingModelObservationContext context = EmbeddingModelObservationContext.builder()
@@ -109,7 +111,7 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 		AtomicInteger index = new AtomicInteger(0);
 		List<Embedding> embeddings = new ArrayList<>();
 		for (EmbedTextRequest embedTextRequest : embedTextRequests) {
-			EmbedTextResult embedTextResult = genAi.embedText(embedTextRequest).getEmbedTextResult();
+			EmbedTextResult embedTextResult = this.genAi.embedText(embedTextRequest).getEmbedTextResult();
 			if (modelId == null) {
 				modelId = embedTextResult.getModelId();
 			}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
@@ -31,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.milvus.MilvusContainer;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -45,7 +47,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.milvus.MilvusContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -88,30 +89,31 @@ public class MilvusVectorStoreIT {
 	@ValueSource(strings = { "COSINE", "L2", "IP" })
 	public void addAndSearch(String metricType) {
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			resetCollection(vectorStore);
+				resetCollection(vectorStore);
 
-			vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-			assertThat(resultDoc.getContent()).contains(
-					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
-			assertThat(resultDoc.getMetadata()).hasSize(2);
-			assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
+				assertThat(resultDoc.getContent()).contains(
+						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+				assertThat(resultDoc.getMetadata()).hasSize(2);
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
-			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				// Remove all documents from the store
+				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-			assertThat(results).hasSize(0);
-		});
+				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				assertThat(results).hasSize(0);
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -121,135 +123,140 @@ public class MilvusVectorStoreIT {
 
 		// https://milvus.io/docs/json_data_type.md
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			resetCollection(vectorStore);
+				resetCollection(vectorStore);
 
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL"));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
 
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
-			assertThat(results).hasSize(3);
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
+				assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'NL'"));
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+				results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'NL'"));
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG'"));
+				results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'BG'"));
 
-			assertThat(results).hasSize(2);
-			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
-			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG' && year == 2020"));
+				results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'BG' && year == 2020"));
 
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
+				results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
 
-			assertThat(results).hasSize(2);
-			assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
-			assertThat(results.get(1).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
+				assertThat(results.get(1).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
 
-		});
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "L2", "IP" })
 	public void documentUpdate(String metricType) {
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			resetCollection(vectorStore);
+				resetCollection(vectorStore);
 
-			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
-					Collections.singletonMap("meta1", "meta1"));
+				Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
+						Collections.singletonMap("meta1", "meta1"));
 
-			vectorStore.add(List.of(document));
+				vectorStore.add(List.of(document));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
-			assertThat(resultDoc.getMetadata()).containsKey("meta1");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(document.getId());
+				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getMetadata()).containsKey("meta1");
+				assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-			Document sameIdDocument = new Document(document.getId(),
-					"The World is Big and Salvation Lurks Around the Corner",
-					Collections.singletonMap("meta2", "meta2"));
+				Document sameIdDocument = new Document(document.getId(),
+						"The World is Big and Salvation Lurks Around the Corner",
+						Collections.singletonMap("meta2", "meta2"));
 
-			vectorStore.add(List.of(sameIdDocument));
+				vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+				results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
 
-			assertThat(results).hasSize(1);
-			resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+				assertThat(results).hasSize(1);
+				resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(document.getId());
+				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getMetadata()).containsKey("meta2");
+				assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-			vectorStore.delete(List.of(document.getId()));
+				vectorStore.delete(List.of(document.getId()));
 
-		});
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "IP" })
 	public void searchWithThreshold(String metricType) {
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			resetCollection(vectorStore);
+				resetCollection(vectorStore);
 
-			vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
-			List<Document> fullResult = vectorStore
-				.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
+				List<Document> fullResult = vectorStore
+					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
 
-			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+				List<Float> distances = fullResult.stream()
+					.map(doc -> (Float) doc.getMetadata().get("distance"))
+					.toList();
 
-			assertThat(distances).hasSize(3);
+				assertThat(distances).hasSize(3);
 
-			float threshold = (distances.get(0) + distances.get(1)) / 2;
+				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-			assertThat(resultDoc.getContent()).contains(
-					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
-			assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
+				assertThat(resultDoc.getContent()).contains(
+						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
-		});
+			});
 	}
 
 	@SpringBootConfiguration
@@ -265,7 +272,7 @@ public class MilvusVectorStoreIT {
 				.withCollectionName("test_vector_store")
 				.withDatabaseName("default")
 				.withIndexType(IndexType.IVF_FLAT)
-				.withMetricType(metricType)
+				.withMetricType(this.metricType)
 				.build();
 			return new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy());
 		}

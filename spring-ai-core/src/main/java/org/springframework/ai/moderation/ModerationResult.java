@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.moderation;
 
 import java.util.Objects;
@@ -10,7 +26,7 @@ import java.util.Objects;
  * @author Ahmed Yousri
  * @since 1.0.0
  */
-public class ModerationResult {
+public final class ModerationResult {
 
 	private boolean flagged;
 
@@ -24,8 +40,12 @@ public class ModerationResult {
 		this.categoryScores = builder.categoryScores;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public boolean isFlagged() {
-		return flagged;
+		return this.flagged;
 	}
 
 	public void setFlagged(boolean flagged) {
@@ -33,7 +53,7 @@ public class ModerationResult {
 	}
 
 	public Categories getCategories() {
-		return categories;
+		return this.categories;
 	}
 
 	public void setCategories(Categories categories) {
@@ -41,15 +61,35 @@ public class ModerationResult {
 	}
 
 	public CategoryScores getCategoryScores() {
-		return categoryScores;
+		return this.categoryScores;
 	}
 
 	public void setCategoryScores(CategoryScores categoryScores) {
 		this.categoryScores = categoryScores;
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof ModerationResult)) {
+			return false;
+		}
+		ModerationResult that = (ModerationResult) o;
+		return this.flagged == that.flagged && Objects.equals(this.categories, that.categories)
+				&& Objects.equals(this.categoryScores, that.categoryScores);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.flagged, this.categories, this.categoryScores);
+	}
+
+	@Override
+	public String toString() {
+		return "ModerationResult{" + "flagged=" + this.flagged + ", categories=" + this.categories + ", categoryScores="
+				+ this.categoryScores + '}';
 	}
 
 	public static class Builder {
@@ -79,28 +119,6 @@ public class ModerationResult {
 			return new ModerationResult(this);
 		}
 
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof ModerationResult))
-			return false;
-		ModerationResult that = (ModerationResult) o;
-		return flagged == that.flagged && Objects.equals(categories, that.categories)
-				&& Objects.equals(categoryScores, that.categoryScores);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(flagged, categories, categoryScores);
-	}
-
-	@Override
-	public String toString() {
-		return "ModerationResult{" + "flagged=" + flagged + ", categories=" + categories + ", categoryScores="
-				+ categoryScores + '}';
 	}
 
 }

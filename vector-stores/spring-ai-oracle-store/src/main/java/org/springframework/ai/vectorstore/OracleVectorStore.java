@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,9 +15,6 @@
  */
 
 package org.springframework.ai.vectorstore;
-
-import static org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT;
-import static org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue;
 
 import java.io.ByteArrayOutputStream;
 import java.sql.PreparedStatement;
@@ -31,8 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.micrometer.observation.ObservationRegistry;
+import oracle.jdbc.OracleType;
+import oracle.sql.VECTOR;
+import oracle.sql.json.OracleJsonFactory;
+import oracle.sql.json.OracleJsonGenerator;
+import oracle.sql.json.OracleJsonObject;
+import oracle.sql.json.OracleJsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -51,13 +56,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.StringUtils;
 
-import io.micrometer.observation.ObservationRegistry;
-import oracle.jdbc.OracleType;
-import oracle.sql.VECTOR;
-import oracle.sql.json.OracleJsonFactory;
-import oracle.sql.json.OracleJsonGenerator;
-import oracle.sql.json.OracleJsonObject;
-import oracle.sql.json.OracleJsonValue;
+import static org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT;
+import static org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue;
 
 /**
  * <p>
@@ -86,9 +86,461 @@ import oracle.sql.json.OracleJsonValue;
  */
 public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	public static final double SIMILARITY_THRESHOLD_EXACT_MATCH = 1.0d;
+
+	public static final String DEFAULT_TABLE_NAME = "SPRING_AI_VECTORS";
+
+	public static final OracleVectorStoreIndexType DEFAULT_INDEX_TYPE = OracleVectorStoreIndexType.IVF;
+
+	public static final OracleVectorStoreDistanceType DEFAULT_DISTANCE_TYPE = OracleVectorStoreDistanceType.COSINE;
+
+	public static final int DEFAULT_DIMENSIONS = -1;
+
+	public static final int DEFAULT_SEARCH_ACCURACY = -1;
+
 	private static final Logger logger = LoggerFactory.getLogger(OracleVectorStore.class);
 
-	public static final double SIMILARITY_THRESHOLD_EXACT_MATCH = 1.0d;
+	private static Map<OracleVectorStoreDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+			OracleVectorStoreDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE,
+			OracleVectorStoreDistanceType.EUCLIDEAN, VectorStoreSimilarityMetric.EUCLIDEAN,
+			OracleVectorStoreDistanceType.DOT, VectorStoreSimilarityMetric.DOT);
+
+	public final FilterExpressionConverter filterExpressionConverter = new SqlJsonPathFilterExpressionConverter();
+
+	private final JdbcTemplate jdbcTemplate;
+
+	private final EmbeddingModel embeddingModel;
+
+	private final boolean initializeSchema;
+
+	private final boolean removeExistingVectorStoreTable;
+
+	/**
+	 * Table name where vectors will be stored.
+	 */
+	private final String tableName;
+
+	/**
+	 * Index type used to index the vectors. It can impact performance and database memory
+	 * consumption.
+	 */
+	private final OracleVectorStoreIndexType indexType;
+
+	/**
+	 * Distance type to use for computing vector distances.
+	 */
+	private final OracleVectorStoreDistanceType distanceType;
+
+	/**
+	 * Expected number of dimensions for vectors. Enforcing vector dimensions is very
+	 * useful to ensure future vector distance computations will be relevant.
+	 */
+	private final int dimensions;
+
+	private final boolean forcedNormalization;
+
+	private final int searchAccuracy;
+
+	private final BatchingStrategy batchingStrategy;
+
+	private final OracleJsonFactory osonFactory = new OracleJsonFactory();
+
+	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
+				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, false, false, false);
+	}
+
+	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, boolean initializeSchema) {
+		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
+				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, initializeSchema, false, false);
+	}
+
+	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
+			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
+			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
+			boolean forcedNormalization) {
+		this(jdbcTemplate, embeddingModel, tableName, indexType, distanceType, dimensions, searchAccuracy,
+				initializeSchema, removeExistingVectorStoreTable, forcedNormalization, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
+	}
+
+	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
+			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
+			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
+			boolean forcedNormalization, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
+
+		super(observationRegistry, customObservationConvention);
+
+		if (dimensions != DEFAULT_DIMENSIONS) {
+			if (dimensions <= 0) {
+				throw new RuntimeException("Number of dimensions must be strictly positive");
+			}
+			if (dimensions > 65535) {
+				throw new RuntimeException("Number of dimensions must be at most 65535");
+			}
+		}
+
+		if (searchAccuracy != DEFAULT_SEARCH_ACCURACY) {
+			if (searchAccuracy < 1) {
+				throw new RuntimeException("Search accuracy must be greater or equals to 1");
+			}
+			if (searchAccuracy > 100) {
+				throw new RuntimeException("Search accuracy must be lower or equals to 100");
+			}
+		}
+
+		this.jdbcTemplate = jdbcTemplate;
+		this.embeddingModel = embeddingModel;
+		this.tableName = tableName;
+		this.indexType = indexType;
+		this.distanceType = distanceType;
+		this.dimensions = dimensions;
+		this.searchAccuracy = searchAccuracy;
+		this.initializeSchema = initializeSchema;
+		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
+		this.forcedNormalization = forcedNormalization;
+		this.batchingStrategy = batchingStrategy;
+	}
+
+	@Override
+	public void doAdd(final List<Document> documents) {
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
+
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				final Document document = documents.get(i);
+				final String content = document.getContent();
+				final byte[] json = toJson(document.getMetadata());
+				final VECTOR embeddingVector = toVECTOR(document.getEmbedding());
+
+				setParameterValue(ps, 1, Types.VARCHAR, document.getId());
+				setParameterValue(ps, 2, Types.VARCHAR, content);
+				setParameterValue(ps, 3, OracleType.JSON.getVendorTypeNumber(), json);
+				setParameterValue(ps, 4, OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
+			}
+
+			@Override
+			public int getBatchSize() {
+				return documents.size();
+			}
+		});
+	}
+
+	private String getIngestStatement() {
+		return String
+			.format("""
+					merge into %s target using (values(?, ?, ?, ?)) source (id, content, metadata, embedding) on (target.id = source.id)
+					when matched then update set target.content = source.content, target.metadata = source.metadata, target.embedding = source.embedding
+					when not matched then insert (target.id, target.content, target.metadata, target.embedding) values (source.id, source.content, source.metadata, source.embedding)""",
+					this.tableName);
+	}
+
+	/**
+	 * Bind binary JSON from the client.
+	 * @param m map of metadata
+	 * @return the binary JSON ready to be inserted
+	 */
+	private byte[] toJson(final Map<String, Object> m) {
+		this.out.reset();
+		try (OracleJsonGenerator gen = this.osonFactory.createJsonBinaryGenerator(this.out)) {
+			gen.writeStartObject();
+			for (String key : m.keySet()) {
+				final Object o = m.get(key);
+				if (o instanceof String) {
+					gen.write(key, (String) o);
+				}
+				else if (o instanceof Integer) {
+					gen.write(key, (Integer) o);
+				}
+				else if (o instanceof Float) {
+					gen.write(key, (Float) o);
+				}
+				else if (o instanceof Double) {
+					gen.write(key, (Double) o);
+				}
+				else if (o instanceof Boolean) {
+					gen.write(key, (Boolean) o);
+				}
+			}
+			gen.writeEnd();
+		}
+
+		return this.out.toByteArray();
+	}
+
+	/**
+	 * Converts a list of Double values into an Oracle VECTOR object ready to be inserted.
+	 * Optionally normalize the vector beforehand (see forcedNormalization).
+	 * @param floatList
+	 * @return
+	 * @throws SQLException
+	 */
+	private VECTOR toVECTOR(final float[] floatList) throws SQLException {
+		final double[] doubles = new double[floatList.length];
+		int i = 0;
+		for (double d : floatList) {
+			doubles[i++] = d;
+		}
+
+		if (this.forcedNormalization) {
+			return VECTOR.ofFloat64Values(normalize(doubles));
+		}
+
+		return VECTOR.ofFloat64Values(doubles);
+	}
+
+	/**
+	 * Normalize a vector if requested.
+	 * @param v vector to normalize
+	 * @return the vector normalized
+	 */
+	private double[] normalize(final double[] v) {
+		double squaredSum = 0d;
+
+		for (double e : v) {
+			squaredSum += e * e;
+		}
+
+		final double magnitude = Math.sqrt(squaredSum);
+
+		if (magnitude > 0) {
+			final double multiplier = 1d / magnitude;
+			final int length = v.length;
+			for (int i = 0; i < length; i++) {
+				v[i] *= multiplier;
+			}
+		}
+
+		return v;
+	}
+
+	@Override
+	public Optional<Boolean> doDelete(final List<String> idList) {
+		final String sql = String.format("delete from %s where id=?", this.tableName);
+		final int[] argTypes = { Types.VARCHAR };
+
+		final List<Object[]> batchArgs = new ArrayList<>();
+		for (String id : idList) {
+			batchArgs.add(new Object[] { id });
+		}
+
+		final int[] deleteCounts = this.jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
+
+		int deleteCount = 0;
+		for (int detailedResult : deleteCounts) {
+			switch (detailedResult) {
+				case Statement.EXECUTE_FAILED:
+					break;
+				case 1:
+				case Statement.SUCCESS_NO_INFO:
+					deleteCount++;
+					break;
+			}
+		}
+
+		return Optional.of(deleteCount == idList.size());
+	}
+
+	@Override
+	public List<Document> doSimilaritySearch(SearchRequest request) {
+		try {
+			// From the provided query, generate a vector using the embedding model
+			final VECTOR embeddingVector = toVECTOR(this.embeddingModel.embed(request.getQuery()));
+
+			if (logger.isDebugEnabled()) {
+				this.jdbcTemplate.batchUpdate("insert into debug(embedding) values(?)",
+						new BatchPreparedStatementSetter() {
+
+							@Override
+							public void setValues(PreparedStatement ps, int i) throws SQLException {
+								setParameterValue(ps, 1, OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
+							}
+
+							@Override
+							public int getBatchSize() {
+								return 1;
+							}
+						});
+			}
+
+			final String nativeFilterExpression = (request.getFilterExpression() != null)
+					? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+
+			String jsonPathFilter = "";
+
+			if (request.getSimilarityThreshold() == SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL) {
+				if (StringUtils.hasText(nativeFilterExpression)) {
+					jsonPathFilter = String.format("where JSON_EXISTS( metadata, '%s' )\n", nativeFilterExpression);
+				}
+
+				final String sql = this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? String.format("""
+						select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
+						from %s
+						%sorder by distance
+						fetch first %d rows only""", this.distanceType == DOT ? "(1+" : "", this.distanceType.name(),
+						this.distanceType == DOT ? ")/2" : "", this.tableName, jsonPathFilter, request.getTopK())
+						: String.format(
+								"""
+										select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
+										from %s
+										%sorder by distance
+										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
+								this.distanceType == DOT ? "(1+" : "", this.distanceType.name(),
+								this.distanceType == DOT ? ")/2" : "", this.tableName, jsonPathFilter,
+								request.getTopK(), this.searchAccuracy);
+
+				logger.debug("SQL query: " + sql);
+
+				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector);
+			}
+			else if (request.getSimilarityThreshold() == SIMILARITY_THRESHOLD_EXACT_MATCH) {
+				if (StringUtils.hasText(nativeFilterExpression)) {
+					jsonPathFilter = String.format("where JSON_EXISTS( metadata, '%s' )\n", nativeFilterExpression);
+				}
+
+				final String sql = String.format("""
+						select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
+						from %s
+						%sorder by distance
+						fetch EXACT first %d rows only""", this.distanceType == DOT ? "(1+" : "",
+						this.distanceType.name(), this.distanceType == DOT ? ")/2" : "", this.tableName, jsonPathFilter,
+						request.getTopK());
+
+				logger.debug("SQL query: " + sql);
+
+				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector);
+			}
+			else {
+				if (!this.forcedNormalization
+						|| (this.distanceType != OracleVectorStoreDistanceType.COSINE && this.distanceType != DOT)) {
+					throw new RuntimeException(
+							"Similarity threshold filtering requires all vectors to be normalized, see the forcedNormalization parameter for this Vector store. Also only COSINE and DOT distance types are supported.");
+				}
+
+				final double distance = this.distanceType == DOT ? (1d - request.getSimilarityThreshold()) * 2d - 1d
+						: 1d - request.getSimilarityThreshold();
+
+				if (StringUtils.hasText(nativeFilterExpression)) {
+					jsonPathFilter = String.format(" and JSON_EXISTS( metadata, '%s' )", nativeFilterExpression);
+				}
+
+				final String sql = this.distanceType == DOT ? (this.searchAccuracy == DEFAULT_SEARCH_ACCURACY
+						? String.format(
+								"""
+										select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
+										from %s
+										where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
+										order by distance
+										fetch first %d rows only""",
+								this.tableName, jsonPathFilter, request.getTopK())
+						: String.format(
+								"""
+										select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
+										from %s
+										where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
+										order by distance
+										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
+								this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy)
+
+				) : (this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? String.format("""
+						select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
+						from %s
+						where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
+						order by distance
+						fetch first %d rows only""", this.tableName, jsonPathFilter, request.getTopK())
+						: String.format(
+								"""
+										select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
+										from %s
+										where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
+										order by distance
+										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
+								this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy));
+
+				logger.debug("SQL query: " + sql);
+
+				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector, embeddingVector,
+						distance);
+			}
+		}
+		catch (SQLException sqle) {
+			throw new RuntimeException(sqle);
+		}
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		if (this.initializeSchema) {
+			// Remove existing VectorStoreTable
+			if (this.removeExistingVectorStoreTable) {
+				this.jdbcTemplate.execute(String.format("drop table if exists %s purge", this.tableName));
+			}
+
+			this.jdbcTemplate.execute(String.format("""
+					create table if not exists %s (
+						id        varchar2(36) default sys_guid() primary key,
+						content   clob not null,
+						metadata  json not null,
+						embedding vector(%s,FLOAT64) annotations(Distance '%s', IndexType '%s')
+					)""", this.tableName, this.dimensions == DEFAULT_DIMENSIONS ? "*" : String.valueOf(this.dimensions),
+					this.distanceType.name(), this.indexType.name()));
+
+			if (logger.isDebugEnabled()) {
+				this.jdbcTemplate.execute(String.format("""
+						create table if not exists debug (
+						id varchar2(36) default sys_guid() primary key,
+						embedding vector(%s,FLOAT64) annotations(Distance '%s')
+						)""", this.dimensions == DEFAULT_DIMENSIONS ? "*" : String.valueOf(this.dimensions),
+						this.distanceType.name()));
+			}
+
+			switch (this.indexType) {
+				case IVF:
+					this.jdbcTemplate.execute(String.format("""
+							create vector index if not exists vector_index_%s on %s (embedding)
+							organization neighbor partitions
+							            distance %s
+							            with target accuracy %d
+							            parameters (type IVF, neighbor partitions 10)""", this.tableName,
+							this.tableName, this.distanceType.name(),
+							this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 : this.searchAccuracy));
+					break;
+
+				/*
+				 * TODO: Enable for 23.5 case HNSW:
+				 * this.jdbcTemplate.execute(String.format(""" create vector index if not
+				 * exists vector_index_%s on %s (embedding) organization inmemory neighbor
+				 * graph distance %s with target accuracy %d parameters (type HNSW,
+				 * neighbors 40, efconstruction 500)""", tableName, tableName,
+				 * distanceType.name(), searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 :
+				 * searchAccuracy)); break;
+				 */
+			}
+		}
+	}
+
+	public String getTableName() {
+		return this.tableName;
+	}
+
+	@Override
+	public Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(VectorStoreProvider.ORACLE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName(this.getTableName())
+			.withSimilarityMetric(getSimilarityMetric());
+	}
+
+	private String getSimilarityMetric() {
+		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.distanceType)) {
+			return this.distanceType.name();
+		}
+		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
+	}
 
 	public enum OracleVectorStoreIndexType {
 
@@ -174,255 +626,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	}
 
-	public static final String DEFAULT_TABLE_NAME = "SPRING_AI_VECTORS";
-
-	public static final OracleVectorStoreIndexType DEFAULT_INDEX_TYPE = OracleVectorStoreIndexType.IVF;
-
-	public static final OracleVectorStoreDistanceType DEFAULT_DISTANCE_TYPE = OracleVectorStoreDistanceType.COSINE;
-
-	public static final int DEFAULT_DIMENSIONS = -1;
-
-	public static final int DEFAULT_SEARCH_ACCURACY = -1;
-
-	private final JdbcTemplate jdbcTemplate;
-
-	private final EmbeddingModel embeddingModel;
-
-	private final boolean initializeSchema;
-
-	private final boolean removeExistingVectorStoreTable;
-
-	public final FilterExpressionConverter filterExpressionConverter = new SqlJsonPathFilterExpressionConverter();
-
-	/**
-	 * Table name where vectors will be stored.
-	 */
-	private final String tableName;
-
-	/**
-	 * Index type used to index the vectors. It can impact performance and database memory
-	 * consumption.
-	 */
-	private final OracleVectorStoreIndexType indexType;
-
-	/**
-	 * Distance type to use for computing vector distances.
-	 */
-	private final OracleVectorStoreDistanceType distanceType;
-
-	/**
-	 * Expected number of dimensions for vectors. Enforcing vector dimensions is very
-	 * useful to ensure future vector distance computations will be relevant.
-	 */
-	private final int dimensions;
-
-	private final boolean forcedNormalization;
-
-	private final int searchAccuracy;
-
-	private final BatchingStrategy batchingStrategy;
-
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
-				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, false, false, false);
-	}
-
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
-				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, initializeSchema, false, false);
-	}
-
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
-			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
-			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
-			boolean forcedNormalization) {
-		this(jdbcTemplate, embeddingModel, tableName, indexType, distanceType, dimensions, searchAccuracy,
-				initializeSchema, removeExistingVectorStoreTable, forcedNormalization, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
-			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
-			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
-			boolean forcedNormalization, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		super(observationRegistry, customObservationConvention);
-
-		if (dimensions != DEFAULT_DIMENSIONS) {
-			if (dimensions <= 0) {
-				throw new RuntimeException("Number of dimensions must be strictly positive");
-			}
-			if (dimensions > 65535) {
-				throw new RuntimeException("Number of dimensions must be at most 65535");
-			}
-		}
-
-		if (searchAccuracy != DEFAULT_SEARCH_ACCURACY) {
-			if (searchAccuracy < 1) {
-				throw new RuntimeException("Search accuracy must be greater or equals to 1");
-			}
-			if (searchAccuracy > 100) {
-				throw new RuntimeException("Search accuracy must be lower or equals to 100");
-			}
-		}
-
-		this.jdbcTemplate = jdbcTemplate;
-		this.embeddingModel = embeddingModel;
-		this.tableName = tableName;
-		this.indexType = indexType;
-		this.distanceType = distanceType;
-		this.dimensions = dimensions;
-		this.searchAccuracy = searchAccuracy;
-		this.initializeSchema = initializeSchema;
-		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
-		this.forcedNormalization = forcedNormalization;
-		this.batchingStrategy = batchingStrategy;
-	}
-
-	@Override
-	public void doAdd(final List<Document> documents) {
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
-		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
-			@Override
-			public void setValues(PreparedStatement ps, int i) throws SQLException {
-				final Document document = documents.get(i);
-				final String content = document.getContent();
-				final byte[] json = toJson(document.getMetadata());
-				final VECTOR embeddingVector = toVECTOR(document.getEmbedding());
-
-				setParameterValue(ps, 1, Types.VARCHAR, document.getId());
-				setParameterValue(ps, 2, Types.VARCHAR, content);
-				setParameterValue(ps, 3, OracleType.JSON.getVendorTypeNumber(), json);
-				setParameterValue(ps, 4, OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
-			}
-
-			@Override
-			public int getBatchSize() {
-				return documents.size();
-			}
-		});
-	}
-
-	private String getIngestStatement() {
-		return String
-			.format("""
-					merge into %s target using (values(?, ?, ?, ?)) source (id, content, metadata, embedding) on (target.id = source.id)
-					when matched then update set target.content = source.content, target.metadata = source.metadata, target.embedding = source.embedding
-					when not matched then insert (target.id, target.content, target.metadata, target.embedding) values (source.id, source.content, source.metadata, source.embedding)""",
-					tableName);
-	}
-
-	private final OracleJsonFactory osonFactory = new OracleJsonFactory();
-
-	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-	/**
-	 * Bind binary JSON from the client.
-	 * @param m map of metadata
-	 * @return the binary JSON ready to be inserted
-	 */
-	private byte[] toJson(final Map<String, Object> m) {
-		out.reset();
-		try (OracleJsonGenerator gen = osonFactory.createJsonBinaryGenerator(out)) {
-			gen.writeStartObject();
-			for (String key : m.keySet()) {
-				final Object o = m.get(key);
-				if (o instanceof String) {
-					gen.write(key, (String) o);
-				}
-				else if (o instanceof Integer) {
-					gen.write(key, (Integer) o);
-				}
-				else if (o instanceof Float) {
-					gen.write(key, (Float) o);
-				}
-				else if (o instanceof Double) {
-					gen.write(key, (Double) o);
-				}
-				else if (o instanceof Boolean) {
-					gen.write(key, (Boolean) o);
-				}
-			}
-			gen.writeEnd();
-		}
-
-		return out.toByteArray();
-	}
-
-	/**
-	 * Converts a list of Double values into an Oracle VECTOR object ready to be inserted.
-	 * Optionally normalize the vector beforehand (see forcedNormalization).
-	 * @param floatList
-	 * @return
-	 * @throws SQLException
-	 */
-	private VECTOR toVECTOR(final float[] floatList) throws SQLException {
-		final double[] doubles = new double[floatList.length];
-		int i = 0;
-		for (double d : floatList) {
-			doubles[i++] = d;
-		}
-
-		if (forcedNormalization) {
-			return VECTOR.ofFloat64Values(normalize(doubles));
-		}
-
-		return VECTOR.ofFloat64Values(doubles);
-	}
-
-	/**
-	 * Normalize a vector if requested.
-	 * @param v vector to normalize
-	 * @return the vector normalized
-	 */
-	private double[] normalize(final double[] v) {
-		double squaredSum = 0d;
-
-		for (double e : v) {
-			squaredSum += e * e;
-		}
-
-		final double magnitude = Math.sqrt(squaredSum);
-
-		if (magnitude > 0) {
-			final double multiplier = 1d / magnitude;
-			final int length = v.length;
-			for (int i = 0; i < length; i++) {
-				v[i] *= multiplier;
-			}
-		}
-
-		return v;
-	}
-
-	@Override
-	public Optional<Boolean> doDelete(final List<String> idList) {
-		final String sql = String.format("delete from %s where id=?", tableName);
-		final int[] argTypes = { Types.VARCHAR };
-
-		final List<Object[]> batchArgs = new ArrayList<>();
-		for (String id : idList) {
-			batchArgs.add(new Object[] { id });
-		}
-
-		final int[] deleteCounts = jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
-
-		int deleteCount = 0;
-		for (int detailedResult : deleteCounts) {
-			switch (detailedResult) {
-				case Statement.EXECUTE_FAILED:
-					break;
-				case 1:
-				case Statement.SUCCESS_NO_INFO:
-					deleteCount++;
-					break;
-			}
-		}
-
-		return Optional.of(deleteCount == idList.size());
-	}
-
 	private static class DocumentRowMapper implements RowMapper<Document> {
 
 		@Override
@@ -457,197 +660,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			return result;
 		}
 
-	}
-
-	@Override
-	public List<Document> doSimilaritySearch(SearchRequest request) {
-		try {
-			// From the provided query, generate a vector using the embedding model
-			final VECTOR embeddingVector = toVECTOR(embeddingModel.embed(request.getQuery()));
-
-			if (logger.isDebugEnabled()) {
-				this.jdbcTemplate.batchUpdate("insert into debug(embedding) values(?)",
-						new BatchPreparedStatementSetter() {
-							@Override
-							public void setValues(PreparedStatement ps, int i) throws SQLException {
-								setParameterValue(ps, 1, OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
-							}
-
-							@Override
-							public int getBatchSize() {
-								return 1;
-							}
-						});
-			}
-
-			final String nativeFilterExpression = (request.getFilterExpression() != null)
-					? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
-
-			String jsonPathFilter = "";
-
-			if (request.getSimilarityThreshold() == SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL) {
-				if (StringUtils.hasText(nativeFilterExpression)) {
-					jsonPathFilter = String.format("where JSON_EXISTS( metadata, '%s' )\n", nativeFilterExpression);
-				}
-
-				final String sql = searchAccuracy == DEFAULT_SEARCH_ACCURACY ? String.format("""
-						select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
-						from %s
-						%sorder by distance
-						fetch first %d rows only""", distanceType == DOT ? "(1+" : "", distanceType.name(),
-						distanceType == DOT ? ")/2" : "", tableName, jsonPathFilter, request.getTopK())
-						: String.format(
-								"""
-										select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
-										from %s
-										%sorder by distance
-										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
-								distanceType == DOT ? "(1+" : "", distanceType.name(), distanceType == DOT ? ")/2" : "",
-								tableName, jsonPathFilter, request.getTopK(), searchAccuracy);
-
-				logger.debug("SQL query: " + sql);
-
-				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector);
-			}
-			else if (request.getSimilarityThreshold() == SIMILARITY_THRESHOLD_EXACT_MATCH) {
-				if (StringUtils.hasText(nativeFilterExpression)) {
-					jsonPathFilter = String.format("where JSON_EXISTS( metadata, '%s' )\n", nativeFilterExpression);
-				}
-
-				final String sql = String.format("""
-						select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
-						from %s
-						%sorder by distance
-						fetch EXACT first %d rows only""", distanceType == DOT ? "(1+" : "", distanceType.name(),
-						distanceType == DOT ? ")/2" : "", tableName, jsonPathFilter, request.getTopK());
-
-				logger.debug("SQL query: " + sql);
-
-				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector);
-			}
-			else {
-				if (!forcedNormalization
-						|| (distanceType != OracleVectorStoreDistanceType.COSINE && distanceType != DOT)) {
-					throw new RuntimeException(
-							"Similarity threshold filtering requires all vectors to be normalized, see the forcedNormalization parameter for this Vector store. Also only COSINE and DOT distance types are supported.");
-				}
-
-				final double distance = distanceType == DOT ? (1d - request.getSimilarityThreshold()) * 2d - 1d
-						: 1d - request.getSimilarityThreshold();
-
-				if (StringUtils.hasText(nativeFilterExpression)) {
-					jsonPathFilter = String.format(" and JSON_EXISTS( metadata, '%s' )", nativeFilterExpression);
-				}
-
-				final String sql = distanceType == DOT ? (searchAccuracy == DEFAULT_SEARCH_ACCURACY ? String.format("""
-						select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
-						from %s
-						where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
-						order by distance
-						fetch first %d rows only""", tableName, jsonPathFilter, request.getTopK()) : String.format("""
-						select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
-						from %s
-						where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
-						order by distance
-						fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""", tableName, jsonPathFilter,
-						request.getTopK(), searchAccuracy)
-
-				) : (searchAccuracy == DEFAULT_SEARCH_ACCURACY ? String.format("""
-						select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
-						from %s
-						where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
-						order by distance
-						fetch first %d rows only""", tableName, jsonPathFilter, request.getTopK()) : String.format("""
-						select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
-						from %s
-						where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
-						order by distance
-						fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""", tableName, jsonPathFilter,
-						request.getTopK(), searchAccuracy));
-
-				logger.debug("SQL query: " + sql);
-
-				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector, embeddingVector,
-						distance);
-			}
-		}
-		catch (SQLException sqle) {
-			throw new RuntimeException(sqle);
-		}
-	}
-
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		if (this.initializeSchema) {
-			// Remove existing VectorStoreTable
-			if (this.removeExistingVectorStoreTable) {
-				this.jdbcTemplate.execute(String.format("drop table if exists %s purge", tableName));
-			}
-
-			this.jdbcTemplate.execute(String.format("""
-					create table if not exists %s (
-						id        varchar2(36) default sys_guid() primary key,
-						content   clob not null,
-						metadata  json not null,
-						embedding vector(%s,FLOAT64) annotations(Distance '%s', IndexType '%s')
-					)""", tableName, dimensions == DEFAULT_DIMENSIONS ? "*" : String.valueOf(dimensions),
-					distanceType.name(), indexType.name()));
-
-			if (logger.isDebugEnabled()) {
-				this.jdbcTemplate.execute(String.format("""
-						create table if not exists debug (
-						id varchar2(36) default sys_guid() primary key,
-						embedding vector(%s,FLOAT64) annotations(Distance '%s')
-						)""", dimensions == DEFAULT_DIMENSIONS ? "*" : String.valueOf(dimensions),
-						distanceType.name()));
-			}
-
-			switch (indexType) {
-				case IVF:
-					this.jdbcTemplate.execute(String.format("""
-							create vector index if not exists vector_index_%s on %s (embedding)
-							organization neighbor partitions
-							            distance %s
-							            with target accuracy %d
-							            parameters (type IVF, neighbor partitions 10)""", tableName, tableName,
-							distanceType.name(), searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 : searchAccuracy));
-					break;
-
-				/*
-				 * TODO: Enable for 23.5 case HNSW:
-				 * this.jdbcTemplate.execute(String.format(""" create vector index if not
-				 * exists vector_index_%s on %s (embedding) organization inmemory neighbor
-				 * graph distance %s with target accuracy %d parameters (type HNSW,
-				 * neighbors 40, efconstruction 500)""", tableName, tableName,
-				 * distanceType.name(), searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 :
-				 * searchAccuracy)); break;
-				 */
-			}
-		}
-	}
-
-	public String getTableName() {
-		return tableName;
-	}
-
-	@Override
-	public Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.ORACLE.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName(this.getTableName())
-			.withSimilarityMetric(getSimilarityMetric());
-	}
-
-	private static Map<OracleVectorStoreDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
-			OracleVectorStoreDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE,
-			OracleVectorStoreDistanceType.EUCLIDEAN, VectorStoreSimilarityMetric.EUCLIDEAN,
-			OracleVectorStoreDistanceType.DOT, VectorStoreSimilarityMetric.DOT);
-
-	private String getSimilarityMetric() {
-		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.distanceType)) {
-			return this.distanceType.name();
-		}
-		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 }

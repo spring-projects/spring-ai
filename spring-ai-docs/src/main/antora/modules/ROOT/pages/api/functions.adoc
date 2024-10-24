@@ -154,7 +154,7 @@ To let the model know and call your `CurrentWeather` function you need to enable
 ----
 ChatClient chatClient = ...
 
-ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
+ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
     .functions("CurrentWeather") // Enable the function
     .call().
     chatResponse();
@@ -181,7 +181,7 @@ In addition to the auto-configuration, you can register callback functions, dyna
 ----
 ChatClient chatClient = ...
 
-ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
+ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
     .functions(new FunctionCallbackWrapper<>(
 		"CurrentWeather", // name
 		"Get the weather in location", // function description
@@ -230,7 +230,7 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 
 ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-    .functions(FunctionCallbackWrapper.builder(weatherFunction)
+    .functions(FunctionCallbackWrapper.builder(this.weatherFunction)
         .withName("getCurrentWeather")
         .withDescription("Get the weather in location")
         .build())

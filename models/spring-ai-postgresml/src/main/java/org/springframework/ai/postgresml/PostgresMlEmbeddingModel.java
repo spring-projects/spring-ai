@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.postgresml;
 
 import java.sql.Array;
@@ -53,34 +54,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	private final PostgresMlEmbeddingOptions defaultOptions;
 
 	private final JdbcTemplate jdbcTemplate;
-
-	public enum VectorType {
-
-		PG_ARRAY("", null, (rs, i) -> {
-			Array embedding = rs.getArray("embedding");
-			return EmbeddingUtils.toPrimitive((Float[]) embedding.getArray());
-
-		}),
-
-		PG_VECTOR("::vector", "vector", (rs, i) -> {
-			String embedding = rs.getString("embedding");
-			return EmbeddingUtils.toPrimitive(Arrays.stream((embedding.substring(1, embedding.length() - 1)
-				/* remove leading '[' and trailing ']' */.split(","))).map(Float::parseFloat).toList());
-		});
-
-		private final String cast;
-
-		private final String extensionName;
-
-		private final RowMapper<float[]> rowMapper;
-
-		VectorType(String cast, String extensionName, RowMapper<float[]> rowMapper) {
-			this.cast = cast;
-			this.extensionName = extensionName;
-			this.rowMapper = rowMapper;
-		}
-
-	}
 
 	/**
 	 * a constructor
@@ -235,6 +208,34 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 			this.jdbcTemplate
 				.execute("CREATE EXTENSION IF NOT EXISTS " + this.defaultOptions.getVectorType().extensionName);
 		}
+	}
+
+	public enum VectorType {
+
+		PG_ARRAY("", null, (rs, i) -> {
+			Array embedding = rs.getArray("embedding");
+			return EmbeddingUtils.toPrimitive((Float[]) embedding.getArray());
+
+		}),
+
+		PG_VECTOR("::vector", "vector", (rs, i) -> {
+			String embedding = rs.getString("embedding");
+			return EmbeddingUtils.toPrimitive(Arrays.stream((embedding.substring(1, embedding.length() - 1)
+				/* remove leading '[' and trailing ']' */.split(","))).map(Float::parseFloat).toList());
+		});
+
+		private final String cast;
+
+		private final String extensionName;
+
+		private final RowMapper<float[]> rowMapper;
+
+		VectorType(String cast, String extensionName, RowMapper<float[]> rowMapper) {
+			this.cast = cast;
+			this.extensionName = extensionName;
+			this.rowMapper = rowMapper;
+		}
+
 	}
 
 }

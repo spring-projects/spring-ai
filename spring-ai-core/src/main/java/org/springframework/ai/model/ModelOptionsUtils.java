@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
@@ -25,13 +26,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
-import org.springframework.ai.util.JacksonUtils;
-import org.springframework.beans.BeanWrapper;
-import org.springframework.beans.BeanWrapperImpl;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.ObjectUtils;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,6 +46,13 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Utility class for manipulating {@link ModelOptions} objects.
@@ -74,6 +75,10 @@ public abstract class ModelOptionsUtils {
 
 	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
+	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
+
+	};
+
 	/**
 	 * Converts the given JSON string to a Map of String and Object.
 	 * @param json the JSON string to convert to a Map.
@@ -87,9 +92,6 @@ public abstract class ModelOptionsUtils {
 			throw new RuntimeException(e);
 		}
 	}
-
-	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
-	};
 
 	/**
 	 * Converts the given JSON string to an Object of the given type.
@@ -193,6 +195,7 @@ public abstract class ModelOptionsUtils {
 		try {
 			String json = OBJECT_MAPPER.writeValueAsString(source);
 			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
+
 			})
 				.entrySet()
 				.stream()
@@ -356,7 +359,7 @@ public abstract class ModelOptionsUtils {
 
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
 		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
-										// version of it).
+			// version of it).
 			toUpperCaseTypeValues(node);
 		}
 

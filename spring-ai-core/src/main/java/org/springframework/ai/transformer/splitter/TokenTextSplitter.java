@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.transformer.splitter;
 
 import java.util.ArrayList;
@@ -33,10 +34,6 @@ import org.springframework.util.Assert;
  */
 public class TokenTextSplitter extends TextSplitter {
 
-	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
-
-	private final Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
-
 	private final static int DEFAULT_CHUNK_SIZE = 800;
 
 	private final static int MIN_CHUNK_SIZE_CHARS = 350;
@@ -46,6 +43,10 @@ public class TokenTextSplitter extends TextSplitter {
 	private final static int MAX_NUM_CHUNKS = 10000;
 
 	private final static boolean KEEP_SEPARATOR = true;
+
+	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
+
+	private final Encoding encoding = this.registry.getEncoding(EncodingType.CL100K_BASE);
 
 	// The target size of each text chunk in tokens
 	private final int chunkSize;
@@ -76,6 +77,10 @@ public class TokenTextSplitter extends TextSplitter {
 		this.minChunkLengthToEmbed = minChunkLengthToEmbed;
 		this.maxNumChunks = maxNumChunks;
 		this.keepSeparator = keepSeparator;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -145,11 +150,7 @@ public class TokenTextSplitter extends TextSplitter {
 		return this.encoding.decode(tokensIntArray);
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
+	public static final class Builder {
 
 		private int chunkSize;
 

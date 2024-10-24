@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.audio.speech;
+
+import java.util.Objects;
 
 import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelRequest;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * The {@link SpeechPrompt} class represents a request to the OpenAI Text-to-Speech (TTS)
@@ -33,9 +32,9 @@ import java.util.Objects;
  */
 public class SpeechPrompt implements ModelRequest<SpeechMessage> {
 
-	private OpenAiAudioSpeechOptions speechOptions;
-
 	private final SpeechMessage message;
+
+	private OpenAiAudioSpeechOptions speechOptions;
 
 	public SpeechPrompt(String instructions) {
 		this(new SpeechMessage(instructions), OpenAiAudioSpeechOptions.builder().build());
@@ -61,21 +60,23 @@ public class SpeechPrompt implements ModelRequest<SpeechMessage> {
 
 	@Override
 	public ModelOptions getOptions() {
-		return speechOptions;
+		return this.speechOptions;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof SpeechPrompt that))
+		}
+		if (!(o instanceof SpeechPrompt that)) {
 			return false;
-		return Objects.equals(speechOptions, that.speechOptions) && Objects.equals(message, that.message);
+		}
+		return Objects.equals(this.speechOptions, that.speechOptions) && Objects.equals(this.message, that.message);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(speechOptions, message);
+		return Objects.hash(this.speechOptions, this.message);
 	}
 
 }

@@ -2,12 +2,13 @@ package org.springframework.ai.ollama;
 
 import java.time.Duration;
 
+import org.testcontainers.ollama.OllamaContainer;
+
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.util.StringUtils;
-import org.testcontainers.ollama.OllamaContainer;
 
 public class BaseOllamaIT {
 

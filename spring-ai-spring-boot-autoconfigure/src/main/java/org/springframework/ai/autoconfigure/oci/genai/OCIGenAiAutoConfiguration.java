@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.oci.genai;
 
 import java.io.IOException;
@@ -27,6 +28,7 @@ import com.oracle.bmc.auth.SimplePrivateKeySupplier;
 import com.oracle.bmc.auth.okeworkloadidentity.OkeWorkloadIdentityAuthenticationDetailsProvider;
 import com.oracle.bmc.generativeaiinference.GenerativeAiInferenceClient;
 import com.oracle.bmc.retrier.RetryConfiguration;
+
 import org.springframework.ai.oci.OCIEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -43,6 +45,23 @@ import org.springframework.util.StringUtils;
 @ConditionalOnClass({ GenerativeAiInferenceClient.class, OCIEmbeddingModel.class })
 @EnableConfigurationProperties({ OCIConnectionProperties.class, OCIEmbeddingModelProperties.class })
 public class OCIGenAiAutoConfiguration {
+
+	private static BasicAuthenticationDetailsProvider authenticationProvider(OCIConnectionProperties properties)
+			throws IOException {
+		return switch (properties.getAuthenticationType()) {
+			case FILE -> new ConfigFileAuthenticationDetailsProvider(properties.getFile(), properties.getProfile());
+			case INSTANCE_PRINCIPAL -> InstancePrincipalsAuthenticationDetailsProvider.builder().build();
+			case WORKLOAD_IDENTITY -> OkeWorkloadIdentityAuthenticationDetailsProvider.builder().build();
+			case SIMPLE -> SimpleAuthenticationDetailsProvider.builder()
+				.userId(properties.getUserId())
+				.tenantId(properties.getTenantId())
+				.fingerprint(properties.getFingerprint())
+				.privateKeySupplier(new SimplePrivateKeySupplier(properties.getPrivateKey()))
+				.passPhrase(properties.getPassPhrase())
+				.region(Region.valueOf(properties.getRegion()))
+				.build();
+		};
+	}
 
 	@ConditionalOnMissingBean
 	@Bean
@@ -68,23 +87,6 @@ public class OCIGenAiAutoConfiguration {
 	public OCIEmbeddingModel ociEmbeddingModel(GenerativeAiInferenceClient generativeAiClient,
 			OCIEmbeddingModelProperties properties) {
 		return new OCIEmbeddingModel(generativeAiClient, properties.getEmbeddingOptions());
-	}
-
-	private static BasicAuthenticationDetailsProvider authenticationProvider(OCIConnectionProperties properties)
-			throws IOException {
-		return switch (properties.getAuthenticationType()) {
-			case FILE -> new ConfigFileAuthenticationDetailsProvider(properties.getFile(), properties.getProfile());
-			case INSTANCE_PRINCIPAL -> InstancePrincipalsAuthenticationDetailsProvider.builder().build();
-			case WORKLOAD_IDENTITY -> OkeWorkloadIdentityAuthenticationDetailsProvider.builder().build();
-			case SIMPLE -> SimpleAuthenticationDetailsProvider.builder()
-				.userId(properties.getUserId())
-				.tenantId(properties.getTenantId())
-				.fingerprint(properties.getFingerprint())
-				.privateKeySupplier(new SimplePrivateKeySupplier(properties.getPrivateKey()))
-				.passPhrase(properties.getPassPhrase())
-				.region(Region.valueOf(properties.getRegion()))
-				.build();
-		};
 	}
 
 }

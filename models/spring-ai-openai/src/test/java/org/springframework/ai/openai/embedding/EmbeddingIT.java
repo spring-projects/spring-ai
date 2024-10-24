@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.embedding;
 
-import org.junit.jupiter.api.Test;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
@@ -33,9 +36,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -50,9 +50,9 @@ class EmbeddingIT extends AbstractIT {
 
 	@Test
 	void defaultEmbedding() {
-		assertThat(embeddingModel).isNotNull();
+		assertThat(this.embeddingModel).isNotNull();
 
-		EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
+		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
@@ -60,12 +60,12 @@ class EmbeddingIT extends AbstractIT {
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(2);
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 
-		assertThat(embeddingModel.dimensions()).isEqualTo(1536);
+		assertThat(this.embeddingModel.dimensions()).isEqualTo(1536);
 	}
 
 	@Test
 	void embeddingBatchDocuments() throws Exception {
-		assertThat(embeddingModel).isNotNull();
+		assertThat(this.embeddingModel).isNotNull();
 		List<float[]> embedded = this.embeddingModel.embed(
 				List.of(new Document("Hello world"), new Document("Hello Spring"), new Document("Hello Spring AI!")),
 				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
@@ -76,10 +76,10 @@ class EmbeddingIT extends AbstractIT {
 
 	@Test
 	void embeddingBatchDocumentsThatExceedTheLimit() throws Exception {
-		assertThat(embeddingModel).isNotNull();
-		String contentAsString = resource.getContentAsString(StandardCharsets.UTF_8);
+		assertThat(this.embeddingModel).isNotNull();
+		String contentAsString = this.resource.getContentAsString(StandardCharsets.UTF_8);
 		assertThatThrownBy(() -> {
-			embeddingModel.embed(List.of(new Document("Hello World"), new Document(contentAsString)),
+			this.embeddingModel.embed(List.of(new Document("Hello World"), new Document(contentAsString)),
 					OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 					new TokenCountBatchingStrategy());
 		}).isInstanceOf(IllegalArgumentException.class);
@@ -88,7 +88,7 @@ class EmbeddingIT extends AbstractIT {
 	@Test
 	void embedding3Large() {
 
-		EmbeddingResponse embeddingResponse = embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
+		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
 				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-large").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
@@ -103,7 +103,7 @@ class EmbeddingIT extends AbstractIT {
 	@Test
 	void textEmbeddingAda002() {
 
-		EmbeddingResponse embeddingResponse = embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
+		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
 				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-small").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();

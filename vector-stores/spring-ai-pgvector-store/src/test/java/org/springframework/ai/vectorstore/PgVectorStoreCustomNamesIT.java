@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.util.Random;
+
+import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -32,12 +41,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-import javax.sql.DataSource;
-import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -92,19 +95,20 @@ public class PgVectorStoreCustomNamesIT {
 
 	@Test
 	public void shouldCreateDefaultTableAndIndexIfNotPresentInConfig() {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.schemaValidation=false").run(context -> {
-			assertThat(context).hasNotFailed();
-			assertThat(isTableExists(context, "vector_store")).isTrue();
-			assertThat(isSchemaExists(context, "public")).isTrue();
-			dropTableByName(context, "vector_store");
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.schemaValidation=false")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(isTableExists(context, "vector_store")).isTrue();
+				assertThat(isSchemaExists(context, "public")).isTrue();
+				dropTableByName(context, "vector_store");
 
-		});
+			});
 	}
 
 	@Test
 	public void shouldCreateTableAndIndexIfNotPresentInDatabase() {
 		String tableName = "new_vector_table";
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName)
 			.run(context -> {
 				assertThat(isTableExists(context, tableName)).isTrue();
 				assertThat(isIndexExists(context, "public", tableName, tableName + "_index")).isTrue();
@@ -118,7 +122,7 @@ public class PgVectorStoreCustomNamesIT {
 
 		String tableName = "customvectortable";
 
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName,
 					"test.spring.ai.vectorstore.pgvector.schemaValidation=true")
 
@@ -136,7 +140,7 @@ public class PgVectorStoreCustomNamesIT {
 
 		String tableName = "users; DROP TABLE users;";
 
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName,
 					"test.spring.ai.vectorstore.pgvector.schemaValidation=true")
 
@@ -156,7 +160,7 @@ public class PgVectorStoreCustomNamesIT {
 		String schemaName = "public; DROP TABLE users;";
 		String tableName = "customvectortable";
 
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName,
 					"test.spring.ai.vectorstore.pgvector.schemaName=" + schemaName,
 					"test.spring.ai.vectorstore.pgvector.schemaValidation=true")
@@ -189,10 +193,10 @@ public class PgVectorStoreCustomNamesIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 
-			return new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(schemaName)
-				.withVectorTableName(vectorTableName)
-				.withVectorTableValidationsEnabled(schemaValidation)
-				.withDimensions(dimensions)
+			return new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(this.schemaName)
+				.withVectorTableName(this.vectorTableName)
+				.withVectorTableValidationsEnabled(this.schemaValidation)
+				.withDimensions(this.dimensions)
 				.withDistanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
 				.withRemoveExistingVectorStoreTable(true)
 				.withIndexType(PgIndexType.HNSW)

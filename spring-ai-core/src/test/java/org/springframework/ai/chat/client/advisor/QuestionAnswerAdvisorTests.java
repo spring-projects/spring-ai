@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -44,6 +42,9 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
@@ -67,24 +68,24 @@ public class QuestionAnswerAdvisorTests {
 	public void qaAdvisorWithDynamicFilterExpressions() {
 
 		// @formatter:off
-		when(chatModel.call(promptCaptor.capture()))
-			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
 				ChatResponseMetadata.builder()
 					.withId("678")
 					.withModel("model1")
 					.withKeyValue("key6", "value6")
-					.withMetadata(Map.of("key1","value1" ))
+					.withMetadata(Map.of("key1", "value1"))
 					.withPromptMetadata(null)
 					.withRateLimit(new RateLimit() {
 
 						@Override
 						public Long getRequestsLimit() {
-							return 5l;
+							return 5L;
 						}
 
 						@Override
 						public Long getRequestsRemaining() {
-							return 6l;
+							return 6L;
 						}
 
 						@Override
@@ -94,12 +95,12 @@ public class QuestionAnswerAdvisorTests {
 
 						@Override
 						public Long getTokensLimit() {
-							return 8l;
+							return 8L;
 						}
 
 						@Override
 						public Long getTokensRemaining() {
-							return 8l;
+							return 8L;
 						}
 
 						@Override
@@ -107,17 +108,17 @@ public class QuestionAnswerAdvisorTests {
 							return Duration.ofSeconds(9);
 						}
 					})
-					.withUsage(new DefaultUsage(6l, 7l))
+					.withUsage(new DefaultUsage(6L, 7L))
 					.build()));
 		// @formatter:on
 
-		when(vectorStore.similaritySearch(vectorSearchCaptor.capture()))
-			.thenReturn(List.of(new Document("doc1"), new Document("doc2")));
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+			.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
-		var qaAdvisor = new QuestionAnswerAdvisor(vectorStore,
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
 				SearchRequest.defaults().withSimilarityThreshold(0.99d).withTopK(6));
 
-		var chatClient = ChatClient.builder(chatModel)
+		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
 			.defaultAdvisors(qaAdvisor)
 			.build();
@@ -133,26 +134,23 @@ public class QuestionAnswerAdvisorTests {
 		// Ensure the metadata is correctly copied over
 		assertThat(response.getMetadata().getModel()).isEqualTo("model1");
 		assertThat(response.getMetadata().getId()).isEqualTo("678");
-		assertThat(response.getMetadata().getRateLimit().getRequestsLimit()).isEqualTo(5l);
-		assertThat(response.getMetadata().getRateLimit().getRequestsRemaining()).isEqualTo(6l);
+		assertThat(response.getMetadata().getRateLimit().getRequestsLimit()).isEqualTo(5L);
+		assertThat(response.getMetadata().getRateLimit().getRequestsRemaining()).isEqualTo(6L);
 		assertThat(response.getMetadata().getRateLimit().getRequestsReset()).isEqualTo(Duration.ofSeconds(7));
-		assertThat(response.getMetadata().getRateLimit().getTokensLimit()).isEqualTo(8l);
-		assertThat(response.getMetadata().getRateLimit().getTokensRemaining()).isEqualTo(8l);
+		assertThat(response.getMetadata().getRateLimit().getTokensLimit()).isEqualTo(8L);
+		assertThat(response.getMetadata().getRateLimit().getTokensRemaining()).isEqualTo(8L);
 		assertThat(response.getMetadata().getRateLimit().getTokensReset()).isEqualTo(Duration.ofSeconds(9));
-		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(6l);
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isEqualTo(7l);
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(6l + 7l);
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(6L);
+		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isEqualTo(7L);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(6L + 7L);
 		assertThat(response.getMetadata().get("key6").toString()).isEqualTo("value6");
 		assertThat(response.getMetadata().get("key1").toString()).isEqualTo("value1");
-		
-
-		
 
 		String content = response.getResult().getOutput().getContent();
 
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
-		Message systemMessage = promptCaptor.getValue().getInstructions().get(0);
+		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 
 		System.out.println(systemMessage.getContent());
 
@@ -161,7 +159,7 @@ public class QuestionAnswerAdvisorTests {
 				""");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
-		Message userMessage = promptCaptor.getValue().getInstructions().get(1);
+		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 
 		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("""
 			Please answer my question XYZ
@@ -177,9 +175,9 @@ public class QuestionAnswerAdvisorTests {
 			the user that you can't answer the question.
 			""");
 
-		assertThat(vectorSearchCaptor.getValue().getFilterExpression()).isEqualTo(new FilterExpressionBuilder().eq("type", "Spring").build());
-		assertThat(vectorSearchCaptor.getValue().getSimilarityThreshold()).isEqualTo(0.99d);
-		assertThat(vectorSearchCaptor.getValue().getTopK()).isEqualTo(6);
+		assertThat(this.vectorSearchCaptor.getValue().getFilterExpression()).isEqualTo(new FilterExpressionBuilder().eq("type", "Spring").build());
+		assertThat(this.vectorSearchCaptor.getValue().getSimilarityThreshold()).isEqualTo(0.99d);
+		assertThat(this.vectorSearchCaptor.getValue().getTopK()).isEqualTo(6);
 
 
 	}

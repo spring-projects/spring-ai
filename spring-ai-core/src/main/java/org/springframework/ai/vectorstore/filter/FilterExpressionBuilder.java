@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.filter;
 
 import java.util.List;
@@ -54,20 +55,6 @@ import org.springframework.ai.vectorstore.filter.Filter.Value;
  * @author Christian Tzolov
  */
 public class FilterExpressionBuilder {
-
-	public record Op(Filter.Operand expression) {
-
-		public Filter.Expression build() {
-			if (expression instanceof Filter.Group group) {
-				// Remove the top-level grouping.
-				return group.content();
-			}
-			else if (expression instanceof Filter.Expression exp) {
-				return exp;
-			}
-			throw new RuntimeException("Invalid expression: " + expression);
-		}
-	}
 
 	public Op eq(String key, Object value) {
 		return new Op(new Filter.Expression(ExpressionType.EQ, new Key(key), new Value(value)));
@@ -123,6 +110,21 @@ public class FilterExpressionBuilder {
 
 	public Op not(Op content) {
 		return new Op(new Filter.Expression(ExpressionType.NOT, content.expression, null));
+	}
+
+	public record Op(Filter.Operand expression) {
+
+		public Filter.Expression build() {
+			if (this.expression instanceof Filter.Group group) {
+				// Remove the top-level grouping.
+				return group.content();
+			}
+			else if (this.expression instanceof Filter.Expression exp) {
+				return exp;
+			}
+			throw new RuntimeException("Invalid expression: " + this.expression);
+		}
+
 	}
 
 }

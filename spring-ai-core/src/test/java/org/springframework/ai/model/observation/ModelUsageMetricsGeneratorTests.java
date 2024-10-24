@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.observation;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.observation.conventions.AiObservationMetricAttributes;
 import org.springframework.ai.observation.conventions.AiObservationMetricNames;
@@ -86,7 +88,7 @@ class ModelUsageMetricsGeneratorTests {
 
 		private final Long totalTokens;
 
-		public TestUsage(Long promptTokens, Long generationTokens, Long totalTokens) {
+		TestUsage(Long promptTokens, Long generationTokens, Long totalTokens) {
 			this.promptTokens = promptTokens;
 			this.generationTokens = generationTokens;
 			this.totalTokens = totalTokens;
@@ -94,17 +96,17 @@ class ModelUsageMetricsGeneratorTests {
 
 		@Override
 		public Long getPromptTokens() {
-			return promptTokens;
+			return this.promptTokens;
 		}
 
 		@Override
 		public Long getGenerationTokens() {
-			return generationTokens;
+			return this.generationTokens;
 		}
 
 		@Override
 		public Long getTotalTokens() {
-			return totalTokens;
+			return this.totalTokens;
 		}
 
 	}

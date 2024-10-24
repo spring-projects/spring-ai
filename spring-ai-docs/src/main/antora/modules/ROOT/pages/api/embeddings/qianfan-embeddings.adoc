@@ -192,7 +192,7 @@ var embeddingClient = new QianFanEmbeddingModel(qianFanApi)
         .withModel("bge_large_en")
         .build());
 
-EmbeddingResponse embeddingResponse = embeddingClient
+EmbeddingResponse embeddingResponse = this.embeddingClient
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.ollama.api;
 
 import java.util.ArrayList;
@@ -23,6 +24,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -30,11 +36,6 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -306,10 +307,70 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return new OllamaOptions();
 	}
 
+	/**
+	 * Helper factory method to create a new {@link OllamaOptions} instance.
+	 * @return A new {@link OllamaOptions} instance.
+	 */
+	public static OllamaOptions create() {
+		return new OllamaOptions();
+	}
+	
+	/**
+	 * Filter out the non-supported fields from the options.
+	 * @param options The options to filter.
+	 * @return The filtered options.
+	 */
+	public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
+		return options.entrySet().stream()
+			.filter(e -> !NON_SUPPORTED_FIELDS.contains(e.getKey()))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
+	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
+		return new OllamaOptions()
+			.withModel(fromOptions.getModel())
+			.withFormat(fromOptions.getFormat())
+			.withKeepAlive(fromOptions.getKeepAlive())
+			.withTruncate(fromOptions.getTruncate())
+			.withUseNUMA(fromOptions.getUseNUMA())
+			.withNumCtx(fromOptions.getNumCtx())
+			.withNumBatch(fromOptions.getNumBatch())
+			.withNumGPU(fromOptions.getNumGPU())
+			.withMainGPU(fromOptions.getMainGPU())
+			.withLowVRAM(fromOptions.getLowVRAM())
+			.withF16KV(fromOptions.getF16KV())
+			.withLogitsAll(fromOptions.getLogitsAll())
+			.withVocabOnly(fromOptions.getVocabOnly())
+			.withUseMMap(fromOptions.getUseMMap())
+			.withUseMLock(fromOptions.getUseMLock())
+			.withNumThread(fromOptions.getNumThread())
+			.withNumKeep(fromOptions.getNumKeep())
+			.withSeed(fromOptions.getSeed())
+			.withNumPredict(fromOptions.getNumPredict())
+			.withTopK(fromOptions.getTopK())
+			.withTopP(fromOptions.getTopP())
+			.withTfsZ(fromOptions.getTfsZ())
+			.withTypicalP(fromOptions.getTypicalP())
+			.withRepeatLastN(fromOptions.getRepeatLastN())
+			.withTemperature(fromOptions.getTemperature())
+			.withRepeatPenalty(fromOptions.getRepeatPenalty())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withMirostat(fromOptions.getMirostat())
+			.withMirostatTau(fromOptions.getMirostatTau())
+			.withMirostatEta(fromOptions.getMirostatEta())
+			.withPenalizeNewline(fromOptions.getPenalizeNewline())
+			.withStop(fromOptions.getStop())
+			.withFunctions(fromOptions.getFunctions())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withToolContext(fromOptions.getToolContext());
+	}
+
 	public OllamaOptions build() {
 		return this;
 	}
-	
+
 	/**
 	 * @param model The ollama model names to use. See the {@link OllamaModel} for the common models.
 	 */
@@ -510,7 +571,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		}
 		else {
 			this.toolContext.putAll(toolContext);
-		}		
+		}
 		return this;
 	}
 
@@ -519,7 +580,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	// -------------------
 	@Override
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -811,7 +872,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;	
+		return this.functionCallbacks;
 	}
 
 	@Override
@@ -862,107 +923,51 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return ModelOptionsUtils.objectToMap(this);
 	}
 
-	/**
-	 * Helper factory method to create a new {@link OllamaOptions} instance.
-	 * @return A new {@link OllamaOptions} instance.
-	 */
-	public static OllamaOptions create() {
-		return new OllamaOptions();
-	}
-
-	/**
-	 * Filter out the non-supported fields from the options.
-	 * @param options The options to filter.
-	 * @return The filtered options.
-	 */
-	public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
-		return options.entrySet().stream()
-			.filter(e -> !NON_SUPPORTED_FIELDS.contains(e.getKey()))
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-	}
-
 	@Override
 	public OllamaOptions copy() {
 		return fromOptions(this);
-	}
-
-	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
-		return new OllamaOptions()
-			.withModel(fromOptions.getModel())
-			.withFormat(fromOptions.getFormat())
-			.withKeepAlive(fromOptions.getKeepAlive())
-			.withTruncate(fromOptions.getTruncate())
-			.withUseNUMA(fromOptions.getUseNUMA())
-			.withNumCtx(fromOptions.getNumCtx())
-			.withNumBatch(fromOptions.getNumBatch())
-			.withNumGPU(fromOptions.getNumGPU())
-			.withMainGPU(fromOptions.getMainGPU())
-			.withLowVRAM(fromOptions.getLowVRAM())
-			.withF16KV(fromOptions.getF16KV())
-			.withLogitsAll(fromOptions.getLogitsAll())
-			.withVocabOnly(fromOptions.getVocabOnly())
-			.withUseMMap(fromOptions.getUseMMap())
-			.withUseMLock(fromOptions.getUseMLock())
-			.withNumThread(fromOptions.getNumThread())
-			.withNumKeep(fromOptions.getNumKeep())
-			.withSeed(fromOptions.getSeed())
-			.withNumPredict(fromOptions.getNumPredict())
-			.withTopK(fromOptions.getTopK())
-			.withTopP(fromOptions.getTopP())
-			.withTfsZ(fromOptions.getTfsZ())
-			.withTypicalP(fromOptions.getTypicalP())
-			.withRepeatLastN(fromOptions.getRepeatLastN())
-			.withTemperature(fromOptions.getTemperature())
-			.withRepeatPenalty(fromOptions.getRepeatPenalty())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withMirostat(fromOptions.getMirostat())
-			.withMirostatTau(fromOptions.getMirostatTau())
-			.withMirostatEta(fromOptions.getMirostatEta())
-			.withPenalizeNewline(fromOptions.getPenalizeNewline())
-			.withStop(fromOptions.getStop())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withToolContext(fromOptions.getToolContext());
 	}
 	// @formatter:on
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 		OllamaOptions that = (OllamaOptions) o;
-		return Objects.equals(model, that.model) && Objects.equals(format, that.format)
-				&& Objects.equals(keepAlive, that.keepAlive) && Objects.equals(truncate, that.truncate)
-				&& Objects.equals(useNUMA, that.useNUMA) && Objects.equals(numCtx, that.numCtx)
-				&& Objects.equals(numBatch, that.numBatch) && Objects.equals(numGPU, that.numGPU)
-				&& Objects.equals(mainGPU, that.mainGPU) && Objects.equals(lowVRAM, that.lowVRAM)
-				&& Objects.equals(f16KV, that.f16KV) && Objects.equals(logitsAll, that.logitsAll)
-				&& Objects.equals(vocabOnly, that.vocabOnly) && Objects.equals(useMMap, that.useMMap)
-				&& Objects.equals(useMLock, that.useMLock) && Objects.equals(numThread, that.numThread)
-				&& Objects.equals(numKeep, that.numKeep) && Objects.equals(seed, that.seed)
-				&& Objects.equals(numPredict, that.numPredict) && Objects.equals(topK, that.topK)
-				&& Objects.equals(topP, that.topP) && Objects.equals(tfsZ, that.tfsZ)
-				&& Objects.equals(typicalP, that.typicalP) && Objects.equals(repeatLastN, that.repeatLastN)
-				&& Objects.equals(temperature, that.temperature) && Objects.equals(repeatPenalty, that.repeatPenalty)
-				&& Objects.equals(presencePenalty, that.presencePenalty)
-				&& Objects.equals(frequencyPenalty, that.frequencyPenalty) && Objects.equals(mirostat, that.mirostat)
-				&& Objects.equals(mirostatTau, that.mirostatTau) && Objects.equals(mirostatEta, that.mirostatEta)
-				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
-				&& Objects.equals(functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(proxyToolCalls, that.proxyToolCalls) && Objects.equals(functions, that.functions)
-				&& Objects.equals(toolContext, that.toolContext);
+		return Objects.equals(this.model, that.model) && Objects.equals(this.format, that.format)
+				&& Objects.equals(this.keepAlive, that.keepAlive) && Objects.equals(this.truncate, that.truncate)
+				&& Objects.equals(this.useNUMA, that.useNUMA) && Objects.equals(this.numCtx, that.numCtx)
+				&& Objects.equals(this.numBatch, that.numBatch) && Objects.equals(this.numGPU, that.numGPU)
+				&& Objects.equals(this.mainGPU, that.mainGPU) && Objects.equals(this.lowVRAM, that.lowVRAM)
+				&& Objects.equals(this.f16KV, that.f16KV) && Objects.equals(this.logitsAll, that.logitsAll)
+				&& Objects.equals(this.vocabOnly, that.vocabOnly) && Objects.equals(this.useMMap, that.useMMap)
+				&& Objects.equals(this.useMLock, that.useMLock) && Objects.equals(this.numThread, that.numThread)
+				&& Objects.equals(this.numKeep, that.numKeep) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.numPredict, that.numPredict) && Objects.equals(this.topK, that.topK)
+				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.tfsZ, that.tfsZ)
+				&& Objects.equals(this.typicalP, that.typicalP) && Objects.equals(this.repeatLastN, that.repeatLastN)
+				&& Objects.equals(this.temperature, that.temperature)
+				&& Objects.equals(this.repeatPenalty, that.repeatPenalty)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
+				&& Objects.equals(this.mirostatEta, that.mirostatEta)
+				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
+				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
+				&& Objects.equals(this.functions, that.functions) && Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
-				this.numBatch, this.numGPU, this.mainGPU, lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
+				this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
-				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
+				this.topP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
 				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
 				this.toolContext);

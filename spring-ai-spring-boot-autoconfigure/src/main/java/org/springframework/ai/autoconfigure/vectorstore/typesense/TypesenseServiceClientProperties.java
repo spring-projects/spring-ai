@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -39,7 +39,7 @@ public class TypesenseServiceClientProperties {
 	private String apiKey = "xyz";
 
 	public String getProtocol() {
-		return protocol;
+		return this.protocol;
 	}
 
 	public void setProtocol(String protocol) {
@@ -47,7 +47,7 @@ public class TypesenseServiceClientProperties {
 	}
 
 	public String getHost() {
-		return host;
+		return this.host;
 	}
 
 	public void setHost(String host) {
@@ -55,7 +55,7 @@ public class TypesenseServiceClientProperties {
 	}
 
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 
 	public void setPort(int port) {
@@ -63,7 +63,7 @@ public class TypesenseServiceClientProperties {
 	}
 
 	public String getApiKey() {
-		return apiKey;
+		return this.apiKey;
 	}
 
 	public void setApiKey(String apiKey) {

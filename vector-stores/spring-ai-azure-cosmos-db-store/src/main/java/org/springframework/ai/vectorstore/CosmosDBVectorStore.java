@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,20 +23,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosAsyncContainer;
@@ -66,9 +52,22 @@ import com.azure.cosmos.util.CosmosPagedFlux;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 
 /**
  * @author Theo van Kraay
@@ -81,13 +80,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	private final CosmosAsyncClient cosmosClient;
 
-	private CosmosAsyncContainer container;
-
 	private final EmbeddingModel embeddingModel;
 
 	private final CosmosDBVectorStoreConfig properties;
 
 	private final BatchingStrategy batchingStrategy;
+
+	private CosmosAsyncContainer container;
 
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
@@ -210,7 +209,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			CosmosItemOperation operation = CosmosBulkOperations
 				.getCreateItemOperation(mapCosmosDocument(doc, doc.getEmbedding()), new PartitionKey(doc.getId()));
 			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
-																// with the operation
+			// with the operation
 		}).toList();
 
 		try {
@@ -233,7 +232,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 						String errorMessage = String.format("Duplicate document id: %s", documentId);
 						logger.error(errorMessage);
 						throw new RuntimeException(errorMessage); // Throw an exception
-																	// for status code 409
+						// for status code 409
 					}
 					else {
 						logger.info("Document added with status: {}", statusCode);
@@ -307,10 +306,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		if (filterExpression != null) {
 			CosmosDBFilterExpressionConverter filterExpressionConverter = new CosmosDBFilterExpressionConverter(
 					this.properties.getMetadataFieldsList()); // Use the expression
-																// directly as
-																// it handles the
-																// "metadata"
-																// fields internally
+			// directly as
+			// it handles the
+			// "metadata"
+			// fields internally
 			String filterQuery = filterExpressionConverter.convertExpression(filterExpression);
 			queryBuilder.append(" AND ").append(filterQuery);
 		}

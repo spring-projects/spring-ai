@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.watsonx.api;
 
 import java.util.Map;
@@ -49,19 +50,18 @@ public class WatsonxAiChatRequest {
         this.projectId = projectId;
     }
 
+    public static Builder builder(String input) { return new Builder(input); }
+
     public WatsonxAiChatRequest withProjectId(String projectId) {
         this.projectId = projectId;
         return this;
     }
 
-    public String getInput() { return input; }
+    public String getInput() { return this.input; }
 
-    public Map<String, Object> getParameters() { return parameters; }
+    public Map<String, Object> getParameters() { return this.parameters; }
 
-    public String getModelId() { return modelId; }
-
-
-    public static Builder builder(String input) { return new Builder(input); }
+    public String getModelId() { return this.modelId; }
 
     public static class Builder {
         public static final String MODEL_PARAMETER_IS_REQUIRED = "Model parameter is required";
@@ -81,7 +81,7 @@ public class WatsonxAiChatRequest {
         }
 
         public WatsonxAiChatRequest build() {
-            return new WatsonxAiChatRequest(input, parameters, model, "");
+            return new WatsonxAiChatRequest(this.input, this.parameters, this.model, "");
         }
 
     }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai;
 
 import java.util.ArrayList;
@@ -22,6 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -34,11 +40,6 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolCho
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Christian Tzolov
@@ -202,6 +203,311 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return new Builder();
 	}
 
+	public static OpenAiChatOptions fromOptions(OpenAiChatOptions fromOptions) {
+		return OpenAiChatOptions.builder()
+			.withModel(fromOptions.getModel())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withLogitBias(fromOptions.getLogitBias())
+			.withLogprobs(fromOptions.getLogprobs())
+			.withTopLogprobs(fromOptions.getTopLogprobs())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withMaxCompletionTokens(fromOptions.getMaxCompletionTokens())
+			.withN(fromOptions.getN())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withResponseFormat(fromOptions.getResponseFormat())
+			.withStreamUsage(fromOptions.getStreamUsage())
+			.withSeed(fromOptions.getSeed())
+			.withStop(fromOptions.getStop())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withTools(fromOptions.getTools())
+			.withToolChoice(fromOptions.getToolChoice())
+			.withUser(fromOptions.getUser())
+			.withParallelToolCalls(fromOptions.getParallelToolCalls())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withFunctions(fromOptions.getFunctions())
+			.withHttpHeaders(fromOptions.getHttpHeaders())
+			.withProxyToolCalls(fromOptions.getProxyToolCalls())
+			.withToolContext(fromOptions.getToolContext())
+			.build();
+	}
+
+	public Boolean getStreamUsage() {
+		return this.streamOptions != null;
+	}
+
+	public void setStreamUsage(Boolean enableStreamUsage) {
+		this.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
+	}
+
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	@Override
+	public Double getFrequencyPenalty() {
+		return this.frequencyPenalty;
+	}
+
+	public void setFrequencyPenalty(Double frequencyPenalty) {
+		this.frequencyPenalty = frequencyPenalty;
+	}
+
+	public Map<String, Integer> getLogitBias() {
+		return this.logitBias;
+	}
+
+	public void setLogitBias(Map<String, Integer> logitBias) {
+		this.logitBias = logitBias;
+	}
+
+	public Boolean getLogprobs() {
+		return this.logprobs;
+	}
+
+	public void setLogprobs(Boolean logprobs) {
+		this.logprobs = logprobs;
+	}
+
+	public Integer getTopLogprobs() {
+		return this.topLogprobs;
+	}
+
+	public void setTopLogprobs(Integer topLogprobs) {
+		this.topLogprobs = topLogprobs;
+	}
+
+	@Override
+	public Integer getMaxTokens() {
+		return this.maxTokens;
+	}
+
+	public void setMaxTokens(Integer maxTokens) {
+		this.maxTokens = maxTokens;
+	}
+
+	public Integer getMaxCompletionTokens() {
+		return this.maxCompletionTokens;
+	}
+
+	public void setMaxCompletionTokens(Integer maxCompletionTokens) {
+		this.maxCompletionTokens = maxCompletionTokens;
+	}
+
+	public Integer getN() {
+		return this.n;
+	}
+
+	public void setN(Integer n) {
+		this.n = n;
+	}
+
+	@Override
+	public Double getPresencePenalty() {
+		return this.presencePenalty;
+	}
+
+	public void setPresencePenalty(Double presencePenalty) {
+		this.presencePenalty = presencePenalty;
+	}
+
+	public ResponseFormat getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+
+	public StreamOptions getStreamOptions() {
+		return this.streamOptions;
+	}
+
+	public void setStreamOptions(StreamOptions streamOptions) {
+		this.streamOptions = streamOptions;
+	}
+
+	public Integer getSeed() {
+		return this.seed;
+	}
+
+	public void setSeed(Integer seed) {
+		this.seed = seed;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
+	}
+
+	public List<String> getStop() {
+		return this.stop;
+	}
+
+	public void setStop(List<String> stop) {
+		this.stop = stop;
+	}
+
+	@Override
+	public Double getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	@Override
+	public Double getTopP() {
+		return this.topP;
+	}
+
+	public void setTopP(Double topP) {
+		this.topP = topP;
+	}
+
+	public List<FunctionTool> getTools() {
+		return this.tools;
+	}
+
+	public void setTools(List<FunctionTool> tools) {
+		this.tools = tools;
+	}
+
+	public String getToolChoice() {
+		return this.toolChoice;
+	}
+
+	public void setToolChoice(String toolChoice) {
+		this.toolChoice = toolChoice;
+	}
+
+	@Override
+	public Boolean getProxyToolCalls() {
+		return this.proxyToolCalls;
+	}
+
+	public void setProxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+	}
+
+	public String getUser() {
+		return this.user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public Boolean getParallelToolCalls() {
+		return this.parallelToolCalls;
+	}
+
+	public void setParallelToolCalls(Boolean parallelToolCalls) {
+		this.parallelToolCalls = parallelToolCalls;
+	}
+
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return this.functions;
+	}
+
+	public void setFunctions(Set<String> functionNames) {
+		this.functions = functionNames;
+	}
+
+	public Map<String, String> getHttpHeaders() {
+		return this.httpHeaders;
+	}
+
+	public void setHttpHeaders(Map<String, String> httpHeaders) {
+		this.httpHeaders = httpHeaders;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Override
+	public OpenAiChatOptions copy() {
+		return OpenAiChatOptions.fromOptions(this);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.model, this.frequencyPenalty, this.logitBias, this.logprobs, this.topLogprobs,
+				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
+				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
+				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
+				this.proxyToolCalls, this.toolContext);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		OpenAiChatOptions other = (OpenAiChatOptions) o;
+		return Objects.equals(this.model, other.model) && Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
+				&& Objects.equals(this.logitBias, other.logitBias) && Objects.equals(this.logprobs, other.logprobs)
+				&& Objects.equals(this.topLogprobs, other.topLogprobs)
+				&& Objects.equals(this.maxTokens, other.maxTokens)
+				&& Objects.equals(this.maxCompletionTokens, other.maxCompletionTokens)
+				&& Objects.equals(this.n, other.n) && Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.responseFormat, other.responseFormat)
+				&& Objects.equals(this.streamOptions, other.streamOptions) && Objects.equals(this.seed, other.seed)
+				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.tools, other.tools)
+				&& Objects.equals(this.toolChoice, other.toolChoice) && Objects.equals(this.user, other.user)
+				&& Objects.equals(this.parallelToolCalls, other.parallelToolCalls)
+				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
+				&& Objects.equals(this.functions, other.functions)
+				&& Objects.equals(this.httpHeaders, other.httpHeaders)
+				&& Objects.equals(this.toolContext, other.toolContext)
+				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls);
+	}
+
+	@Override
+	public String toString() {
+		return "OpenAiChatOptions: " + ModelOptionsUtils.toJsonString(this);
+	}
+
 	public static class Builder {
 
 		protected OpenAiChatOptions options;
@@ -355,309 +661,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this.options;
 		}
 
-	}
-
-	public Boolean getStreamUsage() {
-		return this.streamOptions != null;
-	}
-
-	public void setStreamUsage(Boolean enableStreamUsage) {
-		this.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	@Override
-	public Double getFrequencyPenalty() {
-		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
-
-	public Map<String, Integer> getLogitBias() {
-		return this.logitBias;
-	}
-
-	public void setLogitBias(Map<String, Integer> logitBias) {
-		this.logitBias = logitBias;
-	}
-
-	public Boolean getLogprobs() {
-		return this.logprobs;
-	}
-
-	public void setLogprobs(Boolean logprobs) {
-		this.logprobs = logprobs;
-	}
-
-	public Integer getTopLogprobs() {
-		return this.topLogprobs;
-	}
-
-	public void setTopLogprobs(Integer topLogprobs) {
-		this.topLogprobs = topLogprobs;
-	}
-
-	@Override
-	public Integer getMaxTokens() {
-		return this.maxTokens;
-	}
-
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
-	public Integer getMaxCompletionTokens() {
-		return maxCompletionTokens;
-	}
-
-	public void setMaxCompletionTokens(Integer maxCompletionTokens) {
-		this.maxCompletionTokens = maxCompletionTokens;
-	}
-
-	public Integer getN() {
-		return this.n;
-	}
-
-	public void setN(Integer n) {
-		this.n = n;
-	}
-
-	@Override
-	public Double getPresencePenalty() {
-		return this.presencePenalty;
-	}
-
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
-	public ResponseFormat getResponseFormat() {
-		return this.responseFormat;
-	}
-
-	public void setResponseFormat(ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	public StreamOptions getStreamOptions() {
-		return streamOptions;
-	}
-
-	public void setStreamOptions(StreamOptions streamOptions) {
-		this.streamOptions = streamOptions;
-	}
-
-	public Integer getSeed() {
-		return this.seed;
-	}
-
-	public void setSeed(Integer seed) {
-		this.seed = seed;
-	}
-
-	@Override
-	@JsonIgnore
-	public List<String> getStopSequences() {
-		return getStop();
-	}
-
-	@JsonIgnore
-	public void setStopSequences(List<String> stopSequences) {
-		setStop(stopSequences);
-	}
-
-	public List<String> getStop() {
-		return this.stop;
-	}
-
-	public void setStop(List<String> stop) {
-		this.stop = stop;
-	}
-
-	@Override
-	public Double getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
-
-	@Override
-	public Double getTopP() {
-		return this.topP;
-	}
-
-	public void setTopP(Double topP) {
-		this.topP = topP;
-	}
-
-	public List<FunctionTool> getTools() {
-		return this.tools;
-	}
-
-	public void setTools(List<FunctionTool> tools) {
-		this.tools = tools;
-	}
-
-	public String getToolChoice() {
-		return this.toolChoice;
-	}
-
-	@Override
-	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
-	}
-
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
-	}
-
-	public void setToolChoice(String toolChoice) {
-		this.toolChoice = toolChoice;
-	}
-
-	public String getUser() {
-		return this.user;
-	}
-
-	public void setUser(String user) {
-		this.user = user;
-	}
-
-	public Boolean getParallelToolCalls() {
-		return this.parallelToolCalls;
-	}
-
-	public void setParallelToolCalls(Boolean parallelToolCalls) {
-		this.parallelToolCalls = parallelToolCalls;
-	}
-
-	@Override
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
-	}
-
-	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
-	}
-
-	@Override
-	public Set<String> getFunctions() {
-		return functions;
-	}
-
-	public void setFunctions(Set<String> functionNames) {
-		this.functions = functionNames;
-	}
-
-	public Map<String, String> getHttpHeaders() {
-		return this.httpHeaders;
-	}
-
-	public void setHttpHeaders(Map<String, String> httpHeaders) {
-		this.httpHeaders = httpHeaders;
-	}
-
-	@Override
-	@JsonIgnore
-	public Integer getTopK() {
-		return null;
-	}
-
-	@Override
-	public Map<String, Object> getToolContext() {
-		return this.toolContext;
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
-	}
-
-	@Override
-	public OpenAiChatOptions copy() {
-		return OpenAiChatOptions.fromOptions(this);
-	}
-
-	public static OpenAiChatOptions fromOptions(OpenAiChatOptions fromOptions) {
-		return OpenAiChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withLogitBias(fromOptions.getLogitBias())
-			.withLogprobs(fromOptions.getLogprobs())
-			.withTopLogprobs(fromOptions.getTopLogprobs())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withMaxCompletionTokens(fromOptions.getMaxCompletionTokens())
-			.withN(fromOptions.getN())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withStreamUsage(fromOptions.getStreamUsage())
-			.withSeed(fromOptions.getSeed())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withUser(fromOptions.getUser())
-			.withParallelToolCalls(fromOptions.getParallelToolCalls())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withHttpHeaders(fromOptions.getHttpHeaders())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
-			.build();
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.model, this.frequencyPenalty, this.logitBias, this.logprobs, this.topLogprobs,
-				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
-				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
-				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
-				this.proxyToolCalls, this.toolContext);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
-		OpenAiChatOptions other = (OpenAiChatOptions) o;
-		return Objects.equals(this.model, other.model) && Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
-				&& Objects.equals(this.logitBias, other.logitBias) && Objects.equals(this.logprobs, other.logprobs)
-				&& Objects.equals(this.topLogprobs, other.topLogprobs)
-				&& Objects.equals(this.maxTokens, other.maxTokens)
-				&& Objects.equals(this.maxCompletionTokens, other.maxCompletionTokens)
-				&& Objects.equals(this.n, other.n) && Objects.equals(this.presencePenalty, other.presencePenalty)
-				&& Objects.equals(this.responseFormat, other.responseFormat)
-				&& Objects.equals(this.streamOptions, other.streamOptions) && Objects.equals(this.seed, other.seed)
-				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.temperature, other.temperature)
-				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.tools, other.tools)
-				&& Objects.equals(this.toolChoice, other.toolChoice) && Objects.equals(this.user, other.user)
-				&& Objects.equals(this.parallelToolCalls, other.parallelToolCalls)
-				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
-				&& Objects.equals(this.functions, other.functions)
-				&& Objects.equals(this.httpHeaders, other.httpHeaders)
-				&& Objects.equals(this.toolContext, other.toolContext)
-				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls);
-	}
-
-	@Override
-	public String toString() {
-		return "OpenAiChatOptions: " + ModelOptionsUtils.toJsonString(this);
 	}
 
 }

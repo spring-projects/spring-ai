@@ -148,7 +148,7 @@ AzureOpenAiChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage),
 		AzureOpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
@@ -185,7 +185,7 @@ var promptOptions = AzureOpenAiChatOptions.builder()
 		.build()))
 	.build();
 
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage), this.promptOptions));
 ----
 
 NOTE: The in-prompt registered functions are enabled by default for the duration of this request.

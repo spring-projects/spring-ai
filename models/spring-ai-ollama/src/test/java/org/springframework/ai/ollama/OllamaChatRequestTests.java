@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.ollama;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -39,7 +41,7 @@ public class OllamaChatRequestTests {
 	@Test
 	public void createRequestWithDefaultOptions() {
 
-		var request = chatModel.ollamaChatRequest(new Prompt("Test message content"), false);
+		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content"), false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
@@ -57,7 +59,7 @@ public class OllamaChatRequestTests {
 		// Runtime options should override the default options.
 		OllamaOptions promptOptions = new OllamaOptions().withTemperature(0.8).withTopP(0.5).withNumGPU(2);
 
-		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
@@ -65,11 +67,11 @@ public class OllamaChatRequestTests {
 		assertThat(request.model()).isEqualTo("MODEL_NAME");
 		assertThat(request.options().get("temperature")).isEqualTo(0.8);
 		assertThat(request.options().get("top_k")).isEqualTo(99); // still the default
-																	// value.
+		// value.
 		assertThat(request.options().get("num_gpu")).isEqualTo(2);
 		assertThat(request.options().get("top_p")).isEqualTo(0.5); // new field introduced
-																	// by the
-																	// promptOptions.
+		// by the
+		// promptOptions.
 	}
 
 	@Test
@@ -82,7 +84,7 @@ public class OllamaChatRequestTests {
 			.withTopP(0.6)
 			.build();
 
-		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", portablePromptOptions), true);
+		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content", portablePromptOptions), true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
@@ -100,7 +102,7 @@ public class OllamaChatRequestTests {
 		// Ollama runtime options.
 		OllamaOptions promptOptions = new OllamaOptions().withModel("PROMPT_MODEL");
 
-		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 	}

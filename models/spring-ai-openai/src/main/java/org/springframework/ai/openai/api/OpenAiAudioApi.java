@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.api;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
@@ -32,13 +39,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * Turn audio into text or text into audio. Based on
@@ -125,6 +125,125 @@ public class OpenAiAudioApi {
 	}
 
 	/**
+	 * Request to generates audio from the input text.
+	 * @param requestBody The request body.
+	 * @return Response entity containing the audio binary.
+	 */
+	public ResponseEntity<byte[]> createSpeech(SpeechRequest requestBody) {
+		return this.restClient.post().uri("/v1/audio/speech").body(requestBody).retrieve().toEntity(byte[].class);
+	}
+
+	/**
+	 * Streams audio generated from the input text.
+	 *
+	 * This method sends a POST request to the OpenAI API to generate audio from the
+	 * provided text. The audio is streamed back as a Flux of ResponseEntity objects, each
+	 * containing a byte array of the audio data.
+	 * @param requestBody The request body containing the details for the audio
+	 * generation, such as the input text, model, voice, and response format.
+	 * @return A Flux of ResponseEntity objects, each containing a byte array of the audio
+	 * data.
+	 */
+	public Flux<ResponseEntity<byte[]>> stream(SpeechRequest requestBody) {
+
+		return this.webClient.post()
+			.uri("/v1/audio/speech")
+			.body(Mono.just(requestBody), SpeechRequest.class)
+			.accept(MediaType.APPLICATION_OCTET_STREAM)
+			.exchangeToFlux(clientResponse -> {
+				HttpHeaders headers = clientResponse.headers().asHttpHeaders();
+				return clientResponse.bodyToFlux(byte[].class)
+					.map(bytes -> ResponseEntity.ok().headers(headers).body(bytes));
+			});
+	}
+
+	/**
+	 * Transcribes audio into the input language.
+	 * @param requestBody The request body.
+	 * @return Response entity containing the transcribed text in either json or text
+	 * format.
+	 */
+	public ResponseEntity<?> createTranscription(TranscriptionRequest requestBody) {
+		return createTranscription(requestBody, requestBody.responseFormat().getResponseType());
+	}
+
+	/**
+	 * Transcribes audio into the input language. The response type is specified by the
+	 * responseType parameter.
+	 * @param <T> The response type.
+	 * @param requestBody The request body.
+	 * @param responseType The response type class.
+	 * @return Response entity containing the transcribed text in the responseType format.
+	 */
+	public <T> ResponseEntity<T> createTranscription(TranscriptionRequest requestBody, Class<T> responseType) {
+
+		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+		multipartBody.add("file", new ByteArrayResource(requestBody.file()) {
+
+			@Override
+			public String getFilename() {
+				return "audio.webm";
+			}
+		});
+		multipartBody.add("model", requestBody.model());
+		multipartBody.add("language", requestBody.language());
+		multipartBody.add("prompt", requestBody.prompt());
+		multipartBody.add("response_format", requestBody.responseFormat().getValue());
+		multipartBody.add("temperature", requestBody.temperature());
+		if (requestBody.granularityType() != null) {
+			Assert.isTrue(requestBody.responseFormat() == TranscriptResponseFormat.VERBOSE_JSON,
+					"response_format must be set to verbose_json to use timestamp granularities.");
+			multipartBody.add("timestamp_granularities[]", requestBody.granularityType().getValue());
+		}
+
+		return this.restClient.post()
+			.uri("/v1/audio/transcriptions")
+			.body(multipartBody)
+			.retrieve()
+			.toEntity(responseType);
+	}
+
+	/**
+	 * Translates audio into English.
+	 * @param requestBody The request body.
+	 * @return Response entity containing the transcribed text in either json or text
+	 * format.
+	 */
+	public ResponseEntity<?> createTranslation(TranslationRequest requestBody) {
+		return createTranslation(requestBody, requestBody.responseFormat().getResponseType());
+	}
+
+	/**
+	 * Translates audio into English. The response type is specified by the responseType
+	 * parameter.
+	 * @param <T> The response type.
+	 * @param requestBody The request body.
+	 * @param responseType The response type class.
+	 * @return Response entity containing the transcribed text in the responseType format.
+	 */
+	public <T> ResponseEntity<T> createTranslation(TranslationRequest requestBody, Class<T> responseType) {
+
+		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+		multipartBody.add("file", new ByteArrayResource(requestBody.file()) {
+
+			@Override
+			public String getFilename() {
+				return "audio.webm";
+			}
+		});
+		multipartBody.add("model", requestBody.model());
+		multipartBody.add("prompt", requestBody.prompt());
+		multipartBody.add("response_format", requestBody.responseFormat().getValue());
+		multipartBody.add("temperature", requestBody.temperature());
+
+		return this.restClient.post()
+			.uri("/v1/audio/translations")
+			.body(multipartBody)
+			.retrieve()
+			.toEntity(responseType);
+	}
+
+	/**
 	 * TTS is an AI model that converts text to natural sounding spoken text. We offer two
 	 * different model variates, tts-1 is optimized for real time text to speech use cases
 	 * and tts-1-hd is optimized for quality. These models can be used with the Speech
@@ -157,6 +276,69 @@ public class OpenAiAudioApi {
 	}
 
 	/**
+	 * <a href="https://platform.openai.com/docs/models/whisper">Whisper</a> is a
+	 * general-purpose speech recognition model. It is trained on a large dataset of
+	 * diverse audio and is also a multi-task model that can perform multilingual speech
+	 * recognition as well as speech translation and language identification. The Whisper
+	 * v2-large model is currently available through our API with the whisper-1 model
+	 * name.
+	 */
+	public enum WhisperModel {
+
+		// @formatter:off
+		@JsonProperty("whisper-1") WHISPER_1("whisper-1");
+		// @formatter:on
+
+		public final String value;
+
+		WhisperModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	/**
+	 * The format of the transcript and translation outputs, in one of these options:
+	 * json, text, srt, verbose_json, or vtt. Defaults to json.
+	 */
+	public enum TranscriptResponseFormat {
+
+		// @formatter:off
+		@JsonProperty("json") JSON("json", StructuredResponse.class),
+		@JsonProperty("text") TEXT("text", String.class),
+		@JsonProperty("srt") SRT("srt", String.class),
+		@JsonProperty("verbose_json") VERBOSE_JSON("verbose_json", StructuredResponse.class),
+		@JsonProperty("vtt") VTT("vtt", String.class);
+		// @formatter:on
+
+		public final String value;
+
+		public final Class<?> responseType;
+
+		TranscriptResponseFormat(String value, Class<?> responseType) {
+			this.value = value;
+			this.responseType = responseType;
+		}
+
+		public boolean isJsonType() {
+			return this == JSON || this == VERBOSE_JSON;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		public Class<?> getResponseType() {
+			return this.responseType;
+		}
+
+	}
+
+	/**
 	 * Request to generates audio from the input text. Reference:
 	 * <a href="https://platform.openai.com/docs/api-reference/audio/createSpeech">Create
 	 * Speech</a>
@@ -181,12 +363,16 @@ public class OpenAiAudioApi {
 		@JsonProperty("speed") Float speed) {
 		// @formatter:on
 
+		public static Builder builder() {
+			return new Builder();
+		}
+
 		/**
 		 * The voice to use for synthesis.
 		 */
 		public enum Voice {
 
-		// @formatter:off
+			// @formatter:off
 			@JsonProperty("alloy") ALLOY("alloy"),
 			@JsonProperty("echo") ECHO("echo"),
 			@JsonProperty("fable") FABLE("fable"),
@@ -232,10 +418,6 @@ public class OpenAiAudioApi {
 
 		}
 
-		public static Builder builder() {
-			return new Builder();
-		}
-
 		/**
 		 * Builder for the SpeechRequest.
 		 */
@@ -277,37 +459,12 @@ public class OpenAiAudioApi {
 			}
 
 			public SpeechRequest build() {
-				Assert.hasText(model, "model must not be empty");
-				Assert.hasText(input, "input must not be empty");
+				Assert.hasText(this.model, "model must not be empty");
+				Assert.hasText(this.input, "input must not be empty");
 
 				return new SpeechRequest(this.model, this.input, this.voice, this.responseFormat, this.speed);
 			}
 
-		}
-	}
-
-	/**
-	 * <a href="https://platform.openai.com/docs/models/whisper">Whisper</a> is a
-	 * general-purpose speech recognition model. It is trained on a large dataset of
-	 * diverse audio and is also a multi-task model that can perform multilingual speech
-	 * recognition as well as speech translation and language identification. The Whisper
-	 * v2-large model is currently available through our API with the whisper-1 model
-	 * name.
-	 */
-	public enum WhisperModel {
-
-		// @formatter:off
-		@JsonProperty("whisper-1") WHISPER_1("whisper-1");
-		// @formatter:on
-
-		public final String value;
-
-		WhisperModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
 		}
 
 	}
@@ -347,6 +504,10 @@ public class OpenAiAudioApi {
 		@JsonProperty("timestamp_granularities") GranularityType granularityType) {
 		// @formatter:on
 
+		public static Builder builder() {
+			return new Builder();
+		}
+
 		public enum GranularityType {
 
 			// @formatter:off
@@ -364,10 +525,6 @@ public class OpenAiAudioApi {
 				return this.value;
 			}
 
-		}
-
-		public static Builder builder() {
-			return new Builder();
 		}
 
 		public static class Builder {
@@ -430,42 +587,6 @@ public class OpenAiAudioApi {
 						this.temperature, this.granularityType);
 			}
 
-		}
-	}
-
-	/**
-	 * The format of the transcript and translation outputs, in one of these options:
-	 * json, text, srt, verbose_json, or vtt. Defaults to json.
-	 */
-	public enum TranscriptResponseFormat {
-
-		// @formatter:off
-		@JsonProperty("json") JSON("json", StructuredResponse.class),
-		@JsonProperty("text") TEXT("text", String.class),
-		@JsonProperty("srt") SRT("srt", String.class),
-		@JsonProperty("verbose_json") VERBOSE_JSON("verbose_json", StructuredResponse.class),
-		@JsonProperty("vtt") VTT("vtt", String.class);
-		// @formatter:on
-
-		public final String value;
-
-		public final Class<?> responseType;
-
-		public boolean isJsonType() {
-			return this == JSON || this == VERBOSE_JSON;
-		}
-
-		TranscriptResponseFormat(String value, Class<?> responseType) {
-			this.value = value;
-			this.responseType = responseType;
-		}
-
-		public String getValue() {
-			return this.value;
-		}
-
-		public Class<?> getResponseType() {
-			return this.responseType;
 		}
 
 	}
@@ -537,15 +658,16 @@ public class OpenAiAudioApi {
 			}
 
 			public TranslationRequest build() {
-				Assert.notNull(file, "file must not be null");
-				Assert.hasText(model, "model must not be empty");
-				Assert.notNull(responseFormat, "response_format must not be null");
+				Assert.notNull(this.file, "file must not be null");
+				Assert.hasText(this.model, "model must not be empty");
+				Assert.notNull(this.responseFormat, "response_format must not be null");
 
 				return new TranslationRequest(this.file, this.model, this.prompt, this.responseFormat,
 						this.temperature);
 			}
 
 		}
+
 	}
 
 	/**
@@ -619,123 +741,7 @@ public class OpenAiAudioApi {
 			@JsonProperty("no_speech_prob") Float noSpeechProb) {
 			// @formatter:on
 		}
-	}
 
-	/**
-	 * Request to generates audio from the input text.
-	 * @param requestBody The request body.
-	 * @return Response entity containing the audio binary.
-	 */
-	public ResponseEntity<byte[]> createSpeech(SpeechRequest requestBody) {
-		return this.restClient.post().uri("/v1/audio/speech").body(requestBody).retrieve().toEntity(byte[].class);
-	}
-
-	/**
-	 * Streams audio generated from the input text.
-	 *
-	 * This method sends a POST request to the OpenAI API to generate audio from the
-	 * provided text. The audio is streamed back as a Flux of ResponseEntity objects, each
-	 * containing a byte array of the audio data.
-	 * @param requestBody The request body containing the details for the audio
-	 * generation, such as the input text, model, voice, and response format.
-	 * @return A Flux of ResponseEntity objects, each containing a byte array of the audio
-	 * data.
-	 */
-	public Flux<ResponseEntity<byte[]>> stream(SpeechRequest requestBody) {
-
-		return webClient.post()
-			.uri("/v1/audio/speech")
-			.body(Mono.just(requestBody), SpeechRequest.class)
-			.accept(MediaType.APPLICATION_OCTET_STREAM)
-			.exchangeToFlux(clientResponse -> {
-				HttpHeaders headers = clientResponse.headers().asHttpHeaders();
-				return clientResponse.bodyToFlux(byte[].class)
-					.map(bytes -> ResponseEntity.ok().headers(headers).body(bytes));
-			});
-	}
-
-	/**
-	 * Transcribes audio into the input language.
-	 * @param requestBody The request body.
-	 * @return Response entity containing the transcribed text in either json or text
-	 * format.
-	 */
-	public ResponseEntity<?> createTranscription(TranscriptionRequest requestBody) {
-		return createTranscription(requestBody, requestBody.responseFormat().getResponseType());
-	}
-
-	/**
-	 * Transcribes audio into the input language. The response type is specified by the
-	 * responseType parameter.
-	 * @param <T> The response type.
-	 * @param requestBody The request body.
-	 * @param responseType The response type class.
-	 * @return Response entity containing the transcribed text in the responseType format.
-	 */
-	public <T> ResponseEntity<T> createTranscription(TranscriptionRequest requestBody, Class<T> responseType) {
-
-		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
-		multipartBody.add("file", new ByteArrayResource(requestBody.file()) {
-			@Override
-			public String getFilename() {
-				return "audio.webm";
-			}
-		});
-		multipartBody.add("model", requestBody.model());
-		multipartBody.add("language", requestBody.language());
-		multipartBody.add("prompt", requestBody.prompt());
-		multipartBody.add("response_format", requestBody.responseFormat().getValue());
-		multipartBody.add("temperature", requestBody.temperature());
-		if (requestBody.granularityType() != null) {
-			Assert.isTrue(requestBody.responseFormat() == TranscriptResponseFormat.VERBOSE_JSON,
-					"response_format must be set to verbose_json to use timestamp granularities.");
-			multipartBody.add("timestamp_granularities[]", requestBody.granularityType().getValue());
-		}
-
-		return this.restClient.post()
-			.uri("/v1/audio/transcriptions")
-			.body(multipartBody)
-			.retrieve()
-			.toEntity(responseType);
-	}
-
-	/**
-	 * Translates audio into English.
-	 * @param requestBody The request body.
-	 * @return Response entity containing the transcribed text in either json or text
-	 * format.
-	 */
-	public ResponseEntity<?> createTranslation(TranslationRequest requestBody) {
-		return createTranslation(requestBody, requestBody.responseFormat().getResponseType());
-	}
-
-	/**
-	 * Translates audio into English. The response type is specified by the responseType
-	 * parameter.
-	 * @param <T> The response type.
-	 * @param requestBody The request body.
-	 * @param responseType The response type class.
-	 * @return Response entity containing the transcribed text in the responseType format.
-	 */
-	public <T> ResponseEntity<T> createTranslation(TranslationRequest requestBody, Class<T> responseType) {
-
-		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
-		multipartBody.add("file", new ByteArrayResource(requestBody.file()) {
-			@Override
-			public String getFilename() {
-				return "audio.webm";
-			}
-		});
-		multipartBody.add("model", requestBody.model());
-		multipartBody.add("prompt", requestBody.prompt());
-		multipartBody.add("response_format", requestBody.responseFormat().getValue());
-		multipartBody.add("temperature", requestBody.temperature());
-
-		return this.restClient.post()
-			.uri("/v1/audio/translations")
-			.body(multipartBody)
-			.retrieve()
-			.toEntity(responseType);
 	}
 
 }

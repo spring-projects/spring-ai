@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MilvusServiceClientProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.milvus.client";
+
+	/**
+	 * Secure the authorization for this connection, set to True to enable TLS.
+	 */
+	protected boolean secure = false;
 
 	/**
 	 * Milvus host name/address.
@@ -62,15 +68,15 @@ public class MilvusServiceClientProperties {
 	private long keepAliveTimeMs = 55000;
 
 	/**
+	 * Enables the keep-alive function for client channel.
+	 */
+	// private boolean keepAliveWithoutCalls = false;
+
+	/**
 	 * The keep-alive timeout value of client channel. The timeout value must be greater
 	 * than zero.
 	 */
 	private long keepAliveTimeoutMs = 20000;
-
-	/**
-	 * Enables the keep-alive function for client channel.
-	 */
-	// private boolean keepAliveWithoutCalls = false;
 
 	/**
 	 * Deadline for how long you are willing to wait for a reply from the server. With a
@@ -111,11 +117,6 @@ public class MilvusServiceClientProperties {
 	private String serverName;
 
 	/**
-	 * Secure the authorization for this connection, set to True to enable TLS.
-	 */
-	protected boolean secure = false;
-
-	/**
 	 * Idle timeout value of client channel. The timeout value must be larger than zero.
 	 */
 	private long idleTimeoutMs = TimeUnit.MILLISECONDS.convert(24, TimeUnit.HOURS);
@@ -131,7 +132,7 @@ public class MilvusServiceClientProperties {
 	private String password = "milvus";
 
 	public String getHost() {
-		return host;
+		return this.host;
 	}
 
 	public void setHost(String host) {
@@ -139,7 +140,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 
 	public void setPort(int port) {
@@ -147,7 +148,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getUri() {
-		return uri;
+		return this.uri;
 	}
 
 	public void setUri(String uri) {
@@ -155,7 +156,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getToken() {
-		return token;
+		return this.token;
 	}
 
 	public void setToken(String token) {
@@ -163,7 +164,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public long getConnectTimeoutMs() {
-		return connectTimeoutMs;
+		return this.connectTimeoutMs;
 	}
 
 	public void setConnectTimeoutMs(long connectTimeoutMs) {
@@ -171,7 +172,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public long getKeepAliveTimeMs() {
-		return keepAliveTimeMs;
+		return this.keepAliveTimeMs;
 	}
 
 	public void setKeepAliveTimeMs(long keepAliveTimeMs) {
@@ -179,7 +180,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public long getKeepAliveTimeoutMs() {
-		return keepAliveTimeoutMs;
+		return this.keepAliveTimeoutMs;
 	}
 
 	public void setKeepAliveTimeoutMs(long keepAliveTimeoutMs) {
@@ -195,7 +196,7 @@ public class MilvusServiceClientProperties {
 	// }
 
 	public long getRpcDeadlineMs() {
-		return rpcDeadlineMs;
+		return this.rpcDeadlineMs;
 	}
 
 	public void setRpcDeadlineMs(long rpcDeadlineMs) {
@@ -203,7 +204,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getClientKeyPath() {
-		return clientKeyPath;
+		return this.clientKeyPath;
 	}
 
 	public void setClientKeyPath(String clientKeyPath) {
@@ -211,7 +212,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getClientPemPath() {
-		return clientPemPath;
+		return this.clientPemPath;
 	}
 
 	public void setClientPemPath(String clientPemPath) {
@@ -219,7 +220,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getCaPemPath() {
-		return caPemPath;
+		return this.caPemPath;
 	}
 
 	public void setCaPemPath(String caPemPath) {
@@ -227,7 +228,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getServerPemPath() {
-		return serverPemPath;
+		return this.serverPemPath;
 	}
 
 	public void setServerPemPath(String serverPemPath) {
@@ -235,7 +236,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getServerName() {
-		return serverName;
+		return this.serverName;
 	}
 
 	public void setServerName(String serverName) {
@@ -243,7 +244,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public boolean isSecure() {
-		return secure;
+		return this.secure;
 	}
 
 	public void setSecure(boolean secure) {
@@ -251,7 +252,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public long getIdleTimeoutMs() {
-		return idleTimeoutMs;
+		return this.idleTimeoutMs;
 	}
 
 	public void setIdleTimeoutMs(long idleTimeoutMs) {
@@ -259,7 +260,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getUsername() {
-		return username;
+		return this.username;
 	}
 
 	public void setUsername(String username) {
@@ -267,7 +268,7 @@ public class MilvusServiceClientProperties {
 	}
 
 	public String getPassword() {
-		return password;
+		return this.password;
 	}
 
 	public void setPassword(String password) {

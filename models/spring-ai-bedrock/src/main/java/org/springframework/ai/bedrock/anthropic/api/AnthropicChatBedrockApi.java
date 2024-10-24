@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.anthropic.api;
 
 import java.time.Duration;
@@ -118,6 +119,54 @@ public class AnthropicChatBedrockApi extends
 
 	// Anthropic Claude models: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
 
+	@Override
+	public AnthropicChatResponse chatCompletion(AnthropicChatRequest anthropicRequest) {
+		Assert.notNull(anthropicRequest, "'anthropicRequest' must not be null");
+		return this.internalInvocation(anthropicRequest, AnthropicChatResponse.class);
+	}
+
+	@Override
+	public Flux<AnthropicChatResponse> chatCompletionStream(AnthropicChatRequest anthropicRequest) {
+		Assert.notNull(anthropicRequest, "'anthropicRequest' must not be null");
+		return this.internalInvocationStream(anthropicRequest, AnthropicChatResponse.class);
+	}
+
+	/**
+	 * Anthropic models version.
+	 */
+	public enum AnthropicChatModel implements ChatModelDescription {
+		/**
+		 * anthropic.claude-instant-v1
+		 */
+		CLAUDE_INSTANT_V1("anthropic.claude-instant-v1"),
+		/**
+		 * anthropic.claude-v2
+		 */
+		CLAUDE_V2("anthropic.claude-v2"),
+		/**
+		 * anthropic.claude-v2:1
+		 */
+		CLAUDE_V21("anthropic.claude-v2:1");
+
+		private final String id;
+
+		AnthropicChatModel(String value) {
+			this.id = value;
+		}
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return this.id;
+		}
+
+		@Override
+		public String getName() {
+			return this.id;
+		}
+	}
+
 	/**
 	 * AnthropicChatRequest encapsulates the request parameters for the Anthropic chat model.
 	 * https://docs.anthropic.com/claude/reference/complete_post
@@ -196,13 +245,13 @@ public class AnthropicChatBedrockApi extends
 
 			public AnthropicChatRequest build() {
 				return new AnthropicChatRequest(
-						prompt,
-						temperature,
-						maxTokensToSample,
-						topK,
-						topP,
-						stopSequences,
-						anthropicVersion
+						this.prompt,
+						this.temperature,
+						this.maxTokensToSample,
+						this.topK,
+						this.topP,
+						this.stopSequences,
+						this.anthropicVersion
 				);
 			}
 		}
@@ -223,54 +272,6 @@ public class AnthropicChatBedrockApi extends
 			@JsonProperty("stop_reason") String stopReason,
 			@JsonProperty("stop") String stop,
 			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) {
-	}
-
-	/**
-	 * Anthropic models version.
-	 */
-	public enum AnthropicChatModel implements ChatModelDescription {
-		/**
-		 * anthropic.claude-instant-v1
-		 */
-		CLAUDE_INSTANT_V1("anthropic.claude-instant-v1"),
-		/**
-		 * anthropic.claude-v2
-		 */
-		CLAUDE_V2("anthropic.claude-v2"),
-		/**
-		 * anthropic.claude-v2:1
-		 */
-		CLAUDE_V21("anthropic.claude-v2:1");
-
-		private final String id;
-
-		/**
-		 * @return The model id.
-		 */
-		public String id() {
-			return id;
-		}
-
-		AnthropicChatModel(String value) {
-			this.id = value;
-		}
-
-		@Override
-		public String getName() {
-			return this.id;
-		}
-	}
-
-	@Override
-	public AnthropicChatResponse chatCompletion(AnthropicChatRequest anthropicRequest) {
-		Assert.notNull(anthropicRequest, "'anthropicRequest' must not be null");
-		return this.internalInvocation(anthropicRequest, AnthropicChatResponse.class);
-	}
-
-	@Override
-	public Flux<AnthropicChatResponse> chatCompletionStream(AnthropicChatRequest anthropicRequest) {
-		Assert.notNull(anthropicRequest, "'anthropicRequest' must not be null");
-		return this.internalInvocationStream(anthropicRequest, AnthropicChatResponse.class);
 	}
 
 }

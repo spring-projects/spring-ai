@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import io.milvus.client.MilvusServiceClient;
@@ -57,38 +58,40 @@ public class MilvusEmbeddingDimensionsTests {
 			.withEmbeddingDimension(explicitDimensions)
 			.build();
 
-		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy())
+		var dim = new MilvusVectorStore(this.milvusClient, this.embeddingModel, config, true,
+				new TokenCountBatchingStrategy())
 			.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(explicitDimensions);
-		verify(embeddingModel, never()).dimensions();
+		verify(this.embeddingModel, never()).dimensions();
 	}
 
 	@Test
 	public void embeddingModelDimensions() {
-		when(embeddingModel.dimensions()).thenReturn(969);
+		when(this.embeddingModel.dimensions()).thenReturn(969);
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder().build();
 
-		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy())
+		var dim = new MilvusVectorStore(this.milvusClient, this.embeddingModel, config, true,
+				new TokenCountBatchingStrategy())
 			.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(969);
 
-		verify(embeddingModel, only()).dimensions();
+		verify(this.embeddingModel, only()).dimensions();
 	}
 
 	@Test
 	public void fallBackToDefaultDimensions() {
 
-		when(embeddingModel.dimensions()).thenThrow(new RuntimeException());
+		when(this.embeddingModel.dimensions()).thenThrow(new RuntimeException());
 
-		var dim = new MilvusVectorStore(milvusClient, embeddingModel, MilvusVectorStoreConfig.builder().build(), true,
-				new TokenCountBatchingStrategy())
+		var dim = new MilvusVectorStore(this.milvusClient, this.embeddingModel,
+				MilvusVectorStoreConfig.builder().build(), true, new TokenCountBatchingStrategy())
 			.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
-		verify(embeddingModel, only()).dimensions();
+		verify(this.embeddingModel, only()).dimensions();
 	}
 
 	@ParameterizedTest

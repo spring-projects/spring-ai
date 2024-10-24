@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.moderation.ModerationOptions;
 import org.springframework.ai.openai.api.OpenAiModerationApi;
 
@@ -39,6 +41,15 @@ public class OpenAiModerationOptions implements ModerationOptions {
 		return new Builder();
 	}
 
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
 	public static class Builder {
 
 		private final OpenAiModerationOptions options;
@@ -48,23 +59,14 @@ public class OpenAiModerationOptions implements ModerationOptions {
 		}
 
 		public Builder withModel(String model) {
-			options.setModel(model);
+			this.options.setModel(model);
 			return this;
 		}
 
 		public OpenAiModerationOptions build() {
-			return options;
+			return this.options;
 		}
 
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
 	}
 
 }

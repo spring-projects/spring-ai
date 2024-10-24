@@ -155,7 +155,7 @@ PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbc
 
 embeddingModel.afterPropertiesSet(); // initialize the jdbc template and database.
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

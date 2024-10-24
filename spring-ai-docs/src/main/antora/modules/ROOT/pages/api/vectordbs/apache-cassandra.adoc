@@ -177,7 +177,7 @@ or programmatically using the expression DSL:
 [source,java]
 ----
 Filter.Expression f = new FilterExpressionBuilder()
-    .and(f.in("country", "UK", "NL"), f.gte("year", 2020)).build();
+    .and(f.in("country", "UK", "NL"), this.f.gte("year", 2020)).build();
 
 vectorStore.similaritySearch(
    SearchRequest.query("The World").withTopK(TOP_K)

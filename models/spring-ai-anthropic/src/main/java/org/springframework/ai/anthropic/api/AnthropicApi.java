@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.anthropic.api;
 
 import java.util.ArrayList;
@@ -22,6 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
@@ -38,15 +47,6 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 /**
  * @author Christian Tzolov
  * @author Mariusz Bernacki
@@ -57,12 +57,6 @@ public class AnthropicApi {
 
 	public static final String PROVIDER_NAME = AiProvider.ANTHROPIC.value();
 
-	private static final String HEADER_X_API_KEY = "x-api-key";
-
-	private static final String HEADER_ANTHROPIC_VERSION = "anthropic-version";
-
-	private static final String HEADER_ANTHROPIC_BETA = "anthropic-beta";
-
 	public static final String DEFAULT_BASE_URL = "https://api.anthropic.com";
 
 	public static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
@@ -71,9 +65,17 @@ public class AnthropicApi {
 
 	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
 
+	private static final String HEADER_X_API_KEY = "x-api-key";
+
+	private static final String HEADER_ANTHROPIC_VERSION = "anthropic-version";
+
+	private static final String HEADER_ANTHROPIC_BETA = "anthropic-beta";
+
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
+
+	private final StreamHelper streamHelper = new StreamHelper();
 
 	private WebClient webClient;
 
@@ -142,6 +144,74 @@ public class AnthropicApi {
 	}
 
 	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletionResponse} as a body and HTTP
+	 * status code and headers.
+	 */
+	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+			.uri("/v1/messages")
+			.body(chatRequest)
+			.retrieve()
+			.toEntity(ChatCompletionResponse.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
+		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
+
+		return this.webClient.post()
+			.uri("/v1/messages")
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			.takeUntil(SSE_DONE_PREDICATE)
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, StreamEvent.class))
+			.filter(event -> event.type() != EventType.PING)
+			// Detect if the chunk is part of a streaming function call.
+			.map(event -> {
+				if (this.streamHelper.isToolUseStart(event)) {
+					isInsideTool.set(true);
+				}
+				return event;
+			})
+			// Group all chunks belonging to the same function call.
+			.windowUntil(event -> {
+				if (isInsideTool.get() && this.streamHelper.isToolUseFinish(event)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			// Merging the window chunks into a single chunk.
+			.concatMapIterable(window -> {
+				Mono<StreamEvent> monoChunk = window.reduce(new ToolUseAggregationEvent(),
+						this.streamHelper::mergeToolUseEvents);
+				return List.of(monoChunk);
+			})
+			.flatMap(mono -> mono)
+			.map(event -> this.streamHelper.eventToChatCompletionResponse(event, chatCompletionReference))
+			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
+	}
+
+	/**
 	 * Check the <a href="https://docs.anthropic.com/claude/docs/models-overview">Models
 	 * overview</a> and <a href=
 	 * "https://docs.anthropic.com/claude/docs/models-overview#model-comparison">model
@@ -185,10 +255,90 @@ public class AnthropicApi {
 	 */
 	public enum Role {
 
-	// @formatter:off
+		// @formatter:off
 		@JsonProperty("user") USER,
 		@JsonProperty("assistant") ASSISTANT
 		// @formatter:on
+
+	}
+
+	/**
+	 * The evnt type of the streamed chunk.
+	 */
+	public enum EventType {
+
+		/**
+		 * Message start event. Contains a Message object with empty content.
+		 */
+		@JsonProperty("message_start")
+		MESSAGE_START,
+
+		/**
+		 * Message delta event, indicating top-level changes to the final Message object.
+		 */
+		@JsonProperty("message_delta")
+		MESSAGE_DELTA,
+
+		/**
+		 * A final message stop event.
+		 */
+		@JsonProperty("message_stop")
+		MESSAGE_STOP,
+
+		/**
+		 *
+		 */
+		@JsonProperty("content_block_start")
+		CONTENT_BLOCK_START,
+
+		/**
+		 *
+		 */
+		@JsonProperty("content_block_delta")
+		CONTENT_BLOCK_DELTA,
+
+		/**
+		 *
+		 */
+		@JsonProperty("content_block_stop")
+		CONTENT_BLOCK_STOP,
+
+		/**
+		 *
+		 */
+		@JsonProperty("error")
+		ERROR,
+
+		/**
+		 *
+		 */
+		@JsonProperty("ping")
+		PING,
+
+		/**
+		 * Artifically created event to aggregate tool use events.
+		 */
+		TOOL_USE_AGGREATE;
+
+	}
+
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
+			visible = true)
+	@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockStartEvent.class, name = "content_block_start"),
+			@JsonSubTypes.Type(value = ContentBlockDeltaEvent.class, name = "content_block_delta"),
+			@JsonSubTypes.Type(value = ContentBlockStopEvent.class, name = "content_block_stop"),
+
+			@JsonSubTypes.Type(value = PingEvent.class, name = "ping"),
+
+			@JsonSubTypes.Type(value = ErrorEvent.class, name = "error"),
+
+			@JsonSubTypes.Type(value = MessageStartEvent.class, name = "message_start"),
+			@JsonSubTypes.Type(value = MessageDeltaEvent.class, name = "message_delta"),
+			@JsonSubTypes.Type(value = MessageStopEvent.class, name = "message_stop") })
+	public interface StreamEvent {
+
+		@JsonProperty("type")
+		EventType type();
 
 	}
 
@@ -257,6 +407,14 @@ public class AnthropicApi {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null);
 		}
 
+		public static ChatCompletionRequestBuilder builder() {
+			return new ChatCompletionRequestBuilder();
+		}
+
+		public static ChatCompletionRequestBuilder from(ChatCompletionRequest request) {
+			return new ChatCompletionRequestBuilder(request);
+		}
+
 		/**
 		 * @param userId An external identifier for the user who is associated with the
 		 * request. This should be a uuid, hash value, or other opaque identifier.
@@ -265,15 +423,9 @@ public class AnthropicApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Metadata(@JsonProperty("user_id") String userId) {
+
 		}
 
-		public static ChatCompletionRequestBuilder builder() {
-			return new ChatCompletionRequestBuilder();
-		}
-
-		public static ChatCompletionRequestBuilder from(ChatCompletionRequest request) {
-			return new ChatCompletionRequestBuilder(request);
-		}
 	}
 
 	public static class ChatCompletionRequestBuilder {
@@ -378,11 +530,15 @@ public class AnthropicApi {
 		}
 
 		public ChatCompletionRequest build() {
-			return new ChatCompletionRequest(model, messages, system, maxTokens, metadata, stopSequences, stream,
-					temperature, topP, topK, tools);
+			return new ChatCompletionRequest(this.model, this.messages, this.system, this.maxTokens, this.metadata,
+					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools);
 		}
 
 	}
+
+	///////////////////////////////////////
+	/// ERROR EVENT
+	///////////////////////////////////////
 
 	/**
 	 * Input messages.
@@ -535,8 +691,14 @@ public class AnthropicApi {
 			public Source(String mediaType, String data) {
 				this("base64", mediaType, data);
 			}
+
 		}
+
 	}
+
+	///////////////////////////////////////
+	/// CONTENT_BLOCK EVENTS
+	///////////////////////////////////////
 
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(// @formatter:off
@@ -545,6 +707,8 @@ public class AnthropicApi {
 		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
 		// @formatter:on
 	}
+
+	// CB START EVENT
 
 	/**
 	 * @param id Unique object identifier. The format and length of IDs may change over
@@ -572,6 +736,8 @@ public class AnthropicApi {
 		// @formatter:on
 	}
 
+	// CB DELTA EVENT
+
 	/**
 	 * Usage statistics.
 	 *
@@ -585,94 +751,7 @@ public class AnthropicApi {
 		 // @formatter:off
 	}
 
-
-	///////////////////////////////////////
-	/// ERROR EVENT
-	///////////////////////////////////////
-
-	/**
-	 * The evnt type of the streamed chunk.
-	 */
-	public enum EventType {
-
-		/**
-		 * Message start event. Contains a Message object with empty content.
-		 */
-		@JsonProperty("message_start")
-		MESSAGE_START,
-
-		/**
-		 * Message delta event, indicating top-level changes to the final Message object.
-		 */
-		@JsonProperty("message_delta")
-		MESSAGE_DELTA,
-
-		/**
-		 * A final message stop event.
-		 */
-		@JsonProperty("message_stop")
-		MESSAGE_STOP,
-
-		/**
-		 *
-		 */
-		@JsonProperty("content_block_start")
-		CONTENT_BLOCK_START,
-
-		/**
-		*
-		*/
-		@JsonProperty("content_block_delta")
-		CONTENT_BLOCK_DELTA,
-
-		/**
-		*
-		*/
-		@JsonProperty("content_block_stop")
-		CONTENT_BLOCK_STOP,
-
-		/**
-		*
-		*/
-		@JsonProperty("error")
-		ERROR,
-
-		/**
-		 *
-		 */
-		@JsonProperty("ping")
-		PING,
-
-		/**
-		 * Artifically created event to aggregate tool use events.
-		 */
-		TOOL_USE_AGGREATE;
-
-	}
-
-	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
-			visible = true)
-	@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockStartEvent.class, name = "content_block_start"),
-			@JsonSubTypes.Type(value = ContentBlockDeltaEvent.class, name = "content_block_delta"),
-			@JsonSubTypes.Type(value = ContentBlockStopEvent.class, name = "content_block_stop"),
-
-			@JsonSubTypes.Type(value = PingEvent.class, name = "ping"),
-
-			@JsonSubTypes.Type(value = ErrorEvent.class, name = "error"),
-
-			@JsonSubTypes.Type(value = MessageStartEvent.class, name = "message_start"),
-			@JsonSubTypes.Type(value = MessageDeltaEvent.class, name = "message_delta"),
-			@JsonSubTypes.Type(value = MessageStopEvent.class, name = "message_stop") })
-	public interface StreamEvent {
-
-		@JsonProperty("type")
-		EventType type();
-
-	}
-
-	///////////////////////////////////////
-	/// CONTENT_BLOCK EVENTS
-	///////////////////////////////////////
+	/// ECB STOP
 
 	/**
 	 * Special event used to aggregate multiple tool use events into a single event with
@@ -736,13 +815,17 @@ public class AnthropicApi {
 
 		@Override
 		public String toString() {
-			return "EventToolUseBuilder [index=" + index + ", id=" + id + ", name=" + name + ", partialJson="
-					+ partialJson + ", toolUseMap=" + toolContentBlocks + "]";
+			return "EventToolUseBuilder [index=" + this.index + ", id=" + this.id + ", name=" + this.name + ", partialJson="
+					+ this.partialJson + ", toolUseMap=" + this.toolContentBlocks + "]";
 		}
 
 	}
 
-	// CB START EVENT
+	///////////////////////////////////////
+	/// MESSAGE EVENTS
+	///////////////////////////////////////
+
+	// MESSAGE START EVENT
 
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockStartEvent(// @formatter:off
@@ -773,7 +856,7 @@ public class AnthropicApi {
 		}
     }// @formatter:on
 
-	// CB DELTA EVENT
+	// MESSAGE DELTA EVENT
 
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockDeltaEvent(// @formatter:off
@@ -803,7 +886,7 @@ public class AnthropicApi {
 		}
 	}// @formatter:on
 
-	/// ECB STOP
+	// MESSAGE STOP EVENT
 
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockStopEvent(// @formatter:off
@@ -811,19 +894,11 @@ public class AnthropicApi {
         @JsonProperty("index") Integer index) implements StreamEvent {
     }// @formatter:on
 
-	///////////////////////////////////////
-	/// MESSAGE EVENTS
-	///////////////////////////////////////
-
-	// MESSAGE START EVENT
-
 	@JsonInclude(Include.NON_NULL)
 	public record MessageStartEvent(// @formatter:off
         @JsonProperty("type") EventType type,
         @JsonProperty("message") ChatCompletionResponse message) implements StreamEvent {
     }// @formatter:on
-
-	// MESSAGE DELTA EVENT
 
 	@JsonInclude(Include.NON_NULL)
 	public record MessageDeltaEvent(// @formatter:off
@@ -842,8 +917,6 @@ public class AnthropicApi {
             @JsonProperty("output_tokens") Integer outputTokens) {
         }
     }// @formatter:on
-
-	// MESSAGE STOP EVENT
 
 	@JsonInclude(Include.NON_NULL)
 	public record MessageStopEvent(// @formatter:off
@@ -872,75 +945,5 @@ public class AnthropicApi {
 	public record PingEvent(// @formatter:off
         @JsonProperty("type") EventType type) implements StreamEvent {
     }// @formatter:on
-
-	/**
-	 * Creates a model response for the given chat conversation.
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletionResponse} as a body and HTTP
-	 * status code and headers.
-	 */
-	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-			.uri("/v1/messages")
-			.body(chatRequest)
-			.retrieve()
-			.toEntity(ChatCompletionResponse.class);
-	}
-
-	private final StreamHelper streamHelper = new StreamHelper();
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
-
-		return this.webClient.post()
-			.uri("/v1/messages")
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-			.retrieve()
-			.bodyToFlux(String.class)
-			.takeUntil(SSE_DONE_PREDICATE)
-			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, StreamEvent.class))
-			.filter(event -> event.type() != EventType.PING)
-			// Detect if the chunk is part of a streaming function call.
-			.map(event -> {
-				if (this.streamHelper.isToolUseStart(event)) {
-					isInsideTool.set(true);
-				}
-				return event;
-			})
-			// Group all chunks belonging to the same function call.
-			.windowUntil(event -> {
-				if (isInsideTool.get() && this.streamHelper.isToolUseFinish(event)) {
-					isInsideTool.set(false);
-					return true;
-				}
-				return !isInsideTool.get();
-			})
-			// Merging the window chunks into a single chunk.
-			.concatMapIterable(window -> {
-				Mono<StreamEvent> monoChunk = window.reduce(new ToolUseAggregationEvent(),
-						this.streamHelper::mergeToolUseEvents);
-				return List.of(monoChunk);
-			})
-			.flatMap(mono -> mono)
-			.map(event -> streamHelper.eventToChatCompletionResponse(event, chatCompletionReference))
-			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
-	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -176,24 +176,6 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
-	 * Encapsulates the metrics about the model invocation.
-	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
-	 *
-	 * @param inputTokenCount The number of tokens in the input prompt.
-	 * @param firstByteLatency The time in milliseconds between the request being sent and the first byte of the
-	 * response being received.
-	 * @param outputTokenCount The number of tokens in the generated text.
-	 * @param invocationLatency The time in milliseconds between the request being sent and the response being received.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record AmazonBedrockInvocationMetrics(
-			@JsonProperty("inputTokenCount") Long inputTokenCount,
-			@JsonProperty("firstByteLatency") Long firstByteLatency,
-			@JsonProperty("outputTokenCount") Long outputTokenCount,
-			@JsonProperty("invocationLatency") Long invocationLatency) {
-	}
-
-	/**
 	 * Compute the embedding for the given text.
 	 *
 	 * @param request The embedding request.
@@ -336,6 +318,24 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		this.clientStreaming.invokeModelWithResponseStream(invokeRequest, responseHandler);
 
 		return eventSink.asFlux();
+	}
+
+	/**
+	 * Encapsulates the metrics about the model invocation.
+	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
+	 *
+	 * @param inputTokenCount The number of tokens in the input prompt.
+	 * @param firstByteLatency The time in milliseconds between the request being sent and the first byte of the
+	 * response being received.
+	 * @param outputTokenCount The number of tokens in the generated text.
+	 * @param invocationLatency The time in milliseconds between the request being sent and the response being received.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record AmazonBedrockInvocationMetrics(
+			@JsonProperty("inputTokenCount") Long inputTokenCount,
+			@JsonProperty("firstByteLatency") Long firstByteLatency,
+			@JsonProperty("outputTokenCount") Long outputTokenCount,
+			@JsonProperty("invocationLatency") Long invocationLatency) {
 	}
 }
 // @formatter:on

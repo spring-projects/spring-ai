@@ -58,7 +58,7 @@ public class OldSimpleAiController {
 
     @GetMapping("/ai/simple")
     Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", this.chatClient.call(message));
     }
 }
 ```
@@ -77,7 +77,7 @@ public class SimpleAiController {
 
     @GetMapping("/ai/simple")
     Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 }
 ```
@@ -109,7 +109,7 @@ class OldSimpleAiController {
 	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
 		return Map.of(
                 "generation",
-                chatClient.call(message)
+				this.chatClient.call(message)
         );
 	}
 }
@@ -131,7 +131,7 @@ class SimpleAiController {
     Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         return Map.of(
                 "generation",
-                chatClient.prompt().user(message).call().content()
+				this.chatClient.prompt().user(message).call().content()
         );
     }
 }

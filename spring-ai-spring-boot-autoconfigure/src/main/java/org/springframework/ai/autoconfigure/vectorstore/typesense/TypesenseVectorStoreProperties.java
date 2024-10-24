@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,7 +40,7 @@ public class TypesenseVectorStoreProperties extends CommonVectorStoreProperties 
 	private int embeddingDimension = TypesenseVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
 
 	public String getCollectionName() {
-		return collectionName;
+		return this.collectionName;
 	}
 
 	public void setCollectionName(String collectionName) {
@@ -48,7 +48,7 @@ public class TypesenseVectorStoreProperties extends CommonVectorStoreProperties 
 	}
 
 	public int getEmbeddingDimension() {
-		return embeddingDimension;
+		return this.embeddingDimension;
 	}
 
 	public void setEmbeddingDimension(int embeddingDimension) {

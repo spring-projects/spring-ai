@@ -147,13 +147,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -193,7 +193,7 @@ CohereChatBedrockApi api = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMA
 		new ObjectMapper(),
 		Duration.ofMillis(1000L));
 
-BedrockCohereChatModel chatModel = new BedrockCohereChatModel(api,
+BedrockCohereChatModel chatModel = new BedrockCohereChatModel(this.api,
 	    BedrockCohereChatOptions.builder()
 					.withTemperature(0.6)
 					.withTopK(10)
@@ -201,11 +201,11 @@ BedrockCohereChatModel chatModel = new BedrockCohereChatModel(api,
 					.withMaxTokens(678)
 					.build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -242,7 +242,7 @@ var request = CohereChatRequest
 	.withTruncate(Truncate.NONE)
 	.build();
 
-CohereChatResponse response = cohereChatApi.chatCompletion(request);
+CohereChatResponse response = this.cohereChatApi.chatCompletion(this.request);
 
 var request = CohereChatRequest
 	.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
@@ -258,8 +258,8 @@ var request = CohereChatRequest
 	.withTruncate(Truncate.NONE)
 	.build();
 
-Flux<CohereChatResponse.Generation> responseStream = cohereChatApi.chatCompletionStream(request);
-List<CohereChatResponse.Generation> responses = responseStream.collectList().block();
+Flux<CohereChatResponse.Generation> responseStream = this.cohereChatApi.chatCompletionStream(this.request);
+List<CohereChatResponse.Generation> responses = this.responseStream.collectList().block();
 ----
 
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,25 @@
 
 package org.springframework.ai.autoconfigure.azure;
 
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.implementation.OpenAIClientImpl;
-import com.azure.core.http.*;
+import com.azure.core.http.HttpHeader;
+import com.azure.core.http.HttpHeaderName;
+import com.azure.core.http.HttpMethod;
+import com.azure.core.http.HttpPipeline;
+import com.azure.core.http.HttpRequest;
+import com.azure.core.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
@@ -39,13 +52,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ReflectionUtils;
-import reactor.core.publisher.Flux;
-
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -89,16 +95,16 @@ class AzureOpenAiAutoConfigurationIT {
 
 	@Test
 	void chatCompletion() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage, systemMessage)));
+			ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage, this.systemMessage)));
 			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
 	@Test
 	void httpRequestContainsUserAgentAndCustomHeaders() {
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("spring.ai.azure.openai.custom-headers.foo=bar",
 					"spring.ai.azure.openai.custom-headers.fizz=buzz")
 			.run(context -> {
@@ -125,11 +131,11 @@ class AzureOpenAiAutoConfigurationIT {
 
 	@Test
 	void chatCompletionStreaming() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(this.userMessage, this.systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(10);
@@ -147,7 +153,7 @@ class AzureOpenAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			AzureOpenAiEmbeddingModel embeddingModel = context.getBean(AzureOpenAiEmbeddingModel.class);
 
 			EmbeddingResponse embeddingResponse = embeddingModel
@@ -165,7 +171,7 @@ class AzureOpenAiAutoConfigurationIT {
 	@Test
 	@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_DEPLOYMENT_NAME", matches = ".+")
 	void transcribe() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			AzureOpenAiAudioTranscriptionModel transcriptionModel = context
 				.getBean(AzureOpenAiAudioTranscriptionModel.class);
 			Resource audioFile = new ClassPathResource("/speech/jfk.flac");
@@ -179,17 +185,17 @@ class AzureOpenAiAutoConfigurationIT {
 	void chatActivation() {
 
 		// Disable the chat auto-configuration.
-		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=false").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isEmpty();
 		});
 
 		// The chat auto-configuration is enabled by default.
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
 		});
 
 		// Explicitly enable the chat auto-configuration.
-		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
 		});
 	}
@@ -198,17 +204,17 @@ class AzureOpenAiAutoConfigurationIT {
 	void embeddingActivation() {
 
 		// Disable the embedding auto-configuration.
-		contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=false").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
 		});
 
 		// The embedding auto-configuration is enabled by default.
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty();
 		});
 
 		// Explicitly enable the embedding auto-configuration.
-		contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty();
 		});
 	}
@@ -217,19 +223,21 @@ class AzureOpenAiAutoConfigurationIT {
 	void audioTranscriptionActivation() {
 
 		// Disable the transcription auto-configuration.
-		contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=false")
+			.run(context -> {
+				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
+			});
 
 		// The transcription auto-configuration is enabled by default.
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
 		});
 
 		// Explicitly enable the transcription auto-configuration.
-		contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=true").run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=true")
+			.run(context -> {
+				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
+			});
 	}
 
 }

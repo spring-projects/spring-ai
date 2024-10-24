@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
+
+import java.io.IOException;
+import java.util.List;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.AudioTranscriptionFormat;
 import com.azure.ai.openai.models.AudioTranscriptionOptions;
 import com.azure.ai.openai.models.AudioTranscriptionTimestampGranularity;
 import com.azure.core.http.rest.Response;
+
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
@@ -34,9 +39,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * AzureOpenAI audio transcription client implementation for backed by
@@ -61,6 +63,15 @@ public class AzureOpenAiAudioTranscriptionModel implements Model<AudioTranscript
 		this.defaultOptions = options;
 	}
 
+	private static byte[] toBytes(Resource resource) {
+		try {
+			return resource.getInputStream().readAllBytes();
+		}
+		catch (IOException e) {
+			throw new IllegalArgumentException("Failed to read resource: " + resource, e);
+		}
+	}
+
 	public String call(Resource audioResource) {
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioResource);
 		return call(transcriptionRequest).getResult().getOutput();
@@ -73,7 +84,7 @@ public class AzureOpenAiAudioTranscriptionModel implements Model<AudioTranscript
 
 		AudioTranscriptionFormat responseFormat = audioTranscriptionOptions.getResponseFormat();
 		if (JSON_FORMATS.contains(responseFormat)) {
-			var audioTranscription = openAIClient.getAudioTranscription(deploymentOrModelName, FILENAME_MARKER,
+			var audioTranscription = this.openAIClient.getAudioTranscription(deploymentOrModelName, FILENAME_MARKER,
 					audioTranscriptionOptions);
 
 			List<Word> words = null;
@@ -108,7 +119,7 @@ public class AzureOpenAiAudioTranscriptionModel implements Model<AudioTranscript
 			return new AudioTranscriptionResponse(transcript, metadata);
 		}
 		else {
-			Response<String> audioTranscription = openAIClient.getAudioTranscriptionTextWithResponse(
+			Response<String> audioTranscription = this.openAIClient.getAudioTranscriptionTextWithResponse(
 					deploymentOrModelName, FILENAME_MARKER, audioTranscriptionOptions, null);
 			String text = audioTranscription.getValue();
 			AudioTranscription transcript = new AudioTranscription(text);
@@ -119,7 +130,7 @@ public class AzureOpenAiAudioTranscriptionModel implements Model<AudioTranscript
 	private String getDeploymentName(AudioTranscriptionPrompt audioTranscriptionPrompt) {
 		var runtimeOptions = audioTranscriptionPrompt.getOptions();
 
-		if (defaultOptions != null) {
+		if (this.defaultOptions != null) {
 			runtimeOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
 					AzureOpenAiAudioTranscriptionOptions.class);
 		}
@@ -187,15 +198,6 @@ public class AzureOpenAiAudioTranscriptionModel implements Model<AudioTranscript
 		}
 
 		return audioTranscriptionOptions;
-	}
-
-	private static byte[] toBytes(Resource resource) {
-		try {
-			return resource.getInputStream().readAllBytes();
-		}
-		catch (IOException e) {
-			throw new IllegalArgumentException("Failed to read resource: " + resource, e);
-		}
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.embedding.multimodal;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictRequest;
@@ -23,7 +31,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.Media;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
@@ -34,6 +42,7 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
@@ -47,13 +56,6 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /**
  * Implementation of the Vertex AI Multimodal Embedding Model. Note: This implementation
  * is not yet fully functional and is subject to change.
@@ -66,8 +68,6 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
 
-	public final VertexAiMultimodalEmbeddingOptions defaultOptions;
-
 	private static final MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
 	private static final MimeType IMAGE_MIME_TYPE = MimeTypeUtils.parseMimeType("image/*");
@@ -76,6 +76,13 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 	private static final List<MimeType> SUPPORTED_IMAGE_MIME_SUB_TYPES = List.of(MimeTypeUtils.IMAGE_JPEG,
 			MimeTypeUtils.IMAGE_GIF, MimeTypeUtils.IMAGE_PNG, MimeTypeUtils.parseMimeType("image/bmp"));
+
+	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
+		.of(VertexAiMultimodalEmbeddingModelName.values())
+		.collect(Collectors.toMap(VertexAiMultimodalEmbeddingModelName::getName,
+				VertexAiMultimodalEmbeddingModelName::getDimensions));
+
+	public final VertexAiMultimodalEmbeddingOptions defaultOptions;
 
 	private final VertexAiEmbeddingConnectionDetails connectionDetails;
 
@@ -121,9 +128,6 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		}
 
 		return finalResponse;
-	}
-
-	record DocumentMetadata(String documentId, MimeType mimeType, Object data) {
 	}
 
 	private EmbeddingResponse doSingleDocumentPrediction(PredictionServiceClient client, EndpointName endpointName,
@@ -252,9 +256,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), 768);
 	}
 
-	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
-		.of(VertexAiMultimodalEmbeddingModelName.values())
-		.collect(Collectors.toMap(VertexAiMultimodalEmbeddingModelName::getName,
-				VertexAiMultimodalEmbeddingModelName::getDimensions));
+	record DocumentMetadata(String documentId, MimeType mimeType, Object data) {
+
+	}
 
 }

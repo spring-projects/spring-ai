@@ -199,7 +199,7 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 String response = ChatClient.create(chatModel).prompt()
         .options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
-        .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+        .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, this.url))
         .call()
         .content();
 ----
@@ -231,7 +231,7 @@ String response = ChatClient.create(chatModel).prompt()
     .options(AzureOpenAiChatOptions.builder()
     .withDeploymentName("gpt-4o").build())
     .user(u -> u.text("Explain what do you see on this picture?")
-    .media(MimeTypeUtils.IMAGE_PNG, resource))
+    .media(MimeTypeUtils.IMAGE_PNG, this.resource))
     .call()
     .content();
 ----
@@ -270,13 +270,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -322,13 +322,13 @@ var openAIChatOptions = AzureOpenAiChatOptions.builder()
   .withMaxTokens(200)
   .build();
 
-var chatModel = new AzureOpenAiChatModel(openAIClient, openAIChatOptions);
+var chatModel = new AzureOpenAiChatModel(this.openAIClient, this.openAIChatOptions);
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
   new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
   new Prompt("Generate the names of 5 famous pirates."));
 
 ----

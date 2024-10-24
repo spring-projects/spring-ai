@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
@@ -51,9 +51,6 @@ public class ChatClientResponseEntityTests {
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;
 
-	record MyBean(String name, int age) {
-	}
-
 	@Test
 	public void responseEntityTest() {
 
@@ -63,9 +60,9 @@ public class ChatClientResponseEntityTests {
 				{"name":"John", "age":30}
 				""")), metadata);
 
-		when(chatModel.call(promptCaptor.capture())).thenReturn(chatResponse);
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
-		ResponseEntity<ChatResponse, MyBean> responseEntity = ChatClient.builder(chatModel)
+		ResponseEntity<ChatResponse, MyBean> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
 			.user("Tell me about John")
@@ -77,7 +74,7 @@ public class ChatClientResponseEntityTests {
 
 		assertThat(responseEntity.getEntity()).isEqualTo(new MyBean("John", 30));
 
-		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
+		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).contains("Tell me about John");
 	}
@@ -87,26 +84,27 @@ public class ChatClientResponseEntityTests {
 
 		var chatResponse = new ChatResponse(List.of(new Generation("""
 				[
-				 {"name":"Max", "age":10},
-				 {"name":"Adi", "age":13}
+					{"name":"Max", "age":10},
+					{"name":"Adi", "age":13}
 				]
 				""")));
 
-		when(chatModel.call(promptCaptor.capture())).thenReturn(chatResponse);
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
-		ResponseEntity<ChatResponse, List<MyBean>> responseEntity = ChatClient.builder(chatModel)
+		ResponseEntity<ChatResponse, List<MyBean>> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
 			.user("Tell me about them")
 			.call()
 			.responseEntity(new ParameterizedTypeReference<List<MyBean>>() {
+
 			});
 
 		assertThat(responseEntity.getResponse()).isEqualTo(chatResponse);
 		assertThat(responseEntity.getEntity().get(0)).isEqualTo(new MyBean("Max", 10));
 		assertThat(responseEntity.getEntity().get(1)).isEqualTo(new MyBean("Adi", 13));
 
-		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
+		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).contains("Tell me about them");
 	}
@@ -115,12 +113,12 @@ public class ChatClientResponseEntityTests {
 	public void customSoCResponseEntityTest() {
 
 		var chatResponse = new ChatResponse(List.of(new Generation("""
-				 {"name":"Max", "age":10},
+					{"name":"Max", "age":10},
 				""")));
 
-		when(chatModel.call(promptCaptor.capture())).thenReturn(chatResponse);
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
-		ResponseEntity<ChatResponse, Map<String, Object>> responseEntity = ChatClient.builder(chatModel)
+		ResponseEntity<ChatResponse, Map<String, Object>> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
 			.user("Tell me about Max")
@@ -131,9 +129,13 @@ public class ChatClientResponseEntityTests {
 		assertThat(responseEntity.getEntity().get("name")).isEqualTo("Max");
 		assertThat(responseEntity.getEntity().get("age")).isEqualTo(10);
 
-		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
+		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).contains("Tell me about Max");
+	}
+
+	record MyBean(String name, int age) {
+
 	}
 
 }

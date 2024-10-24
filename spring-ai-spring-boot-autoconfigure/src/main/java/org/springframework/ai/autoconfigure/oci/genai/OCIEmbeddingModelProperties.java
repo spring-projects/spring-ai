@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.oci.genai;
 
 import com.oracle.bmc.generativeaiinference.model.EmbedTextDetails;
+
 import org.springframework.ai.oci.OCIEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -39,15 +41,15 @@ public class OCIEmbeddingModelProperties {
 
 	public OCIEmbeddingOptions getEmbeddingOptions() {
 		return OCIEmbeddingOptions.builder()
-			.withCompartment(compartment)
-			.withModel(model)
-			.withServingMode(servingMode.getMode())
-			.withTruncate(truncate)
+			.withCompartment(this.compartment)
+			.withModel(this.model)
+			.withServingMode(this.servingMode.getMode())
+			.withTruncate(this.truncate)
 			.build();
 	}
 
 	public ServingMode getServingMode() {
-		return servingMode;
+		return this.servingMode;
 	}
 
 	public void setServingMode(ServingMode servingMode) {
@@ -55,7 +57,7 @@ public class OCIEmbeddingModelProperties {
 	}
 
 	public String getCompartment() {
-		return compartment;
+		return this.compartment;
 	}
 
 	public void setCompartment(String compartment) {
@@ -63,7 +65,7 @@ public class OCIEmbeddingModelProperties {
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -71,7 +73,7 @@ public class OCIEmbeddingModelProperties {
 	}
 
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
@@ -79,7 +81,7 @@ public class OCIEmbeddingModelProperties {
 	}
 
 	public EmbedTextDetails.Truncate getTruncate() {
-		return truncate;
+		return this.truncate;
 	}
 
 	public void setTruncate(EmbedTextDetails.Truncate truncate) {

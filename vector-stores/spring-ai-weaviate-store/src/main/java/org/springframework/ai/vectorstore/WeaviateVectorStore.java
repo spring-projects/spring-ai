@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,25 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.model.EmbeddingUtils;
-import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
-import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.micrometer.observation.ObservationRegistry;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
@@ -60,6 +43,23 @@ import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder.GetBuilderBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
+import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * A VectorStore implementation backed by Weaviate vector database.
@@ -129,164 +129,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * weaviate vector store.
 	 */
 	private final ObjectMapper objectMapper = new ObjectMapper();
-
-	/**
-	 * Configuration class for the WeaviateVectorStore.
-	 */
-	public static final class WeaviateVectorStoreConfig {
-
-		public record MetadataField(String name, Type type) {
-			public enum Type {
-
-				TEXT, NUMBER, BOOLEAN
-
-			}
-
-			public static MetadataField text(String name) {
-				return new MetadataField(name, Type.TEXT);
-			}
-
-			public static MetadataField number(String name) {
-				return new MetadataField(name, Type.NUMBER);
-			}
-
-			public static MetadataField bool(String name) {
-				return new MetadataField(name, Type.BOOLEAN);
-			}
-
-		}
-
-		/**
-		 * https://weaviate.io/developers/weaviate/concepts/replication-architecture/consistency#tunable-consistency-strategies
-		 */
-		public enum ConsistentLevel {
-
-			/**
-			 * Write must receive an acknowledgement from at least one replica node. This
-			 * is the fastest (most available), but least consistent option.
-			 */
-			ONE,
-
-			/**
-			 * Write must receive an acknowledgement from at least QUORUM replica nodes.
-			 * QUORUM is calculated as n / 2 + 1, where n is the number of replicas.
-			 */
-			QUORUM,
-
-			/**
-			 * Write must receive an acknowledgement from all replica nodes. This is the
-			 * most consistent, but 'slowest'.
-			 */
-			ALL
-
-		}
-
-		private final String weaviateObjectClass;
-
-		private final ConsistentLevel consistencyLevel;
-
-		/**
-		 * Known metadata fields to add as a fields to the Weaviate schema. You can add
-		 * arbitrary metadata with your documents but only the metadata fields listed here
-		 * can be used in the expression filters.
-		 */
-		private final List<MetadataField> filterMetadataFields;
-
-		private final Map<String, String> headers;
-
-		/**
-		 * Constructor using the builder.
-		 * @param builder The configuration builder.
-		 */
-		public WeaviateVectorStoreConfig(Builder builder) {
-			this.weaviateObjectClass = builder.objectClass;
-			this.consistencyLevel = builder.consistencyLevel;
-			this.filterMetadataFields = builder.filterMetadataFields;
-			this.headers = builder.headers;
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		public static Builder builder() {
-			return new Builder();
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		public static WeaviateVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		public static class Builder {
-
-			private String objectClass = "SpringAiWeaviate";
-
-			private ConsistentLevel consistencyLevel = WeaviateVectorStoreConfig.ConsistentLevel.ONE;
-
-			private List<MetadataField> filterMetadataFields = List.of();
-
-			private Map<String, String> headers = Map.of();
-
-			private Builder() {
-			}
-
-			/**
-			 * Weaviate known, filterable metadata fields.
-			 * @param filterMetadataFields known metadata fields to use.
-			 * @return this builder.
-			 */
-			public Builder withFilterableMetadataFields(List<MetadataField> filterMetadataFields) {
-				Assert.notNull(filterMetadataFields, "The filterMetadataFields can not be null.");
-				this.filterMetadataFields = filterMetadataFields;
-				return this;
-			}
-
-			/**
-			 * Weaviate config headers.
-			 * @param headers config headers to use.
-			 * @return this builder.
-			 */
-			public Builder withHeaders(Map<String, String> headers) {
-				Assert.notNull(headers, "The headers can not be null.");
-				this.headers = headers;
-				return this;
-			}
-
-			/**
-			 * Weaviate objectClass.
-			 * @param objectClass objectClass to use.
-			 * @return this builder.
-			 */
-			public Builder withObjectClass(String objectClass) {
-				Assert.hasText(objectClass, "The objectClass can not be empty.");
-				this.objectClass = objectClass;
-				return this;
-			}
-
-			/**
-			 * Weaviate consistencyLevel.
-			 * @param consistencyLevel consistencyLevel to use.
-			 * @return this builder.
-			 */
-			public Builder withConsistencyLevel(ConsistentLevel consistencyLevel) {
-				Assert.notNull(consistencyLevel, "The consistencyLevel can not be null.");
-				this.consistencyLevel = consistencyLevel;
-				return this;
-			}
-
-			/**
-			 * {@return the immutable configuration}
-			 */
-			public WeaviateVectorStoreConfig build() {
-				return new WeaviateVectorStoreConfig(this);
-			}
-
-		}
-
-	}
 
 	/**
 	 * Constructs a new WeaviateVectorStore.
@@ -462,7 +304,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 				.build())
 			.limit(request.getTopK())
 			.withWhereFilter(WhereArgument.builder().build()) // adds an empty 'where:{}'
-																// placeholder.
+			// placeholder.
 			.fields(Fields.builder().fields(this.weaviateSimilaritySearchFields).build());
 
 		String graphQLQuery = queryBuilder.build().buildQuery();
@@ -552,6 +394,165 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.WEAVIATE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.weaviateObjectClass);
+	}
+
+	/**
+	 * Configuration class for the WeaviateVectorStore.
+	 */
+	public static final class WeaviateVectorStoreConfig {
+
+		private final String weaviateObjectClass;
+
+		private final ConsistentLevel consistencyLevel;
+
+		/**
+		 * Known metadata fields to add as a fields to the Weaviate schema. You can add
+		 * arbitrary metadata with your documents but only the metadata fields listed here
+		 * can be used in the expression filters.
+		 */
+		private final List<MetadataField> filterMetadataFields;
+
+		private final Map<String, String> headers;
+
+		/**
+		 * Constructor using the builder.
+		 * @param builder The configuration builder.
+		 */
+		public WeaviateVectorStoreConfig(Builder builder) {
+			this.weaviateObjectClass = builder.objectClass;
+			this.consistencyLevel = builder.consistencyLevel;
+			this.filterMetadataFields = builder.filterMetadataFields;
+			this.headers = builder.headers;
+		}
+
+		/**
+		 * Start building a new configuration.
+		 * @return The entry point for creating a new configuration.
+		 */
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		/**
+		 * {@return the default config}
+		 */
+		public static WeaviateVectorStoreConfig defaultConfig() {
+			return builder().build();
+		}
+
+		/**
+		 * https://weaviate.io/developers/weaviate/concepts/replication-architecture/consistency#tunable-consistency-strategies
+		 */
+		public enum ConsistentLevel {
+
+			/**
+			 * Write must receive an acknowledgement from at least one replica node. This
+			 * is the fastest (most available), but least consistent option.
+			 */
+			ONE,
+
+			/**
+			 * Write must receive an acknowledgement from at least QUORUM replica nodes.
+			 * QUORUM is calculated as n / 2 + 1, where n is the number of replicas.
+			 */
+			QUORUM,
+
+			/**
+			 * Write must receive an acknowledgement from all replica nodes. This is the
+			 * most consistent, but 'slowest'.
+			 */
+			ALL
+
+		}
+
+		public record MetadataField(String name, Type type) {
+
+			public static MetadataField text(String name) {
+				return new MetadataField(name, Type.TEXT);
+			}
+
+			public static MetadataField number(String name) {
+				return new MetadataField(name, Type.NUMBER);
+			}
+
+			public static MetadataField bool(String name) {
+				return new MetadataField(name, Type.BOOLEAN);
+			}
+
+			public enum Type {
+
+				TEXT, NUMBER, BOOLEAN
+
+			}
+
+		}
+
+		public static class Builder {
+
+			private String objectClass = "SpringAiWeaviate";
+
+			private ConsistentLevel consistencyLevel = WeaviateVectorStoreConfig.ConsistentLevel.ONE;
+
+			private List<MetadataField> filterMetadataFields = List.of();
+
+			private Map<String, String> headers = Map.of();
+
+			private Builder() {
+			}
+
+			/**
+			 * Weaviate known, filterable metadata fields.
+			 * @param filterMetadataFields known metadata fields to use.
+			 * @return this builder.
+			 */
+			public Builder withFilterableMetadataFields(List<MetadataField> filterMetadataFields) {
+				Assert.notNull(filterMetadataFields, "The filterMetadataFields can not be null.");
+				this.filterMetadataFields = filterMetadataFields;
+				return this;
+			}
+
+			/**
+			 * Weaviate config headers.
+			 * @param headers config headers to use.
+			 * @return this builder.
+			 */
+			public Builder withHeaders(Map<String, String> headers) {
+				Assert.notNull(headers, "The headers can not be null.");
+				this.headers = headers;
+				return this;
+			}
+
+			/**
+			 * Weaviate objectClass.
+			 * @param objectClass objectClass to use.
+			 * @return this builder.
+			 */
+			public Builder withObjectClass(String objectClass) {
+				Assert.hasText(objectClass, "The objectClass can not be empty.");
+				this.objectClass = objectClass;
+				return this;
+			}
+
+			/**
+			 * Weaviate consistencyLevel.
+			 * @param consistencyLevel consistencyLevel to use.
+			 * @return this builder.
+			 */
+			public Builder withConsistencyLevel(ConsistentLevel consistencyLevel) {
+				Assert.notNull(consistencyLevel, "The consistencyLevel can not be null.");
+				this.consistencyLevel = consistencyLevel;
+				return this;
+			}
+
+			/**
+			 * {@return the immutable configuration}
+			 */
+			public WeaviateVectorStoreConfig build() {
+				return new WeaviateVectorStoreConfig(this);
+			}
+
+		}
+
 	}
 
 }

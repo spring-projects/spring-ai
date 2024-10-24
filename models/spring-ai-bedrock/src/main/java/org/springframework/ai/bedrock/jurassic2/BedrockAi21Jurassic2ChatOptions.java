@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,13 @@
 
 package org.springframework.ai.bedrock.jurassic2;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.chat.prompt.ChatOptions;
 
-import java.util.List;
+import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
  * Request body for the /complete endpoint of the Jurassic-2 API.
@@ -101,12 +102,31 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 	// Getters and setters
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static BedrockAi21Jurassic2ChatOptions fromOptions(BedrockAi21Jurassic2ChatOptions fromOptions) {
+		return builder().withPrompt(fromOptions.getPrompt())
+			.withNumResults(fromOptions.getNumResults())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withMinTokens(fromOptions.getMinTokens())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withTopK(fromOptions.getTopK())
+			.withStopSequences(fromOptions.getStopSequences())
+			.withFrequencyPenaltyOptions(fromOptions.getFrequencyPenaltyOptions())
+			.withPresencePenaltyOptions(fromOptions.getPresencePenaltyOptions())
+			.withCountPenaltyOptions(fromOptions.getCountPenaltyOptions())
+			.build();
+	}
+
 	/**
 	 * Gets the prompt text for the model to continue.
 	 * @return The prompt text.
 	 */
 	public String getPrompt() {
-		return prompt;
+		return this.prompt;
 	}
 
 	/**
@@ -122,7 +142,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * @return The number of results.
 	 */
 	public Integer getNumResults() {
-		return numResults;
+		return this.numResults;
 	}
 
 	/**
@@ -139,7 +159,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 */
 	@Override
 	public Integer getMaxTokens() {
-		return maxTokens;
+		return this.maxTokens;
 	}
 
 	/**
@@ -155,7 +175,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * @return The minimum number of tokens.
 	 */
 	public Integer getMinTokens() {
-		return minTokens;
+		return this.minTokens;
 	}
 
 	/**
@@ -172,7 +192,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 */
 	@Override
 	public Double getTemperature() {
-		return temperature;
+		return this.temperature;
 	}
 
 	/**
@@ -190,7 +210,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 */
 	@Override
 	public Double getTopP() {
-		return topP;
+		return this.topP;
 	}
 
 	/**
@@ -208,7 +228,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 */
 	@Override
 	public Integer getTopK() {
-		return topK;
+		return this.topK;
 	}
 
 	/**
@@ -225,7 +245,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 */
 	@Override
 	public List<String> getStopSequences() {
-		return stopSequences;
+		return this.stopSequences;
 	}
 
 	/**
@@ -254,7 +274,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * @return The frequency penalty object.
 	 */
 	public Penalty getFrequencyPenaltyOptions() {
-		return frequencyPenaltyOptions;
+		return this.frequencyPenaltyOptions;
 	}
 
 	/**
@@ -283,7 +303,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * @return The presence penalty object.
 	 */
 	public Penalty getPresencePenaltyOptions() {
-		return presencePenaltyOptions;
+		return this.presencePenaltyOptions;
 	}
 
 	/**
@@ -299,7 +319,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * @return The count penalty object.
 	 */
 	public Penalty getCountPenaltyOptions() {
-		return countPenaltyOptions;
+		return this.countPenaltyOptions;
 	}
 
 	/**
@@ -316,8 +336,9 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 		return null;
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	@Override
+	public BedrockAi21Jurassic2ChatOptions copy() {
+		return fromOptions(this);
 	}
 
 	public static class Builder {
@@ -325,62 +346,62 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 		private final BedrockAi21Jurassic2ChatOptions request = new BedrockAi21Jurassic2ChatOptions();
 
 		public Builder withPrompt(String prompt) {
-			request.setPrompt(prompt);
+			this.request.setPrompt(prompt);
 			return this;
 		}
 
 		public Builder withNumResults(Integer numResults) {
-			request.setNumResults(numResults);
+			this.request.setNumResults(numResults);
 			return this;
 		}
 
 		public Builder withMaxTokens(Integer maxTokens) {
-			request.setMaxTokens(maxTokens);
+			this.request.setMaxTokens(maxTokens);
 			return this;
 		}
 
 		public Builder withMinTokens(Integer minTokens) {
-			request.setMinTokens(minTokens);
+			this.request.setMinTokens(minTokens);
 			return this;
 		}
 
 		public Builder withTemperature(Double temperature) {
-			request.setTemperature(temperature);
+			this.request.setTemperature(temperature);
 			return this;
 		}
 
 		public Builder withTopP(Double topP) {
-			request.setTopP(topP);
+			this.request.setTopP(topP);
 			return this;
 		}
 
 		public Builder withStopSequences(List<String> stopSequences) {
-			request.setStopSequences(stopSequences);
+			this.request.setStopSequences(stopSequences);
 			return this;
 		}
 
 		public Builder withTopK(Integer topKReturn) {
-			request.setTopK(topKReturn);
+			this.request.setTopK(topKReturn);
 			return this;
 		}
 
 		public Builder withFrequencyPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty frequencyPenalty) {
-			request.setFrequencyPenaltyOptions(frequencyPenalty);
+			this.request.setFrequencyPenaltyOptions(frequencyPenalty);
 			return this;
 		}
 
 		public Builder withPresencePenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty presencePenalty) {
-			request.setPresencePenaltyOptions(presencePenalty);
+			this.request.setPresencePenaltyOptions(presencePenalty);
 			return this;
 		}
 
 		public Builder withCountPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty countPenalty) {
-			request.setCountPenaltyOptions(countPenalty);
+			this.request.setCountPenaltyOptions(countPenalty);
 			return this;
 		}
 
 		public BedrockAi21Jurassic2ChatOptions build() {
-			return request;
+			return this.request;
 		}
 
 	}
@@ -446,31 +467,12 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 			}
 
 			public Penalty build() {
-				return new Penalty(scale, applyToNumbers, applyToPunctuations, applyToStopwords, applyToWhitespaces,
-						applyToEmojis);
+				return new Penalty(this.scale, this.applyToNumbers, this.applyToPunctuations, this.applyToStopwords,
+						this.applyToWhitespaces, this.applyToEmojis);
 			}
 
 		}
-	}
 
-	@Override
-	public BedrockAi21Jurassic2ChatOptions copy() {
-		return fromOptions(this);
-	}
-
-	public static BedrockAi21Jurassic2ChatOptions fromOptions(BedrockAi21Jurassic2ChatOptions fromOptions) {
-		return builder().withPrompt(fromOptions.getPrompt())
-			.withNumResults(fromOptions.getNumResults())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withMinTokens(fromOptions.getMinTokens())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTopK(fromOptions.getTopK())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withFrequencyPenaltyOptions(fromOptions.getFrequencyPenaltyOptions())
-			.withPresencePenaltyOptions(fromOptions.getPresencePenaltyOptions())
-			.withCountPenaltyOptions(fromOptions.getCountPenaltyOptions())
-			.build();
 	}
 
 }

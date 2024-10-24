@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.zhipuai.api;
+
+import java.util.List;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionChunk;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage;
@@ -25,10 +31,6 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.Embedding;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.EmbeddingList;
 import org.springframework.http.ResponseEntity;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +45,7 @@ public class ZhiPuAiApiIT {
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		ResponseEntity<ChatCompletion> response = zhiPuAiApi
+		ResponseEntity<ChatCompletion> response = this.zhiPuAiApi
 			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7, false));
 
 		assertThat(response).isNotNull();
@@ -53,7 +55,7 @@ public class ZhiPuAiApiIT {
 	@Test
 	void chatCompletionEntityWithMoreParams() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		ResponseEntity<ChatCompletion> response = zhiPuAiApi
+		ResponseEntity<ChatCompletion> response = this.zhiPuAiApi
 			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 1024, null,
 					false, 0.95, 0.7, null, null, null, "test_request_id", false));
 
@@ -64,7 +66,7 @@ public class ZhiPuAiApiIT {
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		Flux<ChatCompletionChunk> response = zhiPuAiApi
+		Flux<ChatCompletionChunk> response = this.zhiPuAiApi
 			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7, true));
 
 		assertThat(response).isNotNull();
@@ -73,7 +75,7 @@ public class ZhiPuAiApiIT {
 
 	@Test
 	void embeddings() {
-		ResponseEntity<EmbeddingList<Embedding>> response = zhiPuAiApi
+		ResponseEntity<EmbeddingList<Embedding>> response = this.zhiPuAiApi
 			.embeddings(new ZhiPuAiApi.EmbeddingRequest<>("Hello world"));
 
 		assertThat(response).isNotNull();

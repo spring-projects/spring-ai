@@ -97,7 +97,7 @@ The `RateLimit` instance can be acquired from the `GenerationMetadata`, like so:
 ----
 RateLimit rateLimit = generationMetadata.getRateLimit();
 
-Long tokensRemaining = rateLimit.getTokensRemaining();
+Long tokensRemaining = this.rateLimit.getTokensRemaining();
 
 // do something interesting with the RateLimit metadata
 ----

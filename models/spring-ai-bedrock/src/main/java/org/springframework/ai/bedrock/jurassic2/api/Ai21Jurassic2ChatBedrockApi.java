@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,15 +22,14 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse;
 import org.springframework.ai.model.ChatModelDescription;
-
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 /**
  * Java client for the Bedrock Jurassic2 chat model.
@@ -110,6 +109,45 @@ public class Ai21Jurassic2ChatBedrockApi extends
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
+	@Override
+	public Ai21Jurassic2ChatResponse chatCompletion(Ai21Jurassic2ChatRequest request) {
+		return this.internalInvocation(request, Ai21Jurassic2ChatResponse.class);
+	}
+
+	/**
+	 * Ai21 Jurassic2 models version.
+	 */
+	public enum Ai21Jurassic2ChatModel implements ChatModelDescription {
+
+		/**
+		 * ai21.j2-mid-v1
+		 */
+		AI21_J2_MID_V1("ai21.j2-mid-v1"),
+
+		/**
+		 * ai21.j2-ultra-v1
+		 */
+		AI21_J2_ULTRA_V1("ai21.j2-ultra-v1");
+
+		private final String id;
+
+		Ai21Jurassic2ChatModel(String value) {
+			this.id = value;
+		}
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return this.id;
+		}
+
+		@Override
+		public String getName() {
+			return this.id;
+		}
+	}
+
 	/**
 	 * AI21 Jurassic2 chat request parameters.
 	 *
@@ -140,6 +178,10 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			@JsonProperty("countPenalty") IntegerScalePenalty countPenalty,
 			@JsonProperty("presencePenalty") FloatScalePenalty presencePenalty,
 			@JsonProperty("frequencyPenalty") IntegerScalePenalty frequencyPenalty) {
+
+		public static Builder builder(String prompt) {
+			return new Builder(prompt);
+		}
 
 		/**
 		 * Penalty with integer scale value.
@@ -192,11 +234,6 @@ public class Ai21Jurassic2ChatBedrockApi extends
 				@JsonProperty("applyToEmojis") boolean applyToEmojis) {
 		}
 
-
-
-		public static Builder builder(String prompt) {
-			return new Builder(prompt);
-		}
 		public static class Builder {
 			private String prompt;
 			private Double temperature;
@@ -248,14 +285,14 @@ public class Ai21Jurassic2ChatBedrockApi extends
 
 			public Ai21Jurassic2ChatRequest build() {
 				return new Ai21Jurassic2ChatRequest(
-						prompt,
-						temperature,
-						topP,
-						maxTokens,
-						stopSequences,
-						countPenalty,
-						presencePenalty,
-						frequencyPenalty
+						this.prompt,
+						this.temperature,
+						this.topP,
+						this.maxTokens,
+						this.stopSequences,
+						this.countPenalty,
+						this.presencePenalty,
+						this.frequencyPenalty
 				);
 			}
 		}
@@ -368,45 +405,6 @@ public class Ai21Jurassic2ChatBedrockApi extends
 				@JsonProperty("length") String length,
 				@JsonProperty("sequence") String sequence) {
 		}
-	}
-
-	/**
-	 * Ai21 Jurassic2 models version.
-	 */
-	public enum Ai21Jurassic2ChatModel implements ChatModelDescription {
-
-		/**
-		 * ai21.j2-mid-v1
-		 */
-		AI21_J2_MID_V1("ai21.j2-mid-v1"),
-
-		/**
-		 * ai21.j2-ultra-v1
-		 */
-		AI21_J2_ULTRA_V1("ai21.j2-ultra-v1");
-
-		private final String id;
-
-		/**
-		 * @return The model id.
-		 */
-		public String id() {
-			return id;
-		}
-
-		Ai21Jurassic2ChatModel(String value) {
-			this.id = value;
-		}
-
-		@Override
-		public String getName() {
-			return this.id;
-		}
-	}
-
-	@Override
-	public Ai21Jurassic2ChatResponse chatCompletion(Ai21Jurassic2ChatRequest request) {
-		return this.internalInvocation(request, Ai21Jurassic2ChatResponse.class);
 	}
 
 

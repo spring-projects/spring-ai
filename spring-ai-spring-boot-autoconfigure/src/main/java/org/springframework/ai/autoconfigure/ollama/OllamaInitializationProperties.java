@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.ollama;
 
-import org.springframework.ai.ollama.management.PullModelStrategy;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+package org.springframework.ai.autoconfigure.ollama;
 
 import java.time.Duration;
 import java.util.List;
+
+import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Ollama initialization configuration properties.
@@ -33,11 +34,6 @@ public class OllamaInitializationProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.init";
 
 	/**
-	 * Whether to pull models at startup-time and how.
-	 */
-	private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
-
-	/**
 	 * Chat models initialization settings.
 	 */
 	private final ModelTypeInit chat = new ModelTypeInit();
@@ -46,6 +42,11 @@ public class OllamaInitializationProperties {
 	 * Embedding models initialization settings.
 	 */
 	private final ModelTypeInit embedding = new ModelTypeInit();
+
+	/**
+	 * Whether to pull models at startup-time and how.
+	 */
+	private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
 
 	/**
 	 * How long to wait for a model to be pulled.
@@ -58,7 +59,7 @@ public class OllamaInitializationProperties {
 	private int maxRetries = 0;
 
 	public PullModelStrategy getPullModelStrategy() {
-		return pullModelStrategy;
+		return this.pullModelStrategy;
 	}
 
 	public void setPullModelStrategy(PullModelStrategy pullModelStrategy) {
@@ -66,15 +67,15 @@ public class OllamaInitializationProperties {
 	}
 
 	public ModelTypeInit getChat() {
-		return chat;
+		return this.chat;
 	}
 
 	public ModelTypeInit getEmbedding() {
-		return embedding;
+		return this.embedding;
 	}
 
 	public Duration getTimeout() {
-		return timeout;
+		return this.timeout;
 	}
 
 	public void setTimeout(Duration timeout) {
@@ -82,7 +83,7 @@ public class OllamaInitializationProperties {
 	}
 
 	public int getMaxRetries() {
-		return maxRetries;
+		return this.maxRetries;
 	}
 
 	public void setMaxRetries(int maxRetries) {
@@ -103,7 +104,7 @@ public class OllamaInitializationProperties {
 		private List<String> additionalModels = List.of();
 
 		public boolean isInclude() {
-			return include;
+			return this.include;
 		}
 
 		public void setInclude(boolean include) {
@@ -111,7 +112,7 @@ public class OllamaInitializationProperties {
 		}
 
 		public List<String> getAdditionalModels() {
-			return additionalModels;
+			return this.additionalModels;
 		}
 
 		public void setAdditionalModels(List<String> additionalModels) {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.filter;
 
 import java.util.List;
@@ -46,14 +47,14 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void testEQ() {
 		// country = "BG"
-		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("node.`metadata.country` = \"BG\"");
 	}
 
 	@Test
 	public void tesEqAndGte() {
 		// genre = "drama" AND year >= 2020
-		String vectorExpr = converter
+		String vectorExpr = this.converter
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
 					new Expression(GTE, new Key("year"), new Value(2020))));
 		assertThat(vectorExpr).isEqualTo("node.`metadata.genre` = \"drama\" AND node.`metadata.year` >= 2020");
@@ -62,7 +63,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void tesIn() {
 		// genre in ["comedy", "documentary", "drama"]
-		String vectorExpr = converter.convertExpression(
+		String vectorExpr = this.converter.convertExpression(
 				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
 		assertThat(vectorExpr).isEqualTo("node.`metadata.genre` IN [\"comedy\",\"documentary\",\"drama\"]");
 	}
@@ -70,7 +71,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void tesNIn() {
 		// genre in ["comedy", "documentary", "drama"]
-		String vectorExpr = converter.convertExpression(
+		String vectorExpr = this.converter.convertExpression(
 				new Expression(NIN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
 		assertThat(vectorExpr).isEqualTo("NOT node.`metadata.genre` IN [\"comedy\",\"documentary\",\"drama\"]");
 	}
@@ -78,7 +79,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void testNe() {
 		// year >= 2020 OR country = "BG" AND city <> "Sofia"
-		String vectorExpr = converter
+		String vectorExpr = this.converter
 			.convertExpression(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 					new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
 							new Expression(NE, new Key("city"), new Value("Sofia")))));
@@ -89,7 +90,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void testGroup() {
 		// (year >= 2020 OR country = "BG") AND NOT city IN ["Sofia", "Plovdiv"]
-		String vectorExpr = converter.convertExpression(new Expression(AND,
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
 				new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NOT, new Expression(IN, new Key("city"), new Value(List.of("Sofia", "Plovdiv"))))));
@@ -100,7 +101,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void testBoolean() {
 		// isOpen = true AND year >= 2020 AND country IN ["BG", "NL", "US"]
-		String vectorExpr = converter.convertExpression(new Expression(AND,
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
 				new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
 						new Expression(GTE, new Key("year"), new Value(2020))),
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
@@ -112,7 +113,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void testDecimal() {
 		// temperature >= -15.6 AND temperature <= +20.13
-		String vectorExpr = converter
+		String vectorExpr = this.converter
 			.convertExpression(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
 					new Expression(LTE, new Key("temperature"), new Value(20.13))));
 
@@ -122,7 +123,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 
 	@Test
 	public void testComplexIdentifiers() {
-		String vectorExpr = converter
+		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("node.`metadata.country 1 2 3` = \"BG\"");
 	}
@@ -131,7 +132,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	public void testComplexIdentifiers2() {
 		Filter.Expression expr = new FilterExpressionTextParser()
 			.parse("author in ['john', 'jill'] && 'article_type' == 'blog'");
-		String vectorExpr = converter.convertExpression(expr);
+		String vectorExpr = this.converter.convertExpression(expr);
 		assertThat(vectorExpr)
 			.isEqualTo("node.`metadata.author` IN [\"john\",\"jill\"] AND node.`metadata.'article_type'` = \"blog\"");
 	}

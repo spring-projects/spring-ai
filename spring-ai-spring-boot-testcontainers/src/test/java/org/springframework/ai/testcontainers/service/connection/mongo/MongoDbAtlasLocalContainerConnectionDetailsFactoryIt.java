@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.testcontainers.service.connection.mongo;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
+
 import org.springframework.ai.autoconfigure.vectorstore.mongo.MongoDBAtlasVectorStoreAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -32,13 +41,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,10 +70,10 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 						"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
 						Collections.singletonMap("meta2", "meta2")));
 
-		vectorStore.add(documents);
+		this.vectorStore.add(documents);
 		Thread.sleep(5000); // Await a second for the document to be indexed
 
-		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
@@ -81,9 +83,9 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 		assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
 		// Remove all documents from the store
-		vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
+		this.vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
 
-		List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 		assertThat(results2).isEmpty();
 	}
 

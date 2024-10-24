@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
+package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 
 import java.util.List;
 import java.util.Map;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -35,12 +39,9 @@ import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfigurati
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.testcontainers.containers.CassandraContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
-import io.micrometer.observation.tck.TestObservationRegistry;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 /**
  * @author Mick Semb Wever
@@ -56,11 +57,6 @@ class CassandraVectorStoreAutoConfigurationIT {
 	@Container
 	static CassandraContainer cassandraContainer = new CassandraContainer(DEFAULT_IMAGE_NAME.withTag("5.0"));
 
-	List<Document> documents = List.of(
-			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
-			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
-					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
 				AutoConfigurations.of(CassandraVectorStoreAutoConfiguration.class, CassandraAutoConfiguration.class))
@@ -69,9 +65,14 @@ class CassandraVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.cassandra.keyspace=test_autoconfigure")
 		.withPropertyValues("spring.ai.vectorstore.cassandra.contentColumnName=doc_chunk");
 
+	List<Document> documents = List.of(
+			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
+			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
+					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
+
 	@Test
 	void addAndSearch() {
-		contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
+		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
 			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
 			.withPropertyValues("spring.ai.vectorstore.cassandra.fixedThreadPoolExecutorSize=8")
@@ -79,7 +80,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
-				vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,
 						VectorStoreObservationContext.Operation.ADD);
@@ -89,7 +90,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
@@ -98,7 +99,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 				observationRegistry.clear();
 
 				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).isEmpty();
@@ -107,6 +108,14 @@ class CassandraVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 			});
+	}
+
+	private String getContactPointHost() {
+		return cassandraContainer.getContactPoint().getHostString();
+	}
+
+	private String getContactPointPort() {
+		return String.valueOf(cassandraContainer.getContactPoint().getPort());
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -122,14 +131,6 @@ class CassandraVectorStoreAutoConfigurationIT {
 			return new TransformersEmbeddingModel();
 		}
 
-	}
-
-	private String getContactPointHost() {
-		return cassandraContainer.getContactPoint().getHostString();
-	}
-
-	private String getContactPointPort() {
-		return String.valueOf(cassandraContainer.getContactPoint().getPort());
 	}
 
 }

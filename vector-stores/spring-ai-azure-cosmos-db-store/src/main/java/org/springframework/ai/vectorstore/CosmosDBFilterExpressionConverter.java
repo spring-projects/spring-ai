@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,6 @@
 
 package org.springframework.ai.vectorstore;
 
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +25,9 @@ import java.util.stream.Collectors;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 
 /**
  * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into
@@ -51,7 +51,7 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 	 */
 	private Optional<String> getMetadataField(String name) {
 		String metadataField = name;
-		return Optional.ofNullable(metadataFields.get(metadataField));
+		return Optional.ofNullable(this.metadataFields.get(metadataField));
 	}
 
 	@Override

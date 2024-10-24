@@ -285,12 +285,12 @@ Next, create an `OllamaEmbeddingModel` instance and use it to compute the embedd
 ----
 var ollamaApi = new OllamaApi();
 
-var embeddingModel = new OllamaEmbeddingModel(ollamaApi,
+var embeddingModel = new OllamaEmbeddingModel(this.ollamaApi,
         OllamaOptions.builder()
 			.withModel(OllamaModel.MISTRAL.id())
             .build());
 
-EmbeddingResponse embeddingResponse = embeddingModel.call(
+EmbeddingResponse embeddingResponse = this.embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.builder()
             .withModel("chroma/all-minilm-l6-v2-f32"))

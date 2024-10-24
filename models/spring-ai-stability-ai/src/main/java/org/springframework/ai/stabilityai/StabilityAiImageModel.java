@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.stabilityai;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.image.Image;
-import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
@@ -49,6 +50,26 @@ public class StabilityAiImageModel implements ImageModel {
 		Assert.notNull(defaultOptions, "StabilityAiImageOptions must not be null");
 		this.stabilityAiApi = stabilityAiApi;
 		this.defaultOptions = defaultOptions;
+	}
+
+	private static StabilityAiApi.GenerateImageRequest getGenerateImageRequest(ImagePrompt stabilityAiImagePrompt,
+			StabilityAiImageOptions optionsToUse) {
+		return new StabilityAiApi.GenerateImageRequest.Builder()
+			.withTextPrompts(stabilityAiImagePrompt.getInstructions()
+				.stream()
+				.map(message -> new StabilityAiApi.GenerateImageRequest.TextPrompts(message.getText(),
+						message.getWeight()))
+				.collect(Collectors.toList()))
+			.withHeight(optionsToUse.getHeight())
+			.withWidth(optionsToUse.getWidth())
+			.withCfgScale(optionsToUse.getCfgScale())
+			.withClipGuidancePreset(optionsToUse.getClipGuidancePreset())
+			.withSampler(optionsToUse.getSampler())
+			.withSamples(optionsToUse.getN())
+			.withSeed(optionsToUse.getSeed())
+			.withSteps(optionsToUse.getSteps())
+			.withStylePreset(optionsToUse.getStylePreset())
+			.build();
 	}
 
 	public StabilityAiImageOptions getOptions() {
@@ -80,26 +101,6 @@ public class StabilityAiImageModel implements ImageModel {
 
 		// Convert to org.springframework.ai.model derived ImageResponse data type
 		return convertResponse(generateImageResponse);
-	}
-
-	private static StabilityAiApi.GenerateImageRequest getGenerateImageRequest(ImagePrompt stabilityAiImagePrompt,
-			StabilityAiImageOptions optionsToUse) {
-		return new StabilityAiApi.GenerateImageRequest.Builder()
-			.withTextPrompts(stabilityAiImagePrompt.getInstructions()
-				.stream()
-				.map(message -> new StabilityAiApi.GenerateImageRequest.TextPrompts(message.getText(),
-						message.getWeight()))
-				.collect(Collectors.toList()))
-			.withHeight(optionsToUse.getHeight())
-			.withWidth(optionsToUse.getWidth())
-			.withCfgScale(optionsToUse.getCfgScale())
-			.withClipGuidancePreset(optionsToUse.getClipGuidancePreset())
-			.withSampler(optionsToUse.getSampler())
-			.withSamples(optionsToUse.getN())
-			.withSeed(optionsToUse.getSeed())
-			.withSteps(optionsToUse.getSteps())
-			.withStylePreset(optionsToUse.getStylePreset())
-			.build();
 	}
 
 	private ImageResponse convertResponse(StabilityAiApi.GenerateImageResponse generateImageResponse) {

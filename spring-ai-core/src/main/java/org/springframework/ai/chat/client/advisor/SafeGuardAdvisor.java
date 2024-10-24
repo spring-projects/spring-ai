@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
+
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
@@ -28,8 +31,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-
-import reactor.core.publisher.Flux;
 
 /**
  * A {@link CallAroundAdvisor} and {@link StreamAroundAdvisor} that filters out the
@@ -62,6 +63,10 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 		this.order = order;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public String getName() {
 		return this.getClass().getSimpleName();
 	}
@@ -82,7 +87,7 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
 		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {
+				&& this.sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {
 			return Flux.just(createFailureResponse(advisedRequest));
 		}
 
@@ -100,11 +105,7 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 		return this.order;
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
+	public static final class Builder {
 
 		private List<String> sensitiveWords;
 

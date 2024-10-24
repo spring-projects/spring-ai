@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai;
+
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.image.ImageOptions;
-
-import java.util.Objects;
 
 /**
  * OpenAI Image API options. OpenAiImageOptions.java
@@ -99,60 +100,6 @@ public class OpenAiImageOptions implements ImageOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private final OpenAiImageOptions options;
-
-		private Builder() {
-			this.options = new OpenAiImageOptions();
-		}
-
-		public Builder withN(Integer n) {
-			options.setN(n);
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			options.setModel(model);
-			return this;
-		}
-
-		public Builder withQuality(String quality) {
-			options.setQuality(quality);
-			return this;
-		}
-
-		public Builder withResponseFormat(String responseFormat) {
-			options.setResponseFormat(responseFormat);
-			return this;
-		}
-
-		public Builder withWidth(Integer width) {
-			options.setWidth(width);
-			return this;
-		}
-
-		public Builder withHeight(Integer height) {
-			options.setHeight(height);
-			return this;
-		}
-
-		public Builder withStyle(String style) {
-			options.setStyle(style);
-			return this;
-		}
-
-		public Builder withUser(String user) {
-			options.setUser(user);
-			return this;
-		}
-
-		public OpenAiImageOptions build() {
-			return options;
-		}
-
-	}
-
 	@Override
 	public Integer getN() {
 		return this.n;
@@ -181,7 +128,7 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
-		return responseFormat;
+		return this.responseFormat;
 	}
 
 	public void setResponseFormat(String responseFormat) {
@@ -247,10 +194,6 @@ public class OpenAiImageOptions implements ImageOptions {
 		this.user = user;
 	}
 
-	public void setSize(String size) {
-		this.size = size;
-	}
-
 	public String getSize() {
 		if (this.size != null) {
 			return this.size;
@@ -258,28 +201,91 @@ public class OpenAiImageOptions implements ImageOptions {
 		return (this.width != null && this.height != null) ? this.width + "x" + this.height : null;
 	}
 
+	public void setSize(String size) {
+		this.size = size;
+	}
+
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof OpenAiImageOptions that))
+		}
+		if (!(o instanceof OpenAiImageOptions that)) {
 			return false;
-		return Objects.equals(n, that.n) && Objects.equals(model, that.model) && Objects.equals(width, that.width)
-				&& Objects.equals(height, that.height) && Objects.equals(quality, that.quality)
-				&& Objects.equals(responseFormat, that.responseFormat) && Objects.equals(size, that.size)
-				&& Objects.equals(style, that.style) && Objects.equals(user, that.user);
+		}
+		return Objects.equals(this.n, that.n) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.width, that.width) && Objects.equals(this.height, that.height)
+				&& Objects.equals(this.quality, that.quality)
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.size, that.size)
+				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(n, model, width, height, quality, responseFormat, size, style, user);
+		return Objects.hash(this.n, this.model, this.width, this.height, this.quality, this.responseFormat, this.size,
+				this.style, this.user);
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiImageOptions{" + "n=" + n + ", model='" + model + '\'' + ", width=" + width + ", height=" + height
-				+ ", quality='" + quality + '\'' + ", responseFormat='" + responseFormat + '\'' + ", size='" + size
-				+ '\'' + ", style='" + style + '\'' + ", user='" + user + '\'' + '}';
+		return "OpenAiImageOptions{" + "n=" + this.n + ", model='" + this.model + '\'' + ", width=" + this.width
+				+ ", height=" + this.height + ", quality='" + this.quality + '\'' + ", responseFormat='"
+				+ this.responseFormat + '\'' + ", size='" + this.size + '\'' + ", style='" + this.style + '\''
+				+ ", user='" + this.user + '\'' + '}';
+	}
+
+	public static class Builder {
+
+		private final OpenAiImageOptions options;
+
+		private Builder() {
+			this.options = new OpenAiImageOptions();
+		}
+
+		public Builder withN(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder withQuality(String quality) {
+			this.options.setQuality(quality);
+			return this;
+		}
+
+		public Builder withResponseFormat(String responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder withWidth(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder withHeight(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder withStyle(String style) {
+			this.options.setStyle(style);
+			return this;
+		}
+
+		public Builder withUser(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public OpenAiImageOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

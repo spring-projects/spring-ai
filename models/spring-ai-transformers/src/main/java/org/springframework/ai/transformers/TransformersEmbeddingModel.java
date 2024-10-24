@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.transformers;
 
 import java.nio.FloatBuffer;
@@ -23,8 +24,22 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import ai.djl.huggingface.tokenizers.Encoding;
+import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
+import ai.djl.modality.nlp.preprocess.Tokenizer;
+import ai.djl.ndarray.NDArray;
+import ai.djl.ndarray.NDManager;
+import ai.djl.ndarray.types.DataType;
+import ai.djl.ndarray.types.Shape;
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OnnxValue;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtSession;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -42,20 +57,6 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import ai.djl.huggingface.tokenizers.Encoding;
-import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
-import ai.djl.modality.nlp.preprocess.Tokenizer;
-import ai.djl.ndarray.NDArray;
-import ai.djl.ndarray.NDManager;
-import ai.djl.ndarray.types.DataType;
-import ai.djl.ndarray.types.Shape;
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OnnxValue;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
-import io.micrometer.observation.ObservationRegistry;
 
 /**
  * An implementation of the AbstractEmbeddingModel that uses ONNX-based Transformer models
@@ -79,10 +80,6 @@ import io.micrometer.observation.ObservationRegistry;
  */
 public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
 
-	private static final Log logger = LogFactory.getLog(TransformersEmbeddingModel.class);
-
-	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
-
 	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
 	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
 
@@ -92,7 +89,26 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 	public final static String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
+	private static final Log logger = LogFactory.getLog(TransformersEmbeddingModel.class);
+
+	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+
 	private final static int EMBEDDING_AXIS = 1;
+
+	/**
+	 * Specifies what parts of the {@link Document}'s content and metadata will be used
+	 * for computing the embeddings. Applicable for the {@link #embed(Document)} method
+	 * only. Has no effect on the {@link #embed(String)} or {@link #embed(List)}. Defaults
+	 * to {@link MetadataMode#NONE}.
+	 */
+	private final MetadataMode metadataMode;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	public Map<String, String> tokenizerOptions = Map.of();
 
 	private Resource tokenizerResource = toResource(DEFAULT_ONNX_TOKENIZER_URI);
 
@@ -117,14 +133,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	private OrtSession session;
 
 	/**
-	 * Specifies what parts of the {@link Document}'s content and metadata will be used
-	 * for computing the embeddings. Applicable for the {@link #embed(Document)} method
-	 * only. Has no effect on the {@link #embed(String)} or {@link #embed(List)}. Defaults
-	 * to {@link MetadataMode#NONE}.
-	 */
-	private final MetadataMode metadataMode;
-
-	/**
 	 * Resource cache directory. Used to cache remote resources, such as the ONNX models,
 	 * to the local file system.
 	 */
@@ -143,16 +151,9 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 */
 	private ResourceCacheService cacheService;
 
-	public Map<String, String> tokenizerOptions = Map.of();
-
 	private String modelOutputName = DEFAULT_MODEL_OUTPUT_NAME;
 
 	private Set<String> onnxModelInputs;
-
-	/**
-	 * Observation registry used for instrumentation.
-	 */
-	private final ObservationRegistry observationRegistry;
 
 	/**
 	 * Conventions to use for generating observations.
@@ -172,6 +173,10 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		Assert.notNull(observationRegistry, "Observation registry should not be null");
 		this.metadataMode = metadataMode;
 		this.observationRegistry = observationRegistry;
+	}
+
+	private static Resource toResource(String uri) {
+		return new DefaultResourceLoader().getResource(uri);
 	}
 
 	public void setTokenizerOptions(Map<String, String> tokenizerOptions) {
@@ -360,7 +365,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 		return modelInputs.entrySet()
 			.stream()
-			.filter(a -> onnxModelInputs.contains(a.getKey()))
+			.filter(a -> this.onnxModelInputs.contains(a.getKey()))
 			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
 	}
@@ -397,10 +402,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 		// Divide sum embeddings by sum mask
 		return sumEmbeddings.div(sumMask);
-	}
-
-	private static Resource toResource(String uri) {
-		return new DefaultResourceLoader().getResource(uri);
 	}
 
 	/**

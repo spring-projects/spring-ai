@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.moderation;
 
 import java.util.Arrays;
@@ -12,7 +28,7 @@ import java.util.Objects;
  * @author Ahmed Yousri
  * @since 1.0.0
  */
-public class Moderation {
+public final class Moderation {
 
 	private final String id;
 
@@ -26,42 +42,44 @@ public class Moderation {
 		this.results = builder.moderationResultList;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public String getId() {
-		return id;
+		return this.id;
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public List<ModerationResult> getResults() {
-		return results;
+		return this.results;
 	}
 
 	@Override
 	public String toString() {
-		return "Moderation{" + "id='" + id + '\'' + ", model='" + model + '\'' + ", results="
-				+ Arrays.toString(results.toArray()) + '}';
+		return "Moderation{" + "id='" + this.id + '\'' + ", model='" + this.model + '\'' + ", results="
+				+ Arrays.toString(this.results.toArray()) + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof Moderation))
+		}
+		if (!(o instanceof Moderation)) {
 			return false;
+		}
 		Moderation that = (Moderation) o;
-		return Objects.equals(id, that.id) && Objects.equals(model, that.model)
-				&& Objects.equals(results, that.results);
+		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.results, that.results);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id, model, results);
-	}
-
-	public static Builder builder() {
-		return new Builder();
+		return Objects.hash(this.id, this.model, this.results);
 	}
 
 	public static class Builder {
