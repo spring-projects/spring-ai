@@ -113,10 +113,6 @@ To learn about the Prompt class, refer to the [Prompt API guide](https://docs.sp
 Delve into PromptTemplates in our [concept guide](https://docs.spring.io/spring-ai/reference/concepts.html#_prompt_templates).
 For a hands-on guide to PromptTemplate, see the [PromptTemplate API guide](https://docs.spring.io/spring-ai/reference/api/prompt-template.html).
 
-**Output Parsers:**  AI model outputs often come as raw `java.lang.String` values. Output Parsers restructure these raw strings into more programmer-friendly formats, such as CSV or JSON.
-
-Get insights on Output Parsers in our [concept guide](https://docs.spring.io/spring-ai/reference/concepts.html#_output_parsing)..
-For implementation details, visit the [StructuredOutputConverter API guide](https://docs.spring.io/spring-ai/reference/api/output-parser.html).
 
 ### Incorporating your data
 

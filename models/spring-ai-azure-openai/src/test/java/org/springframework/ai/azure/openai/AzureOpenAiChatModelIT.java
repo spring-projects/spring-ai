@@ -187,9 +187,9 @@ class AzureOpenAiChatModelIT {
 	@Test
 	void beanStreamOutputConverterRecords() {
 
-		BeanOutputConverter<ActorsFilmsRecord> outputParser = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> converter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = converter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -208,7 +208,7 @@ class AzureOpenAiChatModelIT {
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 
-		ActorsFilmsRecord actorsFilms = outputParser.convert(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = converter.convert(generationTextFromStream);
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);

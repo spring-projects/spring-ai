@@ -46,7 +46,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonOption;
 
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
- * to a specific object type using JSON schema. This parser works by generating a JSON
+ * to a specific object type using JSON schema. This converter works by generating a JSON
  * schema based on a given Java class or parameterized type reference, which is then used
  * to validate and transform the LLM output into the desired type.
  *
