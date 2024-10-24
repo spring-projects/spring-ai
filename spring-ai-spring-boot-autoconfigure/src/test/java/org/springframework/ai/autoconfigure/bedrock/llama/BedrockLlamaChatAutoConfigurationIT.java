@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -45,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Wei Jiang
  * @since 0.8.0
  */
+@Disabled("AWS messed up the Quota limits ")
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 public class BedrockLlamaChatAutoConfigurationIT {

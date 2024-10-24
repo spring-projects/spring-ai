@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.bedrock;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Wei Jiang
  * @since 0.8.1
  */
+@Disabled("AWS messed up the Quota limits ")
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 public class BedrockAwsConnectionConfigurationIT {
