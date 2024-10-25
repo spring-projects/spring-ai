@@ -256,11 +256,13 @@ public class OpenAiAudioApi {
 		/**
 		 * The latest text to speech model, optimized for speed.
 		 */
-		@JsonProperty("tts-1") TTS_1("tts-1"),
+		@JsonProperty("tts-1")
+		TTS_1("tts-1"),
 		/**
 		 * The latest text to speech model, optimized for quality.
 		 */
-		@JsonProperty("tts-1-hd") TTS_1_HD("tts-1-hd");
+		@JsonProperty("tts-1-hd")
+		TTS_1_HD("tts-1-hd");
 		// @formatter:on
 
 		public final String value;
@@ -286,7 +288,8 @@ public class OpenAiAudioApi {
 	public enum WhisperModel {
 
 		// @formatter:off
-		@JsonProperty("whisper-1") WHISPER_1("whisper-1");
+		@JsonProperty("whisper-1")
+		WHISPER_1("whisper-1");
 		// @formatter:on
 
 		public final String value;
@@ -308,11 +311,16 @@ public class OpenAiAudioApi {
 	public enum TranscriptResponseFormat {
 
 		// @formatter:off
-		@JsonProperty("json") JSON("json", StructuredResponse.class),
-		@JsonProperty("text") TEXT("text", String.class),
-		@JsonProperty("srt") SRT("srt", String.class),
-		@JsonProperty("verbose_json") VERBOSE_JSON("verbose_json", StructuredResponse.class),
-		@JsonProperty("vtt") VTT("vtt", String.class);
+		@JsonProperty("json")
+		JSON("json", StructuredResponse.class),
+		@JsonProperty("text")
+		TEXT("text", String.class),
+		@JsonProperty("srt")
+		SRT("srt", String.class),
+		@JsonProperty("verbose_json")
+		VERBOSE_JSON("verbose_json", StructuredResponse.class),
+		@JsonProperty("vtt")
+		VTT("vtt", String.class);
 		// @formatter:on
 
 		public final String value;
@@ -373,17 +381,23 @@ public class OpenAiAudioApi {
 		public enum Voice {
 
 			// @formatter:off
-			@JsonProperty("alloy") ALLOY("alloy"),
-			@JsonProperty("echo") ECHO("echo"),
-			@JsonProperty("fable") FABLE("fable"),
-			@JsonProperty("onyx") ONYX("onyx"),
-			@JsonProperty("nova") NOVA("nova"),
-			@JsonProperty("shimmer") SHIMMER("shimmer");
+			@JsonProperty("alloy")
+			ALLOY("alloy"),
+			@JsonProperty("echo")
+			ECHO("echo"),
+			@JsonProperty("fable")
+			FABLE("fable"),
+			@JsonProperty("onyx")
+			ONYX("onyx"),
+			@JsonProperty("nova")
+			NOVA("nova"),
+			@JsonProperty("shimmer")
+			SHIMMER("shimmer");
 			// @formatter:on
 
 			public final String value;
 
-			private Voice(String value) {
+			Voice(String value) {
 				this.value = value;
 			}
 
@@ -400,10 +414,14 @@ public class OpenAiAudioApi {
 		public enum AudioResponseFormat {
 
 			// @formatter:off
-			@JsonProperty("mp3") MP3("mp3"),
-			@JsonProperty("opus") OPUS("opus"),
-			@JsonProperty("aac") AAC("aac"),
-			@JsonProperty("flac") FLAC("flac");
+			@JsonProperty("mp3")
+			MP3("mp3"),
+			@JsonProperty("opus")
+			OPUS("opus"),
+			@JsonProperty("aac")
+			AAC("aac"),
+			@JsonProperty("flac")
+			FLAC("flac");
 			// @formatter:on
 
 			public final String value;
@@ -511,8 +529,10 @@ public class OpenAiAudioApi {
 		public enum GranularityType {
 
 			// @formatter:off
-			@JsonProperty("word") WORD("word"),
-			@JsonProperty("segment") SEGMENT("segment");
+			@JsonProperty("word")
+			WORD("word"),
+			@JsonProperty("segment")
+			SEGMENT("segment");
 			// @formatter:on
 
 			public final String value;

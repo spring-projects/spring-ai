@@ -253,7 +253,7 @@ class GroqWithOpenAiChatModelIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -276,7 +276,7 @@ class GroqWithOpenAiChatModelIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 

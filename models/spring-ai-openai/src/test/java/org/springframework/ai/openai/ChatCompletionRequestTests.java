@@ -70,7 +70,7 @@ public class ChatCompletionRequestTests {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build()),
 				false);
@@ -97,7 +97,7 @@ public class ChatCompletionRequestTests {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build());
 

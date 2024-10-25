@@ -77,7 +77,7 @@ public class OpenAiModerationApi {
 
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record OpenAiModerationRequest (
+	public record OpenAiModerationRequest(
 		@JsonProperty("input") String prompt,
 		@JsonProperty("model") String model
 	) {

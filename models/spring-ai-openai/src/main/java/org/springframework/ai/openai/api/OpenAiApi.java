@@ -172,7 +172,7 @@ public class OpenAiApi {
 		this.webClient = webClientBuilder
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
-			.build();// @formatter:on
+			.build(); // @formatter:on
 	}
 
 	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
@@ -558,7 +558,8 @@ public class OpenAiApi {
 			/**
 			 * Function tool type.
 			 */
-			@JsonProperty("function") FUNCTION
+			@JsonProperty("function")
+			FUNCTION
 		}
 
 		/**
@@ -588,7 +589,7 @@ public class OpenAiApi {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
 		}
-	}// @formatter:on
+	} // @formatter:on
 
 	/**
 	 * Creates a model response for the given chat conversation.
@@ -782,7 +783,7 @@ public class OpenAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
 				@JsonProperty("type") Type type,
-				@JsonProperty("json_schema") JsonSchema jsonSchema ) {
+				@JsonProperty("json_schema") JsonSchema jsonSchema) {
 
 			public ResponseFormat(Type type) {
 				this(type, (JsonSchema) null);
@@ -794,7 +795,7 @@ public class OpenAiApi {
 
 			@ConstructorBinding
 			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
-				this(type, StringUtils.hasText(schema)? new JsonSchema(name, schema, strict): null);
+				this(type, StringUtils.hasText(schema) ? new JsonSchema(name, schema, strict) : null);
 			}
 
 			public enum Type {
@@ -837,7 +838,7 @@ public class OpenAiApi {
 				}
 
 				public JsonSchema(String name, String schema, Boolean strict) {
-					this(StringUtils.hasText(name)? name : "custom_schema", ModelOptionsUtils.jsonToMap(schema), strict);
+					this(StringUtils.hasText(name) ? name : "custom_schema", ModelOptionsUtils.jsonToMap(schema), strict);
 				}
 			}
 
@@ -856,7 +857,7 @@ public class OpenAiApi {
 
 			public static StreamOptions INCLUDE_USAGE = new StreamOptions(true);
 		}
-	}// @formatter:on
+	} // @formatter:on
 
 	/**
 	 * Message comprising the conversation.
@@ -880,7 +881,7 @@ public class OpenAiApi {
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
 			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-			@JsonProperty("refusal") String refusal) {// @formatter:on
+			@JsonProperty("refusal") String refusal) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -999,7 +1000,7 @@ public class OpenAiApi {
 				@JsonProperty("index") Integer index,
 				@JsonProperty("id") String id,
 				@JsonProperty("type") String type,
-				@JsonProperty("function") ChatCompletionFunction function) {// @formatter:on
+				@JsonProperty("function") ChatCompletionFunction function) { // @formatter:on
 
 			public ToolCall(String id, String type, ChatCompletionFunction function) {
 				this(null, id, type, function);
@@ -1017,7 +1018,7 @@ public class OpenAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ChatCompletionFunction(// @formatter:off
 				@JsonProperty("name") String name,
-				@JsonProperty("arguments") String arguments) {// @formatter:on
+				@JsonProperty("arguments") String arguments) { // @formatter:on
 		}
 
 	}
@@ -1046,7 +1047,7 @@ public class OpenAiApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) {// @formatter:on
+			@JsonProperty("usage") Usage usage) { // @formatter:on
 
 		/**
 		 * Chat completion choice.
@@ -1061,7 +1062,7 @@ public class OpenAiApi {
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("message") ChatCompletionMessage message,
-				@JsonProperty("logprobs") LogProbs logprobs) {// @formatter:on
+				@JsonProperty("logprobs") LogProbs logprobs) { // @formatter:on
 
 		}
 
@@ -1094,7 +1095,7 @@ public class OpenAiApi {
 				@JsonProperty("token") String token,
 				@JsonProperty("logprob") Float logprob,
 				@JsonProperty("bytes") List<Integer> probBytes,
-				@JsonProperty("top_logprobs") List<TopLogProbs> topLogprobs) {// @formatter:on
+				@JsonProperty("top_logprobs") List<TopLogProbs> topLogprobs) { // @formatter:on
 
 			/**
 			 * The most likely tokens and their log probability, at this token position.
@@ -1111,7 +1112,7 @@ public class OpenAiApi {
 			public record TopLogProbs(// @formatter:off
 					@JsonProperty("token") String token,
 					@JsonProperty("logprob") Float logprob,
-					@JsonProperty("bytes") List<Integer> probBytes) {// @formatter:on
+					@JsonProperty("bytes") List<Integer> probBytes) { // @formatter:on
 			}
 
 		}
@@ -1137,7 +1138,7 @@ public class OpenAiApi {
 			@JsonProperty("prompt_tokens") Integer promptTokens,
 			@JsonProperty("total_tokens") Integer totalTokens,
 			@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails,
-			@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails) {// @formatter:on
+			@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails) { // @formatter:on
 
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
 			this(completionTokens, promptTokens, totalTokens, null, null);
@@ -1150,7 +1151,7 @@ public class OpenAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record PromptTokensDetails(// @formatter:off
-				@JsonProperty("cached_tokens") Integer cachedTokens) {// @formatter:on
+				@JsonProperty("cached_tokens") Integer cachedTokens) { // @formatter:on
 		}
 
 		/**
@@ -1160,7 +1161,7 @@ public class OpenAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record CompletionTokenDetails(// @formatter:off
-				@JsonProperty("reasoning_tokens") Integer reasoningTokens) {// @formatter:on
+				@JsonProperty("reasoning_tokens") Integer reasoningTokens) { // @formatter:on
 		}
 
 	}
@@ -1190,7 +1191,7 @@ public class OpenAiApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) {// @formatter:on
+			@JsonProperty("usage") Usage usage) { // @formatter:on
 
 		/**
 		 * Chat completion choice.
@@ -1205,7 +1206,7 @@ public class OpenAiApi {
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("delta") ChatCompletionMessage delta,
-				@JsonProperty("logprobs") LogProbs logprobs) {// @formatter:on
+				@JsonProperty("logprobs") LogProbs logprobs) { // @formatter:on
 		}
 
 	}
@@ -1222,7 +1223,7 @@ public class OpenAiApi {
 	public record Embedding(// @formatter:off
 			@JsonProperty("index") Integer index,
 			@JsonProperty("embedding") float[] embedding,
-			@JsonProperty("object") String object) {// @formatter:on
+			@JsonProperty("object") String object) { // @formatter:on
 
 		/**
 		 * Create an embedding with the given index, embedding and object type set to
@@ -1259,7 +1260,7 @@ public class OpenAiApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("encoding_format") String encodingFormat,
 			@JsonProperty("dimensions") Integer dimensions,
-			@JsonProperty("user") String user) {// @formatter:on
+			@JsonProperty("user") String user) { // @formatter:on
 
 		/**
 		 * Create an embedding request with the given input, model and encoding format set
@@ -1296,7 +1297,7 @@ public class OpenAiApi {
 			@JsonProperty("object") String object,
 			@JsonProperty("data") List<T> data,
 			@JsonProperty("model") String model,
-			@JsonProperty("usage") Usage usage) {// @formatter:on
+			@JsonProperty("usage") Usage usage) { // @formatter:on
 	}
 
 }

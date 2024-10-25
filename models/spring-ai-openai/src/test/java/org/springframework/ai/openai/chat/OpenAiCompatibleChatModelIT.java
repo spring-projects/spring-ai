@@ -52,8 +52,6 @@ public class OpenAiCompatibleChatModelIT {
 		return OpenAiChatOptions.builder().withModel(modelName).build();
 	}
 
-	;
-
 	static Stream<ChatModel> openAiCompatibleApis() {
 		Stream.Builder<ChatModel> builder = Stream.builder();
 

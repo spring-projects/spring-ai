@@ -66,7 +66,7 @@ class OpenAiChatModelFunctionCallingIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build());
 	}
@@ -102,7 +102,7 @@ class OpenAiChatModelFunctionCallingIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(biFunction)
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.withToolContext(Map.of("sessionId", "123"))
 			.build());
@@ -128,7 +128,7 @@ class OpenAiChatModelFunctionCallingIT {
 			.withFunctionCallbacks(List.of((FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build())))
 			.build());
 	}
@@ -163,7 +163,7 @@ class OpenAiChatModelFunctionCallingIT {
 			.withFunctionCallbacks(List.of((FunctionCallbackWrapper.builder(biFunction)
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build())))
 			.withToolContext(Map.of("sessionId", "123"))
 			.build();
