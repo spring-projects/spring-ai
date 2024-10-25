@@ -40,20 +40,27 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 To connect to OpenSearch and use the `OpenSearchVectorStore`, you need to provide access details for your instance.
 A simple configuration can either be provided via Spring Boot's `application.yml`,
+
 [source,yaml]
 ----
 spring:
-  opensearch:
-    uris: <opensearch instance URIs>
-    username: <opensearch username>
-    password: <opensearch password>
-    indexName: <opensearch index name>
-    mappingJson: <JSON mapping for opensearch index>
-# API key if needed, e.g. OpenAI
   ai:
+    vectorstore:
+      opensearch:
+        uris: <opensearch instance URIs>
+        username: <opensearch username>
+        password: <opensearch password>
+        indexName: <opensearch index name>
+        mappingJson: <JSON mapping for opensearch index>
+        aws:
+          host: <aws opensearch host>
+          serviceName: <aws service name>
+          accessKey: <aws access key>
+          secretKey: <aws secret key>
+          region: <aws region>
+# API key if needed, e.g. OpenAI
     openai:
-      api:
-        key: <api-key>
+      apiKey: <api-key>
 ----
 TIP: Check the list of xref:#_configuration_properties[configuration parameters] to learn about the default values and configuration options.
 
@@ -134,11 +141,11 @@ fields are stored and indexed. |
         }
     }
 }
-|`spring.opensearch.aws.host`| Hostname of the OpenSearch instance. | -
-|`spring.opensearch.aws.service-name`| AWS service name for the OpenSearch instance. | -
-|`spring.opensearch.aws.access-key`| AWS access key for the OpenSearch instance. | -
-|`spring.opensearch.aws.secret-key`| AWS secret key for the OpenSearch instance. | -
-|`spring.opensearch.aws.region`| AWS region for the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.host`| Hostname of the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.serviceName`| AWS service name for the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.accessKey`| AWS access key for the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.secretKey`| AWS secret key for the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.region`| AWS region for the OpenSearch instance. | -
 |===
 
 === Customizing OpenSearch Client Configuration
