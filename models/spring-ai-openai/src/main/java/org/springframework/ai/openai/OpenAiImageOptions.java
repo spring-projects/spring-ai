@@ -234,7 +234,7 @@ public class OpenAiImageOptions implements ImageOptions {
 				+ ", user='" + this.user + '\'' + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final OpenAiImageOptions options;
 
