@@ -330,6 +330,15 @@
 				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
 					<argLine>${surefireArgLine}</argLine>
+
+					<useFile>false</useFile>
+					<trimStackTrace>false</trimStackTrace>
+
+					<!-- Show test timing information -->
+					<reportFormat>plain</reportFormat>
+					
+					<!-- Output test execution times in the logs -->
+					<redirectTestOutputToFile>false</redirectTestOutputToFile>
 				</configuration>
 			</plugin>
 			<plugin>
