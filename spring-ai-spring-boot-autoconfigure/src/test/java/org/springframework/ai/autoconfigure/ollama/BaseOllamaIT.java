@@ -18,7 +18,10 @@ package org.springframework.ai.autoconfigure.ollama;
 
 import org.testcontainers.ollama.OllamaContainer;
 
+import java.time.Duration;
+
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 
@@ -48,7 +51,12 @@ public class BaseOllamaIT {
 		if (useTestcontainers) {
 			baseUrl = ollamaContainer.getEndpoint();
 		}
-		var ollamaModelManager = new OllamaModelManager(new OllamaApi(baseUrl));
+
+		var modelManagementOptions = ModelManagementOptions.builder()
+			.withMaxRetries(2)
+			.withTimeout(Duration.ofMinutes(10))
+			.build();
+		var ollamaModelManager = new OllamaModelManager(new OllamaApi(baseUrl), modelManagementOptions);
 		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
 		return baseUrl;
 	}
