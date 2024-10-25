@@ -17,6 +17,10 @@ embeddings stored by the `OpenSearchVectorStore`.
 
 Add the OpenSearch Vector Store dependency to your project:
 
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -25,14 +29,15 @@ Add the OpenSearch Vector Store dependency to your project:
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-opensearch-store'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -66,9 +71,15 @@ TIP: Check the list of xref:#_configuration_properties[configuration parameters]
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the OpenSearch Vector Store.
-To enable it, add the following dependency to your project's Maven `pom.xml` file:
+=== Self-Managed OpenSearch
 
+Spring AI provides Spring Boot auto-configuration for the OpenSearch Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -77,14 +88,45 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-opensearch-store-spring-boot-starter'
 }
 ----
+======
+
+Then use the `spring.ai.vectorstore.opensearch.*` properties to configure the connection to the self-managed OpenSearch instance.
+
+=== Amazon OpenSearch Service
+
+To enable Amazon OpenSearch Service., add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-aws-opensearch-store-spring-boot-starter</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-aws-opensearch-store-spring-boot-starter'
+}
+----
+======
+
+Then use the `spring.ai.vectorstore.opensearch.aws.*` properties to configure the connection to the Amazon OpenSearch Service.
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -154,32 +196,16 @@ In cases where the Spring Boot auto-configured OpenSearchClient with `Apache Htt
 you want or need, you can still define your own bean.
 Please read the link:https://opensearch.org/docs/latest/clients/java/[OpenSearch Java Client Documentation]
 
-for more in-depth information about the configuration of Amazon OpenSearch Service.
-To enable it, add the following dependency to your project's Maven `pom.xml` file:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-aws-opensearch-store-spring-boot-starter</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-aws-opensearch-store-spring-boot-starter'
-}
-----
-
 == Metadata Filtering
 
 You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with OpenSearch as well.
 
 For example, you can use either the text expression language:
 
+[tabs]
+======
+SQL filter syntax::
++
 [source,java]
 ----
 vectorStore.similaritySearch(SearchRequest.defaults()
@@ -189,8 +215,8 @@ vectorStore.similaritySearch(SearchRequest.defaults()
         .withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
 ----
 
-or programmatically using the `Filter.Expression` DSL:
-
+`Filter.Expression` DSL::
++
 [source,java]
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
@@ -203,6 +229,7 @@ vectorStore.similaritySearch(SearchRequest.defaults()
                 b.in("john", "jill"),
                 b.eq("article_type", "blog")).build()));
 ----
+======
 
 NOTE: Those (portable) filter expressions get automatically converted into the proprietary OpenSearch link:https://opensearch.org/docs/latest/query-dsl/full-text/query-string/[Query string query].
 
