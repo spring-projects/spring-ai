@@ -88,8 +88,9 @@ public class StabilityAiImageModel implements ImageModel {
 		// Merge the runtime options passed via the prompt with the default options
 		// configured via the constructor.
 		// Runtime options overwrite StabilityAiImageModel options
-		StabilityAiImageOptions requestImageOptions = mergeOptions(imagePrompt.getOptions(), this.defaultOptions);
-
+		StabilityAiImageOptions runtimeOptions = (StabilityAiImageOptions) imagePrompt.getOptions();
+		StabilityAiImageOptions requestImageOptions = mergeOptions(runtimeOptions, this.defaultOptions);
+		System.err.println("requestImageOptions: " + requestImageOptions);
 		// Copy the org.springframework.ai.model derived ImagePrompt and ImageOptions data
 		// types to the data types used in StabilityAiApi
 		StabilityAiApi.GenerateImageRequest generateImageRequest = getGenerateImageRequest(imagePrompt,
@@ -117,7 +118,8 @@ public class StabilityAiImageModel implements ImageModel {
 	 * Merge runtime and default {@link ImageOptions} to compute the final options to use
 	 * in the request.
 	 */
-	private StabilityAiImageOptions mergeOptions(ImageOptions runtimeOptions, StabilityAiImageOptions defaultOptions) {
+	private StabilityAiImageOptions mergeOptions(StabilityAiImageOptions runtimeOptions,
+			StabilityAiImageOptions defaultOptions) {
 		if (runtimeOptions == null) {
 			return defaultOptions;
 		}
@@ -134,10 +136,10 @@ public class StabilityAiImageModel implements ImageModel {
 			// Handle Stability AI specific image options
 			.withCfgScale(defaultOptions.getCfgScale())
 			.withClipGuidancePreset(defaultOptions.getClipGuidancePreset())
-			.withSampler(defaultOptions.getSampler())
+			.withSampler(runtimeOptions.getSampler())
 			.withSeed(defaultOptions.getSeed())
-			.withSteps(defaultOptions.getSteps())
-			.withStylePreset(defaultOptions.getStylePreset())
+			.withSteps(runtimeOptions.getSteps())
+			.withStylePreset(runtimeOptions.getStylePreset())
 			.build();
 	}
 
