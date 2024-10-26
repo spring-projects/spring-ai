@@ -115,14 +115,14 @@ public class StabilityAiImageModel implements ImageModel {
 
 	/**
 	 * Merge runtime and default {@link ImageOptions} to compute the final options to use
-	 * in the request.
+	 * in the request. Protected access for testing purposes, though maybe useful for
+	 * future subclassing as options change.
 	 */
-	private StabilityAiImageOptions mergeOptions(ImageOptions runtimeOptions, StabilityAiImageOptions defaultOptions) {
+	StabilityAiImageOptions mergeOptions(ImageOptions runtimeOptions, StabilityAiImageOptions defaultOptions) {
 		if (runtimeOptions == null) {
 			return defaultOptions;
 		}
-
-		return StabilityAiImageOptions.builder()
+		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder()
 			// Handle portable image options
 			.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
 			.withN(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
@@ -131,14 +131,29 @@ public class StabilityAiImageModel implements ImageModel {
 			.withWidth(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
 			.withHeight(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
 			.withStylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
-			// Handle Stability AI specific image options
+			// Always set the stability-specific defaults
 			.withCfgScale(defaultOptions.getCfgScale())
 			.withClipGuidancePreset(defaultOptions.getClipGuidancePreset())
 			.withSampler(defaultOptions.getSampler())
 			.withSeed(defaultOptions.getSeed())
 			.withSteps(defaultOptions.getSteps())
-			.withStylePreset(defaultOptions.getStylePreset())
-			.build();
+			.withStylePreset(defaultOptions.getStylePreset());
+		if (runtimeOptions instanceof StabilityAiImageOptions) {
+			StabilityAiImageOptions stabilityOptions = (StabilityAiImageOptions) runtimeOptions;
+			// Handle Stability AI specific image options
+			builder
+				.withCfgScale(
+						ModelOptionsUtils.mergeOption(stabilityOptions.getCfgScale(), defaultOptions.getCfgScale()))
+				.withClipGuidancePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getClipGuidancePreset(),
+						defaultOptions.getClipGuidancePreset()))
+				.withSampler(ModelOptionsUtils.mergeOption(stabilityOptions.getSampler(), defaultOptions.getSampler()))
+				.withSeed(ModelOptionsUtils.mergeOption(stabilityOptions.getSeed(), defaultOptions.getSeed()))
+				.withSteps(ModelOptionsUtils.mergeOption(stabilityOptions.getSteps(), defaultOptions.getSteps()))
+				.withStylePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getStylePreset(),
+						defaultOptions.getStylePreset()));
+		}
+
+		return builder.build();
 	}
 
 }
