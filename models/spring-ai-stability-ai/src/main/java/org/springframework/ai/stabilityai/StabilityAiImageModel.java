@@ -90,7 +90,7 @@ public class StabilityAiImageModel implements ImageModel {
 		// Runtime options overwrite StabilityAiImageModel options
 		StabilityAiImageOptions runtimeOptions = (StabilityAiImageOptions) imagePrompt.getOptions();
 		StabilityAiImageOptions requestImageOptions = mergeOptions(runtimeOptions, this.defaultOptions);
-		System.err.println("requestImageOptions: " + requestImageOptions);
+
 		// Copy the org.springframework.ai.model derived ImagePrompt and ImageOptions data
 		// types to the data types used in StabilityAiApi
 		StabilityAiApi.GenerateImageRequest generateImageRequest = getGenerateImageRequest(imagePrompt,
