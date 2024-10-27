@@ -183,7 +183,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
                 VALUES(:_id, TO_REAL_VECTOR(:embedding), :content)
                 """, tableName);
 
-        entityManager.createNativeQuery(sql)
+		this.entityManager.createNativeQuery(sql)
                 .setParameter("_id", id)
                 .setParameter("embedding", embedding)
                 .setParameter("content", content)
@@ -197,7 +197,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
                 DELETE FROM %s WHERE _ID IN (:ids)
                 """, tableName);
 
-        return entityManager.createNativeQuery(sql)
+        return this.entityManager.createNativeQuery(sql)
                 .setParameter("ids", idList)
                 .executeUpdate();
     }
@@ -209,7 +209,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
                 DELETE FROM %s
                 """, tableName);
 
-        return entityManager.createNativeQuery(sql).executeUpdate();
+        return this.entityManager.createNativeQuery(sql).executeUpdate();
     }
 
     @Override
@@ -219,7 +219,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
                 ORDER BY COSINE_SIMILARITY(EMBEDDING, TO_REAL_VECTOR(:queryEmbedding)) DESC
                 """, tableName);
 
-        return entityManager.createNativeQuery(sql, CricketWorldCup.class)
+        return this.entityManager.createNativeQuery(sql, CricketWorldCup.class)
                 .setParameter("topK", topK)
                 .setParameter("queryEmbedding", queryEmbedding)
                 .getResultList();
@@ -290,7 +290,7 @@ public class CricketWorldCupHanaController {
         Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
         List<Document> documents = splitter.apply(reader.get());
         log.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
-        hanaCloudVectorStore.accept(documents);
+		this.hanaCloudVectorStore.accept(documents);
         return ResponseEntity.ok().body(String.format("%d documents created from pdf file: %s",
                 documents.size(), pdf.getFilename()));
     }
@@ -304,7 +304,7 @@ public class CricketWorldCupHanaController {
 
         var userMessage = new UserMessage(message);
         Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
-        String generation = chatModel.call(prompt).getResult().getOutput().getContent();
+        String generation = this.chatModel.call(prompt).getResult().getOutput().getContent();
         log.info("Generation: {}", generation);
         return Map.of("generation", generation);
     }

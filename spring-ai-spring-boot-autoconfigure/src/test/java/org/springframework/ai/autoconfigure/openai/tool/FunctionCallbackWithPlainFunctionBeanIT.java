@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.openai.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -27,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -46,7 +46,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {
@@ -59,7 +59,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		.withUserConfiguration(Config.class);
 
 	@Test
-	void functionCallTest2() {
+	void functionCallWithDirectBiFunction() {
 		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
 			.run(context -> {
 
@@ -72,7 +72,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 					.toolContext(Map.of("sessionId", "123"))
 					.call()
 					.content();
-				System.out.println(content);
+				logger.info(content);
 
 				// Test weatherFunction
 				UserMessage userMessage = new UserMessage(
@@ -81,6 +81,39 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						OpenAiChatOptions.builder()
 							.withFunction("weatherFunctionWithContext")
+							.withToolContext(Map.of("sessionId", "123"))
+							.build()));
+
+				logger.info("Response: {}", response);
+
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+
+			});
+	}
+
+	@Test
+	void functionCallWithBiFunctionClass() {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+			.run(context -> {
+
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				ChatClient chatClient = ChatClient.builder(chatModel).build();
+
+				String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
+					.functions("weatherFunctionWithClassBiFunction")
+					.toolContext(Map.of("sessionId", "123"))
+					.call()
+					.content();
+				logger.info(content);
+
+				// Test weatherFunction
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+						OpenAiChatOptions.builder()
+							.withFunction("weatherFunctionWithClassBiFunction")
 							.withToolContext(Map.of("sessionId", "123"))
 							.build()));
 
@@ -198,6 +231,12 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 		@Bean
 		@Description("Get the weather in location")
+		public MyBiFunction weatherFunctionWithClassBiFunction() {
+			return new MyBiFunction();
+		}
+
+		@Bean
+		@Description("Get the weather in location")
 		public BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response> weatherFunctionWithContext() {
 			return (request, context) -> {
 				return new MockWeatherService().apply(request);
@@ -216,6 +255,16 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunctionTwo() {
 			MockWeatherService weatherService = new MockWeatherService();
 			return (weatherService::apply);
+		}
+
+	}
+
+	public static class MyBiFunction
+			implements BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response> {
+
+		@Override
+		public MockWeatherService.Response apply(MockWeatherService.Request request, ToolContext context) {
+			return new MockWeatherService().apply(request);
 		}
 
 	}

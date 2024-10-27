@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,10 @@
  */
 
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
+
+import java.util.Arrays;
+
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -32,10 +36,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
-
-import io.micrometer.observation.ObservationRegistry;
-
-import java.util.Arrays;
 
 /**
  * @author Eddú Meléndez
@@ -86,6 +86,7 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 	@Bean
 	public Converter<MimeType, String> mimeTypeToStringConverter() {
 		return new Converter<MimeType, String>() {
+
 			@Override
 			public String convert(MimeType source) {
 				return source.toString();
@@ -96,6 +97,7 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 	@Bean
 	public Converter<String, MimeType> stringToMimeTypeConverter() {
 		return new Converter<String, MimeType>() {
+
 			@Override
 			public MimeType convert(String source) {
 				return MimeType.valueOf(source);

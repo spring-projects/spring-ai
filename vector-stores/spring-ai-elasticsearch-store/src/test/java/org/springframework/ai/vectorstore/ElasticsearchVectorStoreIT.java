@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
@@ -121,7 +122,7 @@ class ElasticsearchVectorStoreIT {
 
 			assertThat(stats.total().docs().count()).isEqualTo(0L);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 			elasticsearchClient.indices().refresh();
 			stats = elasticsearchClient.indices()
 				.stats(s -> s.index("spring-ai-document-index"))
@@ -148,7 +149,7 @@ class ElasticsearchVectorStoreIT {
 			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
 					ElasticsearchVectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			Awaitility.await()
 				.until(() -> vectorStore
@@ -160,14 +161,14 @@ class ElasticsearchVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(Document::getId).toList());
+			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 			Awaitility.await()
 				.until(() -> vectorStore
@@ -266,7 +267,7 @@ class ElasticsearchVectorStoreIT {
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(Document::getId).toList());
+			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(1)), hasSize(0));
@@ -334,7 +335,7 @@ class ElasticsearchVectorStoreIT {
 			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
 					ElasticsearchVectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			SearchRequest query = SearchRequest.query("Great Depression").withTopK(50).withSimilarityThresholdAll();
 
@@ -353,13 +354,13 @@ class ElasticsearchVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(Document::getId).toList());
+			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(

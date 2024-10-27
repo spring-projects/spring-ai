@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.transformer;
 
 import java.util.ArrayList;
@@ -67,7 +68,7 @@ public class ContentFormatTransformer implements DocumentTransformer {
 	 * @return processed documents
 	 */
 	public List<Document> apply(List<Document> documents) {
-		if (contentFormatter != null) {
+		if (this.contentFormatter != null) {
 			documents.forEach(this::processDocument);
 		}
 
@@ -76,7 +77,7 @@ public class ContentFormatTransformer implements DocumentTransformer {
 
 	private void processDocument(Document document) {
 		if (document.getContentFormatter() instanceof DefaultContentFormatter docFormatter
-				&& contentFormatter instanceof DefaultContentFormatter toUpdateFormatter) {
+				&& this.contentFormatter instanceof DefaultContentFormatter toUpdateFormatter) {
 			updateFormatter(document, docFormatter, toUpdateFormatter);
 
 		}
@@ -99,7 +100,7 @@ public class ContentFormatTransformer implements DocumentTransformer {
 			.withMetadataTemplate(docFormatter.getMetadataTemplate())
 			.withMetadataSeparator(docFormatter.getMetadataSeparator());
 
-		if (!disableTemplateRewrite) {
+		if (!this.disableTemplateRewrite) {
 			builder.withTextTemplate(docFormatter.getTextTemplate());
 		}
 
@@ -107,7 +108,7 @@ public class ContentFormatTransformer implements DocumentTransformer {
 	}
 
 	private void overrideFormatter(Document document) {
-		document.setContentFormatter(contentFormatter);
+		document.setContentFormatter(this.contentFormatter);
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.vertexai.embedding;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.autoconfigure.vertexai.embedding;
 
 import java.io.File;
 import java.util.List;
@@ -23,6 +22,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -33,6 +33,8 @@ import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Christian Tzolov
  */
@@ -40,17 +42,17 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
-	@TempDir
-	File tempDir;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.embedding.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
 				"spring.ai.vertex.ai.embedding.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 		.withConfiguration(AutoConfigurations.of(VertexAiEmbeddingAutoConfiguration.class));
 
+	@TempDir
+	File tempDir;
+
 	@Test
 	public void textEmbedding() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var conntectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
 			var textEmbeddingProperties = context.getBean(VertexAiTextEmbeddingProperties.class);
 
@@ -69,17 +71,17 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	void textEmbeddingActivation() {
-		contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.text.enabled=false").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.text.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isEmpty();
 		});
 
-		contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.text.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.text.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
 		});
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
 		});
@@ -88,7 +90,7 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	public void multimodalEmbedding() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var conntectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
 			var multimodalEmbeddingProperties = context.getBean(VertexAiMultimodalEmbeddingProperties.class);
 
@@ -122,17 +124,17 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	void multimodalEmbeddingActivation() {
-		contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.multimodal.enabled=false").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.multimodal.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isEmpty();
 		});
 
-		contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.multimodal.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.multimodal.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();
 		});
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();
 		});

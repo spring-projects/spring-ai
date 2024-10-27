@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.prompt;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+package org.springframework.ai.prompt;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,9 +42,7 @@ class PromptTests {
 		model.put("firstName", "Nick");
 
 		// Try to render with missing value for template variable, expect exception
-		Assertions.assertThatThrownBy(() -> {
-			String promptString = pt.render(model);
-		})
+		Assertions.assertThatThrownBy(() -> pt.render(model))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessage("Not all template variables were replaced. Missing variable names are [lastName]");
 
@@ -83,7 +83,7 @@ class PromptTests {
 		Prompt systemPrompt = promptTemplate.create(systemModel);
 
 		promptTemplate = new PromptTemplate(humanTemplate); // creates a Prompt with
-															// HumanMessage
+		// HumanMessage
 		Prompt humanPrompt = promptTemplate.create(humanModel);
 
 		// ChatPromptTemplate chatPromptTemplate = new ChatPromptTemplate(systemPrompt,
@@ -125,9 +125,9 @@ class PromptTests {
 	@Test
 	void testBadFormatOfTemplateString() {
 		String template = "This is a {foo test";
-		Assertions.assertThatThrownBy(() -> {
-			new PromptTemplate(template);
-		}).isInstanceOf(IllegalArgumentException.class).hasMessage("The template string is not valid.");
+		Assertions.assertThatThrownBy(() -> new PromptTemplate(template))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("The template string is not valid.");
 	}
 
 }

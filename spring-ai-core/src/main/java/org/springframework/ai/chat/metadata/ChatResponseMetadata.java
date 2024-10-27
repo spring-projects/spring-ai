@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.metadata;
 
 import java.util.Map;
@@ -20,6 +21,7 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
@@ -36,7 +38,8 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 	private final static Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
 
 	private String id = ""; // Set to blank to preserve backward compat with previous
-							// interface default methods
+
+	// interface default methods
 
 	private String model = "";
 
@@ -45,6 +48,10 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 	private Usage usage = new EmptyUsage();
 
 	private PromptMetadata promptMetadata = PromptMetadata.empty();
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	/**
 	 * A unique identifier for the chat completion operation.
@@ -86,6 +93,29 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 	 */
 	public PromptMetadata getPromptMetadata() {
 		return this.promptMetadata;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof ChatResponseMetadata that)) {
+			return false;
+		}
+		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.rateLimit, that.rateLimit) && Objects.equals(this.usage, that.usage)
+				&& Objects.equals(this.promptMetadata, that.promptMetadata);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.id, this.model, this.rateLimit, this.usage, this.promptMetadata);
+	}
+
+	@Override
+	public String toString() {
+		return AI_METADATA_STRING.formatted(getId(), getUsage(), getRateLimit());
 	}
 
 	public static class Builder {
@@ -143,31 +173,6 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			return this.chatResponseMetadata;
 		}
 
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof ChatResponseMetadata that))
-			return false;
-		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
-				&& Objects.equals(this.rateLimit, that.rateLimit) && Objects.equals(this.usage, that.usage)
-				&& Objects.equals(this.promptMetadata, that.promptMetadata);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.id, this.model, this.rateLimit, this.usage, this.promptMetadata);
-	}
-
-	@Override
-	public String toString() {
-		return AI_METADATA_STRING.formatted(getId(), getUsage(), getRateLimit());
 	}
 
 }

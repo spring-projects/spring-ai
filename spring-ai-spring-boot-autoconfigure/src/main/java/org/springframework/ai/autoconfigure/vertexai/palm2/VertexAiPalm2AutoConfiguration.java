@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vertexai.palm2;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vertexai.palm2.VertexAiPaLm2ChatModel;
 import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingModel;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -42,10 +44,11 @@ public class VertexAiPalm2AutoConfiguration {
 	@ConditionalOnMissingBean
 	public VertexAiPaLm2Api vertexAiApi(VertexAiPalm2ConnectionProperties connectionProperties,
 			VertexAiPalm2EmbeddingProperties embeddingAiProperties, VertexAiPlam2ChatProperties chatProperties,
-			RestClient.Builder restClientBuilder) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider) {
 
 		return new VertexAiPaLm2Api(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
-				chatProperties.getModel(), embeddingAiProperties.getModel(), restClientBuilder);
+				chatProperties.getModel(), embeddingAiProperties.getModel(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder));
 	}
 
 	@Bean

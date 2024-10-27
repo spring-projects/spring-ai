@@ -123,7 +123,7 @@ spring.ai.vectorstore.mongodb.indexName=vector_index
 spring.ai.vectorstore.mongodb.metadata-fields-to-filter=foo
 ----
 
-
+[stripes=even]
 |===
 |Property| Description | Default value
 
@@ -252,7 +252,7 @@ List<Document> results = vectorStore.similaritySearch(
                 .withQuery("learn how to grow things")
                 .withTopK(2)
                 .withSimilarityThreshold(0.5)
-                .withFilterExpression(b.eq("author", "A").build())
+                .withFilterExpression(this.b.eq("author", "A").build())
 );
 ----
 

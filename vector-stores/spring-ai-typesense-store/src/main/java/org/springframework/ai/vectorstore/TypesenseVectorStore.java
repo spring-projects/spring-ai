@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,8 +23,20 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.typesense.api.Client;
+import org.typesense.api.FieldTypes;
+import org.typesense.model.CollectionResponse;
+import org.typesense.model.CollectionSchema;
+import org.typesense.model.DeleteDocumentsParameters;
+import org.typesense.model.Field;
+import org.typesense.model.ImportDocumentsParameters;
+import org.typesense.model.MultiSearchCollectionParameters;
+import org.typesense.model.MultiSearchResult;
+import org.typesense.model.MultiSearchSearchesParameter;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -38,18 +50,6 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationCont
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
-import org.typesense.api.Client;
-import org.typesense.api.FieldTypes;
-import org.typesense.model.CollectionResponse;
-import org.typesense.model.CollectionSchema;
-import org.typesense.model.DeleteDocumentsParameters;
-import org.typesense.model.Field;
-import org.typesense.model.ImportDocumentsParameters;
-import org.typesense.model.MultiSearchCollectionParameters;
-import org.typesense.model.MultiSearchResult;
-import org.typesense.model.MultiSearchSearchesParameter;
-
-import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Pablo Sanchidrian Herrera
@@ -57,8 +57,6 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Christian Tzolov
  */
 public class TypesenseVectorStore extends AbstractObservationVectorStore implements InitializingBean {
-
-	private static final Logger logger = LoggerFactory.getLogger(TypesenseVectorStore.class);
 
 	/**
 	 * The name of the field that contains the document ID. It is mandatory to set "id" as
@@ -78,87 +76,19 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
+	private static final Logger logger = LoggerFactory.getLogger(TypesenseVectorStore.class);
+
+	public final FilterExpressionConverter filterExpressionConverter = new TypesenseFilterExpressionConverter();
+
 	private final Client client;
 
 	private final EmbeddingModel embeddingModel;
 
 	private final TypesenseVectorStoreConfig config;
 
-	public final FilterExpressionConverter filterExpressionConverter = new TypesenseFilterExpressionConverter();
-
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
-
-	public static class TypesenseVectorStoreConfig {
-
-		private final String collectionName;
-
-		private final int embeddingDimension;
-
-		public TypesenseVectorStoreConfig(String collectionName, int embeddingDimension) {
-			this.collectionName = collectionName;
-			this.embeddingDimension = embeddingDimension;
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		public static TypesenseVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		private TypesenseVectorStoreConfig(Builder builder) {
-			this.collectionName = builder.collectionName;
-			this.embeddingDimension = builder.embeddingDimension;
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		public static Builder builder() {
-
-			return new Builder();
-		}
-
-		public static class Builder {
-
-			private String collectionName;
-
-			private int embeddingDimension;
-
-			/**
-			 * Set the collection name.
-			 * @param collectionName The collection name.
-			 * @return The builder.
-			 */
-			public Builder withCollectionName(String collectionName) {
-				this.collectionName = collectionName;
-				return this;
-			}
-
-			/**
-			 * Set the embedding dimension.
-			 * @param embeddingDimension The embedding dimension.
-			 * @return The builder.
-			 */
-			public Builder withEmbeddingDimension(int embeddingDimension) {
-				this.embeddingDimension = embeddingDimension;
-				return this;
-			}
-
-			/**
-			 * Build the configuration.
-			 * @return The configuration.
-			 */
-			public TypesenseVectorStoreConfig build() {
-				return new TypesenseVectorStoreConfig(this);
-			}
-
-		}
-
-	}
 
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel) {
 		this(client, embeddingModel, TypesenseVectorStoreConfig.defaultConfig(), false);
@@ -394,6 +324,76 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			.withCollectionName(this.config.collectionName)
 			.withFieldName(EMBEDDING_FIELD_NAME)
 			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+	}
+
+	public static class TypesenseVectorStoreConfig {
+
+		private final String collectionName;
+
+		private final int embeddingDimension;
+
+		public TypesenseVectorStoreConfig(String collectionName, int embeddingDimension) {
+			this.collectionName = collectionName;
+			this.embeddingDimension = embeddingDimension;
+		}
+
+		private TypesenseVectorStoreConfig(Builder builder) {
+			this.collectionName = builder.collectionName;
+			this.embeddingDimension = builder.embeddingDimension;
+		}
+
+		/**
+		 * {@return the default config}
+		 */
+		public static TypesenseVectorStoreConfig defaultConfig() {
+			return builder().build();
+		}
+
+		/**
+		 * Start building a new configuration.
+		 * @return The entry point for creating a new configuration.
+		 */
+		public static Builder builder() {
+
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private String collectionName;
+
+			private int embeddingDimension;
+
+			/**
+			 * Set the collection name.
+			 * @param collectionName The collection name.
+			 * @return The builder.
+			 */
+			public Builder withCollectionName(String collectionName) {
+				this.collectionName = collectionName;
+				return this;
+			}
+
+			/**
+			 * Set the embedding dimension.
+			 * @param embeddingDimension The embedding dimension.
+			 * @return The builder.
+			 */
+			public Builder withEmbeddingDimension(int embeddingDimension) {
+				this.embeddingDimension = embeddingDimension;
+				return this;
+			}
+
+			/**
+			 * Build the configuration.
+			 * @return The configuration.
+			 */
+			public TypesenseVectorStoreConfig build() {
+				return new TypesenseVectorStoreConfig(this);
+			}
+
+		}
+
 	}
 
 }

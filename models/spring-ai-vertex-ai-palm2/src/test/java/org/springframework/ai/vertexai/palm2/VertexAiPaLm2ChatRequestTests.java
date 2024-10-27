@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.palm2;
 
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ public class VertexAiPaLm2ChatRequestTests {
 	@Test
 	public void createRequestWithDefaultOptions() {
 
-		var request = chatModel.createRequest(new Prompt("Test message content"));
+		var request = this.chatModel.createRequest(new Prompt("Test message content"));
 
 		assertThat(request.prompt().messages()).hasSize(1);
 
@@ -55,7 +56,7 @@ public class VertexAiPaLm2ChatRequestTests {
 			// .withCandidateCount(2)
 			.build();
 
-		var request = chatModel.createRequest(new Prompt("Test message content", promptOptions));
+		var request = this.chatModel.createRequest(new Prompt("Test message content", promptOptions));
 
 		assertThat(request.prompt().messages()).hasSize(1);
 
@@ -75,7 +76,7 @@ public class VertexAiPaLm2ChatRequestTests {
 			.withTopP(0.6)
 			.build();
 
-		var request = chatModel.createRequest(new Prompt("Test message content", portablePromptOptions));
+		var request = this.chatModel.createRequest(new Prompt("Test message content", portablePromptOptions));
 
 		assertThat(request.prompt().messages()).hasSize(1);
 

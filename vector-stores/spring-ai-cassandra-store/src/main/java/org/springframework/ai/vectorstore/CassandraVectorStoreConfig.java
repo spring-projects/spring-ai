@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -32,23 +44,11 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.ai.cassandra.SchemaUtil;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.function.Function;
-import java.util.stream.Stream;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import org.springframework.lang.Nullable;
 
 /**
  * Configuration for the Cassandra vector store.
@@ -83,51 +83,6 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 	public static final int DEFAULT_ADD_CONCURRENCY = 16;
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStoreConfig.class);
-
-	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys,
-			String content, String embedding, String index, Set<SchemaColumn> metadataColumns) {
-
-	}
-
-	public record SchemaColumn(String name, DataType type, SchemaColumnTags... tags) {
-		public SchemaColumn(String name, DataType type) {
-			this(name, type, new SchemaColumnTags[0]);
-		}
-
-		public GenericType<Object> javaType() {
-			return CodecRegistry.DEFAULT.codecFor(type).getJavaType();
-		}
-
-		public boolean indexed() {
-			for (SchemaColumnTags t : tags) {
-				if (SchemaColumnTags.INDEXED == t) {
-					return true;
-				}
-			}
-			return false;
-		}
-	}
-
-	public enum SchemaColumnTags {
-
-		INDEXED
-
-	}
-
-	/**
-	 * Given a string document id, return the value for each primary key column.
-	 *
-	 * It is a requirement that an empty {@code List<Object>} returns an example formatted
-	 * id
-	 */
-	public interface DocumentIdTranslator extends Function<String, List<Object>> {
-
-	}
-
-	/** Given a list of primary key column values, return the document id. */
-	public interface PrimaryKeyTranslator extends Function<List<Object>, String> {
-
-	}
 
 	final CqlSession session;
 
@@ -179,6 +134,232 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 	void dropKeyspace() {
 		Preconditions.checkState(this.schema.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
 		this.session.execute(SchemaBuilder.dropKeyspace(this.schema.keyspace).ifExists().build());
+	}
+
+	void ensureSchemaExists(int vectorDimension) {
+		if (!this.disallowSchemaChanges) {
+			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
+			ensureTableExists(vectorDimension);
+			ensureTableColumnsExist(vectorDimension);
+			ensureIndexesExists();
+			SchemaUtil.checkSchemaAgreement(this.session);
+		}
+		else {
+			checkSchemaValid(vectorDimension);
+		}
+	}
+
+	void checkSchemaValid(int vectorDimension) {
+
+		Preconditions.checkState(this.session.getMetadata().getKeyspace(this.schema.keyspace).isPresent(),
+				"keyspace %s does not exist", this.schema.keyspace);
+
+		Preconditions.checkState(this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
+			.get()
+			.getTable(this.schema.table)
+			.isPresent(), "table %s does not exist");
+
+		TableMetadata tableMetadata = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
+			.get()
+			.getTable(this.schema.table)
+			.get();
+
+		Preconditions.checkState(tableMetadata.getColumn(this.schema.content).isPresent(), "column %s does not exist",
+				this.schema.content);
+
+		Preconditions.checkState(tableMetadata.getColumn(this.schema.embedding).isPresent(), "column %s does not exist",
+				this.schema.embedding);
+
+		for (SchemaColumn m : this.schema.metadataColumns) {
+			Optional<ColumnMetadata> column = tableMetadata.getColumn(m.name());
+			Preconditions.checkState(column.isPresent(), "column %s does not exist", m.name());
+
+			Preconditions.checkArgument(column.get().getType().equals(m.type()),
+					"Mismatching type on metadata column %s of %s vs %s", m.name(), column.get().getType(), m.type());
+
+			if (m.indexed()) {
+				Preconditions.checkState(
+						tableMetadata.getIndexes().values().stream().anyMatch((i) -> i.getTarget().equals(m.name())),
+						"index %s does not exist", m.name());
+			}
+		}
+
+	}
+
+	private void ensureIndexesExists() {
+		{
+			SimpleStatement indexStmt = SchemaBuilder.createIndex(this.schema.index)
+				.ifNotExists()
+				.custom("StorageAttachedIndex")
+				.onTable(this.schema.keyspace, this.schema.table)
+				.andColumn(this.schema.embedding)
+				.build();
+
+			logger.debug("Executing {}", indexStmt.getQuery());
+			this.session.execute(indexStmt);
+		}
+		Stream
+			.concat(this.schema.partitionKeys.stream(),
+					Stream.concat(this.schema.clusteringKeys.stream(), this.schema.metadataColumns.stream()))
+			.filter((cs) -> cs.indexed())
+			.forEach((metadata) -> {
+
+				SimpleStatement indexStmt = SchemaBuilder.createIndex(String.format("%s_idx", metadata.name()))
+					.ifNotExists()
+					.custom("StorageAttachedIndex")
+					.onTable(this.schema.keyspace, this.schema.table)
+					.andColumn(metadata.name())
+					.build();
+
+				logger.debug("Executing {}", indexStmt.getQuery());
+				this.session.execute(indexStmt);
+			});
+	}
+
+	private void ensureTableExists(int vectorDimension) {
+		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).get().getTable(this.schema.table).isEmpty()) {
+
+			CreateTable createTable = null;
+
+			CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
+				.ifNotExists();
+
+			for (SchemaColumn partitionKey : this.schema.partitionKeys) {
+				createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
+						partitionKey.type);
+			}
+			for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
+				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
+			}
+
+			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
+
+			for (SchemaColumn metadata : this.schema.metadataColumns) {
+				createTable = createTable.withColumn(metadata.name(), metadata.type());
+			}
+
+			// https://datastax-oss.atlassian.net/browse/JAVA-3118
+			// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
+			// vectorDimension));
+
+			StringBuilder tableStmt = new StringBuilder(createTable.asCql());
+			tableStmt.setLength(tableStmt.length() - 1);
+			tableStmt.append(',')
+				.append(this.schema.embedding)
+				.append(" vector<float,")
+				.append(vectorDimension)
+				.append(">)");
+			logger.debug("Executing {}", tableStmt.toString());
+			this.session.execute(tableStmt.toString());
+		}
+	}
+
+	private void ensureTableColumnsExist(int vectorDimension) {
+
+		TableMetadata tableMetadata = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
+			.get()
+			.getTable(this.schema.table)
+			.get();
+
+		Set<SchemaColumn> newColumns = new HashSet<>();
+		boolean addContent = tableMetadata.getColumn(this.schema.content).isEmpty();
+		boolean addEmbedding = tableMetadata.getColumn(this.schema.embedding).isEmpty();
+
+		for (SchemaColumn metadata : this.schema.metadataColumns) {
+			Optional<ColumnMetadata> column = tableMetadata.getColumn(metadata.name());
+			if (column.isPresent()) {
+
+				Preconditions.checkArgument(column.get().getType().equals(metadata.type()),
+						"Cannot change type on metadata column %s from %s to %s", metadata.name(),
+						column.get().getType(), metadata.type());
+			}
+			else {
+				newColumns.add(metadata);
+			}
+		}
+
+		if (!newColumns.isEmpty() || addContent || addEmbedding) {
+			AlterTableAddColumn alterTable = SchemaBuilder.alterTable(this.schema.keyspace, this.schema.table);
+			for (SchemaColumn metadata : newColumns) {
+				alterTable = alterTable.addColumn(metadata.name(), metadata.type());
+			}
+			if (addContent) {
+				alterTable = alterTable.addColumn(this.schema.content, DataTypes.TEXT);
+			}
+			if (addEmbedding) {
+				// special case for embedding column, bc JAVA-3118, as above
+				StringBuilder alterTableStmt = new StringBuilder(((BuildableQuery) alterTable).asCql());
+				if (newColumns.isEmpty() && !addContent) {
+					alterTableStmt.append(" ADD (");
+				}
+				else {
+					alterTableStmt.setLength(alterTableStmt.length() - 1);
+					alterTableStmt.append(',');
+				}
+				alterTableStmt.append(this.schema.embedding)
+					.append(" vector<float,")
+					.append(vectorDimension)
+					.append(">)");
+
+				logger.debug("Executing {}", alterTableStmt.toString());
+				this.session.execute(alterTableStmt.toString());
+			}
+			else {
+				SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
+				logger.debug("Executing {}", stmt.getQuery());
+				this.session.execute(stmt);
+			}
+		}
+	}
+
+	public enum SchemaColumnTags {
+
+		INDEXED
+
+	}
+
+	/**
+	 * Given a string document id, return the value for each primary key column.
+	 *
+	 * It is a requirement that an empty {@code List<Object>} returns an example formatted
+	 * id
+	 */
+	public interface DocumentIdTranslator extends Function<String, List<Object>> {
+
+	}
+
+	/** Given a list of primary key column values, return the document id. */
+	public interface PrimaryKeyTranslator extends Function<List<Object>, String> {
+
+	}
+
+	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys,
+			String content, String embedding, String index, Set<SchemaColumn> metadataColumns) {
+
+	}
+
+	public record SchemaColumn(String name, DataType type, SchemaColumnTags... tags) {
+
+		public SchemaColumn(String name, DataType type) {
+			this(name, type, new SchemaColumnTags[0]);
+		}
+
+		public GenericType<Object> javaType() {
+			return CodecRegistry.DEFAULT.codecFor(this.type).getJavaType();
+		}
+
+		public boolean indexed() {
+			for (SchemaColumnTags t : this.tags) {
+				if (SchemaColumnTags.INDEXED == t) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 	}
 
 	public static class Builder {
@@ -381,185 +562,6 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 			return new CassandraVectorStoreConfig(this);
 		}
 
-	}
-
-	void ensureSchemaExists(int vectorDimension) {
-		if (!this.disallowSchemaChanges) {
-			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
-			ensureTableExists(vectorDimension);
-			ensureTableColumnsExist(vectorDimension);
-			ensureIndexesExists();
-			SchemaUtil.checkSchemaAgreement(session);
-		}
-		else {
-			checkSchemaValid(vectorDimension);
-		}
-	}
-
-	void checkSchemaValid(int vectorDimension) {
-
-		Preconditions.checkState(this.session.getMetadata().getKeyspace(this.schema.keyspace).isPresent(),
-				"keyspace %s does not exist", this.schema.keyspace);
-
-		Preconditions.checkState(this.session.getMetadata()
-			.getKeyspace(this.schema.keyspace)
-			.get()
-			.getTable(this.schema.table)
-			.isPresent(), "table %s does not exist");
-
-		TableMetadata tableMetadata = this.session.getMetadata()
-			.getKeyspace(this.schema.keyspace)
-			.get()
-			.getTable(this.schema.table)
-			.get();
-
-		Preconditions.checkState(tableMetadata.getColumn(this.schema.content).isPresent(), "column %s does not exist",
-				this.schema.content);
-
-		Preconditions.checkState(tableMetadata.getColumn(this.schema.embedding).isPresent(), "column %s does not exist",
-				this.schema.embedding);
-
-		for (SchemaColumn m : this.schema.metadataColumns) {
-			Optional<ColumnMetadata> column = tableMetadata.getColumn(m.name());
-			Preconditions.checkState(column.isPresent(), "column %s does not exist", m.name());
-
-			Preconditions.checkArgument(column.get().getType().equals(m.type()),
-					"Mismatching type on metadata column %s of %s vs %s", m.name(), column.get().getType(), m.type());
-
-			if (m.indexed()) {
-				Preconditions.checkState(
-						tableMetadata.getIndexes().values().stream().anyMatch((i) -> i.getTarget().equals(m.name())),
-						"index %s does not exist", m.name());
-			}
-		}
-
-	}
-
-	private void ensureIndexesExists() {
-		{
-			SimpleStatement indexStmt = SchemaBuilder.createIndex(this.schema.index)
-				.ifNotExists()
-				.custom("StorageAttachedIndex")
-				.onTable(this.schema.keyspace, this.schema.table)
-				.andColumn(this.schema.embedding)
-				.build();
-
-			logger.debug("Executing {}", indexStmt.getQuery());
-			this.session.execute(indexStmt);
-		}
-		Stream
-			.concat(this.schema.partitionKeys.stream(),
-					Stream.concat(this.schema.clusteringKeys.stream(), this.schema.metadataColumns.stream()))
-			.filter((cs) -> cs.indexed())
-			.forEach((metadata) -> {
-
-				SimpleStatement indexStmt = SchemaBuilder.createIndex(String.format("%s_idx", metadata.name()))
-					.ifNotExists()
-					.custom("StorageAttachedIndex")
-					.onTable(this.schema.keyspace, this.schema.table)
-					.andColumn(metadata.name())
-					.build();
-
-				logger.debug("Executing {}", indexStmt.getQuery());
-				this.session.execute(indexStmt);
-			});
-	}
-
-	private void ensureTableExists(int vectorDimension) {
-		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).get().getTable(this.schema.table).isEmpty()) {
-
-			CreateTable createTable = null;
-
-			CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
-				.ifNotExists();
-
-			for (SchemaColumn partitionKey : this.schema.partitionKeys) {
-				createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
-						partitionKey.type);
-			}
-			for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
-				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
-			}
-
-			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
-
-			for (SchemaColumn metadata : this.schema.metadataColumns) {
-				createTable = createTable.withColumn(metadata.name(), metadata.type());
-			}
-
-			// https://datastax-oss.atlassian.net/browse/JAVA-3118
-			// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
-			// vectorDimension));
-
-			StringBuilder tableStmt = new StringBuilder(createTable.asCql());
-			tableStmt.setLength(tableStmt.length() - 1);
-			tableStmt.append(',')
-				.append(this.schema.embedding)
-				.append(" vector<float,")
-				.append(vectorDimension)
-				.append(">)");
-			logger.debug("Executing {}", tableStmt.toString());
-			this.session.execute(tableStmt.toString());
-		}
-	}
-
-	private void ensureTableColumnsExist(int vectorDimension) {
-
-		TableMetadata tableMetadata = this.session.getMetadata()
-			.getKeyspace(this.schema.keyspace)
-			.get()
-			.getTable(this.schema.table)
-			.get();
-
-		Set<SchemaColumn> newColumns = new HashSet<>();
-		boolean addContent = tableMetadata.getColumn(this.schema.content).isEmpty();
-		boolean addEmbedding = tableMetadata.getColumn(this.schema.embedding).isEmpty();
-
-		for (SchemaColumn metadata : this.schema.metadataColumns) {
-			Optional<ColumnMetadata> column = tableMetadata.getColumn(metadata.name());
-			if (column.isPresent()) {
-
-				Preconditions.checkArgument(column.get().getType().equals(metadata.type()),
-						"Cannot change type on metadata column %s from %s to %s", metadata.name(),
-						column.get().getType(), metadata.type());
-			}
-			else {
-				newColumns.add(metadata);
-			}
-		}
-
-		if (!newColumns.isEmpty() || addContent || addEmbedding) {
-			AlterTableAddColumn alterTable = SchemaBuilder.alterTable(this.schema.keyspace, this.schema.table);
-			for (SchemaColumn metadata : newColumns) {
-				alterTable = alterTable.addColumn(metadata.name(), metadata.type());
-			}
-			if (addContent) {
-				alterTable = alterTable.addColumn(this.schema.content, DataTypes.TEXT);
-			}
-			if (addEmbedding) {
-				// special case for embedding column, bc JAVA-3118, as above
-				StringBuilder alterTableStmt = new StringBuilder(((BuildableQuery) alterTable).asCql());
-				if (newColumns.isEmpty() && !addContent) {
-					alterTableStmt.append(" ADD (");
-				}
-				else {
-					alterTableStmt.setLength(alterTableStmt.length() - 1);
-					alterTableStmt.append(',');
-				}
-				alterTableStmt.append(this.schema.embedding)
-					.append(" vector<float,")
-					.append(vectorDimension)
-					.append(">)");
-
-				logger.debug("Executing {}", alterTableStmt.toString());
-				this.session.execute(alterTableStmt.toString());
-			}
-			else {
-				SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
-				logger.debug("Executing {}", stmt.getQuery());
-				this.session.execute(stmt);
-			}
-		}
 	}
 
 }

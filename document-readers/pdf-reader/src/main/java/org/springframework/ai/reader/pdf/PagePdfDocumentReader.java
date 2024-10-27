@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader.pdf;
 
-import java.awt.Rectangle;
+import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +25,9 @@ import java.util.stream.Collectors;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
@@ -46,21 +47,21 @@ import org.springframework.util.StringUtils;
  */
 public class PagePdfDocumentReader implements DocumentReader {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-
-	private static final String PDF_PAGE_REGION = "pdfPageRegion";
-
 	public static final String METADATA_START_PAGE_NUMBER = "page_number";
 
 	public static final String METADATA_END_PAGE_NUMBER = "end_page_number";
 
 	public static final String METADATA_FILE_NAME = "file_name";
 
+	private static final String PDF_PAGE_REGION = "pdfPageRegion";
+
 	protected final PDDocument document;
 
-	private PdfDocumentReaderConfig config;
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected String resourceFileName;
+
+	private PdfDocumentReaderConfig config;
 
 	public PagePdfDocumentReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
@@ -103,15 +104,15 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 			int totalPages = this.document.getDocumentCatalog().getPages().getCount();
 			int logFrequency = totalPages > 10 ? totalPages / 10 : 1; // if less than 10
-																		// pages, print
-																		// each iteration
+			// pages, print
+			// each iteration
 			int counter = 0;
 
 			PDPage lastPage = this.document.getDocumentCatalog().getPages().iterator().next();
 			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
 				lastPage = page;
 				if (counter % logFrequency == 0 && counter / logFrequency < 10) {
-					logger.info("Processing PDF page: {}", (counter + 1));
+					this.logger.info("Processing PDF page: {}", (counter + 1));
 				}
 				counter++;
 
@@ -153,7 +154,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 				readDocuments.add(toDocument(lastPage, pageTextGroupList.stream().collect(Collectors.joining()),
 						startPageNumber, pageNumber));
 			}
-			logger.info("Processing {} pages", totalPages);
+			this.logger.info("Processing {} pages", totalPages);
 			return readDocuments;
 
 		}

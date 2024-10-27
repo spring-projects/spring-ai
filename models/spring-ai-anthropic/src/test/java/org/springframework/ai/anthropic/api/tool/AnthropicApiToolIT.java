@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.anthropic.api.tool;
 
 import java.util.ArrayList;
@@ -26,11 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
+import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
-import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.Tool;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -53,15 +54,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("null")
 public class AnthropicApiToolIT {
 
+	public static final ConcurrentHashMap<String, Function> FUNCTIONS = new ConcurrentHashMap<>();
+
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiLegacyToolIT.class);
 
 	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
-
-	public static final ConcurrentHashMap<String, Function> FUNCTIONS = new ConcurrentHashMap<>();
-
-	static {
-		FUNCTIONS.put("getCurrentWeather", new MockWeatherService());
-	}
 
 	List<Tool> tools = List.of(new Tool("getCurrentWeather",
 			"Get the weather in location. Return temperature in 30°F or 30°C format.", ModelOptionsUtils.jsonToMap("""
@@ -109,10 +106,10 @@ public class AnthropicApiToolIT {
 			.withMessages(messageConversation)
 			.withMaxTokens(1500)
 			.withTemperature(0.8)
-			.withTools(tools)
+			.withTools(this.tools)
 			.build();
 
-		ResponseEntity<ChatCompletionResponse> response = anthropicApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi.chatCompletionEntity(chatCompletionRequest);
 
 		List<ContentBlock> toolToUseList = response.getBody()
 			.content()
@@ -153,6 +150,10 @@ public class AnthropicApiToolIT {
 		messageConversation.add(new AnthropicMessage(toolResults, Role.USER));
 
 		return doCall(messageConversation);
+	}
+
+	static {
+		FUNCTIONS.put("getCurrentWeather", new MockWeatherService());
 	}
 
 }

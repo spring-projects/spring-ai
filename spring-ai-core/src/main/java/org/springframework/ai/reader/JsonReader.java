@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Collections;
 import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -37,7 +37,7 @@ import org.springframework.core.io.Resource;
  *
  * @author Mark Pollack
  * @author Christian Tzolov
- * @author rivkode
+ * @author rivkode rivkode
  * @since 1.0.0
  */
 public class JsonReader implements DocumentReader {
@@ -73,15 +73,15 @@ public class JsonReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try {
-			JsonNode rootNode = objectMapper.readTree(this.resource.getInputStream());
+			JsonNode rootNode = this.objectMapper.readTree(this.resource.getInputStream());
 
 			if (rootNode.isArray()) {
 				return StreamSupport.stream(rootNode.spliterator(), true)
-					.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
+					.map(jsonNode -> parseJsonNode(jsonNode, this.objectMapper))
 					.toList();
 			}
 			else {
-				return Collections.singletonList(parseJsonNode(rootNode, objectMapper));
+				return Collections.singletonList(parseJsonNode(rootNode, this.objectMapper));
 			}
 		}
 		catch (IOException e) {
@@ -91,12 +91,13 @@ public class JsonReader implements DocumentReader {
 
 	private Document parseJsonNode(JsonNode jsonNode, ObjectMapper objectMapper) {
 		Map<String, Object> item = objectMapper.convertValue(jsonNode, new TypeReference<Map<String, Object>>() {
+
 		});
 		var sb = new StringBuilder();
 
-		jsonKeysToUse.stream().filter(item::containsKey).forEach(key -> {
-			sb.append(key).append(": ").append(item.get(key)).append(System.lineSeparator());
-		});
+		this.jsonKeysToUse.stream()
+			.filter(item::containsKey)
+			.forEach(key -> sb.append(key).append(": ").append(item.get(key)).append(System.lineSeparator()));
 
 		Map<String, Object> metadata = this.jsonMetadataGenerator.generate(item);
 		String content = sb.isEmpty() ? item.toString() : sb.toString();
@@ -106,11 +107,11 @@ public class JsonReader implements DocumentReader {
 	protected List<Document> get(JsonNode rootNode) {
 		if (rootNode.isArray()) {
 			return StreamSupport.stream(rootNode.spliterator(), true)
-				.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
+				.map(jsonNode -> parseJsonNode(jsonNode, this.objectMapper))
 				.toList();
 		}
 		else {
-			return Collections.singletonList(parseJsonNode(rootNode, objectMapper));
+			return Collections.singletonList(parseJsonNode(rootNode, this.objectMapper));
 		}
 	}
 
@@ -122,7 +123,7 @@ public class JsonReader implements DocumentReader {
 	 */
 	public List<Document> get(String pointer) {
 		try {
-			JsonNode rootNode = objectMapper.readTree(this.resource.getInputStream());
+			JsonNode rootNode = this.objectMapper.readTree(this.resource.getInputStream());
 			JsonNode targetNode = rootNode.at(pointer);
 
 			if (targetNode.isMissingNode()) {

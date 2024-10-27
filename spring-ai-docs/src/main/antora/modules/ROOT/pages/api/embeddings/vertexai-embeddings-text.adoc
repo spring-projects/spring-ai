@@ -54,7 +54,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that lets you connect to VertexAI Embedding API.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -66,7 +66,7 @@ The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that l
 
 The prefix `spring.ai.vertex.ai.embedding.text` is the property prefix that lets you configure the embedding model implementation for VertexAI Text Embedding.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -154,9 +154,9 @@ VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
     .withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
     .build();
 
-var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, options);
+var embeddingModel = new VertexAiTextEmbeddingModel(this.connectionDetails, this.options);
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

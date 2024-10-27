@@ -189,6 +189,7 @@ node.`metadata.author` IN ["john","jill"] AND node.`metadata.'article_type'` = "
 
 You can use the following properties in your Spring Boot configuration to customize the Neo4j vector store.
 
+[stripes=even]
 |===
 |Property|Default value
 

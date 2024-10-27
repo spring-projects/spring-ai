@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.audio.api;
 
 import java.io.File;
@@ -23,10 +24,10 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest;
-import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest;
-import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
-import org.springframework.ai.openai.api.OpenAiAudioApi.TranslationRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
+import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
+import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest;
+import org.springframework.ai.openai.api.OpenAiAudioApi.TranslationRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TtsModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi.WhisperModel;
 import org.springframework.util.FileCopyUtils;
@@ -45,7 +46,7 @@ public class OpenAiAudioApiIT {
 	@Test
 	void speechTranscriptionAndTranslation() throws IOException {
 
-		byte[] speech = audioApi
+		byte[] speech = this.audioApi
 			.createSpeech(SpeechRequest.builder()
 				.withModel(TtsModel.TTS_1_HD.getValue())
 				.withInput("Hello, my name is Chris and I love Spring A.I.")
@@ -57,7 +58,7 @@ public class OpenAiAudioApiIT {
 
 		FileCopyUtils.copy(speech, new File("target/speech.mp3"));
 
-		StructuredResponse translation = audioApi
+		StructuredResponse translation = this.audioApi
 			.createTranslation(
 					TranslationRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
 					StructuredResponse.class)
@@ -65,7 +66,7 @@ public class OpenAiAudioApiIT {
 
 		assertThat(translation.text().replaceAll(",", "")).isEqualTo("Hello my name is Chris and I love Spring AI.");
 
-		StructuredResponse transcriptionEnglish = audioApi.createTranscription(
+		StructuredResponse transcriptionEnglish = this.audioApi.createTranscription(
 				TranscriptionRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
 				StructuredResponse.class)
 			.getBody();
@@ -73,7 +74,7 @@ public class OpenAiAudioApiIT {
 		assertThat(transcriptionEnglish.text().replaceAll(",", ""))
 			.isEqualTo("Hello my name is Chris and I love Spring AI.");
 
-		StructuredResponse transcriptionDutch = audioApi
+		StructuredResponse transcriptionDutch = this.audioApi
 			.createTranscription(TranscriptionRequest.builder().withFile(speech).withLanguage("nl").build(),
 					StructuredResponse.class)
 			.getBody();

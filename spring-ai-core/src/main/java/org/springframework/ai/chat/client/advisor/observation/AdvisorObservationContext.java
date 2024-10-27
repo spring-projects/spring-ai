@@ -1,29 +1,30 @@
 /*
-* Copyright 2024 - 2024 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.chat.client.advisor.observation;
 
 import java.util.Map;
+
+import io.micrometer.observation.Observation;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import io.micrometer.observation.Observation;
 
 /**
  * Context used to store metadata for chat client advisors.
@@ -34,15 +35,14 @@ import io.micrometer.observation.Observation;
  */
 public class AdvisorObservationContext extends Observation.Context {
 
-	public enum Type {
-
-		BEFORE, AFTER, AROUND
-
-	}
-
 	private final String advisorName;
 
 	private final Type advisorType;
+
+	/**
+	 * The order of the advisor in the advisor chain.
+	 */
+	private final int order;
 
 	/**
 	 * The {@link AdvisedRequest} data to be advised. Represents the row
@@ -65,11 +65,6 @@ public class AdvisorObservationContext extends Observation.Context {
 	@Nullable
 	private Map<String, Object> advisorResponseContext;
 
-	/**
-	 * The order of the advisor in the advisor chain.
-	 */
-	private final int order;
-
 	public AdvisorObservationContext(String advisorName, Type advisorType, @Nullable AdvisedRequest advisorRequest,
 			@Nullable Map<String, Object> advisorRequestContext, @Nullable Map<String, Object> advisorResponseContext,
 			int order) {
@@ -82,6 +77,10 @@ public class AdvisorObservationContext extends Observation.Context {
 		this.advisorRequestContext = advisorRequestContext;
 		this.advisorResponseContext = advisorResponseContext;
 		this.order = order;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public String getAdvisorName() {
@@ -123,8 +122,10 @@ public class AdvisorObservationContext extends Observation.Context {
 		return this.order;
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	public enum Type {
+
+		BEFORE, AFTER, AROUND
+
 	}
 
 	public static class Builder {
@@ -172,8 +173,8 @@ public class AdvisorObservationContext extends Observation.Context {
 		}
 
 		public AdvisorObservationContext build() {
-			return new AdvisorObservationContext(advisorName, advisorType, advisorRequest, advisorRequestContext,
-					advisorResponseContext, order);
+			return new AdvisorObservationContext(this.advisorName, this.advisorType, this.advisorRequest,
+					this.advisorRequestContext, this.advisorResponseContext, this.order);
 		}
 
 	}

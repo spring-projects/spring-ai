@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.moderation;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.moderation.*;
+
+import org.springframework.ai.moderation.Categories;
+import org.springframework.ai.moderation.CategoryScores;
+import org.springframework.ai.moderation.Moderation;
+import org.springframework.ai.moderation.ModerationOptionsBuilder;
+import org.springframework.ai.moderation.ModerationPrompt;
+import org.springframework.ai.moderation.ModerationResponse;
+import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,7 +50,7 @@ public class OpenAiModerationModelIT extends AbstractIT {
 
 		ModerationPrompt moderationPrompt = new ModerationPrompt(instructions, options);
 
-		ModerationResponse moderationResponse = openAiModerationModel.call(moderationPrompt);
+		ModerationResponse moderationResponse = this.openAiModerationModel.call(moderationPrompt);
 
 		assertThat(moderationResponse.getResults()).hasSize(1);
 
@@ -96,7 +104,7 @@ public class OpenAiModerationModelIT extends AbstractIT {
 
 		ModerationPrompt moderationPrompt = new ModerationPrompt(instructions, options);
 
-		ModerationResponse moderationResponse = openAiModerationModel.call(moderationPrompt);
+		ModerationResponse moderationResponse = this.openAiModerationModel.call(moderationPrompt);
 
 		assertThat(moderationResponse.getResults()).hasSize(1);
 

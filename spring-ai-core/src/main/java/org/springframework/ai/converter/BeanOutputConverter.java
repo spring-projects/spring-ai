@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,18 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.converter;
 
-import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
-import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12;
+package org.springframework.ai.converter;
 
 import java.lang.reflect.Type;
 import java.util.Objects;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.lang.NonNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -34,17 +27,23 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.lang.NonNull;
 
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
- * to a specific object type using JSON schema. This parser works by generating a JSON
+ * to a specific object type using JSON schema. This converter works by generating a JSON
  * schema based on a given Java class or parameterized type reference, which is then used
  * to validate and transform the LLM output into the desired type.
  *
@@ -54,23 +53,22 @@ import com.github.victools.jsonschema.module.jackson.JacksonOption;
  * @author Sebastian Ullrich
  * @author Kirk Lund
  * @author Josh Long
+ * @author Sebastien Deleuze
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
 
-	/** Holds the generated JSON schema for the target type. */
-	private String jsonSchema;
-
 	/**
 	 * The target class type reference to which the output will be converted.
 	 */
-	@SuppressWarnings({ "FieldMayBeFinal" })
-	private TypeReference<T> typeRef;
+	private final TypeReference<T> typeRef;
 
 	/** The object mapper used for deserialization and other JSON operations. */
-	@SuppressWarnings("FieldMayBeFinal")
-	private ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
+
+	/** Holds the generated JSON schema for the target type. */
+	private String jsonSchema;
 
 	/**
 	 * Constructor to initialize with the target type's class.
@@ -109,21 +107,6 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 		this(new CustomizedTypeReference<>(typeRef), objectMapper);
 	}
 
-	private static class CustomizedTypeReference<T> extends TypeReference<T> {
-
-		private final Type type;
-
-		CustomizedTypeReference(ParameterizedTypeReference<T> typeRef) {
-			this.type = typeRef.getType();
-		}
-
-		@Override
-		public Type getType() {
-			return this.type;
-		}
-
-	}
-
 	/**
 	 * Constructor to initialize with the target class type reference, a custom object
 	 * mapper, and a line endings normalizer to ensure consistent line endings on any
@@ -143,13 +126,15 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	private void generateSchema() {
 		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(DRAFT_2020_12, PLAIN_JSON)
+		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
+				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
+				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.typeRef.getType());
-		ObjectWriter objectWriter = new ObjectMapper().writer(new DefaultPrettyPrinter()
+		ObjectWriter objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter()
 			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
@@ -201,10 +186,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @return Configured object mapper.
 	 */
 	protected ObjectMapper getObjectMapper() {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.registerModule(new JavaTimeModule());
-		return mapper;
+		return JsonMapper.builder()
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			.build();
 	}
 
 	/**
@@ -231,6 +216,21 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public String getJsonSchema() {
 		return this.jsonSchema;
+	}
+
+	private static class CustomizedTypeReference<T> extends TypeReference<T> {
+
+		private final Type type;
+
+		CustomizedTypeReference(ParameterizedTypeReference<T> typeRef) {
+			this.type = typeRef.getType();
+		}
+
+		@Override
+		public Type getType() {
+			return this.type;
+		}
+
 	}
 
 }

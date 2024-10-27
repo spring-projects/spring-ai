@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.moonshot;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -60,14 +70,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Geng Rong
@@ -156,6 +158,21 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
+	}
+
+	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
+				: choice.message()
+					.toolCalls()
+					.stream()
+					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+							toolCall.function().name(), toolCall.function().arguments()))
+					.toList();
+
+		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		return new Generation(assistantMessage, generationMetadata);
 	}
 
 	@Override
@@ -303,21 +320,6 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 			.withModel(result.model() != null ? result.model() : "")
 			.withKeyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
-	}
-
-	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
-		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
-					.stream()
-					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-							toolCall.function().name(), toolCall.function().arguments()))
-					.toList();
-
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
-		return new Generation(assistantMessage, generationMetadata);
 	}
 
 	/**

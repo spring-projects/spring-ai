@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader;
 
 import java.util.Map;
@@ -23,6 +24,8 @@ public interface JsonMetadataGenerator {
 	/**
 	 * The input is the JSON document represented as a map, the output are the fields
 	 * extracted from the input map that will be used as metadata.
+	 * @param jsonMap json document map
+	 * @return json metadata map
 	 */
 	Map<String, Object> generate(Map<String, Object> jsonMap);
 

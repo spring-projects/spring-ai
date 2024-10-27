@@ -40,7 +40,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.oci.genai` is the property prefix to configure the connection to OCI GenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -60,7 +60,7 @@ The prefix `spring.ai.oci.genai` is the property prefix to configure the connect
 
 The prefix `spring.ai.oci.genai.embedding` is the property prefix that configures the `EmbeddingModel` implementation for OCI GenAI
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -159,15 +159,15 @@ final String REGION = "us-chicago-1";
 final String COMPARTMENT_ID = System.getenv("OCI_COMPARTMENT_ID");
 
 var authProvider = new ConfigFileAuthenticationDetailsProvider(
-        CONFIG_FILE, PROFILE);
+		this.CONFIG_FILE, this.PROFILE);
 var aiClient = GenerativeAiInferenceClient.builder()
-    .region(Region.valueOf(REGION))
-    .build(authProvider);
+    .region(Region.valueOf(this.REGION))
+    .build(this.authProvider);
 var options = OCIEmbeddingOptions.builder()
-    .withModel(EMBEDDING_MODEL)
-    .withCompartment(COMPARTMENT_ID)
+    .withModel(this.EMBEDDING_MODEL)
+    .withCompartment(this.COMPARTMENT_ID)
     .withServingMode("on-demand")
     .build();
-var embeddingModel = new OCIEmbeddingModel(aiClient, options);
-List<Double> embedding = embeddingModel.embed(new Document("How many provinces are in Canada?"));
+var embeddingModel = new OCIEmbeddingModel(this.aiClient, this.options);
+List<Double> embedding = this.embeddingModel.embed(new Document("How many provinces are in Canada?"));
 ----

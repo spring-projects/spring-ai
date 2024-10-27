@@ -15,26 +15,28 @@
  */
 package org.springframework.ai.vectorstore;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micrometer.observation.ObservationRegistry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * The <b>SAP HANA Cloud vector engine</b> offers multiple use cases in AI scenarios.
@@ -64,6 +66,7 @@ import java.util.stream.Collectors;
  *
  * @author Rahul Mittal
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  * @see <a href=
  * "https://help.sap.com/docs/hana-cloud-database/sap-hana-cloud-sap-hana-database-vector-engine-guide/introduction">SAP
  * HANA Database Vector Engine Guide</a>
@@ -78,6 +81,8 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	private final EmbeddingModel embeddingModel;
 
 	private final HanaCloudVectorStoreConfig config;
+
+	private final ObjectMapper objectMapper;
 
 	public HanaCloudVectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
 			EmbeddingModel embeddingModel, HanaCloudVectorStoreConfig config) {
@@ -94,6 +99,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		this.repository = repository;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
 	@Override
@@ -142,7 +148,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 		return searchResult.stream().map(c -> {
 			try {
-				return new Document(c.get_id(), c.toJson(), Collections.emptyMap());
+				return new Document(c.get_id(), this.objectMapper.writeValueAsString(c), Collections.emptyMap());
 			}
 			catch (JsonProcessingException e) {
 				throw new RuntimeException(e);

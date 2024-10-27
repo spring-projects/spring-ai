@@ -1,4 +1,22 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.azure.openai;
+
+import java.util.List;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ImageGenerationOptions;
@@ -10,9 +28,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageGenerationMetadata;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageResponseMetadata;
 import org.springframework.ai.image.Image;
@@ -22,9 +41,8 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
-
-import java.util.List;
 
 import static java.lang.String.format;
 
@@ -33,6 +51,7 @@ import static java.lang.String.format;
  * {@link OpenAIClient}.
  *
  * @author Benoit Moussaud
+ * @author Sebastien Deleuze
  * @see ImageModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -47,6 +66,8 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private final AzureOpenAiImageOptions defaultOptions;
 
+	private final ObjectMapper objectMapper;
+
 	public AzureOpenAiImageModel(OpenAIClient openAIClient) {
 		this(openAIClient, AzureOpenAiImageOptions.builder().withDeploymentName(DEFAULT_DEPLOYMENT_NAME).build());
 	}
@@ -56,25 +77,30 @@ public class AzureOpenAiImageModel implements ImageModel {
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
 		this.defaultOptions = options;
+		this.objectMapper = JsonMapper.builder()
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.build();
 	}
 
 	public AzureOpenAiImageOptions getDefaultOptions() {
-		return defaultOptions;
+		return this.defaultOptions;
 	}
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
 		ImageGenerationOptions imageGenerationOptions = toOpenAiImageOptions(imagePrompt);
 		String deploymentOrModelName = getDeploymentName(imagePrompt);
-		if (logger.isTraceEnabled()) {
-			logger.trace("Azure ImageGenerationOptions call {} with the following options : {} ", deploymentOrModelName,
-					toPrettyJson(imageGenerationOptions));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace("Azure ImageGenerationOptions call {} with the following options : {} ",
+					deploymentOrModelName, toPrettyJson(imageGenerationOptions));
 		}
 
-		var images = openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions);
+		var images = this.openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions);
 
-		if (logger.isTraceEnabled()) {
-			logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
 		}
 
 		List<ImageGeneration> imageGenerations = images.getData().stream().map(entry -> {
@@ -88,11 +114,8 @@ public class AzureOpenAiImageModel implements ImageModel {
 	}
 
 	private String toPrettyJson(Object object) {
-		ObjectMapper objectMapper = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.registerModule(new JavaTimeModule());
 		try {
-			return objectMapper.writeValueAsString(object);
+			return this.objectMapper.writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			return "JsonProcessingException:" + e + " [" + object.toString() + "]";

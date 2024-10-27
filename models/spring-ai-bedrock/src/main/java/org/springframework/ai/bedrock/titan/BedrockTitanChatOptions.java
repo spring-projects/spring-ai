@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
@@ -20,10 +21,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Christian Tzolov
@@ -59,39 +59,17 @@ public class BedrockTitanChatOptions implements ChatOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private BedrockTitanChatOptions options = new BedrockTitanChatOptions();
-
-		public Builder withTemperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public Builder withMaxTokenCount(Integer maxTokenCount) {
-			this.options.maxTokenCount = maxTokenCount;
-			return this;
-		}
-
-		public Builder withStopSequences(List<String> stopSequences) {
-			this.options.stopSequences = stopSequences;
-			return this;
-		}
-
-		public BedrockTitanChatOptions build() {
-			return this.options;
-		}
-
+	public static BedrockTitanChatOptions fromOptions(BedrockTitanChatOptions fromOptions) {
+		return builder().withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withMaxTokenCount(fromOptions.getMaxTokenCount())
+			.withStopSequences(fromOptions.getStopSequences())
+			.build();
 	}
 
 	@Override
 	public Double getTemperature() {
-		return temperature;
+		return this.temperature;
 	}
 
 	public void setTemperature(Double temperature) {
@@ -100,7 +78,7 @@ public class BedrockTitanChatOptions implements ChatOptions {
 
 	@Override
 	public Double getTopP() {
-		return topP;
+		return this.topP;
 	}
 
 	public void setTopP(Double topP) {
@@ -119,7 +97,7 @@ public class BedrockTitanChatOptions implements ChatOptions {
 	}
 
 	public Integer getMaxTokenCount() {
-		return maxTokenCount;
+		return this.maxTokenCount;
 	}
 
 	public void setMaxTokenCount(Integer maxTokenCount) {
@@ -128,7 +106,7 @@ public class BedrockTitanChatOptions implements ChatOptions {
 
 	@Override
 	public List<String> getStopSequences() {
-		return stopSequences;
+		return this.stopSequences;
 	}
 
 	public void setStopSequences(List<String> stopSequences) {
@@ -164,12 +142,34 @@ public class BedrockTitanChatOptions implements ChatOptions {
 		return fromOptions(this);
 	}
 
-	public static BedrockTitanChatOptions fromOptions(BedrockTitanChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withMaxTokenCount(fromOptions.getMaxTokenCount())
-			.withStopSequences(fromOptions.getStopSequences())
-			.build();
+	public static class Builder {
+
+		private BedrockTitanChatOptions options = new BedrockTitanChatOptions();
+
+		public Builder withTemperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder withTopP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder withMaxTokenCount(Integer maxTokenCount) {
+			this.options.maxTokenCount = maxTokenCount;
+			return this;
+		}
+
+		public Builder withStopSequences(List<String> stopSequences) {
+			this.options.stopSequences = stopSequences;
+			return this;
+		}
+
+		public BedrockTitanChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

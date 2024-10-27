@@ -125,7 +125,7 @@ List<Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ----
 
 [[pgvector-properties]]
@@ -133,7 +133,7 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sprin
 
 You can use the following properties in your Spring Boot configuration to customize the PGVector vector store.
 
-[cols="2,5,1"]
+[cols="2,5,1",stripes=even]
 |===
 |Property| Description | Default value
 

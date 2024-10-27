@@ -24,8 +24,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the OpenAI Chat Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -34,14 +38,15 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -51,7 +56,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI chat model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -68,7 +73,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -85,7 +90,7 @@ Usage from these API requests will count as usage for the specified organization
 
 The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat model implementation for OpenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -173,9 +178,9 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 var imageResource = new ClassPathResource("/multimodal.test.png");
 
 var userMessage = new UserMessage("Explain what do you see on this picture?",
-        new Media(MimeTypeUtils.IMAGE_PNG, imageResource));
+        new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
         OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
@@ -187,9 +192,9 @@ or the image URL equivalent using the `gpt-4o` model:
 ----
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG,
-                "https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"));
+                "https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"));
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
         OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
@@ -253,10 +258,10 @@ String jsonSchema = """
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OpenAiChatOptions.builder()
             .withModel(ChatModel.GPT_4_O_MINI)
-            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
             .build());
 
-ChatResponse response = this.openAiChatModel.call(prompt);
+ChatResponse response = this.openAiChatModel.call(this.prompt);
 ----
 
 NOTE: Adhere to the OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/supported-schemas[subset of the JSON Schema language] format.
@@ -283,18 +288,18 @@ record MathReasoning(
 
 var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 
-var jsonSchema = outputConverter.getJsonSchema();
+var jsonSchema = this.outputConverter.getJsonSchema();
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OpenAiChatOptions.builder()
             .withModel(ChatModel.GPT_4_O_MINI)
-            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
             .build());
 
-ChatResponse response = this.openAiChatModel.call(prompt);
-String content = response.getResult().getOutput().getContent();
+ChatResponse response = this.openAiChatModel.call(this.prompt);
+String content = this.response.getResult().getOutput().getContent();
 
-MathReasoning mathReasoning = outputConverter.convert(content);
+MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 ----
 
 NOTE: Ensure you use the `@JsonProperty(required = true,...)` annotation. 
@@ -348,13 +353,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map<String,String> generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -394,13 +399,13 @@ var openAiChatOptions = OpenAiChatOptions.builder()
             .withTemperature(0.4)
             .withMaxTokens(200)
             .build();
-var chatModel = new OpenAiChatModel(openAiApi, openAiChatOptions);
+var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -426,12 +431,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = openAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, false));
+ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = openAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, true));
+Flux<ChatCompletionChunk> streamResponse = this.openAiApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi.java]'s JavaDoc for further information.

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.embedding;
 
 import java.io.IOException;
 
-import org.springframework.util.StringUtils;
-
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
+
+import org.springframework.util.StringUtils;
 
 /**
  * VertexAiEmbeddingConnectionDetails represents the details of a connection to the Vertex
@@ -33,15 +34,13 @@ import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
  */
 public class VertexAiEmbeddingConnectionDetails {
 
-	private static final String DEFAULT_LOCATION = "us-central1";
-
 	public static final String DEFAULT_ENDPOINT = "us-central1-aiplatform.googleapis.com:443";
 
 	public static final String DEFAULT_ENDPOINT_SUFFIX = "-aiplatform.googleapis.com:443";
 
 	public static final String DEFAULT_PUBLISHER = "google";
 
-	private PredictionServiceSettings predictionServiceSettings;
+	private static final String DEFAULT_LOCATION = "us-central1";
 
 	/**
 	 * Your project ID.
@@ -59,6 +58,8 @@ public class VertexAiEmbeddingConnectionDetails {
 
 	private final String publisher;
 
+	private PredictionServiceSettings predictionServiceSettings;
+
 	public VertexAiEmbeddingConnectionDetails(String endpoint, String projectId, String location, String publisher) {
 		this.projectId = projectId;
 		this.location = location;
@@ -74,6 +75,27 @@ public class VertexAiEmbeddingConnectionDetails {
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	public String getProjectId() {
+		return this.projectId;
+	}
+
+	public String getLocation() {
+		return this.location;
+	}
+
+	public String getPublisher() {
+		return this.publisher;
+	}
+
+	public EndpointName getEndpointName(String modelName) {
+		return EndpointName.ofProjectLocationPublisherModelName(this.projectId, this.location, this.publisher,
+				modelName);
+	}
+
+	public PredictionServiceSettings getPredictionServiceSettings() {
+		return this.predictionServiceSettings;
 	}
 
 	public static class Builder {
@@ -141,27 +163,6 @@ public class VertexAiEmbeddingConnectionDetails {
 			return new VertexAiEmbeddingConnectionDetails(this.endpoint, this.projectId, this.location, this.publisher);
 		}
 
-	}
-
-	public String getProjectId() {
-		return this.projectId;
-	}
-
-	public String getLocation() {
-		return this.location;
-	}
-
-	public String getPublisher() {
-		return this.publisher;
-	}
-
-	public EndpointName getEndpointName(String modelName) {
-		return EndpointName.ofProjectLocationPublisherModelName(this.projectId, this.location, this.publisher,
-				modelName);
-	}
-
-	public PredictionServiceSettings getPredictionServiceSettings() {
-		return this.predictionServiceSettings;
 	}
 
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSONObject;
 import io.micrometer.observation.ObservationRegistry;
@@ -44,6 +51,7 @@ import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -60,20 +68,12 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
  */
 public class MilvusVectorStore extends AbstractObservationVectorStore implements InitializingBean {
-
-	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
 
@@ -97,6 +97,12 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public static final List<String> SEARCH_OUTPUT_FIELDS = List.of(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
 			METADATA_FIELD_NAME);
 
+	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
+
+	private static Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(MetricType.COSINE,
+			VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN, MetricType.IP,
+			VectorStoreSimilarityMetric.DOT);
+
 	public final FilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
 
 	private final MilvusServiceClient milvusClient;
@@ -108,151 +114,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
-
-	/**
-	 * Configuration for the Milvus vector store.
-	 */
-	public static class MilvusVectorStoreConfig {
-
-		private final String databaseName;
-
-		private final String collectionName;
-
-		private final int embeddingDimension;
-
-		private final IndexType indexType;
-
-		private final MetricType metricType;
-
-		private final String indexParameters;
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		public static Builder builder() {
-
-			return new Builder();
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		public static MilvusVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		private MilvusVectorStoreConfig(Builder builder) {
-			this.databaseName = builder.databaseName;
-			this.collectionName = builder.collectionName;
-			this.embeddingDimension = builder.embeddingDimension;
-			this.indexType = builder.indexType;
-			this.metricType = builder.metricType;
-			this.indexParameters = builder.indexParameters;
-		}
-
-		public static class Builder {
-
-			private String databaseName = DEFAULT_DATABASE_NAME;
-
-			private String collectionName = DEFAULT_COLLECTION_NAME;
-
-			private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
-
-			private IndexType indexType = IndexType.IVF_FLAT;
-
-			private MetricType metricType = MetricType.COSINE;
-
-			private String indexParameters = "{\"nlist\":1024}";
-
-			private Builder() {
-			}
-
-			/**
-			 * Configures the Milvus metric type to use. Leave {@literal null} or blank to
-			 * use the metric metric: https://milvus.io/docs/metric.md#floating
-			 * @param metricType the metric type to use
-			 * @return this builder
-			 */
-			public Builder withMetricType(MetricType metricType) {
-				Assert.notNull(metricType, "Collection Name must not be empty");
-				Assert.isTrue(
-						metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
-						"Only the text metric types IP and L2 are supported");
-
-				this.metricType = metricType;
-				return this;
-			}
-
-			/**
-			 * Configures the Milvus index type to use. Leave {@literal null} or blank to
-			 * use the default index.
-			 * @param indexType the index type to use
-			 * @return this builder
-			 */
-			public Builder withIndexType(IndexType indexType) {
-				this.indexType = indexType;
-				return this;
-			}
-
-			/**
-			 * Configures the Milvus index parameters to use. Leave {@literal null} or
-			 * blank to use the default index parameters.
-			 * @param indexParameters the index parameters to use
-			 * @return this builder
-			 */
-			public Builder withIndexParameters(String indexParameters) {
-				this.indexParameters = indexParameters;
-				return this;
-			}
-
-			/**
-			 * Configures the Milvus database name to use. Leave {@literal null} or blank
-			 * to use the default database.
-			 * @param databaseName the database name to use
-			 * @return this builder
-			 */
-			public Builder withDatabaseName(String databaseName) {
-				this.databaseName = databaseName;
-				return this;
-			}
-
-			/**
-			 * Configures the Milvus collection name to use. Leave {@literal null} or
-			 * blank to use the default collection name.
-			 * @param collectionName the collection name to use
-			 * @return this builder
-			 */
-			public Builder withCollectionName(String collectionName) {
-				this.collectionName = collectionName;
-				return this;
-			}
-
-			/**
-			 * Configures the size of the embedding. Defaults to {@literal 1536}, inline
-			 * with OpenAIs embeddings.
-			 * @param newEmbeddingDimension The dimension of the embedding
-			 * @return this builder
-			 */
-			public Builder withEmbeddingDimension(int newEmbeddingDimension) {
-
-				Assert.isTrue(newEmbeddingDimension >= 1 && newEmbeddingDimension <= 32768,
-						"Dimension has to be withing the boundaries 1 and 32768 (inclusively)");
-
-				this.embeddingDimension = newEmbeddingDimension;
-				return this;
-			}
-
-			/**
-			 * {@return the immutable configuration}
-			 */
-			public MilvusVectorStoreConfig build() {
-				return new MilvusVectorStoreConfig(this);
-			}
-
-		}
-
-	}
 
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
@@ -369,7 +230,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			searchParamBuilder.withExpr(nativeFilterExpressions);
 		}
 
-		R<SearchResults> respSearch = milvusClient.search(searchParamBuilder.build());
+		R<SearchResults> respSearch = this.milvusClient.search(searchParamBuilder.build());
 
 		if (respSearch.getException() != null) {
 			throw new RuntimeException("Search failed!", respSearch.getException());
@@ -558,15 +419,156 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.withNamespace(this.config.databaseName);
 	}
 
-	private static Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(MetricType.COSINE,
-			VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN, MetricType.IP,
-			VectorStoreSimilarityMetric.DOT);
-
 	private String getSimilarityMetric() {
 		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.config.metricType)) {
 			return this.config.metricType.name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.config.metricType).value();
+	}
+
+	/**
+	 * Configuration for the Milvus vector store.
+	 */
+	public static class MilvusVectorStoreConfig {
+
+		private final String databaseName;
+
+		private final String collectionName;
+
+		private final int embeddingDimension;
+
+		private final IndexType indexType;
+
+		private final MetricType metricType;
+
+		private final String indexParameters;
+
+		private MilvusVectorStoreConfig(Builder builder) {
+			this.databaseName = builder.databaseName;
+			this.collectionName = builder.collectionName;
+			this.embeddingDimension = builder.embeddingDimension;
+			this.indexType = builder.indexType;
+			this.metricType = builder.metricType;
+			this.indexParameters = builder.indexParameters;
+		}
+
+		/**
+		 * Start building a new configuration.
+		 * @return The entry point for creating a new configuration.
+		 */
+		public static Builder builder() {
+
+			return new Builder();
+		}
+
+		/**
+		 * {@return the default config}
+		 */
+		public static MilvusVectorStoreConfig defaultConfig() {
+			return builder().build();
+		}
+
+		public static class Builder {
+
+			private String databaseName = DEFAULT_DATABASE_NAME;
+
+			private String collectionName = DEFAULT_COLLECTION_NAME;
+
+			private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
+
+			private IndexType indexType = IndexType.IVF_FLAT;
+
+			private MetricType metricType = MetricType.COSINE;
+
+			private String indexParameters = "{\"nlist\":1024}";
+
+			private Builder() {
+			}
+
+			/**
+			 * Configures the Milvus metric type to use. Leave {@literal null} or blank to
+			 * use the metric metric: https://milvus.io/docs/metric.md#floating
+			 * @param metricType the metric type to use
+			 * @return this builder
+			 */
+			public Builder withMetricType(MetricType metricType) {
+				Assert.notNull(metricType, "Collection Name must not be empty");
+				Assert.isTrue(
+						metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
+						"Only the text metric types IP and L2 are supported");
+
+				this.metricType = metricType;
+				return this;
+			}
+
+			/**
+			 * Configures the Milvus index type to use. Leave {@literal null} or blank to
+			 * use the default index.
+			 * @param indexType the index type to use
+			 * @return this builder
+			 */
+			public Builder withIndexType(IndexType indexType) {
+				this.indexType = indexType;
+				return this;
+			}
+
+			/**
+			 * Configures the Milvus index parameters to use. Leave {@literal null} or
+			 * blank to use the default index parameters.
+			 * @param indexParameters the index parameters to use
+			 * @return this builder
+			 */
+			public Builder withIndexParameters(String indexParameters) {
+				this.indexParameters = indexParameters;
+				return this;
+			}
+
+			/**
+			 * Configures the Milvus database name to use. Leave {@literal null} or blank
+			 * to use the default database.
+			 * @param databaseName the database name to use
+			 * @return this builder
+			 */
+			public Builder withDatabaseName(String databaseName) {
+				this.databaseName = databaseName;
+				return this;
+			}
+
+			/**
+			 * Configures the Milvus collection name to use. Leave {@literal null} or
+			 * blank to use the default collection name.
+			 * @param collectionName the collection name to use
+			 * @return this builder
+			 */
+			public Builder withCollectionName(String collectionName) {
+				this.collectionName = collectionName;
+				return this;
+			}
+
+			/**
+			 * Configures the size of the embedding. Defaults to {@literal 1536}, inline
+			 * with OpenAIs embeddings.
+			 * @param newEmbeddingDimension The dimension of the embedding
+			 * @return this builder
+			 */
+			public Builder withEmbeddingDimension(int newEmbeddingDimension) {
+
+				Assert.isTrue(newEmbeddingDimension >= 1 && newEmbeddingDimension <= 32768,
+						"Dimension has to be withing the boundaries 1 and 32768 (inclusively)");
+
+				this.embeddingDimension = newEmbeddingDimension;
+				return this;
+			}
+
+			/**
+			 * {@return the immutable configuration}
+			 */
+			public MilvusVectorStoreConfig build() {
+				return new MilvusVectorStoreConfig(this);
+			}
+
+		}
+
 	}
 
 }

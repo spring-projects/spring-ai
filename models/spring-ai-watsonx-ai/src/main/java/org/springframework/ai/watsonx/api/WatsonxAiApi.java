@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.watsonx.api;
 
 import java.util.List;
@@ -23,14 +24,14 @@ import com.ibm.cloud.sdk.core.security.IamAuthenticator;
 import com.ibm.cloud.sdk.core.security.IamToken;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -45,8 +46,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 // @formatter:off
 public class WatsonxAiApi {
 
-    private static final Log logger = LogFactory.getLog(WatsonxAiApi.class);
     public static final String WATSONX_REQUEST_CANNOT_BE_NULL = "Watsonx Request cannot be null";
+
+    private static final Log logger = LogFactory.getLog(WatsonxAiApi.class);
+
     private final RestClient restClient;
     private final WebClient webClient;
     private final IamAuthenticator iamAuthenticator;
@@ -108,7 +111,7 @@ public class WatsonxAiApi {
         return this.restClient.post()
                 .uri(this.textEndpoint)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
-                .body(watsonxAiChatRequest.withProjectId(projectId))
+                .body(watsonxAiChatRequest.withProjectId(this.projectId))
                 .retrieve()
                 .toEntity(WatsonxAiChatResponse.class);
     }
@@ -146,7 +149,7 @@ public class WatsonxAiApi {
         return this.restClient.post()
 				.uri(this.embeddingEndpoint)
 				.header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
-				.body(request.withProjectId(projectId))
+				.body(request.withProjectId(this.projectId))
 				.retrieve()
 				.toEntity(WatsonxAiEmbeddingResponse.class);
 	}

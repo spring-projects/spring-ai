@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -25,12 +32,6 @@ import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into CQL
@@ -49,6 +50,24 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 			.collect(Collectors.toMap((c) -> c.getName().asInternal(), Function.identity()));
 	}
 
+	private static void doOperand(ExpressionType type, StringBuilder context) {
+		switch (type) {
+			case EQ -> context.append(" = ");
+			case NE -> context.append(" != ");
+			case GT -> context.append(" > ");
+			case GTE -> context.append(" >= ");
+			case IN -> context.append(" IN ");
+			case LT -> context.append(" < ");
+			case LTE -> context.append(" <= ");
+			// TODO SAI supports collections
+			// reach out to mck@apache.org if you'd like these implemented
+			// case CONTAINS -> context.append(" CONTAINS ");
+			// case CONTAINS_KEY -> context.append(" CONTAINS_KEY ");
+			default -> throw new UnsupportedOperationException(
+					String.format("Expression type %s not yet implemented. Patches welcome.", type));
+		}
+	}
+
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		String keyName = key.key();
@@ -65,24 +84,6 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 			case NIN, NOT -> throw new UnsupportedOperationException(
 					String.format("Expression type %s not yet implemented. Patches welcome.", expression.type()));
 			default -> doField(expression, context);
-		}
-	}
-
-	private static void doOperand(ExpressionType type, StringBuilder context) {
-		switch (type) {
-			case EQ -> context.append(" = ");
-			case NE -> context.append(" != ");
-			case GT -> context.append(" > ");
-			case GTE -> context.append(" >= ");
-			case IN -> context.append(" IN ");
-			case LT -> context.append(" < ");
-			case LTE -> context.append(" <= ");
-			// TODO SAI supports collections
-			// reach out to mck@apache.org if you'd like these implemented
-			// case CONTAINS -> context.append(" CONTAINS ");
-			// case CONTAINS_KEY -> context.append(" CONTAINS_KEY ");
-			default -> throw new UnsupportedOperationException(
-					String.format("Expression type %s not yet implemented. Patches welcome.", type));
 		}
 	}
 

@@ -1,11 +1,27 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.azure.openai;
 
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.springframework.ai.image.ImageOptions;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.springframework.ai.image.ImageOptions;
 
 /**
  * The configuration information for a image generation request.
@@ -89,9 +105,13 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	@JsonProperty("user")
 	private String user;
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	@Override
 	public Integer getN() {
-		return n;
+		return this.n;
 	}
 
 	public void setN(Integer n) {
@@ -100,7 +120,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -109,7 +129,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public Integer getWidth() {
-		return width;
+		return this.width;
 	}
 
 	public void setWidth(Integer width) {
@@ -119,7 +139,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public Integer getHeight() {
-		return height;
+		return this.height;
 	}
 
 	public void setHeight(Integer height) {
@@ -129,7 +149,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
-		return responseFormat;
+		return this.responseFormat;
 	}
 
 	public void setResponseFormat(String responseFormat) {
@@ -148,7 +168,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	}
 
 	public String getUser() {
-		return user;
+		return this.user;
 	}
 
 	public void setUser(String user) {
@@ -156,7 +176,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	}
 
 	public String getQuality() {
-		return quality;
+		return this.quality;
 	}
 
 	public void setQuality(String quality) {
@@ -165,7 +185,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getStyle() {
-		return style;
+		return this.style;
 	}
 
 	public void setStyle(String style) {
@@ -173,95 +193,40 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	}
 
 	public String getDeploymentName() {
-		return deploymentName;
+		return this.deploymentName;
 	}
 
 	public void setDeploymentName(String deploymentName) {
 		this.deploymentName = deploymentName;
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof AzureOpenAiImageOptions that))
+		}
+		if (!(o instanceof AzureOpenAiImageOptions that)) {
 			return false;
-		return Objects.equals(n, that.n) && Objects.equals(model, that.model)
-				&& Objects.equals(deploymentName, that.deploymentName) && Objects.equals(width, that.width)
-				&& Objects.equals(height, that.height) && Objects.equals(quality, that.quality)
-				&& Objects.equals(responseFormat, that.responseFormat) && Objects.equals(size, that.size)
-				&& Objects.equals(style, that.style) && Objects.equals(user, that.user);
+		}
+		return Objects.equals(this.n, that.n) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.deploymentName, that.deploymentName) && Objects.equals(this.width, that.width)
+				&& Objects.equals(this.height, that.height) && Objects.equals(this.quality, that.quality)
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.size, that.size)
+				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(n, model, deploymentName, width, height, quality, responseFormat, size, style, user);
+		return Objects.hash(this.n, this.model, this.deploymentName, this.width, this.height, this.quality,
+				this.responseFormat, this.size, this.style, this.user);
 	}
 
 	@Override
 	public String toString() {
-		return "AzureOpenAiImageOptions{" + "n=" + n + ", model='" + model + '\'' + ", deploymentName='"
-				+ deploymentName + '\'' + ", width=" + width + ", height=" + height + ", quality='" + quality + '\''
-				+ ", responseFormat='" + responseFormat + '\'' + ", size='" + size + '\'' + ", style='" + style + '\''
-				+ ", user='" + user + '\'' + '}';
-	}
-
-	public static class Builder {
-
-		private final AzureOpenAiImageOptions options;
-
-		private Builder() {
-			this.options = new AzureOpenAiImageOptions();
-		}
-
-		public Builder withN(Integer n) {
-			options.setN(n);
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			options.setModel(model);
-			return this;
-		}
-
-		public Builder withDeploymentName(String deploymentName) {
-			options.setDeploymentName(deploymentName);
-			return this;
-		}
-
-		public Builder withResponseFormat(String responseFormat) {
-			options.setResponseFormat(responseFormat);
-			return this;
-		}
-
-		public Builder withWidth(Integer width) {
-			options.setWidth(width);
-			return this;
-		}
-
-		public Builder withHeight(Integer height) {
-			options.setHeight(height);
-			return this;
-		}
-
-		public Builder withUser(String user) {
-			options.setUser(user);
-			return this;
-		}
-
-		public AzureOpenAiImageOptions build() {
-			return options;
-		}
-
-		public Builder withStyle(String style) {
-			options.setStyle(style);
-			return this;
-		}
-
+		return "AzureOpenAiImageOptions{" + "n=" + this.n + ", model='" + this.model + '\'' + ", deploymentName='"
+				+ this.deploymentName + '\'' + ", width=" + this.width + ", height=" + this.height + ", quality='"
+				+ this.quality + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", size='" + this.size
+				+ '\'' + ", style='" + this.style + '\'' + ", user='" + this.user + '\'' + '}';
 	}
 
 	public enum ImageModel {
@@ -286,6 +251,60 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 		public String getValue() {
 			return this.value;
+		}
+
+	}
+
+	public static class Builder {
+
+		private final AzureOpenAiImageOptions options;
+
+		private Builder() {
+			this.options = new AzureOpenAiImageOptions();
+		}
+
+		public Builder withN(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder withDeploymentName(String deploymentName) {
+			this.options.setDeploymentName(deploymentName);
+			return this;
+		}
+
+		public Builder withResponseFormat(String responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder withWidth(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder withHeight(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder withUser(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public AzureOpenAiImageOptions build() {
+			return this.options;
+		}
+
+		public Builder withStyle(String style) {
+			this.options.setStyle(style);
+			return this;
 		}
 
 	}

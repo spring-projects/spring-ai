@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.oracle;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
@@ -44,7 +45,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	private int searchAccuracy = DEFAULT_SEARCH_ACCURACY;
 
 	public String getTableName() {
-		return tableName;
+		return this.tableName;
 	}
 
 	public void setTableName(String tableName) {
@@ -52,7 +53,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public OracleVectorStore.OracleVectorStoreIndexType getIndexType() {
-		return indexType;
+		return this.indexType;
 	}
 
 	public void setIndexType(OracleVectorStore.OracleVectorStoreIndexType indexType) {
@@ -60,7 +61,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public OracleVectorStore.OracleVectorStoreDistanceType getDistanceType() {
-		return distanceType;
+		return this.distanceType;
 	}
 
 	public void setDistanceType(OracleVectorStore.OracleVectorStoreDistanceType distanceType) {
@@ -68,7 +69,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public int getDimensions() {
-		return dimensions;
+		return this.dimensions;
 	}
 
 	public void setDimensions(int dimensions) {
@@ -76,7 +77,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public boolean isRemoveExistingVectorStoreTable() {
-		return removeExistingVectorStoreTable;
+		return this.removeExistingVectorStoreTable;
 	}
 
 	public void setRemoveExistingVectorStoreTable(boolean removeExistingVectorStoreTable) {
@@ -84,7 +85,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public boolean isForcedNormalization() {
-		return forcedNormalization;
+		return this.forcedNormalization;
 	}
 
 	public void setForcedNormalization(boolean forcedNormalization) {
@@ -92,7 +93,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public int getSearchAccuracy() {
-		return searchAccuracy;
+		return this.searchAccuracy;
 	}
 
 	public void setSearchAccuracy(int searchAccuracy) {

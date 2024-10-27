@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.function;
 
 import java.util.function.Function;
@@ -27,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.model.function.TypeResolverHelperTests.MockWeatherService.Request;
 import org.springframework.ai.model.function.TypeResolverHelperTests.MockWeatherService.Response;
 
-import static org.assertj.core.api.Assertions.assertThat;;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
@@ -64,6 +65,11 @@ public class TypeResolverHelperTests {
 
 	public static class MockWeatherService implements Function<Request, Response> {
 
+		@Override
+		public Response apply(Request request) {
+			return new Response(10, "C");
+		}
+
 		/**
 		 * Weather Function request.
 		 */
@@ -75,14 +81,11 @@ public class TypeResolverHelperTests {
 				@JsonProperty(required = true, value = "lon") @JsonPropertyDescription("The city longitude") double lon,
 				@JsonProperty(required = true,
 						value = "unit") @JsonPropertyDescription("Temperature unit") String unit) {
+
 		}
 
 		public record Response(double temp, String unit) {
-		}
 
-		@Override
-		public Response apply(Request request) {
-			return new Response(10, "C");
 		}
 
 	}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vertexai.gemini;
 
 import java.util.List;
@@ -58,18 +59,6 @@ public class VertexAiGeminiConnectionProperties {
 
 	private Transport transport = Transport.GRPC;
 
-	public enum Transport {
-
-		/** When used, the clients will send REST requests to the backing service. */
-		REST,
-		/**
-		 * When used, the clients will send gRPC to the backing service. This is usually
-		 * more efficient and is the default transport.
-		 */
-		GRPC
-
-	}
-
 	public String getProjectId() {
 		return this.projectId;
 	}
@@ -98,6 +87,10 @@ public class VertexAiGeminiConnectionProperties {
 		return this.apiEndpoint;
 	}
 
+	public void setApiEndpoint(String apiEndpoint) {
+		this.apiEndpoint = apiEndpoint;
+	}
+
 	public List<String> getScopes() {
 		return this.scopes;
 	}
@@ -106,16 +99,24 @@ public class VertexAiGeminiConnectionProperties {
 		this.scopes = scopes;
 	}
 
-	public void setApiEndpoint(String apiEndpoint) {
-		this.apiEndpoint = apiEndpoint;
-	}
-
 	public Transport getTransport() {
 		return this.transport;
 	}
 
 	public void setTransport(Transport transport) {
 		this.transport = transport;
+	}
+
+	public enum Transport {
+
+		/** When used, the clients will send REST requests to the backing service. */
+		REST,
+		/**
+		 * When used, the clients will send gRPC to the backing service. This is usually
+		 * more efficient and is the default transport.
+		 */
+		GRPC
+
 	}
 
 }

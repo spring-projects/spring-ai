@@ -110,7 +110,7 @@ It is a best practice to annotate the request object with information such that 
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanIT.java[PaymentStatusBeanIT.java] demonstrates this approach.
 
-TIP: The Mistral AI link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanOpenAiIT[PaymentStatusBeanOpenAiIT] implements the same function using the OpenAI API.
+TIP: The Mistral AI link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanOpenAiIT.java[PaymentStatusBeanOpenAiIT] implements the same function using the OpenAI API.
 Mistral AI is almost identical to OpenAI in this regard.
 
 ==== FunctionCallback Wrapper
@@ -151,7 +151,7 @@ MistralAiChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
+ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
 		MistralAiChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
@@ -178,7 +178,7 @@ var promptOptions = MistralAiChatOptions.builder()
 		new MockWeatherService()))) // function code
 	.build();
 
-ChatResponse response = chatModel.call(new Prompt(userMessage, promptOptions));
+ChatResponse response = this.chatModel.call(new Prompt(this.userMessage, this.promptOptions));
 ----
 
 NOTE: The in-prompt registered functions are enabled by default for the duration of this request.

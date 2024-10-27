@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.llama.api;
+
+import java.time.Duration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -27,8 +30,6 @@ import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatRequest;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatResponse;
 import org.springframework.ai.model.ChatModelDescription;
-
-import java.time.Duration;
 
 // @formatter:off
 /**
@@ -109,100 +110,14 @@ public class LlamaChatBedrockApi extends
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
-	/**
-	 * LlamaChatRequest encapsulates the request parameters for the Meta Llama chat model.
-	 *
-	 * @param prompt The prompt to use for the chat.
-	 * @param temperature The temperature value controls the randomness of the generated text. Use a lower value to
-	 * decrease randomness in the response.
-	 * @param topP The topP value controls the diversity of the generated text. Use a lower value to ignore less
-	 * probable options. Set to 0 or 1.0 to disable.
-	 * @param maxGenLen The maximum length of the generated text.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record LlamaChatRequest(
-			@JsonProperty("prompt") String prompt,
-			@JsonProperty("temperature") Double temperature,
-			@JsonProperty("top_p") Double topP,
-			@JsonProperty("max_gen_len") Integer maxGenLen) {
-
-			/**
-			 * Create a new LlamaChatRequest builder.
-			 * @param prompt compulsory prompt parameter.
-			 * @return a new LlamaChatRequest builder.
-			 */
-			public static Builder builder(String prompt) {
-				return new Builder(prompt);
-			}
-
-			public static class Builder {
-				private String prompt;
-				private Double temperature;
-				private Double topP;
-				private Integer maxGenLen;
-
-				public Builder(String prompt) {
-					this.prompt = prompt;
-				}
-
-				public Builder withTemperature(Double temperature) {
-					this.temperature = temperature;
-					return this;
-				}
-
-				public Builder withTopP(Double topP) {
-					this.topP = topP;
-					return this;
-				}
-
-				public Builder withMaxGenLen(Integer maxGenLen) {
-					this.maxGenLen = maxGenLen;
-					return this;
-				}
-
-				public LlamaChatRequest build() {
-					return new LlamaChatRequest(
-							prompt,
-							temperature,
-							topP,
-							maxGenLen
-					);
-				}
-			}
+	@Override
+	public LlamaChatResponse chatCompletion(LlamaChatRequest request) {
+		return this.internalInvocation(request, LlamaChatResponse.class);
 	}
 
-	/**
-	 * LlamaChatResponse encapsulates the response parameters for the Meta Llama chat model.
-	 *
-	 * @param generation The generated text.
-	 * @param promptTokenCount The number of tokens in the prompt.
-	 * @param generationTokenCount The number of tokens in the response.
-	 * @param stopReason The reason why the response stopped generating text. Possible values are: (1) stop – The model
-	 * has finished generating text for the input prompt. (2) length – The length of the tokens for the generated text
-	 * exceeds the value of max_gen_len in the call. The response is truncated to max_gen_len tokens. Consider
-	 * increasing the value of max_gen_len and trying again.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record LlamaChatResponse(
-			@JsonProperty("generation") String generation,
-			@JsonProperty("prompt_token_count") Integer promptTokenCount,
-			@JsonProperty("generation_token_count") Integer generationTokenCount,
-			@JsonProperty("stop_reason") StopReason stopReason,
-			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) {
-
-		/**
-		 * The reason the response finished being generated.
-		 */
-		public enum StopReason {
-			/**
-			 * The model has finished generating text for the input prompt.
-			 */
-			@JsonProperty("stop") STOP,
-			/**
-			 * The response was truncated because of the response length you set.
-			 */
-			@JsonProperty("length") LENGTH
-		}
+	@Override
+	public Flux<LlamaChatResponse> chatCompletionStream(LlamaChatRequest request) {
+		return this.internalInvocationStream(request, LlamaChatResponse.class);
 	}
 
 	/**
@@ -267,15 +182,15 @@ public class LlamaChatBedrockApi extends
 
 		private final String id;
 
+		LlamaChatModel(String value) {
+			this.id = value;
+		}
+
 		/**
 		 * @return The model id.
 		 */
 		public String id() {
-			return id;
-		}
-
-		LlamaChatModel(String value) {
-			this.id = value;
+			return this.id;
 		}
 
 		@Override
@@ -284,14 +199,100 @@ public class LlamaChatBedrockApi extends
 		}
 	}
 
-	@Override
-	public LlamaChatResponse chatCompletion(LlamaChatRequest request) {
-		return this.internalInvocation(request, LlamaChatResponse.class);
+	/**
+	 * LlamaChatRequest encapsulates the request parameters for the Meta Llama chat model.
+	 *
+	 * @param prompt The prompt to use for the chat.
+	 * @param temperature The temperature value controls the randomness of the generated text. Use a lower value to
+	 * decrease randomness in the response.
+	 * @param topP The topP value controls the diversity of the generated text. Use a lower value to ignore less
+	 * probable options. Set to 0 or 1.0 to disable.
+	 * @param maxGenLen The maximum length of the generated text.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record LlamaChatRequest(
+			@JsonProperty("prompt") String prompt,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("max_gen_len") Integer maxGenLen) {
+
+			/**
+			 * Create a new LlamaChatRequest builder.
+			 * @param prompt compulsory prompt parameter.
+			 * @return a new LlamaChatRequest builder.
+			 */
+			public static Builder builder(String prompt) {
+				return new Builder(prompt);
+			}
+
+			public static class Builder {
+				private String prompt;
+				private Double temperature;
+				private Double topP;
+				private Integer maxGenLen;
+
+				public Builder(String prompt) {
+					this.prompt = prompt;
+				}
+
+				public Builder withTemperature(Double temperature) {
+					this.temperature = temperature;
+					return this;
+				}
+
+				public Builder withTopP(Double topP) {
+					this.topP = topP;
+					return this;
+				}
+
+				public Builder withMaxGenLen(Integer maxGenLen) {
+					this.maxGenLen = maxGenLen;
+					return this;
+				}
+
+				public LlamaChatRequest build() {
+					return new LlamaChatRequest(
+							this.prompt,
+							this.temperature,
+							this.topP,
+							this.maxGenLen
+					);
+				}
+			}
 	}
 
-	@Override
-	public Flux<LlamaChatResponse> chatCompletionStream(LlamaChatRequest request) {
-		return this.internalInvocationStream(request, LlamaChatResponse.class);
+	/**
+	 * LlamaChatResponse encapsulates the response parameters for the Meta Llama chat model.
+	 *
+	 * @param generation The generated text.
+	 * @param promptTokenCount The number of tokens in the prompt.
+	 * @param generationTokenCount The number of tokens in the response.
+	 * @param stopReason The reason why the response stopped generating text. Possible values are: (1) stop – The model
+	 * has finished generating text for the input prompt. (2) length – The length of the tokens for the generated text
+	 * exceeds the value of max_gen_len in the call. The response is truncated to max_gen_len tokens. Consider
+	 * increasing the value of max_gen_len and trying again.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record LlamaChatResponse(
+			@JsonProperty("generation") String generation,
+			@JsonProperty("prompt_token_count") Integer promptTokenCount,
+			@JsonProperty("generation_token_count") Integer generationTokenCount,
+			@JsonProperty("stop_reason") StopReason stopReason,
+			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) {
+
+		/**
+		 * The reason the response finished being generated.
+		 */
+		public enum StopReason {
+			/**
+			 * The model has finished generating text for the input prompt.
+			 */
+			@JsonProperty("stop") STOP,
+			/**
+			 * The response was truncated because of the response length you set.
+			 */
+			@JsonProperty("length") LENGTH
+		}
 	}
 }
 // @formatter:on

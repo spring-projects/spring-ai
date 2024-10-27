@@ -1,30 +1,44 @@
 = Ollama Chat
 
 With https://ollama.ai/[Ollama] you can run various Large Language Models (LLMs) locally and generate text from them.
-Spring AI supports the Ollama text generation capabilities with the `OllamaChatModel` API.
+Spring AI supports the Ollama chat completion capabilities with the `OllamaChatModel` API.
 
 TIP: Ollama offers an OpenAI API compatible endpoint as well. 
-Check the xref:_openai_api_compatibility[OpenAI API compatibility] section to learn how to use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] project to talk to an Ollama server.
+The xref:_openai_api_compatibility[OpenAI API compatibility] section explains how to use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] to connect to an Ollama server.
 
 == Prerequisites
 
-You first need to run Ollama on your local machine.
-Refer to the official Ollama project link:https://github.com/ollama/ollama[README] to get started running models on your local machine.
+You first need access to an Ollama instance. There are a few options, including the following:
 
-NOTE: Running `ollama pull mistral` will download a 4.1GB model artifact.
+* xref:https://ollama.com/download[Download and install Ollama] on your local machine.
+* Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
+* Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
-=== Add Repositories and BOM
+You can pull the models you want to use in your application from the xref:https://ollama.com/library[Ollama model library]:
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories. 
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+[source,shellscript]
+----
+ollama pull <model-name>
+----
 
-To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+You can also pull any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
+
+[source,shellscript]
+----
+ollama pull hf.co/<username>/<model-repository>
+----
+
+Alternatively, you can enable the option to download automatically any needed model: xref:auto-pulling-models[Auto-pulling Models].
 
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Ollama chat integration.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -33,37 +47,50 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-=== Chat Properties
+=== Base Properties
 
 The prefix `spring.ai.ollama` is the property prefix to configure the connection to Ollama.
+
+[cols="3,6,1", stripes=even]
+|====
+| Property | Description | Default
+| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
+|====
+
+Here are the properties for initializing the Ollama integration and xref:auto-pulling-models[auto-pulling models].
 
 [cols="3,6,1"]
 |====
 | Property | Description | Default
-
-| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
+| spring.ai.ollama.init.pull-model-strategy | Whether to pull models at startup-time and how. | `never`
+| spring.ai.ollama.init.timeout | How long to wait for a model to be pulled. | `5m`
+| spring.ai.ollama.init.max-retries | Maximum number of retries for the model pull operation. | `0`
+| spring.ai.ollama.init.chat.include | Include this type of models in the initialization task. | `true`
+| spring.ai.ollama.init.chat.additional-models | Additional models to initialize besides the ones configured via default properties. | `[]`
 |====
 
-The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the Ollama chat model .
+=== Chat Properties
+
+The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the Ollama chat model.
 It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, and `format` as well as the Ollama model `options` properties.
 
 Here are the advanced request parameter for the Ollama chat model:
 
-[cols="3,6,1"]
+[cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
-
 | spring.ai.ollama.chat.enabled      | Enable Ollama chat model. | true
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
 | spring.ai.ollama.chat.options.format  | The format to return a response in. Currently, the only accepted value is `json` | -
@@ -72,7 +99,7 @@ Here are the advanced request parameter for the Ollama chat model:
 
 The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on the link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama Types Defaults].
 
-[cols="3,6,1"]
+[cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false
@@ -105,7 +132,7 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | spring.ai.ollama.chat.options.penalize-newline  | -                                                             | true
 | spring.ai.ollama.chat.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
 | spring.ai.ollama.chat.options.functions         | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
-| spring.ai.ollama.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
+| spring.ai.ollama.chat.options.proxy-tool-calls  | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 |====
 
 TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
@@ -132,6 +159,68 @@ ChatResponse response = chatModel.call(
 ----
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+[[auto-pulling-models]]
+== Auto-pulling Models
+
+Spring AI Ollama can automatically pull models when they are not available in your Ollama instance.
+This feature is particularly useful for development and testing as well as for deploying your applications to new environments.
+
+TIP: You can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
+
+There are three strategies for pulling models:
+
+* `always` (defined in `PullModelStrategy.ALWAYS`): Always pull the model, even if it's already available. Useful to ensure you're using the latest version of the model.
+* `when_missing` (defined in `PullModelStrategy.WHEN_MISSING`): Only pull the model if it's not already available. This may result in using an older version of the model.
+* `never` (defined in `PullModelStrategy.NEVER`): Never pull the model automatically.
+
+CAUTION: Due to potential delays while downloading models, automatic pulling is not recommended for production environments. Instead, consider assessing and pre-downloading the necessary models in advance.
+
+All models defined via configuration properties and default options can be automatically pulled at startup time.
+You can configure the pull strategy, timeout, and maximum number of retries using configuration properties:
+
+[source,yaml]
+----
+spring:
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: always
+        timeout: 60s
+        max-retries: 1
+----
+
+CAUTION: The application will not complete its initialization until all specified models are available in Ollama. Depending on the model size and internet connection speed, this may significantly slow down your application's startup time.
+
+You can initialize additional models at startup, which is useful for models used dynamically at runtime:
+
+[source,yaml]
+----
+spring:
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: always
+        chat:
+          additional-models:
+            - llama3.2
+            - qwen2.5
+----
+
+If you want to apply the pulling strategy only to specific types of models, you can exclude chat models from the initialization task:
+
+[source,yaml]
+----
+spring:
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: always
+        chat:
+          include: false
+----
+
+This configuration will apply the pulling strategy to all models except chat models.
 
 == Function Calling
 
@@ -162,9 +251,9 @@ Below is a straightforward code example excerpted from link:https://github.com/s
 var imageResource = new ClassPathResource("/multimodal.test.png");
 
 var userMessage = new UserMessage("Explain what do you see on this picture?",
-        new Media(MimeTypeUtils.IMAGE_PNG, imageResource));
+        new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
         OllamaOptions.builder().withModel(OllamaModel.LLAVA)).build());
 ----
 
@@ -195,13 +284,18 @@ Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spr
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-ollama-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Ollama chat model:
+Add a `application.yaml` file, under the `src/main/resources` directory, to enable and configure the Ollama chat model:
 
-[source,application.properties]
+[source,yaml]
 ----
-spring.ai.ollama.base-url=http://localhost:11434
-spring.ai.ollama.chat.options.model=mistral
-spring.ai.ollama.chat.options.temperature=0.7
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: mistral
+          temperature: 0.7
 ----
 
 TIP: Replace the `base-url` with your Ollama server URL.
@@ -223,13 +317,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map<String,String> generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 
 }
@@ -240,8 +334,12 @@ public class ChatController {
 If you don't want to use the Spring Boot auto-configuration, you can manually configure the `OllamaChatModel` in your application.
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/OllamaChatModel.java[OllamaChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the Ollama service.
 
-To use it, add the `spring-ai-ollama` dependency to your project's Maven `pom.xml` file:
+To use it, add the `spring-ai-ollama` dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -250,14 +348,15 @@ To use it, add the `spring-ai-ollama` dependency to your project's Maven `pom.xm
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-ollama'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -270,16 +369,16 @@ Next, create an `OllamaChatModel` instance and use it to send requests for text 
 ----
 var ollamaApi = new OllamaApi();
 
-var chatModel = new OllamaChatModel(ollamaApi,
+var chatModel = new OllamaChatModel(this.ollamaApi,
             OllamaOptions.create()
                 .withModel(OllamaOptions.DEFAULT_MODEL)
                 .withTemperature(0.9));
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -315,7 +414,7 @@ var request = ChatRequest.builder("orca-mini")
     .withOptions(OllamaOptions.create().withTemperature(0.9))
     .build();
 
-ChatResponse response = ollamaApi.chat(request);
+ChatResponse response = this.ollamaApi.chat(this.request);
 
 // Streaming request
 var request2 = ChatRequest.builder("orca-mini")
@@ -326,5 +425,5 @@ var request2 = ChatRequest.builder("orca-mini")
     .withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
     .build();
 
-Flux<ChatResponse> streamingResponse = ollamaApi.streamingChat(request2);
+Flux<ChatResponse> streamingResponse = this.ollamaApi.streamingChat(this.request2);
 ----

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.observation;
 
 import org.springframework.ai.chat.model.ChatResponse;
@@ -40,15 +41,15 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 		this.requestOptions = requestOptions;
 	}
 
-	public ChatOptions getRequestOptions() {
-		return this.requestOptions;
-	}
-
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public ChatOptions getRequestOptions() {
+		return this.requestOptions;
+	}
+
+	public static final class Builder {
 
 		private Prompt prompt;
 
@@ -75,7 +76,7 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 		}
 
 		public ChatModelObservationContext build() {
-			return new ChatModelObservationContext(prompt, provider, requestOptions);
+			return new ChatModelObservationContext(this.prompt, this.provider, this.requestOptions);
 		}
 
 	}

@@ -148,7 +148,7 @@ OpenAiChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
+ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
 		OpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
@@ -184,7 +184,7 @@ var promptOptions = OpenAiChatOptions.builder()
 		new MockWeatherService()))) // function code
 	.build();
 
-ChatResponse response = chatModel.call(new Prompt(userMessage, promptOptions));
+ChatResponse response = this.chatModel.call(new Prompt(this.userMessage, this.promptOptions));
 ----
 
 NOTE: The in-prompt registered functions are enabled by default for the duration of this request.
@@ -254,7 +254,7 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 OpenAiChatOptions options = OpenAiChatOptions.builder()
     .withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-    .withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(weatherFunction)
+    .withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(this.weatherFunction)
         .withName("getCurrentWeather")
         .withDescription("Get the weather in location")
         .build()))
@@ -269,7 +269,7 @@ You can then use these options when making a call to the chat model:
 [source,java]
 ----
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
+ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage), options));
 ----
 
 This approach allows you to pass session-specific or user-specific information to your functions, enabling more contextual and personalized responses.

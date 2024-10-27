@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.audio.speech;
+
+import java.util.Arrays;
+import java.util.Objects;
 
 import org.springframework.ai.model.ModelResult;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechMetadata;
 import org.springframework.lang.Nullable;
-
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * The Speech class represents the result of speech synthesis from an AI model. It
@@ -46,7 +47,7 @@ public class Speech implements ModelResult<byte[]> {
 
 	@Override
 	public OpenAiAudioSpeechMetadata getMetadata() {
-		return speechMetadata != null ? speechMetadata : OpenAiAudioSpeechMetadata.NULL;
+		return this.speechMetadata != null ? this.speechMetadata : OpenAiAudioSpeechMetadata.NULL;
 	}
 
 	public Speech withSpeechMetadata(@Nullable OpenAiAudioSpeechMetadata speechMetadata) {
@@ -56,21 +57,23 @@ public class Speech implements ModelResult<byte[]> {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof Speech that))
+		}
+		if (!(o instanceof Speech that)) {
 			return false;
-		return Arrays.equals(audio, that.audio) && Objects.equals(speechMetadata, that.speechMetadata);
+		}
+		return Arrays.equals(this.audio, that.audio) && Objects.equals(this.speechMetadata, that.speechMetadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(audio), speechMetadata);
+		return Objects.hash(Arrays.hashCode(this.audio), this.speechMetadata);
 	}
 
 	@Override
 	public String toString() {
-		return "Speech{" + "text=" + audio + ", speechMetadata=" + speechMetadata + '}';
+		return "Speech{" + "text=" + this.audio + ", speechMetadata=" + this.speechMetadata + '}';
 	}
 
 }

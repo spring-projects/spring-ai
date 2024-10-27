@@ -6,7 +6,7 @@
             "type": "message",
             "role": "assistant",
             "content": [],
-            "model": "claude-3-5-sonnet-20240620",
+            "model": "claude-3-5-sonnet-20241022",
             "stop_reason": null,
             "stop_sequence": null,
             "usage": {

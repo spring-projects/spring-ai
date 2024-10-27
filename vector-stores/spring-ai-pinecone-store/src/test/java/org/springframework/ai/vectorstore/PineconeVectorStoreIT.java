@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
@@ -62,6 +63,9 @@ public class PineconeVectorStoreIT {
 
 	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";
 
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(TestApplication.class);
+
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
@@ -77,9 +81,6 @@ public class PineconeVectorStoreIT {
 		}
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class);
-
 	@BeforeAll
 	public static void beforeAll() {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
@@ -90,11 +91,11 @@ public class PineconeVectorStoreIT {
 	@Test
 	public void addAndSearchTest() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
@@ -104,14 +105,14 @@ public class PineconeVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
@@ -125,7 +126,7 @@ public class PineconeVectorStoreIT {
 		// Pinecone metadata filtering syntax:
 		// https://docs.pinecone.io/docs/metadata-filtering
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -177,7 +178,7 @@ public class PineconeVectorStoreIT {
 	public void documentUpdateTest() {
 
 		// Note ,using OpenAI to calculate embeddings
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -234,11 +235,11 @@ public class PineconeVectorStoreIT {
 	@Test
 	public void searchThresholdTest() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			Awaitility.await().until(() -> {
 				return vectorStore
@@ -259,13 +260,13 @@ public class PineconeVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
 			}, hasSize(0));

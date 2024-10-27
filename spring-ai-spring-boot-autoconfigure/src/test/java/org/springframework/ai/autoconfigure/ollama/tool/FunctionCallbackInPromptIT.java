@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,21 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.ollama.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Flux;
+
+import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT;
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration;
-import org.springframework.ai.autoconfigure.ollama.OllamaImage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -38,33 +40,18 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.ollama.OllamaContainer;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Disabled("For manual smoke testing only.")
 @Testcontainers
-public class FunctionCallbackInPromptIT {
+@DisabledIf("isDisabled")
+public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
-	private static String MODEL_NAME = "mistral";
+	private static final String MODEL_NAME = "qwen2.5:3b";
 
-	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.IMAGE);
-
-	static String baseUrl = "http://localhost:11434";
-
-	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
-		logger.info(MODEL_NAME + " pulling competed!");
-
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
-	}
+	static String baseUrl;
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -75,19 +62,25 @@ public class FunctionCallbackInPromptIT {
 				// @formatter:on
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
+	@BeforeAll
+	public static void beforeAll() {
+		baseUrl = buildConnectionWithModel(MODEL_NAME);
+	}
+
 	@Test
 	void functionCallTest() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
 			UserMessage userMessage = new UserMessage(
-					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
+					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
+					.withDescription(
+							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 					.withResponseConverter((response) -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
@@ -103,17 +96,18 @@ public class FunctionCallbackInPromptIT {
 	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamingFunctionCallTest() {
-
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
+					.withDescription(
+							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 					.withResponseConverter((response) -> "" + response.temp() + response.unit())
 					.build()))
 				.build();

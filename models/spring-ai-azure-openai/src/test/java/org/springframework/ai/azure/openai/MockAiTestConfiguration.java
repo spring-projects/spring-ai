@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.azure.openai;
 
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+package org.springframework.ai.azure.openai;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -26,8 +25,14 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import okhttp3.mockwebserver.Dispatcher;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import okio.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -43,11 +48,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import okhttp3.mockwebserver.Dispatcher;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
-import okio.Buffer;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Spring {@link Configuration} for AI integration testing using mock objects.
@@ -205,20 +206,20 @@ public class MockAiTestConfiguration {
 	 */
 	static class MockWebServerFactoryBean implements FactoryBean<MockWebServer>, InitializingBean, DisposableBean {
 
-		private Dispatcher dispatcher;
-
 		private final Logger logger = LoggerFactory.getLogger(getClass().getName());
-
-		private MockWebServer mockWebServer;
 
 		private final Queue<MockResponse> queuedResponses = new ConcurrentLinkedDeque<>();
 
-		public void setDispatcher(@Nullable Dispatcher dispatcher) {
-			this.dispatcher = dispatcher;
-		}
+		private Dispatcher dispatcher;
+
+		private MockWebServer mockWebServer;
 
 		protected Optional<Dispatcher> getDispatcher() {
 			return Optional.ofNullable(this.dispatcher);
+		}
+
+		public void setDispatcher(@Nullable Dispatcher dispatcher) {
+			this.dispatcher = dispatcher;
 		}
 
 		protected Logger getLogger() {

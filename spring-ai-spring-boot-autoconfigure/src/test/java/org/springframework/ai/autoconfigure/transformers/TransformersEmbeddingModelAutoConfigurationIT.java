@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.transformers;
 
 import java.io.File;
@@ -33,15 +34,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TransformersEmbeddingModelAutoConfigurationIT {
 
-	@TempDir
-	File tempDir;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(TransformersEmbeddingModelAutoConfiguration.class));
 
+	@TempDir
+	File tempDir;
+
 	@Test
 	public void embedding() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var properties = context.getBean(TransformersEmbeddingModelProperties.class);
 			assertThat(properties.getCache().isEnabled()).isTrue();
 			assertThat(properties.getCache().getDirectory()).isEqualTo(
@@ -54,14 +55,15 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 
 			assertThat(embeddings.size()).isEqualTo(2); // batch size
 			assertThat(embeddings.get(0).length).isEqualTo(embeddingModel.dimensions()); // dimensions
-																							// size
+			// size
 		});
 	}
 
 	@Test
 	public void remoteOnnxModel() {
 		// https://huggingface.co/intfloat/e5-small-v2
-		contextRunner.withPropertyValues("spring.ai.embedding.transformer.cache.directory=" + tempDir.getAbsolutePath(),
+		this.contextRunner.withPropertyValues(
+				"spring.ai.embedding.transformer.cache.directory=" + this.tempDir.getAbsolutePath(),
 				"spring.ai.embedding.transformer.onnx.modelUri=https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx",
 				"spring.ai.embedding.transformer.tokenizer.uri=https://huggingface.co/intfloat/e5-small-v2/raw/main/tokenizer.json")
 			.run(context -> {
@@ -72,8 +74,8 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 					.isEqualTo("https://huggingface.co/intfloat/e5-small-v2/raw/main/tokenizer.json");
 
 				assertThat(properties.getCache().isEnabled()).isTrue();
-				assertThat(properties.getCache().getDirectory()).isEqualTo(tempDir.getAbsolutePath());
-				assertThat(tempDir.listFiles()).hasSize(2);
+				assertThat(properties.getCache().getDirectory()).isEqualTo(this.tempDir.getAbsolutePath());
+				assertThat(this.tempDir.listFiles()).hasSize(2);
 
 				EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
 				assertThat(embeddingModel).isInstanceOf(TransformersEmbeddingModel.class);
@@ -84,23 +86,23 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 
 				assertThat(embeddings.size()).isEqualTo(2); // batch size
 				assertThat(embeddings.get(0).length).isEqualTo(embeddingModel.dimensions()); // dimensions
-																								// size
+				// size
 			});
 	}
 
 	@Test
 	void embeddingActivation() {
-		contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=false").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(TransformersEmbeddingModelProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(TransformersEmbeddingModel.class)).isEmpty();
 		});
 
-		contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(TransformersEmbeddingModelProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(TransformersEmbeddingModel.class)).isNotEmpty();
 		});
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(TransformersEmbeddingModelProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(TransformersEmbeddingModel.class)).isNotEmpty();
 		});

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.transformer.splitter;
 
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ public class TextSplitterTests {
 			List<String> chunks = new ArrayList<>();
 
 			chunks.add(text.substring(0, chuckSize));
-			chunks.add(text.substring(chuckSize, text.length()));
+			chunks.add(text.substring(chuckSize));
 
 			return chunks;
 		}
@@ -211,6 +212,37 @@ public class TextSplitterTests {
 				() -> assertThat(splitedDocument.get(1).getMetadata().get("page_number")).isEqualTo(2),
 				() -> assertThat(splitedDocument.get(2).getMetadata().get("page_number")).isEqualTo(2),
 				() -> assertThat(splitedDocument.get(3).getMetadata().get("page_number")).isEqualTo(3));
+	}
+
+	@Test
+	public void testSplitTextWithNullMetadata() {
+
+		var contentFormatter = DefaultContentFormatter.defaultConfig();
+
+		var doc = new Document("In the end, writing arises when man realizes that memory is not enough.");
+
+		doc.getMetadata().put("key1", "value1");
+		doc.getMetadata().put("key2", null);
+
+		doc.setContentFormatter(contentFormatter);
+
+		List<Document> chunks = testTextSplitter.apply(List.of(doc));
+
+		assertThat(testTextSplitter.isCopyContentFormatter()).isTrue();
+
+		assertThat(chunks).hasSize(2);
+
+		// Doc chunks:
+		assertThat(chunks.get(0).getContent()).isEqualTo("In the end, writing arises when man");
+		assertThat(chunks.get(1).getContent()).isEqualTo(" realizes that memory is not enough.");
+
+		// Verify that the same, merged metadata is copied to all chunks.
+		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());
+		assertThat(chunks.get(1).getMetadata()).containsKeys("key1");
+
+		// Verify that the content formatters are copied from the parents to the chunks.
+		assertThat(chunks.get(0).getContentFormatter()).isSameAs(contentFormatter);
+		assertThat(chunks.get(1).getContentFormatter()).isSameAs(contentFormatter);
 	}
 
 }

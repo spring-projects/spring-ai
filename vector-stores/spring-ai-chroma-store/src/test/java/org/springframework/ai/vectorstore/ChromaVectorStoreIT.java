@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vectorstore;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,6 +22,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.chromadb.ChromaDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.ChromaImage;
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
@@ -34,9 +37,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
-import org.testcontainers.chromadb.ChromaDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
@@ -49,6 +51,10 @@ public class ChromaVectorStoreIT {
 	@Container
 	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
 
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(TestApplication.class)
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
 					Collections.singletonMap("meta1", "meta1")),
@@ -57,29 +63,25 @@ public class ChromaVectorStoreIT {
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
 					Collections.singletonMap("meta2", "meta2")));
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
-
 	@Test
 	public void addAndSearch() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).hasSize(0);
@@ -89,7 +91,7 @@ public class ChromaVectorStoreIT {
 	@Test
 	public void addAndSearchWithFilters() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -129,7 +131,7 @@ public class ChromaVectorStoreIT {
 	public void documentUpdateTest() {
 
 		// Note ,using OpenAI to calculate embeddings
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -170,11 +172,11 @@ public class ChromaVectorStoreIT {
 	@Test
 	public void searchThresholdTest() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			var request = SearchRequest.query("Great").withTopK(5);
 			List<Document> fullResult = vectorStore.similaritySearch(request.withSimilarityThresholdAll());
@@ -189,14 +191,14 @@ public class ChromaVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 		});
 	}
 

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.moderation;
 
 import java.util.Objects;
@@ -10,29 +26,29 @@ import java.util.Objects;
  * @author Ahmed Yousri
  * @since 1.0.0
  */
-public class CategoryScores {
+public final class CategoryScores {
 
-	private double sexual;
+	private final double sexual;
 
-	private double hate;
+	private final double hate;
 
-	private double harassment;
+	private final double harassment;
 
-	private double selfHarm;
+	private final double selfHarm;
 
-	private double sexualMinors;
+	private final double sexualMinors;
 
-	private double hateThreatening;
+	private final double hateThreatening;
 
-	private double violenceGraphic;
+	private final double violenceGraphic;
 
-	private double selfHarmIntent;
+	private final double selfHarmIntent;
 
-	private double selfHarmInstructions;
+	private final double selfHarmInstructions;
 
-	private double harassmentThreatening;
+	private final double harassmentThreatening;
 
-	private double violence;
+	private final double violence;
 
 	private CategoryScores(Builder builder) {
 		this.sexual = builder.sexual;
@@ -48,52 +64,89 @@ public class CategoryScores {
 		this.violence = builder.violence;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public double getSexual() {
-		return sexual;
+		return this.sexual;
 	}
 
 	public double getHate() {
-		return hate;
+		return this.hate;
 	}
 
 	public double getHarassment() {
-		return harassment;
+		return this.harassment;
 	}
 
 	public double getSelfHarm() {
-		return selfHarm;
+		return this.selfHarm;
 	}
 
 	public double getSexualMinors() {
-		return sexualMinors;
+		return this.sexualMinors;
 	}
 
 	public double getHateThreatening() {
-		return hateThreatening;
+		return this.hateThreatening;
 	}
 
 	public double getViolenceGraphic() {
-		return violenceGraphic;
+		return this.violenceGraphic;
 	}
 
 	public double getSelfHarmIntent() {
-		return selfHarmIntent;
+		return this.selfHarmIntent;
 	}
 
 	public double getSelfHarmInstructions() {
-		return selfHarmInstructions;
+		return this.selfHarmInstructions;
 	}
 
 	public double getHarassmentThreatening() {
-		return harassmentThreatening;
+		return this.harassmentThreatening;
 	}
 
 	public double getViolence() {
-		return violence;
+		return this.violence;
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof CategoryScores)) {
+			return false;
+		}
+		CategoryScores that = (CategoryScores) o;
+		return Double.compare(that.sexual, this.sexual) == 0 && Double.compare(that.hate, this.hate) == 0
+				&& Double.compare(that.harassment, this.harassment) == 0
+				&& Double.compare(that.selfHarm, this.selfHarm) == 0
+				&& Double.compare(that.sexualMinors, this.sexualMinors) == 0
+				&& Double.compare(that.hateThreatening, this.hateThreatening) == 0
+				&& Double.compare(that.violenceGraphic, this.violenceGraphic) == 0
+				&& Double.compare(that.selfHarmIntent, this.selfHarmIntent) == 0
+				&& Double.compare(that.selfHarmInstructions, this.selfHarmInstructions) == 0
+				&& Double.compare(that.harassmentThreatening, this.harassmentThreatening) == 0
+				&& Double.compare(that.violence, this.violence) == 0;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.sexual, this.hate, this.harassment, this.selfHarm, this.sexualMinors,
+				this.hateThreatening, this.violenceGraphic, this.selfHarmIntent, this.selfHarmInstructions,
+				this.harassmentThreatening, this.violence);
+	}
+
+	@Override
+	public String toString() {
+		return "CategoryScores{" + "sexual=" + this.sexual + ", hate=" + this.hate + ", harassment=" + this.harassment
+				+ ", selfHarm=" + this.selfHarm + ", sexualMinors=" + this.sexualMinors + ", hateThreatening="
+				+ this.hateThreatening + ", violenceGraphic=" + this.violenceGraphic + ", selfHarmIntent="
+				+ this.selfHarmIntent + ", selfHarmInstructions=" + this.selfHarmInstructions
+				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence + '}';
 	}
 
 	public static class Builder {
@@ -179,39 +232,6 @@ public class CategoryScores {
 			return new CategoryScores(this);
 		}
 
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof CategoryScores))
-			return false;
-		CategoryScores that = (CategoryScores) o;
-		return Double.compare(that.sexual, sexual) == 0 && Double.compare(that.hate, hate) == 0
-				&& Double.compare(that.harassment, harassment) == 0 && Double.compare(that.selfHarm, selfHarm) == 0
-				&& Double.compare(that.sexualMinors, sexualMinors) == 0
-				&& Double.compare(that.hateThreatening, hateThreatening) == 0
-				&& Double.compare(that.violenceGraphic, violenceGraphic) == 0
-				&& Double.compare(that.selfHarmIntent, selfHarmIntent) == 0
-				&& Double.compare(that.selfHarmInstructions, selfHarmInstructions) == 0
-				&& Double.compare(that.harassmentThreatening, harassmentThreatening) == 0
-				&& Double.compare(that.violence, violence) == 0;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(sexual, hate, harassment, selfHarm, sexualMinors, hateThreatening, violenceGraphic,
-				selfHarmIntent, selfHarmInstructions, harassmentThreatening, violence);
-	}
-
-	@Override
-	public String toString() {
-		return "CategoryScores{" + "sexual=" + sexual + ", hate=" + hate + ", harassment=" + harassment + ", selfHarm="
-				+ selfHarm + ", sexualMinors=" + sexualMinors + ", hateThreatening=" + hateThreatening
-				+ ", violenceGraphic=" + violenceGraphic + ", selfHarmIntent=" + selfHarmIntent
-				+ ", selfHarmInstructions=" + selfHarmInstructions + ", harassmentThreatening=" + harassmentThreatening
-				+ ", violence=" + violence + '}';
 	}
 
 }

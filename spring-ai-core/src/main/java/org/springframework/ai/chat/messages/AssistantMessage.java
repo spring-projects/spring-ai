@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.messages;
 
 import java.util.List;
@@ -33,9 +34,6 @@ import org.springframework.util.CollectionUtils;
  * @since 1.0.0
  */
 public class AssistantMessage extends AbstractMessage {
-
-	public record ToolCall(String id, String type, String name, String arguments) {
-	}
 
 	private final List<ToolCall> toolCalls;
 
@@ -63,24 +61,31 @@ public class AssistantMessage extends AbstractMessage {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof AssistantMessage that))
+		}
+		if (!(o instanceof AssistantMessage that)) {
 			return false;
-		if (!super.equals(o))
+		}
+		if (!super.equals(o)) {
 			return false;
-		return Objects.equals(toolCalls, that.toolCalls);
+		}
+		return Objects.equals(this.toolCalls, that.toolCalls);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), toolCalls);
+		return Objects.hash(super.hashCode(), this.toolCalls);
 	}
 
 	@Override
 	public String toString() {
-		return "AssistantMessage [messageType=" + messageType + ", toolCalls=" + toolCalls + ", textContent="
-				+ textContent + ", metadata=" + metadata + "]";
+		return "AssistantMessage [messageType=" + this.messageType + ", toolCalls=" + this.toolCalls + ", textContent="
+				+ this.textContent + ", metadata=" + this.metadata + "]";
+	}
+
+	public record ToolCall(String id, String type, String name, String arguments) {
+
 	}
 
 }

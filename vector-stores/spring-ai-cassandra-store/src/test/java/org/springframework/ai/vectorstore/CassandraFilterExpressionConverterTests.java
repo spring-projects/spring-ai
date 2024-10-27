@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.util.Collection;
@@ -20,8 +21,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import org.junit.jupiter.api.Assertions;
@@ -46,6 +47,16 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
  * @since 1.0.0
  */
 class CassandraFilterExpressionConverterTests {
+
+	private static final CqlIdentifier T = CqlIdentifier.fromInternal("test");
+
+	private static final Collection<ColumnMetadata> COLUMNS = Set.of(
+			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("id"), DataTypes.TEXT, false),
+			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("content"), DataTypes.TEXT, false),
+			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("country"), DataTypes.TEXT, false),
+			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("genre"), DataTypes.TEXT, false),
+			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("drama"), DataTypes.TEXT, false),
+			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("year"), DataTypes.SMALLINT, false));
 
 	@Test
 	void testEQOnPartition() {
@@ -198,15 +209,5 @@ class CassandraFilterExpressionConverterTests {
 		vectorExpr = filter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("\"'country 1 2 3'\" = 'BG'");
 	}
-
-	private static final CqlIdentifier T = CqlIdentifier.fromInternal("test");
-
-	private static final Collection<ColumnMetadata> COLUMNS = Set.of(
-			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("id"), DataTypes.TEXT, false),
-			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("content"), DataTypes.TEXT, false),
-			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("country"), DataTypes.TEXT, false),
-			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("genre"), DataTypes.TEXT, false),
-			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("drama"), DataTypes.TEXT, false),
-			new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("year"), DataTypes.SMALLINT, false));
 
 }

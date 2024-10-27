@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.azure.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
+package org.springframework.ai.autoconfigure.azure.tool;
 
 import java.util.List;
 import java.util.function.Function;
@@ -25,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
@@ -38,6 +37,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
@@ -55,7 +57,8 @@ class FunctionCallWithFunctionBeanIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name=" + getDeploymentName())
+		this.contextRunner
+			.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name=" + getDeploymentName())
 			.run(context -> {
 
 				ChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -66,14 +69,14 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("weatherFunction").build()));
 
-				logger.info("Response: {}", response);
+				this.logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("weatherFunction3").build()));
 
-				logger.info("Response: {}", response);
+				this.logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
@@ -82,7 +85,8 @@ class FunctionCallWithFunctionBeanIT {
 
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
-		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name=" + getDeploymentName())
+		this.contextRunner
+			.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name=" + getDeploymentName())
 			.run(context -> {
 
 				ChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -93,7 +97,7 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						PortableFunctionCallingOptions.builder().withFunction("weatherFunction").build()));
 
-				logger.info("Response: {}", response);
+				this.logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 

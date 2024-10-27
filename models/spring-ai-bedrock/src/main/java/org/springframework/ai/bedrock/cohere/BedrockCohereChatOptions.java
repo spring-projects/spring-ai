@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
@@ -85,59 +86,17 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private final BedrockCohereChatOptions options = new BedrockCohereChatOptions();
-
-		public Builder withTemperature(Double temperature) {
-			this.options.setTemperature(temperature);
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.setTopP(topP);
-			return this;
-		}
-
-		public Builder withTopK(Integer topK) {
-			this.options.setTopK(topK);
-			return this;
-		}
-
-		public Builder withMaxTokens(Integer maxTokens) {
-			this.options.setMaxTokens(maxTokens);
-			return this;
-		}
-
-		public Builder withStopSequences(List<String> stopSequences) {
-			this.options.setStopSequences(stopSequences);
-			return this;
-		}
-
-		public Builder withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
-			this.options.setReturnLikelihoods(returnLikelihoods);
-			return this;
-		}
-
-		public Builder withNumGenerations(Integer numGenerations) {
-			this.options.setNumGenerations(numGenerations);
-			return this;
-		}
-
-		public Builder withLogitBias(LogitBias logitBias) {
-			this.options.setLogitBias(logitBias);
-			return this;
-		}
-
-		public Builder withTruncate(Truncate truncate) {
-			this.options.setTruncate(truncate);
-			return this;
-		}
-
-		public BedrockCohereChatOptions build() {
-			return this.options;
-		}
-
+	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {
+		return builder().withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withTopK(fromOptions.getTopK())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withStopSequences(fromOptions.getStopSequences())
+			.withReturnLikelihoods(fromOptions.getReturnLikelihoods())
+			.withNumGenerations(fromOptions.getNumGenerations())
+			.withLogitBias(fromOptions.getLogitBias())
+			.withTruncate(fromOptions.getTruncate())
+			.build();
 	}
 
 	@Override
@@ -240,17 +199,59 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		return fromOptions(this);
 	}
 
-	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTopK(fromOptions.getTopK())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withReturnLikelihoods(fromOptions.getReturnLikelihoods())
-			.withNumGenerations(fromOptions.getNumGenerations())
-			.withLogitBias(fromOptions.getLogitBias())
-			.withTruncate(fromOptions.getTruncate())
-			.build();
+	public static class Builder {
+
+		private final BedrockCohereChatOptions options = new BedrockCohereChatOptions();
+
+		public Builder withTemperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder withTopP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder withTopK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		public Builder withMaxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		public Builder withStopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
+			this.options.setReturnLikelihoods(returnLikelihoods);
+			return this;
+		}
+
+		public Builder withNumGenerations(Integer numGenerations) {
+			this.options.setNumGenerations(numGenerations);
+			return this;
+		}
+
+		public Builder withLogitBias(LogitBias logitBias) {
+			this.options.setLogitBias(logitBias);
+			return this;
+		}
+
+		public Builder withTruncate(Truncate truncate) {
+			this.options.setTruncate(truncate);
+			return this;
+		}
+
+		public BedrockCohereChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

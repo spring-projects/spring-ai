@@ -94,7 +94,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	private boolean sslEnabled = GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_SSL_ENABLED;
 
 	public int getBeamWidth() {
-		return beamWidth;
+		return this.beamWidth;
 	}
 
 	public void setBeamWidth(int beamWidth) {
@@ -102,7 +102,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 
 	public void setPort(int port) {
@@ -110,7 +110,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getHost() {
-		return host;
+		return this.host;
 	}
 
 	public void setHost(String host) {
@@ -118,7 +118,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getIndexName() {
-		return indexName;
+		return this.indexName;
 	}
 
 	public void setIndexName(String indexName) {
@@ -126,7 +126,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public int getMaxConnections() {
-		return maxConnections;
+		return this.maxConnections;
 	}
 
 	public void setMaxConnections(int maxConnections) {
@@ -134,7 +134,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getVectorSimilarityFunction() {
-		return vectorSimilarityFunction;
+		return this.vectorSimilarityFunction;
 	}
 
 	public void setVectorSimilarityFunction(String vectorSimilarityFunction) {
@@ -142,7 +142,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String[] getFields() {
-		return fields;
+		return this.fields;
 	}
 
 	public void setFields(String[] fields) {
@@ -150,7 +150,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public int getBuckets() {
-		return buckets;
+		return this.buckets;
 	}
 
 	public void setBuckets(int buckets) {
@@ -158,7 +158,7 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public boolean isSslEnabled() {
-		return sslEnabled;
+		return this.sslEnabled;
 	}
 
 	public void setSslEnabled(boolean sslEnabled) {

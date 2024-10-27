@@ -40,7 +40,7 @@ To support the response of the chatbot, we will register our own function that t
 
 When the response to the prompt to the model needs to answer a question such as `"What’s the weather like in Boston?"` the AI model will invoke the client providing the location value as an argument to be passed to the function.  This RPC-like data is passed as JSON.
 
-Our function can some SaaS based weather service API and returns the weather response back to the model to complete the conversation.  In this example we will use a simple implementation named `MockWeatherService` that hard codes the temperature for various locations.
+Our function can have some SaaS based weather service API and returns the weather response back to the model to complete the conversation.  In this example we will use a simple implementation named `MockWeatherService` that hard codes the temperature for various locations.
 
 The following `MockWeatherService.java` represents the weather service API:
 
@@ -148,13 +148,13 @@ AzureOpenAiChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage),
 		AzureOpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
 
-// NOTE: You can can have multiple functions registered in your `ChatModel` but only those enabled in the prompt request will be considered for the function calling.
+// NOTE: You can have multiple functions registered in your `ChatModel` but only those enabled in the prompt request will be considered for the function calling.
 
 Above user question will trigger 3 calls to `CurrentWeather` function (one for each city) and the final response will be something like this:
 
@@ -185,7 +185,7 @@ var promptOptions = AzureOpenAiChatOptions.builder()
 		.build()))
 	.build();
 
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage), this.promptOptions));
 ----
 
 NOTE: The in-prompt registered functions are enabled by default for the duration of this request.

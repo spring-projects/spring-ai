@@ -89,13 +89,14 @@ List <Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ----
 
 === Configuration properties
 
 You can use the following properties in your Spring Boot configuration to customize the Typesense vector store.
 
+[stripes=even]
 |===
 |Property| Description | Default value
 

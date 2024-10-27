@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.titan.api;
 
 import java.time.Duration;
@@ -110,6 +111,55 @@ public class TitanChatBedrockApi extends
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
+	@Override
+	public TitanChatResponse chatCompletion(TitanChatRequest request) {
+		return this.internalInvocation(request, TitanChatResponse.class);
+	}
+
+	@Override
+	public Flux<TitanChatResponseChunk> chatCompletionStream(TitanChatRequest request) {
+		return this.internalInvocationStream(request, TitanChatResponseChunk.class);
+	}
+
+	/**
+	 * Titan models version.
+	 */
+	public enum TitanChatModel implements ChatModelDescription {
+
+		/**
+		 * amazon.titan-text-lite-v1
+		 */
+		TITAN_TEXT_LITE_V1("amazon.titan-text-lite-v1"),
+
+		/**
+		 * amazon.titan-text-express-v1
+		 */
+		TITAN_TEXT_EXPRESS_V1("amazon.titan-text-express-v1"),
+
+		/**
+		 * amazon.titan-text-premier-v1:0
+		 */
+		TITAN_TEXT_PREMIER_V1("amazon.titan-text-premier-v1:0");
+
+		private final String id;
+
+		TitanChatModel(String value) {
+			this.id = value;
+		}
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return this.id;
+		}
+
+		@Override
+		public String getName() {
+			return this.id;
+		}
+	}
+
 	/**
 	 * TitanChatRequest encapsulates the request parameters for the Titan chat model.
 	 *
@@ -120,6 +170,15 @@ public class TitanChatBedrockApi extends
 	public record TitanChatRequest(
 			@JsonProperty("inputText") String inputText,
 			@JsonProperty("textGenerationConfig") TextGenerationConfig textGenerationConfig) {
+
+		/**
+		 * Create a new TitanChatRequest builder.
+		 * @param inputText The prompt to use for the chat.
+		 * @return A new TitanChatRequest builder.
+		 */
+		public static Builder builder(String inputText) {
+			return new Builder(inputText);
+		}
 
 		/**
 		 * Titan request text generation configuration.
@@ -139,15 +198,6 @@ public class TitanChatBedrockApi extends
 				@JsonProperty("topP") Double topP,
 				@JsonProperty("maxTokenCount") Integer maxTokenCount,
 				@JsonProperty("stopSequences") List<String> stopSequences) {
-		}
-
-		/**
-		 * Create a new TitanChatRequest builder.
-		 * @param inputText The prompt to use for the chat.
-		 * @return A new TitanChatRequest builder.
-		 */
-		public static Builder builder(String inputText) {
-			return new Builder(inputText);
 		}
 
 		public static class Builder {
@@ -211,20 +261,6 @@ public class TitanChatBedrockApi extends
 			@JsonProperty("results") List<Result> results) {
 
 		/**
-		 * Titan response result.
-		 *
-		 * @param tokenCount The number of tokens in the generated text.
-		 * @param outputText The generated text.
-		 * @param completionReason The reason the response finished being generated.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record Result(
-				@JsonProperty("tokenCount") Integer tokenCount,
-				@JsonProperty("outputText") String outputText,
-				@JsonProperty("completionReason") CompletionReason completionReason) {
-		}
-
-		/**
 		 * The reason the response finished being generated.
 		 */
 		public enum CompletionReason {
@@ -242,6 +278,20 @@ public class TitanChatBedrockApi extends
 			 * The response was truncated because of restrictions.
 			 */
 			CONTENT_FILTERED
+		}
+
+		/**
+		 * Titan response result.
+		 *
+		 * @param tokenCount The number of tokens in the generated text.
+		 * @param outputText The generated text.
+		 * @param completionReason The reason the response finished being generated.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Result(
+				@JsonProperty("tokenCount") Integer tokenCount,
+				@JsonProperty("outputText") String outputText,
+				@JsonProperty("completionReason") CompletionReason completionReason) {
 		}
 	}
 
@@ -262,55 +312,6 @@ public class TitanChatBedrockApi extends
 			@JsonProperty("totalOutputTextTokenCount") Integer totalOutputTextTokenCount,
 			@JsonProperty("completionReason") CompletionReason completionReason,
 			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) {
-	}
-
-	/**
-	 * Titan models version.
-	 */
-	public enum TitanChatModel implements ChatModelDescription {
-
-		/**
-		 * amazon.titan-text-lite-v1
-		 */
-		TITAN_TEXT_LITE_V1("amazon.titan-text-lite-v1"),
-
-		/**
-		 * amazon.titan-text-express-v1
-		 */
-		TITAN_TEXT_EXPRESS_V1("amazon.titan-text-express-v1"),
-
-		/**
-		 * amazon.titan-text-premier-v1:0
-		 */
-		TITAN_TEXT_PREMIER_V1("amazon.titan-text-premier-v1:0");
-
-		private final String id;
-
-		/**
-		 * @return The model id.
-		 */
-		public String id() {
-			return id;
-		}
-
-		TitanChatModel(String value) {
-			this.id = value;
-		}
-
-		@Override
-		public String getName() {
-			return this.id;
-		}
-	}
-
-	@Override
-	public TitanChatResponse chatCompletion(TitanChatRequest request) {
-		return this.internalInvocation(request, TitanChatResponse.class);
-	}
-
-	@Override
-	public Flux<TitanChatResponseChunk> chatCompletionStream(TitanChatRequest request) {
-		return this.internalInvocationStream(request, TitanChatResponseChunk.class);
 	}
 }
 // @formatter:on

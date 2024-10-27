@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.ai.bindings;
 
+import java.util.Map;
+
 import org.springframework.cloud.bindings.Binding;
 import org.springframework.cloud.bindings.Bindings;
 import org.springframework.cloud.bindings.boot.BindingsPropertiesProcessor;
 import org.springframework.core.env.Environment;
-
-import java.util.Map;
 
 /**
  * An implementation of {@link BindingsPropertiesProcessor} that detects {@link Binding}s

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
+
+import java.util.List;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import java.util.List;
 
 @ConfigurationProperties(prefix = OpenSearchVectorStoreProperties.CONFIG_PREFIX)
 public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties {
@@ -41,7 +42,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	private Aws aws = new Aws();
 
 	public List<String> getUris() {
-		return uris;
+		return this.uris;
 	}
 
 	public void setUris(List<String> uris) {
@@ -57,7 +58,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public String getUsername() {
-		return username;
+		return this.username;
 	}
 
 	public void setUsername(String username) {
@@ -65,7 +66,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public String getPassword() {
-		return password;
+		return this.password;
 	}
 
 	public void setPassword(String password) {
@@ -73,7 +74,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public String getMappingJson() {
-		return mappingJson;
+		return this.mappingJson;
 	}
 
 	public void setMappingJson(String mappingJson) {

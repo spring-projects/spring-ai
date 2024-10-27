@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock;
 
 import java.util.List;
@@ -33,11 +34,11 @@ public class MessageToPromptConverter {
 
 	private static final String ASSISTANT_PROMPT = "Assistant:";
 
+	private final String lineSeparator;
+
 	private String humanPrompt = HUMAN_PROMPT;
 
 	private String assistantPrompt = ASSISTANT_PROMPT;
-
-	private final String lineSeparator;
 
 	private MessageToPromptConverter(String lineSeparator) {
 		this.lineSeparator = lineSeparator;
@@ -84,9 +85,9 @@ public class MessageToPromptConverter {
 			case SYSTEM:
 				return message.getContent();
 			case USER:
-				return humanPrompt + " " + message.getContent();
+				return this.humanPrompt + " " + message.getContent();
 			case ASSISTANT:
-				return assistantPrompt + " " + message.getContent();
+				return this.assistantPrompt + " " + message.getContent();
 			case TOOL:
 				throw new IllegalArgumentException("Tool execution results are not supported for Bedrock models");
 		}

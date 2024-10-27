@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -109,6 +109,39 @@ public class CohereEmbeddingBedrockApi extends
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
+	@Override
+	public CohereEmbeddingResponse embedding(CohereEmbeddingRequest request) {
+		return this.internalInvocation(request, CohereEmbeddingResponse.class);
+	}
+
+	/**
+	 * Cohere Embedding model ids. https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html
+	 */
+	public enum CohereEmbeddingModel {
+		/**
+		 * cohere.embed-multilingual-v3
+		 */
+		COHERE_EMBED_MULTILINGUAL_V1("cohere.embed-multilingual-v3"),
+		/**
+		 * cohere.embed-english-v3
+		 */
+		COHERE_EMBED_ENGLISH_V3("cohere.embed-english-v3");
+
+		private final String id;
+
+		CohereEmbeddingModel(String value) {
+			this.id = value;
+		}
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return this.id;
+		}
+
+	}
+
 	/**
 	 * The Cohere Embed model request.
 	 *
@@ -188,39 +221,6 @@ public class CohereEmbeddingBedrockApi extends
 			@JsonProperty("response_type") String responseType,
 			// For future use: Currently bedrock doesn't return invocationMetrics for the cohere embedding model.
 			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) {
-	}
-
-	/**
-	 * Cohere Embedding model ids. https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html
-	 */
-	public enum CohereEmbeddingModel {
-		/**
-		 * cohere.embed-multilingual-v3
-		 */
-		COHERE_EMBED_MULTILINGUAL_V1("cohere.embed-multilingual-v3"),
-		/**
-		 * cohere.embed-english-v3
-		 */
-		COHERE_EMBED_ENGLISH_V3("cohere.embed-english-v3");
-
-		private final String id;
-
-		/**
-		 * @return The model id.
-		 */
-		public String id() {
-			return this.id;
-		}
-
-		CohereEmbeddingModel(String value) {
-			this.id = value;
-		}
-
-	}
-
-	@Override
-	public CohereEmbeddingResponse embedding(CohereEmbeddingRequest request) {
-		return this.internalInvocation(request, CohereEmbeddingResponse.class);
 	}
 
 }

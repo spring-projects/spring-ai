@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.chat;
 
 import java.util.List;
@@ -24,9 +25,9 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -44,14 +45,12 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 	private static final Logger logger = LoggerFactory
 		.getLogger(OpenAiChatModelTypeReferenceBeanOutputConverterIT.class);
 
-	record ActorsFilmsRecord(String actor, List<String> movies) {
-	}
-
 	@Test
 	void typeRefOutputConverterRecords() {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
 				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
+
 				});
 
 		String format = outputConverter.getFormat();
@@ -61,7 +60,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
@@ -77,6 +76,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
 				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
+
 				});
 
 		String format = outputConverter.getFormat();
@@ -87,7 +87,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = streamingChatModel.stream(prompt)
+		String generationTextFromStream = this.streamingChatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -104,6 +104,10 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 		assertThat(actorsFilms.get(0).movies()).hasSize(5);
 		assertThat(actorsFilms.get(1).actor()).isEqualTo("Bill Murray");
 		assertThat(actorsFilms.get(1).movies()).hasSize(5);
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 }

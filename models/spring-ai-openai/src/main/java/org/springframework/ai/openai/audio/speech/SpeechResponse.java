@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,12 @@
 
 package org.springframework.ai.openai.audio.speech;
 
-import org.springframework.ai.model.ModelResponse;
-import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import org.springframework.ai.model.ModelResponse;
+import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 
 /**
  * Creates a new instance of SpeechResponse with the given speech result.
@@ -60,32 +60,34 @@ public class SpeechResponse implements ModelResponse<Speech> {
 
 	@Override
 	public Speech getResult() {
-		return speech;
+		return this.speech;
 	}
 
 	@Override
 	public List<Speech> getResults() {
-		return Collections.singletonList(speech);
+		return Collections.singletonList(this.speech);
 	}
 
 	@Override
 	public OpenAiAudioSpeechResponseMetadata getMetadata() {
-		return speechResponseMetadata;
+		return this.speechResponseMetadata;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof SpeechResponse that))
+		}
+		if (!(o instanceof SpeechResponse that)) {
 			return false;
-		return Objects.equals(speech, that.speech)
-				&& Objects.equals(speechResponseMetadata, that.speechResponseMetadata);
+		}
+		return Objects.equals(this.speech, that.speech)
+				&& Objects.equals(this.speechResponseMetadata, that.speechResponseMetadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(speech, speechResponseMetadata);
+		return Objects.hash(this.speech, this.speechResponseMetadata);
 	}
 
 }

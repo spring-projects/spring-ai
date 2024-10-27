@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.function;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +62,9 @@ public class FunctionCallingOptionsBuilder {
 
 	public FunctionCallingOptionsBuilder withFunction(String function) {
 		Assert.notNull(function, "Function must not be null");
-		this.options.getFunctions().add(function);
+		var set = new HashSet<>(this.options.getFunctions());
+		set.add(function);
+		this.options.setFunctions(set);
 		return this;
 	}
 
@@ -111,14 +115,18 @@ public class FunctionCallingOptionsBuilder {
 
 	public FunctionCallingOptionsBuilder withToolContext(Map<String, Object> context) {
 		Assert.notNull(context, "Tool context must not be null");
-		this.options.getToolContext().putAll(context);
+		Map<String, Object> newContext = new HashMap<>(this.options.getToolContext());
+		newContext.putAll(context);
+		this.options.setToolContext(newContext);
 		return this;
 	}
 
 	public FunctionCallingOptionsBuilder withToolContext(String key, Object value) {
 		Assert.notNull(key, "Key must not be null");
 		Assert.notNull(value, "Value must not be null");
-		this.options.getToolContext().put(key, value);
+		Map<String, Object> newContext = new HashMap<>(this.options.getToolContext());
+		newContext.put(key, value);
+		this.options.setToolContext(newContext);
 		return this;
 	}
 
@@ -126,7 +134,7 @@ public class FunctionCallingOptionsBuilder {
 		return this.options;
 	}
 
-	public static class PortableFunctionCallingOptions implements FunctionCallingOptions, ChatOptions {
+	public static class PortableFunctionCallingOptions implements FunctionCallingOptions {
 
 		private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
@@ -158,27 +166,27 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
-			return this.functionCallbacks;
+			return Collections.unmodifiableList(this.functionCallbacks);
 		}
 
 		public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
-			this.functionCallbacks = functionCallbacks;
+			this.functionCallbacks = new ArrayList<>(functionCallbacks);
 		}
 
 		@Override
 		public Set<String> getFunctions() {
-			return this.functions;
+			return Collections.unmodifiableSet(this.functions);
 		}
 
 		public void setFunctions(Set<String> functions) {
 			Assert.notNull(functions, "Functions must not be null");
-			this.functions = functions;
+			this.functions = new HashSet<>(functions);
 		}
 
 		@Override
 		public String getModel() {
-			return model;
+			return this.model;
 		}
 
 		public void setModel(String model) {
@@ -187,7 +195,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getFrequencyPenalty() {
-			return frequencyPenalty;
+			return this.frequencyPenalty;
 		}
 
 		public void setFrequencyPenalty(Double frequencyPenalty) {
@@ -196,7 +204,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Integer getMaxTokens() {
-			return maxTokens;
+			return this.maxTokens;
 		}
 
 		public void setMaxTokens(Integer maxTokens) {
@@ -205,7 +213,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getPresencePenalty() {
-			return presencePenalty;
+			return this.presencePenalty;
 		}
 
 		public void setPresencePenalty(Double presencePenalty) {
@@ -214,7 +222,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public List<String> getStopSequences() {
-			return stopSequences;
+			return this.stopSequences;
 		}
 
 		public void setStopSequences(List<String> stopSequences) {
@@ -223,7 +231,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getTemperature() {
-			return temperature;
+			return this.temperature;
 		}
 
 		public void setTemperature(Double temperature) {
@@ -232,7 +240,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Integer getTopK() {
-			return topK;
+			return this.topK;
 		}
 
 		public void setTopK(Integer topK) {
@@ -241,7 +249,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Double getTopP() {
-			return topP;
+			return this.topP;
 		}
 
 		public void setTopP(Double topP) {
@@ -250,7 +258,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Boolean getProxyToolCalls() {
-			return proxyToolCalls;
+			return this.proxyToolCalls;
 		}
 
 		public void setProxyToolCalls(Boolean proxyToolCalls) {
@@ -258,11 +266,12 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		public Map<String, Object> getToolContext() {
-			return context;
+			return Collections.unmodifiableMap(this.context);
 		}
 
 		public void setToolContext(Map<String, Object> context) {
-			this.context = context;
+			Assert.notNull(context, "Context must not be null");
+			this.context = new HashMap<>(context);
 		}
 
 		@Override
@@ -271,14 +280,14 @@ public class FunctionCallingOptionsBuilder {
 				.withFrequencyPenalty(this.frequencyPenalty)
 				.withMaxTokens(this.maxTokens)
 				.withPresencePenalty(this.presencePenalty)
-				.withStopSequences(this.stopSequences)
+				.withStopSequences(this.stopSequences != null ? new ArrayList<>(this.stopSequences) : null)
 				.withTemperature(this.temperature)
 				.withTopK(this.topK)
 				.withTopP(this.topP)
-				.withFunctions(this.functions)
-				.withFunctionCallbacks(this.functionCallbacks)
+				.withFunctions(new HashSet<>(this.functions))
+				.withFunctionCallbacks(new ArrayList<>(this.functionCallbacks))
 				.withProxyToolCalls(this.proxyToolCalls)
-				.withToolContext(this.getToolContext())
+				.withToolContext(new HashMap<>(this.getToolContext()))
 				.build();
 		}
 

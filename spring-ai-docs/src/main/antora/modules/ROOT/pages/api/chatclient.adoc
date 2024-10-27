@@ -57,11 +57,11 @@ Then, create a `ChatClient.Builder` instance programmatically for every `ChatMod
 ----
 ChatModel myChatModel = ... // usually autowired
 
-ChatClient.Builder builder = ChatClient.builder(myChatModel);
+ChatClient.Builder builder = ChatClient.builder(this.myChatModel);
 
 // or create a ChatClient with the default builder settings:
 
-ChatClient chatClient = ChatClient.create(myChatModel);
+ChatClient chatClient = ChatClient.create(this.myChatModel);
 ----
 
 == ChatClient Fluent API
@@ -156,13 +156,13 @@ Flux<String> flux = this.chatClient.prompt()
                         Generate the filmography for a random actor.
                         {format}
                       """)
-            .param("format", converter.getFormat()))
+            .param("format", this.converter.getFormat()))
     .stream()
     .content();
 
-String content = flux.collectList().block().stream().collect(Collectors.joining());
+String content = this.flux.collectList().block().stream().collect(Collectors.joining());
 
-List<ActorFilms> actorFilms = converter.convert(content);
+List<ActorFilms> actorFilms = this.converter.convert(this.content);
 ----
 
 == call() return values
@@ -224,7 +224,7 @@ class AIController {
 
 	@GetMapping("/ai/simple")
 	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of("completion", chatClient.prompt().user(message).call().content());
+		return Map.of("completion", this.chatClient.prompt().user(message).call().content());
 	}
 }
 ----
@@ -234,7 +234,7 @@ When calling the application endpoint via curl, the result is:
 [source,bash]
 ----
 ❯ curl localhost:8080/ai/simple
-{"generation":"Why did the pirate go to the comedy club? To hear some arrr-rated jokes! Arrr, matey!"}
+{"completion":"Why did the pirate go to the comedy club? To hear some arrr-rated jokes! Arrr, matey!"}
 ----
 
 === Default System Text with parameters
@@ -268,7 +268,7 @@ class AIController {
 	@GetMapping("/ai")
 	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message, String voice) {
 		return Map.of("completion",
-				chatClient.prompt()
+				this.chatClient.prompt()
 						.system(sp -> sp.param("voice", voice))
 						.user(message)
 						.call()
@@ -397,7 +397,7 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .build();
 
 // Update filter expression at runtime
-String content = chatClient.prompt()
+String content = this.chatClient.prompt()
     .user("Please answer my question XYZ")
     .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
     .call()
@@ -495,7 +495,7 @@ public class CustomerSupportAssistant {
 The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the `ChatClient`.
 This can be useful for debugging and monitoring your AI interactions.
 
-TIP: Spring AI supports observability for LLM and vector store interactions. Refer to the xref:observabilty/index.adoc[Observability] guide for more information.
+TIP: Spring AI supports observability for LLM and vector store interactions. Refer to the xref:observability/index.adoc[Observability] guide for more information.
 
 To enable logging, add the `SimpleLoggerAdvisor` to the advisor chain when creating your ChatClient.
 It's recommended to add it toward the end of the chain:

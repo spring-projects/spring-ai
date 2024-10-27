@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.filter;
 
 import java.util.List;
@@ -31,8 +32,8 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GT
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NOT;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 
 /**
  * @author Christian Tzolov
@@ -44,13 +45,14 @@ public class FilterExpressionBuilderTests {
 	@Test
 	public void testEQ() {
 		// country == "BG"
-		assertThat(b.eq("country", "BG").build()).isEqualTo(new Expression(EQ, new Key("country"), new Value("BG")));
+		assertThat(this.b.eq("country", "BG").build())
+			.isEqualTo(new Expression(EQ, new Key("country"), new Value("BG")));
 	}
 
 	@Test
 	public void tesEqAndGte() {
 		// genre == "drama" AND year >= 2020
-		Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
+		Expression exp = this.b.and(this.b.eq("genre", "drama"), this.b.gte("year", 2020)).build();
 		assertThat(exp).isEqualTo(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
 				new Expression(GTE, new Key("year"), new Value(2020))));
 	}
@@ -58,7 +60,7 @@ public class FilterExpressionBuilderTests {
 	@Test
 	public void testIn() {
 		// genre in ["comedy", "documentary", "drama"]
-		var exp = b.in("genre", "comedy", "documentary", "drama").build();
+		var exp = this.b.in("genre", "comedy", "documentary", "drama").build();
 		assertThat(exp)
 			.isEqualTo(new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
 	}
@@ -66,7 +68,9 @@ public class FilterExpressionBuilderTests {
 	@Test
 	public void testNe() {
 		// year >= 2020 OR country == "BG" AND city != "Sofia"
-		var exp = b.and(b.or(b.gte("year", 2020), b.eq("country", "BG")), b.ne("city", "Sofia")).build();
+		var exp = this.b
+			.and(this.b.or(this.b.gte("year", 2020), this.b.eq("country", "BG")), this.b.ne("city", "Sofia"))
+			.build();
 
 		assertThat(exp).isEqualTo(new Expression(AND,
 				new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
@@ -77,7 +81,9 @@ public class FilterExpressionBuilderTests {
 	@Test
 	public void testGroup() {
 		// (year >= 2020 OR country == "BG") AND city NIN ["Sofia", "Plovdiv"]
-		var exp = b.and(b.group(b.or(b.gte("year", 2020), b.eq("country", "BG"))), b.nin("city", "Sofia", "Plovdiv"))
+		var exp = this.b
+			.and(this.b.group(this.b.or(this.b.gte("year", 2020), this.b.eq("country", "BG"))),
+					this.b.nin("city", "Sofia", "Plovdiv"))
 			.build();
 
 		assertThat(exp).isEqualTo(new Expression(AND,
@@ -89,7 +95,10 @@ public class FilterExpressionBuilderTests {
 	@Test
 	public void tesIn2() {
 		// isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
-		var exp = b.and(b.and(b.eq("isOpen", true), b.gte("year", 2020)), b.in("country", "BG", "NL", "US")).build();
+		var exp = this.b
+			.and(this.b.and(this.b.eq("isOpen", true), this.b.gte("year", 2020)),
+					this.b.in("country", "BG", "NL", "US"))
+			.build();
 
 		assertThat(exp).isEqualTo(new Expression(AND,
 				new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
@@ -100,7 +109,8 @@ public class FilterExpressionBuilderTests {
 	@Test
 	public void tesNot() {
 		// isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
-		var exp = b.not(b.and(b.and(b.eq("isOpen", true), b.gte("year", 2020)), b.in("country", "BG", "NL", "US")))
+		var exp = this.b.not(this.b.and(this.b.and(this.b.eq("isOpen", true), this.b.gte("year", 2020)),
+				this.b.in("country", "BG", "NL", "US")))
 			.build();
 
 		assertThat(exp).isEqualTo(new Expression(NOT,

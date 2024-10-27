@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.anthropic3;
 
 import java.io.IOException;
@@ -32,18 +33,18 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.Media;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -72,8 +73,8 @@ class BedrockAnthropic3ChatModelIT {
 	@Test
 	void multipleStreamAttempts() {
 
-		Flux<ChatResponse> joke1Stream = chatModel.stream(new Prompt(new UserMessage("Tell me a joke?")));
-		Flux<ChatResponse> joke2Stream = chatModel.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
+		Flux<ChatResponse> joke1Stream = this.chatModel.stream(new Prompt(new UserMessage("Tell me a joke?")));
+		Flux<ChatResponse> joke2Stream = this.chatModel.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
 
 		String joke1 = joke1Stream.collectList()
 			.block()
@@ -100,12 +101,12 @@ class BedrockAnthropic3ChatModelIT {
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
@@ -142,14 +143,11 @@ class BedrockAnthropic3ChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Test
@@ -166,7 +164,7 @@ class BedrockAnthropic3ChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
@@ -187,7 +185,7 @@ class BedrockAnthropic3ChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatModel.stream(prompt)
+		String generationTextFromStream = this.chatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -211,7 +209,7 @@ class BedrockAnthropic3ChatModelIT {
 		var userMessage = new UserMessage("Explain what do you see o this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-		var response = chatModel.call(new Prompt(List.of(userMessage)));
+		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
@@ -222,10 +220,14 @@ class BedrockAnthropic3ChatModelIT {
 		Anthropic3ChatOptions chatOptions = new Anthropic3ChatOptions();
 		chatOptions.setStopSequences(List.of("Hello"));
 
-		var response = chatModel.call(new Prompt("hi", chatOptions));
+		var response = this.chatModel.call(new Prompt("hi", chatOptions));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResults()).isEmpty();
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 	@SpringBootConfiguration

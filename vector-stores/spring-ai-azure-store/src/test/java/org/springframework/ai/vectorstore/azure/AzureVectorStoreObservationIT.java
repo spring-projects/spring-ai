@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore.azure;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vectorstore.azure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,10 +23,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.azure.core.credential.AzureKeyCredential;
+import com.azure.search.documents.indexes.SearchIndexClient;
+import com.azure.search.documents.indexes.SearchIndexClientBuilder;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -47,13 +53,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.search.documents.indexes.SearchIndexClient;
-import com.azure.search.documents.indexes.SearchIndexClientBuilder;
-
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistry;
-import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for observation instrumentation AbstractObservationVectorStore in
@@ -65,6 +65,9 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_ENDPOINT", matches = ".+")
 public class AzureVectorStoreObservationIT {
+
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(Config.class);
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -81,9 +84,6 @@ public class AzureVectorStoreObservationIT {
 		}
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(Config.class);
-
 	@BeforeAll
 	public static void beforeAll() {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
@@ -94,13 +94,13 @@ public class AzureVectorStoreObservationIT {
 	@Test
 	void observationVectorStoreAddAndQueryOperations() {
 
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			TestObservationRegistryAssert.assertThat(observationRegistry)
 				.doesNotHaveAnyRemainingCurrentObservation()

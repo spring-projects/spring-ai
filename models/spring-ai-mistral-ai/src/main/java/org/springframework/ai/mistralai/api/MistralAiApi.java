@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mistralai.api;
 
 import java.util.Arrays;
@@ -26,12 +27,12 @@ import java.util.function.Predicate;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.observation.conventions.AiProvider;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
@@ -62,15 +63,17 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class MistralAiApi {
 
-	private static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
-
 	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
+
+	private static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
 
-	private WebClient webClient;
+	private final WebClient webClient;
+
+	private final MistralAiStreamFunctionCallingHelper chunkMerger = new MistralAiStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
@@ -110,6 +113,201 @@ public class MistralAiApi {
 			.build();
 
 		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
+	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
+	 * {@link List} of tokens (e.g. Integers). For embedding multiple inputs in a single
+	 * request, You can pass a {@link List} of {@link String} or {@link List} of
+	 * {@link List} of tokens. For example:
+	 *
+	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
+	 */
+	public <T> ResponseEntity<EmbeddingList<Embedding>> embeddings(EmbeddingRequest<T> embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		// Input text to embed, encoded as a string or array of tokens. To embed multiple
+		// inputs in a single
+		// request, pass an array of strings or array of token arrays.
+		Assert.notNull(embeddingRequest.input(), "The input can not be null.");
+		Assert.isTrue(embeddingRequest.input() instanceof String || embeddingRequest.input() instanceof List,
+				"The input must be either a String, or a List of Strings or List of List of integers.");
+
+		// The input must not an empty string, and any array must be 1024 dimensions or
+		// less.
+		if (embeddingRequest.input() instanceof List list) {
+			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
+			Assert.isTrue(list.size() <= 1024, "The list must be 1024 dimensions or less");
+			Assert.isTrue(
+					list.get(0) instanceof String || list.get(0) instanceof Integer || list.get(0) instanceof List,
+					"The input must be either a String, or a List of Strings or list of list of integers.");
+		}
+
+		return this.restClient.post()
+			.uri("/v1/embeddings")
+			.body(embeddingRequest)
+			.retrieve()
+			.toEntity(new ParameterizedTypeReference<>() {
+
+			});
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+			.uri("/v1/chat/completions")
+			.body(chatRequest)
+			.retrieve()
+			.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
+		return this.webClient.post()
+			.uri("/v1/chat/completions")
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			.takeUntil(SSE_DONE_PREDICATE)
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.map(chunk -> {
+				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			.concatMapIterable(window -> {
+				Mono<ChatCompletionChunk> mono1 = window.reduce(new ChatCompletionChunk(null, null, null, null, null),
+						(previous, current) -> this.chunkMerger.merge(previous, current));
+				return List.of(mono1);
+			})
+			.flatMap(mono -> mono);
+	}
+
+	/**
+	 * The reason the model stopped generating tokens.
+	 */
+	public enum ChatCompletionFinishReason {
+
+		// @formatter:off
+		 /**
+		  * The model hit a natural stop point or a provided stop sequence.
+		  */
+		 @JsonProperty("stop") STOP,
+		 /**
+		  * The maximum number of tokens specified in the request was reached.
+		  */
+		 @JsonProperty("length") LENGTH,
+		 /**
+		  * The content was omitted due to a flag from our content filters.
+		  */
+		 @JsonProperty("model_length") MODEL_LENGTH,
+		 /**
+		  *
+		  */
+		 @JsonProperty("error") ERROR,
+		 /**
+		  * The model requested a tool call.
+		  */
+		 @JsonProperty("tool_calls") TOOL_CALLS
+		 // @formatter:on
+
+	}
+
+	/**
+	 * List of well-known Mistral chat models.
+	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
+	 *
+	 * <p>
+	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
+	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
+	 * Medium, Mistral Large, and Mistral Embeddings).
+	 */
+	public enum ChatModel implements ChatModelDescription {
+
+		// @formatter:off
+		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
+		 TINY("open-mistral-7b"),
+		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MIXTRAL_7B
+		 MIXTRAL("open-mixtral-8x7b"),
+		 OPEN_MISTRAL_7B("open-mistral-7b"),
+		 OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
+		 OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
+		 SMALL("mistral-small-latest"),
+		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral is removing this model
+		 MEDIUM("mistral-medium-latest"),
+		 LARGE("mistral-large-latest");
+		 // @formatter:on
+
+		private final String value;
+
+		ChatModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		@Override
+		public String getName() {
+			return this.value;
+		}
+
+	}
+
+	/**
+	 * List of well-known Mistral embedding models.
+	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-embedding-model
+	 */
+	public enum EmbeddingModel {
+
+		// @formatter:off
+		 EMBED("mistral-embed");
+		 // @formatter:on
+
+		private final String value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
 	}
 
 	/**
@@ -168,7 +366,9 @@ public class MistralAiApi {
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
+
 		}
+
 	}
 
 	/**
@@ -218,26 +418,29 @@ public class MistralAiApi {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o)
+			if (this == o) {
 				return true;
-			if (!(o instanceof Embedding embedding1))
+			}
+			if (!(o instanceof Embedding embedding1)) {
 				return false;
-			return Objects.equals(index, embedding1.index) && Arrays.equals(embedding, embedding1.embedding)
-					&& Objects.equals(object, embedding1.object);
+			}
+			return Objects.equals(this.index, embedding1.index) && Arrays.equals(this.embedding, embedding1.embedding)
+					&& Objects.equals(this.object, embedding1.object);
 		}
 
 		@Override
 		public int hashCode() {
-			int result = Objects.hash(index, object);
-			result = 31 * result + Arrays.hashCode(embedding);
+			int result = Objects.hash(this.index, this.object);
+			result = 31 * result + Arrays.hashCode(this.embedding);
 			return result;
 		}
 
 		@Override
 		public String toString() {
-			return "Embedding{" + "index=" + index + ", embedding=" + Arrays.toString(embedding) + ", object='" + object
-					+ '\'' + '}';
+			return "Embedding{" + "index=" + this.index + ", embedding=" + Arrays.toString(this.embedding)
+					+ ", object='" + this.object + '\'' + '}';
 		}
+
 	}
 
 	/**
@@ -274,6 +477,7 @@ public class MistralAiApi {
 		public EmbeddingRequest(T input) {
 			this(input, EmbeddingModel.EMBED.getValue());
 		}
+
 	}
 
 	/**
@@ -293,46 +497,6 @@ public class MistralAiApi {
 			 @JsonProperty("model") String model,
 			 @JsonProperty("usage") Usage usage) {
 		 // @formatter:on
-	}
-
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
-	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
-	 * {@link List} of tokens (e.g. Integers). For embedding multiple inputs in a single
-	 * request, You can pass a {@link List} of {@link String} or {@link List} of
-	 * {@link List} of tokens. For example:
-	 *
-	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
-	 */
-	public <T> ResponseEntity<EmbeddingList<Embedding>> embeddings(EmbeddingRequest<T> embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		// Input text to embed, encoded as a string or array of tokens. To embed multiple
-		// inputs in a single
-		// request, pass an array of strings or array of token arrays.
-		Assert.notNull(embeddingRequest.input(), "The input can not be null.");
-		Assert.isTrue(embeddingRequest.input() instanceof String || embeddingRequest.input() instanceof List,
-				"The input must be either a String, or a List of Strings or List of List of integers.");
-
-		// The input must not an empty string, and any array must be 1024 dimensions or
-		// less.
-		if (embeddingRequest.input() instanceof List list) {
-			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
-			Assert.isTrue(list.size() <= 1024, "The list must be 1024 dimensions or less");
-			Assert.isTrue(
-					list.get(0) instanceof String || list.get(0) instanceof Integer || list.get(0) instanceof List,
-					"The input must be either a String, or a List of Strings or list of list of integers.");
-		}
-
-		return this.restClient.post()
-			.uri("/v1/embeddings")
-			.body(embeddingRequest)
-			.retrieve()
-			.toEntity(new ParameterizedTypeReference<>() {
-			});
 	}
 
 	/**
@@ -472,7 +636,9 @@ public class MistralAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(@JsonProperty("type") String type) {
+
 		}
+
 	}
 
 	/**
@@ -547,6 +713,7 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function) {
+
 		}
 
 		/**
@@ -559,36 +726,8 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
+
 		}
-	}
-
-	/**
-	 * The reason the model stopped generating tokens.
-	 */
-	public enum ChatCompletionFinishReason {
-
-		// @formatter:off
-		 /**
-		  * The model hit a natural stop point or a provided stop sequence.
-		  */
-		 @JsonProperty("stop") STOP,
-		 /**
-		  * The maximum number of tokens specified in the request was reached.
-		  */
-		 @JsonProperty("length") LENGTH,
-		 /**
-		  * The content was omitted due to a flag from our content filters.
-		  */
-		 @JsonProperty("model_length") MODEL_LENGTH,
-		 /**
-		  *
-		  */
-		 @JsonProperty("error") ERROR,
-		 /**
-		  * The model requested a tool call.
-		  */
-		 @JsonProperty("tool_calls") TOOL_CALLS
-		 // @formatter:on
 
 	}
 
@@ -632,6 +771,7 @@ public class MistralAiApi {
 			@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
 		}
+
 	}
 
 	/**
@@ -676,8 +816,11 @@ public class MistralAiApi {
 			@JsonInclude(Include.NON_NULL)
 			public record TopLogProbs(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
 					@JsonProperty("bytes") List<Integer> probBytes) {
+
 			}
+
 		}
+
 	}
 
 	/**
@@ -719,132 +862,7 @@ public class MistralAiApi {
 		@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
 		}
-	}
 
-	/**
-	 * List of well-known Mistral chat models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
-	 *
-	 * <p>
-	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
-	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
-	 * Medium, Mistral Large, and Mistral Embeddings).
-	 */
-	public enum ChatModel implements ChatModelDescription {
-
-		// @formatter:off
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
-		 TINY("open-mistral-7b"),
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MIXTRAL_7B
-		 MIXTRAL("open-mixtral-8x7b"),
-		 OPEN_MISTRAL_7B("open-mistral-7b"),
-		 OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
-		 OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
-		 SMALL("mistral-small-latest"),
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral is removing this model
-		 MEDIUM("mistral-medium-latest"),
-		 LARGE("mistral-large-latest");
-		 // @formatter:on
-
-		private final String value;
-
-		ChatModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return this.value;
-		}
-
-		@Override
-		public String getName() {
-			return this.value;
-		}
-
-	}
-
-	/**
-	 * List of well-known Mistral embedding models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-embedding-model
-	 */
-	public enum EmbeddingModel {
-
-		// @formatter:off
-		 EMBED("mistral-embed");
-		 // @formatter:on
-
-		private final String value;
-
-		EmbeddingModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return this.value;
-		}
-
-	}
-
-	/**
-	 * Creates a model response for the given chat conversation.
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
-	 * and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-			.uri("/v1/chat/completions")
-			.body(chatRequest)
-			.retrieve()
-			.toEntity(ChatCompletion.class);
-	}
-
-	private MistralAiStreamFunctionCallingHelper chunkMerger = new MistralAiStreamFunctionCallingHelper();
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		return this.webClient.post()
-			.uri("/v1/chat/completions")
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-			.retrieve()
-			.bodyToFlux(String.class)
-			.takeUntil(SSE_DONE_PREDICATE)
-			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-			.map(chunk -> {
-				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-					isInsideTool.set(true);
-				}
-				return chunk;
-			})
-			.windowUntil(chunk -> {
-				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-					isInsideTool.set(false);
-					return true;
-				}
-				return !isInsideTool.get();
-			})
-			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> mono1 = window.reduce(new ChatCompletionChunk(null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
-				return List.of(mono1);
-			})
-			.flatMap(mono -> mono);
 	}
 
 }

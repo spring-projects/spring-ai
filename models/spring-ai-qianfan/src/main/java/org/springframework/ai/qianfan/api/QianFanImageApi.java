@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.qianfan.api;
+
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.qianfan.api.auth.AuthApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-
-import java.util.List;
 
 /**
  * QianFan Image API.
@@ -76,6 +78,18 @@ public class QianFanImageApi extends AuthApi {
 			.build();
 	}
 
+	public ResponseEntity<QianFanImageResponse> createImage(QianFanImageRequest qianFanImageRequest) {
+		Assert.notNull(qianFanImageRequest, "Image request cannot be null.");
+		Assert.hasLength(qianFanImageRequest.prompt(), "Prompt cannot be empty.");
+
+		return this.restClient.post()
+			.uri("/v1/wenxinworkshop/text2image/{model}?access_token={token}", qianFanImageRequest.model(),
+					getAccessToken())
+			.body(qianFanImageRequest)
+			.retrieve()
+			.toEntity(QianFanImageResponse.class);
+	}
+
 	/**
 	 * QianFan Image API model.
 	 */
@@ -122,24 +136,11 @@ public class QianFanImageApi extends AuthApi {
 		@JsonProperty("created") Long created,
 		@JsonProperty("data") List<Data> data) {
 	}
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record Data(
-		@JsonProperty("index") Integer index,
-		@JsonProperty("b64_image") String b64Image) {
-	}
 	// @formatter:onn
 
-	public ResponseEntity<QianFanImageResponse> createImage(QianFanImageRequest qianFanImageRequest) {
-		Assert.notNull(qianFanImageRequest, "Image request cannot be null.");
-		Assert.hasLength(qianFanImageRequest.prompt(), "Prompt cannot be empty.");
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record Data(@JsonProperty("index") Integer index, @JsonProperty("b64_image") String b64Image) {
 
-		return this.restClient.post()
-			.uri("/v1/wenxinworkshop/text2image/{model}?access_token={token}", qianFanImageRequest.model(),
-					getAccessToken())
-			.body(qianFanImageRequest)
-			.retrieve()
-			.toEntity(QianFanImageResponse.class);
 	}
 
 }

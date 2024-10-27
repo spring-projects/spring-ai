@@ -66,7 +66,7 @@ The complete list of supported properties are:
 
 === Embedding Properties
 
-[cols="3*"]
+[cols="3*"", stripes=even]
 |===
 | Property    | Description | Default
 
@@ -176,7 +176,7 @@ embeddingModel.setTokenizerOptions(Map.of("padding", "true"));
 
 embeddingModel.afterPropertiesSet();
 
-List<List<Double>> embeddings = embeddingModel.embed(List.of("Hello world", "World is big"));
+List<List<Double>> embeddings = this.embeddingModel.embed(List.of("Hello world", "World is big"));
 
 ----
 

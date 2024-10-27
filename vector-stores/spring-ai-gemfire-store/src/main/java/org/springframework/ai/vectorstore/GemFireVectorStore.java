@@ -16,22 +16,29 @@
 
 package org.springframework.ai.vectorstore;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.util.annotation.NonNull;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -45,14 +52,8 @@ import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.micrometer.observation.ObservationRegistry;
-import reactor.util.annotation.NonNull;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * A VectorStore implementation backed by GemFire. This store supports creating, updating,
@@ -62,6 +63,7 @@ import reactor.util.annotation.NonNull;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  */
 public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -80,6 +82,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
+
+	private final ObjectMapper objectMapper;
 
 	/**
 	 * Configures and initializes a GemFireVectorStore instance based on the provided
@@ -127,6 +131,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			.toString();
 		this.client = WebClient.create(base);
 		this.batchingStrategy = batchingStrategy;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
 	// Create Index Parameters
@@ -419,10 +424,9 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 					document.getContent(), document.getMetadata()))
 			.toList());
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		String embeddingsJson = null;
 		try {
-			String embeddingString = objectMapper.writeValueAsString(upload);
+			String embeddingString = this.objectMapper.writeValueAsString(upload);
 			embeddingsJson = embeddingString.substring("{\"embeddings\":".length());
 		}
 		catch (JsonProcessingException e) {
@@ -498,8 +502,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		createRequest.setVectorSimilarityFunction(vectorSimilarityFunction);
 		createRequest.setFields(fields);
 
-		ObjectMapper objectMapper = new ObjectMapper();
-		String index = objectMapper.writeValueAsString(createRequest);
+		String index = this.objectMapper.writeValueAsString(createRequest);
 
 		client.post()
 			.contentType(MediaType.APPLICATION_JSON)

@@ -155,13 +155,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -202,7 +202,7 @@ AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(anthropicApi,
+BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(this.anthropicApi,
     AnthropicChatOptions.builder()
         .withTemperature(0.6)
         .withTopK(10)
@@ -211,11 +211,11 @@ BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(anthropicApi
         .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
         .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -244,11 +244,11 @@ AnthropicChatRequest request = AnthropicChatRequest
   .build();
 
 // Sync request
-AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
+AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(this.request);
 
 // Streaming request
-Flux<AnthropicChatResponse> responseStream = anthropicChatApi.chatCompletionStream(request);
-List<AnthropicChatResponse> responses = responseStream.collectList().block();
+Flux<AnthropicChatResponse> responseStream = this.anthropicChatApi.chatCompletionStream(this.request);
+List<AnthropicChatResponse> responses = this.responseStream.collectList().block();
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi.java]'s JavaDoc for further information.

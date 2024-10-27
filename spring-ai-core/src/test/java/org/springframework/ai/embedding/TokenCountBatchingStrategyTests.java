@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.embedding;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+package org.springframework.ai.embedding;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Basic unit test for {@link TokenCountBatchingStrategy}.
@@ -49,9 +50,8 @@ public class TokenCountBatchingStrategyTests {
 		Resource resource = new DefaultResourceLoader().getResource("classpath:text_source.txt");
 		String contentAsString = resource.getContentAsString(StandardCharsets.UTF_8);
 		TokenCountBatchingStrategy tokenCountBatchingStrategy = new TokenCountBatchingStrategy();
-		assertThatThrownBy(() -> {
-			tokenCountBatchingStrategy.batch(List.of(new Document(contentAsString)));
-		}).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> tokenCountBatchingStrategy.batch(List.of(new Document(contentAsString))))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 }

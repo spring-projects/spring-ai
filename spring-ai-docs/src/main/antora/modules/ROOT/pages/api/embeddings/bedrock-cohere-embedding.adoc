@@ -53,7 +53,7 @@ export SPRING_AI_BEDROCK_COHERE_EMBEDDING_ENABLED=true
 
 The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
 
-[cols="3,4,1"]
+[cols="3,4,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -64,7 +64,7 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 
 The prefix `spring.ai.bedrock.cohere.embedding` (defined in `BedrockCohereEmbeddingProperties`) is the property prefix that configures the embedding model implementation for Cohere.
 
-[cols="3,4,1"]
+[cols="3,4,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.bedrock.cohere.embedding.enabled              | Enable or disable support for Cohere  | false
@@ -172,9 +172,9 @@ var cohereEmbeddingApi =new CohereEmbeddingBedrockApi(
 		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
 
 
-var embeddingModel = new BedrockCohereEmbeddingModel(cohereEmbeddingApi);
+var embeddingModel = new BedrockCohereEmbeddingModel(this.cohereEmbeddingApi);
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
@@ -202,7 +202,7 @@ CohereEmbeddingRequest request = new CohereEmbeddingRequest(
 		CohereEmbeddingRequest.InputType.search_document,
 		CohereEmbeddingRequest.Truncate.NONE);
 
-CohereEmbeddingResponse response = api.embedding(request);
+CohereEmbeddingResponse response = this.api.embedding(this.request);
 ----
 
 

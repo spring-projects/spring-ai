@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mistralai.api;
 
 import java.util.List;
@@ -45,7 +46,7 @@ public class MistralAiApiIT {
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		ResponseEntity<ChatCompletion> response = mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
+		ResponseEntity<ChatCompletion> response = this.mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
 				List.of(chatCompletionMessage), MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
@@ -62,7 +63,7 @@ public class MistralAiApiIT {
 				You should reply to the user's request with your name and also in the style of a pirate.
 					""", Role.SYSTEM);
 
-		ResponseEntity<ChatCompletion> response = mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
+		ResponseEntity<ChatCompletion> response = this.mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
 				List.of(systemMessage, userMessage), MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
@@ -72,7 +73,7 @@ public class MistralAiApiIT {
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		Flux<ChatCompletionChunk> response = mistralAiApi.chatCompletionStream(new ChatCompletionRequest(
+		Flux<ChatCompletionChunk> response = this.mistralAiApi.chatCompletionStream(new ChatCompletionRequest(
 				List.of(chatCompletionMessage), MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue(), 0.8, true));
 
 		assertThat(response).isNotNull();
@@ -81,7 +82,7 @@ public class MistralAiApiIT {
 
 	@Test
 	void embeddings() {
-		ResponseEntity<EmbeddingList<Embedding>> response = mistralAiApi
+		ResponseEntity<EmbeddingList<Embedding>> response = this.mistralAiApi
 			.embeddings(new MistralAiApi.EmbeddingRequest<String>("Hello world"));
 
 		assertThat(response).isNotNull();

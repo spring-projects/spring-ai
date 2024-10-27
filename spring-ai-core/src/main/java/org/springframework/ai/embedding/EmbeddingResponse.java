@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.embedding;
 
 import java.util.List;
@@ -58,13 +59,13 @@ public class EmbeddingResponse implements ModelResponse<Embedding> {
 	 * @return Get the embedding metadata.
 	 */
 	public EmbeddingResponseMetadata getMetadata() {
-		return metadata;
+		return this.metadata;
 	}
 
 	@Override
 	public Embedding getResult() {
-		Assert.notEmpty(embeddings, "No embedding data available.");
-		return embeddings.get(0);
+		Assert.notEmpty(this.embeddings, "No embedding data available.");
+		return this.embeddings.get(0);
 	}
 
 	/**
@@ -72,27 +73,29 @@ public class EmbeddingResponse implements ModelResponse<Embedding> {
 	 */
 	@Override
 	public List<Embedding> getResults() {
-		return embeddings;
+		return this.embeddings;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 		EmbeddingResponse that = (EmbeddingResponse) o;
-		return Objects.equals(embeddings, that.embeddings) && Objects.equals(metadata, that.metadata);
+		return Objects.equals(this.embeddings, that.embeddings) && Objects.equals(this.metadata, that.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(embeddings, metadata);
+		return Objects.hash(this.embeddings, this.metadata);
 	}
 
 	@Override
 	public String toString() {
-		return "EmbeddingResult{" + "data=" + embeddings + ", metadata=" + metadata + '}';
+		return "EmbeddingResult{" + "data=" + this.embeddings + ", metadata=" + this.metadata + '}';
 	}
 
 }

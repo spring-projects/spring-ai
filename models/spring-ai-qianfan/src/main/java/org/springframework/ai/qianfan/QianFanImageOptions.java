@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.qianfan;
+
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.image.ImageOptions;
 
-import java.util.Objects;
+import org.springframework.ai.image.ImageOptions;
 
 /**
  * QianFan Image API options. QianFanImageOptions.java
@@ -86,50 +88,6 @@ public class QianFanImageOptions implements ImageOptions {
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public static class Builder {
-
-		private final QianFanImageOptions options;
-
-		private Builder() {
-			this.options = new QianFanImageOptions();
-		}
-
-		public Builder withN(Integer n) {
-			options.setN(n);
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			options.setModel(model);
-			return this;
-		}
-
-		public Builder withWidth(Integer width) {
-			options.setWidth(width);
-			return this;
-		}
-
-		public Builder withHeight(Integer height) {
-			options.setHeight(height);
-			return this;
-		}
-
-		public Builder withStyle(String style) {
-			options.setStyle(style);
-			return this;
-		}
-
-		public Builder withUser(String user) {
-			options.setUser(user);
-			return this;
-		}
-
-		public QianFanImageOptions build() {
-			return options;
-		}
-
 	}
 
 	@Override
@@ -206,24 +164,72 @@ public class QianFanImageOptions implements ImageOptions {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof QianFanImageOptions that))
+		}
+		if (!(o instanceof QianFanImageOptions that)) {
 			return false;
-		return Objects.equals(n, that.n) && Objects.equals(model, that.model) && Objects.equals(width, that.width)
-				&& Objects.equals(height, that.height) && Objects.equals(size, that.size)
-				&& Objects.equals(style, that.style) && Objects.equals(user, that.user);
+		}
+		return Objects.equals(this.n, that.n) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.width, that.width) && Objects.equals(this.height, that.height)
+				&& Objects.equals(this.size, that.size) && Objects.equals(this.style, that.style)
+				&& Objects.equals(this.user, that.user);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(n, model, width, height, size, style, user);
+		return Objects.hash(this.n, this.model, this.width, this.height, this.size, this.style, this.user);
 	}
 
 	@Override
 	public String toString() {
-		return "QianFanImageOptions{" + "n=" + n + ", model='" + model + '\'' + ", width=" + width + ", height="
-				+ height + ", size='" + size + '\'' + ", style='" + style + '\'' + ", user='" + user + '\'' + '}';
+		return "QianFanImageOptions{" + "n=" + this.n + ", model='" + this.model + '\'' + ", width=" + this.width
+				+ ", height=" + this.height + ", size='" + this.size + '\'' + ", style='" + this.style + '\''
+				+ ", user='" + this.user + '\'' + '}';
+	}
+
+	public static class Builder {
+
+		private final QianFanImageOptions options;
+
+		private Builder() {
+			this.options = new QianFanImageOptions();
+		}
+
+		public Builder withN(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder withWidth(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder withHeight(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder withStyle(String style) {
+			this.options.setStyle(style);
+			return this;
+		}
+
+		public Builder withUser(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public QianFanImageOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

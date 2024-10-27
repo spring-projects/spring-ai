@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader.pdf;
 
-import java.awt.Rectangle;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.pdf.config.ParagraphManager;
@@ -48,8 +49,6 @@ import org.springframework.util.StringUtils;
  */
 public class ParagraphPdfDocumentReader implements DocumentReader {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-
 	// Constants for metadata keys
 	private static final String METADATA_START_PAGE = "page_number";
 
@@ -61,13 +60,15 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 	private static final String METADATA_FILE_NAME = "file_name";
 
-	private final ParagraphManager paragraphTextExtractor;
-
 	protected final PDDocument document;
 
-	private PdfDocumentReaderConfig config;
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private final ParagraphManager paragraphTextExtractor;
 
 	protected String resourceFileName;
+
+	private PdfDocumentReaderConfig config;
 
 	/**
 	 * Constructs a ParagraphPdfDocumentReader using a resource URL.
@@ -132,7 +133,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		List<Document> documents = new ArrayList<>(paragraphs.size());
 
 		if (!CollectionUtils.isEmpty(paragraphs)) {
-			logger.info("Start processing paragraphs from PDF");
+			this.logger.info("Start processing paragraphs from PDF");
 			Iterator<Paragraph> itr = paragraphs.iterator();
 
 			var current = itr.next();
@@ -151,7 +152,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 				}
 			}
 		}
-		logger.info("End processing paragraphs from PDF");
+		this.logger.info("End processing paragraphs from PDF");
 		return documents;
 	}
 

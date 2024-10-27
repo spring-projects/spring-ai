@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.palm2.api;
 
 import java.util.List;
@@ -47,7 +48,7 @@ public class VertexAiPaLm2ApiIT {
 
 		GenerateMessageRequest request = new GenerateMessageRequest(prompt);
 
-		GenerateMessageResponse response = vertexAiPaLm2Api.generateMessage(request);
+		GenerateMessageResponse response = this.vertexAiPaLm2Api.generateMessage(request);
 
 		assertThat(response).isNotNull();
 
@@ -66,7 +67,7 @@ public class VertexAiPaLm2ApiIT {
 
 		var text = "Hello, how are you?";
 
-		Embedding response = vertexAiPaLm2Api.embedText(text);
+		Embedding response = this.vertexAiPaLm2Api.embedText(text);
 
 		assertThat(response).isNotNull();
 		assertThat(response.value()).hasSize(768);
@@ -77,7 +78,7 @@ public class VertexAiPaLm2ApiIT {
 
 		var text = List.of("Hello, how are you?", "I am fine, thank you!");
 
-		List<Embedding> response = vertexAiPaLm2Api.batchEmbedText(text);
+		List<Embedding> response = this.vertexAiPaLm2Api.batchEmbedText(text);
 
 		assertThat(response).isNotNull();
 		assertThat(response).hasSize(2);
@@ -91,7 +92,7 @@ public class VertexAiPaLm2ApiIT {
 		var text = "Hello, how are you?";
 
 		var prompt = new MessagePrompt(List.of(new VertexAiPaLm2Api.Message("0", text)));
-		int response = vertexAiPaLm2Api.countMessageTokens(prompt);
+		int response = this.vertexAiPaLm2Api.countMessageTokens(prompt);
 
 		assertThat(response).isEqualTo(17);
 	}
@@ -99,14 +100,14 @@ public class VertexAiPaLm2ApiIT {
 	@Test
 	public void listModels() {
 
-		List<String> response = vertexAiPaLm2Api.listModels();
+		List<String> response = this.vertexAiPaLm2Api.listModels();
 
 		assertThat(response).isNotNull();
 		assertThat(response).hasSizeGreaterThan(0);
 		assertThat(response).contains("models/chat-bison-001", "models/text-bison-001", "models/embedding-gecko-001");
 
 		System.out.println(" - " + response.stream()
-			.map(vertexAiPaLm2Api::getModel)
+			.map(this.vertexAiPaLm2Api::getModel)
 			.map(VertexAiPaLm2Api.Model::toString)
 			.collect(Collectors.joining("\n - ")));
 	}
@@ -114,7 +115,7 @@ public class VertexAiPaLm2ApiIT {
 	@Test
 	public void getModel() {
 
-		VertexAiPaLm2Api.Model model = vertexAiPaLm2Api.getModel("models/chat-bison-001");
+		VertexAiPaLm2Api.Model model = this.vertexAiPaLm2Api.getModel("models/chat-bison-001");
 
 		System.out.println(model);
 		assertThat(model).isNotNull();

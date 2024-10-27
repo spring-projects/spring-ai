@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.palm2.api;
 
 import java.util.List;
@@ -26,8 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.Embedding;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageRequest;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageResponse;
-import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.MessagePrompt;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageResponse.ContentFilter.BlockedReason;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.MessagePrompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
@@ -62,7 +63,7 @@ public class VertexAiPaLm2ApiTests {
 
 	@AfterEach
 	void resetMockServer() {
-		server.reset();
+		this.server.reset();
 	}
 
 	@Test
@@ -76,18 +77,19 @@ public class VertexAiPaLm2ApiTests {
 				List.of(new VertexAiPaLm2Api.Message("0", "I'm fine, thank you.")),
 				List.of(new VertexAiPaLm2Api.GenerateMessageResponse.ContentFilter(BlockedReason.SAFETY, "reason")));
 
-		server
+		this.server
 			.expect(requestToUriTemplate("/models/{generative}:generateMessage?key={apiKey}",
 					VertexAiPaLm2Api.DEFAULT_GENERATE_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
-			.andExpect(content().json(objectMapper.writeValueAsString(request)))
-			.andRespond(withSuccess(objectMapper.writeValueAsString(expectedResponse), MediaType.APPLICATION_JSON));
+			.andExpect(content().json(this.objectMapper.writeValueAsString(request)))
+			.andRespond(
+					withSuccess(this.objectMapper.writeValueAsString(expectedResponse), MediaType.APPLICATION_JSON));
 
-		GenerateMessageResponse response = client.generateMessage(request);
+		GenerateMessageResponse response = this.client.generateMessage(request);
 
 		assertThat(response).isEqualTo(expectedResponse);
 
-		server.verify();
+		this.server.verify();
 	}
 
 	@Test
@@ -97,19 +99,19 @@ public class VertexAiPaLm2ApiTests {
 
 		Embedding expectedEmbedding = new Embedding(new float[] { 0.1f, 0.2f, 0.3f });
 
-		server
+		this.server
 			.expect(requestToUriTemplate("/models/{generative}:embedText?key={apiKey}",
 					VertexAiPaLm2Api.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
-			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("text", text))))
-			.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embedding", expectedEmbedding)),
+			.andExpect(content().json(this.objectMapper.writeValueAsString(Map.of("text", text))))
+			.andRespond(withSuccess(this.objectMapper.writeValueAsString(Map.of("embedding", expectedEmbedding)),
 					MediaType.APPLICATION_JSON));
 
-		Embedding embedding = client.embedText(text);
+		Embedding embedding = this.client.embedText(text);
 
 		assertThat(embedding).isEqualTo(expectedEmbedding);
 
-		server.verify();
+		this.server.verify();
 	}
 
 	@Test
@@ -120,19 +122,19 @@ public class VertexAiPaLm2ApiTests {
 		List<Embedding> expectedEmbeddings = List.of(new Embedding(new float[] { 0.1f, 0.2f, 0.3f }),
 				new Embedding(new float[] { 0.4f, 0.5f, 0.6f }));
 
-		server
+		this.server
 			.expect(requestToUriTemplate("/models/{generative}:batchEmbedText?key={apiKey}",
 					VertexAiPaLm2Api.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
-			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("texts", texts))))
-			.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embeddings", expectedEmbeddings)),
+			.andExpect(content().json(this.objectMapper.writeValueAsString(Map.of("texts", texts))))
+			.andRespond(withSuccess(this.objectMapper.writeValueAsString(Map.of("embeddings", expectedEmbeddings)),
 					MediaType.APPLICATION_JSON));
 
-		List<Embedding> embeddings = client.batchEmbedText(texts);
+		List<Embedding> embeddings = this.client.batchEmbedText(texts);
 
 		assertThat(embeddings).isEqualTo(expectedEmbeddings);
 
-		server.verify();
+		this.server.verify();
 	}
 
 	@SpringBootConfiguration

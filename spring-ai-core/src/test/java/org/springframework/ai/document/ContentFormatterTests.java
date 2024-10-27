@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.document;
 
 import java.util.Map;
@@ -31,12 +32,12 @@ public class ContentFormatterTests {
 
 	@Test
 	public void noExplicitlySetFormatter() {
-		assertThat(document.getContent()).isEqualTo("""
+		assertThat(this.document.getContent()).isEqualTo("""
 				The World is Big and Salvation Lurks Around the Corner""");
 
-		assertThat(document.getFormattedContent()).isEqualTo(document.getFormattedContent(MetadataMode.ALL));
-		assertThat(document.getFormattedContent())
-			.isEqualTo(document.getFormattedContent(Document.DEFAULT_CONTENT_FORMATTER, MetadataMode.ALL));
+		assertThat(this.document.getFormattedContent()).isEqualTo(this.document.getFormattedContent(MetadataMode.ALL));
+		assertThat(this.document.getFormattedContent())
+			.isEqualTo(this.document.getFormattedContent(Document.DEFAULT_CONTENT_FORMATTER, MetadataMode.ALL));
 
 	}
 
@@ -45,7 +46,7 @@ public class ContentFormatterTests {
 
 		DefaultContentFormatter defaultConfigFormatter = DefaultContentFormatter.defaultConfig();
 
-		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL)).isEqualTo("""
+		assertThat(this.document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL)).isEqualTo("""
 				llmKey2: value4
 				embedKey1: value1
 				embedKey2: value2
@@ -53,11 +54,11 @@ public class ContentFormatterTests {
 
 				The World is Big and Salvation Lurks Around the Corner""");
 
-		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
-			.isEqualTo(document.getFormattedContent());
+		assertThat(this.document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
+			.isEqualTo(this.document.getFormattedContent());
 
-		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
-			.isEqualTo(defaultConfigFormatter.format(document, MetadataMode.ALL));
+		assertThat(this.document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
+			.isEqualTo(defaultConfigFormatter.format(this.document, MetadataMode.ALL));
 	}
 
 	@Test
@@ -70,23 +71,24 @@ public class ContentFormatterTests {
 			.withMetadataTemplate("Key/Value {key}={value}")
 			.build();
 
-		assertThat(document.getFormattedContent(textFormatter, MetadataMode.EMBED)).isEqualTo("""
+		assertThat(this.document.getFormattedContent(textFormatter, MetadataMode.EMBED)).isEqualTo("""
 				Metadata:
 				Key/Value llmKey2=value4
 				Key/Value embedKey1=value1
 
 				Text:The World is Big and Salvation Lurks Around the Corner""");
 
-		assertThat(document.getContent()).isEqualTo("""
+		assertThat(this.document.getContent()).isEqualTo("""
 				The World is Big and Salvation Lurks Around the Corner""");
 
-		assertThat(document.getFormattedContent(textFormatter, MetadataMode.EMBED))
-			.isEqualTo(textFormatter.format(document, MetadataMode.EMBED));
+		assertThat(this.document.getFormattedContent(textFormatter, MetadataMode.EMBED))
+			.isEqualTo(textFormatter.format(this.document, MetadataMode.EMBED));
 
-		var documentWithCustomFormatter = new Document(document.getId(), document.getContent(), document.getMetadata());
+		var documentWithCustomFormatter = new Document(this.document.getId(), this.document.getContent(),
+				this.document.getMetadata());
 		documentWithCustomFormatter.setContentFormatter(textFormatter);
 
-		assertThat(document.getFormattedContent(textFormatter, MetadataMode.ALL))
+		assertThat(this.document.getFormattedContent(textFormatter, MetadataMode.ALL))
 			.isEqualTo(documentWithCustomFormatter.getFormattedContent());
 	}
 
