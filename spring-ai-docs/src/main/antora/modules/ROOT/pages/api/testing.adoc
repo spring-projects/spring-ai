@@ -103,6 +103,7 @@ The 'claim' and 'document' are presented to the AI model for evaluation. Smaller
 
 === Usage
 The FactCheckingEvaluator constructor takes a ChatClient.Builder as a parameter:
+
 [source,java]
 ----
 public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
@@ -148,3 +149,71 @@ void testFactChecking() {
 
 }
 ----
+
+== CorrectnessEvaluator
+
+Whereas `FactCheckingEvaluator` establishes if the generated content is factual given some context data, `CorrectnessEvaluator` determines if the generated content is correct, as compared with a reference answer that is correct. It also produces a score (with a range of 1 to 5) the gauge how correct the generated content is.
+
+The `CorrectnessEvaluator` submits the following system prompt to the AI model as guidelines for determining correctness:
+
+[source,text]
+----
+You are an expert evaluation system for a question answering chatbot.
+You are given the following information:
+- a user query, and
+- a generated answer
+You may also be given a reference answer to use for reference in your evaluation.
+Your job is to judge the relevance and correctness of the generated answer.
+Output a single score that represents a holistic evaluation.
+Follow these guidelines for scoring:
+- Your score has to be between 1 and 5, where 1 is the worst and 5 is the best.
+- If the generated answer is not relevant to the user query,
+you should give a score of 1.
+- If the generated answer is relevant but contains mistakes,
+you should give a score between 2 and 3.
+- If the generated answer is relevant and fully correct,
+you should give a score between 4 and 5.
+Example Response:
+4.0
+The generated answer has the exact same metrics as the reference answer,
+but it is not as concise.
+----
+
+Along with the system prompt, the query input, generated answer, and the reference answer are provided in the user prompt:
+
+[source,text]
+----
+{query}
+## Reference Answer
+{reference_answer}
+## Generated Answer
+{generated_answer}
+----
+
+Here is an example of a JUnit test that performs a RAG query over a PDF document loaded into a Vector Store and then evaluates if the response is relevant to the user text.
+
+[source,java]
+----
+@Test
+void testEvaluation() {
+    String userText = "Why is the sky blue?";
+
+    ChatResponse response = ChatClient.builder(chatModel)
+            .build().prompt()
+            .user(userText)
+            .call()
+            .chatResponse();
+
+    var correctnessEvaluator = new CorrectnessEvaluator(ChatClient.builder(chatModel), 3.5f);
+
+    EvaluationResponse evaluationResponse = correctnessEvaluator.evaluate(
+    new EvaluationRequest(
+        question,
+        List.of(),
+        "Light scattering makes the sky blue."));
+
+    assertTrue(evaluationResponse.isPass(), "Response is incorrect");
+}
+----
+
+The `CorrectnessEvaluator` is created with a `ChatClient` as well as a threshold that the score must be greater than or equal to in order for the evaluation to be considered correct.
