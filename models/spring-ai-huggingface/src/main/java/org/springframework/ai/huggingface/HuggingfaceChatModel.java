@@ -34,6 +34,10 @@ import org.springframework.ai.huggingface.model.chat.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.springframework.ai.huggingface.model.chat.AllOfGenerateResponseDetails;
+import org.springframework.ai.huggingface.model.chat.GenerateParameters;
+import org.springframework.ai.huggingface.model.chat.GenerateRequest;
+import org.springframework.ai.huggingface.model.chat.GenerateResponse;
 
 /**
  * An implementation of {@link ChatModel} that interfaces with HuggingFace Inference

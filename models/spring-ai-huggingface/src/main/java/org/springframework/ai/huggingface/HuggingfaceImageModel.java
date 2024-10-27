@@ -18,6 +18,8 @@ import java.util.List;
  */
 public class HuggingfaceImageModel implements ImageModel {
 
+	private final String APPLICATION_JSON = "application/json";
+
 	/**
 	 * Token required for authenticating with the HuggingFace Inference API.
 	 */
@@ -47,8 +49,7 @@ public class HuggingfaceImageModel implements ImageModel {
 		final GenerateParameters generateParameters = createGenerateParameters(prompt.getOptions());
 		final GenerateRequest generateRequest = createGenerateRequest(prompt.getInstructions(), generateParameters);
 
-		// huggingface eps with text-to-image models return only single image in default
-		// mode
+		// hf text-to-image endpoints return only a single image in default mode
 		final String base64Encoded = generateImage(generateRequest, prompt);
 		final Image image = new Image(null, base64Encoded);
 		final ImageGeneration imageGeneration = new ImageGeneration(image);
@@ -56,14 +57,19 @@ public class HuggingfaceImageModel implements ImageModel {
 	}
 
 	private String generateImage(GenerateRequest generateRequest, ImagePrompt prompt) {
-		final String mimeType = prompt.getOptions().getResponseFormat();
-		switch (mimeType) {
-			case "application/json" -> {
-				return new String(this.imageGenApi.generate(generateRequest, prompt.getOptions().getResponseFormat()));
+		final String responseFormat = prompt.getOptions().getResponseFormat();
+		final HuggingfaceImageOptions options = (HuggingfaceImageOptions) prompt.getOptions();
+		switch (responseFormat) {
+			case "base64" -> {
+				return new String(this.imageGenApi.generate(generateRequest, APPLICATION_JSON));
+			}
+			case "bytes" -> {
+				byte[] bytes = this.imageGenApi.generate(generateRequest, options.getResponseMimeType());
+				return Base64.getEncoder().encodeToString(bytes);
 			}
 			default -> {
-				byte[] bytes = this.imageGenApi.generate(generateRequest, prompt.getOptions().getResponseFormat());
-				return Base64.getEncoder().encodeToString(bytes);
+				throw new UnsupportedOperationException(String
+					.format("Unsupported response format: %s, should be 'base64' or 'bytes'", responseFormat));
 			}
 		}
 	}

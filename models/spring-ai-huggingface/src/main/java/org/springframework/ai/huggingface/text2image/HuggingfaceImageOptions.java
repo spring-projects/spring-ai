@@ -12,7 +12,18 @@ public class HuggingfaceImageOptions implements ImageOptions {
 
 	private Integer height;
 
+	/**
+	 * should be one of 'base64' or 'bytes'
+	 */
 	private String responseFormat;
+
+	private String style;
+
+	/**
+	 * considered only if responseFormat = 'bytes' should be one of 'image/png',
+	 * 'image/jpg', 'image/tiff' etc.
+	 */
+	private String responseMimeType;
 
 	private String negativePrompt;
 
@@ -69,6 +80,23 @@ public class HuggingfaceImageOptions implements ImageOptions {
 
 	public void setResponseFormat(String responseFormat) {
 		this.responseFormat = responseFormat;
+	}
+
+	@Override
+	public String getStyle() {
+		return style;
+	}
+
+	public void setStyle(String style) {
+		this.style = style;
+	}
+
+	public String getResponseMimeType() {
+		return responseMimeType;
+	}
+
+	public void setResponseMimeType(String responseMimeType) {
+		this.responseMimeType = responseMimeType;
 	}
 
 	public String getNegativePrompt() {
