@@ -135,7 +135,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		return this.jdbcTemplate.queryForObject(
 				"SELECT pgml.embed(?, ?, ?::JSONB)" + this.defaultOptions.getVectorType().cast + " AS embedding",
 				this.defaultOptions.getVectorType().rowMapper, this.defaultOptions.getTransformer(), text,
-				this.defaultOptions.getKwargs());
+				ModelOptionsUtils.toJsonString(this.defaultOptions.getKwargs()));
 	}
 
 	@Override
@@ -203,7 +203,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	@Override
 	public void afterPropertiesSet() {
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pgml");
-		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
 		if (StringUtils.hasText(this.defaultOptions.getVectorType().extensionName)) {
 			this.jdbcTemplate
 				.execute("CREATE EXTENSION IF NOT EXISTS " + this.defaultOptions.getVectorType().extensionName);
