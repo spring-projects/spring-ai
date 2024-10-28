@@ -50,17 +50,12 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientTest {
 
-	static Function<String, String> mockFunction = new Function<String, String>() {
-
-		@Override
-		public String apply(String s) {
-			return s;
-		}
-	};
+	static Function<String, String> mockFunction = s -> s;
 
 	@Mock
 	ChatModel chatModel;
@@ -88,7 +83,7 @@ public class ChatClientTest {
 
 		var chatClient = ChatClient.builder(this.chatModel).defaultSystem("Default system text").build();
 
-		var content = chatClient.prompt().call().content();
+		var content = chatClient.prompt("What's Spring AI?").call().content();
 
 		assertThat(content).isEqualTo("response");
 
@@ -96,7 +91,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getContent()).isEqualTo("Default system text");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
-		content = join(chatClient.prompt().stream().content());
+		content = join(chatClient.prompt("What's Spring AI?").stream().content());
 
 		assertThat(content).isEqualTo("response");
 
@@ -105,7 +100,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Override the default system text with prompt system
-		content = chatClient.prompt().system("Override default system text").call().content();
+		content = chatClient.prompt("What's Spring AI?").system("Override default system text").call().content();
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
@@ -113,7 +108,8 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Streaming
-		content = join(chatClient.prompt().system("Override default system text").stream().content());
+		content = join(
+				chatClient.prompt("What's Spring AI?").system("Override default system text").stream().content());
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
@@ -140,7 +136,7 @@ public class ChatClientTest {
 				.param("param2", "value2"))
 			.build();
 
-		var content = chatClient.prompt().call().content();
+		var content = chatClient.prompt("What's Spring AI?").call().content();
 
 		assertThat(content).isEqualTo("response");
 
@@ -149,7 +145,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Streaming
-		content = join(chatClient.prompt().stream().content());
+		content = join(chatClient.prompt("What's Spring AI?").stream().content());
 
 		assertThat(content).isEqualTo("response");
 
@@ -158,7 +154,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Override single default system parameter
-		content = chatClient.prompt().system(s -> s.param("param1", "value1New")).call().content();
+		content = chatClient.prompt("What's Spring AI?").system(s -> s.param("param1", "value1New")).call().content();
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
@@ -166,7 +162,8 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// streaming
-		content = join(chatClient.prompt().system(s -> s.param("param1", "value1New")).stream().content());
+		content = join(
+				chatClient.prompt("What's Spring AI?").system(s -> s.param("param1", "value1New")).stream().content());
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
@@ -174,7 +171,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Override default system text
-		content = chatClient.prompt()
+		content = chatClient.prompt("What's Spring AI?")
 			.system(s -> s.text("Override default system text {param3}").param("param3", "value3"))
 			.call()
 			.content();
@@ -185,7 +182,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Streaming
-		content = join(chatClient.prompt()
+		content = join(chatClient.prompt("What's Spring AI?")
 			.system(s -> s.text("Override default system text {param3}").param("param3", "value3"))
 			.stream()
 			.content());
@@ -489,11 +486,16 @@ public class ChatClientTest {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		String response = ChatClient.builder(this.chatModel).build().prompt().system("System prompt").call().content();
+		String response = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt("What's Spring AI?")
+			.system("System prompt")
+			.call()
+			.content();
 
 		assertThat(response).isEqualTo("response");
 
-		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(1);
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
 
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getContent()).isEqualTo("System prompt");
