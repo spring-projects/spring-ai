@@ -34,6 +34,8 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -41,8 +43,6 @@ import org.springframework.util.StringUtils;
  * The data of the chat client request that can be modified before the execution of the
  * ChatClient's call method
  *
- * @author Christian Tzolov
- * @since 1.0.0
  * @param chatModel the chat model used
  * @param userText the text provided by the user
  * @param systemText the text provided by the system
@@ -57,13 +57,53 @@ import org.springframework.util.StringUtils;
  * @param advisorParams the map of advisor parameters
  * @param adviseContext the map of advise context
  * @param toolContext the tool context
+ * @author Christian Tzolov
+ * @author Thomas Vitale
+ * @since 1.0.0
  */
-public record AdvisedRequest(ChatModel chatModel, String userText, String systemText, ChatOptions chatOptions,
-		List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages,
-		Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors,
-		Map<String, Object> advisorParams, Map<String, Object> adviseContext, Map<String, Object> toolContext) {
+public record AdvisedRequest(
+// @formatter:off
+		ChatModel chatModel,
+		String userText,
+		@Nullable
+		String systemText,
+		@Nullable
+		ChatOptions chatOptions,
+		List<Media> media,
+		List<String> functionNames,
+		List<FunctionCallback> functionCallbacks,
+		List<Message> messages,
+		Map<String, Object> userParams,
+		Map<String, Object> systemParams,
+		List<Advisor> advisors,
+		Map<String, Object> advisorParams,
+		Map<String, Object> adviseContext,
+		Map<String, Object> toolContext
+// @formatter:on
+) {
+
+	public AdvisedRequest {
+		Assert.notNull(chatModel, "chatModel cannot be null");
+		Assert.hasText(userText, "userText cannot be null or empty");
+		Assert.notNull(media, "media cannot be null");
+		Assert.notNull(functionNames, "functionNames cannot be null");
+		Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
+		Assert.notNull(messages, "messages cannot be null");
+		Assert.notNull(userParams, "userParams cannot be null");
+		Assert.notNull(systemParams, "systemParams cannot be null");
+		Assert.notNull(advisors, "advisors cannot be null");
+		Assert.notNull(advisorParams, "advisorParams cannot be null");
+		Assert.notNull(adviseContext, "adviseContext cannot be null");
+		Assert.notNull(toolContext, "toolContext cannot be null");
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static Builder from(AdvisedRequest from) {
+		Assert.notNull(from, "AdvisedRequest cannot be null");
+
 		Builder builder = new Builder();
 		builder.chatModel = from.chatModel;
 		builder.userText = from.userText;
@@ -79,23 +119,18 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		builder.advisorParams = from.advisorParams;
 		builder.adviseContext = from.adviseContext;
 		builder.toolContext = from.toolContext;
-
 		return builder;
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
 	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
+		Assert.notNull(contextTransform, "contextTransform cannot be null");
 		return from(this)
 			.withAdviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
 			.build();
 	}
 
 	public Prompt toPrompt() {
-
-		var messages = new ArrayList<Message>(this.messages());
+		var messages = new ArrayList<>(this.messages());
 
 		String processedSystemText = this.systemText();
 		if (StringUtils.hasText(processedSystemText)) {
@@ -111,7 +146,6 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
 
 		if (StringUtils.hasText(processedUserText)) {
-
 			Map<String, Object> userParams = new HashMap<>(this.userParams());
 			if (StringUtils.hasText(formatParam)) {
 				userParams.put("spring_ai_soc_format", formatParam);
@@ -137,17 +171,15 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		return new Prompt(messages, this.chatOptions());
 	}
 
-	public static class Builder {
-
-		public Map<String, Object> toolContext = Map.of();
+	public static final class Builder {
 
 		private ChatModel chatModel;
 
-		private String userText = "";
+		private String userText;
 
-		private String systemText = "";
+		private String systemText;
 
-		private ChatOptions chatOptions = null;
+		private ChatOptions chatOptions;
 
 		private List<Media> media = List.of();
 
@@ -166,6 +198,11 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		private Map<String, Object> advisorParams = Map.of();
 
 		private Map<String, Object> adviseContext = Map.of();
+
+		public Map<String, Object> toolContext = Map.of();
+
+		private Builder() {
+		}
 
 		public Builder withChatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;
@@ -202,11 +239,6 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
-			this.toolContext = toolContext;
-			return this;
-		}
-
 		public Builder withMessages(List<Message> messages) {
 			this.messages = messages;
 			return this;
@@ -234,6 +266,11 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 
 		public Builder withAdviseContext(Map<String, Object> adviseContext) {
 			this.adviseContext = adviseContext;
+			return this;
+		}
+
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			this.toolContext = toolContext;
 			return this;
 		}
 
