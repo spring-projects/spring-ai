@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
@@ -50,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 		"spring.ai.vectorstore.mongodb.initialize-schema=true",
 		"spring.ai.vectorstore.mongodb.collection-name=test_collection",
 		"spring.ai.vectorstore.mongodb.index-name=text_index" })
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 
 	@Container
