@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest(properties = "logging.level.sql=TRACE")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Disabled("Disabled from automatic execution, as it requires an excessive amount of memory (over 9GB)!")
+@Disabled("Disabled from automatic execution, as it pulls a very large image file (over 9GB)!")
 class PostgresMlEmbeddingModelIT {
 
 	@Container
