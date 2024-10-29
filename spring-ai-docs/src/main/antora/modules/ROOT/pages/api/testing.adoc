@@ -12,7 +12,7 @@ The Spring AI interface for evaluating responses is `Evaluator`, defined as:
 ----
 @FunctionalInterface
 public interface Evaluator {
-    EvaluationResponse evaluate(EvaluationRequest evaluationRequest)
+    EvaluationResponse evaluate(EvaluationRequest evaluationRequest);
 }
 ----
 
