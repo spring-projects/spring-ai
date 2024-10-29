@@ -16,6 +16,8 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.ollama.OllamaContainer;
 
 import java.time.Duration;
@@ -27,10 +29,25 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 
 public class BaseOllamaIT {
 
-	public static final OllamaContainer ollamaContainer;
+	private static OllamaContainer ollamaContainer;
 
 	// Toggle for running tests locally on native Ollama for a faster feedback loop.
 	private static final boolean useTestcontainers = true;
+
+	@BeforeAll
+	public static void setUp() {
+		if (useTestcontainers && !isDisabled()) {
+			ollamaContainer = new OllamaContainer(OllamaImage.IMAGE).withReuse(true);
+			ollamaContainer.start();
+		}
+	}
+
+	@AfterAll
+	public static void tearDown() {
+		if (ollamaContainer != null) {
+			ollamaContainer.stop();
+		}
+	}
 
 	/**
 	 * Change the return value to false in order to run multiple Ollama IT tests locally
@@ -59,11 +76,6 @@ public class BaseOllamaIT {
 		var ollamaModelManager = new OllamaModelManager(new OllamaApi(baseUrl), modelManagementOptions);
 		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
 		return baseUrl;
-	}
-
-	static {
-		ollamaContainer = new OllamaContainer(OllamaImage.IMAGE).withReuse(true);
-		ollamaContainer.start();
 	}
 
 }
