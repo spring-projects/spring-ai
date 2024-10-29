@@ -62,6 +62,7 @@
 		<module>vector-stores/spring-ai-typesense-store</module>
 
 		<module>vector-stores/spring-ai-weaviate-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-cosmos-db-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
