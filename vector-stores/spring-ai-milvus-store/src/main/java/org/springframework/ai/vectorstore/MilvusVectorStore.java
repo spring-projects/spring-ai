@@ -197,6 +197,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				idList.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")));
 
 		R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
+			.withDatabaseName(this.config.databaseName)
 			.withCollectionName(this.config.collectionName)
 			.withExpr(deleteExpression)
 			.build());
