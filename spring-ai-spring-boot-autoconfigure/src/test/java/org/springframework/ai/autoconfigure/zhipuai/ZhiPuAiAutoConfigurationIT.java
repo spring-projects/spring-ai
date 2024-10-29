@@ -69,9 +69,11 @@ public class ZhiPuAiAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
-			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
-				return chatResponse.getResults().get(0).getOutput().getContent();
-			}).collect(Collectors.joining());
+			String response = responseFlux.collectList()
+				.block()
+				.stream()
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
+				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);

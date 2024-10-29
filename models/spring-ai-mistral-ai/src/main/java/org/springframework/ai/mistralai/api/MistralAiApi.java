@@ -221,26 +221,32 @@ public class MistralAiApi {
 	public enum ChatCompletionFinishReason {
 
 		// @formatter:off
-		 /**
-		  * The model hit a natural stop point or a provided stop sequence.
-		  */
-		 @JsonProperty("stop") STOP,
-		 /**
-		  * The maximum number of tokens specified in the request was reached.
-		  */
-		 @JsonProperty("length") LENGTH,
-		 /**
-		  * The content was omitted due to a flag from our content filters.
-		  */
-		 @JsonProperty("model_length") MODEL_LENGTH,
-		 /**
-		  *
-		  */
-		 @JsonProperty("error") ERROR,
-		 /**
-		  * The model requested a tool call.
-		  */
-		 @JsonProperty("tool_calls") TOOL_CALLS
+		/**
+		* The model hit a natural stop point or a provided stop sequence.
+		*/
+		@JsonProperty("stop")
+		STOP,
+
+		/**
+		* The maximum number of tokens specified in the request was reached.
+		*/
+		@JsonProperty("length")
+		LENGTH,
+
+		/**
+		* The content was omitted due to a flag from our content filters.
+		*/
+		@JsonProperty("model_length")
+		MODEL_LENGTH,
+
+		@JsonProperty("error")
+		ERROR,
+
+		/**
+		* The model requested a tool call.
+		*/
+		@JsonProperty("tool_calls")
+		TOOL_CALLS
 		 // @formatter:on
 
 	}
@@ -257,18 +263,18 @@ public class MistralAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
-		 TINY("open-mistral-7b"),
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MIXTRAL_7B
-		 MIXTRAL("open-mixtral-8x7b"),
-		 OPEN_MISTRAL_7B("open-mistral-7b"),
-		 OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
-		 OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
-		 SMALL("mistral-small-latest"),
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral is removing this model
-		 MEDIUM("mistral-medium-latest"),
-		 LARGE("mistral-large-latest");
-		 // @formatter:on
+		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
+		TINY("open-mistral-7b"),
+		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MIXTRAL_7B
+		MIXTRAL("open-mixtral-8x7b"),
+		OPEN_MISTRAL_7B("open-mistral-7b"),
+		OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
+		OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
+		SMALL("mistral-small-latest"),
+		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral is removing this model
+		MEDIUM("mistral-medium-latest"),
+		LARGE("mistral-large-latest");
+		// @formatter:on
 
 		private final String value;
 
@@ -294,7 +300,7 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		 EMBED("mistral-embed");
+		EMBED("mistral-embed");
 		 // @formatter:on
 
 		private final String value;
@@ -380,9 +386,9 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(
 	// @formatter:off
-		 @JsonProperty("prompt_tokens") Integer promptTokens,
-		 @JsonProperty("total_tokens") Integer totalTokens,
-		 @JsonProperty("completion_tokens") Integer completionTokens) {
+		@JsonProperty("prompt_tokens") Integer promptTokens,
+		@JsonProperty("total_tokens") Integer totalTokens,
+		@JsonProperty("completion_tokens") Integer completionTokens) {
 		 // @formatter:on
 	}
 
@@ -397,9 +403,9 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Embedding(
 	// @formatter:off
-		 @JsonProperty("index") Integer index,
-		 @JsonProperty("embedding") float[] embedding,
-		 @JsonProperty("object") String object) {
+		@JsonProperty("index") Integer index,
+		@JsonProperty("embedding") float[] embedding,
+		@JsonProperty("object") String object) {
 		 // @formatter:on
 
 		/**
@@ -451,9 +457,9 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest<T>(
 	// @formatter:off
-		 @JsonProperty("input") T input,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("encoding_format") String encodingFormat) {
+		@JsonProperty("input") T input,
+		@JsonProperty("model") String model,
+		@JsonProperty("encoding_format") String encodingFormat) {
 		 // @formatter:on
 
 		/**
@@ -489,10 +495,10 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingList<T>(
 	// @formatter:off
-			 @JsonProperty("object") String object,
-			 @JsonProperty("data") List<T> data,
-			 @JsonProperty("model") String model,
-			 @JsonProperty("usage") Usage usage) {
+			@JsonProperty("object") String object,
+			@JsonProperty("data") List<T> data,
+			@JsonProperty("model") String model,
+			@JsonProperty("usage") Usage usage) {
 		 // @formatter:on
 	}
 
@@ -535,18 +541,18 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 	// @formatter:off
-			 @JsonProperty("model") String model,
-			 @JsonProperty("messages") List<ChatCompletionMessage> messages,
-			 @JsonProperty("tools") List<FunctionTool> tools,
-			 @JsonProperty("tool_choice") ToolChoice toolChoice,
-			 @JsonProperty("temperature") Double temperature,
-			 @JsonProperty("top_p") Double topP,
-			 @JsonProperty("max_tokens") Integer maxTokens,
-			 @JsonProperty("stream") Boolean stream,
-			 @JsonProperty("safe_prompt") Boolean safePrompt,
-	         @JsonProperty("stop") List<String> stop,
-			 @JsonProperty("random_seed") Integer randomSeed,
-			 @JsonProperty("response_format") ResponseFormat responseFormat) {
+			@JsonProperty("model") String model,
+			@JsonProperty("messages") List<ChatCompletionMessage> messages,
+			@JsonProperty("tools") List<FunctionTool> tools,
+			@JsonProperty("tool_choice") ToolChoice toolChoice,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("safe_prompt") Boolean safePrompt,
+			@JsonProperty("stop") List<String> stop,
+			@JsonProperty("random_seed") Integer randomSeed,
+			@JsonProperty("response_format") ResponseFormat responseFormat) {
 		 // @formatter:on
 
 		/**
@@ -619,9 +625,12 @@ public class MistralAiApi {
 		public enum ToolChoice {
 
 			// @formatter:off
-			 @JsonProperty("auto") AUTO,
-			 @JsonProperty("any") ANY,
-			 @JsonProperty("none") NONE
+			@JsonProperty("auto")
+			AUTO,
+			@JsonProperty("any")
+			ANY,
+			@JsonProperty("none")
+			NONE
 			 // @formatter:on
 
 		}
@@ -652,12 +661,17 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionMessage(
 	// @formatter:off
-		 @JsonProperty("content") String content,
-		 @JsonProperty("role") Role role,
-		 @JsonProperty("name") String name,
-		 @JsonProperty("tool_calls") List<ToolCall> toolCalls,
-		 @JsonProperty("tool_call_id") String toolCallId) {
-		 // @formatter:on
+		@JsonProperty("content")
+		String content,
+		@JsonProperty("role")
+		Role role,
+		@JsonProperty("name")
+		String name,
+		@JsonProperty("tool_calls")
+		List<ToolCall> toolCalls,
+		@JsonProperty("tool_call_id")
+		String toolCallId) {
+		// @formatter:on
 
 		/**
 		 * Message comprising the conversation.
@@ -690,10 +704,14 @@ public class MistralAiApi {
 		public enum Role {
 
 			// @formatter:off
-			 @JsonProperty("system") SYSTEM,
-			 @JsonProperty("user") USER,
-			 @JsonProperty("assistant") ASSISTANT,
-			 @JsonProperty("tool") TOOL
+			@JsonProperty("system")
+			SYSTEM,
+			@JsonProperty("user")
+			USER,
+			@JsonProperty("assistant")
+			ASSISTANT,
+			@JsonProperty("tool")
+			TOOL
 			 // @formatter:on
 
 		}
@@ -743,12 +761,12 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletion(
 	// @formatter:off
-		 @JsonProperty("id") String id,
-		 @JsonProperty("object") String object,
-		 @JsonProperty("created") Long created,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("choices") List<Choice> choices,
-		 @JsonProperty("usage") Usage usage) {
+		@JsonProperty("id") String id,
+		@JsonProperty("object") String object,
+		@JsonProperty("created") Long created,
+		@JsonProperty("model") String model,
+		@JsonProperty("choices") List<Choice> choices,
+		@JsonProperty("usage") Usage usage) {
 		 // @formatter:on
 
 		/**
@@ -762,9 +780,9 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record Choice(
 		// @formatter:off
-			 @JsonProperty("index") Integer index,
-			 @JsonProperty("message") ChatCompletionMessage message,
-			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+			@JsonProperty("index") Integer index,
+			@JsonProperty("message") ChatCompletionMessage message,
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 			@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
 		}
@@ -835,11 +853,11 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
 	// @formatter:off
-		 @JsonProperty("id") String id,
-		 @JsonProperty("object") String object,
-		 @JsonProperty("created") Long created,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("choices") List<ChunkChoice> choices) {
+		@JsonProperty("id") String id,
+		@JsonProperty("object") String object,
+		@JsonProperty("created") Long created,
+		@JsonProperty("model") String model,
+		@JsonProperty("choices") List<ChunkChoice> choices) {
 		 // @formatter:on
 
 		/**
@@ -853,9 +871,9 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ChunkChoice(
 		// @formatter:off
-			 @JsonProperty("index") Integer index,
-			 @JsonProperty("delta") ChatCompletionMessage delta,
-			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+			@JsonProperty("index") Integer index,
+			@JsonProperty("delta") ChatCompletionMessage delta,
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 		@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
 		}

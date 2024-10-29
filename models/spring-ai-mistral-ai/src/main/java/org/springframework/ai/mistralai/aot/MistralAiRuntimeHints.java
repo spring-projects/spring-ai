@@ -23,8 +23,6 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
-
 /**
  * The MistralAiRuntimeHints class is responsible for registering runtime hints for
  * Mistral AI API classes.
@@ -37,8 +35,9 @@ public class MistralAiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(MistralAiApi.class))
+		for (var tr : org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage(MistralAiApi.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

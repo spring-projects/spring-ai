@@ -53,9 +53,8 @@ public class AzureAiSearchFilterExpressionConverterTests {
 
 		FilterExpressionConverter converter = new AzureAiSearchFilterExpressionConverter(List.of());
 
-		assertThatThrownBy(() -> {
-			converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
-		}).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG"))))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Not allowed filter identifier name: country");
 	}
 

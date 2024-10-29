@@ -36,7 +36,7 @@ public class SpringAiRetryAutoConfigurationIT {
 
 	@Test
 	void testRetryAutoConfiguration() {
-		this.contextRunner.run((context) -> {
+		this.contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(RetryTemplate.class);
 			assertThat(context).hasSingleBean(ResponseErrorHandler.class);
 		});

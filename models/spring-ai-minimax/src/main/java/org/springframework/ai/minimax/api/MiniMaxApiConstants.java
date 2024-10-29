@@ -32,4 +32,8 @@ public final class MiniMaxApiConstants {
 
 	public static final String PROVIDER_NAME = AiProvider.MINIMAX.value();
 
+	private MiniMaxApiConstants() {
+
+	}
+
 }

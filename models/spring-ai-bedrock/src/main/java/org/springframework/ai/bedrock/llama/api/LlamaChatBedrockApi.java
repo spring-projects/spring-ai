@@ -287,11 +287,13 @@ public class LlamaChatBedrockApi extends
 			/**
 			 * The model has finished generating text for the input prompt.
 			 */
-			@JsonProperty("stop") STOP,
+			@JsonProperty("stop")
+			STOP,
 			/**
 			 * The response was truncated because of the response length you set.
 			 */
-			@JsonProperty("length") LENGTH
+			@JsonProperty("length")
+			LENGTH
 		}
 	}
 }

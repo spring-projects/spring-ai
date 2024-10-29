@@ -208,14 +208,14 @@ public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
 		/**
 		 * Jaccard distance
 		 */
-		JACCARD;
+		JACCARD
 
 	}
 
 	public enum MilvusIndexType {
 
 		INVALID, FLAT, IVF_FLAT, IVF_SQ8, IVF_PQ, HNSW, DISKANN, AUTOINDEX, SCANN, GPU_IVF_FLAT, GPU_IVF_PQ, BIN_FLAT,
-		BIN_IVF_FLAT, TRIE, STL_SORT;
+		BIN_IVF_FLAT, TRIE, STL_SORT
 
 	}
 

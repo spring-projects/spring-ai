@@ -27,6 +27,8 @@ import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 
+import static org.springframework.ai.autoconfigure.ollama.BaseOllamaIT.isDisabled;
+
 public class BaseOllamaIT {
 
 	private static OllamaContainer ollamaContainer;
@@ -36,7 +38,7 @@ public class BaseOllamaIT {
 
 	@BeforeAll
 	public static void setUp() {
-		if (useTestcontainers && !isDisabled()) {
+		if (useTestcontainers && !BaseOllamaIT.isDisabled()) {
 			ollamaContainer = new OllamaContainer(OllamaImage.IMAGE).withReuse(true);
 			ollamaContainer.start();
 		}

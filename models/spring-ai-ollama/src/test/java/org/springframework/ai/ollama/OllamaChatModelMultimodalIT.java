@@ -37,7 +37,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest
 @Testcontainers
@@ -58,7 +58,8 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 		var userMessage = new UserMessage("Explain what do you see in this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt(List.of(userMessage))));
+		assertThatThrownBy(() -> this.chatModel.call(new Prompt(List.of(userMessage))))
+			.isInstanceOf(RuntimeException.class);
 	}
 
 	@Test

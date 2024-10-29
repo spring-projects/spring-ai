@@ -113,7 +113,7 @@ public class OllamaApi {
 	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	public GenerateResponse generate(GenerateRequest completionRequest) {
 		Assert.notNull(completionRequest, REQUEST_BODY_NULL_ERROR);
-		Assert.isTrue(completionRequest.stream() == false, "Stream mode must be disabled.");
+		Assert.isTrue(!completionRequest.stream(), "Stream mode must be disabled.");
 
 		return this.restClient.post()
 			.uri("/api/generate")
@@ -534,19 +534,23 @@ public class OllamaApi {
 			/**
 			 * System message type used as instructions to the model.
 			 */
-			@JsonProperty("system") SYSTEM,
+			@JsonProperty("system")
+			SYSTEM,
 			/**
 			 * User message type.
 			 */
-			@JsonProperty("user") USER,
+			@JsonProperty("user")
+			USER,
 			/**
 			 * Assistant message type. Usually the response from the model.
 			 */
-			@JsonProperty("assistant") ASSISTANT,
+			@JsonProperty("assistant")
+			ASSISTANT,
 			/**
 			 * Tool message.
 			 */
-			@JsonProperty("tool") TOOL
+			@JsonProperty("tool")
+			TOOL
 
 		}
 
@@ -664,7 +668,8 @@ public class OllamaApi {
 				/**
 				 * Function tool type.
 				 */
-				@JsonProperty("function") FUNCTION
+				@JsonProperty("function")
+				FUNCTION
 			}
 
 			/**
@@ -897,13 +902,13 @@ public class OllamaApi {
 				@JsonProperty("families") List<String> families,
 				@JsonProperty("parameter_size") String parameterSize,
 				@JsonProperty("quantization_level") String quantizationLevel
-		) {}
+		) { }
 	}
 
 	@JsonInclude(Include.NON_NULL)
 	public record ListModelResponse(
 			@JsonProperty("models") List<Model> models
-	) {}
+	) { }
 
 	@JsonInclude(Include.NON_NULL)
 	public record ShowModelRequest(
@@ -929,18 +934,18 @@ public class OllamaApi {
 			@JsonProperty("model_info") Map<String, Object> modelInfo,
 			@JsonProperty("projector_info") Map<String, Object> projectorInfo,
 			@JsonProperty("modified_at") Instant modifiedAt
-	) {}
+	) { }
 
 	@JsonInclude(Include.NON_NULL)
 	public record CopyModelRequest(
 			@JsonProperty("source") String source,
 			@JsonProperty("destination") String destination
-	) {}
+	) { }
 
 	@JsonInclude(Include.NON_NULL)
 	public record DeleteModelRequest(
 			@JsonProperty("model") String model
-	) {}
+	) { }
 
 	@JsonInclude(Include.NON_NULL)
 	public record PullModelRequest(
@@ -968,7 +973,7 @@ public class OllamaApi {
 			@JsonProperty("digest") String digest,
 			@JsonProperty("total") Long total,
 			@JsonProperty("completed") Long completed
-	) {}
+	) { }
 
 }
 // @formatter:on

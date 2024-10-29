@@ -69,10 +69,9 @@ public class ZhiPuAiImageApi {
 	public ZhiPuAiImageApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> {
-			h.setBearerAuth(zhiPuAiToken);
-			// h.setContentType(MediaType.APPLICATION_JSON);
-		}).defaultStatusHandler(responseErrorHandler).build();
+		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> h.setBearerAuth(zhiPuAiToken)
+		// h.setContentType(MediaType.APPLICATION_JSON);
+		).defaultStatusHandler(responseErrorHandler).build();
 	}
 
 	public ResponseEntity<ZhiPuAiImageResponse> createImage(ZhiPuAiImageRequest zhiPuAiImageRequest) {
@@ -108,7 +107,7 @@ public class ZhiPuAiImageApi {
 
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ZhiPuAiImageRequest (
+	public record ZhiPuAiImageRequest(
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("model") String model,
 		@JsonProperty("user_id") String user) {

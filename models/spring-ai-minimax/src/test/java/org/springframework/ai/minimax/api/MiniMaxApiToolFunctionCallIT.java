@@ -131,7 +131,7 @@ public class MiniMaxApiToolFunctionCallIT {
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = this.miniMaxApi.chatCompletionEntity(functionResponseRequest);
 
-		this.logger.info("Final response: " + chatCompletion2.getBody());
+		logger.info("Final response: " + chatCompletion2.getBody());
 
 		assertThat(Objects.requireNonNull(chatCompletion2.getBody()).choices()).isNotEmpty();
 

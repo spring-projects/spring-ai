@@ -30,12 +30,12 @@ public class WatsonxAiAutoConfigurationTests {
 	public void propertiesTest() {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
-                        "spring.ai.watsonx.ai.base-url=TEST_BASE_URL",
-                        "spring.ai.watsonx.ai.stream-endpoint=ml/v1/text/generation_stream?version=2023-05-29",
-                        "spring.ai.watsonx.ai.text-endpoint=ml/v1/text/generation?version=2023-05-29",
-						"spring.ai.watsonx.ai.embedding-endpoint=ml/v1/text/embeddings?version=2023-05-29",
-                        "spring.ai.watsonx.ai.projectId=1",
-                        "spring.ai.watsonx.ai.IAMToken=123456")
+			"spring.ai.watsonx.ai.base-url=TEST_BASE_URL",
+			"spring.ai.watsonx.ai.stream-endpoint=ml/v1/text/generation_stream?version=2023-05-29",
+			"spring.ai.watsonx.ai.text-endpoint=ml/v1/text/generation?version=2023-05-29",
+			"spring.ai.watsonx.ai.embedding-endpoint=ml/v1/text/embeddings?version=2023-05-29",
+			"spring.ai.watsonx.ai.projectId=1",
+			"spring.ai.watsonx.ai.IAMToken=123456")
                 // @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(RestClientAutoConfiguration.class, WatsonxAiAutoConfiguration.class))

@@ -31,10 +31,10 @@ import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreCon
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -68,7 +68,7 @@ public class MilvusEmbeddingDimensionsTests {
 
 	@Test
 	public void embeddingModelDimensions() {
-		when(this.embeddingModel.dimensions()).thenReturn(969);
+		given(this.embeddingModel.dimensions()).willReturn(969);
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder().build();
 
@@ -84,7 +84,7 @@ public class MilvusEmbeddingDimensionsTests {
 	@Test
 	public void fallBackToDefaultDimensions() {
 
-		when(this.embeddingModel.dimensions()).thenThrow(new RuntimeException());
+		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException());
 
 		var dim = new MilvusVectorStore(this.milvusClient, this.embeddingModel,
 				MilvusVectorStoreConfig.builder().build(), true, new TokenCountBatchingStrategy())

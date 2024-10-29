@@ -21,8 +21,12 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Thomas Vitale
  */
-public class TypesenseImage {
+public final class TypesenseImage {
 
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("typesense/typesense:27.1");
+
+	private TypesenseImage() {
+
+	}
 
 }

@@ -83,9 +83,8 @@ class CassandraFilterExpressionConverterTests {
 
 		CassandraFilterExpressionConverter filter = new CassandraFilterExpressionConverter(COLUMNS);
 
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			filter.convertExpression(new Expression(EQ, new Key("unknown_column"), new Value("BG")));
-		});
+		Assertions.assertThrows(IllegalArgumentException.class,
+				() -> filter.convertExpression(new Expression(EQ, new Key("unknown_column"), new Value("BG"))));
 	}
 
 	@Test

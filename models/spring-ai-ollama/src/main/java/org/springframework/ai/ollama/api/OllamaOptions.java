@@ -61,24 +61,28 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	/**
 	 * Whether to use NUMA. (Default: false)
 	 */
-	@JsonProperty("numa") private Boolean useNUMA;
+	@JsonProperty("numa")
+	private Boolean useNUMA;
 
 	/**
 	 * Sets the size of the context window used to generate the next token. (Default: 2048)
 	 */
-	@JsonProperty("num_ctx") private Integer numCtx;
+	@JsonProperty("num_ctx")
+	private Integer numCtx;
 
 	/**
 	 * Prompt processing maximum batch size. (Default: 512)
 	 */
-	@JsonProperty("num_batch") private Integer numBatch;
+	@JsonProperty("num_batch")
+	private Integer numBatch;
 
 	/**
 	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
 	 * (Default: -1, which indicates that numGPU should be set dynamically)
 	*/
-	@JsonProperty("num_gpu") private Integer numGPU;
+	@JsonProperty("num_gpu")
+	private Integer numGPU;
 
 	/**
 	 * When using multiple GPUs this option controls which GPU is used
@@ -87,28 +91,33 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * more VRAM to store a scratch buffer for temporary results.
 	 * By default, GPU 0 is used.
 	 */
-	@JsonProperty("main_gpu")private Integer mainGPU;
+	@JsonProperty("main_gpu")
+	private Integer mainGPU;
 
 	/**
 	 * (Default: false)
 	 */
-	@JsonProperty("low_vram") private Boolean lowVRAM;
+	@JsonProperty("low_vram")
+	private Boolean lowVRAM;
 
 	/**
 	 * (Default: true)
 	 */
-	@JsonProperty("f16_kv") private Boolean f16KV;
+	@JsonProperty("f16_kv")
+	private Boolean f16KV;
 
 	/**
 	 * Return logits for all the tokens, not just the last one.
 	 * To enable completions to return logprobs, this must be true.
 	 */
-	@JsonProperty("logits_all") private Boolean logitsAll;
+	@JsonProperty("logits_all")
+	private Boolean logitsAll;
 
 	/**
 	 * Load only the vocabulary, not the weights.
 	 */
-	@JsonProperty("vocab_only") private Boolean vocabOnly;
+	@JsonProperty("vocab_only")
+	private Boolean vocabOnly;
 
 	/**
 	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
@@ -119,7 +128,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * the model from loading at all.
 	 * (Default: null)
 	 */
-	@JsonProperty("use_mmap") private Boolean useMMap;
+	@JsonProperty("use_mmap")
+	private Boolean useMMap;
 
 	/**
 	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
@@ -127,7 +137,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
 	 * (Default: false)
 	 */
-	@JsonProperty("use_mlock") private Boolean useMLock;
+	@JsonProperty("use_mlock")
+	private Boolean useMLock;
 
 	/**
 	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
@@ -135,113 +146,131 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * Using the correct number of threads can greatly improve performance.
 	 * By default, Ollama will detect this value for optimal performance.
 	 */
-	@JsonProperty("num_thread") private Integer numThread;
+	@JsonProperty("num_thread")
+	private Integer numThread;
 
 	// Following fields are predict options used at runtime.
 
 	/**
 	 * (Default: 4)
 	 */
-	@JsonProperty("num_keep") private Integer numKeep;
+	@JsonProperty("num_keep")
+	private Integer numKeep;
 
 	/**
 	 * Sets the random number seed to use for generation. Setting this to a
 	 * specific number will make the model generate the same text for the same prompt.
 	 * (Default: -1)
 	 */
-	@JsonProperty("seed") private Integer seed;
+	@JsonProperty("seed")
+	private Integer seed;
 
 	/**
 	 * Maximum number of tokens to predict when generating text.
 	 * (Default: 128, -1 = infinite generation, -2 = fill context)
 	 */
-	@JsonProperty("num_predict") private Integer numPredict;
+	@JsonProperty("num_predict")
+	private Integer numPredict;
 
 	/**
 	 * Reduces the probability of generating nonsense. A higher value (e.g.
 	 * 100) will give more diverse answers, while a lower value (e.g. 10) will be more
 	 * conservative. (Default: 40)
 	 */
-	@JsonProperty("top_k") private Integer topK;
+	@JsonProperty("top_k")
+	private Integer topK;
 
 	/**
 	 * Works together with top-k. A higher value (e.g., 0.95) will lead to
 	 * more diverse text, while a lower value (e.g., 0.5) will generate more focused and
 	 * conservative text. (Default: 0.9)
 	 */
-	@JsonProperty("top_p") private Double topP;
+	@JsonProperty("top_p")
+	private Double topP;
 
 	/**
 	 * Tail free sampling is used to reduce the impact of less probable tokens
 	 * from the output. A higher value (e.g., 2.0) will reduce the impact more, while a
 	 * value of 1.0 disables this setting. (default: 1)
 	 */
-	@JsonProperty("tfs_z") private Float tfsZ;
+	@JsonProperty("tfs_z")
+	private Float tfsZ;
 
 	/**
 	 * (Default: 1.0)
 	 */
-	@JsonProperty("typical_p") private Float typicalP;
+	@JsonProperty("typical_p")
+	private Float typicalP;
 
 	/**
 	 * Sets how far back for the model to look back to prevent
 	 * repetition. (Default: 64, 0 = disabled, -1 = num_ctx)
 	 */
-	@JsonProperty("repeat_last_n") private Integer repeatLastN;
+	@JsonProperty("repeat_last_n")
+	private Integer repeatLastN;
 
 	/**
 	 * The temperature of the model. Increasing the temperature will
 	 * make the model answer more creatively. (Default: 0.8)
 	 */
-	@JsonProperty("temperature") private Double temperature;
+	@JsonProperty("temperature")
+	private Double temperature;
 
 	/**
 	 * Sets how strongly to penalize repetitions. A higher value
 	 * (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g.,
 	 * 0.9) will be more lenient. (Default: 1.1)
 	 */
-	@JsonProperty("repeat_penalty") private Double repeatPenalty;
+	@JsonProperty("repeat_penalty")
+	private Double repeatPenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("presence_penalty") private Double presencePenalty;
+	@JsonProperty("presence_penalty")
+	private Double presencePenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("frequency_penalty") private Double frequencyPenalty;
+	@JsonProperty("frequency_penalty")
+	private Double frequencyPenalty;
 
 	/**
 	 * Enable Mirostat sampling for controlling perplexity. (default: 0, 0
 	 * = disabled, 1 = Mirostat, 2 = Mirostat 2.0)
 	 */
-	@JsonProperty("mirostat") private Integer mirostat;
+	@JsonProperty("mirostat")
+	private Integer mirostat;
 
 	/**
 	 * Controls the balance between coherence and diversity of the output.
 	 * A lower value will result in more focused and coherent text. (Default: 5.0)
 	 */
-	@JsonProperty("mirostat_tau") private Float mirostatTau;
+	@JsonProperty("mirostat_tau")
+	private Float mirostatTau;
 
 	/**
 	 * Influences how quickly the algorithm responds to feedback from the generated text.
 	 * A lower learning rate will result in slower adjustments, while a higher learning rate
 	 * will make the algorithm more responsive. (Default: 0.1)
 	 */
-	@JsonProperty("mirostat_eta") private Float mirostatEta;
+	@JsonProperty("mirostat_eta")
+	private Float mirostatEta;
 
 	/**
 	 * (Default: true)
 	 */
-	@JsonProperty("penalize_newline") private Boolean penalizeNewline;
+	@JsonProperty("penalize_newline")
+	private Boolean penalizeNewline;
 
 	/**
 	 * Sets the stop sequences to use. When this pattern is encountered the
 	 * LLM will stop generating text and return. Multiple stop patterns may be set by
 	 * specifying multiple separate stop parameters in a modelfile.
 	 */
-	@JsonProperty("stop") private List<String> stop;
+	@JsonProperty("stop")
+	private List<String> stop;
 
 
 	// Following fields are not part of the Ollama Options API but part of the Request.
@@ -251,27 +280,30 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * Used to allow overriding the model name with prompt options.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
-	@JsonProperty("model") private String model;
+	@JsonProperty("model")
+	private String model;
 
 	/**
 	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	@JsonProperty("format") private String format;
+	@JsonProperty("format")
+	private String format;
 
 	/**
 	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
 	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	@JsonProperty("keep_alive") private String keepAlive;
-	
-	
+	@JsonProperty("keep_alive")
+	private String keepAlive;
+
 	/**
 	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
 	 * Defaults to true.
 	 */
-	@JsonProperty("truncate") private Boolean truncate;
+	@JsonProperty("truncate")
+	private Boolean truncate;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -310,7 +342,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	public static OllamaOptions create() {
 		return new OllamaOptions();
 	}
-	
+
 	/**
 	 * Filter out the non-supported fields from the options.
 	 * @param options The options to filter.
@@ -714,8 +746,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@Override
 	@JsonIgnore
 	public Integer getMaxTokens() {
-    	return getNumPredict();
-    }
+		return getNumPredict();
+	}
 
 	@JsonIgnore
 	public void setMaxTokens(Integer maxTokens) {

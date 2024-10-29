@@ -98,7 +98,7 @@ public class WatsonxAiEmbeddingModel extends AbstractEmbeddingModel {
 				? (WatsonxAiEmbeddingOptions) options : this.defaultOptions;
 
 		if (!StringUtils.hasText(runtimeOptions.getModel())) {
-			this.logger.warn("The model cannot be null, using default model instead");
+			logger.warn("The model cannot be null, using default model instead");
 			runtimeOptions = this.defaultOptions;
 		}
 

@@ -40,8 +40,8 @@ import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Pablo Sanchidrian Herrera
@@ -57,9 +57,7 @@ public class WatsonxAiChatModelTest {
 
 		Prompt prompt = new Prompt("Test message", options);
 
-		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-			WatsonxAiChatRequest request = this.chatModel.request(prompt);
-		});
+		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> this.chatModel.request(prompt));
 	}
 
 	@Test
@@ -171,8 +169,8 @@ public class WatsonxAiChatModelTest {
 				List.of(fakeResults),
 				Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))));
 
-		when(mockChatApi.generate(any(WatsonxAiChatRequest.class)))
-			.thenReturn(ResponseEntity.of(Optional.of(fakeResponse)));
+		given(mockChatApi.generate(any(WatsonxAiChatRequest.class)))
+			.willReturn(ResponseEntity.of(Optional.of(fakeResponse)));
 
 		Generation expectedGenerator = new Generation("LLM response")
 			.withGenerationMetadata(ChatGenerationMetadata.from("max_tokens",
@@ -205,7 +203,7 @@ public class WatsonxAiChatModelTest {
 				List.of(fakeResultsSecond), null);
 
 		Flux<WatsonxAiChatResponse> fakeResponse = Flux.just(fakeResponseFirst, fakeResponseSecond);
-		when(mockChatApi.generateStreaming(any(WatsonxAiChatRequest.class))).thenReturn(fakeResponse);
+		given(mockChatApi.generateStreaming(any(WatsonxAiChatRequest.class))).willReturn(fakeResponse);
 
 		Generation firstGen = new Generation("LLM resp")
 			.withGenerationMetadata(ChatGenerationMetadata.from("max_tokens",

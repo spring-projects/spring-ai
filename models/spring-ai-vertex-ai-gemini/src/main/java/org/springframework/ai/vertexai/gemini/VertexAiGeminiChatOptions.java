@@ -228,8 +228,8 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		return this.responseMimeType;
 	}
 
-	public String setResponseMimeType(String mimeType) {
-		return this.responseMimeType = mimeType;
+	public void setResponseMimeType(String mimeType) {
+		this.responseMimeType = mimeType;
 	}
 
 	public List<FunctionCallback> getFunctionCallbacks() {

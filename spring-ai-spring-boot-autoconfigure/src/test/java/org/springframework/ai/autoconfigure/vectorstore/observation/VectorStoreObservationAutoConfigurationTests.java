@@ -40,16 +40,14 @@ class VectorStoreObservationAutoConfigurationTests {
 
 	@Test
 	void queryResponseFilterDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(VectorStoreQueryResponseObservationFilter.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(VectorStoreQueryResponseObservationFilter.class));
 	}
 
 	@Test
 	void queryResponseHandlerDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(VectorStoreQueryResponseObservationHandler.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(VectorStoreQueryResponseObservationHandler.class));
 	}
 
 	@Test
@@ -57,9 +55,7 @@ class VectorStoreObservationAutoConfigurationTests {
 		this.contextRunner
 			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
 			.withPropertyValues("spring.ai.vectorstore.observations.include-query-response=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(VectorStoreQueryResponseObservationHandler.class);
-			});
+			.run(context -> assertThat(context).hasSingleBean(VectorStoreQueryResponseObservationHandler.class));
 	}
 
 }

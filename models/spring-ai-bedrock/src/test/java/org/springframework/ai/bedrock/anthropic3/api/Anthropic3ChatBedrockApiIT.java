@@ -38,7 +38,6 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.Ch
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION;
 
 /**
  * @author Ben Middleton
@@ -62,12 +61,13 @@ public class Anthropic3ChatBedrockApiIT {
 			.withTemperature(0.8)
 			.withMaxTokens(300)
 			.withTopK(10)
-			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
+			.withAnthropicVersion(
+					org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		this.logger.info("" + response.content());
+		logger.info("" + response.content());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content().get(0).text()).isNotEmpty();
@@ -77,7 +77,7 @@ public class Anthropic3ChatBedrockApiIT {
 		assertThat(response.usage().inputTokens()).isGreaterThan(10);
 		assertThat(response.usage().outputTokens()).isGreaterThan(100);
 
-		this.logger.info("" + response);
+		logger.info("" + response);
 	}
 
 	@Test
@@ -102,12 +102,13 @@ public class Anthropic3ChatBedrockApiIT {
 			.withTemperature(0.8)
 			.withMaxTokens(400)
 			.withTopK(10)
-			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
+			.withAnthropicVersion(
+					org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		this.logger.info("" + response.content());
+		logger.info("" + response.content());
 		assertThat(response).isNotNull();
 		assertThat(response.content().get(0).text()).isNotEmpty();
 		assertThat(response.content().get(0).text()).contains("Blackbeard");
@@ -116,7 +117,7 @@ public class Anthropic3ChatBedrockApiIT {
 		assertThat(response.usage().inputTokens()).isGreaterThan(30);
 		assertThat(response.usage().outputTokens()).isGreaterThan(200);
 
-		this.logger.info("" + response);
+		logger.info("" + response);
 	}
 
 	@Test
@@ -128,7 +129,8 @@ public class Anthropic3ChatBedrockApiIT {
 			.withTemperature(0.8)
 			.withMaxTokens(300)
 			.withTopK(10)
-			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
+			.withAnthropicVersion(
+					org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
 		Flux<Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse> responseStream = this.anthropicChatApi

@@ -45,7 +45,7 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
 	 * backed by an Azure OpenAI base model.
 	 */
-	private @JsonProperty(value = "deployment_name") String deploymentName;
+	private @JsonProperty("deployment_name") String deploymentName;
 
 	/**
 	 * The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt.
@@ -138,41 +138,53 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		AzureOpenAiAudioTranscriptionOptions other = (AzureOpenAiAudioTranscriptionOptions) obj;
 		if (this.model == null) {
-			if (other.model != null)
+			if (other.model != null) {
 				return false;
+			}
 		}
-		else if (!this.model.equals(other.model))
+		else if (!this.model.equals(other.model)) {
 			return false;
+		}
 		if (this.prompt == null) {
-			if (other.prompt != null)
+			if (other.prompt != null) {
 				return false;
+			}
 		}
-		else if (!this.prompt.equals(other.prompt))
+		else if (!this.prompt.equals(other.prompt)) {
 			return false;
+		}
 		if (this.language == null) {
-			if (other.language != null)
+			if (other.language != null) {
 				return false;
+			}
 		}
-		else if (!this.language.equals(other.language))
+		else if (!this.language.equals(other.language)) {
 			return false;
-		if (this.responseFormat == null) {
-			return other.responseFormat==null;
 		}
-		else return this.responseFormat.equals(other.responseFormat);
+		if (this.responseFormat == null) {
+			return other.responseFormat == null;
+		}
+		else {
+			return this.responseFormat.equals(other.responseFormat);
+		}
 	}
 
 	public enum WhisperModel {
 
 		// @formatter:off
-		@JsonProperty("whisper") WHISPER("whisper");
+		@JsonProperty("whisper")
+		WHISPER("whisper");
 		// @formatter:on
 
 		public final String value;
@@ -190,11 +202,16 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	public enum TranscriptResponseFormat {
 
 		// @formatter:off
-		@JsonProperty("json") JSON(AudioTranscriptionFormat.JSON, StructuredResponse.class),
-		@JsonProperty("text") TEXT(AudioTranscriptionFormat.TEXT, String.class),
-		@JsonProperty("srt") SRT(AudioTranscriptionFormat.SRT, String.class),
-		@JsonProperty("verbose_json") VERBOSE_JSON(AudioTranscriptionFormat.VERBOSE_JSON, StructuredResponse.class),
-		@JsonProperty("vtt") VTT(AudioTranscriptionFormat.VTT, String.class);
+		@JsonProperty("json")
+		JSON(AudioTranscriptionFormat.JSON, StructuredResponse.class),
+		@JsonProperty("text")
+		TEXT(AudioTranscriptionFormat.TEXT, String.class),
+		@JsonProperty("srt")
+		SRT(AudioTranscriptionFormat.SRT, String.class),
+		@JsonProperty("verbose_json")
+		VERBOSE_JSON(AudioTranscriptionFormat.VERBOSE_JSON, StructuredResponse.class),
+		@JsonProperty("vtt")
+		VTT(AudioTranscriptionFormat.VTT, String.class);
 
 		public final AudioTranscriptionFormat value;
 
@@ -217,8 +234,10 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	public enum GranularityType {
 
 		// @formatter:off
-		@JsonProperty("word") WORD(AudioTranscriptionTimestampGranularity.WORD),
-		@JsonProperty("segment") SEGMENT(AudioTranscriptionTimestampGranularity.SEGMENT);
+		@JsonProperty("word")
+		WORD(AudioTranscriptionTimestampGranularity.WORD),
+		@JsonProperty("segment")
+		SEGMENT(AudioTranscriptionTimestampGranularity.SEGMENT);
 		// @formatter:on
 
 		public final AudioTranscriptionTimestampGranularity value;

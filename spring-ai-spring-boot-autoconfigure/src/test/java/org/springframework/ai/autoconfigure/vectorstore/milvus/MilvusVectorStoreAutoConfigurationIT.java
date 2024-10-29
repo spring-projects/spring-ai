@@ -112,7 +112,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void searchWithCustomFields() {
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=COSINE",
 					"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
 					"spring.ai.vectorstore.milvus.embeddingDimension=384",
@@ -128,7 +128,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
 
-				vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.MILVUS,
 						VectorStoreObservationContext.Operation.ADD);
@@ -138,7 +138,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).hasSize(2);
@@ -149,7 +149,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 				observationRegistry.clear();
 
 				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).hasSize(0);

@@ -449,7 +449,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	/**
 	 * Configuration for the Milvus vector store.
 	 */
-	public static class MilvusVectorStoreConfig {
+	public static final class MilvusVectorStoreConfig {
 
 		private final String databaseName;
 
@@ -503,7 +503,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			return builder().build();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String databaseName = DEFAULT_DATABASE_NAME;
 

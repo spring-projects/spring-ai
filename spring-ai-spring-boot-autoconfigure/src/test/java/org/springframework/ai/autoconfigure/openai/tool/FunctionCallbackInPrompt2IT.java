@@ -62,7 +62,7 @@ public class FunctionCallbackInPrompt2IT {
 					.call().content();
 			// @formatter:on
 
-				this.logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
 			});
@@ -87,7 +87,7 @@ public class FunctionCallbackInPrompt2IT {
 							})
 					.call().content();
 			// @formatter:on
-				this.logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
 				assertThat(content).contains("18");
 			});
@@ -109,7 +109,7 @@ public class FunctionCallbackInPrompt2IT {
 					.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-				this.logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
 			});

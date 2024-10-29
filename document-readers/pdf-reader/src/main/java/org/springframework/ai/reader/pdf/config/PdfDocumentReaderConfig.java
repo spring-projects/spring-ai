@@ -27,7 +27,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public class PdfDocumentReaderConfig {
+public final class PdfDocumentReaderConfig {
 
 	public static final int ALL_PAGES = 0;
 
@@ -65,7 +65,7 @@ public class PdfDocumentReaderConfig {
 		return builder().build();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private int pagesPerDocument = 1;
 

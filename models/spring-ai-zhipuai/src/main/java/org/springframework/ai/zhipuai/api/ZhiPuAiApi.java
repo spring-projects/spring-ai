@@ -261,27 +261,33 @@ public class ZhiPuAiApi {
 		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
-		@JsonProperty("stop") STOP,
+		@JsonProperty("stop")
+		STOP,
 		/**
 		 * The maximum number of tokens specified in the request was reached.
 		 */
-		@JsonProperty("length") LENGTH,
+		@JsonProperty("length")
+		LENGTH,
 		/**
 		 * The content was omitted due to a flag from our content filters.
 		 */
-		@JsonProperty("content_filter") CONTENT_FILTER,
+		@JsonProperty("content_filter")
+		CONTENT_FILTER,
 		/**
 		 * The model called a tool.
 		 */
-		@JsonProperty("tool_calls") TOOL_CALLS,
+		@JsonProperty("tool_calls")
+		TOOL_CALLS,
 		/**
 		 * (deprecated) The model called a function.
 		 */
-		@JsonProperty("function_call") FUNCTION_CALL,
+		@JsonProperty("function_call")
+		FUNCTION_CALL,
 		/**
 		 * Only for compatibility with Mistral AI API.
 		 */
-		@JsonProperty("tool_call") TOOL_CALL
+		@JsonProperty("tool_call")
+		TOOL_CALL
 	}
 
 	/**
@@ -332,7 +338,8 @@ public class ZhiPuAiApi {
 			/**
 			 * Function tool type.
 			 */
-			@JsonProperty("function") FUNCTION
+			@JsonProperty("function")
+			FUNCTION
 		}
 
 		/**
@@ -363,7 +370,7 @@ public class ZhiPuAiApi {
 		}
 	}
 
-        /**
+	/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -390,7 +397,7 @@ public class ZhiPuAiApi {
 	 *
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest (
+	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("max_tokens") Integer maxTokens,
@@ -540,19 +547,24 @@ public class ZhiPuAiApi {
 			/**
 			 * System message.
 			 */
-			@JsonProperty("system") SYSTEM,
+			@JsonProperty("system")
+			SYSTEM,
 			/**
 			 * User message.
 			 */
-			@JsonProperty("user") USER,
+			@JsonProperty("user")
+			USER,
 			/**
 			 * Assistant message.
 			 */
-			@JsonProperty("assistant") ASSISTANT,
+			@JsonProperty("assistant")
+			ASSISTANT,
 			/**
 			 * Tool message.
 			 */
-			@JsonProperty("tool") TOOL
+			@JsonProperty("tool")
+			TOOL
+
 		}
 
 		/**
@@ -796,11 +808,18 @@ public class ZhiPuAiApi {
 		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
-		@Override public boolean equals(Object o) {
-    		if (this == o) return true;
-    		if (!(o instanceof Embedding embedding1)) return false;
-    		return Objects.equals(this.index, embedding1.index) && Arrays.equals(this.embedding, embedding1.embedding) && Objects.equals(this.object, embedding1.object);
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof Embedding embedding1)) {
+				return false;
+			}
+			return Objects.equals(this.index, embedding1.index) && Arrays.equals(this.embedding, embedding1.embedding) && Objects.equals(this.object, embedding1.object);
 		}
+
 		@Override
 		public int hashCode() {
 			int result = Objects.hash(this.index, this.object);
@@ -808,7 +827,8 @@ public class ZhiPuAiApi {
 			return result;
 		}
 
-		@Override public String toString() {
+		@Override
+		public String toString() {
 			return "Embedding{" +
 					"index=" + this.index +
 					", embedding=" + Arrays.toString(this.embedding) +

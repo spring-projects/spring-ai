@@ -68,7 +68,7 @@ public class FunctionCallWithFunctionWrapperIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("WeatherInfo").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 			});

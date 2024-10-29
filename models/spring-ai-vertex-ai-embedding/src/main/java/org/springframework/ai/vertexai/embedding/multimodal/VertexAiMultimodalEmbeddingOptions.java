@@ -85,13 +85,12 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private @JsonProperty("videoStartOffsetSec") Integer videoStartOffsetSec;
 
-	
 	/**
 	 * The end offset of the video segment in seconds. If not specified, it's calculated with min(video length, startOffSec + 120).
 	 * If both startOffSec and endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120, endOffsetSec).
 	 */
 	private @JsonProperty("videoEndOffsetSec") Integer videoEndOffsetSec;
-	
+
 	/**
 	 * The interval of the video the embedding will be generated. The minimum value for interval_sec is 4.
 	 * If the interval is less than 4, an InvalidArgumentError is returned. There are no limitations on the maximum value

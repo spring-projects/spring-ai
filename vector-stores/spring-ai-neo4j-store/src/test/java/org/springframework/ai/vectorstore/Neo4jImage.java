@@ -21,10 +21,14 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Thomas Vitale
  */
-public class Neo4jImage {
+public final class Neo4jImage {
 
 	// Needs to be Neo4j 5.15+ because Neo4j 5.15 deprecated the old vector index creation
 	// function.
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("neo4j:5.24");
+
+	private Neo4jImage() {
+
+	}
 
 }

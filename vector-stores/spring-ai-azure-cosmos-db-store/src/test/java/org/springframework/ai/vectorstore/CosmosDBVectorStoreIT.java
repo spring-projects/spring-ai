@@ -55,9 +55,7 @@ public class CosmosDBVectorStoreIT {
 
 	@BeforeEach
 	public void setup() {
-		this.contextRunner.run(context -> {
-			this.vectorStore = context.getBean(VectorStore.class);
-		});
+		this.contextRunner.run(context -> this.vectorStore = context.getBean(VectorStore.class));
 	}
 
 	@Test
