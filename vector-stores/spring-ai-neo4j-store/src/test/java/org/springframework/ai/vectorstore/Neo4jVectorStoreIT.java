@@ -257,32 +257,28 @@ class Neo4jVectorStoreIT {
 
 	@Test
 	void ensureVectorIndexGetsCreated() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBean(Driver.class)
-				.executableQuery(
-						"SHOW indexes yield name, type WHERE name = 'spring-ai-document-index' AND type = 'VECTOR' return count(*) > 0")
-				.execute()
-				.records()
-				.get(0) // get first record
-				.get(0)
-				.asBoolean()) // get returned result
-				.isTrue();
-		});
+		this.contextRunner.run(context -> assertThat(context.getBean(Driver.class)
+			.executableQuery(
+					"SHOW indexes yield name, type WHERE name = 'spring-ai-document-index' AND type = 'VECTOR' return count(*) > 0")
+			.execute()
+			.records()
+			.get(0) // get first record
+			.get(0)
+			.asBoolean()) // get returned result
+			.isTrue());
 	}
 
 	@Test
 	void ensureIdIndexGetsCreated() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBean(Driver.class)
-				.executableQuery(
-						"SHOW indexes yield labelsOrTypes, properties, type WHERE any(x in labelsOrTypes where x = 'Document')  AND any(x in properties where x = 'id') AND type = 'RANGE' return count(*) > 0")
-				.execute()
-				.records()
-				.get(0) // get first record
-				.get(0)
-				.asBoolean()) // get returned result
-				.isTrue();
-		});
+		this.contextRunner.run(context -> assertThat(context.getBean(Driver.class)
+			.executableQuery(
+					"SHOW indexes yield labelsOrTypes, properties, type WHERE any(x in labelsOrTypes where x = 'Document')  AND any(x in properties where x = 'id') AND type = 'RANGE' return count(*) > 0")
+			.execute()
+			.records()
+			.get(0) // get first record
+			.get(0)
+			.asBoolean()) // get returned result
+			.isTrue());
 	}
 
 	@SpringBootConfiguration

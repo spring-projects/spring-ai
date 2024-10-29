@@ -236,7 +236,8 @@ public class TitanChatBedrockApi extends
 				if (this.temperature == null && this.topP == null && this.maxTokenCount == null
 						&& this.stopSequences == null) {
 					return new TitanChatRequest(this.inputText, null);
-				} else {
+				}
+				else {
 					return new TitanChatRequest(this.inputText,
 						new TextGenerationConfig(
 								this.temperature,

@@ -37,8 +37,9 @@ public class MiniMaxRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(MiniMaxApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(MiniMaxApi.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

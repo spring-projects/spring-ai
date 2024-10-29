@@ -230,12 +230,12 @@ public class Anthropic3ChatBedrockApi extends
 			return new Builder(messages);
 		}
 
-		public static class Builder {
+		public static final class Builder {
 			private final List<ChatCompletionMessage> messages;
 			private String system;
-			private Double temperature;// = 0.7;
-			private Integer maxTokens;// = 500;
-			private Integer topK;// = 10;
+			private Double temperature; // = 0.7;
+			private Integer maxTokens; // = 500;
+			private Integer topK; // = 10;
 			private Double topP;
 			private List<String> stopSequences;
 			private String anthropicVersion;
@@ -301,7 +301,8 @@ public class Anthropic3ChatBedrockApi extends
 	 * responses.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record MediaContent( // @formatter:off
+	public record MediaContent(
+			// @formatter:off
 		@JsonProperty("type") Type type,
 		@JsonProperty("source") Source source,
 		@JsonProperty("text") String text,
@@ -349,7 +350,8 @@ public class Anthropic3ChatBedrockApi extends
 		 * @param data The base64-encoded data of the content.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record Source( // @formatter:off
+		public record Source(
+		// @formatter:off
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
 			@JsonProperty("data") String data) {

@@ -65,7 +65,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		 */
 		public final String unitName;
 
-		private Unit(String text) {
+		Unit(String text) {
 			this.unitName = text;
 		}
 
@@ -78,8 +78,8 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 	@JsonClassDescription("Weather API request")
 	public record Request(@JsonProperty(required = true,
 			value = "location") @JsonPropertyDescription("The city and state e.g. San Francisco, CA") String location,
-			@JsonProperty(value = "lat") @JsonPropertyDescription("The city latitude") double lat,
-			@JsonProperty(value = "lon") @JsonPropertyDescription("The city longitude") double lon,
+			@JsonProperty("lat") @JsonPropertyDescription("The city latitude") double lat,
+			@JsonProperty("lon") @JsonPropertyDescription("The city longitude") double lon,
 			@JsonProperty(required = true, value = "unit") @JsonPropertyDescription("Temperature unit") Unit unit) {
 
 	}

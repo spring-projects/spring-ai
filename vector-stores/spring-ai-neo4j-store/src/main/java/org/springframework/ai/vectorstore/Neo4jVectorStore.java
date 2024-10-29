@@ -132,7 +132,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 				.run("""
 						MATCH (n:%s) WHERE n.%s IN $ids
 						CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF $transactionSize ROWS
-						 """.formatted(this.config.label, this.config.idProperty),
+						""".formatted(this.config.label, this.config.idProperty),
 						Map.of("ids", idList, "transactionSize", 10_000))
 				.consume();
 			return Optional.of(idList.size() == summary.counters().nodesDeleted());
@@ -182,8 +182,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			var statement = """
 					CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
 							OPTIONS {indexConfig: {
-							 `vector.dimensions`: %d,
-							 `vector.similarity_function`: '%s'
+							`vector.dimensions`: %d,
+							`vector.similarity_function`: '%s'
 							}}
 					""".formatted(this.config.indexName, this.config.label, this.config.embeddingProperty,
 					this.config.embeddingDimension, this.config.distanceType.name);
@@ -312,7 +312,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			return builder().build();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String databaseName;
 

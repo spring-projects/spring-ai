@@ -27,4 +27,8 @@ public final class MoonshotConstants {
 
 	public static final String PROVIDER_NAME = AiProvider.MOONSHOT.value();
 
+	private MoonshotConstants() {
+
+	}
+
 }

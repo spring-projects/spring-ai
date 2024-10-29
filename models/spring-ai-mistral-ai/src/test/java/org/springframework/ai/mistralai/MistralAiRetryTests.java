@@ -50,7 +50,7 @@ import org.springframework.retry.support.RetryTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
@@ -97,10 +97,10 @@ public class MistralAiRetryTests {
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", "chat.completion", 789L, "model",
 				List.of(choice), new MistralAiApi.Usage(10, 10, 10));
 
-		when(this.mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
+		given(this.mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
 		var result = this.chatModel.call(new Prompt("text"));
 
@@ -112,8 +112,8 @@ public class MistralAiRetryTests {
 
 	@Test
 	public void mistralAiChatNonTransientError() {
-		when(this.mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
 	}
 
@@ -126,10 +126,10 @@ public class MistralAiRetryTests {
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", "chat.completion.chunk", 789L,
 				"model", List.of(choice));
 
-		when(this.mistralAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(Flux.just(expectedChatCompletion));
+		given(this.mistralAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(Flux.just(expectedChatCompletion));
 
 		var result = this.chatModel.stream(new Prompt("text"));
 
@@ -142,8 +142,8 @@ public class MistralAiRetryTests {
 	@Test
 	@Disabled("Currently stream() does not implement retry")
 	public void mistralAiChatStreamNonTransientError() {
-		when(this.mistralAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.mistralAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.stream(new Prompt("text")));
 	}
 
@@ -153,10 +153,10 @@ public class MistralAiRetryTests {
 		EmbeddingList<Embedding> expectedEmbeddings = new EmbeddingList<>("list",
 				List.of(new Embedding(0, new float[] { 9.9f, 8.8f })), "model", new MistralAiApi.Usage(10, 10, 10));
 
-		when(this.mistralAiApi.embeddings(isA(EmbeddingRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
+		given(this.mistralAiApi.embeddings(isA(EmbeddingRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
 
 		var result = this.embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
@@ -169,8 +169,8 @@ public class MistralAiRetryTests {
 
 	@Test
 	public void mistralAiEmbeddingNonTransientError() {
-		when(this.mistralAiApi.embeddings(isA(EmbeddingRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.mistralAiApi.embeddings(isA(EmbeddingRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}

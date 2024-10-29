@@ -47,7 +47,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 			temperature = 30;
 		}
 
-		this.logger.info("Request is {}, response temperature is {}", request, temperature);
+		logger.info("Request is {}, response temperature is {}", request, temperature);
 		return new Response(temperature, Unit.C);
 	}
 
@@ -70,7 +70,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		 */
 		public final String unitName;
 
-		private Unit(String text) {
+		Unit(String text) {
 			this.unitName = text;
 		}
 

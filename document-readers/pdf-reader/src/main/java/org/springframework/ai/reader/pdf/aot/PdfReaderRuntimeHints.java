@@ -45,9 +45,11 @@ public class PdfReaderRuntimeHints implements RuntimeHintsRegistrar {
 					"/org/apache/pdfbox/resources/icc/**", "/org/apache/pdfbox/resources/text/**",
 					"/org/apache/pdfbox/resources/ttf/**", "/org/apache/pdfbox/resources/version.properties");
 
-			for (var pattern : patterns)
-				for (var resourceMatch : resolver.getResources(pattern))
+			for (var pattern : patterns) {
+				for (var resourceMatch : resolver.getResources(pattern)) {
 					hints.resources().registerResource(resourceMatch);
+				}
+			}
 
 		}
 		catch (IOException e) {

@@ -73,8 +73,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
-import static org.springframework.ai.minimax.api.MiniMaxApiConstants.TOOL_CALL_FUNCTION_TYPE;
-
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal MiniMax}
  * backed by {@link MiniMaxApi}.
@@ -246,9 +244,10 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			// @formatter:off
 						// if the choice is a web search tool call, return last message of choice.messages
 						ChatCompletionMessage message = null;
-						if(choice.message() != null) {
+						if (choice.message() != null) {
 							message = choice.message();
-						} else if(!CollectionUtils.isEmpty(choice.messages())){
+						}
+						else if (!CollectionUtils.isEmpty(choice.messages())) {
 							// the MiniMax web search messages result is ['user message','assistant tool call', 'tool call', 'assistant message']
 							// so the last message is the assistant message
 							message = choice.messages().get(choice.messages().size() - 1);
@@ -328,7 +327,8 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 								return buildGeneration(choice, metadata);
 							}).toList();
 							return new ChatResponse(generations, from(chatCompletion2));
-						} catch (Exception e) {
+					}
+					catch (Exception e) {
 							logger.error("Error processing chat completion", e);
 							return new ChatResponse(List.of());
 						}
@@ -368,7 +368,8 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 		return generation.getOutput()
 			.getToolCalls()
 			.stream()
-			.anyMatch(toolCall -> TOOL_CALL_FUNCTION_TYPE.equals(toolCall.type()));
+			.anyMatch(toolCall -> org.springframework.ai.minimax.api.MiniMaxApiConstants.TOOL_CALL_FUNCTION_TYPE
+				.equals(toolCall.type()));
 	}
 
 	private ChatOptions buildRequestOptions(ChatCompletionRequest request) {
@@ -456,9 +457,8 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
-				toolMessage.getResponses().forEach(response -> {
-					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
-				});
+				toolMessage.getResponses()
+					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
 
 				return toolMessage.getResponses()
 					.stream()

@@ -44,9 +44,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Fabian Krüger
@@ -71,7 +71,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 				Why don't scientists trust atoms?
 				Because they make up everything!
 				"""))));
-		when(chatModel.call(argumentCaptor.capture())).thenReturn(chatResponse);
+		given(chatModel.call(argumentCaptor.capture())).willReturn(chatResponse);
 		return chatModel;
 	}
 
@@ -153,7 +153,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			documents.forEach(d -> d.setEmbedding(this.embed));
 			return List.of(this.embed, this.embed);
 		}).when(embeddingModel).embed(ArgumentMatchers.any(), any(), any());
-		when(embeddingModel.embed(any(String.class))).thenReturn(this.embed);
+		given(embeddingModel.embed(any(String.class))).willReturn(this.embed);
 		return embeddingModel;
 	}
 

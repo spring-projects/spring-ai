@@ -21,8 +21,12 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Thomas Vitale
  */
-public class OracleImage {
+public final class OracleImage {
 
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("gvenzl/oracle-free:23-slim");
+
+	private OracleImage() {
+
+	}
 
 }

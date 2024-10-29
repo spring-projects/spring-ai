@@ -104,7 +104,7 @@ public class MiniMaxApi {
 	 */
 	public MiniMaxApi(String baseUrl, String miniMaxToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-		Consumer<HttpHeaders> authHeaders = (headers) -> {
+		Consumer<HttpHeaders> authHeaders = headers -> {
 			headers.setBearerAuth(miniMaxToken);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
@@ -252,27 +252,33 @@ public class MiniMaxApi {
 		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
-		@JsonProperty("stop") STOP,
+		@JsonProperty("stop")
+		STOP,
 		/**
 		 * The maximum number of tokens specified in the request was reached.
 		 */
-		@JsonProperty("length") LENGTH,
+		@JsonProperty("length")
+		LENGTH,
 		/**
 		 * The content was omitted due to a flag from our content filters.
 		 */
-		@JsonProperty("content_filter") CONTENT_FILTER,
+		@JsonProperty("content_filter")
+		CONTENT_FILTER,
 		/**
 		 * The model called a tool.
 		 */
-		@JsonProperty("tool_calls") TOOL_CALLS,
+		@JsonProperty("tool_calls")
+		TOOL_CALLS,
 		/**
 		 * (deprecated) The model called a function.
 		 */
-		@JsonProperty("function_call") FUNCTION_CALL,
+		@JsonProperty("function_call")
+		FUNCTION_CALL,
 		/**
 		 * Only for compatibility with Mistral AI API.
 		 */
-		@JsonProperty("tool_call") TOOL_CALL
+		@JsonProperty("tool_call")
+		TOOL_CALL
 	}
 
 	/**
@@ -355,8 +361,10 @@ public class MiniMaxApi {
 			/**
 			 * Function tool type.
 			 */
-			@JsonProperty("function") FUNCTION,
-			@JsonProperty("web_search") WEB_SEARCH
+			@JsonProperty("function")
+			FUNCTION,
+			@JsonProperty("web_search")
+			WEB_SEARCH
 		}
 
 		/**
@@ -388,7 +396,7 @@ public class MiniMaxApi {
 		}
 	}
 
-        /**
+	/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -428,7 +436,7 @@ public class MiniMaxApi {
 	 * functions are present. Use the {@link ToolChoiceBuilder} to create the tool choice value.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest (
+	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("frequency_penalty") Double frequencyPenalty,
@@ -454,7 +462,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, false, temperature, null,null,
+					null, null, null, false, temperature, null, null,
 					null, null);
 		}
 
@@ -469,7 +477,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, stream, temperature, null,null,
+					null, null, null, stream, temperature, null, null,
 					null, null);
 		}
 
@@ -485,11 +493,11 @@ public class MiniMaxApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null,
-					null, null, null, false, 0.8, null,null,
+					null, null, null, false, 0.8, null, null,
 					tools, toolChoice);
 		}
 
-				/**
+		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
 		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
 		 *
@@ -499,7 +507,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null,  null, null, null,
-					null, null, null, stream, null, null,null,
+					null, null, null, stream, null, null, null,
 					null, null);
 		}
 
@@ -585,19 +593,23 @@ public class MiniMaxApi {
 			/**
 			 * System message.
 			 */
-			@JsonProperty("system") SYSTEM,
+			@JsonProperty("system")
+			SYSTEM,
 			/**
 			 * User message.
 			 */
-			@JsonProperty("user") USER,
+			@JsonProperty("user")
+			USER,
 			/**
 			 * Assistant message.
 			 */
-			@JsonProperty("assistant") ASSISTANT,
+			@JsonProperty("assistant")
+			ASSISTANT,
 			/**
 			 * Tool message.
 			 */
-			@JsonProperty("tool") TOOL
+			@JsonProperty("tool")
+			TOOL
 		}
 
 		/**
@@ -717,11 +729,10 @@ public class MiniMaxApi {
 				@JsonProperty("logprobs") LogProbs logprobs) {
 		}
 
-
 		public record BaseResponse(
 				@JsonProperty("status_code") Long statusCode,
 				@JsonProperty("status_msg") String message
-		){}
+		) { }
 	}
 
 	/**

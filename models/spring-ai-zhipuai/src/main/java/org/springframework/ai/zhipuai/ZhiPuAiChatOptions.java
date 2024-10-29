@@ -130,7 +130,7 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
-		@NestedConfigurationProperty
+	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 	// @formatter:on

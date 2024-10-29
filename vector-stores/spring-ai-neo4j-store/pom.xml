@@ -36,6 +36,12 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
+	<properties>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+		<disable.checks>false</disable.checks>
+	</properties>
+
 	<dependencyManagement>
 		<dependencies>
 			<dependency>

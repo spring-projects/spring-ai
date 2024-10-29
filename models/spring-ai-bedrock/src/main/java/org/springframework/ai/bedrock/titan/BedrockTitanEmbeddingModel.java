@@ -78,7 +78,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 		if (request.getInstructions().size() != 1) {
-			this.logger.warn(
+			logger.warn(
 					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
 		}
 

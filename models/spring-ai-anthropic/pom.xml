@@ -37,6 +37,10 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
+	<properties>
+		<disable.checks>false</disable.checks>
+	</properties>
+
 	<dependencies>
 
 		<!-- production dependencies -->

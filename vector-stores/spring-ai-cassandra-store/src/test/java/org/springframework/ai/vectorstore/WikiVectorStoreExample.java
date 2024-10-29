@@ -34,7 +34,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
-import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -109,10 +108,10 @@ class WikiVectorStoreExample {
 					if (primaryKeys.isEmpty()) {
 						return "test§¶0";
 					}
-					return format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
+					return java.lang.String.format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
 				})
 
-				.withDocumentIdTranslator((id) -> {
+				.withDocumentIdTranslator(id -> {
 					String[] parts = id.split("§¶");
 					String title = parts[0];
 					int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;

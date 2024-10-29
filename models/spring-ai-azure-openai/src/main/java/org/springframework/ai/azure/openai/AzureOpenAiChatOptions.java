@@ -49,7 +49,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	/**
 	 * The maximum number of tokens to generate.
 	 */
-	@JsonProperty(value = "max_tokens")
+	@JsonProperty("max_tokens")
 	private Integer maxTokens;
 
 	/**
@@ -59,7 +59,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * temperature and top_p for the same completions request as the interaction of these
 	 * two settings is difficult to predict.
 	 */
-	@JsonProperty(value = "temperature")
+	@JsonProperty("temperature")
 	private Double temperature;
 
 	/**
@@ -70,7 +70,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * temperature and top_p for the same completions request as the interaction of these
 	 * two settings is difficult to predict.
 	 */
-	@JsonProperty(value = "top_p")
+	@JsonProperty("top_p")
 	private Double topP;
 
 	/**
@@ -80,14 +80,14 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * minimum and maximum values corresponding to a full ban or exclusive selection of a
 	 * token, respectively. The exact behavior of a given bias score varies by model.
 	 */
-	@JsonProperty(value = "logit_bias")
+	@JsonProperty("logit_bias")
 	private Map<String, Integer> logitBias;
 
 	/**
 	 * An identifier for the caller or end user of the operation. This may be used for
 	 * tracking or rate-limiting purposes.
 	 */
-	@JsonProperty(value = "user")
+	@JsonProperty("user")
 	private String user;
 
 	/**
@@ -96,13 +96,13 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * quickly consume your token quota. Use carefully and ensure reasonable settings for
 	 * max_tokens and stop.
 	 */
-	@JsonProperty(value = "n")
+	@JsonProperty("n")
 	private Integer n;
 
 	/**
 	 * A collection of textual sequences that will end completions generation.
 	 */
-	@JsonProperty(value = "stop")
+	@JsonProperty("stop")
 	private List<String> stop;
 
 	/**
@@ -111,7 +111,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * likely to appear when they already exist and increase the model's likelihood to
 	 * output new topics.
 	 */
-	@JsonProperty(value = "presence_penalty")
+	@JsonProperty("presence_penalty")
 	private Double presencePenalty;
 
 	/**
@@ -120,14 +120,14 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * likely to appear as their frequency increases and decrease the likelihood of the
 	 * model repeating the same statements verbatim.
 	 */
-	@JsonProperty(value = "frequency_penalty")
+	@JsonProperty("frequency_penalty")
 	private Double frequencyPenalty;
 
 	/**
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
 	 * backed by an Azure OpenAI base model.
 	 */
-	@JsonProperty(value = "deployment_name")
+	@JsonProperty("deployment_name")
 	private String deploymentName;
 
 	/**
@@ -171,7 +171,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * Seed value for deterministic sampling such that the same seed and parameters return
 	 * the same result.
 	 */
-	@JsonProperty(value = "seed")
+	@JsonProperty("seed")
 	private Long seed;
 
 	/**
@@ -179,7 +179,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * the log probabilities of each output token returned in the `content` of `message`.
 	 * This option is currently not available on the `gpt-4-vision-preview` model.
 	 */
-	@JsonProperty(value = "log_probs")
+	@JsonProperty("log_probs")
 	private Boolean logprobs;
 
 	/*
@@ -187,7 +187,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * each token position, each with an associated log probability. `logprobs` must be
 	 * set to `true` if this parameter is used.
 	 */
-	@JsonProperty(value = "top_log_probs")
+	@JsonProperty("top_log_probs")
 	private Integer topLogProbs;
 
 	/*

@@ -40,8 +40,6 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import static org.springframework.ai.moonshot.api.MoonshotConstants.DEFAULT_BASE_URL;
-
 /**
  * Single-class, Java Client library for Moonshot platform. Provides implementation for
  * the <a href="https://platform.moonshot.cn/docs/api-reference">Chat Completion</a> APIs.
@@ -69,7 +67,7 @@ public class MoonshotApi {
 	 * @param moonshotApiKey Moonshot api Key.
 	 */
 	public MoonshotApi(String moonshotApiKey) {
-		this(DEFAULT_BASE_URL, moonshotApiKey);
+		this(org.springframework.ai.moonshot.api.MoonshotConstants.DEFAULT_BASE_URL, moonshotApiKey);
 	}
 
 	/**
@@ -223,9 +221,9 @@ public class MoonshotApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
-        MOONSHOT_V1_8K("moonshot-v1-8k"),
-        MOONSHOT_V1_32K("moonshot-v1-32k"),
-        MOONSHOT_V1_128K("moonshot-v1-128k");
+		MOONSHOT_V1_8K("moonshot-v1-8k"),
+		MOONSHOT_V1_32K("moonshot-v1-32k"),
+		MOONSHOT_V1_128K("moonshot-v1-128k");
 		 // @formatter:on
 
 		private final String value;
@@ -257,10 +255,10 @@ public class MoonshotApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(
 	// @formatter:off
-		 @JsonProperty("prompt_tokens") Integer promptTokens,
-		 @JsonProperty("total_tokens") Integer totalTokens,
-		 @JsonProperty("completion_tokens") Integer completionTokens) {
-		 // @formatter:on
+		@JsonProperty("prompt_tokens") Integer promptTokens,
+		@JsonProperty("total_tokens") Integer totalTokens,
+		@JsonProperty("completion_tokens") Integer completionTokens) {
+		// @formatter:on
 	}
 
 	/**
@@ -296,16 +294,16 @@ public class MoonshotApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 	// @formatter:off
-            @JsonProperty("messages") List<ChatCompletionMessage> messages,
-            @JsonProperty("model") String model,
-            @JsonProperty("max_tokens") Integer maxTokens,
-            @JsonProperty("temperature") Double temperature,
-            @JsonProperty("top_p") Double topP,
-            @JsonProperty("n") Integer n,
-            @JsonProperty("frequency_penalty") Double frequencyPenalty,
-            @JsonProperty("presence_penalty") Double presencePenalty,
-            @JsonProperty("stop") List<String> stop,
-            @JsonProperty("stream") Boolean stream,
+			@JsonProperty("messages") List<ChatCompletionMessage> messages,
+			@JsonProperty("model") String model,
+			@JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("n") Integer n,
+			@JsonProperty("frequency_penalty") Double frequencyPenalty,
+			@JsonProperty("presence_penalty") Double presencePenalty,
+			@JsonProperty("stop") List<String> stop,
+			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice) {
 		 // @formatter:on
@@ -517,12 +515,12 @@ public class MoonshotApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletion(
 	// @formatter:off
-		 @JsonProperty("id") String id,
-		 @JsonProperty("object") String object,
-		 @JsonProperty("created") Long created,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("choices") List<Choice> choices,
-		 @JsonProperty("usage") Usage usage) {
+		@JsonProperty("id") String id,
+		@JsonProperty("object") String object,
+		@JsonProperty("created") Long created,
+		@JsonProperty("model") String model,
+		@JsonProperty("choices") List<Choice> choices,
+		@JsonProperty("usage") Usage usage) {
 		 // @formatter:on
 
 		/**
@@ -535,9 +533,9 @@ public class MoonshotApi {
 		@JsonInclude(Include.NON_NULL)
 		public record Choice(
 		// @formatter:off
-			 @JsonProperty("index") Integer index,
-			 @JsonProperty("message") ChatCompletionMessage message,
-			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
+			@JsonProperty("index") Integer index,
+			@JsonProperty("message") ChatCompletionMessage message,
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
 			 // @formatter:on
 		}
 
@@ -558,11 +556,11 @@ public class MoonshotApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
 	// @formatter:off
-		 @JsonProperty("id") String id,
-		 @JsonProperty("object") String object,
-		 @JsonProperty("created") Long created,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("choices") List<ChunkChoice> choices) {
+		@JsonProperty("id") String id,
+		@JsonProperty("object") String object,
+		@JsonProperty("created") Long created,
+		@JsonProperty("model") String model,
+		@JsonProperty("choices") List<ChunkChoice> choices) {
 		 // @formatter:on
 
 		/**

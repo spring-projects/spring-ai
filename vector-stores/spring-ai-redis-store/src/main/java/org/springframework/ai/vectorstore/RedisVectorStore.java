@@ -109,7 +109,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final Predicate<Object> RESPONSE_OK = Predicate.isEqual("OK");
 
-	private static final Predicate<Object> RESPONSE_DEL_OK = Predicate.isEqual(1l);
+	private static final Predicate<Object> RESPONSE_DEL_OK = Predicate.isEqual(1L);
 
 	private static final String VECTOR_TYPE_FLOAT32 = "FLOAT32";
 
@@ -409,7 +409,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			return builder().build();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String indexName = DEFAULT_INDEX_NAME;
 

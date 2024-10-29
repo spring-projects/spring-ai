@@ -66,7 +66,7 @@ import org.springframework.lang.Nullable;
  * @author Mick Semb Wever
  * @since 1.0.0
  */
-public class CassandraVectorStoreConfig implements AutoCloseable {
+public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	public static final String DEFAULT_KEYSPACE_NAME = "springframework";
 
@@ -181,7 +181,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 
 			if (m.indexed()) {
 				Preconditions.checkState(
-						tableMetadata.getIndexes().values().stream().anyMatch((i) -> i.getTarget().equals(m.name())),
+						tableMetadata.getIndexes().values().stream().anyMatch(i -> i.getTarget().equals(m.name())),
 						"index %s does not exist", m.name());
 			}
 		}
@@ -189,32 +189,32 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	private void ensureIndexesExists() {
-		{
-			SimpleStatement indexStmt = SchemaBuilder.createIndex(this.schema.index)
-				.ifNotExists()
-				.custom("StorageAttachedIndex")
-				.onTable(this.schema.keyspace, this.schema.table)
-				.andColumn(this.schema.embedding)
-				.build();
 
-			logger.debug("Executing {}", indexStmt.getQuery());
-			this.session.execute(indexStmt);
-		}
+		SimpleStatement indexStmt = SchemaBuilder.createIndex(this.schema.index)
+			.ifNotExists()
+			.custom("StorageAttachedIndex")
+			.onTable(this.schema.keyspace, this.schema.table)
+			.andColumn(this.schema.embedding)
+			.build();
+
+		logger.debug("Executing {}", indexStmt.getQuery());
+		this.session.execute(indexStmt);
+
 		Stream
 			.concat(this.schema.partitionKeys.stream(),
 					Stream.concat(this.schema.clusteringKeys.stream(), this.schema.metadataColumns.stream()))
-			.filter((cs) -> cs.indexed())
-			.forEach((metadata) -> {
+			.filter(cs -> cs.indexed())
+			.forEach(metadata -> {
 
-				SimpleStatement indexStmt = SchemaBuilder.createIndex(String.format("%s_idx", metadata.name()))
+				SimpleStatement indexStatement = SchemaBuilder.createIndex(String.format("%s_idx", metadata.name()))
 					.ifNotExists()
 					.custom("StorageAttachedIndex")
 					.onTable(this.schema.keyspace, this.schema.table)
 					.andColumn(metadata.name())
 					.build();
 
-				logger.debug("Executing {}", indexStmt.getQuery());
-				this.session.execute(indexStmt);
+				logger.debug("Executing {}", indexStatement.getQuery());
+				this.session.execute(indexStatement);
 			});
 	}
 
@@ -362,7 +362,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private CqlSession session = null;
 
@@ -485,8 +485,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 
 		public Builder addMetadataColumn(SchemaColumn column) {
 
-			Preconditions.checkArgument(
-					this.metadataColumns.stream().noneMatch((sc) -> sc.name().equals(column.name())),
+			Preconditions.checkArgument(this.metadataColumns.stream().noneMatch(sc -> sc.name().equals(column.name())),
 					"A metadata column with name %s has already been added", column.name());
 
 			this.metadataColumns.add(column);
@@ -532,11 +531,11 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 			for (SchemaColumn metadata : this.metadataColumns) {
 
 				Preconditions.checkArgument(
-						!this.partitionKeys.stream().anyMatch((c) -> c.name().equals(metadata.name())),
+						!this.partitionKeys.stream().anyMatch(c -> c.name().equals(metadata.name())),
 						"metadataColumn %s cannot have same name as a partition key", metadata.name());
 
 				Preconditions.checkArgument(
-						!this.clusteringKeys.stream().anyMatch((c) -> c.name().equals(metadata.name())),
+						!this.clusteringKeys.stream().anyMatch(c -> c.name().equals(metadata.name())),
 						"metadataColumn %s cannot have same name as a clustering key", metadata.name());
 
 				Preconditions.checkArgument(!metadata.name().equals(this.contentColumnName),
@@ -546,19 +545,19 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 						"metadataColumn %s cannot have same name as embedding column name", this.embeddingColumnName);
 
 			}
-			{
-				int primaryKeyColumnsCount = this.partitionKeys.size() + this.clusteringKeys.size();
-				String exampleId = this.primaryKeyTranslator.apply(Collections.emptyList());
-				List<Object> testIdTranslation = this.documentIdTranslator.apply(exampleId);
 
-				Preconditions.checkArgument(testIdTranslation.size() == primaryKeyColumnsCount,
-						"documentIdTranslator results length %s doesn't match number of primary key columns %s",
-						String.valueOf(testIdTranslation.size()), String.valueOf(primaryKeyColumnsCount));
+			int primaryKeyColumnsCount = this.partitionKeys.size() + this.clusteringKeys.size();
+			String exampleId = this.primaryKeyTranslator.apply(Collections.emptyList());
+			List<Object> testIdTranslation = this.documentIdTranslator.apply(exampleId);
 
-				Preconditions.checkArgument(
-						exampleId.equals(this.primaryKeyTranslator.apply(this.documentIdTranslator.apply(exampleId))),
-						"primaryKeyTranslator is not an inverse function to documentIdTranslator");
-			}
+			Preconditions.checkArgument(testIdTranslation.size() == primaryKeyColumnsCount,
+					"documentIdTranslator results length %s doesn't match number of primary key columns %s",
+					String.valueOf(testIdTranslation.size()), String.valueOf(primaryKeyColumnsCount));
+
+			Preconditions.checkArgument(
+					exampleId.equals(this.primaryKeyTranslator.apply(this.documentIdTranslator.apply(exampleId))),
+					"primaryKeyTranslator is not an inverse function to documentIdTranslator");
+
 			return new CassandraVectorStoreConfig(this);
 		}
 

@@ -489,7 +489,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private final ObjectMapper objectMapper;
 
-		public DocumentRowMapper(ObjectMapper objectMapper) {
+		DocumentRowMapper(ObjectMapper objectMapper) {
 			this.objectMapper = objectMapper;
 		}
 

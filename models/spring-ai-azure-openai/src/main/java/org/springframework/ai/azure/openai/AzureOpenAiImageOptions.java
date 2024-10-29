@@ -45,14 +45,14 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	/**
 	 * The model dall-e-3 or dall-e-2 By default dall-e-3
 	 */
-	@JsonProperty(value = "model")
+	@JsonProperty("model")
 	private String model = ImageModel.DALL_E_3.value;
 
 	/**
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
 	 * backed by an Azure OpenAI base model.
 	 */
-	@JsonProperty(value = "deployment_name")
+	@JsonProperty("deployment_name")
 	private String deploymentName;
 
 	/**
@@ -255,7 +255,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	}
 
-	public static class Builder {
+	public final static class Builder {
 
 		private final AzureOpenAiImageOptions options;
 
