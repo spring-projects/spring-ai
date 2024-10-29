@@ -28,7 +28,11 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationCont
  * @since 1.0.0
  */
 
-public class ObservationTestUtil {
+public final class ObservationTestUtil {
+
+	private ObservationTestUtil() {
+
+	}
 
 	public static void assertObservationRegistry(TestObservationRegistry observationRegistry,
 			VectorStoreProvider vectorStoreProvider, VectorStoreObservationContext.Operation operation) {

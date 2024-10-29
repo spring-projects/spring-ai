@@ -81,7 +81,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					.withName("CurrentWeatherService")
 					.withDescription(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.withResponseConverter((response) -> "" + response.temp() + response.unit())
+					.withResponseConverter(response -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
 
@@ -108,7 +108,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					.withName("CurrentWeatherService")
 					.withDescription(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.withResponseConverter((response) -> "" + response.temp() + response.unit())
+					.withResponseConverter(response -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
 

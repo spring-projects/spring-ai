@@ -114,7 +114,7 @@ public class QianFanImageApi extends AuthApi {
 
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record QianFanImageRequest (
+	public record QianFanImageRequest(
 		@JsonProperty("model") String model,
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("negative_prompt") String negativePrompt,

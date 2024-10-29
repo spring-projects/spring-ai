@@ -64,7 +64,7 @@ public class FunctionCallbackWrapper2IT {
 				.call().content();
 			// @formatter:on
 
-			this.logger.info("Response: {}", content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});
@@ -84,7 +84,7 @@ public class FunctionCallbackWrapper2IT {
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-			this.logger.info("Response: {}", content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});
@@ -99,7 +99,7 @@ public class FunctionCallbackWrapper2IT {
 			return FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("WeatherInfo")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build();
 		}
 

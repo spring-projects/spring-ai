@@ -86,7 +86,7 @@ public class CassandraVectorStoreAutoConfiguration {
 	public DriverConfigLoaderBuilderCustomizer driverConfigLoaderBuilderCustomizer() {
 		// this replaces spring-ai-cassandra-*.jar!application.conf
 		// as spring-boot autoconfigure will not resolve the default driver configs
-		return (builder) -> builder.startProfile(CassandraVectorStore.DRIVER_PROFILE_UPDATES)
+		return builder -> builder.startProfile(CassandraVectorStore.DRIVER_PROFILE_UPDATES)
 			.withString(DefaultDriverOption.REQUEST_CONSISTENCY, "LOCAL_QUORUM")
 			.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(1))
 			.withBoolean(DefaultDriverOption.REQUEST_DEFAULT_IDEMPOTENCE, true)

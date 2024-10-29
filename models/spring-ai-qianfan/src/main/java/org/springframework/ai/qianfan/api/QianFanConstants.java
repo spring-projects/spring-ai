@@ -25,10 +25,14 @@ import org.springframework.ai.observation.conventions.AiProvider;
  * @author Geng Rong
  * @since 1.0
  */
-public class QianFanConstants {
+public final class QianFanConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://aip.baidubce.com/rpc/2.0/ai_custom";
 
 	public static final String PROVIDER_NAME = AiProvider.QIANFAN.value();
+
+	private QianFanConstants() {
+
+	}
 
 }

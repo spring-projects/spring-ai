@@ -21,8 +21,12 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Thomas Vitale
  */
-public class ChromaImage {
+public final class ChromaImage {
 
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("ghcr.io/chroma-core/chroma:0.5.11");
+
+	private ChromaImage() {
+
+	}
 
 }

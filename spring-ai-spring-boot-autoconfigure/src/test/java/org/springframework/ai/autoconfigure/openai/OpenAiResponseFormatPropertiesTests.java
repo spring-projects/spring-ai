@@ -42,15 +42,15 @@ public class OpenAiResponseFormatPropertiesTests {
 
 		String responseFormatJsonSchema = """
 				{
-					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-					  "type" : "object",
-					  "properties" : {
-					    "someString" : {
-					      "type" : "string"
-					    }
-					  },
-					  "additionalProperties" : false
-					}
+					"$schema" : "https://json-schema.org/draft/2020-12/schema",
+					"type" : "object",
+					"properties" : {
+						"someString" : {
+						"type" : "string"
+						}
+					},
+					"additionalProperties" : false
+				}
 				""";
 
 		new ApplicationContextRunner().withPropertyValues(

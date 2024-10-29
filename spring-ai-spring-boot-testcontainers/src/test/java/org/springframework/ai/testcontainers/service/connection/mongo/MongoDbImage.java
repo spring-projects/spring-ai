@@ -21,8 +21,12 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Thomas Vitale
  */
-public class MongoDbImage {
+public final class MongoDbImage {
 
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("mongodb/mongodb-atlas-local:8.0.0");
+
+	private MongoDbImage() {
+
+	}
 
 }
