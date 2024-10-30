@@ -28,8 +28,12 @@ import com.oracle.bmc.auth.SimplePrivateKeySupplier;
 import com.oracle.bmc.auth.okeworkloadidentity.OkeWorkloadIdentityAuthenticationDetailsProvider;
 import com.oracle.bmc.generativeaiinference.GenerativeAiInferenceClient;
 import com.oracle.bmc.retrier.RetryConfiguration;
+import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.oci.OCIEmbeddingModel;
+import org.springframework.ai.oci.cohere.OCICohereChatModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -43,7 +47,8 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration
 @ConditionalOnClass({ GenerativeAiInferenceClient.class, OCIEmbeddingModel.class })
-@EnableConfigurationProperties({ OCIConnectionProperties.class, OCIEmbeddingModelProperties.class })
+@EnableConfigurationProperties({ OCIConnectionProperties.class, OCIEmbeddingModelProperties.class,
+		OCICohereChatModelProperties.class, })
 public class OCIGenAiAutoConfiguration {
 
 	private static BasicAuthenticationDetailsProvider authenticationProvider(OCIConnectionProperties properties)
@@ -87,6 +92,19 @@ public class OCIGenAiAutoConfiguration {
 	public OCIEmbeddingModel ociEmbeddingModel(GenerativeAiInferenceClient generativeAiClient,
 			OCIEmbeddingModelProperties properties) {
 		return new OCIEmbeddingModel(generativeAiClient, properties.getEmbeddingOptions());
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = OCICohereChatModelProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OCICohereChatModel ociChatModel(GenerativeAiInferenceClient generativeAiClient,
+			OCICohereChatModelProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+		var chatModel = new OCICohereChatModel(generativeAiClient, properties.getOptions(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+		return chatModel;
 	}
 
 }

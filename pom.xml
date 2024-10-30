@@ -183,7 +183,7 @@
 
 		<djl.version>0.30.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
-		<oci-sdk-version>3.46.1</oci-sdk-version>
+		<oci-sdk-version>3.51.0</oci-sdk-version>
 		<com.google.cloud.version>26.48.0</com.google.cloud.version>
 		<qdrant.version>1.9.1</qdrant.version>
 		<spring-retry.version>2.0.9</spring-retry.version>
