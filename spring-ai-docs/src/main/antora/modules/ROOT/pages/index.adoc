@@ -1,4 +1,5 @@
 [[introduction]]
+= Introduction
 
 image::spring_ai_logo_with_text.svg[Integration Problem, width=300, align="left"]
 

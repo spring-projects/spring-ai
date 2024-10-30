@@ -44,7 +44,8 @@ public class PostgresMlAutoConfiguration {
 	public PostgresMlEmbeddingModel postgresMlEmbeddingModel(JdbcTemplate jdbcTemplate,
 			PostgresMlEmbeddingProperties embeddingProperties) {
 
-		return new PostgresMlEmbeddingModel(jdbcTemplate, embeddingProperties.getOptions());
+		return new PostgresMlEmbeddingModel(jdbcTemplate, embeddingProperties.getOptions(),
+				embeddingProperties.isCreateExtension());
 	}
 
 }

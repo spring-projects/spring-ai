@@ -41,6 +41,11 @@ public class PostgresMlEmbeddingProperties {
 	 */
 	private boolean enabled = true;
 
+	/**
+	 * Create the extensions required for embedding
+	 */
+	private boolean createExtension;
+
 	@NestedConfigurationProperty
 	private PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
 		.withTransformer(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL)
@@ -69,6 +74,14 @@ public class PostgresMlEmbeddingProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public boolean isCreateExtension() {
+		return createExtension;
+	}
+
+	public void setCreateExtension(boolean createExtension) {
+		this.createExtension = createExtension;
 	}
 
 }
