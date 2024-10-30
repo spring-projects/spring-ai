@@ -26,6 +26,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.common.clientenum.ConsistencyLevelEnum;
+import io.milvus.exception.ParamException;
 import io.milvus.grpc.DataType;
 import io.milvus.grpc.DescribeIndexResponse;
 import io.milvus.grpc.MutationResult;
@@ -72,6 +73,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 public class MilvusVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -93,9 +95,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	// Metadata, automatically assigned by Milvus.
 	public static final String DISTANCE_FIELD_NAME = "distance";
-
-	public static final List<String> SEARCH_OUTPUT_FIELDS = List.of(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
-			METADATA_FIELD_NAME);
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
@@ -170,10 +169,13 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();
-		fields.add(new InsertParam.Field(DOC_ID_FIELD_NAME, docIdArray));
-		fields.add(new InsertParam.Field(CONTENT_FIELD_NAME, contentArray));
-		fields.add(new InsertParam.Field(METADATA_FIELD_NAME, metadataArray));
-		fields.add(new InsertParam.Field(EMBEDDING_FIELD_NAME, embeddingArray));
+		// Insert ID field only if it is not auto ID
+		if (!this.config.isAutoId) {
+			fields.add(new InsertParam.Field(this.config.idFieldName, docIdArray));
+		}
+		fields.add(new InsertParam.Field(this.config.contentFieldName, contentArray));
+		fields.add(new InsertParam.Field(this.config.metadataFieldName, metadataArray));
+		fields.add(new InsertParam.Field(this.config.embeddingFieldName, embeddingArray));
 
 		InsertParam insertParam = InsertParam.newBuilder()
 			.withDatabaseName(this.config.databaseName)
@@ -191,7 +193,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public Optional<Boolean> doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 
-		String deleteExpression = String.format("%s in [%s]", DOC_ID_FIELD_NAME,
+		String deleteExpression = String.format("%s in [%s]", this.config.idFieldName,
 				idList.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")));
 
 		R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
@@ -214,17 +216,20 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
-
+		List<String> outFieldNames = new ArrayList<>();
+		outFieldNames.add(this.config.idFieldName);
+		outFieldNames.add(this.config.contentFieldName);
+		outFieldNames.add(this.config.metadataFieldName);
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		var searchParamBuilder = SearchParam.newBuilder()
 			.withCollectionName(this.config.collectionName)
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withMetricType(this.config.metricType)
-			.withOutFields(SEARCH_OUTPUT_FIELDS)
+			.withOutFields(outFieldNames)
 			.withTopK(request.getTopK())
 			.withVectors(List.of(EmbeddingUtils.toList(embedding)))
-			.withVectorFieldName(EMBEDDING_FIELD_NAME);
+			.withVectorFieldName(this.config.embeddingFieldName);
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
 			searchParamBuilder.withExpr(nativeFilterExpressions);
@@ -242,12 +247,19 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.stream()
 			.filter(rowRecord -> getResultSimilarity(rowRecord) >= request.getSimilarityThreshold())
 			.map(rowRecord -> {
-				String docId = (String) rowRecord.get(DOC_ID_FIELD_NAME);
-				String content = (String) rowRecord.get(CONTENT_FIELD_NAME);
-				JSONObject metadata = (JSONObject) rowRecord.get(METADATA_FIELD_NAME);
-				// inject the distance into the metadata.
-				metadata.put(DISTANCE_FIELD_NAME, 1 - getResultSimilarity(rowRecord));
-				return new Document(docId, content, metadata.getInnerMap());
+				String docId = String.valueOf(rowRecord.get(this.config.idFieldName));
+				String content = (String) rowRecord.get(this.config.contentFieldName);
+				JSONObject metadata = null;
+				try {
+					metadata = (JSONObject) rowRecord.get(this.config.metadataFieldName);
+					// inject the distance into the metadata.
+					metadata.put(DISTANCE_FIELD_NAME, 1 - getResultSimilarity(rowRecord));
+				}
+				catch (ParamException e) {
+					// skip the ParamException if metadata doesn't exist for the custom
+					// collection
+				}
+				return new Document(docId, content, (metadata != null) ? metadata.getInnerMap() : Map.of());
 			})
 			.toList();
 	}
@@ -291,45 +303,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	void createCollection() {
 
 		if (!isDatabaseCollectionExists()) {
-
-			FieldType docIdFieldType = FieldType.newBuilder()
-				.withName(DOC_ID_FIELD_NAME)
-				.withDataType(DataType.VarChar)
-				.withMaxLength(36)
-				.withPrimaryKey(true)
-				.withAutoID(false)
-				.build();
-			FieldType contentFieldType = FieldType.newBuilder()
-				.withName(CONTENT_FIELD_NAME)
-				.withDataType(DataType.VarChar)
-				.withMaxLength(65535)
-				.build();
-			FieldType metadataFieldType = FieldType.newBuilder()
-				.withName(METADATA_FIELD_NAME)
-				.withDataType(DataType.JSON)
-				.build();
-			FieldType embeddingFieldType = FieldType.newBuilder()
-				.withName(EMBEDDING_FIELD_NAME)
-				.withDataType(DataType.FloatVector)
-				.withDimension(this.embeddingDimensions())
-				.build();
-
-			CreateCollectionParam createCollectionReq = CreateCollectionParam.newBuilder()
-				.withDatabaseName(this.config.databaseName)
-				.withCollectionName(this.config.collectionName)
-				.withDescription("Spring AI Vector Store")
-				.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
-				.withShardsNum(2)
-				.addFieldType(docIdFieldType)
-				.addFieldType(contentFieldType)
-				.addFieldType(metadataFieldType)
-				.addFieldType(embeddingFieldType)
-				.build();
-
-			R<RpcStatus> collectionStatus = this.milvusClient.createCollection(createCollectionReq);
-			if (collectionStatus.getException() != null) {
-				throw new RuntimeException("Failed to create collection", collectionStatus.getException());
-			}
+			createCollection(this.config.databaseName, this.config.collectionName, this.config.idFieldName,
+					this.config.isAutoId, this.config.contentFieldName, this.config.metadataFieldName,
+					this.config.embeddingFieldName);
 		}
 
 		R<DescribeIndexResponse> indexDescriptionResponse = this.milvusClient
@@ -342,7 +318,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			R<RpcStatus> indexStatus = this.milvusClient.createIndex(CreateIndexParam.newBuilder()
 				.withDatabaseName(this.config.databaseName)
 				.withCollectionName(this.config.collectionName)
-				.withFieldName(EMBEDDING_FIELD_NAME)
+				.withFieldName(this.config.embeddingFieldName)
 				.withIndexType(this.config.indexType)
 				.withMetricType(this.config.metricType)
 				.withExtraParam(this.config.indexParameters)
@@ -362,6 +338,49 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		if (loadCollectionStatus.getException() != null) {
 			throw new RuntimeException("Collection loading failed!", loadCollectionStatus.getException());
 		}
+	}
+
+	void createCollection(String databaseName, String collectionName, String idFieldName, boolean isAutoId,
+			String contentFieldName, String metadataFieldName, String embeddingFieldName) {
+		FieldType docIdFieldType = FieldType.newBuilder()
+			.withName(idFieldName)
+			.withDataType(DataType.VarChar)
+			.withMaxLength(36)
+			.withPrimaryKey(true)
+			.withAutoID(isAutoId)
+			.build();
+		FieldType contentFieldType = FieldType.newBuilder()
+			.withName(contentFieldName)
+			.withDataType(DataType.VarChar)
+			.withMaxLength(65535)
+			.build();
+		FieldType metadataFieldType = FieldType.newBuilder()
+			.withName(metadataFieldName)
+			.withDataType(DataType.JSON)
+			.build();
+		FieldType embeddingFieldType = FieldType.newBuilder()
+			.withName(embeddingFieldName)
+			.withDataType(DataType.FloatVector)
+			.withDimension(this.embeddingDimensions())
+			.build();
+
+		CreateCollectionParam createCollectionReq = CreateCollectionParam.newBuilder()
+			.withDatabaseName(databaseName)
+			.withCollectionName(collectionName)
+			.withDescription("Spring AI Vector Store")
+			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
+			.withShardsNum(2)
+			.addFieldType(docIdFieldType)
+			.addFieldType(contentFieldType)
+			.addFieldType(metadataFieldType)
+			.addFieldType(embeddingFieldType)
+			.build();
+
+		R<RpcStatus> collectionStatus = this.milvusClient.createCollection(createCollectionReq);
+		if (collectionStatus.getException() != null) {
+			throw new RuntimeException("Failed to create collection", collectionStatus.getException());
+		}
+
 	}
 
 	int embeddingDimensions() {
@@ -443,6 +462,16 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		private final String indexParameters;
 
+		private final String idFieldName;
+
+		private final boolean isAutoId;
+
+		private final String contentFieldName;
+
+		private final String metadataFieldName;
+
+		private final String embeddingFieldName;
+
 		private MilvusVectorStoreConfig(Builder builder) {
 			this.databaseName = builder.databaseName;
 			this.collectionName = builder.collectionName;
@@ -450,6 +479,11 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			this.indexType = builder.indexType;
 			this.metricType = builder.metricType;
 			this.indexParameters = builder.indexParameters;
+			this.idFieldName = builder.idFieldName;
+			this.isAutoId = builder.isAutoId;
+			this.contentFieldName = builder.contentFieldName;
+			this.metadataFieldName = builder.metadataFieldName;
+			this.embeddingFieldName = builder.embeddingFieldName;
 		}
 
 		/**
@@ -481,6 +515,16 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			private MetricType metricType = MetricType.COSINE;
 
 			private String indexParameters = "{\"nlist\":1024}";
+
+			private String idFieldName = DOC_ID_FIELD_NAME;
+
+			private boolean isAutoId = false;
+
+			private String contentFieldName = CONTENT_FIELD_NAME;
+
+			private String metadataFieldName = METADATA_FIELD_NAME;
+
+			private String embeddingFieldName = EMBEDDING_FIELD_NAME;
 
 			private Builder() {
 			}
@@ -557,6 +601,58 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 						"Dimension has to be withing the boundaries 1 and 32768 (inclusively)");
 
 				this.embeddingDimension = newEmbeddingDimension;
+				return this;
+			}
+
+			/**
+			 * Configures the ID field name. Default is {@value #DOC_ID_FIELD_NAME}.
+			 * @param idFieldName The name for the ID field
+			 * @return this builder
+			 */
+			public Builder withIDFieldName(String idFieldName) {
+				this.idFieldName = idFieldName;
+				return this;
+			}
+
+			/**
+			 * Configures the boolean flag if the auto-id is used. Default is false.
+			 * @param isAutoId boolean flag to indicate if the auto-id is enabled
+			 * @return this builder
+			 */
+			public Builder withAutoId(boolean isAutoId) {
+				this.isAutoId = isAutoId;
+				return this;
+			}
+
+			/**
+			 * Configures the content field name. Default is {@value #CONTENT_FIELD_NAME}.
+			 * @param contentFieldName The name for the content field
+			 * @return this builder
+			 */
+			public Builder withContentFieldName(String contentFieldName) {
+				this.contentFieldName = contentFieldName;
+				return this;
+			}
+
+			/**
+			 * Configures the metadata field name. Default is
+			 * {@value #METADATA_FIELD_NAME}.
+			 * @param metadataFieldName The name for the metadata field
+			 * @return this builder
+			 */
+			public Builder withMetadataFieldName(String metadataFieldName) {
+				this.metadataFieldName = metadataFieldName;
+				return this;
+			}
+
+			/**
+			 * Configures the embedding field name. Default is
+			 * {@value #EMBEDDING_FIELD_NAME}.
+			 * @param embeddingFieldName The name for the embedding field
+			 * @return this builder
+			 */
+			public Builder withEmbeddingFieldName(String embeddingFieldName) {
+				this.embeddingFieldName = embeddingFieldName;
 				return this;
 			}
 
