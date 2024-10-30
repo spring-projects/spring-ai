@@ -51,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class MilvusVectorStoreCustomFieldNamesIT {
+class MilvusVectorStoreCustomFieldNamesIT {
 
 	@Container
 	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
@@ -81,7 +81,7 @@ public class MilvusVectorStoreCustomFieldNamesIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE" })
-	public void searchWithCustomFieldNames(String metricType) {
+	void searchWithCustomFieldNames(String metricType) {
 
 		contextRunner
 			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType,
@@ -122,7 +122,7 @@ public class MilvusVectorStoreCustomFieldNamesIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE" })
-	public void searchWithoutMetadataFieldOverride(String metricType) {
+	void searchWithoutMetadataFieldOverride(String metricType) {
 
 		contextRunner
 			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType,
@@ -162,7 +162,7 @@ public class MilvusVectorStoreCustomFieldNamesIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE" })
-	public void searchWithAutoIdEnabled(String metricType) {
+	void searchWithAutoIdEnabled(String metricType) {
 
 		contextRunner
 			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType,
@@ -205,7 +205,7 @@ public class MilvusVectorStoreCustomFieldNamesIT {
 
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
-	public static class TestApplication {
+	static class TestApplication {
 
 		@Value("${test.spring.ai.vectorstore.milvus.metricType}")
 		private MetricType metricType;
@@ -226,7 +226,7 @@ public class MilvusVectorStoreCustomFieldNamesIT {
 		private String metadataFieldName;
 
 		@Bean
-		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
+		VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
 			MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
 				.withCollectionName("test_vector_store_custom_fields")
 				.withDatabaseName("default")
@@ -242,7 +242,7 @@ public class MilvusVectorStoreCustomFieldNamesIT {
 		}
 
 		@Bean
-		public MilvusServiceClient milvusClient() {
+		MilvusServiceClient milvusClient() {
 			return new MilvusServiceClient(ConnectParam.newBuilder()
 				.withAuthorization("minioadmin", "minioadmin")
 				.withUri(milvusContainer.getEndpoint())
@@ -250,7 +250,7 @@ public class MilvusVectorStoreCustomFieldNamesIT {
 		}
 
 		@Bean
-		public EmbeddingModel embeddingModel() {
+		EmbeddingModel embeddingModel() {
 			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 

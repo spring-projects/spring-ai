@@ -46,6 +46,7 @@ import static org.springframework.ai.autoconfigure.vectorstore.observation.Obser
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @Testcontainers
 public class MilvusVectorStoreAutoConfigurationIT {
