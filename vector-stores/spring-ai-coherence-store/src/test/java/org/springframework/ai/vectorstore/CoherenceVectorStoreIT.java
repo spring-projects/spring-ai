@@ -84,7 +84,8 @@ public class CoherenceVectorStoreIT {
 		public VectorStore vectorStore(EmbeddingModel embeddingModel, Session session) {
 			return new CoherenceVectorStore(embeddingModel, session).setDistanceType(distanceType)
 				.setIndexType(indexType)
-				.setForcedNormalization(distanceType == CoherenceVectorStore.DistanceType.COSINE || distanceType == CoherenceVectorStore.DistanceType.IP);
+				.setForcedNormalization(distanceType == CoherenceVectorStore.DistanceType.COSINE
+						|| distanceType == CoherenceVectorStore.DistanceType.IP);
 		}
 
 		@Bean
