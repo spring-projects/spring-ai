@@ -198,7 +198,7 @@
 		<pdfbox.version>3.0.3</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
-		<coherence.version>15.1.1-0-0-SNAPSHOT</coherence.version>
+		<coherence.version>24.09</coherence.version>
 		<oracle.version>23.4.0.24.05</oracle.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>

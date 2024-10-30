@@ -22,7 +22,7 @@
 	</scm>
 
 	<properties>
-		<coherence.groupId>com.oracle.coherence</coherence.groupId>
+		<coherence.groupId>com.oracle.coherence.ce</coherence.groupId>
 	</properties>
 
 	<dependencies>
@@ -44,16 +44,10 @@
 			<version>${coherence.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<!--	temporary: remove once Vector DB is merged into Coherence	-->
 		<dependency>
-			<groupId>com.oracle.coherence.ai</groupId>
+			<groupId>${coherence.groupId}</groupId>
 			<artifactId>coherence-hnsw</artifactId>
-			<version>1.1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>com.oracle.coherence.ai</groupId>
-			<artifactId>vector-db</artifactId>
-			<version>1.1.0-SNAPSHOT</version>
+			<version>${coherence.version}</version>
 		</dependency>
 
 		<!-- TESTING -->
@@ -79,7 +73,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.oracle.coherence</groupId>
+			<groupId>${coherence.groupId}</groupId>
 			<artifactId>coherence-bedrock-testing-support</artifactId>
 			<version>${coherence.version}</version>
 			<scope>test</scope>

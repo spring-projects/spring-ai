@@ -250,13 +250,7 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 	 * @param doubleList a list of Doubles to convert
 	 * @return a {@code Vector} instance
 	 */
-	private Float32Vector toFloat32Vector(final List<Double> doubleList) {
-		final float[] floats = new float[doubleList.size()];
-		int i = 0;
-		for (double d : doubleList) {
-			floats[i++] = (float) d;
-		}
-
+	private Float32Vector toFloat32Vector(final float[] floats) {
 		return new Float32Vector(forcedNormalization ? Vectors.normalize(floats) : floats);
 	}
 

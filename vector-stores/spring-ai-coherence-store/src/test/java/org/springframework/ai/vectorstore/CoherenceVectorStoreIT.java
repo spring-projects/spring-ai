@@ -49,7 +49,7 @@ public class CoherenceVectorStoreIT {
 	static CoherenceClusterExtension cluster = new CoherenceClusterExtension()
 		.with(ClusterName.of("CoherenceVectorStoreIT"), WellKnownAddress.loopback(), LocalHost.only(),
 				IPv4Preferred.autoDetect(), SystemProperty.of("coherence.serializer", "pof"))
-		.include(1, CoherenceClusterMember.class, DisplayName.of("storage"), RoleName.of("storage"), testLogs);
+		.include(3, CoherenceClusterMember.class, DisplayName.of("storage"), RoleName.of("storage"), testLogs);
 
 	final List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -84,7 +84,7 @@ public class CoherenceVectorStoreIT {
 		public VectorStore vectorStore(EmbeddingModel embeddingModel, Session session) {
 			return new CoherenceVectorStore(embeddingModel, session).setDistanceType(distanceType)
 				.setIndexType(indexType)
-				.setForcedNormalization(distanceType == CoherenceVectorStore.DistanceType.COSINE);
+				.setForcedNormalization(distanceType == CoherenceVectorStore.DistanceType.COSINE || distanceType == CoherenceVectorStore.DistanceType.IP);
 		}
 
 		@Bean
