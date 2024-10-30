@@ -183,6 +183,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-cassandra-store</artifactId>
@@ -292,6 +298,12 @@
                 <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-azure-cosmos-db-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
