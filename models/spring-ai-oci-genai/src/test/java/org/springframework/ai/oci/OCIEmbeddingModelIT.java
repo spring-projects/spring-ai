@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 		matches = ".+")
 public class OCIEmbeddingModelIT extends BaseEmbeddingModelTest {
 
-	private final OCIEmbeddingModel embeddingModel = get();
+	private final OCIEmbeddingModel embeddingModel = getEmbeddingModel();
 
 	private final List<String> content = List.of("How many states are in the USA?", "How many states are in India?");
 

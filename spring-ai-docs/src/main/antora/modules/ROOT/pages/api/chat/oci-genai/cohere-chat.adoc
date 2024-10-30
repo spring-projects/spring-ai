@@ -1,0 +1,208 @@
+= OCI GenAI Cohere Chat
+
+https://www.oracle.com/artificial-intelligence/generative-ai/generative-ai-service/[OCI GenAI Service] offers generative AI chat with on-demand models, or dedicated AI clusters.
+
+The https://docs.oracle.com/en-us/iaas/Content/generative-ai/chat-models.htm[OCI Chat Models Page] and https://docs.oracle.com/en-us/iaas/Content/generative-ai/use-playground-embed.htm[OCI Generative AI Playground] provide detailed information about using and hosting chat models on OCI.
+
+== Prerequisites
+
+You will need an active https://signup.oraclecloud.com/[Oracle Cloud Infrastructure (OCI)] account to use the OCI GenAI Cohere Chat client. The client offers four different ways to connect, including simple authentication with a user and private key, workload identity, instance principal, or OCI configuration file authentication.
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the OCI GenAI Cohere Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-oci-genai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-oci-genai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Connection Properties
+
+The prefix `spring.ai.oci.genai` is the property prefix to configure the connection to OCI GenAI.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.oci.genai.authenticationType |  The type of authentication to use when authenticating to OCI. May be `file`, `instance-principal`, `workload-identity`, or `simple`.  | file
+| spring.ai.oci.genai.region | OCI service region. | us-chicago-1
+| spring.ai.oci.genai.tenantId | OCI tenant OCID, used when authenticating with `simple` auth. | -
+| spring.ai.oci.genai.userId | OCI user OCID, used when authenticating with `simple` auth. | -
+| spring.ai.oci.genai.fingerprint | Private key fingerprint, used when authenticating with `simple` auth. | -
+| spring.ai.oci.genai.privateKey | Private key content, used when authenticating with `simple` auth. | -
+| spring.ai.oci.genai.passPhrase | Optional private key passphrase, used when authenticating with `simple` auth and a passphrase protected private key. | -
+| spring.ai.oci.genai.file | Path to OCI config file. Used when authenticating with `file` auth. | <user's home directory>/.oci/config
+| spring.ai.oci.genai.profile | OCI profile name. Used when authenticating with `file` auth. | DEFAULT
+| spring.ai.oci.genai.endpoint | Optional OCI GenAI endpoint. | -
+
+|====
+
+
+==== Configuration Properties
+
+The prefix `spring.ai.oci.genai.chat.cohere` is the property prefix that configures the `ChatModel` implementation for OCI GenAI Cohere Chat.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.oci.genai.chat.cohere.enabled | Enable OCI GenAI Cohere chat model.  | true
+| spring.ai.oci.genai.chat.cohere.options.model | Model OCID or endpoint | -
+| spring.ai.oci.genai.chat.cohere.options.compartment | Model compartment OCID.  | -
+| spring.ai.oci.genai.chat.cohere.options.servingMode | The model serving mode to be used. May be `on-demand`, or `dedicated`.  | on-demand
+| spring.ai.oci.genai.chat.cohere.options.preambleOverride | Override the chat model's prompt preamble | -
+| spring.ai.oci.genai.chat.cohere.options.temperature | Inference temperature | -
+| spring.ai.oci.genai.chat.cohere.options.topP | Top P parameter | -
+| spring.ai.oci.genai.chat.cohere.options.topK | Top K parameter | -
+| spring.ai.oci.genai.chat.cohere.options.frequencyPenalty | Higher values will reduce repeated tokens and outputs will be more random. | -
+| spring.ai.oci.genai.chat.cohere.options.presencePenalty | Higher values encourage generating outputs with tokens that haven't been used. | -
+| spring.ai.oci.genai.chat.cohere.options.stop | List of textual sequences that will end completions generation. | -
+| spring.ai.oci.genai.chat.cohere.options.documents | List of documents used in chat context. | -
+|====
+
+TIP: All properties prefixed with `spring.ai.oci.genai.chat.cohere.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime Options [[chat-options]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-oci-genai/src/main/java/org/springframework/ai/oci/cohere/OCICohereChatOptions.java[OCICohereChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `OCICohereChatModel(api, options)` constructor or the `spring.ai.oci.genai.chat.cohere.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        OCICohereChatOptions.builder()
+            .withModel("my-model-ocid")
+            .withCompartment("my-compartment-ocid")
+            .withTemperature(0.5)
+        .build()
+    ));
+----
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-oci-genai-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OCI GenAI Cohere chat model:
+
+[source,application.properties]
+----
+spring.ai.oci.genai.authenticationType=file
+spring.ai.oci.genai.file=/path/to/oci/config/file
+spring.ai.oci.genai.cohere.chat.options.compartment=my-compartment-ocid
+spring.ai.oci.genai.cohere.chat.options.servingMode=on-demand
+spring.ai.oci.genai.cohere.chat.options.model=my-chat-model-ocid
+----
+
+TIP: replace the `file`, `compartment`, and `model` with your values from your OCI account.
+
+This will create a `OCICohereChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final OCICohereChatModel chatModel;
+
+    @Autowired
+    public ChatController(OCICohereChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        var prompt = new Prompt(new UserMessage(message));
+        return chatModel.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-oci-genai/src/main/java/org/springframework/ai/oci/cohere/OCICohereChatModel.java[OCICohereChatModel] implements the `ChatModel` and uses the OCI Java SDK to connect to the OCI GenAI service.
+
+Add the `spring-ai-oci-genai` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-oci-genai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-oci-genai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `OCICohereChatModel` and use it for text generations:
+
+[source,java]
+----
+var CONFIG_FILE = Paths.get(System.getProperty("user.home"), ".oci", "config").toString();
+var COMPARTMENT_ID = System.getenv("OCI_COMPARTMENT_ID");
+var MODEL_ID = System.getenv("OCI_CHAT_MODEL_ID");
+
+ConfigFileAuthenticationDetailsProvider authProvider = new ConfigFileAuthenticationDetailsProvider(
+        CONFIG_FILE,
+        "DEFAULT"
+);
+var genAi = GenerativeAiInferenceClient.builder()
+        .region(Region.valueOf("us-chicago-1"))
+        .build(authProvider);
+
+var chatModel = new OCICohereChatModel(genAi, OCICohereChatOptions.builder()
+        .withModel(MODEL_ID)
+        .withCompartment(COMPARTMENT_ID)
+        .withServingMode("on-demand")
+        .build());
+
+ChatResponse response = chatModel.call(
+        new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `OCICohereChatOptions` provides the configuration information for the chat requests.
+The `OCICohereChatOptions.Builder` is fluent options builder.
