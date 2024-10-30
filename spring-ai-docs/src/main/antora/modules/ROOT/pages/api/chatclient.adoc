@@ -450,7 +450,7 @@ public class CustomerSupportAssistant {
 
         this.chatClient = builder
             .defaultSystem("""
-                    You are a customer chat support agent of an airline named "Funnair".", Respond in a friendly,
+                    You are a customer chat support agent of an airline named "Funnair". Respond in a friendly,
                     helpful, and joyful manner.
 
                     Before providing information about a booking or cancelling a booking, you MUST always
@@ -524,7 +524,7 @@ Example usage:
 
 [source,java]
 ----
-javaCopySimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
+SimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
     request -> "Custom request: " + request.userText,
     response -> "Custom response: " + response.getResult()
 );
