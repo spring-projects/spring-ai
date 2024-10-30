@@ -45,7 +45,7 @@
 		<dependency>
 			<groupId>com.azure</groupId>
 			<artifactId>azure-spring-data-cosmos</artifactId>
-			<version>LATEST</version>
+			<version>${azure-cosmos.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
