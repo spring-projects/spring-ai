@@ -13,7 +13,8 @@ Exporting an environment variable is one way to set that configuration property:
 
 [source,shell]
 ----
-export SPRING_AI_QIANFAN_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_QIANFAN_API_KEY=<INSERT API KEY HERE>
+export SPRING_AI_QIANFAN_SECRET_KEY=<INSERT SECRET KEY HERE>
 ----
 
 === Add Repositories and BOM
@@ -96,9 +97,9 @@ The prefix `spring.ai.qianfan.embedding` is property prefix that configures the 
 | spring.ai.qianfan.embedding.options.model | The model to use      | bge_large_zh
 |====
 
-NOTE: You can override the common `spring.ai.qianfan.base-url`, `spring.ai.qianfan.embedding.api-key` and `spring.ai.qianfan.embedding.secret-key` for the `ChatClient` and `EmbeddingClient` implementations.
-The `spring.ai.qianfan.embedding.base-url`, `spring.ai.qianfan.embedding.api-key` and `spring.ai.qianfan.embedding.secret-key` properties if set take precedence over the common properties.
-Similarly, the `spring.ai.qianfan.embedding.base-url`, `spring.ai.qianfan.embedding.api-key` and `spring.ai.qianfan.embedding.secret-key` properties if set take precedence over the common properties.
+NOTE: You can override the common `spring.ai.qianfan.base-url`, `spring.ai.qianfan.api-key` and `spring.ai.qianfan.secret-key` for the `ChatModel` and `EmbeddingModel` implementations.
+The `spring.ai.qianfan.chat.base-url`, `spring.ai.qianfan.chat.api-key` and `spring.ai.qianfan.chat.secret-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.qianfan.chat.base-url`, `spring.ai.qianfan.chat.api-key` and `spring.ai.qianfan.chat.secret-key` properties if set take precedence over the common properties.
 This is useful if you want to use different QianFan accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.qianfan.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
