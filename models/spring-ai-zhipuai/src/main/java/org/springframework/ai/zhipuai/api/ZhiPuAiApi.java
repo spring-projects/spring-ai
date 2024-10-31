@@ -299,7 +299,11 @@ public class ZhiPuAiApi {
 		/**
 		 * DIMENSION: 1024
 		 */
-		Embedding_2("Embedding-2");
+		Embedding_2("Embedding-2"),
+		/**
+		 * DIMENSION: 2048
+		 */
+		Embedding_3("Embedding-3");
 
 		public final String  value;
 

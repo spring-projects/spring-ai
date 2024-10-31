@@ -21,9 +21,12 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
+import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingOptions;
 import org.springframework.ai.zhipuai.ZhiPuAiTestConfiguration;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -51,6 +54,25 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1024);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
+	}
+
+	@Test
+	void embedding3() {
+		assertThat(this.embeddingModel).isNotNull();
+
+		var options = ZhiPuAiEmbeddingOptions.builder()
+			.withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
+			.build();
+
+		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
+		EmbeddingResponse embeddingResponse = this.embeddingModel.call(embeddingRequest);
+
+		assertThat(embeddingResponse.getResults()).hasSize(1);
+
+		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(2048);
+
+		// assertThat(this.embeddingModel.dimensions()).isEqualTo(2048);
 	}
 
 	@Test
