@@ -152,11 +152,11 @@ public class VectorStoreObservationContext extends Observation.Context {
 	public enum Operation {
 
 		/**
-		 * VectorStore delete operation.
+		 * VectorStore add operation.
 		 */
 		ADD("add"),
 		/**
-		 * VectorStore add operation.
+		 * VectorStore delete operation.
 		 */
 		DELETE("delete"),
 		/**
