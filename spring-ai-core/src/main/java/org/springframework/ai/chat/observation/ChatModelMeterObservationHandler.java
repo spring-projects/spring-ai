@@ -16,16 +16,25 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.util.Optional;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.observation.ModelUsageMetricsGenerator;
+import org.springframework.lang.Nullable;
 
 /**
- * Handler for generating metrics from chat model observations.
+ * {@link ObservationHandler} used to generate metrics from chat model observations.
  *
  * @author Thomas Vitale
+ * @author John Blum
+ * @see ChatModelObservationContext
+ * @see ObservationHandler
  * @since 1.0.0
  */
 public class ChatModelMeterObservationHandler implements ObservationHandler<ChatModelObservationContext> {
@@ -38,11 +47,16 @@ public class ChatModelMeterObservationHandler implements ObservationHandler<Chat
 
 	@Override
 	public void onStop(ChatModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getUsage() != null) {
-			ModelUsageMetricsGenerator.generate(context.getResponse().getMetadata().getUsage(), context,
-					this.meterRegistry);
-		}
+		resolveUsage(context)
+			.ifPresent(usage -> ModelUsageMetricsGenerator.generate(usage, context, this.meterRegistry));
+	}
+
+	private Optional<Usage> resolveUsage(@Nullable ChatModelObservationContext context) {
+
+		return Optional.ofNullable(context)
+			.map(ChatModelObservationContext::getResponse)
+			.map(ChatResponse::getMetadata)
+			.map(ChatResponseMetadata::getUsage);
 	}
 
 	@Override

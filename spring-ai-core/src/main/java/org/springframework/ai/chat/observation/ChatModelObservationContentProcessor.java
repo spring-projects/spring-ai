@@ -16,9 +16,15 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.model.Content;
+import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -26,36 +32,29 @@ import org.springframework.util.StringUtils;
  * Utilities to process the prompt and completion content in observations for chat models.
  *
  * @author Thomas Vitale
+ * @author John Blum
+ * @since 1.0.0
  */
-public final class ChatModelObservationContentProcessor {
-
-	private ChatModelObservationContentProcessor() {
-	}
+public abstract class ChatModelObservationContentProcessor {
 
 	public static List<String> prompt(ChatModelObservationContext context) {
-		if (CollectionUtils.isEmpty(context.getRequest().getInstructions())) {
-			return List.of();
-		}
 
-		return context.getRequest().getInstructions().stream().map(Content::getContent).toList();
+		List<Message> instructions = context.getRequest().getInstructions();
+
+		return CollectionUtils.isEmpty(instructions) ? Collections.emptyList()
+				: instructions.stream().map(Content::getContent).toList();
 	}
 
-	public static List<String> completion(ChatModelObservationContext context) {
-		if (context == null || context.getResponse() == null || context.getResponse().getResults() == null
-				|| CollectionUtils.isEmpty(context.getResponse().getResults())) {
-			return List.of();
-		}
+	public static List<String> completion(@Nullable ChatModelObservationContext context) {
 
-		if (!StringUtils.hasText(context.getResponse().getResult().getOutput().getContent())) {
-			return List.of();
-		}
-
-		return context.getResponse()
-			.getResults()
+		return Optional.ofNullable(context)
+			.map(ChatModelObservationContext::getResponse)
+			.map(ChatResponse::getResults)
+			.orElseGet(Collections::emptyList)
 			.stream()
-			.filter(generation -> generation.getOutput() != null
-					&& StringUtils.hasText(generation.getOutput().getContent()))
-			.map(generation -> generation.getOutput().getContent())
+			.map(Generation::getOutput)
+			.map(Message::getContent)
+			.filter(StringUtils::hasText)
 			.toList();
 	}
 

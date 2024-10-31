@@ -25,23 +25,24 @@ import org.springframework.ai.observation.tracing.TracingHelper;
  * An {@link ObservationFilter} to include the chat prompt content in the observation.
  *
  * @author Thomas Vitale
+ * @author John Blum
  * @since 1.0.0
  */
 public class ChatModelPromptContentObservationFilter implements ObservationFilter {
 
 	@Override
 	public Observation.Context map(Observation.Context context) {
-		if (!(context instanceof ChatModelObservationContext chatModelObservationContext)) {
-			return context;
+
+		if (context instanceof ChatModelObservationContext chatModelObservationContext) {
+
+			var prompts = ChatModelObservationContentProcessor.prompt(chatModelObservationContext);
+
+			context = chatModelObservationContext
+				.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.PROMPT
+					.withValue(TracingHelper.concatenateStrings(prompts)));
 		}
 
-		var prompts = ChatModelObservationContentProcessor.prompt(chatModelObservationContext);
-
-		chatModelObservationContext
-			.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.PROMPT
-				.withValue(TracingHelper.concatenateStrings(prompts)));
-
-		return chatModelObservationContext;
+		return context;
 	}
 
 }

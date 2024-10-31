@@ -22,26 +22,28 @@ import io.micrometer.observation.ObservationFilter;
 import org.springframework.ai.observation.tracing.TracingHelper;
 
 /**
- * An {@link ObservationFilter} to include the chat completion content in the observation.
+ * {@link ObservationFilter} used to include chat completion content in the
+ * {@link Observation}.
  *
  * @author Thomas Vitale
+ * @author John Blum
  * @since 1.0.0
  */
 public class ChatModelCompletionObservationFilter implements ObservationFilter {
 
 	@Override
 	public Observation.Context map(Observation.Context context) {
-		if (!(context instanceof ChatModelObservationContext chatModelObservationContext)) {
-			return context;
+
+		if (context instanceof ChatModelObservationContext chatModelObservationContext) {
+
+			var completions = ChatModelObservationContentProcessor.completion(chatModelObservationContext);
+
+			context = chatModelObservationContext
+				.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.COMPLETION
+					.withValue(TracingHelper.concatenateStrings(completions)));
 		}
 
-		var completions = ChatModelObservationContentProcessor.completion(chatModelObservationContext);
-
-		chatModelObservationContext
-			.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.COMPLETION
-				.withValue(TracingHelper.concatenateStrings(completions)));
-
-		return chatModelObservationContext;
+		return context;
 	}
 
 }

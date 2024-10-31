@@ -31,6 +31,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author John Blum
  * @since 1.0.0
  */
 @SuppressWarnings({ "rawtypes", "null" })
@@ -62,18 +63,22 @@ public class ErrorLoggingObservationHandler implements ObservationHandler {
 	}
 
 	@Override
+	@SuppressWarnings("all")
 	public boolean supportsContext(Context context) {
-		return (context == null) ? false : this.supportedContextTypes.stream().anyMatch(clz -> clz.isInstance(context));
+		return context != null && this.supportedContextTypes.stream().anyMatch(clz -> clz.isInstance(context));
 	}
 
 	@Override
+	@SuppressWarnings("unused")
 	public void onError(Context context) {
-		if (context != null) {
-			TracingContext tracingContext = context.get(TracingContext.class);
-			if (tracingContext != null) {
-				try (var val = this.tracer.withSpan(tracingContext.getSpan())) {
-					this.errorConsumer.accept(context);
-				}
+
+		Assert.notNull(context, "Context must not be null");
+
+		TracingContext tracingContext = context.get(TracingContext.class);
+
+		if (tracingContext != null) {
+			try (var val = this.tracer.withSpan(tracingContext.getSpan())) {
+				this.errorConsumer.accept(context);
 			}
 		}
 	}
