@@ -53,8 +53,8 @@ public interface FunctionCallingOptions extends ChatOptions {
 	void setFunctionCallbacks(List<FunctionCallback> functionCallbacks);
 
 	/**
-	 * @return List of function names from the ChatModel registry to be used in the next
-	 * chat completion requests.
+	 * @return <@link Set> of function names from the ChatModel registry to be used in the
+	 * next chat completion requests.
 	 */
 	Set<String> getFunctions();
 
