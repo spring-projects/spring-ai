@@ -60,7 +60,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ChatC
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
-import org.springframework.ai.minimax.api.MiniMaxApi.FunctionTool;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.minimax.metadata.MiniMaxUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -508,11 +507,11 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 		return request;
 	}
 
-	private List<FunctionTool> getFunctionTools(Set<String> functionNames) {
+	private List<MiniMaxApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
 		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
-			var function = new FunctionTool.Function(functionCallback.getDescription(), functionCallback.getName(),
-					functionCallback.getInputTypeSchema());
-			return new FunctionTool(function);
+			var function = new MiniMaxApi.FunctionTool.Function(functionCallback.getDescription(),
+					functionCallback.getName(), functionCallback.getInputTypeSchema());
+			return new MiniMaxApi.FunctionTool(function);
 		}).toList();
 	}
 

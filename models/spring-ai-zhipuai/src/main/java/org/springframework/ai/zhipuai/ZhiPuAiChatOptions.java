@@ -31,7 +31,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.FunctionTool;
 import org.springframework.util.Assert;
 
 /**
@@ -74,7 +73,10 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
-	private @JsonProperty("tools") List<FunctionTool> tools;
+	private @JsonProperty("tools") List<ZhiPuAiApi.FunctionTool> tools;
+
+	private @JsonProperty("tools1")  List<ZhiPuAiApi.Foo> foos;
+
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -207,11 +209,11 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.topP = topP;
 	}
 
-	public List<FunctionTool> getTools() {
+	public List<ZhiPuAiApi.FunctionTool> getTools() {
 		return this.tools;
 	}
 
-	public void setTools(List<FunctionTool> tools) {
+	public void setTools(List<ZhiPuAiApi.FunctionTool> tools) {
 		this.tools = tools;
 	}
 
@@ -473,7 +475,7 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withTools(List<FunctionTool> tools) {
+		public Builder withTools(List<ZhiPuAiApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
