@@ -18,6 +18,7 @@ package org.springframework.ai.openai.api;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -532,14 +533,35 @@ public class OpenAiApi {
 	/**
 	 * Represents a tool the model may call. Currently, only functions are supported as a
 	 * tool.
-	 *
-	 * @param type The type of the tool. Currently, only 'function' is supported.
-	 * @param function The function definition.
 	 */
-	@JsonInclude(Include.NON_NULL)
-	public record FunctionTool(// @formatter:off
-			@JsonProperty("type") Type type,
-			@JsonProperty("function") Function function) {
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public static class FunctionTool {
+
+		/**
+		 * The type of the tool. Currently, only 'function' is supported.
+		 */
+		@JsonProperty("type")
+		private Type type = Type.FUNCTION;
+
+		/**
+		 * The function definition.
+		 */
+		@JsonProperty("function")
+		private Function function;
+
+		public FunctionTool() {
+
+		}
+
+		/**
+		 * Create a tool of type 'function' and the given function definition.
+		 * @param type the tool type
+		 * @param function function definition
+		 */
+		public FunctionTool(Type type, Function function) {
+			this.type = type;
+			this.function = function;
+		}
 
 		/**
 		 * Create a tool of type 'function' and the given function definition.
@@ -549,35 +571,73 @@ public class OpenAiApi {
 			this(Type.FUNCTION, function);
 		}
 
+		public Type getType() {
+			return this.type;
+		}
+
+		public Function getFunction() {
+			return this.function;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		public void setFunction(Function function) {
+			this.function = function;
+		}
+
 		/**
 		 * Create a tool of type 'function' and the given function definition.
 		 */
 		public enum Type {
+
 			/**
 			 * Function tool type.
 			 */
 			@JsonProperty("function")
 			FUNCTION
+
 		}
 
 		/**
 		 * Function definition.
-		 *
-		 * @param description A description of what the function does, used by the model to choose when and how to call
-		 * the function.
-		 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes,
-		 * with a maximum length of 64.
-		 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
-		 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
 		 */
-		public record Function(
-				@JsonProperty("description") String description,
-				@JsonProperty("name") String name,
-				@JsonProperty("parameters") Map<String, Object> parameters) {
+		public static class Function {
+
+			@JsonProperty("description")
+			private String description;
+
+			@JsonProperty("name")
+			private String name;
+
+			@JsonProperty("parameters")
+			private Map<String, Object> parameters;
+
+			private String jsonSchema;
+
+			private Function() {
+
+			}
 
 			/**
 			 * Create tool function definition.
-			 *
+			 * @param description A description of what the function does, used by the
+			 * model to choose when and how to call the function.
+			 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9,
+			 * or contain underscores and dashes, with a maximum length of 64.
+			 * @param parameters The parameters the functions accepts, described as a JSON
+			 * Schema object. To describe a function that accepts no parameters, provide
+			 * the value {"type": "object", "properties": {}}.
+			 */
+			public Function(String description, String name, Map<String, Object> parameters) {
+				this.description = description;
+				this.name = name;
+				this.parameters = parameters;
+			}
+
+			/**
+			 * Create tool function definition.
 			 * @param description tool function description.
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
@@ -585,8 +645,45 @@ public class OpenAiApi {
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
+
+			public String getDescription() {
+				return this.description;
+			}
+
+			public String getName() {
+				return this.name;
+			}
+
+			public Map<String, Object> getParameters() {
+				return this.parameters;
+			}
+
+			public void setDescription(String description) {
+				this.description = description;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public void setParameters(Map<String, Object> parameters) {
+				this.parameters = parameters;
+			}
+
+			public String getJsonSchema() {
+				return this.jsonSchema;
+			}
+
+			public void setJsonSchema(String jsonSchema) {
+				this.jsonSchema = jsonSchema;
+				if (jsonSchema != null) {
+					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
+				}
+			}
+
 		}
-	} // @formatter:on
+
+	}
 
 	/**
 	 * Creates a model response for the given chat conversation.
@@ -771,16 +868,62 @@ public class OpenAiApi {
 			}
 		}
 
-		/**
-		 * An object specifying the format that the model must output.
-		 * @param type Must be one of 'text' or 'json_object'.
-		 * @param jsonSchema JSON schema object that describes the format of the JSON object.
-		 * Only applicable when type is 'json_schema'.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(
-				@JsonProperty("type") Type type,
-				@JsonProperty("json_schema") JsonSchema jsonSchema) {
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		public static class ResponseFormat {
+
+			@JsonProperty("type")
+			private Type type;
+
+			private String name;
+
+			private String schema;
+
+			private Boolean strict;
+
+			@JsonProperty("json_schema")
+			private JsonSchema jsonSchema;
+
+			@JsonProperty("type")
+			public Type getType() {
+				return this.type;
+			}
+
+			@JsonProperty("json_schema")
+			public JsonSchema getJsonSchema() {
+				return StringUtils.hasText(this.schema) ? new JsonSchema(this.name, this.schema, this.strict) : null;
+			}
+
+			public String getName() {
+				return this.name;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public String getSchema() {
+				return this.schema;
+			}
+
+			public void setSchema(String schema) {
+				this.schema = schema;
+			}
+
+			public Boolean getStrict() {
+				return this.strict;
+			}
+
+			public void setStrict(Boolean strict) {
+				this.strict = strict;
+			}
+
+			private ResponseFormat() {
+			}
+
+			public ResponseFormat(Type type, JsonSchema jsonSchema) {
+				this.type = type;
+				this.jsonSchema = jsonSchema;
+			}
 
 			public ResponseFormat(Type type) {
 				this(type, (JsonSchema) null);
@@ -792,6 +935,40 @@ public class OpenAiApi {
 
 			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
 				this(type, StringUtils.hasText(schema) ? new JsonSchema(name, schema, strict) : null);
+			}
+
+			public void setType(Type type) {
+				this.type = type;
+			}
+
+			public void setJsonSchema(JsonSchema jsonSchema) {
+				this.jsonSchema = jsonSchema;
+			}
+
+			@Override
+			public boolean equals(Object o) {
+				if (this == o) {
+					return true;
+				}
+				if (o == null || getClass() != o.getClass()) {
+					return false;
+				}
+				ResponseFormat that = (ResponseFormat) o;
+				return Objects.equals(this.type, that.type) &&
+						Objects.equals(this.jsonSchema, that.jsonSchema);
+			}
+
+			@Override
+			public int hashCode() {
+				return Objects.hash(this.type, this.jsonSchema);
+			}
+
+			@Override
+			public String toString() {
+				return "ResponseFormat{" +
+						"type=" + this.type +
+						", jsonSchema=" + this.jsonSchema +
+						'}';
 			}
 
 			public enum Type {
@@ -823,11 +1000,11 @@ public class OpenAiApi {
 			 * @param schema The JSON schema object that describes the format of the JSON object.
 			 * @param strict If true, the model will only generate outputs that match the schema.
 			 */
-			@JsonInclude(Include.NON_NULL)
+			@JsonInclude(JsonInclude.Include.NON_NULL)
 			public record JsonSchema(
-				@JsonProperty("name") String name,
-				@JsonProperty("schema") Map<String, Object> schema,
-				@JsonProperty("strict") Boolean strict) {
+					@JsonProperty("name") String name,
+					@JsonProperty("schema") Map<String, Object> schema,
+					@JsonProperty("strict") Boolean strict) {
 
 				public JsonSchema(String name, String schema) {
 					this(name, ModelOptionsUtils.jsonToMap(schema), true);

@@ -34,7 +34,6 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +70,7 @@ public class OpenAiApiToolFunctionCallIT {
 		var message = new ChatCompletionMessage("What's the weather like in San Francisco, Tokyo, and Paris?",
 				Role.USER);
 
-		var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION,
+		var functionTool = new OpenAiApi.FunctionTool(OpenAiApi.FunctionTool.Type.FUNCTION,
 				new OpenAiApi.FunctionTool.Function("Get the weather in location. Return temperature in Celsius.",
 						"getCurrentWeather", ModelOptionsUtils.jsonToMap("""
 								{
