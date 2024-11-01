@@ -73,12 +73,13 @@ void testEvaluation() {
 
     String userText = "What is the purpose of Carina?";
 
-    String responseContent = ChatClient.builder(chatModel)
+    ChatResponse response = ChatClient.builder(chatModel)
             .build().prompt()
             .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
             .user(userText)
             .call()
-            .content();
+            .chatResponse();
+    String responseContent = response.getResult().getOutput().getContent();
 
     var relevancyEvaluator = new RelevancyEvaluator(ChatClient.builder(chatModel));
 
