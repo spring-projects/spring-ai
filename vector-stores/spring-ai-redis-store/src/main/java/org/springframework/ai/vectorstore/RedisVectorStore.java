@@ -81,6 +81,7 @@ import org.springframework.util.CollectionUtils;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Jihoon Kim
  * @see VectorStore
  * @see RedisVectorStoreConfig
  * @see EmbeddingModel
@@ -335,8 +336,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.withCollectionName(this.config.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withFieldName(this.config.embeddingFieldName)
-			.withSimilarityMetric(
-					"COSINE".equals(DEFAULT_DISTANCE_METRIC) ? VectorStoreSimilarityMetric.COSINE.value() : "");
+			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 
 	}
 
@@ -467,7 +467,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			}
 
 			/**
-			 * Configures the Redis vector algorithmto use.
+			 * Configures the Redis vector algorithm to use.
 			 * @param algorithm the vector algorithm to use
 			 * @return this builder
 			 */
