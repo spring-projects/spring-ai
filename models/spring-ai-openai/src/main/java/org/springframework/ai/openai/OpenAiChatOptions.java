@@ -38,7 +38,6 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.Respons
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
@@ -314,14 +313,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	public void setResponseFormat(ResponseFormat responseFormat) {
-		if (responseFormat != null) {
-			ResponseFormat.JsonSchema jsonSchema = StringUtils.hasText(responseFormat.getSchema())
-					? new ResponseFormat.JsonSchema(responseFormat.getName(), responseFormat.getSchema(),
-							responseFormat.getStrict())
-					: null;
-
-			responseFormat.setJsonSchema(jsonSchema);
-		}
 		this.responseFormat = responseFormat;
 	}
 

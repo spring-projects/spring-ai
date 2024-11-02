@@ -18,7 +18,6 @@ package org.springframework.ai.openai.api;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -868,62 +867,16 @@ public class OpenAiApi {
 			}
 		}
 
-		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public static class ResponseFormat {
-
-			@JsonProperty("type")
-			private Type type;
-
-			private String name;
-
-			private String schema;
-
-			private Boolean strict;
-
-			@JsonProperty("json_schema")
-			private JsonSchema jsonSchema;
-
-			@JsonProperty("type")
-			public Type getType() {
-				return this.type;
-			}
-
-			@JsonProperty("json_schema")
-			public JsonSchema getJsonSchema() {
-				return StringUtils.hasText(this.schema) ? new JsonSchema(this.name, this.schema, this.strict) : null;
-			}
-
-			public String getName() {
-				return this.name;
-			}
-
-			public void setName(String name) {
-				this.name = name;
-			}
-
-			public String getSchema() {
-				return this.schema;
-			}
-
-			public void setSchema(String schema) {
-				this.schema = schema;
-			}
-
-			public Boolean getStrict() {
-				return this.strict;
-			}
-
-			public void setStrict(Boolean strict) {
-				this.strict = strict;
-			}
-
-			private ResponseFormat() {
-			}
-
-			public ResponseFormat(Type type, JsonSchema jsonSchema) {
-				this.type = type;
-				this.jsonSchema = jsonSchema;
-			}
+		/**
+		 * An object specifying the format that the model must output.
+		 * @param type Must be one of 'text' or 'json_object'.
+		 * @param jsonSchema JSON schema object that describes the format of the JSON object.
+		 * Only applicable when type is 'json_schema'.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ResponseFormat(
+				@JsonProperty("type") Type type,
+				@JsonProperty("json_schema") JsonSchema jsonSchema) {
 
 			public ResponseFormat(Type type) {
 				this(type, (JsonSchema) null);
@@ -935,40 +888,6 @@ public class OpenAiApi {
 
 			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
 				this(type, StringUtils.hasText(schema) ? new JsonSchema(name, schema, strict) : null);
-			}
-
-			public void setType(Type type) {
-				this.type = type;
-			}
-
-			public void setJsonSchema(JsonSchema jsonSchema) {
-				this.jsonSchema = jsonSchema;
-			}
-
-			@Override
-			public boolean equals(Object o) {
-				if (this == o) {
-					return true;
-				}
-				if (o == null || getClass() != o.getClass()) {
-					return false;
-				}
-				ResponseFormat that = (ResponseFormat) o;
-				return Objects.equals(this.type, that.type) &&
-						Objects.equals(this.jsonSchema, that.jsonSchema);
-			}
-
-			@Override
-			public int hashCode() {
-				return Objects.hash(this.type, this.jsonSchema);
-			}
-
-			@Override
-			public String toString() {
-				return "ResponseFormat{" +
-						"type=" + this.type +
-						", jsonSchema=" + this.jsonSchema +
-						'}';
 			}
 
 			public enum Type {
@@ -1000,7 +919,7 @@ public class OpenAiApi {
 			 * @param schema The JSON schema object that describes the format of the JSON object.
 			 * @param strict If true, the model will only generate outputs that match the schema.
 			 */
-			@JsonInclude(JsonInclude.Include.NON_NULL)
+			@JsonInclude(Include.NON_NULL)
 			public record JsonSchema(
 					@JsonProperty("name") String name,
 					@JsonProperty("schema") Map<String, Object> schema,
@@ -1016,7 +935,6 @@ public class OpenAiApi {
 			}
 
 		}
-
 		/**
 		 * @param includeUsage If set, an additional chunk will be streamed
 		 * before the data: [DONE] message. The usage field on this chunk
