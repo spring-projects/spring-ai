@@ -31,6 +31,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -356,6 +357,7 @@ class OpenSearchVectorStoreIT {
 	}
 
 	@Test
+	@Disabled("GH-1645")
 	public void searchDocumentsInTwoIndicesTest() {
 		getContextRunner().run(context -> {
 			// given
