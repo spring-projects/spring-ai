@@ -35,6 +35,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -46,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class DefaultChatClientBuilder implements Builder {
@@ -57,10 +59,10 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			ChatClientObservationConvention customObservationConvention) {
+			@Nullable ChatClientObservationConvention customObservationConvention) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
-		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(),
+		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), null, Map.of(), List.of(),
 				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
 				customObservationConvention, Map.of());
 	}
@@ -69,8 +71,8 @@ public class DefaultChatClientBuilder implements Builder {
 		return new DefaultChatClient(this.defaultRequest);
 	}
 
-	public Builder defaultAdvisors(Advisor... advisor) {
-		this.defaultRequest.advisors(advisor);
+	public Builder defaultAdvisors(Advisor... advisors) {
+		this.defaultRequest.advisors(advisors);
 		return this;
 	}
 
@@ -95,6 +97,8 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	public Builder defaultUser(Resource text, Charset charset) {
+		Assert.notNull(text, "text cannot be null");
+		Assert.notNull(charset, "charset cannot be null");
 		try {
 			this.defaultRequest.user(text.getContentAsString(charset));
 		}
@@ -119,6 +123,8 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	public Builder defaultSystem(Resource text, Charset charset) {
+		Assert.notNull(text, "text cannot be null");
+		Assert.notNull(charset, "charset cannot be null");
 		try {
 			this.defaultRequest.system(text.getContentAsString(charset));
 		}
