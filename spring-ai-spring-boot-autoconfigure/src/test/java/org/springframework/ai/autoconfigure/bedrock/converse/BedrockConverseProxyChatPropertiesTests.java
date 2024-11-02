@@ -16,28 +16,25 @@
 
 package org.springframework.ai.autoconfigure.bedrock.converse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-
 import org.junit.jupiter.api.Test;
+
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  *
  * Unit Tests for {@link BedrockConverseProxyChatProperties}.
  */
-public class BedrockConversePropertiesTests {
+public class BedrockConverseProxyChatPropertiesTests {
 
 	@Test
 	public void chatOptionsTest() {
 
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
-				"spring.ai.bedrock.converse.chat.timeout=4m",	
-
 				"spring.ai.bedrock.converse.chat.options.model=MODEL_XYZ",
 
 				"spring.ai.bedrock.converse.chat.options.max-tokens=123",
@@ -54,7 +51,6 @@ public class BedrockConversePropertiesTests {
 				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
 
 				assertThat(chatProperties.isEnabled()).isTrue();
-				assertThat(chatProperties.getTimeout()).isEqualTo(Duration.ofMinutes(4));
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
@@ -72,23 +68,17 @@ public class BedrockConversePropertiesTests {
 		// It is enabled by default
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty());
 
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.converse.chat..enabled=true")
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty());
 
 		// Explicitly disable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.converse.chat..enabled=false")
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty());
 	}
 
 }

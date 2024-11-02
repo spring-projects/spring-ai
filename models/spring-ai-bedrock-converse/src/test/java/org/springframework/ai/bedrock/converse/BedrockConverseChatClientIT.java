@@ -180,8 +180,6 @@ class BedrockConverseChatClientIT {
 		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
 				.advisors(new SimpleLoggerAdvisor())
-				// .options(FunctionCallingOptions.builder().withModel("meta.llama2-13b-chat-v1").build())
-				// .options(FunctionCallingOptions.builder().withModel("mistral.mistral-large-2402-v1:0").build())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
@@ -212,9 +210,8 @@ class BedrockConverseChatClientIT {
 	void functionCallTest() {
 
 		// @formatter:off
-		String response = ChatClient.create(this.chatModel).prompt()
-				// .user(u -> u.text("What's the weather like in San Francisco? Return the temperature in Celsius."))
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
+		String response = ChatClient.create(this.chatModel)
+				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")				
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.call()
 				.content();
@@ -230,10 +227,12 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-		.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
-		.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
-		.build()
-		.prompt().call().content();
+			.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+			.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
+			.build()
+			.prompt()
+			.call()
+			.content();
 		// @formatter:on
 
 		logger.info("Response: {}", response);

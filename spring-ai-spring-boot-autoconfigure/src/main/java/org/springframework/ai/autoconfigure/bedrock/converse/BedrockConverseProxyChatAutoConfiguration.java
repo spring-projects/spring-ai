@@ -18,7 +18,14 @@ package org.springframework.ai.autoconfigure.bedrock.converse;
 
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
+import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -33,12 +40,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-
-import io.micrometer.observation.ObservationRegistry;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.providers.AwsRegionProvider;
-import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
-import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Converse Proxy Chat Client.
@@ -60,7 +61,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public BedrockProxyChatModel bedrockProxyChatModel(AwsCredentialsProvider credentialsProvider,
-			AwsRegionProvider regionProvider, BedrockAwsConnectionConfiguration connectionProperties,
+			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties connectionProperties,
 			BedrockConverseProxyChatProperties chatProperties, FunctionCallbackContext functionCallbackContext,
 			List<FunctionCallback> toolFunctionCallbacks, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
@@ -70,7 +71,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 		var chatModel = BedrockProxyChatModel.builder()
 			.withCredentialsProvider(credentialsProvider)
 			.withRegion(regionProvider.getRegion())
-			.withTimeout(chatProperties.getTimeout())
+			.withTimeout(connectionProperties.getTimeout())
 			.withDefaultOptions(chatProperties.getOptions())
 			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.withFunctionCallbackContext(functionCallbackContext)

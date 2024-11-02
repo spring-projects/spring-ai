@@ -16,8 +16,6 @@
 
 package org.springframework.ai.autoconfigure.bedrock.converse;
 
-import java.time.Duration;
-
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -34,11 +32,6 @@ import org.springframework.util.Assert;
 public class BedrockConverseProxyChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.converse.chat";
-
-	/**
-	 * Set model timeout, Defaults 10 min.
-	 */
-	private Duration timeout = Duration.ofMinutes(5L);
 
 	/**
 	 * Enable Bedrock Converse chat model.
@@ -81,14 +74,6 @@ public class BedrockConverseProxyChatProperties {
 	public void setOptions(PortableFunctionCallingOptions options) {
 		Assert.notNull(options, "PortableFunctionCallingOptions must not be null");
 		this.options = options;
-	}
-
-	public Duration getTimeout() {
-		return this.timeout;
-	}
-
-	public void setTimeout(Duration timeout) {
-		this.timeout = timeout;
 	}
 
 }
