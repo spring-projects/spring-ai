@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -31,11 +32,12 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record AdvisedResponse(ChatResponse response, Map<String, Object> adviseContext) {
+public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Object> adviseContext) {
 
 	public AdvisedResponse {
-		Assert.notNull(response, "response cannot be null");
 		Assert.notNull(adviseContext, "adviseContext cannot be null");
+		Assert.noNullElements(adviseContext.keySet(), "adviseContext keys cannot be null");
+		Assert.noNullElements(adviseContext.values(), "adviseContext values cannot be null");
 	}
 
 	public static Builder builder() {
@@ -55,6 +57,7 @@ public record AdvisedResponse(ChatResponse response, Map<String, Object> adviseC
 
 	public static final class Builder {
 
+		@Nullable
 		private ChatResponse response;
 
 		private Map<String, Object> adviseContext;
@@ -62,7 +65,7 @@ public record AdvisedResponse(ChatResponse response, Map<String, Object> adviseC
 		private Builder() {
 		}
 
-		public Builder withResponse(ChatResponse response) {
+		public Builder withResponse(@Nullable ChatResponse response) {
 			this.response = response;
 			return this;
 		}

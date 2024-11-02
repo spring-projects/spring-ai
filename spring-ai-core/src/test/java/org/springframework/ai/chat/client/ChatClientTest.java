@@ -33,6 +33,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -46,6 +47,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 /**
@@ -69,7 +71,7 @@ public class ChatClientTest {
 
 	// ChatClient Builder Tests
 	@Test
-	public void defaultSystemText() {
+	void defaultSystemText() {
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
@@ -118,7 +120,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void defaultSystemTextLambda() {
+	void defaultSystemTextLambda() {
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
@@ -194,7 +196,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void mutateDefaults() {
+	void mutateDefaults() {
 
 		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
@@ -322,7 +324,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void mutatePrompt() {
+	void mutatePrompt() {
 
 		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
@@ -412,7 +414,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void defaultUserText() {
+	void defaultUserText() {
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
@@ -437,7 +439,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void simpleUserPromptAsString() {
+	void simpleUserPromptAsString() {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -450,7 +452,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void simpleUserPrompt() {
+	void simpleUserPrompt() {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -463,7 +465,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void simpleUserPromptObject() throws MalformedURLException {
+	void simpleUserPromptObject() {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -482,7 +484,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void simpleSystemPrompt() throws MalformedURLException {
+	void simpleSystemPrompt() {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -503,7 +505,7 @@ public class ChatClientTest {
 	}
 
 	@Test
-	public void complexCall() throws MalformedURLException {
+	void complexCall() throws MalformedURLException {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -543,6 +545,266 @@ public class ChatClientTest {
 
 		assertThat(runtieOptions.getFunctions()).containsExactly("function1");
 		assertThat(options.getFunctions()).isEmpty();
+	}
+
+	// Constructors
+
+	@Test
+	void whenCreateAndChatModelIsNullThenThrow() {
+		assertThatThrownBy(() -> ChatClient.create(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("chatModel cannot be null");
+	}
+
+	@Test
+	void whenCreateAndObservationRegistryIsNullThenThrow() {
+		assertThatThrownBy(() -> ChatClient.create(this.chatModel, null, null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("observationRegistry cannot be null");
+	}
+
+	@Test
+	void whenBuilderAndChatModelIsNullThenThrow() {
+		assertThatThrownBy(() -> ChatClient.builder(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("chatModel cannot be null");
+	}
+
+	@Test
+	void whenBuilderAndObservationRegistryIsNullThenThrow() {
+		assertThatThrownBy(() -> ChatClient.builder(this.chatModel, null, null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("observationRegistry cannot be null");
+	}
+
+	// Prompt Tests - User
+
+	@Test
+	void whenPromptWithStringContent() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var content = chatClient.prompt("my question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(1);
+		var userMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(userMessage.getContent()).isEqualTo("my question");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+	}
+
+	@Test
+	void whenPromptWithMessages() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new SystemMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt(prompt).call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
+		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
+		assertThat(userMessage.getContent()).isEqualTo("my question");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+	}
+
+	@Test
+	void whenPromptWithStringContentAndUserText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var content = chatClient.prompt("my question").user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
+		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
+		assertThat(userMessage.getContent()).isEqualTo("another question");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+	}
+
+	@Test
+	void whenPromptWithHistoryAndUserText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new UserMessage("my question"), new AssistantMessage("your answer"));
+		var content = chatClient.prompt(prompt).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
+		var userMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(userMessage.getContent()).isEqualTo("another question");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+	}
+
+	@Test
+	void whenPromptWithUserMessageAndUserText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new UserMessage("my question"));
+		var content = chatClient.prompt(prompt).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
+		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
+		assertThat(userMessage.getContent()).isEqualTo("another question");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+	}
+
+	@Test
+	void whenMessagesWithHistoryAndUserText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new UserMessage("my question"), new AssistantMessage("your answer"));
+		var content = chatClient.prompt().messages(messages).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
+		var userMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(userMessage.getContent()).isEqualTo("another question");
+	}
+
+	@Test
+	void whenMessagesWithUserMessageAndUserText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new UserMessage("my question"));
+		var content = chatClient.prompt().messages(messages).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
+		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
+		assertThat(userMessage.getContent()).isEqualTo("another question");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+	}
+
+	// Prompt Tests - System
+
+	@Test
+	void whenPromptWithMessagesAndSystemText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new UserMessage("my question"), new AssistantMessage("your answer"));
+		var content = chatClient.prompt(prompt).system("instructions").user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(systemMessage.getContent()).isEqualTo("instructions");
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	@Test
+	void whenPromptWithSystemMessageAndNoSystemText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new SystemMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt(prompt).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(systemMessage.getContent()).isEqualTo("instructions");
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	@Test
+	void whenPromptWithSystemMessageAndSystemText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new SystemMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt(prompt).system("other instructions").user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(systemMessage.getContent()).isEqualTo("other instructions");
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	@Test
+	void whenMessagesAndSystemText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new UserMessage("my question"), new AssistantMessage("your answer"));
+		var content = chatClient.prompt()
+			.messages(messages)
+			.system("instructions")
+			.user("another question")
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(systemMessage.getContent()).isEqualTo("instructions");
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	@Test
+	void whenMessagesWithSystemMessageAndNoSystemText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new SystemMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt().messages(messages).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(systemMessage.getContent()).isEqualTo("instructions");
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	@Test
+	void whenMessagesWithSystemMessageAndSystemText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new SystemMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt()
+			.messages(messages)
+			.system("other instructions")
+			.user("another question")
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(systemMessage.getContent()).isEqualTo("other instructions");
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}
 
 }
