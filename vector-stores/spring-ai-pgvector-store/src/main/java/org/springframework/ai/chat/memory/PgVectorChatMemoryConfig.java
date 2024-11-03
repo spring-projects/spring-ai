@@ -118,8 +118,8 @@ public class PgVectorChatMemoryConfig {
 		var indexName = String
 			.format("%s_%s_%s_idx", this.getTableName(), this.getSessionIdColumnName(), this.getExchangeIdColumnName())
 			// Keywords in postgres has to be wrapped in double quotes. It is possible
-			// that the table or column may
-			// be a reserved keyword. If so, just remove them.
+			// that the table or column may be a reserved keyword. If so, just remove
+			// them.
 			.replaceAll("\"", "");
 
 		this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", this.getSchemaName()));
