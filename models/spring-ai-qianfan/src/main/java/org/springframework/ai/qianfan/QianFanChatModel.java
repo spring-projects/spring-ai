@@ -19,6 +19,7 @@ package org.springframework.ai.qianfan;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -39,6 +40,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -62,6 +64,7 @@ import org.springframework.util.Assert;
  * backed by {@link QianFanApi}.
  *
  * @author Geng Rong
+ * @author John Blum
  * @see ChatModel
  * @see StreamingChatModel
  * @see QianFanApi
@@ -155,56 +158,59 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(QianFanConstants.PROVIDER_NAME)
 			.requestOptions(buildRequestOptions(request))
 			.build();
 
-		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.qianFanApi.chatCompletionEntity(request));
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				var chatCompletion = completionEntity.getBody();
-				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
-					return new ChatResponse(List.of());
-				}
+		return observation.observe(() -> {
+			ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+				.execute(ctx -> this.qianFanApi.chatCompletionEntity(request));
+
+			var chatCompletion = completionEntity.getBody();
+			if (chatCompletion == null) {
+				logger.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
 
 			// @formatter:off
-					Map<String, Object> metadata = Map.of(
-						"id", chatCompletion.id(),
-						"role", Role.ASSISTANT
-					);
-					// @formatter:on
+			Map<String, Object> metadata = Map.of(
+				"id", chatCompletion.id(),
+				"role", Role.ASSISTANT
+			);
+			// @formatter:on
 
-				var assistantMessage = new AssistantMessage(chatCompletion.result(), metadata);
-				List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
-				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
-				observationContext.setResponse(chatResponse);
-				return chatResponse;
-			});
+			var assistantMessage = new AssistantMessage(chatCompletion.result(), metadata);
+			List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
+			ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
+			return chatResponse;
+		});
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
 		return Flux.deferContextual(contextView -> {
+
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			var completionChunks = this.qianFanApi.chatCompletionStream(request);
 
-			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(QianFanConstants.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(buildRequestOptions(request))
+				.provider(QianFanConstants.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -225,7 +231,9 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 				.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-			return new MessageAggregator().aggregate(chatResponse, observationContext::setResponse);
+
+			return new MessageAggregator().aggregate(chatResponse,
+					ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 
 		});
 	}

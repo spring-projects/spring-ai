@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -45,6 +47,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -73,6 +76,7 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * @author Geng Rong
+ * @author John Blum
  */
 public class MoonshotChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
@@ -177,35 +181,37 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(MoonshotConstants.PROVIDER_NAME)
 			.requestOptions(buildRequestOptions(request))
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.moonshotApi.chatCompletionEntity(request));
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				var chatCompletion = completionEntity.getBody();
+		ChatResponse response = observation.observe(() -> {
+			ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+				.execute(ctx -> this.moonshotApi.chatCompletionEntity(request));
 
-				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
-					return new ChatResponse(List.of());
-				}
+			var chatCompletion = completionEntity.getBody();
 
-				List<Choice> choices = chatCompletion.choices();
-				if (choices == null) {
-					logger.warn("No choices returned for prompt: {}", prompt);
-					return new ChatResponse(List.of());
-				}
+			if (chatCompletion == null) {
+				logger.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
 
-				List<Generation> generations = choices.stream().map(choice -> {
+			List<Choice> choices = chatCompletion.choices();
+			if (choices == null) {
+				logger.warn("No choices returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
+
+			List<Generation> generations = choices.stream().map(choice -> {
 			// @formatter:off
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id(),
@@ -213,15 +219,16 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
 					);
 					// @formatter:on
-					return buildGeneration(choice, metadata);
-				}).toList();
+				return buildGeneration(choice, metadata);
+			}).toList();
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+			ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
 
-				observationContext.setResponse(chatResponse);
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
 
-				return chatResponse;
-			});
+			return chatResponse;
+		});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions)
 				&& isToolCall(response, Set.of(MoonshotApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
@@ -241,7 +248,9 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
 		return Flux.deferContextual(contextView -> {
+
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
@@ -249,16 +258,16 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			ConcurrentMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(MoonshotConstants.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(buildRequestOptions(request))
+				.provider(MoonshotConstants.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -308,7 +317,8 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 				.doFinally(signalType -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(flux,
+					ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 		});
 	}
 

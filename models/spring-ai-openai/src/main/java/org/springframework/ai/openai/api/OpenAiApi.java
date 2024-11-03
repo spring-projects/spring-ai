@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.api;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,16 +31,19 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ChatModelDescription;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MimeType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -57,6 +61,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author David Frizelle
+ * @author John Blum
  */
 public class OpenAiApi {
 
@@ -986,6 +991,10 @@ public class OpenAiApi {
 			this(content, role, null, null, null, null);
 		}
 
+		public static Builder builder() {
+			return new ChatCompletionMessage.Builder();
+		}
+
 		/**
 		 * Get message content as String.
 		 */
@@ -1112,6 +1121,57 @@ public class OpenAiApi {
 		public record ChatCompletionFunction(// @formatter:off
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) { // @formatter:on
+		}
+
+		public static class Builder {
+
+			private Object rawContent;
+
+			private Role role;
+
+			private String name;
+
+			private String toolCallId;
+
+			private String refusal;
+
+			private List<ToolCall> toolCalls;
+
+			public Builder name(String name) {
+				this.name = name;
+				return this;
+			}
+
+			public Builder rawContent(Object rawContent) {
+				this.rawContent = rawContent;
+				return this;
+			}
+
+			public Builder refusal(String refusal) {
+				this.refusal = refusal;
+				return this;
+			}
+
+			public Builder role(Role role) {
+				this.role = role;
+				return this;
+			}
+
+			public Builder toolCallId(String toolCallId) {
+				this.toolCallId = toolCallId;
+				return this;
+			}
+
+			public Builder toolCalls(List<ToolCall> toolCalls) {
+				this.toolCalls = List.copyOf(toolCalls);
+				return this;
+			}
+
+			public ChatCompletionMessage build() {
+				return new ChatCompletionMessage(this.rawContent, this.role, this.name, this.toolCallId, this.toolCalls,
+						this.refusal);
+			}
+
 		}
 
 	}
@@ -1391,6 +1451,40 @@ public class OpenAiApi {
 			@JsonProperty("data") List<T> data,
 			@JsonProperty("model") String model,
 			@JsonProperty("usage") Usage usage) { // @formatter:on
+	}
+
+	public static class MediaConverter implements Converter<Media, ChatCompletionMessage.MediaContent> {
+
+		public static final MediaConverter INSTANCE = new MediaConverter();
+
+		@Override
+		public ChatCompletionMessage.MediaContent convert(Media media) {
+			String url = fromMediaData(media.getMimeType(), media.getData());
+			ChatCompletionMessage.MediaContent.ImageUrl imageUrl = new ChatCompletionMessage.MediaContent.ImageUrl(url);
+			return new ChatCompletionMessage.MediaContent(imageUrl);
+		}
+
+		private String fromMediaData(MimeType mimeType, Object mediaContentData) {
+
+			if (mediaContentData instanceof byte[] bytes) {
+				// Assume the bytes are an image. So, convert the bytes to a base64
+				// encoded
+				// following the prefix pattern.
+				return String.format("data:%s;base64,%s", mimeType.toString(),
+						Base64.getEncoder().encodeToString(bytes));
+			}
+			else if (mediaContentData instanceof String text) {
+				// Assume the text is a URLs or a base64 encoded image prefixed by the
+				// user.
+				return text;
+			}
+			else {
+				throw new IllegalArgumentException(
+						"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
+			}
+
+		}
+
 	}
 
 }

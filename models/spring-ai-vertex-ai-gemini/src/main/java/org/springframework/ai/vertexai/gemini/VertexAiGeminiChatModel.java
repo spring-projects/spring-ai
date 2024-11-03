@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -64,6 +65,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -90,6 +92,7 @@ import org.springframework.util.StringUtils;
  * @author Chris Turchin
  * @author Mark Pollack
  * @author Soby Chacko
+ * @author John Blum
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
@@ -285,33 +288,35 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		VertexAiGeminiChatOptions vertexAiGeminiChatOptions = vertexAiGeminiChatOptions(prompt);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(VertexAiGeminiConstants.PROVIDER_NAME)
 			.requestOptions(vertexAiGeminiChatOptions)
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> this.retryTemplate.execute(context -> {
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				var geminiRequest = createGeminiRequest(prompt, vertexAiGeminiChatOptions);
+		ChatResponse response = observation.observe(() -> this.retryTemplate.execute(context -> {
 
-				GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
+			var geminiRequest = createGeminiRequest(prompt, vertexAiGeminiChatOptions);
 
-				List<Generation> generations = generateContentResponse.getCandidatesList()
-					.stream()
-					.map(this::responseCandiateToGeneration)
-					.flatMap(List::stream)
-					.toList();
+			GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
 
-				ChatResponse chatResponse = new ChatResponse(generations,
-						toChatResponseMetadata(generateContentResponse));
+			List<Generation> generations = generateContentResponse.getCandidatesList()
+				.stream()
+				.map(this::responseCandiateToGeneration)
+				.flatMap(List::stream)
+				.toList();
 
-				observationContext.setResponse(chatResponse);
-				return chatResponse;
-			}));
+			ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(generateContentResponse));
+
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(it -> it.setResponse(chatResponse));
+
+			return chatResponse;
+		}));
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(FinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
@@ -326,20 +331,23 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
 		return Flux.deferContextual(contextView -> {
+
 			VertexAiGeminiChatOptions vertexAiGeminiChatOptions = vertexAiGeminiChatOptions(prompt);
 
-			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(VertexAiGeminiConstants.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(vertexAiGeminiChatOptions)
+				.provider(VertexAiGeminiConstants.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
 			var request = createGeminiRequest(prompt, vertexAiGeminiChatOptions);
 
 			try {
@@ -369,7 +377,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-					return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+					return new MessageAggregator().aggregate(chatResponseFlux,
+							ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 				});
 			}
 			catch (Exception e) {
@@ -545,14 +554,12 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	private List<Content> toGeminiContent(List<Message> instrucitons) {
 
-		List<Content> contents = instrucitons.stream()
+		return instrucitons.stream()
 			.map(message -> Content.newBuilder()
 				.setRole(toGeminiMessageType(message.getMessageType()).getValue())
 				.addAllParts(messageToGeminiParts(message))
 				.build())
 			.toList();
-
-		return contents;
 	}
 
 	private List<Tool> getFunctionTools(Set<String> functionNames) {

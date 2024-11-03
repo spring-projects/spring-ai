@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -41,6 +42,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -74,6 +76,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author luocongqiu
  * @author Thomas Vitale
+ * @author John Blum
  * @since 1.0.0
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -130,42 +133,46 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		OllamaApi.ChatRequest request = ollamaChatRequest(prompt, false);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(OllamaApi.PROVIDER_NAME)
 			.requestOptions(buildRequestOptions(request))
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				OllamaApi.ChatResponse ollamaResponse = this.chatApi.chat(request);
+		ChatResponse response = observation.observe(() -> {
 
-				List<AssistantMessage.ToolCall> toolCalls = ollamaResponse.message().toolCalls() == null ? List.of()
-						: ollamaResponse.message()
-							.toolCalls()
-							.stream()
-							.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
-									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
-							.toList();
+			OllamaApi.ChatResponse ollamaResponse = this.chatApi.chat(request);
 
-				var assistantMessage = new AssistantMessage(ollamaResponse.message().content(), Map.of(), toolCalls);
+			List<AssistantMessage.ToolCall> toolCalls = ollamaResponse.message().toolCalls() == null ? List.of()
+					: ollamaResponse.message()
+						.toolCalls()
+						.stream()
+						.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+								ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+						.toList();
 
-				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
-				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.from(ollamaResponse.doneReason(), null);
-				}
+			var assistantMessage = new AssistantMessage(ollamaResponse.message().content(), Map.of(), toolCalls);
 
-				var generator = new Generation(assistantMessage, generationMetadata);
-				ChatResponse chatResponse = new ChatResponse(List.of(generator), from(ollamaResponse));
+			ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 
-				observationContext.setResponse(chatResponse);
+			if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
+				generationMetadata = ChatGenerationMetadata.from(ollamaResponse.doneReason(), null);
+			}
 
-				return chatResponse;
+			var generator = new Generation(assistantMessage, generationMetadata);
 
-			});
+			ChatResponse chatResponse = new ChatResponse(List.of(generator), from(ollamaResponse));
+
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
+
+			return chatResponse;
+
+		});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
 				&& isToolCall(response, Set.of("stop"))) {
@@ -180,17 +187,19 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
 		return Flux.deferContextual(contextView -> {
+
 			OllamaApi.ChatRequest request = ollamaChatRequest(prompt, true);
 
-			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(OllamaApi.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(buildRequestOptions(request))
+				.provider(OllamaApi.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -236,13 +245,12 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 				}
 			})
 			.doOnError(observation::error)
-			.doFinally(s ->
-				observation.stop()
-			)
+			.doFinally(signalType -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux,
+					ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 		});
 	}
 

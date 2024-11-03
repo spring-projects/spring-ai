@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -46,6 +48,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -77,6 +80,7 @@ import org.springframework.util.CollectionUtils;
  * backed by {@link MiniMaxApi}.
  *
  * @author Geng Rong
+ * @author John Blum
  * @see ChatModel
  * @see StreamingChatModel
  * @see MiniMaxApi
@@ -209,62 +213,66 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(MiniMaxApiConstants.PROVIDER_NAME)
 			.requestOptions(buildRequestOptions(request))
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.miniMaxApi.chatCompletionEntity(request));
+		ChatResponse response = observation.observe(() -> {
 
-				var chatCompletion = completionEntity.getBody();
+			ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+				.execute(ctx -> this.miniMaxApi.chatCompletionEntity(request));
 
-				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
-					return new ChatResponse(List.of());
-				}
+			var chatCompletion = completionEntity.getBody();
 
-				List<Choice> choices = chatCompletion.choices();
-				if (choices == null) {
-					logger.warn("No choices returned for prompt: {}, because: {}}", prompt,
-							chatCompletion.baseResponse().message());
-					return new ChatResponse(List.of());
-				}
+			if (chatCompletion == null) {
+				logger.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
 
-				List<Generation> generations = choices.stream().map(choice -> {
-			// @formatter:off
-						// if the choice is a web search tool call, return last message of choice.messages
-						ChatCompletionMessage message = null;
-						if (choice.message() != null) {
-							message = choice.message();
-						}
-						else if (!CollectionUtils.isEmpty(choice.messages())) {
-							// the MiniMax web search messages result is ['user message','assistant tool call', 'tool call', 'assistant message']
-							// so the last message is the assistant message
-							message = choice.messages().get(choice.messages().size() - 1);
-						}
-						Map<String, Object> metadata = Map.of(
-								"id", chatCompletion.id(),
-								"role", message != null && message.role() != null ? message.role().name() : "",
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
-						// @formatter:on
-					return buildGeneration(message, choice.finishReason(), metadata);
-				}).toList();
+			List<Choice> choices = chatCompletion.choices();
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+			if (choices == null) {
+				logger.warn("No choices returned for prompt: {}, because: {}}", prompt,
+						chatCompletion.baseResponse().message());
+				return new ChatResponse(List.of());
+			}
 
-				observationContext.setResponse(chatResponse);
+			List<Generation> generations = choices.stream().map(choice -> {
+				// @formatter:off
+					// if the choice is a web search tool call, return last message of choice.messages
+					ChatCompletionMessage message = null;
+					if (choice.message() != null) {
+						message = choice.message();
+					}
+					else if (!CollectionUtils.isEmpty(choice.messages())) {
+						// the MiniMax web search messages result is ['user message','assistant tool call', 'tool call', 'assistant message']
+						// so the last message is the assistant message
+						message = choice.messages().get(choice.messages().size() - 1);
+					}
+					Map<String, Object> metadata = Map.of(
+							"id", chatCompletion.id(),
+							"role", message != null && message.role() != null ? message.role().name() : "",
+							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+					// @formatter:on
+				return buildGeneration(message, choice.finishReason(), metadata);
+			}).toList();
 
-				return chatResponse;
-			});
+			ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
+
+			return chatResponse;
+		});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
 				Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
@@ -284,24 +292,26 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
 		return Flux.deferContextual(contextView -> {
+
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.miniMaxApi.chatCompletionStream(request));
+				.execute(retryContext -> this.miniMaxApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			ConcurrentMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(MiniMaxApiConstants.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(buildRequestOptions(request))
+				.provider(MiniMaxApiConstants.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -309,46 +319,48 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(justChatCompletion -> {
 					try {
 						@SuppressWarnings("null")
-						String id = chatCompletion2.id();
+						String id = justChatCompletion.id();
 
 				// @formatter:off
-							List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
-								if (choice.message().role() != null) {
-									roleMap.putIfAbsent(id, choice.message().role().name());
-								}
-								Map<String, Object> metadata = Map.of(
-										"id", chatCompletion2.id(),
-										"role", roleMap.getOrDefault(id, ""),
-										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
-								return buildGeneration(choice, metadata);
-							}).toList();
-							return new ChatResponse(generations, from(chatCompletion2));
+						List<Generation> generations = justChatCompletion.choices().stream().map(choice -> {
+							Role role = choice.message().role();
+							if (role != null) {
+								roleMap.putIfAbsent(id, role.name());
+							}
+							Map<String, Object> metadata = Map.of(
+									"id", id,
+									"role", roleMap.getOrDefault(id, ""),
+									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+							return buildGeneration(choice, metadata);
+						}).toList();
+						// @formatter:on
+						return new ChatResponse(generations, from(justChatCompletion));
 					}
 					catch (Exception e) {
-							logger.error("Error processing chat completion", e);
-							return new ChatResponse(List.of());
-						}
-					}));
+						logger.error("Error processing chat completion", e);
+						return new ChatResponse(List.of());
+					}
+				}));
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-						if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
-								Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
-							var toolCallConversation = handleToolCalls(prompt, response);
-							// Recursively call the stream method with the tool call message
-							// conversation that contains the call responses.
-							return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
-						}
-						return Flux.just(response);
-					})
-					.doOnError(observation::error)
-					.doFinally(signalType -> observation.stop())
-					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-			// @formatter:on
+				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
+						Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
+					var toolCallConversation = handleToolCalls(prompt, response);
+					// Recursively call the stream method with the tool call message
+					// conversation that contains the call responses.
+					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+				}
+				return Flux.just(response);
+			})
+				.doOnError(observation::error)
+				.doFinally(signalType -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(flux,
+					ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 		});
 	}
 

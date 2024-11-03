@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
@@ -54,10 +55,12 @@ import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Content;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -77,6 +80,7 @@ import org.springframework.util.StringUtils;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Claudio Silva Junior
+ * @author John Blum
  * @since 1.0.0
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -209,28 +213,31 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(AnthropicApi.PROVIDER_NAME)
 			.requestOptions(buildRequestOptions(request))
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate
-					.execute(ctx -> this.anthropicApi.chatCompletionEntity(request));
+		ChatResponse response = observation.observe(() -> {
 
-				ChatResponse chatResponse = toChatResponse(completionEntity.getBody());
+			ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate
+				.execute(ctx -> this.anthropicApi.chatCompletionEntity(request));
 
-				observationContext.setResponse(chatResponse);
+			ChatResponse chatResponse = toChatResponse(completionEntity.getBody());
 
-				return chatResponse;
-			});
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
+
+			return chatResponse;
+		});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
 				&& this.isToolCall(response, Set.of("tool_use"))) {
@@ -243,17 +250,19 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
 		return Flux.deferContextual(contextView -> {
+
 			ChatCompletionRequest request = createRequest(prompt, true);
 
-			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(AnthropicApi.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(buildRequestOptions(request))
+				.provider(AnthropicApi.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -276,7 +285,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux,
+					ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 		});
 	}
 
@@ -408,7 +418,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		String systemPrompt = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(m -> m.getContent())
+			.map(Content::getContent)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		ChatCompletionRequest request = new ChatCompletionRequest(this.defaultOptions.getModel(), userMessages,

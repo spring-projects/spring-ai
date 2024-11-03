@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -44,6 +45,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -75,6 +77,7 @@ import org.springframework.util.CollectionUtils;
  * @author Grogdunn
  * @author Thomas Vitale
  * @author luocongqiu
+ * @author John Blum
  * @since 1.0.0
  */
 public class MistralAiChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -161,44 +164,46 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		MistralAiApi.ChatCompletionRequest request = createRequest(prompt, false);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(MistralAiApi.PROVIDER_NAME)
 			.requestOptions(buildRequestOptions(request))
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.mistralAiApi.chatCompletionEntity(request));
+		ChatResponse response = observation.observe(() -> {
 
-				ChatCompletion chatCompletion = completionEntity.getBody();
+			ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+				.execute(ctx -> this.mistralAiApi.chatCompletionEntity(request));
 
-				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
-					return new ChatResponse(List.of());
-				}
+			ChatCompletion chatCompletion = completionEntity.getBody();
 
-				List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-			// @formatter:off
+			if (chatCompletion == null) {
+				logger.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
+
+			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+				// @formatter:off
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 							"index", choice.index(),
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 					// @formatter:on
-					return buildGeneration(choice, metadata);
-				}).toList();
+				return buildGeneration(choice, metadata);
+			}).toList();
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+			ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
 
-				observationContext.setResponse(chatResponse);
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
 
-				return chatResponse;
-			});
+			return chatResponse;
+		});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
 				&& isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
@@ -214,17 +219,19 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
 		return Flux.deferContextual(contextView -> {
+
 			var request = createRequest(prompt, true);
 
-			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(MistralAiApi.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(buildRequestOptions(request))
+				.provider(MistralAiApi.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -284,11 +291,12 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 				}
 			})
 			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
+			.doFinally(signalType -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on;
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux,
+					ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 		});
 
 	}

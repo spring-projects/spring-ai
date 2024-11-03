@@ -25,7 +25,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
@@ -78,6 +80,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -87,6 +90,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.util.ValueUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -195,24 +199,24 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(AiProvider.AZURE_OPENAI.value())
 			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
-				ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
-				options.setStream(false);
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
-				ChatResponse chatResponse = toChatResponse(chatCompletions);
-				observationContext.setResponse(chatResponse);
-				return chatResponse;
-			});
+		ChatResponse response = observation.observe(() -> {
+			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt).setStream(false);
+			ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
+			ChatResponse chatResponse = toChatResponse(chatCompletions);
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
+			return chatResponse;
+		});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions)
 				&& isToolCall(response, Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
@@ -229,24 +233,28 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
 		return Flux.deferContextual(contextView -> {
-			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
-			options.setStream(true);
+
+			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt).setStream(true);
 
 			Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
 				.getChatCompletionsStream(options.getModel(), options);
 
+			// @formatter:off
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			// TODO: Why is roleMap not used? I am guessing it should have served the same
+			//  purpose as the roleMap in OpenAiChatModel.stream(:Prompt)
+			// @formatter:on
+			ConcurrentMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
+				.requestOptions(ValueUtils.defaultIfNull(prompt.getOptions(), this.defaultOptions))
 				.provider(AiProvider.AZURE_OPENAI.value())
-				.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -295,7 +303,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 					.doFinally(s -> observation.stop())
 					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+				return new MessageAggregator().aggregate(flux,
+						ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 			});
 
 		});

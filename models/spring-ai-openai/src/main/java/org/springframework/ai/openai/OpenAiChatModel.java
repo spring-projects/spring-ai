@@ -17,13 +17,16 @@
 package org.springframework.ai.openai;
 
 import java.util.ArrayList;
-import java.util.Base64;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
@@ -51,6 +54,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.support.ChatModelObservationSupport;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -71,13 +75,12 @@ import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.ValueUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.MimeType;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -103,6 +106,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	private static final EnumSet<MessageType> USER_SYSTEM_MESSAGE_TYPE_SET = EnumSet.of(MessageType.USER,
+			MessageType.SYSTEM);
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -213,55 +219,55 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-			.prompt(prompt)
-			.provider(OpenAiApiConstants.PROVIDER_NAME)
+		Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 			.requestOptions(buildRequestOptions(request))
+			.provider(OpenAiApiConstants.PROVIDER_NAME)
+			.prompt(prompt)
 			.build();
 
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
+		ChatResponse response = observation.observe(() -> {
 
-				var chatCompletion = completionEntity.getBody();
+			ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+				.execute(context -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
 
-				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
-					return new ChatResponse(List.of());
-				}
+			var chatCompletion = completionEntity.getBody();
 
-				List<Choice> choices = chatCompletion.choices();
-				if (choices == null) {
-					logger.warn("No choices returned for prompt: {}", prompt);
-					return new ChatResponse(List.of());
-				}
+			if (chatCompletion == null) {
+				logger.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(Collections.emptyList());
+			}
 
-				List<Generation> generations = choices.stream().map(choice -> {
+			List<Choice> choices = chatCompletion.choices();
+
+			if (choices == null) {
+				logger.warn("No choices returned for prompt: {}", prompt);
+				return new ChatResponse(Collections.emptyList());
+			}
+
 			// @formatter:off
-					Map<String, Object> metadata = Map.of(
-							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
-							"role", choice.message().role() != null ? choice.message().role().name() : "",
-							"index", choice.index(),
-							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
-					// @formatter:on
-					return buildGeneration(choice, metadata);
-				}).toList();
+			List<Generation> generations = choices.stream().map(choice -> {
+				Map<String, Object> metadata = choiceMetadata(choice, chatCompletion.id(),
+					ValueUtils.defaultToEmptyString(choice.message().role(), OpenAiApi.ChatCompletionMessage.Role::name));
 
-				// Non function calling.
-				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+				return buildGeneration(choice, metadata);
+			}).toList();
+			// @formatter:on
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
+			// Non function calling.
+			RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
-				observationContext.setResponse(chatResponse);
+			ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
 
-				return chatResponse;
+			ChatModelObservationSupport.getObservationContext(observation)
+				.ifPresent(context -> context.setResponse(chatResponse));
 
-			});
+			return chatResponse;
+
+		});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions)
 				&& isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
@@ -277,7 +283,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
 		return Flux.deferContextual(contextView -> {
+
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi.chatCompletionStream(request,
@@ -285,16 +293,16 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			ConcurrentMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(OpenAiApiConstants.PROVIDER_NAME)
+			Supplier<ChatModelObservationContext> observationContext = () -> ChatModelObservationContext.builder()
 				.requestOptions(buildRequestOptions(request))
+				.provider(OpenAiApiConstants.PROVIDER_NAME)
+				.prompt(prompt)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
@@ -302,27 +310,22 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(resolvedChatCompletion -> {
 					try {
 						@SuppressWarnings("null")
-						String id = chatCompletion2.id();
+						String id = resolvedChatCompletion.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
+						List<Generation> generations = resolvedChatCompletion.choices().stream().map(choice -> {
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(id, choice.message().role().name());
 							}
-							Map<String, Object> metadata = Map.of(
-									"id", chatCompletion2.id(),
-									"role", roleMap.getOrDefault(id, ""),
-									"index", choice.index(),
-									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
+
+							Map<String, Object> metadata = choiceMetadata(choice, id, roleMap.getOrDefault(id, ""));
 
 							return buildGeneration(choice, metadata);
 						}).toList();
-						// @formatter:on
 
-						return new ChatResponse(generations, from(chatCompletion2, null));
+						return new ChatResponse(generations, from(resolvedChatCompletion, null));
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
@@ -332,27 +335,42 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				}));
 
 			// @formatter:off
-			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-
-				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
-					var toolCallConversation = handleToolCalls(prompt, response);
-					// Recursively call the stream method with the tool call message
-					// conversation that contains the call responses.
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
-				}
-				else {
-					return Flux.just(response);
-				}
-			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			Flux<ChatResponse> flux = chatResponse
+				.flatMap(response -> {
+					if (!isProxyToolCalls(prompt, this.defaultOptions)
+							&& isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+									OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
+						var toolCallConversation = handleToolCalls(prompt, response);
+						// Recursively call the stream method with the tool call message
+						// conversation that contains the call responses.
+						return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					}
+					else {
+						return Flux.just(response);
+					}
+				})
+				.doOnError(observation::error)
+				.doFinally(signalType -> observation.stop())
+				.contextWrite(context -> context.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
-
+			return new MessageAggregator().aggregate(flux,
+					ChatModelObservationSupport.setChatResponseInObservationContext(observation));
 		});
+	}
+
+	private Map<String, Object> choiceMetadata(Choice choice, String id, String roleName) {
+
+		// @formatter:off
+		return Map.of(
+			"id", ValueUtils.defaultToEmptyString(id),
+			"role", roleName,
+			"index", choice.index(),
+			"finishReason", ValueUtils.defaultToEmptyString(choice.finishReason(),
+				OpenAiApi.ChatCompletionFinishReason::name),
+			"refusal", ValueUtils.defaultToEmptyString(choice.message().refusal())
+		);
+		// @formatter:on
 	}
 
 	private MultiValueMap<String, String> getAdditionalHttpHeaders(Prompt prompt) {
@@ -416,7 +434,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
-			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
+			MessageType messageType = message.getMessageType();
+			if (USER_SYSTEM_MESSAGE_TYPE_SET.contains(messageType)) {
 				Object content = message.getContent();
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
@@ -425,8 +444,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 						contentList.addAll(userMessage.getMedia()
 							.stream()
-							.map(media -> new MediaContent(new MediaContent.ImageUrl(
-									this.fromMediaData(media.getMimeType(), media.getData()))))
+							.map(OpenAiApi.MediaConverter.INSTANCE::convert)
 							.toList());
 
 						content = contentList;
@@ -436,7 +454,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				return List.of(new ChatCompletionMessage(content,
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
-			else if (message.getMessageType() == MessageType.ASSISTANT) {
+			else if (MessageType.ASSISTANT.equals(messageType)) {
 				var assistantMessage = (AssistantMessage) message;
 				List<ToolCall> toolCalls = null;
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
@@ -445,18 +463,26 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
+				return List.of(ChatCompletionMessage.builder()
+					.rawContent(assistantMessage.getContent())
+					.role(ChatCompletionMessage.Role.ASSISTANT)
+					.toolCalls(toolCalls)
+					.build());
 			}
-			else if (message.getMessageType() == MessageType.TOOL) {
+			else if (MessageType.TOOL.equals(messageType)) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
 				toolMessage.getResponses()
-					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
+					.forEach(response -> Assert.notNull(response.id(), "ToolResponseMessage must have an id"));
+
 				return toolMessage.getResponses()
 					.stream()
-					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null))
+					.map(toolResponse -> ChatCompletionMessage.builder()
+						.rawContent(toolResponse.responseData())
+						.role(ChatCompletionMessage.Role.TOOL)
+						.name(toolResponse.name())
+						.toolCallId(toolResponse.id())
+						.build())
 					.toList();
 			}
 			else {
@@ -493,7 +519,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
-
 			request = ModelOptionsUtils.merge(
 					OpenAiChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
@@ -506,22 +531,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 
 		return request;
-	}
-
-	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
-		if (mediaContentData instanceof byte[] bytes) {
-			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
-			// following the prefix pattern.
-			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
-		}
-		else if (mediaContentData instanceof String text) {
-			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
-			return text;
-		}
-		else {
-			throw new IllegalArgumentException(
-					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
-		}
 	}
 
 	private List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {

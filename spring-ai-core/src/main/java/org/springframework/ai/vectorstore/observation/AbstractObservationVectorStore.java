@@ -18,7 +18,9 @@ package org.springframework.ai.vectorstore.observation;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
@@ -28,6 +30,7 @@ import org.springframework.lang.Nullable;
 
 /**
  * @author Christian Tzolov
+ * @author John Blum
  * @since 1.0.0
  */
 public abstract class AbstractObservationVectorStore implements VectorStore {
@@ -48,45 +51,65 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Override
 	public void add(List<Document> documents) {
 
-		VectorStoreObservationContext observationContext = this
-			.createObservationContextBuilder(VectorStoreObservationContext.Operation.ADD.value())
-			.build();
+		Supplier<VectorStoreObservationContext> observationContext = observationContextSupplier(
+				VectorStoreObservationContext.Operation.ADD);
 
 		VectorStoreObservationDocumentation.AI_VECTOR_STORE
-			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry)
-			.observe(() -> this.doAdd(documents));
+			.observe(() -> doAdd(documents));
 	}
 
 	@Override
+	@SuppressWarnings("all")
 	public Optional<Boolean> delete(List<String> deleteDocIds) {
 
-		VectorStoreObservationContext observationContext = this
-			.createObservationContextBuilder(VectorStoreObservationContext.Operation.DELETE.value())
-			.build();
+		Supplier<VectorStoreObservationContext> observationContext = observationContextSupplier(
+				VectorStoreObservationContext.Operation.DELETE);
 
 		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
-			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
 					this.observationRegistry)
-			.observe(() -> this.doDelete(deleteDocIds));
+			.observe(() -> doDelete(deleteDocIds));
 	}
 
 	@Override
+	@SuppressWarnings("all")
 	public List<Document> similaritySearch(SearchRequest request) {
 
-		VectorStoreObservationContext searchObservationContext = this
-			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
-			.withQueryRequest(request)
-			.build();
+		Supplier<VectorStoreObservationContext> observationContext = observationContextSupplier(
+				VectorStoreObservationContext.Operation.QUERY, builder -> builder.withQueryRequest(request));
 
-		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
-			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION,
-					() -> searchObservationContext, this.observationRegistry)
-			.observe(() -> {
-				var documents = this.doSimilaritySearch(request);
-				searchObservationContext.setQueryResponse(documents);
-				return documents;
-			});
+		Observation observation = VectorStoreObservationDocumentation.AI_VECTOR_STORE.observation(
+				this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, observationContext,
+				this.observationRegistry);
+
+		return observation.observe(() -> {
+			var documents = doSimilaritySearch(request);
+			getObservationContext(observation).ifPresent(context -> context.setQueryResponse(documents));
+			return documents;
+		});
+	}
+
+	private Optional<VectorStoreObservationContext> getObservationContext(@Nullable Observation observation) {
+
+		return Optional.ofNullable(observation)
+			.map(Observation::getContext)
+			.filter(VectorStoreObservationContext.class::isInstance)
+			.map(VectorStoreObservationContext.class::cast);
+	}
+
+	private Supplier<VectorStoreObservationContext> observationContextSupplier(
+			VectorStoreObservationContext.Operation operation) {
+
+		return observationContextSupplier(operation, VectorStoreObservationContextBuilderCustomizer.IDENTITY);
+	}
+
+	private Supplier<VectorStoreObservationContext> observationContextSupplier(
+			VectorStoreObservationContext.Operation operation,
+			VectorStoreObservationContextBuilderCustomizer customizer) {
+
+		return () -> customizer.customize(createObservationContextBuilder(operation.value())).build();
 	}
 
 	public abstract void doAdd(List<Document> documents);
@@ -96,5 +119,21 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	public abstract List<Document> doSimilaritySearch(SearchRequest request);
 
 	public abstract VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName);
+
+	@FunctionalInterface
+	@SuppressWarnings("unused")
+	protected interface VectorStoreObservationContextBuilderCustomizer {
+
+		VectorStoreObservationContextBuilderCustomizer IDENTITY = builder -> builder;
+
+		VectorStoreObservationContext.Builder customize(VectorStoreObservationContext.Builder builder);
+
+		default VectorStoreObservationContextBuilderCustomizer andThen(
+				@Nullable VectorStoreObservationContextBuilderCustomizer customizer) {
+
+			return customizer != null ? builder -> customizer.customize(this.customize(builder)) : this;
+		}
+
+	}
 
 }
