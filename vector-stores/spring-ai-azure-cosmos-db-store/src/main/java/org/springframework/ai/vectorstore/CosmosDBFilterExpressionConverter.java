@@ -40,7 +40,7 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 
 	private Map<String, String> metadataFields;
 
-	public CosmosDBFilterExpressionConverter(Collection<String> columns) {
+	CosmosDBFilterExpressionConverter(Collection<String> columns) {
 		this.metadataFields = columns.stream().collect(Collectors.toMap(Function.identity(), Function.identity()));
 	}
 

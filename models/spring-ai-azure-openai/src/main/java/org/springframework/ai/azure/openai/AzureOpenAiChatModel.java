@@ -290,9 +290,10 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 				}
 
-				Flux<ChatResponse> flux = Flux.just(chatResponse).doOnError(observation::error).doFinally(s -> {
-					observation.stop();
-				}).contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				Flux<ChatResponse> flux = Flux.just(chatResponse)
+					.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 			});
@@ -416,7 +417,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 				return List.of(new ChatRequestUserMessage(items));
 			case SYSTEM:
 				return List.of(new ChatRequestSystemMessage(message.getContent()));
-			case ASSISTANT: {
+			case ASSISTANT:
 				AssistantMessage assistantMessage = (AssistantMessage) message;
 				List<ChatCompletionsToolCall> toolCalls = null;
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
@@ -430,20 +431,17 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getContent());
 				azureAssistantMessage.setToolCalls(toolCalls);
 				return List.of(azureAssistantMessage);
-			}
-			case TOOL: {
+			case TOOL:
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
-				toolMessage.getResponses().forEach(response -> {
-					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
-				});
+				toolMessage.getResponses()
+					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
 
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatRequestToolMessage(tr.responseData(), tr.id()))
 					.map(crtm -> ((ChatRequestMessage) crtm))
 					.toList();
-			}
 			default:
 				throw new IllegalArgumentException("Unknown message type " + message.getMessageType());
 		}

@@ -55,7 +55,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -95,20 +94,18 @@ class CassandraRichSchemaVectorStoreIT {
 	static CassandraVectorStoreConfig.Builder storeBuilder(ApplicationContext context,
 			List<SchemaColumn> columnOverrides) throws IOException {
 
-		Optional<SchemaColumn> wikiOverride = columnOverrides.stream()
-			.filter((f) -> "wiki".equals(f.name()))
-			.findFirst();
+		Optional<SchemaColumn> wikiOverride = columnOverrides.stream().filter(f -> "wiki".equals(f.name())).findFirst();
 
 		Optional<SchemaColumn> langOverride = columnOverrides.stream()
-			.filter((f) -> "language".equals(f.name()))
+			.filter(f -> "language".equals(f.name()))
 			.findFirst();
 
 		Optional<SchemaColumn> titleOverride = columnOverrides.stream()
-			.filter((f) -> "title".equals(f.name()))
+			.filter(f -> "title".equals(f.name()))
 			.findFirst();
 
 		Optional<SchemaColumn> chunkNoOverride = columnOverrides.stream()
-			.filter((f) -> "chunk_no".equals(f.name()))
+			.filter(f -> "chunk_no".equals(f.name()))
 			.findFirst();
 
 		SchemaColumn wikiSC = wikiOverride.orElse(new SchemaColumn("wiki", DataTypes.TEXT));
@@ -138,9 +135,9 @@ class CassandraRichSchemaVectorStoreIT {
 				if (primaryKeys.isEmpty()) {
 					return "test§¶0";
 				}
-				return format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
+				return java.lang.String.format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
 			})
-			.withDocumentIdTranslator((id) -> {
+			.withDocumentIdTranslator(id -> {
 				String[] parts = id.split("§¶");
 				String title = parts[0];
 				int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;
@@ -176,9 +173,8 @@ class CassandraRichSchemaVectorStoreIT {
 				executeCqlFile(context, "test_wiki_partial_3_schema.cql");
 
 				// IllegalStateException: column all_minilm_l6_v2_embedding does not exist
-				IllegalStateException ise = Assertions.assertThrows(IllegalStateException.class, () -> {
-					createStore(context, List.of(), true, false);
-				});
+				IllegalStateException ise = Assertions.assertThrows(IllegalStateException.class,
+						() -> createStore(context, List.of(), true, false));
 
 				Assertions.assertEquals("column all_minilm_l6_v2_embedding does not exist", ise.getMessage());
 			}
@@ -194,7 +190,7 @@ class CassandraRichSchemaVectorStoreIT {
 		this.contextRunner.run(context -> {
 			int PARTIAL_FILES = 5;
 			for (int i = 0; i < PARTIAL_FILES; ++i) {
-				executeCqlFile(context, format("test_wiki_partial_%d_schema.cql", i));
+				executeCqlFile(context, java.lang.String.format("test_wiki_partial_%d_schema.cql", i));
 				var wrapper = createStore(context, List.of(), false, false);
 				try {
 					Assertions.assertNotNull(wrapper.store());
@@ -208,9 +204,8 @@ class CassandraRichSchemaVectorStoreIT {
 				}
 			}
 			// make sure there's not more files to test
-			Assertions.assertThrows(IOException.class, () -> {
-				executeCqlFile(context, format("test_wiki_partial_%d_schema.cql", PARTIAL_FILES));
-			});
+			Assertions.assertThrows(IOException.class, () -> executeCqlFile(context,
+					java.lang.String.format("test_wiki_partial_%d_schema.cql", PARTIAL_FILES)));
 		});
 	}
 
@@ -328,13 +323,12 @@ class CassandraRichSchemaVectorStoreIT {
 				assertThat(results).hasSize(3);
 
 				// cassandra server will throw an error
-				Assertions.assertThrows(SyntaxError.class, () -> {
-					store.similaritySearch(SearchRequest.query("Great Dark Spot")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression(
-								"NOT(wiki == 'simplewiki' && language == 'en' && title == 'Neptune' && id == 1)"));
-				});
+				Assertions.assertThrows(SyntaxError.class,
+						() -> store.similaritySearch(SearchRequest.query("Great Dark Spot")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression(
+									"NOT(wiki == 'simplewiki' && language == 'en' && title == 'Neptune' && id == 1)")));
 			}
 		});
 	}
@@ -348,12 +342,11 @@ class CassandraRichSchemaVectorStoreIT {
 				List<Document> results = store.similaritySearch(SearchRequest.query("Great Dark Spot").withTopK(5));
 				assertThat(results).hasSize(3);
 
-				Assertions.assertThrows(InvalidQueryException.class, () -> {
-					store.similaritySearch(SearchRequest.query("The World")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression("revision == 9385813"));
-				});
+				Assertions.assertThrows(InvalidQueryException.class,
+						() -> store.similaritySearch(SearchRequest.query("The World")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression("revision == 9385813")));
 			}
 		});
 	}
@@ -396,29 +389,26 @@ class CassandraRichSchemaVectorStoreIT {
 				// note, it is possible to have SAI indexes on primary key columns to
 				// achieve
 				// e.g. searchWithFilterOnPrimaryKeys()
-				Assertions.assertThrows(InvalidQueryException.class, () -> {
-					store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression("id > 557 && \"chunk_no\" == 1"));
-				});
+				Assertions.assertThrows(InvalidQueryException.class,
+						() -> store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression("id > 557 && \"chunk_no\" == 1")));
 
 				// cassandra server will throw an error,
 				// as revision is not searchable (i.e. no SAI index on it)
-				Assertions.assertThrows(SyntaxError.class, () -> {
-					store.similaritySearch(SearchRequest.query("Great Dark Spot")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression("id == 558 || revision == 2020"));
-				});
+				Assertions.assertThrows(SyntaxError.class,
+						() -> store.similaritySearch(SearchRequest.query("Great Dark Spot")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression("id == 558 || revision == 2020")));
 
 				// cassandra java-driver will throw an error
-				Assertions.assertThrows(InvalidQueryException.class, () -> {
-					store.similaritySearch(SearchRequest.query("Great Dark Spot")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression("NOT(id == 557 || revision == 2020)"));
-				});
+				Assertions.assertThrows(InvalidQueryException.class,
+						() -> store.similaritySearch(SearchRequest.query("Great Dark Spot")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression("NOT(id == 557 || revision == 2020)")));
 			}
 		});
 	}

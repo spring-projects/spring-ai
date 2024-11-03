@@ -68,18 +68,18 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 				{
 					"type": "OBJECT",
 					"properties": {
-					  "location": {
+						"location": {
 						"type": "STRING",
 						"description": "The city and state e.g. San Francisco, CA"
-					  },
-					  "unit" : {
+					},
+						"unit" : {
 						"type" : "STRING",
 						"enum" : [ "C", "F" ],
 						"description" : "Temperature unit"
-					  }
+						}
 					},
 					"required": ["location", "unit"]
-				  }
+					}
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
@@ -93,7 +93,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		this.logger.info("Response: {}", response);
+		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 	}
@@ -123,14 +123,14 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		this.logger.info("Response: {}", response);
+		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
 
-		this.logger.info("Response: {}", response2);
+		logger.info("Response: {}", response2);
 
 		assertThat(response2.getResult().getOutput().getContent()).containsIgnoringCase("transaction 696 is PAYED");
 
@@ -162,14 +162,14 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		this.logger.info("Response: {}", response);
+		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
 
-		this.logger.info("Response: {}", response2);
+		logger.info("Response: {}", response2);
 
 		assertThat(response2.getResult().getOutput().getContent()).containsIgnoringCase("transaction 696 is PAYED");
 
@@ -203,7 +203,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
-		this.logger.info("Response: {}", responseString);
+		logger.info("Response: {}", responseString);
 
 		assertThat(responseString).contains("30", "10", "15");
 

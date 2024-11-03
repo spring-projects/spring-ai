@@ -97,9 +97,9 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
-			}, hasSize(1));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
+						hasSize(1));
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 
@@ -114,9 +114,8 @@ public class PineconeVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
-			}, hasSize(0));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
 		});
 	}
 
@@ -139,9 +138,7 @@ public class PineconeVectorStoreIT {
 
 			SearchRequest searchRequest = SearchRequest.query("The World");
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(searchRequest.withTopK(1));
-			}, hasSize(1));
+			Awaitility.await().until(() -> vectorStore.similaritySearch(searchRequest.withTopK(1)), hasSize(1));
 
 			List<Document> results = vectorStore.similaritySearch(searchRequest.withTopK(5));
 			assertThat(results).hasSize(2);
@@ -168,9 +165,7 @@ public class PineconeVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(searchRequest.withTopK(1));
-			}, hasSize(0));
+			Awaitility.await().until(() -> vectorStore.similaritySearch(searchRequest.withTopK(1)), hasSize(0));
 		});
 	}
 
@@ -189,9 +184,7 @@ public class PineconeVectorStoreIT {
 
 			SearchRequest springSearchRequest = SearchRequest.query("Spring").withTopK(5);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(springSearchRequest);
-			}, hasSize(1));
+			Awaitility.await().until(() -> vectorStore.similaritySearch(springSearchRequest), hasSize(1));
 
 			List<Document> results = vectorStore.similaritySearch(springSearchRequest);
 
@@ -210,9 +203,9 @@ public class PineconeVectorStoreIT {
 
 			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent();
-			}, equalTo("The World is Big and Salvation Lurks Around the Corner"));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
+						equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
 			results = vectorStore.similaritySearch(fooBarSearchRequest);
 
@@ -225,9 +218,7 @@ public class PineconeVectorStoreIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(List.of(document.getId()));
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(fooBarSearchRequest);
-			}, hasSize(0));
+			Awaitility.await().until(() -> vectorStore.similaritySearch(fooBarSearchRequest), hasSize(0));
 
 		});
 	}
@@ -241,10 +232,10 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			Awaitility.await().until(() -> {
-				return vectorStore
-					.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll());
-			}, hasSize(3));
+			Awaitility.await()
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll()),
+						hasSize(3));
 
 			List<Document> fullResult = vectorStore
 				.similaritySearch(SearchRequest.query("Depression").withTopK(5).withSimilarityThresholdAll());
@@ -267,9 +258,8 @@ public class PineconeVectorStoreIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
-			}, hasSize(0));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
 		});
 	}
 

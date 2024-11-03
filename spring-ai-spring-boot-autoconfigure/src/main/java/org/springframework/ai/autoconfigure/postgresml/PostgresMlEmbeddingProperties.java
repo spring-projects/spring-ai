@@ -77,7 +77,7 @@ public class PostgresMlEmbeddingProperties {
 	}
 
 	public boolean isCreateExtension() {
-		return createExtension;
+		return this.createExtension;
 	}
 
 	public void setCreateExtension(boolean createExtension) {

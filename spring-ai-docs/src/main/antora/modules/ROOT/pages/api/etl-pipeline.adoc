@@ -235,6 +235,7 @@ class MyTextReader {
     MyTextReader(@Value("classpath:text-source.txt") Resource resource) {
         this.resource = resource;
     }
+
 	List<Document> loadText() {
 		TextReader textReader = new TextReader(this.resource);
 		textReader.getCustomMetadata().put("filename", "text-source.txt");
@@ -447,7 +448,7 @@ dependencies {
 @Component
 public class MyPagePdfDocumentReader {
 
-	List<Document> getDocsFromPdfwithCatalog() {
+	List<Document> getDocsFromPdfWithCatalog() {
 
         ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
                 PdfDocumentReaderConfig.builder()
@@ -458,7 +459,7 @@ public class MyPagePdfDocumentReader {
                     .withPagesPerDocument(1)
                     .build());
 
-	return pdfReader.read();
+	    return pdfReader.read();
     }
 }
 ----

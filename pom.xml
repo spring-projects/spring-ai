@@ -200,11 +200,12 @@
 		<oracle.version>23.4.0.24.05</oracle.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>
-		<milvus.version>2.3.4</milvus.version>
+		<milvus.version>2.3.5</milvus.version>
 		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
 		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
 		<azure-search.version>11.6.1</azure-search.version>
+		<azure-cosmos.version>5.17.1</azure-cosmos.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>

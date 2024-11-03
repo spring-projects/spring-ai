@@ -39,13 +39,14 @@
 	<properties>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
+		<disable.checks>false</disable.checks>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.azure</groupId>
 			<artifactId>azure-spring-data-cosmos</artifactId>
-			<version>LATEST</version>
+			<version>${azure-cosmos.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

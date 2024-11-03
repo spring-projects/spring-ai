@@ -48,11 +48,6 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.ValueFactory.value;
-import static io.qdrant.client.VectorsFactory.vectors;
-import static io.qdrant.client.WithPayloadSelectorFactory.enable;
-
 /**
  * Qdrant vectorStore implementation. This store supports creating, updating, deleting,
  * and similarity searching of documents in a Qdrant collection.
@@ -148,8 +143,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 			List<PointStruct> points = documents.stream()
 				.map(document -> PointStruct.newBuilder()
-					.setId(id(UUID.fromString(document.getId())))
-					.setVectors(vectors(document.getEmbedding()))
+					.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
+					.setVectors(io.qdrant.client.VectorsFactory.vectors(document.getEmbedding()))
 					.putAllPayload(toPayload(document))
 					.build())
 				.toList();
@@ -169,7 +164,9 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public Optional<Boolean> doDelete(List<String> documentIds) {
 		try {
-			List<PointId> ids = documentIds.stream().map(id -> id(UUID.fromString(id))).toList();
+			List<PointId> ids = documentIds.stream()
+				.map(id -> io.qdrant.client.PointIdFactory.id(UUID.fromString(id)))
+				.toList();
 			var result = this.qdrantClient.deleteAsync(this.collectionName, ids)
 				.get()
 				.getStatus() == UpdateStatus.Completed;
@@ -198,7 +195,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			var searchPoints = SearchPoints.newBuilder()
 				.setCollectionName(this.collectionName)
 				.setLimit(request.getTopK())
-				.setWithPayload(enable(true))
+				.setWithPayload(io.qdrant.client.WithPayloadSelectorFactory.enable(true))
 				.addAllVector(EmbeddingUtils.toList(queryEmbedding))
 				.setFilter(filter)
 				.setScoreThreshold((float) request.getSimilarityThreshold())
@@ -206,9 +203,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 			var queryResponse = this.qdrantClient.searchAsync(searchPoints).get();
 
-			return queryResponse.stream().map(scoredPoint -> {
-				return toDocument(scoredPoint);
-			}).toList();
+			return queryResponse.stream().map(this::toDocument).toList();
 
 		}
 		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
@@ -245,7 +240,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private Map<String, Value> toPayload(Document document) {
 		try {
 			var payload = QdrantValueFactory.toValueMap(document.getMetadata());
-			payload.put(CONTENT_FIELD_NAME, value(document.getContent()));
+			payload.put(CONTENT_FIELD_NAME, io.qdrant.client.ValueFactory.value(document.getContent()));
 			return payload;
 		}
 		catch (Exception e) {
@@ -323,7 +318,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			return builder().build();
 		}
 
-		public static class Builder {
+		public final static class Builder {
 
 			private String collectionName;
 

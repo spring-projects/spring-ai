@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.qianfan.api.QianFanApi;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * QianFanChatOptions represents the options for performing chat completion using the
@@ -67,7 +66,6 @@ public class QianFanChatOptions implements ChatOptions {
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
-	@NestedConfigurationProperty
 	private @JsonProperty("stop") List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output

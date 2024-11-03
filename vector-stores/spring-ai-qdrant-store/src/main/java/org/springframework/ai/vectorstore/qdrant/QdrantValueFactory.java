@@ -34,7 +34,7 @@ import org.springframework.util.Assert;
  * @author Anush Shetty
  * @since 0.8.1
  */
-class QdrantValueFactory {
+final class QdrantValueFactory {
 
 	private QdrantValueFactory() {
 	}

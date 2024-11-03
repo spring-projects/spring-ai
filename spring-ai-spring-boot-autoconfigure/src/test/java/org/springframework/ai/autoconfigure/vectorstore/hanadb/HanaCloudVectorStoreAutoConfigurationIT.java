@@ -18,9 +18,9 @@ package org.springframework.ai.autoconfigure.vectorstore.hanadb;
 
 import java.util.List;
 
-import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;

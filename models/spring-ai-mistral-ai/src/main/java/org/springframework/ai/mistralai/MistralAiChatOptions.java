@@ -34,7 +34,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.T
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -94,7 +93,6 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * Stop generation if this token is detected. Or if one of these tokens is detected
 	 * when providing an array.
 	 */
-	@NestedConfigurationProperty
 	private @JsonProperty("stop") List<String> stop;
 
 	/**
@@ -102,7 +100,6 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * tool. Use this to provide a list of functions the model may generate JSON inputs
 	 * for.
 	 */
-	@NestedConfigurationProperty
 	private @JsonProperty("tools") List<FunctionTool> tools;
 
 	/**
@@ -110,7 +107,6 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * not call a function and instead generates a message. auto means the model can pick
 	 * between generating a message or calling a function.
 	 */
-	@NestedConfigurationProperty
 	private @JsonProperty("tool_choice") ToolChoice toolChoice;
 
 	/**
@@ -120,7 +116,6 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * disabled by default. Use the enableFunctions to set the functions from the registry
 	 * to be used by the ChatModel chat completion requests.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
@@ -135,14 +130,12 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	 * functions is set in a prompt options, then the enabled functions are only active
 	 * for the duration of this prompt execution.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 

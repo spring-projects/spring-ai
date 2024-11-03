@@ -134,7 +134,7 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 		return "ZhiPuAiImageOptions{model='" + this.model + '\'' + ", user='" + this.user + '\'' + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final ZhiPuAiImageOptions options;
 

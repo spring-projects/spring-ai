@@ -143,23 +143,23 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 	private String getJson() {
 		return """
 					{
-					  "id": "chatcmpl-123",
-					  "object": "chat.completion",
-					  "created": 1677652288,
-					  "model": "gpt-3.5-turbo-0613",
-					  "choices": [{
+						"id": "chatcmpl-123",
+						"object": "chat.completion",
+						"created": 1677652288,
+						"model": "gpt-3.5-turbo-0613",
+						"choices": [{
 						"index": 0,
 						"message": {
-						  "role": "assistant",
-						  "content": "I surrender!"
+							"role": "assistant",
+							"content": "I surrender!"
 						},
 						"finish_reason": "stop"
-					  }],
-					  "usage": {
+						}],
+						"usage": {
 						"prompt_tokens": 9,
 						"completion_tokens": 12,
 						"total_tokens": 21
-					  }
+						}
 					}
 				""";
 	}

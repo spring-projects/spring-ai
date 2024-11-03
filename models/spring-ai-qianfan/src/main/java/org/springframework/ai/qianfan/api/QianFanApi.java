@@ -112,7 +112,7 @@ public class QianFanApi extends AuthApi {
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public QianFanApi(String baseUrl, String apiKey, String secretKey, RestClient.Builder restClientBuilder,
-					  WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+					WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		super(apiKey, secretKey);
 
 		this.restClient = restClientBuilder
@@ -139,7 +139,7 @@ public class QianFanApi extends AuthApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 
 		return this.restClient.post()
-				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
+				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}", chatRequest.model, getAccessToken())
 				.body(chatRequest)
 				.retrieve()
 				.toEntity(ChatCompletion.class);
@@ -156,7 +156,7 @@ public class QianFanApi extends AuthApi {
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		return this.webClient.post()
-				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
+				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}", chatRequest.model, getAccessToken())
 				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 				.retrieve()
 				.bodyToFlux(ChatCompletionChunk.class)
@@ -287,7 +287,7 @@ public class QianFanApi extends AuthApi {
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest (
+	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("system") String system,
 			@JsonProperty("model") String model,
@@ -308,7 +308,7 @@ public class QianFanApi extends AuthApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature) {
-			this(messages, system, model, null,null,
+			this(messages, system, model, null, null,
 					null, null, null, false, temperature, null);
 		}
 
@@ -322,7 +322,7 @@ public class QianFanApi extends AuthApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature, boolean stream) {
-			this(messages, system, model, null,null,
+			this(messages, system, model, null, null,
 					null, null, null, stream, temperature, null);
 		}
 
@@ -336,7 +336,7 @@ public class QianFanApi extends AuthApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, Boolean stream) {
-			this(messages, system, DEFAULT_CHAT_MODEL, null,null,
+			this(messages, system, DEFAULT_CHAT_MODEL, null, null,
 					null, null, null, stream, 0.8, null);
 		}
 
@@ -382,15 +382,18 @@ public class QianFanApi extends AuthApi {
 			/**
 			 * System message.
 			 */
-			@JsonProperty("system") SYSTEM,
+			@JsonProperty("system")
+			SYSTEM,
 			/**
 			 * User message.
 			 */
-			@JsonProperty("user") USER,
+			@JsonProperty("user")
+			USER,
 			/**
 			 * Assistant message.
 			 */
-			@JsonProperty("assistant") ASSISTANT
+			@JsonProperty("assistant")
+			ASSISTANT
 		}
 	}
 
@@ -483,7 +486,7 @@ public class QianFanApi extends AuthApi {
 		 * @param userId A unique identifier representing your end-user, which can help QianFan to
 		 * 		monitor and detect abuse.
 		 */
-		public EmbeddingRequest(String text,String model,String userId) {
+		public EmbeddingRequest(String text, String model, String userId) {
 			this(List.of(text), model, userId);
 		}
 

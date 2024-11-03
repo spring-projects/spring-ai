@@ -139,7 +139,7 @@ public class OpenAiImageApi {
 
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record OpenAiImageRequest (
+	public record OpenAiImageRequest(
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("model") String model,
 		@JsonProperty("n") Integer n,

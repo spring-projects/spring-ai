@@ -14,22 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.document;
+@NonNullApi
+@NonNullFields
+package org.springframework.ai.chat.client.advisor;
 
-import java.util.List;
-import java.util.function.Function;
-
-public interface DocumentRetriever extends Function<String, List<Document>> {
-
-	/**
-	 * Retrieves relevant documents however the implementation sees fit.
-	 * @param query query string
-	 * @return relevant documents
-	 */
-	List<Document> retrieve(String query);
-
-	default List<Document> apply(String query) {
-		return retrieve(query);
-	}
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;

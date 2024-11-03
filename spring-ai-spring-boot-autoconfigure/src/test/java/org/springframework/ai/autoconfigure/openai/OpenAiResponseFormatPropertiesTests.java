@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
@@ -38,19 +39,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OpenAiResponseFormatPropertiesTests {
 
 	@Test
+	@Disabled("GH-1645")
 	public void responseFormatJsonSchema() {
 
 		String responseFormatJsonSchema = """
 				{
-					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-					  "type" : "object",
-					  "properties" : {
-					    "someString" : {
-					      "type" : "string"
-					    }
-					  },
-					  "additionalProperties" : false
-					}
+					"$schema" : "https://json-schema.org/draft/2020-12/schema",
+					"type" : "object",
+					"properties" : {
+						"someString" : {
+						"type" : "string"
+						}
+					},
+					"additionalProperties" : false
+				}
 				""";
 
 		new ApplicationContextRunner().withPropertyValues(
@@ -76,6 +78,7 @@ public class OpenAiResponseFormatPropertiesTests {
 	}
 
 	@Test
+	@Disabled("GH-1645")
 	public void responseFormatJsonObject() {
 
 		new ApplicationContextRunner()

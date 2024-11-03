@@ -82,7 +82,7 @@ public class CricketWorldCupHanaController {
 	}
 
 	@GetMapping("/ai/hana-vector-store/cricket-world-cup")
-	public Map<String, String> hanaVectorStoreSearch(@RequestParam(value = "message") String message) {
+	public Map<String, String> hanaVectorStoreSearch(@RequestParam("message") String message) {
 		var documents = this.hanaCloudVectorStore.similaritySearch(message);
 		var inlined = documents.stream().map(Document::getContent).collect(Collectors.joining(System.lineSeparator()));
 		var similarDocsMessage = new SystemPromptTemplate("Based on the following: {documents}")

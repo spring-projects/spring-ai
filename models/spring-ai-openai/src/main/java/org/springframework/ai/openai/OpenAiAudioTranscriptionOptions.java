@@ -122,37 +122,48 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		OpenAiAudioTranscriptionOptions other = (OpenAiAudioTranscriptionOptions) obj;
 		if (this.model == null) {
-			if (other.model != null)
+			if (other.model != null) {
 				return false;
+			}
 		}
-		else if (!this.model.equals(other.model))
+		else if (!this.model.equals(other.model)) {
 			return false;
+		}
 		if (this.prompt == null) {
-			if (other.prompt != null)
+			if (other.prompt != null) {
 				return false;
+			}
 		}
-		else if (!this.prompt.equals(other.prompt))
+		else if (!this.prompt.equals(other.prompt)) {
 			return false;
+		}
 		if (this.language == null) {
-			if (other.language != null)
+			if (other.language != null) {
 				return false;
+			}
 		}
-		else if (!this.language.equals(other.language))
+		else if (!this.language.equals(other.language)) {
 			return false;
+		}
 		if (this.responseFormat == null) {
-			if (other.responseFormat != null)
+			if (other.responseFormat != null) {
 				return false;
+			}
 		}
-		else if (!this.responseFormat.equals(other.responseFormat))
+		else if (!this.responseFormat.equals(other.responseFormat)) {
 			return false;
+		}
 		return true;
 	}
 

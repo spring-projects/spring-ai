@@ -61,9 +61,7 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
-		List<Generation> generations = response.generations().stream().map(g -> {
-			return new Generation(g.text());
-		}).toList();
+		List<Generation> generations = response.generations().stream().map(g -> new Generation(g.text())).toList();
 
 		return new ChatResponse(generations);
 	}

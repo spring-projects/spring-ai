@@ -45,7 +45,6 @@ import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.assertObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -109,12 +108,12 @@ public class AzureVectorStoreAutoConfigurationIT {
 
 				vectorStore.add(this.documents);
 
-				Awaitility.await().until(() -> {
-					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-				}, hasSize(1));
+				Awaitility.await()
+					.until(() -> vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1)), hasSize(1));
 
-				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
-						VectorStoreObservationContext.Operation.ADD);
+				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
+					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
+							VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
 				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -127,19 +126,20 @@ public class AzureVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
-						VectorStoreObservationContext.Operation.QUERY);
+				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
+					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
+							VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-				Awaitility.await().until(() -> {
-					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-				}, hasSize(0));
+				Awaitility.await()
+					.until(() -> vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1)), hasSize(0));
 
-				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
-						VectorStoreObservationContext.Operation.DELETE);
+				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
+					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
+							VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 
 			});

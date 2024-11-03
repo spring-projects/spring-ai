@@ -201,7 +201,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 				for (var metadataColumn : this.conf.schema.metadataColumns()
 					.stream()
-					.filter((mc) -> d.getMetadata().containsKey(mc.name()))
+					.filter(mc -> d.getMetadata().containsKey(mc.name()))
 					.toList()) {
 
 					builder = builder.set(metadataColumn.name(), d.getMetadata().get(metadataColumn.name()),
@@ -307,11 +307,11 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		// metadata fields that are not configured as metadata columns are not added
 		Set<String> fieldsThatAreColumns = new HashSet<>(this.conf.schema.metadataColumns()
 			.stream()
-			.map((mc) -> mc.name())
-			.filter((mc) -> metadataFields.contains(mc))
+			.map(mc -> mc.name())
+			.filter(mc -> metadataFields.contains(mc))
 			.toList());
 
-		return this.addStmts.computeIfAbsent(fieldsThatAreColumns, (fields) -> {
+		return this.addStmts.computeIfAbsent(fieldsThatAreColumns, fields -> {
 
 			RegularInsert stmt = null;
 			InsertInto stmtStart = QueryBuilder.insertInto(this.conf.schema.keyspace(), this.conf.schema.table());
@@ -400,7 +400,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	 */
 	public enum Similarity {
 
-		COSINE, DOT_PRODUCT, EUCLIDEAN;
+		COSINE, DOT_PRODUCT, EUCLIDEAN
 
 	}
 

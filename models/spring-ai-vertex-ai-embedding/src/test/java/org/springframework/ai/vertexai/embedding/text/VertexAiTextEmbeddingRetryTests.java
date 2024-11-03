@@ -41,11 +41,11 @@ import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Mark Pollack
@@ -81,7 +81,7 @@ public class VertexAiTextEmbeddingRetryTests {
 				VertexAiTextEmbeddingOptions.builder().build(), this.retryTemplate);
 		this.embeddingModel.setMockPredictionServiceClient(this.mockPredictionServiceClient);
 		this.embeddingModel.setMockPredictRequestBuilder(this.mockPredictRequestBuilder);
-		when(this.mockPredictRequestBuilder.build()).thenReturn(PredictRequest.getDefaultInstance());
+		given(this.mockPredictRequestBuilder.build()).willReturn(PredictRequest.getDefaultInstance());
 	}
 
 	@Test
@@ -112,9 +112,9 @@ public class VertexAiTextEmbeddingRetryTests {
 			.build();
 
 		// Setup the mock PredictionServiceClient
-		when(this.mockPredictionServiceClient.predict(any())).thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(mockResponse);
+		given(this.mockPredictionServiceClient.predict(any())).willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(mockResponse);
 
 		EmbeddingResponse result = this.embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), null));
 
@@ -130,11 +130,11 @@ public class VertexAiTextEmbeddingRetryTests {
 	@Test
 	public void vertexAiEmbeddingNonTransientError() {
 		// Setup the mock PredictionServiceClient to throw a non-transient error
-		when(this.mockPredictionServiceClient.predict(any())).thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.mockPredictionServiceClient.predict(any())).willThrow(new RuntimeException("Non Transient Error"));
 
 		// Assert that a RuntimeException is thrown and not retried
-		assertThrows(RuntimeException.class,
-				() -> this.embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), null)));
+		assertThatThrownBy(() -> this.embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), null)))
+			.isInstanceOf(RuntimeException.class);
 
 		// Verify that predict was called only once (no retries for non-transient errors)
 		verify(this.mockPredictionServiceClient, times(1)).predict(any());

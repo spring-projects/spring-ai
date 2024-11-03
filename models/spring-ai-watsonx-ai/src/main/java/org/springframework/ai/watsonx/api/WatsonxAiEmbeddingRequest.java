@@ -30,7 +30,7 @@ import org.springframework.ai.watsonx.WatsonxAiEmbeddingOptions;
  * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class WatsonxAiEmbeddingRequest {
+public final class WatsonxAiEmbeddingRequest {
 
 	@JsonProperty("model_id")
 	String model;

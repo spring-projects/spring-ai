@@ -68,7 +68,7 @@ public class BedrockAwsConnectionConfiguration {
 
 		private final Region region;
 
-		public StaticRegionProvider(String region) {
+		StaticRegionProvider(String region) {
 			try {
 				this.region = Region.of(region);
 			}

@@ -144,7 +144,7 @@ public class ImageGeneration implements ModelResult<Image> {
 
 	private Image image;
 
-    	@Override
+    @Override
 	public Image getOutput() {...}
 
 	@Override

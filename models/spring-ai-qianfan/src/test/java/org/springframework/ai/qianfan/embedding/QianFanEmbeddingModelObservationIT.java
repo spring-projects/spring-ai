@@ -50,7 +50,7 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
  * @author Geng Rong
  */
 @SpringBootTest(classes = QianFanEmbeddingModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariables(value = { @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "QIANFAN_SECRET_KEY", matches = ".+") })
 public class QianFanEmbeddingModelObservationIT {
 

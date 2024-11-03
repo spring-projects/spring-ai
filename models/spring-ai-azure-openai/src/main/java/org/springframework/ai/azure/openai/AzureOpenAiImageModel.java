@@ -44,8 +44,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
-import static java.lang.String.format;
-
 /**
  * {@link ImageModel} implementation for {@literal Microsoft Azure AI} backed by
  * {@link OpenAIClient}.
@@ -92,15 +90,15 @@ public class AzureOpenAiImageModel implements ImageModel {
 	public ImageResponse call(ImagePrompt imagePrompt) {
 		ImageGenerationOptions imageGenerationOptions = toOpenAiImageOptions(imagePrompt);
 		String deploymentOrModelName = getDeploymentName(imagePrompt);
-		if (this.logger.isTraceEnabled()) {
-			this.logger.trace("Azure ImageGenerationOptions call {} with the following options : {} ",
-					deploymentOrModelName, toPrettyJson(imageGenerationOptions));
+		if (logger.isTraceEnabled()) {
+			logger.trace("Azure ImageGenerationOptions call {} with the following options : {} ", deploymentOrModelName,
+					toPrettyJson(imageGenerationOptions));
 		}
 
 		var images = this.openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions);
 
-		if (this.logger.isTraceEnabled()) {
-			this.logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
+		if (logger.isTraceEnabled()) {
+			logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
 		}
 
 		List<ImageGeneration> imageGenerations = images.getData().stream().map(entry -> {
@@ -154,8 +152,8 @@ public class AzureOpenAiImageModel implements ImageModel {
 	private ImageGenerationOptions toOpenAiImageOptions(ImagePrompt prompt) {
 
 		if (prompt.getInstructions().size() > 1) {
-			throw new RuntimeException(format("implementation support 1 image instruction only, found %s",
-					prompt.getInstructions().size()));
+			throw new RuntimeException(java.lang.String
+				.format("implementation support 1 image instruction only, found %s", prompt.getInstructions().size()));
 		}
 		if (prompt.getInstructions().isEmpty()) {
 			throw new RuntimeException("please provide image instruction, current is empty");

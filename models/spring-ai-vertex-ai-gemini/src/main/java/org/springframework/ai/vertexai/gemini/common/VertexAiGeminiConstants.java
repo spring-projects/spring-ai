@@ -21,8 +21,12 @@ import org.springframework.ai.observation.conventions.AiProvider;
 /**
  * @author Soby Chacko
  */
-public class VertexAiGeminiConstants {
+public final class VertexAiGeminiConstants {
 
 	public static final String PROVIDER_NAME = AiProvider.VERTEX_AI.value();
+
+	private VertexAiGeminiConstants() {
+
+	}
 
 }

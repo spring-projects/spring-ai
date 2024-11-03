@@ -39,7 +39,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
@@ -58,7 +57,8 @@ class FunctionCallWithFunctionBeanIT {
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name=" + getDeploymentName())
+			.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name="
+					+ org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName())
 			.run(context -> {
 
 				ChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -69,14 +69,14 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("weatherFunction").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("weatherFunction3").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
@@ -86,7 +86,8 @@ class FunctionCallWithFunctionBeanIT {
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name=" + getDeploymentName())
+			.withPropertyValues("spring.ai.azure.openai.chat.options..deployment-name="
+					+ org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName())
 			.run(context -> {
 
 				ChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -97,7 +98,7 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						PortableFunctionCallingOptions.builder().withFunction("weatherFunction").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 

@@ -37,7 +37,7 @@ import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
@@ -56,10 +56,10 @@ public class OllamaEmbeddingModelTests {
 	@Test
 	public void options() {
 
-		when(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
-			.thenReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME",
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME",
 					List.of(new float[] { 1f, 2f, 3f }, new float[] { 4f, 5f, 6f }), 0L, 0L, 0))
-			.thenReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME2",
+			.willReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME2",
 					List.of(new float[] { 7f, 8f, 9f }, new float[] { 10f, 11f, 12f }), 0L, 0L, 0));
 
 		// Tests default options

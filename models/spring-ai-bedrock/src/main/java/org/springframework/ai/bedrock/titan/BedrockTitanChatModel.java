@@ -60,9 +60,10 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
-		List<Generation> generations = response.results().stream().map(result -> {
-			return new Generation(result.outputText());
-		}).toList();
+		List<Generation> generations = response.results()
+			.stream()
+			.map(result -> new Generation(result.outputText()))
+			.toList();
 
 		return new ChatResponse(generations);
 	}

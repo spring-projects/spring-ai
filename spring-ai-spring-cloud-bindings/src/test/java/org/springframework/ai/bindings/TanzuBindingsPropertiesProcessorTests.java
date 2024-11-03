@@ -27,7 +27,6 @@ import org.springframework.cloud.bindings.Bindings;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH;
 
 /**
  * Unit tests for {@link TanzuBindingsPropertiesProcessor}.
@@ -38,13 +37,13 @@ class TanzuBindingsPropertiesProcessorTests {
 
 	private final Bindings bindings = new Bindings(new Binding("test-name", Paths.get("test-path"),
 	// @formatter:off
-            Map.of(
-                    Binding.TYPE, TanzuBindingsPropertiesProcessor.TYPE,
-                    "api-key", "demo",
-                    "uri", "https://my.openai.example.net",
-					"model-name", "llava1.6",
-					"model-capabilities", " chat , vision "
-            )),
+			Map.of(
+				Binding.TYPE, TanzuBindingsPropertiesProcessor.TYPE,
+				"api-key", "demo",
+				"uri", "https://my.openai.example.net",
+				"model-name", "llava1.6",
+				"model-capabilities", " chat , vision "
+			)),
 			new Binding("test-name2", Paths.get("test-path2"),
 			Map.of(
 				Binding.TYPE, TanzuBindingsPropertiesProcessor.TYPE,
@@ -57,11 +56,11 @@ class TanzuBindingsPropertiesProcessorTests {
 	private final Bindings bindingsMissingModelCapabilities = new Bindings(
 			new Binding("test-name", Paths.get("test-path"),
 			// @formatter:off
-            Map.of(
-                    Binding.TYPE, TanzuBindingsPropertiesProcessor.TYPE,
-                    "api-key", "demo",
-                    "uri", "https://my.openai.example.net"
-            )));
+			Map.of(
+				Binding.TYPE, TanzuBindingsPropertiesProcessor.TYPE,
+				"api-key", "demo",
+				"uri", "https://my.openai.example.net"
+			)));
     // @formatter:on
 
 	private final MockEnvironment environment = new MockEnvironment();
@@ -89,7 +88,8 @@ class TanzuBindingsPropertiesProcessorTests {
 
 	@Test
 	void whenDisabledThenPropertiesAreNotContributed() {
-		this.environment.setProperty("%s.genai.enabled".formatted(CONFIG_PATH), "false");
+		this.environment.setProperty(
+				"%s.genai.enabled".formatted(org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH), "false");
 
 		new TanzuBindingsPropertiesProcessor().process(this.environment, this.bindings, this.properties);
 		assertThat(this.properties).isEmpty();

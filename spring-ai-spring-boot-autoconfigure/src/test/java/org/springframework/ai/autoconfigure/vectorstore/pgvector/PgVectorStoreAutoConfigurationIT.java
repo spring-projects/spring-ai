@@ -147,9 +147,7 @@ public class PgVectorStoreAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.vectorstore.pgvector.schema-name=" + schemaName,
 					"spring.ai.vectorstore.pgvector.table-name=" + tableName)
-			.run(context -> {
-				assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isTrue();
-			});
+			.run(context -> assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isTrue());
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -162,9 +160,7 @@ public class PgVectorStoreAutoConfigurationIT {
 			.withPropertyValues("spring.ai.vectorstore.pgvector.schema-name=" + schemaName,
 					"spring.ai.vectorstore.pgvector.table-name=" + tableName,
 					"spring.ai.vectorstore.pgvector.initialize-schema=false")
-			.run(context -> {
-				assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isFalse();
-			});
+			.run(context -> assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isFalse());
 	}
 
 	@Configuration(proxyBeanMethods = false)

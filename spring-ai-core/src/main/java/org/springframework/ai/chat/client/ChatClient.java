@@ -38,6 +38,8 @@ import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
 /**
@@ -49,6 +51,7 @@ import org.springframework.util.MimeType;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public interface ChatClient {
@@ -62,7 +65,9 @@ public interface ChatClient {
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
-			ChatClientObservationConvention observationConvention) {
+			@Nullable ChatClientObservationConvention observationConvention) {
+		Assert.notNull(chatModel, "chatModel cannot be null");
+		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		return builder(chatModel, observationRegistry, observationConvention).build();
 	}
 
@@ -71,7 +76,9 @@ public interface ChatClient {
 	}
 
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			ChatClientObservationConvention customObservationConvention) {
+			@Nullable ChatClientObservationConvention customObservationConvention) {
+		Assert.notNull(chatModel, "chatModel cannot be null");
+		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		return new DefaultChatClientBuilder(chatModel, observationRegistry, customObservationConvention);
 	}
 
@@ -136,14 +143,19 @@ public interface ChatClient {
 
 	interface CallResponseSpec {
 
+		@Nullable
 		<T> T entity(ParameterizedTypeReference<T> type);
 
+		@Nullable
 		<T> T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
+		@Nullable
 		<T> T entity(Class<T> type);
 
+		@Nullable
 		ChatResponse chatResponse();
 
+		@Nullable
 		String content();
 
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);

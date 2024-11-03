@@ -122,7 +122,8 @@ public class PgVectorStoreIT {
 		}
 
 		Iterator<Float> iter = distances.iterator();
-		Float current, previous = iter.next();
+		Float current;
+		Float previous = iter.next();
 		while (iter.hasNext()) {
 			current = iter.next();
 			if (previous > current) {

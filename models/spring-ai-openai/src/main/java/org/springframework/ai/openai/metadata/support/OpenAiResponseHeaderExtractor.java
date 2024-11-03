@@ -47,9 +47,13 @@ import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHe
  * @author Christian Tzolov
  * @since 0.7.0
  */
-public class OpenAiResponseHeaderExtractor {
+public final class OpenAiResponseHeaderExtractor {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiResponseHeaderExtractor.class);
+
+	private OpenAiResponseHeaderExtractor() {
+
+	}
 
 	public static RateLimit extractAiResponseHeaders(ResponseEntity<?> response) {
 

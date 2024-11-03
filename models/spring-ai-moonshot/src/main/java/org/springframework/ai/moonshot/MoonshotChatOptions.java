@@ -30,7 +30,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -90,10 +89,8 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	/**
 	 * Up to 5 sequences where the API will stop generating further tokens.
 	 */
-	@NestedConfigurationProperty
 	private @JsonProperty("stop") List<String> stop;
 
-	@NestedConfigurationProperty
 	private @JsonProperty("tools") List<MoonshotApi.FunctionTool> tools;
 
 	/**
@@ -115,7 +112,6 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	 * default. Use the enableFunctions to set the functions from the registry to be used
 	 * by the ChatModel chat completion requests.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
@@ -130,7 +126,6 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	 * functions is set in a prompt options, then the enabled functions are only active
 	 * for the duration of this prompt execution.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
@@ -143,7 +138,6 @@ public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions 
 	@JsonIgnore
 	private Boolean proxyToolCalls;
 
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 

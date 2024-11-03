@@ -37,7 +37,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
@@ -56,7 +55,8 @@ public class FunctionCallWithFunctionWrapperIT {
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name=" + getDeploymentName())
+			.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name="
+					+ org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName())
 			.run(context -> {
 
 				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -67,7 +67,7 @@ public class FunctionCallWithFunctionWrapperIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30", "10", "15");
 

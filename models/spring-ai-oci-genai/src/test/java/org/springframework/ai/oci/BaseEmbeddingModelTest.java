@@ -43,7 +43,7 @@ public class BaseEmbeddingModelTest {
 	 * Create an OCIEmbeddingModel instance using a config file authentication provider.
 	 * @return OCIEmbeddingModel instance
 	 */
-	public static OCIEmbeddingModel get() {
+	public OCIEmbeddingModel get() {
 		try {
 			ConfigFileAuthenticationDetailsProvider authProvider = new ConfigFileAuthenticationDetailsProvider(
 					CONFIG_FILE, PROFILE);

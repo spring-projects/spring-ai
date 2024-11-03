@@ -26,6 +26,10 @@ final class BindingsValidator {
 
 	static final String CONFIG_PATH = "spring.ai.cloud.bindings";
 
+	private BindingsValidator() {
+
+	}
+
 	/**
 	 * Whether the given binding type should be used to contribute properties.
 	 */

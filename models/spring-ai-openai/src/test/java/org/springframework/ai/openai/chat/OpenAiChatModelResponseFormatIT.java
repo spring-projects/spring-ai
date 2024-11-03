@@ -89,7 +89,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getContent();
 
-		this.logger.info("Response content: {}", content);
+		logger.info("Response content: {}", content);
 
 		assertThat(isValidJson(content)).isTrue();
 	}
@@ -132,7 +132,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getContent();
 
-		this.logger.info("Response content: {}", content);
+		logger.info("Response content: {}", content);
 
 		assertThat(isValidJson(content)).isTrue();
 	}
@@ -172,7 +172,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getContent();
 
-		this.logger.info("Response content: {}", content);
+		logger.info("Response content: {}", content);
 
 		MathReasoning mathReasoning = outputConverter.convert(content);
 

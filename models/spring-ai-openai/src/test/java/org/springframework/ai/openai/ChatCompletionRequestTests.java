@@ -70,7 +70,7 @@ public class ChatCompletionRequestTests {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build()),
 				false);
@@ -83,7 +83,7 @@ public class ChatCompletionRequestTests {
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 
 		assertThat(request.tools()).hasSize(1);
-		assertThat(request.tools().get(0).function().name()).isEqualTo(TOOL_FUNCTION_NAME);
+		assertThat(request.tools().get(0).getFunction().getName()).isEqualTo(TOOL_FUNCTION_NAME);
 	}
 
 	@Test
@@ -97,7 +97,7 @@ public class ChatCompletionRequestTests {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build());
 
@@ -120,7 +120,7 @@ public class ChatCompletionRequestTests {
 				OpenAiChatOptions.builder().withFunction(TOOL_FUNCTION_NAME).build()), false);
 
 		assertThat(request.tools()).hasSize(1);
-		assertThat(request.tools().get(0).function().name()).as("Explicitly enabled function")
+		assertThat(request.tools().get(0).getFunction().getName()).as("Explicitly enabled function")
 			.isEqualTo(TOOL_FUNCTION_NAME);
 
 		// Override the default options function with one from the prompt
@@ -134,7 +134,7 @@ public class ChatCompletionRequestTests {
 				false);
 
 		assertThat(request.tools()).hasSize(1);
-		assertThat(request.tools().get(0).function().name()).as("Explicitly enabled function")
+		assertThat(request.tools().get(0).getFunction().getName()).as("Explicitly enabled function")
 			.isEqualTo(TOOL_FUNCTION_NAME);
 
 		assertThat(client.getFunctionCallbackRegister()).hasSize(1);

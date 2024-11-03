@@ -34,7 +34,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
@@ -52,7 +51,8 @@ public class FunctionCallWithPromptFunctionIT {
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name=" + getDeploymentName())
+			.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name="
+					+ org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName())
 			.run(context -> {
 
 				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -69,7 +69,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 			});

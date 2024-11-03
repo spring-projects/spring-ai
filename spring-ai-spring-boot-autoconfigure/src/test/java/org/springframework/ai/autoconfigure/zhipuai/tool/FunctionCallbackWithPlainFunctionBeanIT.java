@@ -73,7 +73,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunction").build()));
 
-			this.logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
@@ -81,7 +81,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			response = chatModel.call(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
-			this.logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
@@ -104,7 +104,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			this.logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 		});
 	}
 
@@ -129,7 +129,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
-			this.logger.info("Response: {}", content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");
@@ -147,7 +147,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
-			this.logger.info("Response: {}", content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

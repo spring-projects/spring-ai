@@ -41,45 +41,54 @@ public class BedrockCohereChatOptions implements ChatOptions {
 	 * (optional) Use a lower value to decrease randomness in the response. Defaults to
 	 * 0.7.
 	 */
-	@JsonProperty("temperature") Double temperature;
+	@JsonProperty("temperature")
+	Double temperature;
 	/**
 	 * (optional) The maximum cumulative probability of tokens to consider when sampling.
 	 * The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers
 	 * the smallest set of tokens whose probability sum is at least topP.
 	 */
-	@JsonProperty("p") Double topP;
+	@JsonProperty("p")
+	Double topP;
 	/**
 	 * (optional) Specify the number of token choices the generative uses to generate the
 	 * next token.
 	 */
-	@JsonProperty("k") Integer topK;
+	@JsonProperty("k")
+	Integer topK;
 	/**
 	 * (optional) Specify the maximum number of tokens to use in the generated response.
 	 */
-	@JsonProperty("max_tokens") Integer maxTokens;
+	@JsonProperty("max_tokens")
+	Integer maxTokens;
 	/**
 	 * (optional) Configure up to four sequences that the generative recognizes. After a
 	 * stop sequence, the generative stops generating further tokens. The returned text
 	 * doesn't contain the stop sequence.
 	 */
-	@JsonProperty("stop_sequences") List<String> stopSequences;
+	@JsonProperty("stop_sequences")
+	List<String> stopSequences;
 	/**
 	 * (optional) Specify how and if the token likelihoods are returned with the response.
 	 */
-	@JsonProperty("return_likelihoods") ReturnLikelihoods returnLikelihoods;
+	@JsonProperty("return_likelihoods")
+	ReturnLikelihoods returnLikelihoods;
 	/**
 	 * (optional) The maximum number of generations that the generative should return.
 	 */
-	@JsonProperty("num_generations") Integer numGenerations;
+	@JsonProperty("num_generations")
+	Integer numGenerations;
 	/**
 	 * Prevents the model from generating unwanted tokens or incentivize the model to include desired tokens.
 	 */
-	@JsonProperty("logit_bias") LogitBias logitBias;
+	@JsonProperty("logit_bias")
+	LogitBias logitBias;
 	/**
 	 * (optional) Specifies how the API handles inputs longer than the maximum token
 	 * length.
 	 */
-	@JsonProperty("truncate") Truncate truncate;
+	@JsonProperty("truncate")
+	Truncate truncate;
 	// @formatter:on
 
 	public static Builder builder() {

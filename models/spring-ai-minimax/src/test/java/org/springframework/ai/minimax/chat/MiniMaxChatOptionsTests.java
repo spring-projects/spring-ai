@@ -38,7 +38,6 @@ import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat;
 
 /**
  * @author Geng Rong
@@ -93,7 +92,7 @@ public class MiniMaxChatOptionsTests {
 		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-			.withModel(ABAB_6_5_S_Chat.value)
+			.withModel(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
 			.withTools(functionTool)
 			.build();
 
@@ -123,7 +122,7 @@ public class MiniMaxChatOptionsTests {
 		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-			.withModel(ABAB_6_5_S_Chat.value)
+			.withModel(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
 			.withTools(functionTool)
 			.build();
 

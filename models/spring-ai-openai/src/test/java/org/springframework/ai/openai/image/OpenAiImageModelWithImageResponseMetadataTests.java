@@ -113,17 +113,17 @@ public class OpenAiImageModelWithImageResponseMetadataTests {
 
 	private String getJson() {
 		return """
-					{
-					  "created": 1589478378,
-					  "data": [
+				{
+					"created": 1589478378,
+					"data": [
 						{
-						  "url": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Mini_Golden_Doodle.jpg"
+							"url": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Mini_Golden_Doodle.jpg"
 						},
 						{
-						  "url": "https://upload.wikimedia.org/wikipedia/commons/8/85/Goldendoodle_puppy_Marty.jpg"
+							"url": "https://upload.wikimedia.org/wikipedia/commons/8/85/Goldendoodle_puppy_Marty.jpg"
 						}
-					  ]
-					}
+					]
+				}
 				""";
 	}
 

@@ -120,7 +120,7 @@ public class CreateGeminiRequestTests {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build()),
 				null);
@@ -148,7 +148,7 @@ public class CreateGeminiRequestTests {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build());
 

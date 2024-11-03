@@ -34,11 +34,9 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatModel.GLM_4;
 
 /**
  * @author Geng Rong
@@ -69,7 +67,7 @@ public class ZhiPuAiApiToolFunctionCallIT {
 		var message = new ChatCompletionMessage(
 				"What's the weather like in San Francisco? Return the temperature in Celsius.", Role.USER);
 
-		var functionTool = new ZhiPuAiApi.FunctionTool(Type.FUNCTION,
+		var functionTool = new ZhiPuAiApi.FunctionTool(ZhiPuAiApi.FunctionTool.Type.FUNCTION,
 				new ZhiPuAiApi.FunctionTool.Function(
 						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
 						ModelOptionsUtils.jsonToMap("""
@@ -99,8 +97,9 @@ public class ZhiPuAiApiToolFunctionCallIT {
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
-		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, GLM_4.value,
-				List.of(functionTool), ToolChoiceBuilder.AUTO);
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages,
+				org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatModel.GLM_4.value, List.of(functionTool),
+				ToolChoiceBuilder.AUTO);
 
 		ResponseEntity<ChatCompletion> chatCompletion = this.zhiPuAiApi.chatCompletionEntity(chatCompletionRequest);
 
@@ -129,12 +128,13 @@ public class ZhiPuAiApiToolFunctionCallIT {
 			}
 		}
 
-		var functionResponseRequest = new ChatCompletionRequest(messages, GLM_4.value, List.of(functionTool),
+		var functionResponseRequest = new ChatCompletionRequest(messages,
+				org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatModel.GLM_4.value, List.of(functionTool),
 				ToolChoiceBuilder.AUTO);
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = this.zhiPuAiApi.chatCompletionEntity(functionResponseRequest);
 
-		this.logger.info("Final response: " + chatCompletion2.getBody());
+		logger.info("Final response: " + chatCompletion2.getBody());
 
 		assertThat(Objects.requireNonNull(chatCompletion2.getBody()).choices()).isNotEmpty();
 

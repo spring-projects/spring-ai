@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.titan;
 
 import java.time.Duration;
@@ -66,8 +67,8 @@ class BedrockTitanChatModelIT {
 	@Test
 	void multipleStreamAttempts() {
 
-		Flux<ChatResponse> joke1Stream = chatModel.stream(new Prompt(new UserMessage("Tell me a joke?")));
-		Flux<ChatResponse> joke2Stream = chatModel.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
+		Flux<ChatResponse> joke1Stream = this.chatModel.stream(new Prompt(new UserMessage("Tell me a joke?")));
+		Flux<ChatResponse> joke2Stream = this.chatModel.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
 
 		String joke1 = joke1Stream.collectList()
 			.block()
@@ -96,10 +97,10 @@ class BedrockTitanChatModelIT {
 		String name = "Bob";
 		String voice = "pirate";
 		UserMessage userMessage = new UserMessage(request);
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
 
@@ -136,14 +137,11 @@ class BedrockTitanChatModelIT {
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Disabled("TODO: Fix the converter instructions to return the correct format")
@@ -160,7 +158,7 @@ class BedrockTitanChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
@@ -182,7 +180,7 @@ class BedrockTitanChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatModel.stream(prompt)
+		String generationTextFromStream = this.chatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -213,6 +211,9 @@ class BedrockTitanChatModelIT {
 			return new BedrockTitanChatModel(titanApi);
 		}
 
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 }

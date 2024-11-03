@@ -51,23 +51,19 @@ public class ChatClientAutoConfigurationIT {
 
 	@Test
 	void implicitlyEnabled() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(ChatClient.Builder.class)).isNotEmpty();
-		});
+		this.contextRunner.run(context -> assertThat(context.getBeansOfType(ChatClient.Builder.class)).isNotEmpty());
 	}
 
 	@Test
 	void explicitlyEnabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.client.enabled=true").run(context -> {
-			assertThat(context.getBeansOfType(ChatClient.Builder.class)).isNotEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.chat.client.enabled=true")
+			.run(context -> assertThat(context.getBeansOfType(ChatClient.Builder.class)).isNotEmpty());
 	}
 
 	@Test
 	void explicitlyDisabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.client.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(ChatClient.Builder.class)).isEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.chat.client.enabled=false")
+			.run(context -> assertThat(context.getBeansOfType(ChatClient.Builder.class)).isEmpty());
 	}
 
 	@Test

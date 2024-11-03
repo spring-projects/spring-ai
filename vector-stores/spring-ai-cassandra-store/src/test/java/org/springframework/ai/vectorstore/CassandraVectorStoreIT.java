@@ -48,8 +48,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import static java.lang.String.format;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -197,7 +195,7 @@ class CassandraVectorStoreIT {
 				var bgDocument = new Document("BG", "The World is Big and Salvation Lurks Around the Corner",
 						Map.of("year", (short) 2020));
 				var nlDocument = new Document("NL", "The World is Big and Salvation Lurks Around the Corner",
-						emptyMap());
+						java.util.Collections.emptyMap());
 				var bgDocument2 = new Document("BG2", "The World is Big and Salvation Lurks Around the Corner",
 						Map.of("year", (short) 2023));
 
@@ -209,7 +207,8 @@ class CassandraVectorStoreIT {
 				results = store.similaritySearch(SearchRequest.query("The World")
 					.withTopK(5)
 					.withSimilarityThresholdAll()
-					.withFilterExpression(format("%s == 'NL'", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
+					.withFilterExpression(
+							java.lang.String.format("%s == 'NL'", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
@@ -217,7 +216,8 @@ class CassandraVectorStoreIT {
 				results = store.similaritySearch(SearchRequest.query("The World")
 					.withTopK(5)
 					.withSimilarityThresholdAll()
-					.withFilterExpression(format("%s == 'BG2'", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
+					.withFilterExpression(
+							java.lang.String.format("%s == 'BG2'", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
@@ -225,26 +225,25 @@ class CassandraVectorStoreIT {
 				results = store.similaritySearch(SearchRequest.query("The World")
 					.withTopK(5)
 					.withSimilarityThresholdAll()
-					.withFilterExpression(
-							format("%s == 'BG' && year == 2020", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
+					.withFilterExpression(java.lang.String.format("%s == 'BG' && year == 2020",
+							CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 				// cassandra server will throw an error
-				Assertions.assertThrows(SyntaxError.class, () -> {
-					store.similaritySearch(SearchRequest.query("The World")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression(
-								format("NOT(%s == 'BG' && year == 2020)", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
-				});
+				Assertions.assertThrows(SyntaxError.class,
+						() -> store.similaritySearch(SearchRequest.query("The World")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression(java.lang.String.format("NOT(%s == 'BG' && year == 2020)",
+									CassandraVectorStoreConfig.DEFAULT_ID_NAME))));
 			}
 		});
 	}
 
 	@Test
-	void unsearchableFilters() throws InterruptedException {
+	void unsearchableFilters() {
 		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = context.getBean(CassandraVectorStore.class)) {
 
@@ -260,12 +259,11 @@ class CassandraVectorStoreIT {
 				List<Document> results = store.similaritySearch(SearchRequest.query("The World").withTopK(5));
 				assertThat(results).hasSize(3);
 
-				Assertions.assertThrows(InvalidQueryException.class, () -> {
-					store.similaritySearch(SearchRequest.query("The World")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression("country == 'NL'"));
-				});
+				Assertions.assertThrows(InvalidQueryException.class,
+						() -> store.similaritySearch(SearchRequest.query("The World")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression("country == 'NL'")));
 			}
 		});
 	}
@@ -315,20 +313,18 @@ class CassandraVectorStoreIT {
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 				// cassandra server will throw an error
-				Assertions.assertThrows(SyntaxError.class, () -> {
-					store.similaritySearch(SearchRequest.query("The World")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression("country == 'BG' || year == 2020"));
-				});
+				Assertions.assertThrows(SyntaxError.class,
+						() -> store.similaritySearch(SearchRequest.query("The World")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression("country == 'BG' || year == 2020")));
 
 				// cassandra server will throw an error
-				Assertions.assertThrows(SyntaxError.class, () -> {
-					store.similaritySearch(SearchRequest.query("The World")
-						.withTopK(5)
-						.withSimilarityThresholdAll()
-						.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
-				});
+				Assertions.assertThrows(SyntaxError.class,
+						() -> store.similaritySearch(SearchRequest.query("The World")
+							.withTopK(5)
+							.withSimilarityThresholdAll()
+							.withFilterExpression("NOT(country == 'BG' && year == 2020)")));
 			}
 		});
 	}

@@ -64,8 +64,6 @@ import org.springframework.core.io.DefaultResourceLoader;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 
-;
-
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale

@@ -200,11 +200,11 @@ public class AnthropicChatBedrockApi extends
 			return new Builder(prompt);
 		}
 
-		public static class Builder {
+		public static final class Builder {
 			private final String prompt;
-			private Double temperature;// = 0.7;
-			private Integer maxTokensToSample;// = 500;
-			private Integer topK;// = 10;
+			private Double temperature;	// = 0.7;
+			private Integer maxTokensToSample;	// = 500;
+			private Integer topK;	// = 10;
 			private Double topP;
 			private List<String> stopSequences;
 			private String anthropicVersion;

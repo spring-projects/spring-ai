@@ -223,7 +223,7 @@ public class MockAiTestConfiguration {
 		}
 
 		protected Logger getLogger() {
-			return this.logger;
+			return logger;
 		}
 
 		@Override

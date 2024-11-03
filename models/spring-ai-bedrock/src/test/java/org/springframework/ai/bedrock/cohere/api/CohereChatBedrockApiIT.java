@@ -35,8 +35,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-;
-
 /**
  * @author Christian Tzolov
  */

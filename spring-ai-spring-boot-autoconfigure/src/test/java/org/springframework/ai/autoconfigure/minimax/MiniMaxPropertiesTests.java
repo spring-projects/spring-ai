@@ -229,11 +229,11 @@ public class MiniMaxPropertiesTests {
 
 				assertThat(chatProperties.getOptions().getTools()).hasSize(1);
 				var tool = chatProperties.getOptions().getTools().get(0);
-				assertThat(tool.type()).isEqualTo(MiniMaxApi.FunctionTool.Type.FUNCTION);
-				var function = tool.function();
-				assertThat(function.name()).isEqualTo("myFunction1");
-				assertThat(function.description()).isEqualTo("function description");
-				assertThat(function.parameters()).isNotEmpty();
+				assertThat(tool.getType()).isEqualTo(MiniMaxApi.FunctionTool.Type.FUNCTION);
+				var function = tool.getFunction();
+				assertThat(function.getName()).isEqualTo("myFunction1");
+				assertThat(function.getDescription()).isEqualTo("function description");
+				assertThat(function.getParameters()).isNotEmpty();
 			});
 	}
 

@@ -65,7 +65,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		 */
 		public final String unitName;
 
-		private Unit(String text) {
+		Unit(String text) {
 			this.unitName = text;
 		}
 

@@ -64,8 +64,6 @@ public class SpringAiRetryAutoConfiguration {
 						RetryCallback<T, E> callback, Throwable throwable) {
 					logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
 				}
-
-			;
 			})
 			.build();
 	}

@@ -25,10 +25,10 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -55,7 +55,7 @@ public class PgVectorEmbeddingDimensionsTests {
 
 	@Test
 	public void embeddingModelDimensions() {
-		when(this.embeddingModel.dimensions()).thenReturn(969);
+		given(this.embeddingModel.dimensions()).willReturn(969);
 
 		var dim = new PgVectorStore(this.jdbcTemplate, this.embeddingModel).embeddingDimensions();
 
@@ -67,7 +67,7 @@ public class PgVectorEmbeddingDimensionsTests {
 	@Test
 	public void fallBackToDefaultDimensions() {
 
-		when(this.embeddingModel.dimensions()).thenThrow(new RuntimeException());
+		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException());
 
 		var dim = new PgVectorStore(this.jdbcTemplate, this.embeddingModel).embeddingDimensions();
 

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client;
 
+import org.springframework.lang.Nullable;
+
 /**
  * Represents a {@link org.springframework.ai.model.Model} response that includes the
  * entire response along withe specified response entity type.
@@ -25,14 +27,17 @@ package org.springframework.ai.chat.client;
  * @param response the entire response object.
  * @param entity the converted entity object.
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public record ResponseEntity<R, E>(R response, E entity) {
+public record ResponseEntity<R, E>(@Nullable R response, @Nullable E entity) {
 
+	@Nullable
 	public R getResponse() {
 		return this.response;
 	}
 
+	@Nullable
 	public E getEntity() {
 		return this.entity;
 	}

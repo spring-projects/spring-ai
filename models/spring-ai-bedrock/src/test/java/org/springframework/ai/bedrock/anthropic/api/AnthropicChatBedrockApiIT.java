@@ -35,8 +35,6 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.Anth
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-;
-
 /**
  * @author Christian Tzolov
  */
@@ -70,7 +68,7 @@ public class AnthropicChatBedrockApiIT {
 		assertThat(response.stop()).isEqualTo("\n\nHuman:");
 		assertThat(response.amazonBedrockInvocationMetrics()).isNull();
 
-		this.logger.info("" + response);
+		logger.info("" + response);
 	}
 
 	@Test
