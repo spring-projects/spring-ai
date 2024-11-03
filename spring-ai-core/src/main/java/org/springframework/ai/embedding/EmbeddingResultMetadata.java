@@ -23,13 +23,14 @@ import org.springframework.util.MimeTypeUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Jihoon Kim
  */
 public class EmbeddingResultMetadata implements ResultMetadata {
 
 	public static EmbeddingResultMetadata EMPTY = new EmbeddingResultMetadata();
 
 	/**
-	 * The {@link MimeType} of the source data used to generate the embedding.
+	 * The {@link ModalityType} of the source data used to generate the embedding.
 	 */
 	private final ModalityType modalityType;
 
@@ -80,7 +81,7 @@ public class EmbeddingResultMetadata implements ResultMetadata {
 
 		private static MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
-		private static MimeType IMAGE_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
+		private static MimeType IMAGE_MIME_TYPE = MimeTypeUtils.parseMimeType("image/*");
 
 		private static MimeType VIDEO_MIME_TYPE = MimeTypeUtils.parseMimeType("video/*");
 

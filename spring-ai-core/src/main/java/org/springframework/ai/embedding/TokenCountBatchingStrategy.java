@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  * @author Mark Pollack
  * @author Laura Trotta
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class TokenCountBatchingStrategy implements BatchingStrategy {
@@ -68,7 +69,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 
 	private final int maxInputTokenCount;
 
-	private final ContentFormatter contentFormater;
+	private final ContentFormatter contentFormatter;
 
 	private final MetadataMode metadataMode;
 
@@ -78,9 +79,9 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 
 	/**
 	 * @param encodingType {@link EncodingType}
+	 * @param maxInputTokenCount upper limit for input tokens
 	 * @param reservePercentage the percentage of tokens to reserve from the max input
 	 * token count to create a buffer.
-	 * @param maxInputTokenCount upper limit for input tokens
 	 */
 	public TokenCountBatchingStrategy(EncodingType encodingType, int maxInputTokenCount, double reservePercentage) {
 		this(encodingType, maxInputTokenCount, reservePercentage, Document.DEFAULT_CONTENT_FORMATTER,
@@ -106,7 +107,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 		Assert.notNull(metadataMode, "MetadataMode must not be null");
 		this.tokenCountEstimator = new JTokkitTokenCountEstimator(encodingType);
 		this.maxInputTokenCount = (int) Math.round(maxInputTokenCount * (1 - reservePercentage));
-		this.contentFormater = contentFormatter;
+		this.contentFormatter = contentFormatter;
 		this.metadataMode = metadataMode;
 	}
 
@@ -129,7 +130,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 		Assert.notNull(metadataMode, "MetadataMode must not be null");
 		this.tokenCountEstimator = tokenCountEstimator;
 		this.maxInputTokenCount = (int) Math.round(maxInputTokenCount * (1 - reservePercentage));
-		this.contentFormater = contentFormatter;
+		this.contentFormatter = contentFormatter;
 		this.metadataMode = metadataMode;
 	}
 
@@ -142,7 +143,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 
 		for (Document document : documents) {
 			int tokenCount = this.tokenCountEstimator
-				.estimate(document.getFormattedContent(this.contentFormater, this.metadataMode));
+				.estimate(document.getFormattedContent(this.contentFormatter, this.metadataMode));
 			if (tokenCount > this.maxInputTokenCount) {
 				throw new IllegalArgumentException(
 						"Tokens in a single document exceeds the maximum number of allowed input tokens");
