@@ -43,7 +43,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnClass(RetryTemplate.class)
+@ConditionalOnClass(TransientAiException.class)
 @EnableConfigurationProperties({ SpringAiRetryProperties.class })
 public class SpringAiRetryAutoConfiguration {
 
