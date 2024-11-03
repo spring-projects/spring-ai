@@ -37,7 +37,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.util.Assert;
 
 /**
@@ -133,7 +132,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
-	private @JsonProperty("tools") List<FunctionTool> tools;
+	private @JsonProperty("tools") List<OpenAiApi.FunctionTool> tools;
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -370,11 +369,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.topP = topP;
 	}
 
-	public List<FunctionTool> getTools() {
+	public List<OpenAiApi.FunctionTool> getTools() {
 		return this.tools;
 	}
 
-	public void setTools(List<FunctionTool> tools) {
+	public void setTools(List<OpenAiApi.FunctionTool> tools) {
 		this.tools = tools;
 	}
 
@@ -593,7 +592,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withTools(List<FunctionTool> tools) {
+		public Builder withTools(List<OpenAiApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}

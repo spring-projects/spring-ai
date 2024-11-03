@@ -14,32 +14,9 @@
  * limitations under the License.
  */
 
+@NonNullApi
+@NonNullFields
 package org.springframework.ai.chat.client;
 
-import org.springframework.lang.Nullable;
-
-/**
- * Represents a {@link org.springframework.ai.model.Model} response that includes the
- * entire response along withe specified response entity type.
- *
- * @param <R> the entire response type.
- * @param <E> the converted entity type.
- * @param response the entire response object.
- * @param entity the converted entity object.
- * @author Christian Tzolov
- * @author Thomas Vitale
- * @since 1.0.0
- */
-public record ResponseEntity<R, E>(@Nullable R response, @Nullable E entity) {
-
-	@Nullable
-	public R getResponse() {
-		return this.response;
-	}
-
-	@Nullable
-	public E getEntity() {
-		return this.entity;
-	}
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;

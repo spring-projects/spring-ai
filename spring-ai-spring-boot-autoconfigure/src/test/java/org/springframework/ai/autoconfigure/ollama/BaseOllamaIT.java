@@ -16,18 +16,16 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.ollama.OllamaContainer;
-
-import java.time.Duration;
 
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-
-import static org.springframework.ai.autoconfigure.ollama.BaseOllamaIT.isDisabled;
 
 public class BaseOllamaIT {
 
@@ -38,7 +36,7 @@ public class BaseOllamaIT {
 
 	@BeforeAll
 	public static void setUp() {
-		if (useTestcontainers && !BaseOllamaIT.isDisabled()) {
+		if (useTestcontainers && !isDisabled()) {
 			ollamaContainer = new OllamaContainer(OllamaImage.IMAGE).withReuse(true);
 			ollamaContainer.start();
 		}

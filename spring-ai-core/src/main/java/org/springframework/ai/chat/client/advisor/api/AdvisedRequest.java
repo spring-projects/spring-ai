@@ -86,15 +86,30 @@ public record AdvisedRequest(
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.hasText(userText, "userText cannot be null or empty");
 		Assert.notNull(media, "media cannot be null");
+		Assert.noNullElements(media, "media cannot contain null elements");
 		Assert.notNull(functionNames, "functionNames cannot be null");
+		Assert.noNullElements(functionNames, "functionNames cannot contain null elements");
 		Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
+		Assert.noNullElements(functionCallbacks, "functionCallbacks cannot contain null elements");
 		Assert.notNull(messages, "messages cannot be null");
+		Assert.noNullElements(messages, "messages cannot contain null elements");
 		Assert.notNull(userParams, "userParams cannot be null");
+		Assert.noNullElements(userParams.keySet(), "userParams keys cannot contain null elements");
+		Assert.noNullElements(userParams.values(), "userParams values cannot contain null elements");
 		Assert.notNull(systemParams, "systemParams cannot be null");
+		Assert.noNullElements(systemParams.keySet(), "systemParams keys cannot contain null elements");
+		Assert.noNullElements(systemParams.values(), "systemParams values cannot contain null elements");
 		Assert.notNull(advisors, "advisors cannot be null");
+		Assert.noNullElements(advisors, "advisors cannot contain null elements");
 		Assert.notNull(advisorParams, "advisorParams cannot be null");
+		Assert.noNullElements(advisorParams.keySet(), "advisorParams keys cannot contain null elements");
+		Assert.noNullElements(advisorParams.values(), "advisorParams values cannot contain null elements");
 		Assert.notNull(adviseContext, "adviseContext cannot be null");
+		Assert.noNullElements(adviseContext.keySet(), "adviseContext keys cannot contain null elements");
+		Assert.noNullElements(adviseContext.values(), "adviseContext values cannot contain null elements");
 		Assert.notNull(toolContext, "toolContext cannot be null");
+		Assert.noNullElements(toolContext.keySet(), "toolContext keys cannot contain null elements");
+		Assert.noNullElements(toolContext.values(), "toolContext values cannot contain null elements");
 	}
 
 	public static Builder builder() {

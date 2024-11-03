@@ -95,7 +95,7 @@ The prefix `spring.ai.minimax.embedding` is property prefix that configures the 
 
 NOTE: You can override the common `spring.ai.minimax.base-url` and `spring.ai.minimax.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.minimax.embedding.base-url` and `spring.ai.minimax.embedding.api-key` properties if set take precedence over the common properties.
-Similarly, the `spring.ai.minimax.embedding.base-url` and `spring.ai.minimax.embedding.api-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.minimax.chat.base-url` and `spring.ai.minimax.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different MiniMax accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.minimax.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.

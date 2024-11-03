@@ -37,11 +37,13 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.util.StringUtils;
 
 /**
  * Memory is retrieved from a VectorStore added into the prompt's system text.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
@@ -58,7 +60,6 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			LONG_TERM_MEMORY:
 			{long_term_memory}
 			---------------------
-
 			""";
 
 	private final String systemTextAdvise;
@@ -128,7 +129,13 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	private AdvisedRequest before(AdvisedRequest request) {
 
-		String advisedSystemText = request.systemText() + System.lineSeparator() + this.systemTextAdvise;
+		String advisedSystemText;
+		if (StringUtils.hasText(request.systemText())) {
+			advisedSystemText = request.systemText() + System.lineSeparator() + this.systemTextAdvise;
+		}
+		else {
+			advisedSystemText = this.systemTextAdvise;
+		}
 
 		var searchRequest = SearchRequest.query(request.userText())
 			.withTopK(this.doGetChatMemoryRetrieveSize(request.adviseContext()))

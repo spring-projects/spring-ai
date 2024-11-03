@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -32,12 +31,12 @@ import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Content;
 import org.springframework.ai.rag.Query;
+import org.springframework.ai.rag.augmentation.ContextualQueryAugmentor;
+import org.springframework.ai.rag.augmentation.QueryAugmentor;
 import org.springframework.ai.rag.retrieval.source.DocumentRetriever;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -60,33 +59,19 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 
 	public static final String DOCUMENT_CONTEXT = "rag_document_context";
 
-	public static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
-			{query}
-
-			Context information is below. Use this information to answer the user query.
-
-			---------------------
-			{context}
-			---------------------
-
-			Given the context and provided history information and not prior knowledge,
-			reply to the user query. If the answer is not in the context, inform
-			the user that you can't answer the query.
-			""");
-
 	private final DocumentRetriever documentRetriever;
 
-	private final PromptTemplate promptTemplate;
+	private final QueryAugmentor queryAugmentor;
 
 	private final boolean protectFromBlocking;
 
 	private final int order;
 
-	public RetrievalAugmentationAdvisor(DocumentRetriever documentRetriever, @Nullable PromptTemplate promptTemplate,
+	public RetrievalAugmentationAdvisor(DocumentRetriever documentRetriever, @Nullable QueryAugmentor queryAugmentor,
 			@Nullable Boolean protectFromBlocking, @Nullable Integer order) {
 		Assert.notNull(documentRetriever, "documentRetriever cannot be null");
 		this.documentRetriever = documentRetriever;
-		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
+		this.queryAugmentor = queryAugmentor != null ? queryAugmentor : ContextualQueryAugmentor.builder().build();
 		this.protectFromBlocking = protectFromBlocking != null ? protectFromBlocking : false;
 		this.order = order != null ? order : 0;
 	}
@@ -140,21 +125,10 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 		List<Document> documents = this.documentRetriever.retrieve(query);
 		context.put(DOCUMENT_CONTEXT, documents);
 
-		// 2. Combine retrieved documents.
-		String documentContext = documents.stream()
-			.map(Content::getContent)
-			.collect(Collectors.joining(System.lineSeparator()));
+		// 2. Augment user query with the contextual data.
+		Query augmentedQuery = this.queryAugmentor.augment(query, documents);
 
-		// 3. Define augmentation prompt parameters.
-		Map<String, Object> promptParameters = Map.of("query", query.text(), "context", documentContext);
-
-		// 4. Augment user prompt with the context data.
-		UserMessage augmentedUserMessage = (UserMessage) this.promptTemplate.createMessage(promptParameters);
-
-		return AdvisedRequest.from(request)
-			.withUserText(augmentedUserMessage.getContent())
-			.withAdviseContext(context)
-			.build();
+		return AdvisedRequest.from(request).withUserText(augmentedQuery.text()).withAdviseContext(context).build();
 	}
 
 	private AdvisedResponse after(AdvisedResponse advisedResponse) {
@@ -185,7 +159,7 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 
 		private DocumentRetriever documentRetriever;
 
-		private PromptTemplate promptTemplate;
+		private QueryAugmentor queryAugmentor;
 
 		private Boolean protectFromBlocking;
 
@@ -199,8 +173,8 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 			return this;
 		}
 
-		public Builder promptTemplate(PromptTemplate promptTemplate) {
-			this.promptTemplate = promptTemplate;
+		public Builder queryAugmentor(QueryAugmentor queryAugmentor) {
+			this.queryAugmentor = queryAugmentor;
 			return this;
 		}
 
@@ -215,7 +189,7 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 		}
 
 		public RetrievalAugmentationAdvisor build() {
-			return new RetrievalAugmentationAdvisor(this.documentRetriever, this.promptTemplate,
+			return new RetrievalAugmentationAdvisor(this.documentRetriever, this.queryAugmentor,
 					this.protectFromBlocking, this.order);
 		}
 

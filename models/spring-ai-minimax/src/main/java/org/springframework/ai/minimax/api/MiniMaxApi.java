@@ -331,14 +331,35 @@ public class MiniMaxApi {
 
 	/**
 	 * Represents a tool the model may call. Currently, only functions are supported as a tool.
-	 *
-	 * @param type The type of the tool. Currently, only 'function' is supported.
-	 * @param function The function definition.
 	 */
-	@JsonInclude(Include.NON_NULL)
-	public record FunctionTool(
-			@JsonProperty("type") Type type,
-			@JsonProperty("function") Function function) {
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public static class FunctionTool {
+
+		/**
+		 *  The type of the tool. Currently, only 'function' is supported.
+		 */
+		private Type type = Type.FUNCTION;
+
+		/**
+		 * The function definition.
+		 */
+		private Function function;
+
+		public FunctionTool() {
+
+		}
+
+		/**
+		 * Create a tool of type 'function' and the given function definition.
+		 * @param type the tool type
+		 * @param function function definition
+		 */
+		public FunctionTool(
+				@JsonProperty("type") Type type,
+				@JsonProperty("function") Function function) {
+			this.type = type;
+			this.function = function;
+		}
 
 		/**
 		 * Create a tool of type 'function' and the given function definition.
@@ -348,8 +369,22 @@ public class MiniMaxApi {
 			this(Type.FUNCTION, function);
 		}
 
-		public static FunctionTool webSearchFunctionTool() {
-			return new FunctionTool(Type.WEB_SEARCH, null);
+		@JsonProperty("type")
+		public Type getType() {
+			return this.type;
+		}
+
+		@JsonProperty("function")
+		public Function getFunction() {
+			return this.function;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		public void setFunction(Function function) {
+			this.function = function;
 		}
 
 		/**
@@ -361,35 +396,104 @@ public class MiniMaxApi {
 			 */
 			@JsonProperty("function")
 			FUNCTION,
+
 			@JsonProperty("web_search")
 			WEB_SEARCH
 		}
 
+		public static FunctionTool webSearchFunctionTool() {
+			return new FunctionTool(FunctionTool.Type.WEB_SEARCH, null);
+		}
+
+
 		/**
 		 * Function definition.
-		 *
-		 * @param description A description of what the function does, used by the model to choose when and how to call
-		 * the function.
-		 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes,
-		 * with a maximum length of 64.
-		 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
-		 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
 		 */
-		public record Function(
-				@JsonProperty("description") String description,
-				@JsonProperty("name") String name,
-				@JsonProperty("parameters") String parameters) {
+		public static class Function {
+
+			@JsonProperty("description")
+			private String description;
+
+			@JsonProperty("name")
+			private String name;
+
+			@JsonProperty("parameters")
+			private Map<String, Object> parameters;
+
+			private String jsonSchema;
+
+			private Function() {
+
+			}
+
+			/**
+			 * Create tool function definition.
+			 *
+			 * @param description A description of what the function does, used by the model to choose when and how to call
+			 * the function.
+			 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes,
+			 * with a maximum length of 64.
+			 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
+			 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
+			 */
+			public Function(
+					String description,
+					String name,
+					Map<String, Object> parameters) {
+				this.description = description;
+				this.name = name;
+				this.parameters = parameters;
+			}
 
 			/**
 			 * Create tool function definition.
 			 *
 			 * @param description tool function description.
 			 * @param name tool function name.
-			 * @param parameters tool function schema.
+			 * @param jsonSchema tool function schema as json.
 			 */
-			public Function(String description, String name, Map<String, Object> parameters) {
-				this(description, name, ModelOptionsUtils.toJsonString(parameters));
+			public Function(String description, String name, String jsonSchema) {
+				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
+
+			@JsonProperty("description")
+			public String getDescription() {
+				return this.description;
+			}
+
+			@JsonProperty("name")
+			public String getName() {
+				return this.name;
+			}
+
+			@JsonProperty("parameters")
+			public Map<String, Object> getParameters() {
+				return this.parameters;
+			}
+
+			public void setDescription(String description) {
+				this.description = description;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public void setParameters(Map<String, Object> parameters) {
+				this.parameters = parameters;
+			}
+
+			public String getJsonSchema() {
+				return this.jsonSchema;
+			}
+
+			public void setJsonSchema(String jsonSchema) {
+				this.jsonSchema = jsonSchema;
+				if (jsonSchema != null) {
+					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
+				}
+			}
+
 		}
 	}
 

@@ -19,6 +19,7 @@ package org.springframework.ai.autoconfigure.mistralai;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -49,6 +50,54 @@ public class MistralAiPropertiesTests {
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+			});
+	}
+
+	@Test
+	public void chatOptionsTest() {
+
+		new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL",
+				"spring.ai.mistralai.chat.options.tools[0].function.name=myFunction1",
+				"spring.ai.mistralai.chat.options.tools[0].function.description=function description",
+				"spring.ai.mistralai.chat.options.tools[0].function.jsonSchema=" + """
+						{
+							"type": "object",
+							"properties": {
+								"location": {
+									"type": "string",
+									"description": "The city and state e.g. San Francisco, CA"
+								},
+								"lat": {
+									"type": "number",
+									"description": "The city latitude"
+								},
+								"lon": {
+									"type": "number",
+									"description": "The city longitude"
+								},
+								"unit": {
+									"type": "string",
+									"enum": ["c", "f"]
+								}
+							},
+							"required": ["location", "lat", "lon", "unit"]
+						}
+						""",
+
+				"spring.ai.mistralai.api-key=abc123", "spring.ai.mistralai.embedding.base-url=TEST_BASE_URL2",
+				"spring.ai.mistralai.embedding.api-key=456", "spring.ai.mistralai.embedding.options.model=MODEL_XYZ")
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+			.run(context -> {
+
+				var chatProperties = context.getBean(MistralAiChatProperties.class);
+
+				var tool = chatProperties.getOptions().getTools().get(0);
+				assertThat(tool.getType()).isEqualTo(MistralAiApi.FunctionTool.Type.FUNCTION);
+				var function = tool.getFunction();
+				assertThat(function.getName()).isEqualTo("myFunction1");
+				assertThat(function.getDescription()).isEqualTo("function description");
+				assertThat(function.getParameters()).isNotEmpty();
 			});
 	}
 
