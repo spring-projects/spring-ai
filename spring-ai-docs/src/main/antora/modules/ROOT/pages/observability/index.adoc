@@ -9,7 +9,7 @@ NOTE: Low cardinality keys will be added to metrics and traces, while high cardi
 
 == Chat Client
 
-The `spring.ai.chat.client` observations are recorded when a ChatClient `call()` or `stream()` operations are invoked. 
+The `spring.ai.chat.client` observations are recorded when a ChatClient `call()` or `stream()` operations are invoked.
 They measure the time spent performing the invocation and propagate the related tracing information.
 
 .Low Cardinality Keys
@@ -56,7 +56,7 @@ WARNING: If you enable the inclusion of the input content in the observations, t
 
 === Chat Client Advisors
 
-The `spring.ai.advisor` observations are recorded when a call or stream around advisors is performed. 
+The `spring.ai.advisor` observations are recorded when a call or stream around advisors is performed.
 They measure the time spent in the advisor (including the time spend on the inner advisors) and propagate the related tracing information.
 
 .Low Cardinality Keys
@@ -64,8 +64,6 @@ They measure the time spent in the advisor (including the time spend on the inne
 |===
 |Name | Description
 
-|`gen_ai.operation.name` | Always `framework`.
-|`gen_ai.system` | Always `spring_ai`.
 |`spring.ai.advisor.type` | Where the advisor applies it's logic in the request processing, one of `BEFORE`, `AFTER`, or `AROUND`.
 |`spring.ai.kind` | The kind of framework API in Spring AI: `advisor`.
 |===
@@ -85,7 +83,7 @@ NOTE: Observability features are currently supported only for `ChatModel` implem
 providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, OpenAI, Vertex AI, MiniMax, Moonshot, QianFan, Zhiu AI.
 Additional AI model providers will be supported in a future release.
 
-The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
+The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods.
 They measure the time spent on method completion and propagate the related tracing information.
 
 IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
@@ -162,7 +160,7 @@ NOTE: Observability features are currently supported only for `EmbeddingModel` i
 AI model providers: Azure OpenAI, Mistral AI, Ollama, and OpenAI.
 Additional AI model providers will be supported in a future release.
 
-The `gen_ai.client.operation` observations are recorded on embedding model method calls. 
+The `gen_ai.client.operation` observations are recorded on embedding model method calls.
 They measure the time spent on method completion and propagate the related tracing information.
 
 IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
@@ -197,7 +195,7 @@ NOTE: Observability features are currently supported only for `ImageModel` imple
 providers: OpenAI.
 Additional AI model providers will be supported in a future release.
 
-The `gen_ai.client.operation` observations are recorded on image model method calls. 
+The `gen_ai.client.operation` observations are recorded on image model method calls.
 They measure the time spent on method completion and propagate the related tracing information.
 
 IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
@@ -260,7 +258,7 @@ WARNING: If you enable the inclusion of the image prompt data in the observation
 
 All vector store implementations in Spring AI are instrumented to provide metrics and distributed tracing data through Micrometer.
 
-The `db.vector.client.operation` observations are recorded when interacting with the Vector Store. 
+The `db.vector.client.operation` observations are recorded when interacting with the Vector Store.
 They measure the time spent on the `query`, `add` and `remove` operations and propagate the related tracing information.
 
 .Low Cardinality Keys
