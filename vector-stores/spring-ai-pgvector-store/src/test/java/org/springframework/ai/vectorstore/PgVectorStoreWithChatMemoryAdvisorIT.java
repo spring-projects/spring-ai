@@ -106,7 +106,6 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		assertThat(promptCaptor.getValue().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(promptCaptor.getValue().getInstructions().get(0).getContent()).isEqualTo("""
 
-
 				Use the long term conversation memory from the LONG_TERM_MEMORY section to provide accurate answers.
 
 				---------------------
@@ -114,7 +113,6 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 				Tell me a good joke
 				Tell me a bad joke
 				---------------------
-
 				""");
 	}
 
