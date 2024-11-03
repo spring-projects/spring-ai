@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -905,7 +906,8 @@ public class OpenAiApi {
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("tool_calls")
+			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("refusal") String refusal) { // @formatter:on
 
 		/**
