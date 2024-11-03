@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest(properties = "logging.level.sql=TRACE")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Disabled("Disabled from automatic execution, as it requires an excessive amount of memory (over 9GB)!")
+@Disabled("Disabled from automatic execution, as it pulls a very large image file (over 9GB)!")
 class PostgresMlEmbeddingModelIT {
 
 	@Container
@@ -73,14 +73,15 @@ class PostgresMlEmbeddingModelIT {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
-	@AfterEach
+	@BeforeEach
 	void dropPgmlExtension() {
 		this.jdbcTemplate.execute("DROP EXTENSION IF EXISTS pgml");
 	}
 
 	@Test
 	void embed() {
-		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate);
+		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
+				PostgresMlEmbeddingOptions.builder().build(), true);
 		embeddingModel.afterPropertiesSet();
 
 		float[] embed = embeddingModel.embed("Hello World!");
@@ -94,7 +95,8 @@ class PostgresMlEmbeddingModelIT {
 				PostgresMlEmbeddingOptions.builder()
 					.withTransformer("distilbert-base-uncased")
 					.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
-					.build());
+					.build(),
+				true);
 		embeddingModel.afterPropertiesSet();
 
 		float[] embed = embeddingModel.embed(new Document("Hello World!"));
@@ -105,7 +107,7 @@ class PostgresMlEmbeddingModelIT {
 	@Test
 	void embedWithDifferentModel() {
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
-				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build());
+				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build(), true);
 		embeddingModel.afterPropertiesSet();
 
 		float[] embed = embeddingModel.embed(new Document("Hello World!"));
@@ -121,7 +123,8 @@ class PostgresMlEmbeddingModelIT {
 					.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_ARRAY)
 					.withKwargs(Map.of("device", "cpu"))
 					.withMetadataMode(MetadataMode.EMBED)
-					.build());
+					.build(),
+				true);
 		embeddingModel.afterPropertiesSet();
 
 		float[] embed = embeddingModel.embed(new Document("Hello World!"));
@@ -136,7 +139,8 @@ class PostgresMlEmbeddingModelIT {
 				PostgresMlEmbeddingOptions.builder()
 					.withTransformer("distilbert-base-uncased")
 					.withVectorType(VectorType.valueOf(vectorType))
-					.build());
+					.build(),
+				true);
 		embeddingModel.afterPropertiesSet();
 
 		EmbeddingResponse embeddingResponse = embeddingModel
@@ -174,7 +178,8 @@ class PostgresMlEmbeddingModelIT {
 				PostgresMlEmbeddingOptions.builder()
 					.withTransformer("distilbert-base-uncased")
 					.withVectorType(VectorType.PG_VECTOR)
-					.build());
+					.build(),
+				true);
 		embeddingModel.afterPropertiesSet();
 
 		var request1 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"), EmbeddingOptions.EMPTY);
@@ -244,7 +249,8 @@ class PostgresMlEmbeddingModelIT {
 
 	@Test
 	void dimensions() {
-		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate);
+		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
+				PostgresMlEmbeddingOptions.builder().build(), true);
 		embeddingModel.afterPropertiesSet();
 		Assertions.assertThat(embeddingModel.dimensions()).isEqualTo(768);
 		// cached

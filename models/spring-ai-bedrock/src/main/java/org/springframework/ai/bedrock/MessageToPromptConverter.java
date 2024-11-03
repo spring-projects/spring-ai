@@ -28,7 +28,7 @@ import org.springframework.ai.chat.messages.MessageType;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MessageToPromptConverter {
+public final class MessageToPromptConverter {
 
 	private static final String HUMAN_PROMPT = "Human:";
 

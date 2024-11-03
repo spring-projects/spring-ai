@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  */
 @SpringBootTest(classes = QianFanTestConfiguration.class)
-@EnabledIfEnvironmentVariables(value = { @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "QIANFAN_SECRET_KEY", matches = ".+") })
 class QianFanChatModelIT {
 

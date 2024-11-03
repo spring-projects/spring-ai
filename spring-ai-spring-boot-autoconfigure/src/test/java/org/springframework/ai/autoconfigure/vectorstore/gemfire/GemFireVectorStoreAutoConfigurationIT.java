@@ -152,9 +152,8 @@ class GemFireVectorStoreAutoConfigurationIT {
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.GEMFIRE,
 					VectorStoreObservationContext.Operation.ADD);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-			}, hasSize(1));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1)), hasSize(1));
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -177,9 +176,8 @@ class GemFireVectorStoreAutoConfigurationIT {
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.GEMFIRE,
 					VectorStoreObservationContext.Operation.DELETE);
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-			}, hasSize(0));
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1)), hasSize(0));
 			observationRegistry.clear();
 		});
 	}

@@ -50,8 +50,9 @@ public class AzureOpenAiRuntimeHints implements RuntimeHintsRegistrar {
 
 		try {
 			var resolver = new PathMatchingResourcePatternResolver();
-			for (var resourceMatch : resolver.getResources("/azure-ai-openai.properties"))
+			for (var resourceMatch : resolver.getResources("/azure-ai-openai.properties")) {
 				hints.resources().registerResource(resourceMatch);
+			}
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);

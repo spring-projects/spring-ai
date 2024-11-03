@@ -54,7 +54,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
-import static com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AzureOpenAiChatModelIT.TestConfiguration.class)
@@ -269,7 +268,8 @@ class AzureOpenAiChatModelIT {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
 				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
 				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-				.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS));
+				.httpLogOptions(new HttpLogOptions()
+					.setLogLevel(com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS));
 		}
 
 		@Bean

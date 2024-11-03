@@ -66,7 +66,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 			});

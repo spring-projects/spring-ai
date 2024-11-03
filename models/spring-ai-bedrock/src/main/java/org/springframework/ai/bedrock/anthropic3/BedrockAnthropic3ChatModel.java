@@ -85,10 +85,11 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		List<Generation> generations = response.content().stream().map(content -> {
-			return new Generation(new AssistantMessage(content.text()),
-					ChatGenerationMetadata.from(response.stopReason(), null));
-		}).toList();
+		List<Generation> generations = response.content()
+			.stream()
+			.map(content -> new Generation(new AssistantMessage(content.text()),
+					ChatGenerationMetadata.from(response.stopReason(), null)))
+			.toList();
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
 			.withId(response.id())

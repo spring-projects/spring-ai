@@ -25,6 +25,10 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Configure Testcontainers
+        run: |
+          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
+
       # - name: Cache Docker images.
       #   uses: ScribeMD/docker-cache@0.3.7
       #   with:

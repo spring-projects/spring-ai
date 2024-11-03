@@ -38,10 +38,12 @@ public class ZhiPuAiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(ZhiPuAiApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(ZhiPuAiApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(ZhiPuAiImageApi.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(ZhiPuAiImageApi.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

@@ -43,8 +43,8 @@ import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Mark Pollack
@@ -91,10 +91,10 @@ public class VertexAiGeminiRetryTests {
 				.build())
 			.build();
 
-		when(this.mockGenerativeModel.generateContent(any(List.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(mockedResponse);
+		given(this.mockGenerativeModel.generateContent(any(List.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(mockedResponse);
 
 		// Call the chat model
 		ChatResponse result = this.chatModel.call(new Prompt("test prompt"));
@@ -109,8 +109,8 @@ public class VertexAiGeminiRetryTests {
 	@Test
 	public void vertexAiGeminiChatNonTransientError() throws Exception {
 		// Set up the mock GenerativeModel to throw a non-transient RuntimeException
-		when(this.mockGenerativeModel.generateContent(any(List.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.mockGenerativeModel.generateContent(any(List.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 
 		// Assert that a RuntimeException is thrown when calling the chat model
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("test prompt")));

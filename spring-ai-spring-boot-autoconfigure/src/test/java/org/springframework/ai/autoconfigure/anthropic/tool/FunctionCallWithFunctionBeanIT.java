@@ -68,14 +68,14 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						AnthropicChatOptions.builder().withFunction("weatherFunction").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						AnthropicChatOptions.builder().withFunction("weatherFunction3").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
@@ -98,7 +98,7 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						PortableFunctionCallingOptions.builder().withFunction("weatherFunction").build()));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 			});

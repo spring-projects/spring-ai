@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.prompt;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,10 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	public Prompt(List<Message> messages) {
 		this(messages, null);
+	}
+
+	public Prompt(Message... messages) {
+		this(Arrays.asList(messages), null);
 	}
 
 	public Prompt(String contents, ChatOptions chatOptions) {

@@ -21,8 +21,12 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Thomas Vitale
  */
-public class WeaviateImage {
+public final class WeaviateImage {
 
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("semitechnologies/weaviate:1.25.9");
+
+	private WeaviateImage() {
+
+	}
 
 }

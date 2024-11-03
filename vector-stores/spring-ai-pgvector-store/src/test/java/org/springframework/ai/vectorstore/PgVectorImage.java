@@ -21,8 +21,12 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Thomas Vitale
  */
-public class PgVectorImage {
+public final class PgVectorImage {
 
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("pgvector/pgvector:pg17");
+
+	private PgVectorImage() {
+
+	}
 
 }

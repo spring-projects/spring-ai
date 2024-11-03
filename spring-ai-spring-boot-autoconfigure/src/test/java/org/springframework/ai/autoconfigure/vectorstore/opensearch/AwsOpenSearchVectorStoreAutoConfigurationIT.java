@@ -74,12 +74,12 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=" + DOCUMENT_INDEX,
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
 						{
-						   "properties":{
-						      "embedding":{
-						         "type":"knn_vector",
-						         "dimension":384
-						      }
-						   }
+							"properties":{
+								"embedding":{
+									"type":"knn_vector",
+									"dimension":384
+								}
+							}
 						}
 						""");
 

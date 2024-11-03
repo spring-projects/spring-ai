@@ -85,7 +85,7 @@ For example to override the Stability AI specific options such as quality and th
 
 [source,java]
 ----
-ImageResponse response = openaiImageModel.call(
+ImageResponse response = stabilityaiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
         StabilityAiImageOptions.builder()
                 .withStylePreset("cinematic")

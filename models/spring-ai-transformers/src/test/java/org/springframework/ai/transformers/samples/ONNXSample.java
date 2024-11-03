@@ -35,7 +35,11 @@ import org.springframework.core.io.DefaultResourceLoader;
 
 // https://www.sbert.net/examples/applications/computing-embeddings/README.html#sentence-embeddings-with-transformers
 
-public class ONNXSample {
+public final class ONNXSample {
+
+	private ONNXSample() {
+
+	}
 
 	public static NDArray meanPooling(NDArray tokenEmbeddings, NDArray attentionMask) {
 

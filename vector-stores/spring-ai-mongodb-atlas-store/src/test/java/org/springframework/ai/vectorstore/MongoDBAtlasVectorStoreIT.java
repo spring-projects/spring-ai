@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
@@ -54,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @Testcontainers
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class MongoDBAtlasVectorStoreIT {
 
 	@Container

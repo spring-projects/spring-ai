@@ -39,6 +39,6 @@ public enum PullModelStrategy {
 	/**
 	 * Never pull the model.
 	 */
-	NEVER;
+	NEVER
 
 }

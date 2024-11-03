@@ -272,9 +272,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				return Mono.just(chatResponse);
 			})
 			.doOnError(observation::error)
-			.doFinally(s -> {
-				observation.stop();
-			})
+			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
@@ -292,10 +290,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		List<Generation> generations = chatCompletion.content()
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.map(content -> {
-				return new Generation(new AssistantMessage(content.text(), Map.of()),
-						ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
-			})
+			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
+					ChatGenerationMetadata.from(chatCompletion.stopReason(), null)))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);

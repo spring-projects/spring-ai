@@ -56,8 +56,6 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
-import static java.lang.Math.sqrt;
-
 /**
  * The ElasticsearchVectorStore class implements the VectorStore interface and provides
  * functionality for managing and querying documents in Elasticsearch. It uses an
@@ -225,7 +223,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				// (closest to zero means more accurate), so to make it consistent
 				// with the other functions the reverse is returned applying a "1-"
 				// to the standard transformation
-				return (float) (1 - (sqrt((1 / score) - 1)));
+				return (float) (1 - (java.lang.Math.sqrt((1 / score) - 1)));
 			// cosine and dot_product
 			default:
 				return (2 * score) - 1;

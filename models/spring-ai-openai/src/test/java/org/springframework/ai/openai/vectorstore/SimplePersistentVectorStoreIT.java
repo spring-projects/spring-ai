@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -38,6 +39,7 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class SimplePersistentVectorStoreIT {
 
 	@TempDir(cleanup = CleanupMode.ON_SUCCESS)

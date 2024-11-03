@@ -35,7 +35,7 @@ public class StabilityAiImagePropertiesTests {
 
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
-	  "spring.ai.stabilityai.image.api-key=API_KEY",
+		"spring.ai.stabilityai.image.api-key=API_KEY",
 				"spring.ai.stabilityai.image.base-url=ENDPOINT",
 				"spring.ai.stabilityai.image.options.n=10",
 				"spring.ai.stabilityai.image.options.model=MODEL_XYZ",

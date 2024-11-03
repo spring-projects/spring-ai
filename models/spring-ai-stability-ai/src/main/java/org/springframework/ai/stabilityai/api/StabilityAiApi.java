@@ -100,7 +100,7 @@ public class StabilityAiApi {
 			@JsonProperty("cfg_scale") Float cfgScale, @JsonProperty("clip_guidance_preset") String clipGuidancePreset,
 			@JsonProperty("sampler") String sampler, @JsonProperty("samples") Integer samples,
 			@JsonProperty("seed") Long seed, @JsonProperty("steps") Integer steps,
-			@JsonProperty("style_present") String stylePreset) {
+			@JsonProperty("style_preset") String stylePreset) {
 
 		public static Builder builder() {
 			return new Builder();

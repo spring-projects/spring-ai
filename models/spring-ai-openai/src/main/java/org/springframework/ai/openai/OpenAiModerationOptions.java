@@ -50,7 +50,7 @@ public class OpenAiModerationOptions implements ModerationOptions {
 		this.model = model;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final OpenAiModerationOptions options;
 

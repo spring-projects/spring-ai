@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.testcontainers.service.connection.chroma;
 
 import java.util.List;
@@ -62,25 +63,25 @@ class ChromaWithTokenContainerConnectionDetailsFactoryTest {
 		var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 				Map.of("country", "Netherlands"));
 
-		vectorStore.add(List.of(bgDocument, nlDocument));
+		this.vectorStore.add(List.of(bgDocument, nlDocument));
 
 		var request = SearchRequest.query("The World").withTopK(5);
 
-		List<Document> results = vectorStore.similaritySearch(request);
+		List<Document> results = this.vectorStore.similaritySearch(request);
 		assertThat(results).hasSize(2);
 
-		results = vectorStore
+		results = this.vectorStore
 			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-		results = vectorStore
+		results = this.vectorStore
 			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 		// Remove all documents from the store
-		vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
+		this.vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
 	}
 
 	@Configuration(proxyBeanMethods = false)

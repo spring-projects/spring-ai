@@ -132,7 +132,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 		var speech = speechEntity.getBody();
 
 		if (speech == null) {
-			this.logger.warn("No speech response returned for speechRequest: {}", speechRequest);
+			logger.warn("No speech response returned for speechRequest: {}", speechRequest);
 			return new SpeechResponse(new Speech(new byte[0]));
 		}
 

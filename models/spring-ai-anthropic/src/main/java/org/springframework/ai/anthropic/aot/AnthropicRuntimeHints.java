@@ -37,8 +37,9 @@ public class AnthropicRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicApi.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

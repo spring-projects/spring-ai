@@ -95,7 +95,7 @@ The prefix `spring.ai.zhipuai.embedding` is property prefix that configures the 
 
 NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.zhipuai.embedding.base-url` and `spring.ai.zhipuai.embedding.api-key` properties if set take precedence over the common properties.
-Similarly, the `spring.ai.zhipuai.embedding.base-url` and `spring.ai.zhipuai.embedding.api-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.zhipuai.chat.base-url` and `spring.ai.zhipuai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different ZhiPuAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.zhipuai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.

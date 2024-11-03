@@ -155,19 +155,19 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		private AdvisedRequest before(AdvisedRequest request) {
-			this.logger.info("System text: \n" + request.systemText());
-			this.logger.info("System params: " + request.systemParams());
-			this.logger.info("User text: \n" + request.userText());
-			this.logger.info("User params:" + request.userParams());
-			this.logger.info("Function names: " + request.functionNames());
+			logger.info("System text: \n" + request.systemText());
+			logger.info("System params: " + request.systemParams());
+			logger.info("User text: \n" + request.userText());
+			logger.info("User params:" + request.userParams());
+			logger.info("Function names: " + request.functionNames());
 
-			this.logger.info("Options: " + request.chatOptions().toString());
+			logger.info("Options: " + request.chatOptions().toString());
 
 			return request;
 		}
 
 		private void observeAfter(AdvisedResponse advisedResponse) {
-			this.logger.info("Response: " + advisedResponse.response());
+			logger.info("Response: " + advisedResponse.response());
 		}
 
 	}

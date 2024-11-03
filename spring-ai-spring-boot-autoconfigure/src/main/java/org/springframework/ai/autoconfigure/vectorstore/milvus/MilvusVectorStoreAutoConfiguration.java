@@ -42,6 +42,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
  */
 @AutoConfiguration
 @ConditionalOnClass({ MilvusVectorStore.class, EmbeddingModel.class })
@@ -75,6 +76,11 @@ public class MilvusVectorStoreAutoConfiguration {
 			.withMetricType(MetricType.valueOf(properties.getMetricType().name()))
 			.withIndexParameters(properties.getIndexParameters())
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
+			.withIDFieldName(properties.getIdFieldName())
+			.withAutoId(properties.isAutoId())
+			.withContentFieldName(properties.getContentFieldName())
+			.withMetadataFieldName(properties.getMetadataFieldName())
+			.withEmbeddingFieldName(properties.getEmbeddingFieldName())
 			.build();
 
 		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema(),

@@ -190,8 +190,8 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
 				.defaultFunction("getCurrentWeather", "Get the weather in location", biFunction)
-				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))				
-			.build()
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.build()
 			.prompt()
 			.toolContext(Map.of("sessionId", "123"))
 			.call().content();

@@ -44,15 +44,15 @@ public class ClientIT {
 				address: #1 Samuel St.
 				Just generate the JSON object without explanations:
 				[/INST]
-				 """;
+				""";
 		Prompt prompt = new Prompt(mistral7bInstruct);
 		ChatResponse chatResponse = this.huggingfaceChatModel.call(prompt);
 		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
 		String expectedResponse = """
 				{
-				  "name": "John",
-				  "lastname": "Smith",
-				  "address": "#1 Samuel St."
+					"name": "John",
+					"lastname": "Smith",
+					"address": "#1 Samuel St."
 				}""";
 		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo(expectedResponse);
 		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsKey("generated_tokens");

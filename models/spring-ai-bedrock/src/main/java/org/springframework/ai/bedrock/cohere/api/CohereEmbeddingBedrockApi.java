@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// @formatter:off
+
 package org.springframework.ai.bedrock.cohere.api;
+
+// @formatter:off
 
 import java.time.Duration;
 import java.util.List;
@@ -169,19 +171,23 @@ public class CohereEmbeddingBedrockApi extends
 			 * In search use-cases, use search_document when you encode documents for embeddings that you store in a
 			 * vector database.
 			 */
-			@JsonProperty("search_document") SEARCH_DOCUMENT,
+			@JsonProperty("search_document")
+			SEARCH_DOCUMENT,
 			/**
 			 * Use search_query when querying your vector DB to find relevant documents.
 			 */
-			@JsonProperty("search_query") SEARCH_QUERY,
+			@JsonProperty("search_query")
+			SEARCH_QUERY,
 			/**
 			 * Use classification when using embeddings as an input to a text classifier.
 			 */
-			@JsonProperty("classification") CLASSIFICATION,
+			@JsonProperty("classification")
+			CLASSIFICATION,
 			/**
 			 * Use clustering to cluster the embeddings.
 			 */
-			@JsonProperty("clustering") CLUSTERING
+			@JsonProperty("clustering")
+			CLUSTERING
 		}
 
 		/**

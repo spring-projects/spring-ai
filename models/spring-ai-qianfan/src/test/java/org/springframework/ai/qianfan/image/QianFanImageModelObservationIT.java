@@ -46,7 +46,7 @@ import static org.springframework.ai.image.observation.ImageModelObservationDocu
  * @author Geng Rong
  */
 @SpringBootTest(classes = QianFanImageModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariables(value = { @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "QIANFAN_SECRET_KEY", matches = ".+") })
 public class QianFanImageModelObservationIT {
 

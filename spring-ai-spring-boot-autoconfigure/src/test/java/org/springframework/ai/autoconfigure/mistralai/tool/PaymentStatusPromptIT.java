@@ -78,7 +78,7 @@ public class PaymentStatusPromptIT {
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("T1001");
 				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("paid");

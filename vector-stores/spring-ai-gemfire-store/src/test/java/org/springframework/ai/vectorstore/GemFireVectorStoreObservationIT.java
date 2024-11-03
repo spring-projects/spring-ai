@@ -48,7 +48,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -145,7 +144,7 @@ public class GemFireVectorStoreObservationIT {
 				.hasBeenStopped();
 
 			Awaitility.await()
-				.atMost(1, MINUTES)
+				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
 				.until(() -> vectorStore
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(5).withSimilarityThresholdAll()),
 						hasSize(3));

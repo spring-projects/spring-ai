@@ -36,16 +36,14 @@ class ImageObservationAutoConfigurationTests {
 
 	@Test
 	void promptFilterDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(ImageModelPromptContentObservationFilter.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ImageModelPromptContentObservationFilter.class));
 	}
 
 	@Test
 	void promptFilterEnabled() {
-		this.contextRunner.withPropertyValues("spring.ai.image.observations.include-prompt=true").run(context -> {
-			assertThat(context).hasSingleBean(ImageModelPromptContentObservationFilter.class);
-		});
+		this.contextRunner.withPropertyValues("spring.ai.image.observations.include-prompt=true")
+			.run(context -> assertThat(context).hasSingleBean(ImageModelPromptContentObservationFilter.class));
 	}
 
 }

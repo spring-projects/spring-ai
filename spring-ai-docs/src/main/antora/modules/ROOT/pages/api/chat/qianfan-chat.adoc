@@ -13,7 +13,8 @@ Exporting an environment variable is one way to set that configuration property:
 
 [source,shell]
 ----
-export SPRING_AI_QIANFAN_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_QIANFAN_API_KEY=<INSERT API KEY HERE>
+export SPRING_AI_QIANFAN_SECRET_KEY=<INSERT SECRET KEY HERE>
 ----
 
 === Add Repositories and BOM
@@ -102,7 +103,7 @@ The prefix `spring.ai.qianfan.chat` is the property prefix that lets you configu
 | spring.ai.qianfan.chat.options.stop | The model will stop generating characters specified by stop, and currently only supports a single stop word in the format of ["stop_word1"] | -
 |====
 
-NOTE: You can override the common `spring.ai.qianfan.base-url`, `spring.ai.qianfan.chat.api-key` and `spring.ai.qianfan.chat.secret-key` for the `ChatClient` implementations.
+NOTE: You can override the common `spring.ai.qianfan.base-url`, `spring.ai.qianfan.api-key` and `spring.ai.qianfan.secret-key` for the `ChatClient` implementations.
 The `spring.ai.qianfan.chat.base-url`, `spring.ai.qianfan.chat.api-key` and `spring.ai.qianfan.chat.secret-key` properties if set take precedence over the common properties.
 This is useful if you want to use different QianFan accounts for different models and different model endpoints.
 

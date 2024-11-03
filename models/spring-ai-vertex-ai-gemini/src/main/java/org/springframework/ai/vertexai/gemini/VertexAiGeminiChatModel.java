@@ -366,9 +366,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 					Flux<ChatResponse> chatResponseFlux = Flux.just(chatResponse)
 						.doOnError(observation::error)
-						.doFinally(s -> {
-							observation.stop();
-						})
+						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 					return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);

@@ -30,4 +30,8 @@ public final class ZhiPuApiConstants {
 
 	public static final String PROVIDER_NAME = AiProvider.ZHIPUAI.value();
 
+	private ZhiPuApiConstants() {
+
+	}
+
 }

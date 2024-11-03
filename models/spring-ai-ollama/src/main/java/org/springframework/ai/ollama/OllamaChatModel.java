@@ -236,9 +236,9 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 				}
 			})
 			.doOnError(observation::error)
-			.doFinally(s -> {
-				observation.stop();
-			})
+			.doFinally(s ->
+				observation.stop()
+			)
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
@@ -392,7 +392,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		this.observationConvention = observationConvention;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private OllamaApi ollamaApi;
 

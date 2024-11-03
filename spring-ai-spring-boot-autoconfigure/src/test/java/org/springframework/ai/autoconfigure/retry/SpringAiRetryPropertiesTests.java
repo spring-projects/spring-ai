@@ -59,7 +59,7 @@ public class SpringAiRetryPropertiesTests {
 				"spring.ai.retry.on-http-codes=429",
 				"spring.ai.retry.backoff.initial-interval=1000",
 				"spring.ai.retry.backoff.multiplier=2",
-				"spring.ai.retry.backoff.max-interval=60000" )
+				"spring.ai.retry.backoff.max-interval=60000")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class))
 			.run(context -> {

@@ -185,38 +185,31 @@ class AzureOpenAiAutoConfigurationIT {
 	void chatActivation() {
 
 		// Disable the chat auto-configuration.
-		this.contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=false")
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isEmpty());
 
 		// The chat auto-configuration is enabled by default.
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
-		});
+		this.contextRunner.run(context -> assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty());
 
 		// Explicitly enable the chat auto-configuration.
-		this.contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=true").run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=true")
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty());
 	}
 
 	@Test
 	void embeddingActivation() {
 
 		// Disable the embedding auto-configuration.
-		this.contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=false")
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty());
 
 		// The embedding auto-configuration is enabled by default.
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty());
 
 		// Explicitly enable the embedding auto-configuration.
-		this.contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=true").run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=true")
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty());
 	}
 
 	@Test
@@ -224,20 +217,15 @@ class AzureOpenAiAutoConfigurationIT {
 
 		// Disable the transcription auto-configuration.
 		this.contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=false")
-			.run(context -> {
-				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty());
 
 		// The transcription auto-configuration is enabled by default.
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
-		});
+		this.contextRunner
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty());
 
 		// Explicitly enable the transcription auto-configuration.
 		this.contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=true")
-			.run(context -> {
-				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty());
 	}
 
 }

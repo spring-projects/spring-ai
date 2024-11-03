@@ -256,8 +256,10 @@ public class AnthropicApi {
 	public enum Role {
 
 		// @formatter:off
-		@JsonProperty("user") USER,
-		@JsonProperty("assistant") ASSISTANT
+		@JsonProperty("user")
+		USER,
+		@JsonProperty("assistant")
+		ASSISTANT
 		// @formatter:on
 
 	}
@@ -318,7 +320,7 @@ public class AnthropicApi {
 		/**
 		 * Artifically created event to aggregate tool use events.
 		 */
-		TOOL_USE_AGGREATE;
+		TOOL_USE_AGGREATE
 
 	}
 
@@ -383,7 +385,8 @@ public class AnthropicApi {
 	 * optionally return results back to the model using tool_result content blocks.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest( // @formatter:off
+	public record ChatCompletionRequest(
+	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("messages") List<AnthropicMessage> messages,
 		@JsonProperty("system") String system,
@@ -428,7 +431,7 @@ public class AnthropicApi {
 
 	}
 
-	public static class ChatCompletionRequestBuilder {
+	public static final class ChatCompletionRequestBuilder {
 
 		private String model;
 
@@ -559,9 +562,10 @@ public class AnthropicApi {
 	 * types.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record AnthropicMessage( // @formatter:off
-		 @JsonProperty("content") List<ContentBlock> content,
-		 @JsonProperty("role") Role role) {
+	public record AnthropicMessage(
+	// @formatter:off
+		@JsonProperty("content") List<ContentBlock> content,
+		@JsonProperty("role") Role role) {
 		 // @formatter:on
 	}
 
@@ -574,7 +578,8 @@ public class AnthropicApi {
 	 * responses.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ContentBlock( // @formatter:off
+	public record ContentBlock(
+	// @formatter:off
 		@JsonProperty("type") Type type,
 		@JsonProperty("source") Source source,
 		@JsonProperty("text") String text,
@@ -682,7 +687,8 @@ public class AnthropicApi {
 		 * @param data The base64-encoded data of the content.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record Source( // @formatter:off
+		public record Source(
+		// @formatter:off
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
 			@JsonProperty("data") String data) {
@@ -701,7 +707,8 @@ public class AnthropicApi {
 	///////////////////////////////////////
 
 	@JsonInclude(Include.NON_NULL)
-	public record Tool(// @formatter:off
+	public record Tool(
+	// @formatter:off
 		@JsonProperty("name") String name,
 		@JsonProperty("description") String description,
 		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
@@ -724,7 +731,8 @@ public class AnthropicApi {
 	 * @param usage Input and output token usage.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionResponse( // @formatter:off
+	public record ChatCompletionResponse(
+	// @formatter:off
 		@JsonProperty("id") String id,
 		@JsonProperty("type") String type,
 		@JsonProperty("role") Role role,
@@ -745,9 +753,10 @@ public class AnthropicApi {
 	 * @param outputTokens The number of output tokens which were used. completion).
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record Usage( // @formatter:off
-		 @JsonProperty("input_tokens") Integer inputTokens,
-		 @JsonProperty("output_tokens") Integer outputTokens) {
+	public record Usage(
+	// @formatter:off
+		@JsonProperty("input_tokens") Integer inputTokens,
+		@JsonProperty("output_tokens") Integer outputTokens) {
 		 // @formatter:off
 	}
 
@@ -828,10 +837,11 @@ public class AnthropicApi {
 	// MESSAGE START EVENT
 
 	@JsonInclude(Include.NON_NULL)
-	public record ContentBlockStartEvent(// @formatter:off
-        @JsonProperty("type") EventType type,
-        @JsonProperty("index") Integer index,
-        @JsonProperty("content_block") ContentBlockBody contentBlock) implements StreamEvent {
+	public record ContentBlockStartEvent(
+			// @formatter:off
+		@JsonProperty("type") EventType type,
+		@JsonProperty("index") Integer index,
+		@JsonProperty("content_block") ContentBlockBody contentBlock) implements StreamEvent {
 
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
@@ -854,16 +864,17 @@ public class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockBody {
 		}
-    }// @formatter:on
+	}
+	// @formatter:on
 
 	// MESSAGE DELTA EVENT
 
 	@JsonInclude(Include.NON_NULL)
-	public record ContentBlockDeltaEvent(// @formatter:off
-        @JsonProperty("type") EventType type,
-        @JsonProperty("index") Integer index,
+	public record ContentBlockDeltaEvent(
+	// @formatter:off
+		@JsonProperty("type") EventType type,
+		@JsonProperty("index") Integer index,
 		@JsonProperty("delta") ContentBlockDeltaBody delta) implements StreamEvent {
-
 
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
@@ -884,66 +895,78 @@ public class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("partial_json") String partialJson) implements ContentBlockDeltaBody {
 		}
-	}// @formatter:on
+	}
+	// @formatter:on
 
 	// MESSAGE STOP EVENT
 
 	@JsonInclude(Include.NON_NULL)
-	public record ContentBlockStopEvent(// @formatter:off
-        @JsonProperty("type") EventType type,
-        @JsonProperty("index") Integer index) implements StreamEvent {
-    }// @formatter:on
+	public record ContentBlockStopEvent(
+	// @formatter:off
+		@JsonProperty("type") EventType type,
+		@JsonProperty("index") Integer index) implements StreamEvent {
+	}
+	// @formatter:on
 
 	@JsonInclude(Include.NON_NULL)
 	public record MessageStartEvent(// @formatter:off
-        @JsonProperty("type") EventType type,
-        @JsonProperty("message") ChatCompletionResponse message) implements StreamEvent {
-    }// @formatter:on
+		@JsonProperty("type") EventType type,
+		@JsonProperty("message") ChatCompletionResponse message) implements StreamEvent {
+	}
+	// @formatter:on
 
 	@JsonInclude(Include.NON_NULL)
-	public record MessageDeltaEvent(// @formatter:off
-        @JsonProperty("type") EventType type,
-        @JsonProperty("delta") MessageDelta delta,
-        @JsonProperty("usage") MessageDeltaUsage usage) implements StreamEvent {
+	public record MessageDeltaEvent(
+	// @formatter:off
+		@JsonProperty("type") EventType type,
+		@JsonProperty("delta") MessageDelta delta,
+		@JsonProperty("usage") MessageDeltaUsage usage) implements StreamEvent {
 
-        @JsonInclude(Include.NON_NULL)
-        public record MessageDelta(
-            @JsonProperty("stop_reason") String stopReason,
-            @JsonProperty("stop_sequence") String stopSequence) {
+		@JsonInclude(Include.NON_NULL)
+		public record MessageDelta(
+			@JsonProperty("stop_reason") String stopReason,
+			@JsonProperty("stop_sequence") String stopSequence) {
 		}
 
 		@JsonInclude(Include.NON_NULL)
 		public record MessageDeltaUsage(
-            @JsonProperty("output_tokens") Integer outputTokens) {
-        }
-    }// @formatter:on
+			@JsonProperty("output_tokens") Integer outputTokens) {
+		}
+	}
+	// @formatter:on
 
 	@JsonInclude(Include.NON_NULL)
-	public record MessageStopEvent(// @formatter:off
-        @JsonProperty("type") EventType type) implements StreamEvent {
-    }// @formatter:on
+	public record MessageStopEvent(
+	// @formatter:off
+		@JsonProperty("type") EventType type) implements StreamEvent {
+	}
+	// @formatter:on
 
 	///////////////////////////////////////
 	/// ERROR EVENT
 	///////////////////////////////////////
 	@JsonInclude(Include.NON_NULL)
-	public record ErrorEvent(// @formatter:off
-        @JsonProperty("type") EventType type,
-        @JsonProperty("error") Error error) implements StreamEvent {
+	public record ErrorEvent(
+	// @formatter:off
+		@JsonProperty("type") EventType type,
+		@JsonProperty("error") Error error) implements StreamEvent {
 
-        @JsonInclude(Include.NON_NULL)
-        public record Error(
-            @JsonProperty("type") String type,
-            @JsonProperty("message") String message) {
-        }
-    }// @formatter:on
+		@JsonInclude(Include.NON_NULL)
+		public record Error(
+			@JsonProperty("type") String type,
+			@JsonProperty("message") String message) {
+		}
+	}
+	// @formatter:on
 
 	///////////////////////////////////////
 	/// PING EVENT
 	///////////////////////////////////////
 	@JsonInclude(Include.NON_NULL)
-	public record PingEvent(// @formatter:off
-        @JsonProperty("type") EventType type) implements StreamEvent {
-    }// @formatter:on
+	public record PingEvent(
+	// @formatter:off
+		@JsonProperty("type") EventType type) implements StreamEvent {
+	}
+	// @formatter:on
 
 }

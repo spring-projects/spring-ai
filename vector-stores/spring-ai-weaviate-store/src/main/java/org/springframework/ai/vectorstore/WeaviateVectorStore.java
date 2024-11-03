@@ -487,7 +487,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String objectClass = "SpringAiWeaviate";
 

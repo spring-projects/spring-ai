@@ -43,8 +43,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
 /**
  * @author Chris Smith
  * @author Soby Chacko
@@ -190,7 +188,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
-		Query query = new Query(where(ID_FIELD_NAME).in(idList));
+		Query query = new Query(org.springframework.data.mongodb.core.query.Criteria.where(ID_FIELD_NAME).in(idList));
 
 		var deleteRes = this.mongoTemplate.remove(query, this.config.collectionName);
 		long deleteCount = deleteRes.getDeletedCount();
@@ -236,7 +234,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			.withFieldName(this.config.pathName);
 	}
 
-	public static class MongoDBVectorStoreConfig {
+	public static final class MongoDBVectorStoreConfig {
 
 		private final String collectionName;
 
@@ -264,7 +262,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			return builder().build();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String collectionName = DEFAULT_VECTOR_COLLECTION_NAME;
 

@@ -28,5 +28,6 @@
 	<suppress files="FiltersParser\.java" checks="AvoidNestedBlocks"/>
 	<suppress files="FiltersParser\.java" checks="MultipleVariableDeclarations"/>
 	<suppress files="FiltersLexer\.java" checks="MultipleVariableDeclarations"/>
+	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
 
 </suppressions>

@@ -35,8 +35,9 @@ public class VertexAiGeminiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(VertexAiGeminiChatModel.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(VertexAiGeminiChatModel.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

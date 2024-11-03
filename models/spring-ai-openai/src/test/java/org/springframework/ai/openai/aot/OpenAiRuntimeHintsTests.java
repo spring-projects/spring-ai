@@ -25,8 +25,6 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
-import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 class OpenAiRuntimeHintsTests {
 
@@ -36,9 +34,11 @@ class OpenAiRuntimeHintsTests {
 		OpenAiRuntimeHints openAiRuntimeHints = new OpenAiRuntimeHints();
 		openAiRuntimeHints.registerHints(runtimeHints, null);
 
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(OpenAiApi.class);
+		Set<TypeReference> jsonAnnotatedClasses = org.springframework.ai.aot.AiRuntimeHints
+			.findJsonAnnotatedClassesInPackage(OpenAiApi.class);
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
-			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
+			assertThat(runtimeHints).matches(org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection()
+				.onType(jsonAnnotatedClass));
 		}
 	}
 

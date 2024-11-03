@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.util.Collections;
@@ -110,27 +111,27 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 					document.getId());
 			String content = document.getContent().replaceAll("\\s+", " ");
 			String embedding = getEmbedding(document);
-			repository.save(config.getTableName(), document.getId(), embedding, content);
+			this.repository.save(this.config.getTableName(), document.getId(), embedding, content);
 		}
 		logger.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
 	}
 
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
-		int deleteCount = repository.deleteEmbeddingsById(config.getTableName(), idList);
+		int deleteCount = this.repository.deleteEmbeddingsById(this.config.getTableName(), idList);
 		logger.info("{} embeddings deleted", deleteCount);
 		return Optional.of(deleteCount == idList.size());
 	}
 
 	public int purgeEmbeddings() {
-		int deleteCount = repository.deleteAllEmbeddings(config.getTableName());
+		int deleteCount = this.repository.deleteAllEmbeddings(this.config.getTableName());
 		logger.info("{} embeddings deleted", deleteCount);
 		return deleteCount;
 	}
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return similaritySearch(SearchRequest.query(query).withTopK(config.getTopK()));
+		return similaritySearch(SearchRequest.query(query).withTopK(this.config.getTopK()));
 	}
 
 	@Override
@@ -141,8 +142,8 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		}
 
 		String queryEmbedding = getEmbedding(request);
-		List<? extends HanaVectorEntity> searchResult = repository.cosineSimilaritySearch(config.getTableName(),
-				request.getTopK(), queryEmbedding);
+		List<? extends HanaVectorEntity> searchResult = this.repository
+			.cosineSimilaritySearch(this.config.getTableName(), request.getTopK(), queryEmbedding);
 		logger.info("Hana cosine-similarity for query={}, with topK={} returned {} results", request.getQuery(),
 				request.getTopK(), searchResult.size());
 

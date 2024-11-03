@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// @formatter:off
+
 package org.springframework.ai.bedrock.jurassic2.api;
+
+// @formatter:off
 
 import java.time.Duration;
 import java.util.List;

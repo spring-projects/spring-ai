@@ -71,12 +71,12 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	public static final String DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536 = """
 			{
-			   "properties":{
-			      "embedding":{
-			         "type":"knn_vector",
-			         "dimension":1536
-			      }
-			   }
+				"properties":{
+					"embedding":{
+						"type":"knn_vector",
+						"dimension":1536
+					}
+				}
 			}
 			""";
 
@@ -154,8 +154,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		for (String id : idList)
+		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
+		}
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
 

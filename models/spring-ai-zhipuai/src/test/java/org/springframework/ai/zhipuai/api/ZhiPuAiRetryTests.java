@@ -59,7 +59,7 @@ import org.springframework.retry.support.RetryTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Geng Rong
@@ -101,13 +101,13 @@ public class ZhiPuAiRetryTests {
 
 		var choice = new ChatCompletion.Choice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
-		ChatCompletion expectedChatCompletion = new ChatCompletion("id", List.of(choice), 666l, "model", null, null,
+		ChatCompletion expectedChatCompletion = new ChatCompletion("id", List.of(choice), 666L, "model", null, null,
 				new ZhiPuAiApi.Usage(10, 10, 10));
 
-		when(this.zhiPuAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
+		given(this.zhiPuAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
 		var result = this.chatModel.call(new Prompt("text"));
 
@@ -119,8 +119,8 @@ public class ZhiPuAiRetryTests {
 
 	@Test
 	public void zhiPuAiChatNonTransientError() {
-		when(this.zhiPuAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.zhiPuAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
 	}
 
@@ -129,13 +129,13 @@ public class ZhiPuAiRetryTests {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
-		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666l, "model", null,
+		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666L, "model", null,
 				null);
 
-		when(this.zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(Flux.just(expectedChatCompletion));
+		given(this.zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(Flux.just(expectedChatCompletion));
 
 		var result = this.chatModel.stream(new Prompt("text"));
 
@@ -147,8 +147,8 @@ public class ZhiPuAiRetryTests {
 
 	@Test
 	public void zhiPuAiChatStreamNonTransientError() {
-		when(this.zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.stream(new Prompt("text")).collectList().block());
 	}
 
@@ -158,10 +158,10 @@ public class ZhiPuAiRetryTests {
 		EmbeddingList<Embedding> expectedEmbeddings = new EmbeddingList<>("list",
 				List.of(new Embedding(0, new float[] { 9.9f, 8.8f })), "model", new ZhiPuAiApi.Usage(10, 10, 10));
 
-		when(this.zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
+		given(this.zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
 
 		var result = this.embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
@@ -174,8 +174,8 @@ public class ZhiPuAiRetryTests {
 
 	@Test
 	public void zhiPuAiEmbeddingNonTransientError() {
-		when(this.zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}
@@ -183,12 +183,12 @@ public class ZhiPuAiRetryTests {
 	@Test
 	public void zhiPuAiImageTransientError() {
 
-		var expectedResponse = new ZhiPuAiImageResponse(678l, List.of(new Data("url678")));
+		var expectedResponse = new ZhiPuAiImageResponse(678L, List.of(new Data("url678")));
 
-		when(this.zhiPuAiImageApi.createImage(isA(ZhiPuAiImageRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(ResponseEntity.of(Optional.of(expectedResponse)));
+		given(this.zhiPuAiImageApi.createImage(isA(ZhiPuAiImageRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(ResponseEntity.of(Optional.of(expectedResponse)));
 
 		var result = this.imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message"))));
 
@@ -200,8 +200,8 @@ public class ZhiPuAiRetryTests {
 
 	@Test
 	public void zhiPuAiImageNonTransientError() {
-		when(this.zhiPuAiImageApi.createImage(isA(ZhiPuAiImageRequest.class)))
-			.thenThrow(new RuntimeException("Transient Error 1"));
+		given(this.zhiPuAiImageApi.createImage(isA(ZhiPuAiImageRequest.class)))
+			.willThrow(new RuntimeException("Transient Error 1"));
 		assertThrows(RuntimeException.class,
 				() -> this.imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
 	}

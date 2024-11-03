@@ -136,7 +136,7 @@ public class PaymentStatusFunctionCallingIT {
 			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.LARGE.getValue()));
 
 		var responseContent = response.getBody().choices().get(0).message().content();
-		this.logger.info("Final response: " + responseContent);
+		logger.info("Final response: " + responseContent);
 
 		assertThat(responseContent).containsIgnoringCase("T1001");
 		assertThat(responseContent).containsIgnoringCase("Paid");

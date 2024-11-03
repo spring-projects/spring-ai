@@ -36,16 +36,14 @@ class ChatClientObservationAutoConfigurationTests {
 
 	@Test
 	void inputContentFilterDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(ChatClientInputContentObservationFilter.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ChatClientInputContentObservationFilter.class));
 	}
 
 	@Test
 	void inputContentFilterEnabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.client.observations.include-input=true").run(context -> {
-			assertThat(context).hasSingleBean(ChatClientInputContentObservationFilter.class);
-		});
+		this.contextRunner.withPropertyValues("spring.ai.chat.client.observations.include-input=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatClientInputContentObservationFilter.class));
 	}
 
 }

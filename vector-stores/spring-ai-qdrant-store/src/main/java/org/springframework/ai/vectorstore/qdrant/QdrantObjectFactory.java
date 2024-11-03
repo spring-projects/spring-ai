@@ -32,7 +32,7 @@ import org.springframework.util.Assert;
  * @author Anush Shetty
  * @since 0.8.1
  */
-class QdrantObjectFactory {
+final class QdrantObjectFactory {
 
 	private static final Log logger = LogFactory.getLog(QdrantObjectFactory.class);
 

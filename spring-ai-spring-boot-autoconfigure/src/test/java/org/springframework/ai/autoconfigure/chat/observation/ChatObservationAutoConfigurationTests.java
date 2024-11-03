@@ -44,30 +44,25 @@ class ChatObservationAutoConfigurationTests {
 
 	@Test
 	void meterObservationHandlerEnabled() {
-		this.contextRunner.withBean(CompositeMeterRegistry.class).run(context -> {
-			assertThat(context).hasSingleBean(ChatModelMeterObservationHandler.class);
-		});
+		this.contextRunner.withBean(CompositeMeterRegistry.class)
+			.run(context -> assertThat(context).hasSingleBean(ChatModelMeterObservationHandler.class));
 	}
 
 	@Test
 	void meterObservationHandlerDisabled() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(ChatModelMeterObservationHandler.class);
-		});
+		this.contextRunner.run(context -> assertThat(context).doesNotHaveBean(ChatModelMeterObservationHandler.class));
 	}
 
 	@Test
 	void promptFilterDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationFilter.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationFilter.class));
 	}
 
 	@Test
 	void promptHandlerDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class));
 	}
 
 	@Test
@@ -75,30 +70,25 @@ class ChatObservationAutoConfigurationTests {
 		this.contextRunner
 			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
 			.withPropertyValues("spring.ai.chat.observations.include-prompt=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(ChatModelPromptContentObservationHandler.class);
-			});
+			.run(context -> assertThat(context).hasSingleBean(ChatModelPromptContentObservationHandler.class));
 	}
 
 	@Test
 	void promptHandlerDisabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-prompt=true").run(context -> {
-			assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class);
-		});
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-prompt=true")
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class));
 	}
 
 	@Test
 	void completionFilterDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(ChatModelCompletionObservationFilter.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelCompletionObservationFilter.class));
 	}
 
 	@Test
 	void completionHandlerDefault() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(ChatModelCompletionObservationHandler.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelCompletionObservationHandler.class));
 	}
 
 	@Test
@@ -106,16 +96,13 @@ class ChatObservationAutoConfigurationTests {
 		this.contextRunner
 			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
 			.withPropertyValues("spring.ai.chat.observations.include-completion=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(ChatModelCompletionObservationHandler.class);
-			});
+			.run(context -> assertThat(context).hasSingleBean(ChatModelCompletionObservationHandler.class));
 	}
 
 	@Test
 	void completionHandlerDisabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-completion=true").run(context -> {
-			assertThat(context).doesNotHaveBean(ChatModelCompletionObservationHandler.class);
-		});
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-completion=true")
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelCompletionObservationHandler.class));
 	}
 
 }

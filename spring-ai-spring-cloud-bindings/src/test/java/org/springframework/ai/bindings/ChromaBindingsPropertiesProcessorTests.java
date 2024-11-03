@@ -27,7 +27,6 @@ import org.springframework.cloud.bindings.Bindings;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH;
 
 /**
  * Unit tests for {@link ChromaBindingsPropertiesProcessor}.
@@ -38,12 +37,12 @@ class ChromaBindingsPropertiesProcessorTests {
 
 	private final Bindings bindings = new Bindings(new Binding("test-name", Paths.get("test-path"),
 	// @formatter:off
-            Map.of(
+			Map.of(
 				Binding.TYPE, ChromaBindingsPropertiesProcessor.TYPE,
 				"uri", "https://example.net:8000",
 				"username", "itsme",
 				"password", "youknowit"
-            )));
+			)));
 	// @formatter:on
 
 	private final MockEnvironment environment = new MockEnvironment();
@@ -61,7 +60,8 @@ class ChromaBindingsPropertiesProcessorTests {
 
 	@Test
 	void whenDisabledThenPropertiesAreNotContributed() {
-		this.environment.setProperty("%s.chroma.enabled".formatted(CONFIG_PATH), "false");
+		this.environment.setProperty(
+				"%s.chroma.enabled".formatted(org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH), "false");
 
 		new ChromaBindingsPropertiesProcessor().process(this.environment, this.bindings, this.properties);
 		assertThat(this.properties).isEmpty();

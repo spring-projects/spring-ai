@@ -102,7 +102,7 @@ public class TitanEmbeddingBedrockApi extends
 		/**
 		 * amazon.titan-embed-text-v2
 		 */
-		TITAN_EMBED_TEXT_V2("amazon.titan-embed-text-v2:0");;
+		TITAN_EMBED_TEXT_V2("amazon.titan-embed-text-v2:0");
 
 		private final String id;
 

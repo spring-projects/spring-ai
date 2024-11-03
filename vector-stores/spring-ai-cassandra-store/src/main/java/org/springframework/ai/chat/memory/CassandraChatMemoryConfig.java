@@ -213,7 +213,7 @@ public final class CassandraChatMemoryConfig {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private CqlSession session = null;
 
@@ -236,7 +236,7 @@ public final class CassandraChatMemoryConfig {
 
 		private boolean disallowSchemaChanges = false;
 
-		private SessionIdToPrimaryKeysTranslator primaryKeyTranslator = (sessionId) -> List.of(sessionId);
+		private SessionIdToPrimaryKeysTranslator primaryKeyTranslator = List::of;
 
 		private Builder() {
 		}

@@ -1,0 +1,28 @@
+{
+  "groups": [
+	{
+	  "name": "spring.ai.azure.openai.chat.options.enhancements",
+	  "type": "com.azure.ai.openai.models.AzureChatEnhancementConfiguration",
+	  "sourceType": "org.springframework.ai.azure.openai.AzureOpenAiChatOptions",
+	  "sourceMethod": "getEnhancements()"
+	},
+	{
+	  "name": "spring.ai.mistralai.chat.options.tool-choice",
+	  "type": "org.springframework.ai.mistralai.api.MistralAiApi$ChatCompletionRequest$ToolChoice",
+	  "sourceType": "org.springframework.ai.mistralai.MistralAiChatOptions"
+	}
+  ],
+  "properties": [
+	{
+	  "name": "spring.ai.azure.openai.chat.options.enhancements.grounding",
+	  "type": "com.azure.ai.openai.models.AzureChatGroundingEnhancementConfiguration",
+	  "sourceType": "com.azure.ai.openai.models.AzureChatEnhancementConfiguration"
+	},
+	{
+	  "name": "spring.ai.azure.openai.chat.options.enhancements.ocr",
+	  "type": "com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration",
+	  "sourceType": "com.azure.ai.openai.models.AzureChatEnhancementConfiguration"
+	}
+  ],
+  "hints": []
+}

@@ -169,10 +169,11 @@ public class OpenAiImageModel implements ImageModel {
 			return new ImageResponse(List.of());
 		}
 
-		List<ImageGeneration> imageGenerationList = imageApiResponse.data().stream().map(entry -> {
-			return new ImageGeneration(new Image(entry.url(), entry.b64Json()),
-					new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
-		}).toList();
+		List<ImageGeneration> imageGenerationList = imageApiResponse.data()
+			.stream()
+			.map(entry -> new ImageGeneration(new Image(entry.url(), entry.b64Json()),
+					new OpenAiImageGenerationMetadata(entry.revisedPrompt())))
+			.toList();
 
 		ImageResponseMetadata openAiImageResponseMetadata = new ImageResponseMetadata(imageApiResponse.created());
 		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);

@@ -29,12 +29,10 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-import static org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingModelProperties.CONFIG_PREFIX;
-
 /**
  * @author Christian Tzolov
  */
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingModelProperties.CONFIG_PREFIX)
 public class TransformersEmbeddingModelProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.embedding.transformer";

@@ -65,13 +65,13 @@ public class FunctionCallbackInPromptIT {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName("CurrentWeatherService")
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build();
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 			});
@@ -94,7 +94,7 @@ public class FunctionCallbackInPromptIT {
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName("CurrentWeatherService")
 						.withDescription("Get the weather in location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.withResponseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build();
 
@@ -108,7 +108,7 @@ public class FunctionCallbackInPromptIT {
 					.map(Generation::getOutput)
 					.map(AssistantMessage::getContent)
 					.collect(Collectors.joining());
-				this.logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
 			});

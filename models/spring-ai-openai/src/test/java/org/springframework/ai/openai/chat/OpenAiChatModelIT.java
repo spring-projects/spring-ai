@@ -121,9 +121,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		});
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		IntStream.rangeClosed(1, 1000).forEach(n -> {
-			assertThat(answer).contains(String.valueOf(n));
-		});
+		IntStream.rangeClosed(1, 1000).forEach(n -> assertThat(answer).contains(String.valueOf(n)));
 	}
 
 	@Test
@@ -333,7 +331,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -358,7 +356,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 

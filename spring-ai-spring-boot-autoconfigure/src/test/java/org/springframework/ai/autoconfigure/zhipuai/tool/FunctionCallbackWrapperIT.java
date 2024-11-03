@@ -70,7 +70,7 @@ public class FunctionCallbackWrapperIT {
 			ChatResponse response = chatModel.call(
 					new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withFunction("WeatherInfo").build()));
 
-			this.logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
@@ -97,7 +97,7 @@ public class FunctionCallbackWrapperIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
-			this.logger.info("Response: {}", content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");
@@ -115,7 +115,7 @@ public class FunctionCallbackWrapperIT {
 			return FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("WeatherInfo")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build();
 		}
 

@@ -307,8 +307,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						@SuppressWarnings("null")
 						String id = chatCompletion2.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {// @formatter:off
-							
+						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(id, choice.message().role().name());
 							}
@@ -347,9 +346,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				}
 			})
 			.doOnError(observation::error)
-			.doFinally(s -> {
-				observation.stop();
-			})
+			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
@@ -454,10 +451,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
-				toolMessage.getResponses().forEach(response -> {
-					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
-				});
-
+				toolMessage.getResponses()
+					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),

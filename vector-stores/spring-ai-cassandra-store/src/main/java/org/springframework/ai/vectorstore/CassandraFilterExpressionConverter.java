@@ -44,10 +44,10 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 
 	private final Map<String, ColumnMetadata> columnsByName;
 
-	public CassandraFilterExpressionConverter(Collection<ColumnMetadata> columns) {
+	CassandraFilterExpressionConverter(Collection<ColumnMetadata> columns) {
 
 		this.columnsByName = columns.stream()
-			.collect(Collectors.toMap((c) -> c.getName().asInternal(), Function.identity()));
+			.collect(Collectors.toMap(c -> c.getName().asInternal(), Function.identity()));
 	}
 
 	private static void doOperand(ExpressionType type, StringBuilder context) {

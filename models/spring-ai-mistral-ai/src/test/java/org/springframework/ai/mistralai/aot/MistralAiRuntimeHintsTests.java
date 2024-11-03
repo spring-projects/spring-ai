@@ -25,7 +25,6 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 class MistralAiRuntimeHintsTests {
@@ -36,7 +35,8 @@ class MistralAiRuntimeHintsTests {
 		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
 		mistralAiRuntimeHints.registerHints(runtimeHints, null);
 
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(MistralAiApi.class);
+		Set<TypeReference> jsonAnnotatedClasses = org.springframework.ai.aot.AiRuntimeHints
+			.findJsonAnnotatedClassesInPackage(MistralAiApi.class);
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
 		}
