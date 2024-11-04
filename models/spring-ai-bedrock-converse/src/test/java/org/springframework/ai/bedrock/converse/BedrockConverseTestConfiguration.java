@@ -18,12 +18,12 @@ package org.springframework.ai.bedrock.converse;
 
 import java.time.Duration;
 
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
-
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 @SpringBootConfiguration
 public class BedrockConverseTestConfiguration {

@@ -39,7 +39,6 @@
 	<properties>
 		<maven.compiler.target>17</maven.compiler.target>
 		<maven.compiler.source>17</maven.compiler.source>
-		<disable.checks>false</disable.checks>
 		<!-- testing -->
 		<hikari-cp.version>4.0.3</hikari-cp.version>
 	</properties>

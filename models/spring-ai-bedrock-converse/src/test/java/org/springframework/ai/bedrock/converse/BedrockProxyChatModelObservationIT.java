@@ -16,8 +16,6 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +42,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for observation instrumentation in {@link BedrockProxyChatModel}.

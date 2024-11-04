@@ -111,7 +111,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		private Document.Builder currentDocumentBuilder;
 
-		public DocumentVisitor(MarkdownDocumentReaderConfig config) {
+		DocumentVisitor(MarkdownDocumentReaderConfig config) {
 			this.config = config;
 		}
 

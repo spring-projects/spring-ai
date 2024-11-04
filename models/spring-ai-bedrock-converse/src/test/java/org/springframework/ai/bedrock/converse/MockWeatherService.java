@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		 */
 		public final String unitName;
 
-		private Unit(String text) {
+		Unit(String text) {
 			this.unitName = text;
 		}
 
