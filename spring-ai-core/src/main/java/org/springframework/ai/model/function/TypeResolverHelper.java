@@ -16,21 +16,31 @@
 
 package org.springframework.ai.model.function;
 
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import net.jodah.typetools.TypeResolver;
+import kotlin.jvm.functions.Function1;
+import kotlin.jvm.functions.Function2;
 
-import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.KotlinDetector;
+import org.springframework.core.ResolvableType;
+import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * A utility class that provides methods for resolving types and classes related to
  * functions.
  *
  * @author Christian Tzolov
+ * @author Sebastien Dekeuze
  */
 public abstract class TypeResolverHelper {
 
@@ -68,12 +78,9 @@ public abstract class TypeResolverHelper {
 	 * @return The class of the specified function argument.
 	 */
 	public static Class<?> getFunctionArgumentClass(Class<? extends Function<?, ?>> functionClass, int argumentIndex) {
-		Type type = TypeResolver.reify(Function.class, functionClass);
-
-		var argumentType = type instanceof ParameterizedType
-				? ((ParameterizedType) type).getActualTypeArguments()[argumentIndex] : Object.class;
-
-		return toRawClass(argumentType);
+		ResolvableType resolvableType = ResolvableType.forClass(functionClass).as(Function.class);
+		return (resolvableType == ResolvableType.NONE ? Object.class
+				: resolvableType.getGeneric(argumentIndex).toClass());
 	}
 
 	/**
@@ -84,80 +91,139 @@ public abstract class TypeResolverHelper {
 	 */
 	public static Class<?> getBiFunctionArgumentClass(Class<? extends BiFunction<?, ?, ?>> biFunctionClass,
 			int argumentIndex) {
-		Type type = TypeResolver.reify(BiFunction.class, biFunctionClass);
-
-		Type argumentType = type instanceof ParameterizedType
-				? ((ParameterizedType) type).getActualTypeArguments()[argumentIndex] : Object.class;
-
-		return toRawClass(argumentType);
+		ResolvableType resolvableType = ResolvableType.forClass(biFunctionClass).as(BiFunction.class);
+		return (resolvableType == ResolvableType.NONE ? Object.class
+				: resolvableType.getGeneric(argumentIndex).toClass());
 	}
 
 	/**
-	 * Returns the input type of a given function class.
-	 * @param functionClass The class of the function.
-	 * @return The input type of the function.
+	 * Resolve bean type, either directly with {@link BeanDefinition#getResolvableType()}
+	 * or by resolving the factory method (duplicating
+	 * {@code ConstructorResolver#resolveFactoryMethodIfPossible} logic as it is not
+	 * public).
+	 * @param applicationContext The application context.
+	 * @param beanName The name of the bean to find a definition for.
+	 * @return The resolved type.
+	 * @throws IllegalArgumentException if the type of the bean definition is not
+	 * resolvable.
 	 */
-	public static Type getFunctionInputType(Class<? extends Function<?, ?>> functionClass) {
-		return getFunctionArgumentType(functionClass, 0);
+	public static ResolvableType resolveBeanType(GenericApplicationContext applicationContext, String beanName) {
+		BeanDefinition beanDefinition;
+		try {
+			beanDefinition = applicationContext.getBeanDefinition(beanName);
+		}
+		catch (NoSuchBeanDefinitionException ex) {
+			throw new IllegalArgumentException(
+					"Functional bean with name " + beanName + " does not exist in the context.");
+		}
+		ResolvableType functionType = beanDefinition.getResolvableType();
+		Class<?> resolvableClass = functionType.resolve();
+		if (resolvableClass != null) {
+			return functionType;
+		}
+		if (beanDefinition instanceof RootBeanDefinition rootBeanDefinition) {
+			Class<?> factoryClass;
+			boolean isStatic;
+			if (rootBeanDefinition.getFactoryBeanName() != null) {
+				factoryClass = applicationContext.getBeanFactory().getType(rootBeanDefinition.getFactoryBeanName());
+				isStatic = false;
+			}
+			else {
+				factoryClass = rootBeanDefinition.getBeanClass();
+				isStatic = true;
+			}
+			Assert.state(factoryClass != null, "Unresolvable factory class");
+			factoryClass = ClassUtils.getUserClass(factoryClass);
+
+			Method[] candidates = getCandidateMethods(factoryClass, rootBeanDefinition);
+			Method uniqueCandidate = null;
+			for (Method candidate : candidates) {
+				if ((!isStatic || isStaticCandidate(candidate, factoryClass))
+						&& rootBeanDefinition.isFactoryMethod(candidate)) {
+					if (uniqueCandidate == null) {
+						uniqueCandidate = candidate;
+					}
+					else if (isParamMismatch(uniqueCandidate, candidate)) {
+						uniqueCandidate = null;
+						break;
+					}
+				}
+			}
+			rootBeanDefinition.setResolvedFactoryMethod(uniqueCandidate);
+			return rootBeanDefinition.getResolvableType();
+		}
+		throw new IllegalArgumentException("Impossible to resolve the type of bean " + beanName);
 	}
 
-	/**
-	 * Retrieves the output type of a given function class.
-	 * @param functionClass The function class.
-	 * @return The output type of the function.
-	 */
-	public static Type getFunctionOutputType(Class<? extends Function<?, ?>> functionClass) {
-		return getFunctionArgumentType(functionClass, 1);
+	static private Method[] getCandidateMethods(Class<?> factoryClass, RootBeanDefinition mbd) {
+		return (mbd.isNonPublicAccessAllowed() ? ReflectionUtils.getUniqueDeclaredMethods(factoryClass)
+				: factoryClass.getMethods());
+	}
+
+	static private boolean isStaticCandidate(Method method, Class<?> factoryClass) {
+		return (Modifier.isStatic(method.getModifiers()) && method.getDeclaringClass() == factoryClass);
+	}
+
+	static private boolean isParamMismatch(Method uniqueCandidate, Method candidate) {
+		int uniqueCandidateParameterCount = uniqueCandidate.getParameterCount();
+		int candidateParameterCount = candidate.getParameterCount();
+		return (uniqueCandidateParameterCount != candidateParameterCount
+				|| !Arrays.equals(uniqueCandidate.getParameterTypes(), candidate.getParameterTypes()));
 	}
 
 	/**
 	 * Retrieves the type of a specific argument in a given function class.
-	 * @param functionClass The function class.
-	 * @param argumentIndex The index of the argument whose type should be retrieved.
-	 * @return The type of the specified function argument.
-	 */
-	public static Type getFunctionArgumentType(Class<? extends Function<?, ?>> functionClass, int argumentIndex) {
-		Type functionType = TypeResolver.reify(Function.class, functionClass);
-		return getFunctionArgumentType(functionType, argumentIndex);
-	}
-
-	/**
-	 * Retrieves the type of a specific argument in a given function type.
 	 * @param functionType The function type.
 	 * @param argumentIndex The index of the argument whose type should be retrieved.
 	 * @return The type of the specified function argument.
+	 * @throws IllegalArgumentException if functionType is not a supported type
 	 */
-	public static Type getFunctionArgumentType(Type functionType, int argumentIndex) {
+	public static ResolvableType getFunctionArgumentType(ResolvableType functionType, int argumentIndex) {
 
-		// Resolves: https://github.com/spring-projects/spring-ai/issues/726
-		if (!(functionType instanceof ParameterizedType)) {
-			Class<?> functionalClass = FunctionTypeUtils.getRawType(functionType);
-			// Resolves: https://github.com/spring-projects/spring-ai/issues/1576
-			if (BiFunction.class.isAssignableFrom(functionalClass)) {
-				functionType = TypeResolver.reify(BiFunction.class, (Class<BiFunction<?, ?, ?>>) functionalClass);
+		Class<?> resolvableClass = functionType.toClass();
+		ResolvableType functionArgumentResolvableType = ResolvableType.NONE;
+
+		if (Function.class.isAssignableFrom(resolvableClass)) {
+			functionArgumentResolvableType = functionType.as(Function.class);
+		}
+		else if (BiFunction.class.isAssignableFrom(resolvableClass)) {
+			functionArgumentResolvableType = functionType.as(BiFunction.class);
+		}
+		else if (KotlinDetector.isKotlinPresent()) {
+			if (KotlinDelegate.isKotlinFunction(resolvableClass)) {
+				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinFunctionType(functionType);
 			}
-			else {
-				functionType = FunctionTypeUtils.discoverFunctionTypeFromClass(functionalClass);
+			else if (KotlinDelegate.isKotlinBiFunction(resolvableClass)) {
+				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinBiFunctionType(functionType);
 			}
 		}
 
-		var argumentType = functionType instanceof ParameterizedType
-				? ((ParameterizedType) functionType).getActualTypeArguments()[argumentIndex] : Object.class;
+		if (functionArgumentResolvableType == ResolvableType.NONE) {
+			throw new IllegalArgumentException(
+					"Type must be a Function, BiFunction, Function1 or Function2. Found: " + functionType);
+		}
 
-		return argumentType;
+		return functionArgumentResolvableType.getGeneric(argumentIndex);
 	}
 
-	/**
-	 * Effectively converts {@link Type} which could be {@link ParameterizedType} to raw
-	 * Class (no generics).
-	 * @param type actual {@link Type} instance
-	 * @return instance of {@link Class} as raw representation of the provided
-	 * {@link Type}
-	 */
-	public static Class<?> toRawClass(Type type) {
-		return type != null
-				? TypeResolver.resolveRawClass(type instanceof GenericArrayType ? type : TypeResolver.reify(type), null)
-				: null;
+	private static class KotlinDelegate {
+
+		public static boolean isKotlinFunction(Class<?> clazz) {
+			return Function1.class.isAssignableFrom(clazz);
+		}
+
+		public static ResolvableType adaptToKotlinFunctionType(ResolvableType resolvableType) {
+			return resolvableType.as(Function1.class);
+		}
+
+		public static boolean isKotlinBiFunction(Class<?> clazz) {
+			return Function2.class.isAssignableFrom(clazz);
+		}
+
+		public static ResolvableType adaptToKotlinBiFunctionType(ResolvableType resolvableType) {
+			return resolvableType.as(Function2.class);
+		}
+
 	}
 
 }
