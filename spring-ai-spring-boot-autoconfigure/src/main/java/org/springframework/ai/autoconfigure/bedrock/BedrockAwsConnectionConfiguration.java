@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.bedrock;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -43,6 +44,12 @@ public class BedrockAwsConnectionConfiguration {
 	public AwsCredentialsProvider credentialsProvider(BedrockAwsConnectionProperties properties) {
 
 		if (StringUtils.hasText(properties.getAccessKey()) && StringUtils.hasText(properties.getSecretKey())) {
+
+			if (StringUtils.hasText(properties.getSessionToken())) {
+				return StaticCredentialsProvider.create(AwsSessionCredentials.create(properties.getAccessKey(),
+						properties.getSecretKey(), properties.getSessionToken()));
+			}
+
 			return StaticCredentialsProvider
 				.create(AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey()));
 		}
@@ -61,9 +68,6 @@ public class BedrockAwsConnectionConfiguration {
 		return DefaultAwsRegionProviderChain.builder().build();
 	}
 
-	/**
-	 * @author Wei Jiang
-	 */
 	static class StaticRegionProvider implements AwsRegionProvider {
 
 		private final Region region;

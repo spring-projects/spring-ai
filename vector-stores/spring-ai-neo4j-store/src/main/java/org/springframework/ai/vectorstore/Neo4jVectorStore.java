@@ -119,7 +119,9 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 						WITH row, u
 						CALL db.create.setNodeVectorProperty(u, $embeddingProperty, row.embedding)
 					""".formatted(this.config.label, this.config.idProperty);
-			session.run(statement, Map.of("rows", rows, "embeddingProperty", this.config.embeddingProperty)).consume();
+			session.executeWrite(
+					tx -> tx.run(statement, Map.of("rows", rows, "embeddingProperty", this.config.embeddingProperty))
+						.consume());
 		}
 	}
 
@@ -128,6 +130,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
+			// Those queries with internal, cypher based transaction management cannot be
+			// run with executeWrite
 			var summary = session
 				.run("""
 						MATCH (n:%s) WHERE n.%s IN $ids
@@ -158,10 +162,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 					WHERE %s
 					RETURN node, score""".formatted(condition);
 
-			return session
+			return session.executeRead(tx -> tx
 				.run(query, Map.of("indexName", this.config.indexNameNotSanitized, "numberOfNearestNeighbours",
 						request.getTopK(), "embeddingValue", embedding, "threshold", request.getSimilarityThreshold()))
-				.list(this::recordToDocument);
+				.list(this::recordToDocument));
 		}
 	}
 
@@ -174,20 +178,22 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
-			session
-				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
-					.formatted(this.config.constraintName, this.config.label, this.config.idProperty))
-				.consume();
+			session.executeWriteWithoutResult(tx -> {
+				tx.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
+					.formatted(this.config.constraintName, this.config.label, this.config.idProperty)).consume();
 
-			var statement = """
-					CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
-							OPTIONS {indexConfig: {
-							`vector.dimensions`: %d,
-							`vector.similarity_function`: '%s'
-							}}
-					""".formatted(this.config.indexName, this.config.label, this.config.embeddingProperty,
-					this.config.embeddingDimension, this.config.distanceType.name);
-			session.run(statement).consume();
+				var statement = """
+						CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
+								OPTIONS {indexConfig: {
+								`vector.dimensions`: %d,
+								`vector.similarity_function`: '%s'
+								}}
+						""".formatted(this.config.indexName, this.config.label, this.config.embeddingProperty,
+						this.config.embeddingDimension, this.config.distanceType.name);
+				tx.run(statement).consume();
+			});
+
+			// Bad idea to retry this...
 			session.run("CALL db.awaitIndexes()").consume();
 		}
 	}

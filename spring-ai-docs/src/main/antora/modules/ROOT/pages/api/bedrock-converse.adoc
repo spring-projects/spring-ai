@@ -1,0 +1,168 @@
+= Bedrock Converse API
+
+link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html[Amazon Bedrock] Converse API provides a unified interface for conversational AI models with enhanced capabilities including function/tool calling, multimodal inputs, and streaming responses.
+
+The Bedrock Converse API has the following high-level features:
+
+* Tool/Function Calling: Support for function definitions and tool use during conversations
+* Multimodal Input: Ability to process both text and image inputs in conversations
+* Streaming Support: Real-time streaming of model responses
+* System Messages: Support for system-level instructions and context setting
+* Metrics Integration: Built-in support for observation and metrics tracking
+
+The https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted service.
+
+TIP: The Bedrock Converse API provides a unified interface across multiple model providers while handling AWS-specific authentication and infrastructure concerns.
+
+== Prerequisites
+
+Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+
+* Obtain AWS credentials: If you don't have an AWS account and AWS CLI configured yet, this video guide can help you configure it: link:https://youtu.be/gswVHTrRX8I?si=buaY7aeI0l3-bBVb[AWS CLI & SDK Setup in Less Than 4 Minutes!]. You should be able to obtain your access and security keys.
+
+* Enable the Models to use: Go to link:https://us-east-1.console.aws.amazon.com/bedrock/home[Amazon Bedrock] and from the link:https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess[Model Access] menu on the left, configure access to the models you are going to use.
+
+
+== Auto-configuration
+
+Add the `spring-ai-bedrock-converse-spring-boot-starter` dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-bedrock-converse-spring-boot-starter</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock-converse-spring-boot-starter'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+
+=== Chat Properties
+
+The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
+
+[cols="3,3,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.aws.region     | AWS region to use.  | us-east-1
+| spring.ai.bedrock.aws.timeout    | AWS timeout to use. | 5m
+| spring.ai.bedrock.aws.access-key | AWS access key.  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+| spring.ai.bedrock.aws.session-token | AWS session token for temporary credentials. | -
+|====
+
+The prefix `spring.ai.bedrock.converse.chat` is the property prefix that configures the chat model implementation for the Converse API.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.converse.chat.enabled | Enable Bedrock Converse chat model. | true
+| spring.ai.bedrock.converse.chat.options.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | anthropic.claude-3-sonnet-20240229-v1:0
+| spring.ai.bedrock.converse.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0] | 0.8
+| spring.ai.bedrock.converse.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. | AWS Bedrock default
+| spring.ai.bedrock.converse.chat.options.top-k | Number of token choices for generating the next token. | AWS Bedrock default
+| spring.ai.bedrock.converse.chat.options.max-tokens | Maximum number of tokens in the generated response. | 500
+|====
+
+== Runtime Options [[chat-options]]
+
+Use the portable `ChatOptions` or `FunctionCallingOptions` portable builders to create model configurations, such as temperature, maxToken, topP, etc.
+
+On start-up, the default options can be configured with the `BedrockConverseProxyChatModel(api, options)` constructor or the `spring.ai.bedrock.converse.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call:
+
+[source,java]
+----
+var options = FunctionCallingOptions.builder()
+        .withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
+        .withTemperature(0.6)
+        .withMaxTokens(300)
+        .withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new WeatherService())
+            .withName("getCurrentWeather")
+            .withDescription("Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+            .build()))
+        .build();
+
+ChatResponse response = chatModel.call(new Prompt("What is current weather in Amsterdam?", options));
+----
+
+== Tool/Function Calling
+
+The Bedrock Converse API supports function calling capabilities, allowing models to use tools during conversations. Here's an example of how to define and use functions:
+
+[source,java]
+----
+@Bean
+@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+public Function<Request, Response> weatherFunction() {
+    return new MockWeatherService();
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .function("weatherFunction")
+        .call()
+        .content();
+----
+
+== Sample Controller
+
+Create a new Spring Boot project and add the `spring-ai-bedrock-converse-spring-boot-starter` to your dependencies.
+
+Add an `application.properties` file under `src/main/resources`:
+
+[source,properties]
+----
+spring.ai.bedrock.aws.region=eu-central-1
+spring.ai.bedrock.aws.timeout=10m
+spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
+spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
+
+spring.ai.bedrock.converse.chat.options.temperature=0.8
+spring.ai.bedrock.converse.chat.options.top-k=15
+----
+
+Here's an example controller using the chat model:
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient.Builder builder) {
+        this.chatClient = builder.build();
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", this.chatClient.prompt(message).call().content());
+    }
+
+    @GetMapping("/ai/generateStream")
+    public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return this.chatClient.prompt(message).stream().content();
+    }
+}
+----
+

@@ -19,10 +19,11 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.bedrock.BedrockTestUtils;
+import org.springframework.ai.autoconfigure.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
@@ -35,17 +36,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
- * @since 0.8.0
+ * @author Mark Pollack
+ * @since 1.0.0
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class BedrockCohereEmbeddingAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true",
-				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
-				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
-				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
 				"spring.ai.bedrock.cohere.embedding.options.inputType=SEARCH_DOCUMENT",
 				"spring.ai.bedrock.cohere.embedding.options.truncate=NONE")
@@ -86,10 +84,10 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	@Test
 	public void propertiesTest() {
 
-		new ApplicationContextRunner()
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
 			.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
+					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 					"spring.ai.bedrock.cohere.embedding.model=MODEL_XYZ",
 					"spring.ai.bedrock.cohere.embedding.options.inputType=CLASSIFICATION",
 					"spring.ai.bedrock.cohere.embedding.options.truncate=START")
@@ -99,7 +97,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
 
 				assertThat(properties.isEnabled()).isTrue();
-				assertThat(awsProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
+				assertThat(awsProperties.getRegion()).isEqualTo(Region.US_EAST_1.id());
 				assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
 
 				assertThat(properties.getOptions().getInputType()).isEqualTo(InputType.CLASSIFICATION);
@@ -114,7 +112,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	public void embeddingDisabled() {
 
 		// It is disabled by default
-		new ApplicationContextRunner()
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();
@@ -122,7 +120,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 			});
 
 		// Explicitly enable the embedding auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true")
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
+			.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isNotEmpty();
@@ -130,7 +129,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 			});
 
 		// Explicitly disable the embedding auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=false")
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
+			.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=false")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();

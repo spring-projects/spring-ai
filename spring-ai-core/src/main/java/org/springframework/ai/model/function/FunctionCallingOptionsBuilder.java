@@ -26,6 +26,8 @@ import java.util.Set;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Builder for {@link FunctionCallingOptions}. Using the {@link FunctionCallingOptions}
@@ -289,6 +291,69 @@ public class FunctionCallingOptionsBuilder {
 				.withProxyToolCalls(this.proxyToolCalls)
 				.withToolContext(new HashMap<>(this.getToolContext()))
 				.build();
+		}
+
+		public PortableFunctionCallingOptions merge(FunctionCallingOptions options) {
+
+			var builder = PortableFunctionCallingOptions.builder()
+				.withModel(StringUtils.hasText(options.getModel()) ? options.getModel() : this.model)
+				.withFrequencyPenalty(
+						options.getFrequencyPenalty() != null ? options.getFrequencyPenalty() : this.frequencyPenalty)
+				.withMaxTokens(options.getMaxTokens() != null ? options.getMaxTokens() : this.maxTokens)
+				.withPresencePenalty(
+						options.getPresencePenalty() != null ? options.getPresencePenalty() : this.presencePenalty)
+				.withStopSequences(options.getStopSequences() != null ? options.getStopSequences() : this.stopSequences)
+				.withTemperature(options.getTemperature() != null ? options.getTemperature() : this.temperature)
+				.withTopK(options.getTopK() != null ? options.getTopK() : this.topK)
+				.withTopP(options.getTopP() != null ? options.getTopP() : this.topP)
+				.withProxyToolCalls(
+						options.getProxyToolCalls() != null ? options.getProxyToolCalls() : this.proxyToolCalls);
+
+			Set<String> functions = new HashSet<>();
+			if (!CollectionUtils.isEmpty(this.functions)) {
+				functions.addAll(this.functions);
+			}
+			if (!CollectionUtils.isEmpty(options.getFunctions())) {
+				functions.addAll(options.getFunctions());
+			}
+			builder.withFunctions(functions);
+
+			List<FunctionCallback> functionCallbacks = new ArrayList<>();
+			if (!CollectionUtils.isEmpty(this.functionCallbacks)) {
+				functionCallbacks.addAll(this.functionCallbacks);
+			}
+			if (!CollectionUtils.isEmpty(options.getFunctionCallbacks())) {
+				functionCallbacks.addAll(options.getFunctionCallbacks());
+			}
+			builder.withFunctionCallbacks(functionCallbacks);
+
+			Map<String, Object> context = new HashMap<>();
+			if (!CollectionUtils.isEmpty(this.context)) {
+				context.putAll(this.context);
+			}
+			if (!CollectionUtils.isEmpty(options.getToolContext())) {
+				context.putAll(options.getToolContext());
+			}
+			builder.withToolContext(context);
+
+			return builder.build();
+		}
+
+		public PortableFunctionCallingOptions merge(ChatOptions options) {
+
+			var builder = PortableFunctionCallingOptions.builder()
+				.withModel(StringUtils.hasText(options.getModel()) ? options.getModel() : this.model)
+				.withFrequencyPenalty(
+						options.getFrequencyPenalty() != null ? options.getFrequencyPenalty() : this.frequencyPenalty)
+				.withMaxTokens(options.getMaxTokens() != null ? options.getMaxTokens() : this.maxTokens)
+				.withPresencePenalty(
+						options.getPresencePenalty() != null ? options.getPresencePenalty() : this.presencePenalty)
+				.withStopSequences(options.getStopSequences() != null ? options.getStopSequences() : this.stopSequences)
+				.withTemperature(options.getTemperature() != null ? options.getTemperature() : this.temperature)
+				.withTopK(options.getTopK() != null ? options.getTopK() : this.topK)
+				.withTopP(options.getTopP() != null ? options.getTopP() : this.topP);
+
+			return builder.build();
 		}
 
 	}

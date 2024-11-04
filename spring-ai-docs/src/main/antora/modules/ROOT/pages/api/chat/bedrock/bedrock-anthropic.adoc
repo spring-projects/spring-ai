@@ -198,7 +198,7 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
     AnthropicChatBedrockApi.AnthropicModel.CLAUDE_V2.id(),
     EnvironmentVariableCredentialsProvider.create(),
-    Region.EU_CENTRAL_1.id(),
+    Region.US_EAST_1.id(),
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
@@ -234,7 +234,7 @@ Here is a simple snippet how to use the api programmatically:
 [source,java]
 ----
 AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(
-   AnthropicModel.CLAUDE_V2.id(), Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
+   AnthropicModel.CLAUDE_V2.id(), Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))

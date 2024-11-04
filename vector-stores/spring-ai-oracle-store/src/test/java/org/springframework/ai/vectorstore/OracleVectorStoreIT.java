@@ -28,6 +28,7 @@ import javax.sql.DataSource;
 
 import oracle.jdbc.pool.OracleDataSource;
 import org.junit.Assert;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -57,6 +58,7 @@ import org.springframework.util.CollectionUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
+@Disabled("Oracle image is 2GB")
 public class OracleVectorStoreIT {
 
 	@Container

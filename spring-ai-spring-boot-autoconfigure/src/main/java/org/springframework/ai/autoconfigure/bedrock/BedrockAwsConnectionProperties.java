@@ -47,6 +47,12 @@ public class BedrockAwsConnectionProperties {
 	private String secretKey;
 
 	/**
+	 * AWS session token. (optional) When provided the AwsSessionCredentials are used.
+	 * Otherwise the AwsBasicCredentials are used.
+	 */
+	private String sessionToken;
+
+	/**
 	 * Set model timeout, Defaults 5 min.
 	 */
 	private Duration timeout = Duration.ofMinutes(5L);
@@ -81,6 +87,14 @@ public class BedrockAwsConnectionProperties {
 
 	public void setTimeout(Duration timeout) {
 		this.timeout = timeout;
+	}
+
+	public String getSessionToken() {
+		return this.sessionToken;
+	}
+
+	public void setSessionToken(String sessionToken) {
+		this.sessionToken = sessionToken;
 	}
 
 }

@@ -88,6 +88,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bedrock-converse</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-huggingface</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -320,6 +326,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bedrock-converse-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
