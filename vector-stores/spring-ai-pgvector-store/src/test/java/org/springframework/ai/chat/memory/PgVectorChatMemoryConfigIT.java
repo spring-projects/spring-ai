@@ -104,7 +104,7 @@ class PgVectorChatMemoryConfigIT {
 			assertThat(hasTable).isTrue();
 			assertThat(expectedColumns.containsAll(tableColumns)).isTrue();
 			assertThat(String.format("%s_%s_%s_idx", tableName, sessionIdColumnName, exchangeIdColumnName))
-					.isEqualTo(indexName);
+				.isEqualTo(indexName);
 
 			// Cleanup for the other tests
 			jdbcTemplate.update(String.format("DROP SCHEMA IF EXISTS %s CASCADE", schemaName));
