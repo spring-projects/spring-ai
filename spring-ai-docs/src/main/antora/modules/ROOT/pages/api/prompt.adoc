@@ -95,7 +95,7 @@ More than just an answer or reaction, it's crucial for maintaining the flow of t
 By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
 The Assistant message may contain Function Tool Call request information as well.
 It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking.
-* Tool/Function Role: The Too/Function Role focuses on returning additional information in response to Tool Call Assistant Messages.
+* Tool/Function Role: The Tool/Function Role focuses on returning additional information in response to Tool Call Assistant Messages.
 
 Roles are represented as an enumeration in Spring AI as shown below
 
