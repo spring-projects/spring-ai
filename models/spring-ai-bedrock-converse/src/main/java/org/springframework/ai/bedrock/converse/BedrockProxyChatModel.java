@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.converse;
 
 import java.io.IOException;
@@ -26,44 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
-import org.springframework.ai.bedrock.converse.api.URLValidator;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.ai.chat.observation.ChatModelObservationContext;
-import org.springframework.ai.chat.observation.ChatModelObservationConvention;
-import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
-import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
-import org.springframework.ai.observation.conventions.AiProvider;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StreamUtils;
-import org.springframework.util.StringUtils;
-
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -96,6 +64,39 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolResultBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolResultContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
+
+import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
+import org.springframework.ai.bedrock.converse.api.URLValidator;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.ai.chat.observation.ChatModelObservationContext;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * A {@link ChatModel} implementation that uses the Amazon Bedrock Converse API to
@@ -335,7 +336,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
 			.build();
 		Document additionalModelRequestFields = ConverseApiUtils
-			.getChatOptionsAdditionalModelRequestFields(defaultOptions, prompt.getOptions());
+			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
 
 		return ConverseRequest.builder()
 			.modelId(updatedRuntimeOptions.getModel())
@@ -411,10 +412,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		List<Generation> generations = message.content()
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.map(content -> {
-				return new Generation(new AssistantMessage(content.text(), Map.of()),
-						ChatGenerationMetadata.from(response.stopReasonAsString(), null));
-			})
+			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
+					ChatGenerationMetadata.from(response.stopReasonAsString(), null)))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
@@ -508,7 +507,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			// @formatter:off
 			Flux<ChatResponse> chatResponses = ConverseApiUtils.toChatResponse(response);
 
-			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {							
+			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 				if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
 						&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
@@ -540,14 +539,14 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		Sinks.Many<ConverseStreamOutput> eventSink = Sinks.many().multicast().onBackpressureBuffer();
 
 		ConverseStreamResponseHandler.Visitor visitor = ConverseStreamResponseHandler.Visitor.builder()
-			.onDefault((output) -> {
+			.onDefault(output -> {
 				logger.debug("Received converse stream output:{}", output);
 				eventSink.tryEmitNext(output);
 			})
 			.build();
 
 		ConverseStreamResponseHandler responseHandler = ConverseStreamResponseHandler.builder()
-			.onEventStream(stream -> stream.subscribe((e) -> e.accept(visitor)))
+			.onEventStream(stream -> stream.subscribe(e -> e.accept(visitor)))
 			.onComplete(() -> {
 				EmitResult emitResult = eventSink.tryEmitComplete();
 
@@ -559,7 +558,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 				eventSink.emitComplete(EmitFailureHandler.busyLooping(Duration.ofSeconds(3)));
 				logger.info("Completed streaming response.");
 			})
-			.onError((error) -> {
+			.onError(error -> {
 				logger.error("Error handling Bedrock converse stream response", error);
 				eventSink.tryEmitError(error);
 			})
@@ -571,11 +570,20 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 	}
 
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private AwsCredentialsProvider credentialsProvider;
 
@@ -694,15 +702,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			return bedrockProxyChatModel;
 		}
 
-	}
-
-	/**
-	 * Use the provided convention for reporting observation data
-	 * @param observationConvention The provided convention
-	 */
-	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
-		Assert.notNull(observationConvention, "observationConvention cannot be null");
-		this.observationConvention = observationConvention;
 	}
 
 }
