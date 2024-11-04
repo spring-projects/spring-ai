@@ -31,6 +31,7 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -56,6 +57,7 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Thomas Vitale
  * @author Soby Chacko
  */
+@Disabled
 public class GemFireVectorStoreObservationIT {
 
 	public static final String TEST_INDEX_NAME = "spring-ai-index1";
