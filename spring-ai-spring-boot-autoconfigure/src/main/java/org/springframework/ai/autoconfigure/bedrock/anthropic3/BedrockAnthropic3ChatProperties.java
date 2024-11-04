@@ -75,8 +75,8 @@ public class BedrockAnthropic3ChatProperties {
 	}
 
 	public void setOptions(Anthropic3ChatOptions options) {
-		Assert.notNull(options, "AnthropicChatOptions must not be null");
-		Assert.notNull(options.getTemperature(), "AnthropicChatOptions.temperature must not be null");
+		Assert.notNull(options, "Anthropic3ChatOptions must not be null");
+		Assert.notNull(options.getTemperature(), "Anthropic3ChatOptions.temperature must not be null");
 
 		this.options = options;
 	}
