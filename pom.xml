@@ -95,7 +95,6 @@
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
-		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
@@ -116,7 +115,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
