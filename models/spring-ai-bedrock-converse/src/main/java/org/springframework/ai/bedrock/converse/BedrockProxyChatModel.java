@@ -165,7 +165,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
 	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
 	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeClient.html#converse
-	 * @param bedrockConverseRequest Model invocation request.
 	 * @return The model invocation response.
 	 */
 	@Override
@@ -472,7 +471,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
 	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
 	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeAsyncClient.html#converseStream
-	 * @param bedrockConverseRequest Model invocation request.
 	 * @return The model invocation response stream.
 	 */
 	@Override
