@@ -155,8 +155,8 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 			case GTE -> new Numeric(inclusive(value), POSITIVE_INFINITY);
 			case LT -> new Numeric(NEGATIVE_INFINITY, exclusive(value));
 			case LTE -> new Numeric(NEGATIVE_INFINITY, inclusive(value));
-			default -> throw new UnsupportedOperationException(MessageFormat
-					.format("Expression type {0} not supported for numeric fields", expression.type()));
+			default -> throw new UnsupportedOperationException(
+					MessageFormat.format("Expression type {0} not supported for numeric fields", expression.type()));
 		};
 	}
 
