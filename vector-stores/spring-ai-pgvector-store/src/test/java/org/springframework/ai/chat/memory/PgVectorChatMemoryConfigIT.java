@@ -1,7 +1,31 @@
+/*
+ * Copyright 2024-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.chat.memory;
+
+import java.util.List;
+
+import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.vectorstore.PgVectorImage;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -12,15 +36,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import javax.sql.DataSource;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
@@ -52,7 +69,7 @@ class PgVectorChatMemoryConfigIT {
 
 	@Test
 	void initializeSchema_withValueTrue_shouldCreateSchema() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var jdbcTemplate = context.getBean(JdbcTemplate.class);
 			var config = PgVectorChatMemoryConfig.builder()
 				.withInitializeSchema(true)
@@ -83,11 +100,11 @@ class PgVectorChatMemoryConfigIT {
 					"SELECT indexname FROM pg_indexes WHERE schemaname = ? AND tablename = ?", String.class, schemaName,
 					tableName);
 
-			assertEquals(Boolean.TRUE, hasSchema);
-			assertEquals(Boolean.TRUE, hasTable);
-			assertTrue(expectedColumns.containsAll(tableColumns));
-			assertEquals(String.format("%s_%s_%s_idx", tableName, sessionIdColumnName, exchangeIdColumnName),
-					indexName);
+			assertThat(hasSchema).isTrue();
+			assertThat(hasTable).isTrue();
+			assertThat(expectedColumns.containsAll(tableColumns)).isTrue();
+			assertThat(String.format("%s_%s_%s_idx", tableName, sessionIdColumnName, exchangeIdColumnName))
+					.isEqualTo(indexName);
 
 			// Cleanup for the other tests
 			jdbcTemplate.update(String.format("DROP SCHEMA IF EXISTS %s CASCADE", schemaName));
@@ -96,7 +113,7 @@ class PgVectorChatMemoryConfigIT {
 
 	@Test
 	void initializeSchema_withValueFalse_shouldNotCreateSchema() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var jdbcTemplate = context.getBean(JdbcTemplate.class);
 			var config = PgVectorChatMemoryConfig.builder()
 				.withInitializeSchema(false)
@@ -124,10 +141,10 @@ class PgVectorChatMemoryConfigIT {
 					"SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = ? AND tablename = ?)", Boolean.class,
 					schemaName, tableName);
 
-			assertEquals(Boolean.FALSE, hasSchema);
-			assertEquals(Boolean.FALSE, hasTable);
-			assertEquals(0, columnCount);
-			assertEquals(Boolean.FALSE, hasIndex);
+			assertThat(hasSchema).isFalse();
+			assertThat(hasTable).isFalse();
+			assertThat(columnCount).isZero();
+			assertThat(hasIndex).isFalse();
 		});
 	}
 

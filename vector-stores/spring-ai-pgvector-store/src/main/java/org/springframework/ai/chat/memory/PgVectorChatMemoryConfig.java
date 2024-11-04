@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.memory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
@@ -24,7 +26,7 @@ import org.springframework.util.Assert;
  * @author Jonathan Leijendekker
  * @since 1.0.0
  */
-public class PgVectorChatMemoryConfig {
+public final class PgVectorChatMemoryConfig {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorChatMemoryConfig.class);
 
@@ -136,7 +138,7 @@ public class PgVectorChatMemoryConfig {
 				this.getFullyQualifiedTableName(), this.getSessionIdColumnName(), this.getExchangeIdColumnName()));
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean initializeSchema = DEFAULT_SCHEMA_INITIALIZATION;
 
@@ -212,7 +214,7 @@ public class PgVectorChatMemoryConfig {
 		}
 
 		public PgVectorChatMemoryConfig build() {
-			Assert.notNull(jdbcTemplate, "jdbc template must not be null");
+			Assert.notNull(this.jdbcTemplate, "jdbc template must not be null");
 
 			return new PgVectorChatMemoryConfig(this);
 		}

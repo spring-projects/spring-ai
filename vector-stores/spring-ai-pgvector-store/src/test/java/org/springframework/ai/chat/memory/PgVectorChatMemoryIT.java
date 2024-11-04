@@ -1,9 +1,35 @@
+/*
+ * Copyright 2024-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.chat.memory;
+
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.UUID;
+
+import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -18,16 +44,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import javax.sql.DataSource;
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
@@ -59,17 +77,17 @@ class PgVectorChatMemoryIT {
 
 	@Test
 	void correctChatMemoryInstance() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 
-			assertInstanceOf(PgVectorChatMemory.class, chatMemory);
+			assertThat(chatMemory).isInstanceOf(PgVectorChatMemory.class);
 		});
 	}
 
 	@ParameterizedTest
 	@CsvSource({ "Message from assistant,ASSISTANT", "Message from user,USER" })
 	void add_shouldInsertSingleMessage(String content, MessageType messageType) {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
 			String assistantContent = null;
@@ -94,18 +112,18 @@ class PgVectorChatMemoryIT {
 					sessionIdColumnName);
 			var result = jdbcTemplate.queryForMap(query, conversationId);
 
-			assertEquals(4, result.size());
-			assertEquals(conversationId, result.get(sessionIdColumnName));
-			assertInstanceOf(Timestamp.class, result.get(exchangeIdColumnName));
-			assertNotNull(result.get(exchangeIdColumnName));
-			assertEquals(assistantContent, result.get(assistantColumnName));
-			assertEquals(userContent, result.get(userColumnName.replace("\"", "")));
+			assertThat(result.size()).isEqualTo(4);
+			assertThat(result.get(sessionIdColumnName)).isEqualTo(conversationId);
+			assertThat(result.get(exchangeIdColumnName)).isInstanceOf(Timestamp.class);
+			assertThat(result.get(exchangeIdColumnName)).isNotNull();
+			assertThat(result.get(assistantColumnName)).isEqualTo(assistantContent);
+			assertThat(result.get(userColumnName.replace("\"", ""))).isEqualTo(userContent);
 		});
 	}
 
 	@Test
 	void add_shouldInsertMessages() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
@@ -119,21 +137,21 @@ class PgVectorChatMemoryIT {
 					sessionIdColumnName);
 			var results = jdbcTemplate.queryForList(query, conversationId);
 
-			assertEquals(messages.size(), results.size());
+			assertThat(results.size()).isEqualTo(messages.size());
 
 			for (var i = 0; i < messages.size(); i++) {
 				var message = messages.get(i);
 				var result = results.get(i);
 
-				assertEquals(conversationId, result.get(sessionIdColumnName));
-				assertInstanceOf(Timestamp.class, result.get(exchangeIdColumnName));
-				assertNotNull(result.get(exchangeIdColumnName));
+				assertThat(result.get(exchangeIdColumnName)).isNotNull();
+				assertThat(result.get(sessionIdColumnName)).isEqualTo(conversationId);
+				assertThat(result.get(exchangeIdColumnName)).isInstanceOf(Timestamp.class);
 
 				if (message.getMessageType() == MessageType.ASSISTANT) {
-					assertEquals(message.getContent(), result.get(assistantColumnName));
+					assertThat(result.get(assistantColumnName)).isEqualTo(message.getContent());
 				}
 				else {
-					assertEquals(message.getContent(), result.get(userColumnName.replace("\"", "")));
+					assertThat(result.get(userColumnName.replace("\"", ""))).isEqualTo(message.getContent());
 				}
 			}
 		});
@@ -141,7 +159,7 @@ class PgVectorChatMemoryIT {
 
 	@Test
 	void get_shouldReturnMessages() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + conversationId),
@@ -152,14 +170,14 @@ class PgVectorChatMemoryIT {
 
 			var results = chatMemory.get(conversationId, Integer.MAX_VALUE);
 
-			assertEquals(messages.size(), results.size());
-			assertEquals(messages, results);
+			assertThat(results.size()).isEqualTo(messages.size());
+			assertThat(results).isEqualTo(messages);
 		});
 	}
 
 	@Test
 	void clear_shouldDeleteMessages() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
@@ -173,7 +191,7 @@ class PgVectorChatMemoryIT {
 			var count = jdbcTemplate.queryForObject(String.format("SELECT COUNT(*) FROM %s.%s WHERE %s = ?", schemaName,
 					tableName, sessionIdColumnName), Integer.class, conversationId);
 
-			assertEquals(0, count);
+			assertThat(count).isZero();
 		});
 	}
 

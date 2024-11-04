@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.chat.memory.pgvector;
 
 import org.springframework.ai.autoconfigure.chat.memory.CommonChatMemoryProperties;
@@ -41,7 +42,7 @@ public class PgVectorChatMemoryProperties extends CommonChatMemoryProperties {
 	private String userColumnName = PgVectorChatMemoryConfig.DEFAULT_USER_COLUMN_NAME;
 
 	public String getSchemaName() {
-		return schemaName;
+		return this.schemaName;
 	}
 
 	public void setSchemaName(String schemaName) {
@@ -49,7 +50,7 @@ public class PgVectorChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	public String getTableName() {
-		return tableName;
+		return this.tableName;
 	}
 
 	public void setTableName(String tableName) {
@@ -57,7 +58,7 @@ public class PgVectorChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	public String getSessionIdColumnName() {
-		return sessionIdColumnName;
+		return this.sessionIdColumnName;
 	}
 
 	public void setSessionIdColumnName(String sessionIdColumnName) {
@@ -65,7 +66,7 @@ public class PgVectorChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	public String getExchangeIdColumnName() {
-		return exchangeIdColumnName;
+		return this.exchangeIdColumnName;
 	}
 
 	public void setExchangeIdColumnName(String exchangeIdColumnName) {
@@ -73,7 +74,7 @@ public class PgVectorChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	public String getAssistantColumnName() {
-		return assistantColumnName;
+		return this.assistantColumnName;
 	}
 
 	public void setAssistantColumnName(String assistantColumnName) {
@@ -81,7 +82,7 @@ public class PgVectorChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	public String getUserColumnName() {
-		return userColumnName;
+		return this.userColumnName;
 	}
 
 	public void setUserColumnName(String userColumnName) {
