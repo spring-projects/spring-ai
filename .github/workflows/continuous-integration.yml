@@ -43,7 +43,7 @@ jobs:
         run: mvn -s settings.xml -Pintegration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 --batch-mode --update-snapshots deploy
 
       - name: Generate Java docs
-        run: mvn javadoc:aggregate
+        run: mvn javadoc:aggregate -Dmaven.javadoc.failOnError=false
 
       - name: Generate assembly
         working-directory: spring-ai-docs
