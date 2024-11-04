@@ -58,7 +58,7 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 			case IN:
 				return " in ";
 			case NIN:
-				return " nin ";
+				return " not in ";
 			default:
 				throw new RuntimeException("Not supported expression type:" + exp.type());
 		}
