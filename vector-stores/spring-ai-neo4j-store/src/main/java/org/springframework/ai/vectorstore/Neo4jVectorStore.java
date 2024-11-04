@@ -135,7 +135,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 				.run("""
 						MATCH (n:%s) WHERE n.%s IN $ids
 						CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF $transactionSize ROWS
-						 """.formatted(this.config.label, this.config.idProperty),
+						""".formatted(this.config.label, this.config.idProperty),
 						Map.of("ids", idList, "transactionSize", DEFAULT_TRANSACTION_SIZE))
 				.consume();
 			return Optional.of(idList.size() == summary.counters().nodesDeleted());
