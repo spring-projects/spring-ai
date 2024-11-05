@@ -88,6 +88,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bedrock-converse</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-huggingface</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -125,12 +131,6 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-transformers</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-vertex-ai-palm2</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -325,6 +325,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bedrock-converse-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-chroma-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -446,12 +452,6 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-vertex-ai-palm2-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -38,6 +38,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -48,6 +49,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Timo Salm
  */
 @ExtendWith(MockitoExtension.class)
 public class QuestionAnswerAdvisorTests {
@@ -178,7 +180,63 @@ public class QuestionAnswerAdvisorTests {
 		assertThat(this.vectorSearchCaptor.getValue().getFilterExpression()).isEqualTo(new FilterExpressionBuilder().eq("type", "Spring").build());
 		assertThat(this.vectorSearchCaptor.getValue().getSimilarityThreshold()).isEqualTo(0.99d);
 		assertThat(this.vectorSearchCaptor.getValue().getTopK()).isEqualTo(6);
-
-
 	}
+
+	@Test
+	public void qaAdvisorTakesUserTextParametersIntoAccountForSimilaritySearch() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
+						ChatResponseMetadata.builder().build()));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.defaults());
+
+		var userTextTemplate = "Please answer my question {question}";
+		// @formatter:off
+		chatClient.prompt()
+				.user(u -> u.text(userTextTemplate).param("question", "XYZ"))
+				.advisors(qaAdvisor)
+				.call()
+				.chatResponse();
+		//formatter:on
+
+		var expectedQuery = "Please answer my question XYZ";
+		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getContent();
+		assertThat(userPrompt).doesNotContain(userTextTemplate);
+		assertThat(userPrompt).contains(expectedQuery);
+		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
+	}
+
+	@Test
+	public void qaAdvisorTakesUserParameterizedUserMessagesIntoAccountForSimilaritySearch() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
+						ChatResponseMetadata.builder().build()));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.defaults());
+
+		var userTextTemplate = "Please answer my question {question}";
+		var userPromptTemplate = new PromptTemplate(userTextTemplate, Map.of("question", "XYZ"));
+		var userMessage = userPromptTemplate.createMessage();
+		// @formatter:off
+		chatClient.prompt(new Prompt(userMessage))
+				.advisors(qaAdvisor)
+				.call()
+				.chatResponse();
+		//formatter:on
+
+		var expectedQuery = "Please answer my question XYZ";
+		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getContent();
+		assertThat(userPrompt).doesNotContain(userTextTemplate);
+		assertThat(userPrompt).contains(expectedQuery);
+		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
+	}
+
 }

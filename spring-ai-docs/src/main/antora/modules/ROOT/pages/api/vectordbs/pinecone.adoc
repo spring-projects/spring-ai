@@ -112,7 +112,6 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.pinecone.project-id`| Pinecone project ID | -
 |`spring.ai.vectorstore.pinecone.index-name`| Pinecone index name | -
 |`spring.ai.vectorstore.pinecone.namespace`| Pinecone namespace | -
-|`spring.ai.vectorstore.pinecone.namespace`| Pinecone namespace | -
 |`spring.ai.vectorstore.pinecone.content-field-name`| Pinecone metadata field name used to store the original text content. | `document_content`
 |`spring.ai.vectorstore.pinecone.distance-metadata-field-name`| Pinecone metadata field name used to store the computed distance. | `distance`
 |`spring.ai.vectorstore.pinecone.server-side-timeout`|  | 20 sec.
