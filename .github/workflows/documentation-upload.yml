@@ -26,6 +26,9 @@ jobs:
           cache: 'maven'
 
       - name: Generate Java docs
+        run: mvn clean install -DskipTests -Pjavadoc
+
+      - name: Aggregate Java docs
         run: mvn javadoc:aggregate
 
       - name: Generate assembly
