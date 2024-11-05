@@ -50,6 +50,6 @@ jobs:
         working-directory: spring-ai-docs/target
         run: |
           unzip spring-ai-$RELEASE_VERSION-docs.zip
-          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $RELEASE_VERSION/api"
+          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $RELEASE_VERSION"
           scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$RELEASE_VERSION
 
