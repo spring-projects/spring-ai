@@ -36,7 +36,6 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
-import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -128,12 +127,11 @@ public class ChromaVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void throwExceptionOnMissingCollectionAndDisabledInitializedSchema() {
+
 		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=false")
 			.run(context -> assertThatThrownBy(() -> context.getBean(VectorStore.class))
-				.isInstanceOf(IllegalStateException.class)
-				.hasCauseInstanceOf(BeanCreationException.class)
-				.hasRootCauseExactlyInstanceOf(RuntimeException.class)
-				.hasRootCauseMessage(
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage(
 						"Collection TestCollection doesn't exist and won't be created as the initializeSchema is set to false."));
 	}
 

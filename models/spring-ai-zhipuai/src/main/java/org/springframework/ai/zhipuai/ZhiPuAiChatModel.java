@@ -68,6 +68,7 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Media
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.FunctionTool;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
 import org.springframework.ai.zhipuai.metadata.ZhiPuAiUsage;
 import org.springframework.http.ResponseEntity;
@@ -469,11 +470,11 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 			.build();
 	}
 
-	private List<ZhiPuAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
+	private List<FunctionTool> getFunctionTools(Set<String> functionNames) {
 		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
-			var function = new ZhiPuAiApi.FunctionTool.Function(functionCallback.getDescription(),
-					functionCallback.getName(), functionCallback.getInputTypeSchema());
-			return new ZhiPuAiApi.FunctionTool(function);
+			var function = new FunctionTool.Function(functionCallback.getDescription(), functionCallback.getName(),
+					functionCallback.getInputTypeSchema());
+			return new FunctionTool(function);
 		}).toList();
 	}
 
