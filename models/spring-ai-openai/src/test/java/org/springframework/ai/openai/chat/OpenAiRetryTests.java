@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.chat;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
@@ -59,7 +62,6 @@ import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.api.OpenAiImageApi.Data;
 import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageRequest;
 import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageResponse;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
@@ -81,6 +83,8 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 public class OpenAiRetryTests {
 
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiRetryTests.class);
+
 	private TestRetryListener retryListener;
 
 	private RetryTemplate retryTemplate;
@@ -99,9 +103,23 @@ public class OpenAiRetryTests {
 
 	private OpenAiImageModel imageModel;
 
+	public static final RetryTemplate SHORT_RETRY_TEMPLATE = RetryTemplate.builder()
+		.maxAttempts(10)
+		.retryOn(TransientAiException.class)
+		.fixedBackoff(Duration.ofMillis(100))
+		.withListener(new RetryListener() {
+
+			@Override
+			public <T extends Object, E extends Throwable> void onError(RetryContext context,
+					RetryCallback<T, E> callback, Throwable throwable) {
+				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
+			}
+		})
+		.build();
+
 	@BeforeEach
 	public void beforeEach() {
-		this.retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+		this.retryTemplate = SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
