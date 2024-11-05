@@ -33,7 +33,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.ai.minimax.api.MiniMaxApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,31 +66,33 @@ public class MiniMaxApiToolFunctionCallIT {
 		var message = new ChatCompletionMessage(
 				"What's the weather like in San Francisco? Return the temperature in Celsius.", Role.USER);
 
-		var functionTool = new MiniMaxApi.FunctionTool(Type.FUNCTION, new MiniMaxApi.FunctionTool.Function(
-				"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather", """
-						{
-							"type": "object",
-							"properties": {
-								"location": {
-									"type": "string",
-									"description": "The city and state e.g. San Francisco, CA"
-								},
-								"lat": {
-									"type": "number",
-									"description": "The city latitude"
-								},
-								"lon": {
-									"type": "number",
-									"description": "The city longitude"
-								},
-								"unit": {
-									"type": "string",
-									"enum": ["C", "F"]
+		var functionTool = new MiniMaxApi.FunctionTool(MiniMaxApi.FunctionTool.Type.FUNCTION,
+				new MiniMaxApi.FunctionTool.Function(
+						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
+						"""
+								{
+									"type": "object",
+									"properties": {
+										"location": {
+											"type": "string",
+											"description": "The city and state e.g. San Francisco, CA"
+										},
+										"lat": {
+											"type": "number",
+											"description": "The city latitude"
+										},
+										"lon": {
+											"type": "number",
+											"description": "The city longitude"
+										},
+										"unit": {
+											"type": "string",
+											"enum": ["C", "F"]
+										}
+									},
+									"required": ["location", "lat", "lon", "unit"]
 								}
-							},
-							"required": ["location", "lat", "lon", "unit"]
-						}
-						"""));
+								"""));
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 

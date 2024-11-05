@@ -34,7 +34,6 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,7 +67,7 @@ public class ZhiPuAiApiToolFunctionCallIT {
 		var message = new ChatCompletionMessage(
 				"What's the weather like in San Francisco? Return the temperature in Celsius.", Role.USER);
 
-		var functionTool = new ZhiPuAiApi.FunctionTool(Type.FUNCTION,
+		var functionTool = new ZhiPuAiApi.FunctionTool(ZhiPuAiApi.FunctionTool.Type.FUNCTION,
 				new ZhiPuAiApi.FunctionTool.Function(
 						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
 						ModelOptionsUtils.jsonToMap("""
