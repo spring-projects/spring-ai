@@ -32,9 +32,9 @@ import com.azure.search.documents.indexes.SearchIndexClient;
 import com.azure.search.documents.indexes.SearchIndexClientBuilder;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -48,7 +48,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -266,9 +265,9 @@ public class AzureVectorStoreIT {
 			vectorStore.add(this.documents);
 
 			Awaitility.await()
-					.until(() -> vectorStore
-						.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll()),
-							hasSize(3));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll()),
+						hasSize(3));
 
 			List<Document> fullResult = vectorStore
 				.similaritySearch(SearchRequest.query("Depression").withTopK(5).withSimilarityThresholdAll());
@@ -292,7 +291,7 @@ public class AzureVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await()
-					.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
 		});
 	}
 
@@ -319,14 +318,7 @@ public class AzureVectorStoreIT {
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
 					MetadataField.date("activationDate"));
-			var result = new AzureVectorStore(searchIndexClient, embeddingModel, true, filterableMetaFields);
-			try {
-				result.afterPropertiesSet();
-			}
-			catch (Exception e) {
-				fail(e.getMessage());
-			}
-			return result;
+			return new AzureVectorStore(searchIndexClient, embeddingModel, true, filterableMetaFields);
 		}
 
 		@Bean
