@@ -94,7 +94,7 @@ public class AzureVectorStoreIT {
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
-					hasSize(1));
+						hasSize(1));
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 
@@ -210,7 +210,7 @@ public class AzureVectorStoreIT {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
-				Collections.singletonMap("meta1", "meta1"));
+					Collections.singletonMap("meta1", "meta1"));
 
 			vectorStore.add(List.of(document));
 
@@ -229,7 +229,7 @@ public class AzureVectorStoreIT {
 
 			Document sameIdDocument = new Document(document.getId(),
 					"The World is Big and Salvation Lurks Around the Corner",
-				Collections.singletonMap("meta2", "meta2"));
+					Collections.singletonMap("meta2", "meta2"));
 
 			vectorStore.add(List.of(sameIdDocument));
 
@@ -237,7 +237,7 @@ public class AzureVectorStoreIT {
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
-					equalTo("The World is Big and Salvation Lurks Around the Corner"));
+						equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
 			results = vectorStore.similaritySearch(fooBarSearchRequest);
 
