@@ -56,13 +56,8 @@ When the model needs to answer a question such as `"What’s the weather like in
 
 Our function calls some SaaS-based weather service API and returns the weather response back to the model to complete the conversation. In this example, we will use a simple implementation named `MockWeatherService` that hard-codes the temperature for various locations.
 
-The following `MockWeatherService` class represents the weather service API:
+The following `MockWeatherService.java` represents the weather service API:
 
---
-[tabs]
-======
-Java::
-+
 [source,java]
 ----
 public class MockWeatherService implements Function<Request, Response> {
@@ -76,20 +71,6 @@ public class MockWeatherService implements Function<Request, Response> {
 	}
 }
 ----
-Kotlin::
-+
-[source,kotlin]
-----
-class MockWeatherService : Function1<Request, Response> {
-	override fun invoke(request: Request) = Response(30.0, Unit.C)
-}
-
-enum class Unit { C, F }
-data class Request(val location: String, val unit: Unit) {}
-data class Response(val temp: Double, val unit: Unit) {}
-----
-======
---
 
 === Registering Functions as Beans
 
@@ -97,18 +78,13 @@ Spring AI provides multiple ways to register custom functions as beans in the Sp
 
 We start by describing the most POJO-friendly options.
 
-==== Plain Functions
+==== Plain Java Functions
 
 In this approach, you define a `@Bean` in your application context as you would any other Spring managed object.
 
 Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is used function name.
 
---
-[tabs]
-======
-Java::
-+
 [source,java]
 ----
 @Configuration
@@ -122,63 +98,24 @@ static class Config {
 
 }
 ----
-Kotlin::
-+
-[source,kotlin]
-----
-@Configuration
-class Config {
-
-	@Bean
-	@Description("Get the weather in location") // function description
-	fun currentWeather(): (Request) -> Response = MockWeatherService()
-
-}
-----
-======
---
 
 The `@Description` annotation is optional and provides a function description that helps the model understand when to call the function. It is an important property to set to help the AI model determine what client side function to invoke.
 
 Another option for providing the description of the function is to use the `@JsonClassDescription` annotation on the `MockWeatherService.Request`:
 
---
-[tabs]
-======
-Java::
-+
 [source,java]
 ----
 @Configuration
 static class Config {
-
 	@Bean
 	public Function<Request, Response> currentWeather() { // bean name as function name
 		return new MockWeatherService();
 	}
 }
 
-@JsonClassDescription("Get the weather in location") // function description
+@JsonClassDescription("Get the weather in location") // // function description
 public record Request(String location, Unit unit) {}
 ----
-Kotlin::
-+
-[source,kotlin]
-----
-@Configuration
-class Config {
-
-	@Bean
-	fun currentWeather(): (Request) -> Response  { // bean name as function name
-		return MockWeatherService()
-	}
-}
-
-@JsonClassDescription("Get the weather in location") // function description
-data class Request(val location: String, val unit: Unit)
-----
-======
---
 
 It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
@@ -186,11 +123,6 @@ It is a best practice to annotate the request object with information such that 
 
 Another way to register a function is to create a `FunctionCallbackWrapper` like this:
 
---
-[tabs]
-======
-Java::
-+
 [source,java]
 ----
 @Configuration
@@ -206,30 +138,6 @@ static class Config {
 	}
 }
 ----
-Kotlin::
-+
-[source,kotlin]
-----
-import org.springframework.ai.model.function.withInputType
-
-@Configuration
-class Config {
-
-	@Bean
-	fun weatherFunctionInfo(): FunctionCallback {
-
-        return FunctionCallbackWrapper.builder(MockWeatherService())
-            .withName("CurrentWeather") // (1) function name
-            .withDescription("Get the weather in location") // (2) function description
-            // (3) Required due to Kotlin SAM conversion beeing an opaque lambda
-            .withInputType<MockWeatherService.Request>()
-            .build();
-	}
-}
-
-----
-======
---
 
 It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `ChatClient`.
 It also provides a description (2) and an optional response converter to convert the response into a text as expected by the model.

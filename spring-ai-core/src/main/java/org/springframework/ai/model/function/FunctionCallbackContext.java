@@ -16,22 +16,20 @@
 
 package org.springframework.ai.model.function;
 
+import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
-import kotlin.jvm.functions.Function1;
-import kotlin.jvm.functions.Function2;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
+import org.springframework.cloud.function.context.config.FunctionContextUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Description;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.ResolvableType;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
@@ -51,7 +49,6 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Christopher Smith
- * @author Sebastien Deleuze
  */
 public class FunctionCallbackContext implements ApplicationContextAware {
 
@@ -71,19 +68,23 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public FunctionCallback getFunctionCallback(@NonNull String beanName, @Nullable String defaultDescription) {
 
-		BeanDefinition beanDefinition;
-		try {
-			beanDefinition = this.applicationContext.getBeanDefinition(beanName);
-		}
-		catch (NoSuchBeanDefinitionException ex) {
+		Type beanType = FunctionContextUtils.findType(this.applicationContext.getBeanFactory(), beanName);
+
+		if (beanType == null) {
 			throw new IllegalArgumentException(
-					"Functional bean with name " + beanName + " does not exist in the context.");
+					"Functional bean with name: " + beanName + " does not exist in the context.");
 		}
 
-		ResolvableType functionType = beanDefinition.getResolvableType();
-		ResolvableType functionInputType = TypeResolverHelper.getFunctionArgumentType(functionType.getType(), 0);
+		if (!Function.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))
+				&& !BiFunction.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))) {
+			throw new IllegalArgumentException(
+					"Function call Bean must be of type Function or BiFunction. Found: " + beanType.getTypeName());
+		}
 
-		Class<?> functionInputClass = functionInputType.toClass();
+		Type functionInputType = TypeResolverHelper.getFunctionArgumentType(beanType, 0);
+
+		Class<?> functionInputClass = FunctionTypeUtils.getRawType(functionInputType);
+		String functionName = beanName;
 		String functionDescription = defaultDescription;
 
 		if (!StringUtils.hasText(functionDescription)) {
@@ -113,68 +114,30 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 
 		Object bean = this.applicationContext.getBean(beanName);
 
-		if (KotlinDelegate.isKotlinFunction(functionType.toClass())) {
-			return FunctionCallbackWrapper.builder(KotlinDelegate.wrapKotlinFunction(bean))
-				.withName(beanName)
-				.withSchemaType(this.schemaType)
-				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
-				.build();
-		}
-		else if (KotlinDelegate.isKotlinBiFunction(functionType.toClass())) {
-			return FunctionCallbackWrapper.builder(KotlinDelegate.wrapKotlinBiFunction(bean))
-				.withName(beanName)
-				.withSchemaType(this.schemaType)
-				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
-				.build();
-		}
-		else if (bean instanceof Function<?, ?> function) {
+		if (bean instanceof Function<?, ?> function) {
 			return FunctionCallbackWrapper.builder(function)
-				.withName(beanName)
+				.withName(functionName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
 				.withInputType(functionInputClass)
 				.build();
 		}
-		else if (bean instanceof BiFunction<?, ?, ?>) {
-			return FunctionCallbackWrapper.builder((BiFunction<?, ToolContext, ?>) bean)
-				.withName(beanName)
+		else if (bean instanceof BiFunction<?, ?, ?> biFunction) {
+			return FunctionCallbackWrapper.builder((BiFunction<?, ToolContext, ?>) biFunction)
+				.withName(functionName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
 				.withInputType(functionInputClass)
 				.build();
 		}
 		else {
-			throw new IllegalStateException();
+			throw new IllegalArgumentException("Bean must be of type Function");
 		}
 	}
 
 	public enum SchemaType {
 
 		JSON_SCHEMA, OPEN_API_SCHEMA
-
-	}
-
-	private static class KotlinDelegate {
-
-		public static boolean isKotlinFunction(Class<?> clazz) {
-			return Function1.class.isAssignableFrom(clazz);
-		}
-
-		@SuppressWarnings("unchecked")
-		public static Function<?, ?> wrapKotlinFunction(Object function) {
-			return t -> ((Function1<Object, Object>) function).invoke(t);
-		}
-
-		public static boolean isKotlinBiFunction(Class<?> clazz) {
-			return Function2.class.isAssignableFrom(clazz);
-		}
-
-		@SuppressWarnings("unchecked")
-		public static BiFunction<?, ToolContext, ?> wrapKotlinBiFunction(Object function) {
-			return (t, u) -> ((Function2<Object, ToolContext, Object>) function).invoke(t, u);
-		}
 
 	}
 
