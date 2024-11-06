@@ -42,7 +42,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -870,74 +869,6 @@ public class OpenAiApi {
 			}
 		}
 
-		/**
-		 * An object specifying the format that the model must output.
-		 * @param type Must be one of 'text' or 'json_object'.
-		 * @param jsonSchema JSON schema object that describes the format of the JSON object.
-		 * Only applicable when type is 'json_schema'.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(
-				@JsonProperty("type") Type type,
-				@JsonProperty("json_schema") JsonSchema jsonSchema) {
-
-			public ResponseFormat(Type type) {
-				this(type, (JsonSchema) null);
-			}
-
-			public ResponseFormat(Type type, String schema) {
-				this(type, "custom_schema", schema, true);
-			}
-
-			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
-				this(type, StringUtils.hasText(schema) ? new JsonSchema(name, schema, strict) : null);
-			}
-
-			public enum Type {
-				/**
-				 * Generates a text response. (default)
-				 */
-				@JsonProperty("text")
-				TEXT,
-
-				/**
-				 * Enables JSON mode, which guarantees the message
-				 * the model generates is valid JSON.
-				 */
-				@JsonProperty("json_object")
-				JSON_OBJECT,
-
-				/**
-				 * Enables Structured Outputs which guarantees the model
-				 * will match your supplied JSON schema.
-				 */
-				@JsonProperty("json_schema")
-				JSON_SCHEMA
-			}
-
-			/**
-			 * JSON schema object that describes the format of the JSON object.
-			 * Applicable for the 'json_schema' type only.
-			 * @param name The name of the schema.
-			 * @param schema The JSON schema object that describes the format of the JSON object.
-			 * @param strict If true, the model will only generate outputs that match the schema.
-			 */
-			@JsonInclude(Include.NON_NULL)
-			public record JsonSchema(
-					@JsonProperty("name") String name,
-					@JsonProperty("schema") Map<String, Object> schema,
-					@JsonProperty("strict") Boolean strict) {
-
-				public JsonSchema(String name, String schema) {
-					this(name, ModelOptionsUtils.jsonToMap(schema), true);
-				}
-
-				public JsonSchema(String name, String schema, Boolean strict) {
-					this(StringUtils.hasText(name) ? name : "custom_schema", ModelOptionsUtils.jsonToMap(schema), strict);
-				}
-			}
-
-		}
 		/**
 		 * @param includeUsage If set, an additional chunk will be streamed
 		 * before the data: [DONE] message. The usage field on this chunk

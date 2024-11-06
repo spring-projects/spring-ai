@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openai.chat;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
@@ -24,8 +23,8 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -39,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OpenAiResponseFormatPropertiesTests {
 
 	@Test
-	@Disabled("GH-1645")
 	public void responseFormatJsonSchema() {
 
 		String responseFormatJsonSchema = """
@@ -72,13 +70,12 @@ public class OpenAiResponseFormatPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(chatProperties.getOptions().getResponseFormat()).isEqualTo(
-						new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, "MyName", responseFormatJsonSchema, true));
+				assertThat(chatProperties.getOptions().getResponseFormat())
+					.isEqualTo(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, responseFormatJsonSchema));
 			});
 	}
 
 	@Test
-	@Disabled("GH-1645")
 	public void responseFormatJsonObject() {
 
 		new ApplicationContextRunner()
@@ -90,7 +87,7 @@ public class OpenAiResponseFormatPropertiesTests {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 
 				assertThat(chatProperties.getOptions().getResponseFormat())
-					.isEqualTo(new ResponseFormat(ResponseFormat.Type.JSON_OBJECT));
+					.isEqualTo(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build());
 			});
 	}
 
