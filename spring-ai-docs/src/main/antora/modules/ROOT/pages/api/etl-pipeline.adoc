@@ -118,7 +118,7 @@ class MyJsonReader {
 
 	private final Resource resource;
 
-    MyAiAppComponent(@Value("classpath:bikes.json") Resource resource) {
+    MyJsonReader(@Value("classpath:bikes.json") Resource resource) {
         this.resource = resource;
     }
 

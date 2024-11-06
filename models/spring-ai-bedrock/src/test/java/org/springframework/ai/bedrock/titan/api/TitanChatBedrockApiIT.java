@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TitanChatBedrockApiIT {
 
 	TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.EU_CENTRAL_1.id(), ModelOptionsUtils.OBJECT_MAPPER,
+			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), ModelOptionsUtils.OBJECT_MAPPER,
 			Duration.ofMinutes(2));
 
 	TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")

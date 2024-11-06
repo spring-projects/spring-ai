@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -420,6 +421,7 @@ public class MiniMaxApi {
 			@JsonProperty("parameters")
 			private Map<String, Object> parameters;
 
+			@JsonIgnore
 			private String jsonSchema;
 
 			private Function() {

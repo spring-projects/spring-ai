@@ -21,11 +21,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.bedrock.BedrockTestUtils;
+import org.springframework.ai.autoconfigure.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.llama.BedrockLlamaChatModel;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -39,21 +40,19 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.within;
 
 /**
  * @author Christian Tzolov
  * @author Wei Jiang
- * @since 0.8.0
+ * @author Mark Pollack
+ * @since 1.0.0
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class BedrockLlamaChatAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true",
-				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
-				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
-				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 				"spring.ai.bedrock.llama.chat.model=" + LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
 				"spring.ai.bedrock.llama.chat.options.temperature=0.5",
 				"spring.ai.bedrock.llama.chat.options.maxGenLen=500")
@@ -67,7 +66,7 @@ public class BedrockLlamaChatAutoConfigurationIT {
 			""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
 	private final UserMessage userMessage = new UserMessage(
-			"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+			"Describe 3 of the most feared and legendary pirates from the Golden Age of Piracy, particularly those known for their intimidating tactics and whose stories influenced popular culture.");
 
 	@Test
 	public void chatCompletion() {
@@ -104,11 +103,11 @@ public class BedrockLlamaChatAutoConfigurationIT {
 	@Test
 	public void propertiesTest() {
 
-		new ApplicationContextRunner()
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
 			.withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.llama.chat.model=MODEL_XYZ",
-					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
+					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 					"spring.ai.bedrock.llama.chat.options.temperature=0.55",
 					"spring.ai.bedrock.llama.chat.options.maxGenLen=123")
 			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
@@ -117,9 +116,9 @@ public class BedrockLlamaChatAutoConfigurationIT {
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
 
 				assertThat(llamaChatProperties.isEnabled()).isTrue();
-				assertThat(awsProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
+				assertThat(awsProperties.getRegion()).isEqualTo(Region.US_EAST_1.id());
 
-				assertThat(llamaChatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(llamaChatProperties.getOptions().getTemperature()).isCloseTo(0.55, within(0.0001));
 				assertThat(llamaChatProperties.getOptions().getMaxGenLen()).isEqualTo(123);
 				assertThat(llamaChatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
@@ -132,14 +131,16 @@ public class BedrockLlamaChatAutoConfigurationIT {
 	public void chatCompletionDisabled() {
 
 		// It is disabled by default
-		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
+			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockLlamaChatModel.class)).isEmpty();
 			});
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true")
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
+			.withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true")
 			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isNotEmpty();
@@ -147,7 +148,8 @@ public class BedrockLlamaChatAutoConfigurationIT {
 			});
 
 		// Explicitly disable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama.chat.enabled=false")
+		BedrockTestUtils.getContextRunnerWithUserConfiguration()
+			.withPropertyValues("spring.ai.bedrock.llama.chat.enabled=false")
 			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isEmpty();

@@ -224,6 +224,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		var searchParamBuilder = SearchParam.newBuilder()
+			.withDatabaseName(this.config.databaseName)
 			.withCollectionName(this.config.collectionName)
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withMetricType(this.config.metricType)

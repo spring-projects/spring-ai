@@ -21,7 +21,6 @@
 	</scm>
 
 	<properties>
-		<disable.checks>false</disable.checks>
 	</properties>
 
 	<dependencies>
@@ -233,14 +232,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Vertex AI PaLM2 -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vertex-ai-palm2</artifactId>
-			<version>${project.parent.version}</version>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- Vertex AI Embedding -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -277,6 +268,14 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-bedrock</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Bedrock  Converse -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-bedrock-converse</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -447,7 +446,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>oracle-free</artifactId>
-			<version>1.19.8</version>
+			<version>${oracle.free.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -460,12 +459,6 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>cassandra</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>oracle-free</artifactId>
 			<scope>test</scope>
 		</dependency>
 

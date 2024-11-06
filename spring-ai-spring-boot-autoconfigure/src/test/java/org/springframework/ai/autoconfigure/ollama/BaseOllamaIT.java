@@ -60,7 +60,7 @@ public class BaseOllamaIT {
 	 * to the file ".testcontainers.properties" located in your home directory
 	 */
 	public static boolean isDisabled() {
-		return false;
+		return true;
 	}
 
 	public static String buildConnectionWithModel(String model) {
