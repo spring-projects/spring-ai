@@ -18,7 +18,7 @@ package org.springframework.ai.observation.conventions;
 
 /**
  * Enumeration of metric names used in AI observations.
- * <p/>
+ * <p>
  * Based on OpenTelemetry's Semantic Conventions for AI systems.
  *
  * @author Thomas Vitale
