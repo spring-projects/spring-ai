@@ -54,7 +54,8 @@ class AdvisedRequestTests {
 		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("userText cannot be null or empty");
+			.hasMessage(
+					"userText cannot be null or empty unless messages are provided and contain Tool Response message.");
 	}
 
 	@Test
@@ -62,7 +63,8 @@ class AdvisedRequestTests {
 		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "", null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("userText cannot be null or empty");
+			.hasMessage(
+					"userText cannot be null or empty unless messages are provided and contain Tool Response message.");
 	}
 
 	@Test
