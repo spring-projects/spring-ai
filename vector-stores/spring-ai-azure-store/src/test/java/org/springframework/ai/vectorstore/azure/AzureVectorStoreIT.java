@@ -325,6 +325,7 @@ public class AzureVectorStoreIT {
 		public EmbeddingModel embeddingModel() {
 			return new TransformersEmbeddingModel();
 		}
+
 	}
 
 }
