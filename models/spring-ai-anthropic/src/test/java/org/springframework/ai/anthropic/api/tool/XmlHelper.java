@@ -35,7 +35,7 @@ import org.springframework.util.StringUtils;
 /**
  * @author Christian Tzolov
  */
-public class XmlHelper {
+public final class XmlHelper {
 
 	// Regular expression to match XML block between <function_calls> and
 	// </function_calls> tags
@@ -45,6 +45,10 @@ public class XmlHelper {
 	private static final Pattern FUNCTION_CALLS_PATTERN = Pattern.compile(FUNCTION_CALLS_REGEX, Pattern.DOTALL);
 
 	private static final XmlMapper xmlMapper = new XmlMapper();
+
+	private XmlHelper() {
+
+	}
 
 	public static String extractFunctionCallsXmlBlock(String text) {
 		if (!StringUtils.hasText(text)) {
@@ -128,7 +132,8 @@ public class XmlHelper {
 					@JsonProperty("description") String description) {
 			}
 		}
- 	} // @formatter:on
+	}
+	// @formatter:on
 
 	@JsonInclude(Include.NON_NULL) // @formatter:off
 	@JacksonXmlRootElement(localName = "function_calls")

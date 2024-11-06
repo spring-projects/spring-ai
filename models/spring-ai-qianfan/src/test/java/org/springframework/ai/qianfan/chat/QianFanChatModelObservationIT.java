@@ -52,7 +52,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Geng Rong
  */
 @SpringBootTest(classes = QianFanChatModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariables(value = { @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "QIANFAN_SECRET_KEY", matches = ".+") })
 public class QianFanChatModelObservationIT {
 

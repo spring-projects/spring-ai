@@ -31,4 +31,8 @@ public final class OpenAiApiConstants {
 
 	public static final String PROVIDER_NAME = AiProvider.OPENAI.value();
 
+	private OpenAiApiConstants() {
+
+	}
+
 }

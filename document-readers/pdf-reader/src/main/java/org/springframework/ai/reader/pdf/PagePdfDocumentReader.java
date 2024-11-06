@@ -16,7 +16,7 @@
 
 package org.springframework.ai.reader.pdf;
 
-import java.awt.*;
+import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,7 +112,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
 				lastPage = page;
 				if (counter % logFrequency == 0 && counter / logFrequency < 10) {
-					this.logger.info("Processing PDF page: {}", (counter + 1));
+					logger.info("Processing PDF page: {}", (counter + 1));
 				}
 				counter++;
 
@@ -154,7 +154,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 				readDocuments.add(toDocument(lastPage, pageTextGroupList.stream().collect(Collectors.joining()),
 						startPageNumber, pageNumber));
 			}
-			this.logger.info("Processing {} pages", totalPages);
+			logger.info("Processing {} pages", totalPages);
 			return readDocuments;
 
 		}

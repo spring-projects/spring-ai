@@ -33,7 +33,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
@@ -48,9 +48,8 @@ public class OpenAiChatModeAdditionalHttpHeadersIT {
 	@Test
 	void additionalApiKeyHeader() {
 
-		assertThrows(NonTransientAiException.class, () -> {
-			this.openAiChatModel.call("Tell me a joke");
-		});
+		assertThatThrownBy(() -> this.openAiChatModel.call("Tell me a joke"))
+			.isInstanceOf(NonTransientAiException.class);
 
 		// Use the additional headers to override the Api Key.
 		// Mind that you have to prefix the Api Key with the "Bearer " prefix.

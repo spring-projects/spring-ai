@@ -146,7 +146,7 @@ public class MistralAiApiToolFunctionCallIT {
 			ResponseEntity<ChatCompletion> chatCompletion2 = this.completionApi
 				.chatCompletionEntity(functionResponseRequest);
 
-			this.logger.info("Final response: " + chatCompletion2.getBody());
+			logger.info("Final response: " + chatCompletion2.getBody());
 
 			assertThat(chatCompletion2.getBody().choices()).isNotEmpty();
 

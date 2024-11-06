@@ -36,8 +36,9 @@ public class MoonshotRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(MoonshotApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(MoonshotApi.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

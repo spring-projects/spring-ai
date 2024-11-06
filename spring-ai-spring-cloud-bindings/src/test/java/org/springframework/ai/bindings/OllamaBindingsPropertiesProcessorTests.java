@@ -27,7 +27,6 @@ import org.springframework.cloud.bindings.Bindings;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH;
 
 /**
  * Unit tests for {@link OllamaBindingsPropertiesProcessor}.
@@ -38,10 +37,10 @@ class OllamaBindingsPropertiesProcessorTests {
 
 	private final Bindings bindings = new Bindings(new Binding("test-name", Paths.get("test-path"),
 	// @formatter:off
-            Map.of(
-                Binding.TYPE, OllamaBindingsPropertiesProcessor.TYPE,
-                "uri", "https://example.net/ollama:11434"
-            )));
+			Map.of(
+				Binding.TYPE, OllamaBindingsPropertiesProcessor.TYPE,
+				"uri", "https://example.net/ollama:11434"
+			)));
     // @formatter:on
 
 	private final MockEnvironment environment = new MockEnvironment();
@@ -56,7 +55,8 @@ class OllamaBindingsPropertiesProcessorTests {
 
 	@Test
 	void whenDisabledThenPropertiesAreNotContributed() {
-		this.environment.setProperty("%s.ollama.enabled".formatted(CONFIG_PATH), "false");
+		this.environment.setProperty(
+				"%s.ollama.enabled".formatted(org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH), "false");
 
 		new OllamaBindingsPropertiesProcessor().process(this.environment, this.bindings, this.properties);
 		assertThat(this.properties).isEmpty();

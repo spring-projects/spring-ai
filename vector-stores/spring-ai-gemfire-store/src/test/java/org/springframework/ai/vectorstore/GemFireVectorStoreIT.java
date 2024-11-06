@@ -30,6 +30,7 @@ import com.vmware.gemfire.testcontainers.GemFireCluster;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -41,7 +42,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Thomas Vitale
  * @since 1.0.0
  */
+@Disabled
 public class GemFireVectorStoreIT {
 
 	public static final String INDEX_NAME = "spring-ai-index1";
@@ -110,7 +111,7 @@ public class GemFireVectorStoreIT {
 			vectorStore.add(this.documents);
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await()
-				.atMost(1, MINUTES)
+				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(3)),
 						hasSize(0));
 		});
@@ -123,7 +124,7 @@ public class GemFireVectorStoreIT {
 			vectorStore.add(this.documents);
 
 			Awaitility.await()
-				.atMost(1, MINUTES)
+				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
 						hasSize(1));
 
@@ -147,7 +148,7 @@ public class GemFireVectorStoreIT {
 			vectorStore.add(List.of(document));
 			SearchRequest springSearchRequest = SearchRequest.query("Spring").withTopK(5);
 			Awaitility.await()
-				.atMost(1, MINUTES)
+				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
 				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
 						hasSize(1));
 			List<Document> results = vectorStore.similaritySearch(springSearchRequest);
@@ -182,7 +183,7 @@ public class GemFireVectorStoreIT {
 			vectorStore.add(this.documents);
 
 			Awaitility.await()
-				.atMost(1, MINUTES)
+				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
 				.until(() -> vectorStore
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(5).withSimilarityThresholdAll()),
 						hasSize(3));

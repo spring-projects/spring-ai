@@ -52,43 +52,59 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(AbstractBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(AbstractBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(Ai21Jurassic2ChatBedrockApi.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(Ai21Jurassic2ChatBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 
-		for (var tr : findJsonAnnotatedClassesInPackage(CohereChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(CohereChatBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereChatOptions.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereChatOptions.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(CohereEmbeddingBedrockApi.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(CohereEmbeddingBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereEmbeddingOptions.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereEmbeddingOptions.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 
-		for (var tr : findJsonAnnotatedClassesInPackage(LlamaChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(LlamaChatBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockLlamaChatOptions.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockLlamaChatOptions.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 
-		for (var tr : findJsonAnnotatedClassesInPackage(TitanChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(TitanChatBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanChatOptions.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanChatOptions.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanEmbeddingOptions.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanEmbeddingOptions.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(TitanEmbeddingBedrockApi.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(TitanEmbeddingBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 
-		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicChatBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicChatOptions.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicChatOptions.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 
-		for (var tr : findJsonAnnotatedClassesInPackage(Anthropic3ChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(Anthropic3ChatBedrockApi.class)) {
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(Anthropic3ChatOptions.class))
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(Anthropic3ChatOptions.class)) {
 			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

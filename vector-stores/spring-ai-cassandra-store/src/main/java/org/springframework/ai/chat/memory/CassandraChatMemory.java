@@ -53,7 +53,13 @@ public final class CassandraChatMemory implements ChatMemory {
 
 	final CassandraChatMemoryConfig conf;
 
-	private final PreparedStatement addUserStmt, addAssistantStmt, getStmt, deleteStmt;
+	private final PreparedStatement addUserStmt;
+
+	private final PreparedStatement addAssistantStmt;
+
+	private final PreparedStatement getStmt;
+
+	private final PreparedStatement deleteStmt;
 
 	public CassandraChatMemory(CassandraChatMemoryConfig config) {
 		this.conf = config;
@@ -71,7 +77,7 @@ public final class CassandraChatMemory implements ChatMemory {
 	@Override
 	public void add(String conversationId, List<Message> messages) {
 		final AtomicLong instantSeq = new AtomicLong(Instant.now().toEpochMilli());
-		messages.forEach((msg) -> {
+		messages.forEach(msg -> {
 			if (msg.getMetadata().containsKey(CONVERSATION_TS)) {
 				msg.getMetadata().put(CONVERSATION_TS, Instant.ofEpochMilli(instantSeq.getAndIncrement()));
 			}
@@ -89,12 +95,7 @@ public final class CassandraChatMemory implements ChatMemory {
 
 		msg.getMetadata().putIfAbsent(CONVERSATION_TS, Instant.now());
 
-		PreparedStatement stmt;
-		switch (msg.getMessageType()) {
-			case USER -> stmt = this.addUserStmt;
-			case ASSISTANT -> stmt = this.addAssistantStmt;
-			default -> throw new IllegalArgumentException("Cant add type " + msg);
-		}
+		PreparedStatement stmt = getStatement(msg);
 
 		List<Object> primaryKeys = this.conf.primaryKeyTranslator.apply(sessionId);
 		BoundStatementBuilder builder = stmt.boundStatementBuilder();
@@ -110,6 +111,14 @@ public final class CassandraChatMemory implements ChatMemory {
 			.setString("message", msg.getContent());
 
 		this.conf.session.execute(builder.build());
+	}
+
+	PreparedStatement getStatement(Message msg) {
+		return switch (msg.getMessageType()) {
+			case USER -> this.addUserStmt;
+			case ASSISTANT -> this.addAssistantStmt;
+			default -> throw new IllegalArgumentException("Cant add type " + msg);
+		};
 	}
 
 	@Override

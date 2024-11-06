@@ -45,7 +45,7 @@ import org.springframework.retry.support.RetryTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Geng Rong
@@ -80,13 +80,13 @@ public class MoonshotRetryTests {
 
 		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.ASSISTANT),
 				ChatCompletionFinishReason.STOP);
-		ChatCompletion expectedChatCompletion = new ChatCompletion("id", "chat.completion", 789l, "model",
+		ChatCompletion expectedChatCompletion = new ChatCompletion("id", "chat.completion", 789L, "model",
 				List.of(choice), new MoonshotApi.Usage(10, 10, 10));
 
-		when(this.moonshotApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
+		given(this.moonshotApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
 		var result = this.chatModel.call(new Prompt("text"));
 
@@ -98,8 +98,8 @@ public class MoonshotRetryTests {
 
 	@Test
 	public void moonshotChatNonTransientError() {
-		when(this.moonshotApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.moonshotApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
 	}
 
@@ -108,13 +108,13 @@ public class MoonshotRetryTests {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(0, new ChatCompletionMessage("Response", Role.ASSISTANT),
 				ChatCompletionFinishReason.STOP, null);
-		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", "chat.completion.chunk", 789l,
+		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", "chat.completion.chunk", 789L,
 				"model", List.of(choice));
 
-		when(this.moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.thenThrow(new TransientAiException("Transient Error 1"))
-			.thenThrow(new TransientAiException("Transient Error 2"))
-			.thenReturn(Flux.just(expectedChatCompletion));
+		given(this.moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(Flux.just(expectedChatCompletion));
 
 		var result = this.chatModel.stream(new Prompt("text"));
 
@@ -126,8 +126,8 @@ public class MoonshotRetryTests {
 
 	@Test
 	public void moonshotChatStreamNonTransientError() {
-		when(this.moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.thenThrow(new RuntimeException("Non Transient Error"));
+		given(this.moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.stream(new Prompt("text")).collectList().block());
 	}
 

@@ -88,6 +88,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bedrock-converse</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-huggingface</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -125,12 +131,6 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-transformers</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-vertex-ai-palm2</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -182,6 +182,12 @@
                 <artifactId>spring-ai-azure-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -293,6 +299,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-azure-cosmos-db-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
@@ -308,6 +320,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bedrock-converse-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -434,12 +452,6 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-vertex-ai-palm2-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

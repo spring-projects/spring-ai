@@ -106,9 +106,11 @@ public class OpenAiAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
-			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
-				return chatResponse.getResults().get(0).getOutput().getContent();
-			}).collect(Collectors.joining());
+			String response = responseFlux.collectList()
+				.block()
+				.stream()
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
+				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);

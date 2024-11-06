@@ -17,8 +17,9 @@
 package org.springframework.ai.observation.conventions;
 
 /**
- * Collection of metric names used in AI observations. Based on the OpenTelemetry Semantic
- * Conventions for AI Systems.
+ * Enumeration of metric names used in AI observations.
+ * <p/>
+ * Based on OpenTelemetry's Semantic Conventions for AI systems.
  *
  * @author Thomas Vitale
  * @since 1.0.0
@@ -28,10 +29,7 @@ package org.springframework.ai.observation.conventions;
  */
 public enum AiObservationMetricNames {
 
-// @formatter:off
-
-	OPERATION_DURATION("gen_ai.client.operation.duration"),
-	TOKEN_USAGE("gen_ai.client.token.usage");
+	OPERATION_DURATION("gen_ai.client.operation.duration"), TOKEN_USAGE("gen_ai.client.token.usage");
 
 	private final String value;
 
@@ -42,7 +40,5 @@ public enum AiObservationMetricNames {
 	public String value() {
 		return this.value;
 	}
-
-// @formatter:on
 
 }

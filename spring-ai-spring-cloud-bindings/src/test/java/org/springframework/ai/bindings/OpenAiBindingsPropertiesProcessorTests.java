@@ -27,7 +27,6 @@ import org.springframework.cloud.bindings.Bindings;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH;
 
 /**
  * Unit tests for {@link OpenAiBindingsPropertiesProcessor}.
@@ -38,11 +37,11 @@ class OpenAiBindingsPropertiesProcessorTests {
 
 	private final Bindings bindings = new Bindings(new Binding("test-name", Paths.get("test-path"),
 	// @formatter:off
-            Map.of(
-                    Binding.TYPE, OpenAiBindingsPropertiesProcessor.TYPE,
-                    "api-key", "demo",
-                    "uri", "https://my.openai.example.net"
-            )));
+			Map.of(
+				Binding.TYPE, OpenAiBindingsPropertiesProcessor.TYPE,
+				"api-key", "demo",
+				"uri", "https://my.openai.example.net"
+			)));
     // @formatter:on
 
 	private final MockEnvironment environment = new MockEnvironment();
@@ -58,7 +57,8 @@ class OpenAiBindingsPropertiesProcessorTests {
 
 	@Test
 	void whenDisabledThenPropertiesAreNotContributed() {
-		this.environment.setProperty("%s.openai.enabled".formatted(CONFIG_PATH), "false");
+		this.environment.setProperty(
+				"%s.openai.enabled".formatted(org.springframework.ai.bindings.BindingsValidator.CONFIG_PATH), "false");
 
 		new OpenAiBindingsPropertiesProcessor().process(this.environment, this.bindings, this.properties);
 		assertThat(this.properties).isEmpty();

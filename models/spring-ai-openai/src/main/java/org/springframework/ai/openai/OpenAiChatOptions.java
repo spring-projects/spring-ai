@@ -37,8 +37,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -117,7 +115,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
-	@NestedConfigurationProperty
 	private @JsonProperty("stop") List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
@@ -135,8 +132,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
-	@NestedConfigurationProperty
-	private @JsonProperty("tools") List<FunctionTool> tools;
+	private @JsonProperty("tools") List<OpenAiApi.FunctionTool> tools;
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -161,7 +157,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
@@ -174,7 +169,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
@@ -189,11 +183,9 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	/**
 	 * Optional HTTP headers to be added to the chat completion request.
 	 */
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, String> httpHeaders = new HashMap<>();
 
-	@NestedConfigurationProperty
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
@@ -377,11 +369,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.topP = topP;
 	}
 
-	public List<FunctionTool> getTools() {
+	public List<OpenAiApi.FunctionTool> getTools() {
 		return this.tools;
 	}
 
-	public void setTools(List<FunctionTool> tools) {
+	public void setTools(List<OpenAiApi.FunctionTool> tools) {
 		this.tools = tools;
 	}
 
@@ -600,7 +592,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withTools(List<FunctionTool> tools) {
+		public Builder withTools(List<OpenAiApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}

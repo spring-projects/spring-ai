@@ -94,6 +94,12 @@ To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/m
 ./mvnw javadoc:javadoc -Pjavadoc
 ```
 
+To build with checkstyles enabled.
+Checkstyles are currently disabled, but you can enable them by doing the following:
+```shell
+./mvnw clean package -DskipTests -Ddisable.checks=false
+```
+
 ## Project Links
 
 * [Documentation](https://docs.spring.io/spring-ai/reference/)

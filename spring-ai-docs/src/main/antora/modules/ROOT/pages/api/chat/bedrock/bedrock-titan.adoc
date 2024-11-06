@@ -220,7 +220,7 @@ Here is a simple snippet how to use the api programmatically:
 [source,java]
 ----
 TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatCompletionModel.TITAN_TEXT_EXPRESS_V1.id(),
-		Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
+		Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
 	.withTemperature(0.5)

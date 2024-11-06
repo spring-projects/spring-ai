@@ -121,7 +121,8 @@ class OpenAiChatClientIT extends AbstractIT {
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
-				.entity(new ParameterizedTypeReference<List<String>>() {});
+				.entity(new ParameterizedTypeReference<List<String>>() {
+				});
 		// @formatter:on
 
 		logger.info(collection.toString());

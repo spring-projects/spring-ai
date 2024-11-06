@@ -78,11 +78,11 @@ class EmbeddingIT extends AbstractIT {
 	void embeddingBatchDocumentsThatExceedTheLimit() throws Exception {
 		assertThat(this.embeddingModel).isNotNull();
 		String contentAsString = this.resource.getContentAsString(StandardCharsets.UTF_8);
-		assertThatThrownBy(() -> {
-			this.embeddingModel.embed(List.of(new Document("Hello World"), new Document(contentAsString)),
-					OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
-					new TokenCountBatchingStrategy());
-		}).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(
+				() -> this.embeddingModel.embed(List.of(new Document("Hello World"), new Document(contentAsString)),
+						OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+						new TokenCountBatchingStrategy()))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test

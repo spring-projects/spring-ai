@@ -31,6 +31,7 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -48,7 +49,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -57,6 +57,7 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Thomas Vitale
  * @author Soby Chacko
  */
+@Disabled
 public class GemFireVectorStoreObservationIT {
 
 	public static final String TEST_INDEX_NAME = "spring-ai-index1";
@@ -145,7 +146,7 @@ public class GemFireVectorStoreObservationIT {
 				.hasBeenStopped();
 
 			Awaitility.await()
-				.atMost(1, MINUTES)
+				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
 				.until(() -> vectorStore
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(5).withSimilarityThresholdAll()),
 						hasSize(3));

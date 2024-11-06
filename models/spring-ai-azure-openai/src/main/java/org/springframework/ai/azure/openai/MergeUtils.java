@@ -48,7 +48,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MergeUtils {
+public final class MergeUtils {
 
 	private static final Class<?>[] CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES = new Class<?>[] { String.class,
 			OffsetDateTime.class, List.class, CompletionsUsage.class };
@@ -58,6 +58,10 @@ public class MergeUtils {
 
 	private static final Class<?>[] chatResponseMessageConstructorArgumentTypes = new Class<?>[] { ChatRole.class,
 			String.class };
+
+	private MergeUtils() {
+
+	}
 
 	/**
 	 * Create a new instance of the given class using the constructor at the given index.

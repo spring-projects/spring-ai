@@ -107,7 +107,7 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 
 NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-key` properties if set take precedence over the common properties.
-Similarly, the `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.openai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.

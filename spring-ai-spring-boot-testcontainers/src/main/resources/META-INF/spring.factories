@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=\
 org.springframework.ai.testcontainers.service.connection.chroma.ChromaContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.milvus.MilvusContainerConnectionDetailsFactory,\

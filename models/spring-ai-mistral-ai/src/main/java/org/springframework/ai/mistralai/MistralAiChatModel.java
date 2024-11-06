@@ -178,7 +178,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 				ChatCompletion chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					this.logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: {}", prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -266,7 +266,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 						}
 					}
 					catch (Exception e) {
-						this.logger.error("Error processing chat completion", e);
+						logger.error("Error processing chat completion", e);
 						return new ChatResponse(List.of());
 					}
 				}));
@@ -284,9 +284,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 				}
 			})
 			.doOnError(observation::error)
-			.doFinally(s -> {
-				observation.stop();
-			})
+			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on;
 
@@ -349,9 +347,8 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
 
-				toolResponseMessage.getResponses().forEach(response -> {
-					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
-				});
+				toolResponseMessage.getResponses()
+					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
 
 				return toolResponseMessage.getResponses()
 					.stream()

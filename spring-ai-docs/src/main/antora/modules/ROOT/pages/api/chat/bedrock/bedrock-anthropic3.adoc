@@ -271,7 +271,7 @@ Here is a simple snippet how to use the api programmatically:
 [source,java]
 ----
 Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(
-   AnthropicModel.CLAUDE_V2.id(), Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
+   AnthropicModel.CLAUDE_V2.id(), Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(Anthropic3ChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))

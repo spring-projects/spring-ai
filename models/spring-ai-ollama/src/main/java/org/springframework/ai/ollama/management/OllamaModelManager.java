@@ -81,13 +81,13 @@ public class OllamaModelManager {
 	}
 
 	public void deleteModel(String modelName) {
-		this.logger.info("Start deletion of model: {}", modelName);
+		logger.info("Start deletion of model: {}", modelName);
 		if (!isModelAvailable(modelName)) {
-			this.logger.info("Model {} not found", modelName);
+			logger.info("Model {} not found", modelName);
 			return;
 		}
 		this.ollamaApi.deleteModel(new DeleteModelRequest(modelName));
-		this.logger.info("Completed deletion of model: {}", modelName);
+		logger.info("Completed deletion of model: {}", modelName);
 	}
 
 	public void pullModel(String modelName) {
@@ -101,27 +101,27 @@ public class OllamaModelManager {
 
 		if (PullModelStrategy.WHEN_MISSING.equals(pullModelStrategy)) {
 			if (isModelAvailable(modelName)) {
-				this.logger.debug("Model '{}' already available. Skipping pull operation.", modelName);
+				logger.debug("Model '{}' already available. Skipping pull operation.", modelName);
 				return;
 			}
 		}
 
 		// @formatter:off
 
-		this.logger.info("Start pulling model: {}", modelName);
+		logger.info("Start pulling model: {}", modelName);
 		this.ollamaApi.pullModel(new PullModelRequest(modelName))
 				.bufferUntilChanged(OllamaApi.ProgressResponse::status)
 				.doOnEach(signal -> {
 					var progressResponses = signal.get();
 					if (!CollectionUtils.isEmpty(progressResponses) && progressResponses.get(progressResponses.size() - 1) != null) {
-						this.logger.info("Pulling the '{}' model - Status: {}", modelName, progressResponses.get(progressResponses.size() - 1).status());
+						logger.info("Pulling the '{}' model - Status: {}", modelName, progressResponses.get(progressResponses.size() - 1).status());
 					}
 				})
 				.takeUntil(progressResponses -> progressResponses.get(0) != null && progressResponses.get(0).status().equals("success"))
 				.timeout(this.options.timeout())
 				.retryWhen(Retry.backoff(this.options.maxRetries(), Duration.ofSeconds(5)))
 				.blockLast();
-		this.logger.info("Completed pulling the '{}' model", modelName);
+		logger.info("Completed pulling the '{}' model", modelName);
 
 		// @formatter:on
 	}

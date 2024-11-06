@@ -223,9 +223,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 					return new ChatResponse(generations, from(chatCompletion, request.model()));
 				}))
 				.doOnError(observation::error)
-				.doFinally(s -> {
-					observation.stop();
-				})
+				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			return new MessageAggregator().aggregate(chatResponse, observationContext::setResponse);
 

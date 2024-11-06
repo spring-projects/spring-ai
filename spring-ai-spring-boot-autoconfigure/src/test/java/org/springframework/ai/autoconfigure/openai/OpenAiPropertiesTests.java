@@ -26,8 +26,8 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -426,11 +426,11 @@ public class OpenAiPropertiesTests {
 
 				assertThat(chatProperties.getOptions().getTools()).hasSize(1);
 				var tool = chatProperties.getOptions().getTools().get(0);
-				assertThat(tool.type()).isEqualTo(Type.FUNCTION);
-				var function = tool.function();
-				assertThat(function.name()).isEqualTo("myFunction1");
-				assertThat(function.description()).isEqualTo("function description");
-				assertThat(function.parameters()).isNotEmpty();
+				assertThat(tool.getType()).isEqualTo(OpenAiApi.FunctionTool.Type.FUNCTION);
+				var function = tool.getFunction();
+				assertThat(function.getName()).isEqualTo("myFunction1");
+				assertThat(function.getDescription()).isEqualTo("function description");
+				assertThat(function.getParameters()).isNotEmpty();
 			});
 	}
 

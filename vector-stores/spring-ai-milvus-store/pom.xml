@@ -36,6 +36,11 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
+	<properties>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -50,12 +55,6 @@
 		</dependency>
 
 		<!-- TESTING -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vertex-ai-palm2</artifactId>
-			<version>${parent.version}</version>
-			<scope>test</scope>
-		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

@@ -81,7 +81,7 @@ public class WeatherServicePromptIT {
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
 				// assertThat(response.getResult().getOutput().getContent()).contains("30.0",
@@ -109,7 +109,7 @@ public class WeatherServicePromptIT {
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-				this.logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
 			});
@@ -137,7 +137,7 @@ public class WeatherServicePromptIT {
 		@JsonInclude(Include.NON_NULL)
 		public record Request(
 				@JsonProperty(required = true, value = "location") String location,
-				@JsonProperty(required = true, value = "unit") Unit unit) {}
+				@JsonProperty(required = true, value = "unit") Unit unit) { }
 		// @formatter:on
 
 		public record Response(double temperature, Unit unit) {

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,7 +35,6 @@ import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -222,26 +222,32 @@ public class MistralAiApi {
 	public enum ChatCompletionFinishReason {
 
 		// @formatter:off
-		 /**
-		  * The model hit a natural stop point or a provided stop sequence.
-		  */
-		 @JsonProperty("stop") STOP,
-		 /**
-		  * The maximum number of tokens specified in the request was reached.
-		  */
-		 @JsonProperty("length") LENGTH,
-		 /**
-		  * The content was omitted due to a flag from our content filters.
-		  */
-		 @JsonProperty("model_length") MODEL_LENGTH,
-		 /**
-		  *
-		  */
-		 @JsonProperty("error") ERROR,
-		 /**
-		  * The model requested a tool call.
-		  */
-		 @JsonProperty("tool_calls") TOOL_CALLS
+		/**
+		* The model hit a natural stop point or a provided stop sequence.
+		*/
+		@JsonProperty("stop")
+		STOP,
+
+		/**
+		* The maximum number of tokens specified in the request was reached.
+		*/
+		@JsonProperty("length")
+		LENGTH,
+
+		/**
+		* The content was omitted due to a flag from our content filters.
+		*/
+		@JsonProperty("model_length")
+		MODEL_LENGTH,
+
+		@JsonProperty("error")
+		ERROR,
+
+		/**
+		* The model requested a tool call.
+		*/
+		@JsonProperty("tool_calls")
+		TOOL_CALLS
 		 // @formatter:on
 
 	}
@@ -258,18 +264,18 @@ public class MistralAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
-		 TINY("open-mistral-7b"),
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MIXTRAL_7B
-		 MIXTRAL("open-mixtral-8x7b"),
-		 OPEN_MISTRAL_7B("open-mistral-7b"),
-		 OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
-		 OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
-		 SMALL("mistral-small-latest"),
-		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral is removing this model
-		 MEDIUM("mistral-medium-latest"),
-		 LARGE("mistral-large-latest");
-		 // @formatter:on
+		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
+		TINY("open-mistral-7b"),
+		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MIXTRAL_7B
+		MIXTRAL("open-mixtral-8x7b"),
+		OPEN_MISTRAL_7B("open-mistral-7b"),
+		OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
+		OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
+		SMALL("mistral-small-latest"),
+		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral is removing this model
+		MEDIUM("mistral-medium-latest"),
+		LARGE("mistral-large-latest");
+		// @formatter:on
 
 		private final String value;
 
@@ -295,7 +301,7 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		 EMBED("mistral-embed");
+		EMBED("mistral-embed");
 		 // @formatter:on
 
 		private final String value;
@@ -313,20 +319,49 @@ public class MistralAiApi {
 	/**
 	 * Represents a tool the model may call. Currently, only functions are supported as a
 	 * tool.
-	 *
-	 * @param type The type of the tool. Currently, only 'function' is supported.
-	 * @param function The function definition.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record FunctionTool(@JsonProperty("type") Type type, @JsonProperty("function") Function function) {
+	public static class FunctionTool {
+
+		// The type of the tool. Currently, only 'function' is supported.
+		@JsonProperty("type")
+		Type type = Type.FUNCTION;
+
+		// The function definition.
+		@JsonProperty("function")
+		Function function;
+
+		public FunctionTool() {
+
+		}
 
 		/**
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
-		@ConstructorBinding
 		public FunctionTool(Function function) {
 			this(Type.FUNCTION, function);
+		}
+
+		public FunctionTool(Type type, Function function) {
+			this.type = type;
+			this.function = function;
+		}
+
+		public Type getType() {
+			return this.type;
+		}
+
+		public Function getFunction() {
+			return this.function;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		public void setFunction(Function function) {
+			this.function = function;
 		}
 
 		/**
@@ -344,17 +379,40 @@ public class MistralAiApi {
 
 		/**
 		 * Function definition.
-		 *
-		 * @param description A description of what the function does, used by the model
-		 * to choose when and how to call the function.
-		 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or
-		 * contain underscores and dashes, with a maximum length of 64.
-		 * @param parameters The parameters the functions accepts, described as a JSON
-		 * Schema object. To describe a function that accepts no parameters, provide the
-		 * value {"type": "object", "properties": {}}.
 		 */
-		public record Function(@JsonProperty("description") String description, @JsonProperty("name") String name,
-				@JsonProperty("parameters") Map<String, Object> parameters) {
+		public static class Function {
+
+			@JsonProperty("description")
+			private String description;
+
+			@JsonProperty("name")
+			private String name;
+
+			@JsonProperty("parameters")
+			private Map<String, Object> parameters;
+
+			@JsonIgnore
+			private String jsonSchema;
+
+			private Function() {
+
+			}
+
+			/**
+			 * Create tool function definition.
+			 * @param description A description of what the function does, used by the
+			 * model to choose when and how to call the function.
+			 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9,
+			 * or contain underscores and dashes, with a maximum length of 64.
+			 * @param parameters The parameters the functions accepts, described as a JSON
+			 * Schema object. To describe a function that accepts no parameters, provide
+			 * the value {"type": "object", "properties": {}}.
+			 */
+			public Function(String description, String name, Map<String, Object> parameters) {
+				this.description = description;
+				this.name = name;
+				this.parameters = parameters;
+			}
 
 			/**
 			 * Create tool function definition.
@@ -362,9 +420,43 @@ public class MistralAiApi {
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
 			 */
-			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+			}
+
+			public String getDescription() {
+				return this.description;
+			}
+
+			public String getName() {
+				return this.name;
+			}
+
+			public Map<String, Object> getParameters() {
+				return this.parameters;
+			}
+
+			public void setDescription(String description) {
+				this.description = description;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public void setParameters(Map<String, Object> parameters) {
+				this.parameters = parameters;
+			}
+
+			public String getJsonSchema() {
+				return this.jsonSchema;
+			}
+
+			public void setJsonSchema(String jsonSchema) {
+				this.jsonSchema = jsonSchema;
+				if (jsonSchema != null) {
+					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
+				}
 			}
 
 		}
@@ -383,9 +475,9 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(
 	// @formatter:off
-		 @JsonProperty("prompt_tokens") Integer promptTokens,
-		 @JsonProperty("total_tokens") Integer totalTokens,
-		 @JsonProperty("completion_tokens") Integer completionTokens) {
+		@JsonProperty("prompt_tokens") Integer promptTokens,
+		@JsonProperty("total_tokens") Integer totalTokens,
+		@JsonProperty("completion_tokens") Integer completionTokens) {
 		 // @formatter:on
 	}
 
@@ -400,9 +492,9 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Embedding(
 	// @formatter:off
-		 @JsonProperty("index") Integer index,
-		 @JsonProperty("embedding") float[] embedding,
-		 @JsonProperty("object") String object) {
+		@JsonProperty("index") Integer index,
+		@JsonProperty("embedding") float[] embedding,
+		@JsonProperty("object") String object) {
 		 // @formatter:on
 
 		/**
@@ -454,9 +546,9 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest<T>(
 	// @formatter:off
-		 @JsonProperty("input") T input,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("encoding_format") String encodingFormat) {
+		@JsonProperty("input") T input,
+		@JsonProperty("model") String model,
+		@JsonProperty("encoding_format") String encodingFormat) {
 		 // @formatter:on
 
 		/**
@@ -492,10 +584,10 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingList<T>(
 	// @formatter:off
-			 @JsonProperty("object") String object,
-			 @JsonProperty("data") List<T> data,
-			 @JsonProperty("model") String model,
-			 @JsonProperty("usage") Usage usage) {
+			@JsonProperty("object") String object,
+			@JsonProperty("data") List<T> data,
+			@JsonProperty("model") String model,
+			@JsonProperty("usage") Usage usage) {
 		 // @formatter:on
 	}
 
@@ -538,18 +630,18 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 	// @formatter:off
-			 @JsonProperty("model") String model,
-			 @JsonProperty("messages") List<ChatCompletionMessage> messages,
-			 @JsonProperty("tools") List<FunctionTool> tools,
-			 @JsonProperty("tool_choice") ToolChoice toolChoice,
-			 @JsonProperty("temperature") Double temperature,
-			 @JsonProperty("top_p") Double topP,
-			 @JsonProperty("max_tokens") Integer maxTokens,
-			 @JsonProperty("stream") Boolean stream,
-			 @JsonProperty("safe_prompt") Boolean safePrompt,
-	         @JsonProperty("stop") List<String> stop,
-			 @JsonProperty("random_seed") Integer randomSeed,
-			 @JsonProperty("response_format") ResponseFormat responseFormat) {
+			@JsonProperty("model") String model,
+			@JsonProperty("messages") List<ChatCompletionMessage> messages,
+			@JsonProperty("tools") List<FunctionTool> tools,
+			@JsonProperty("tool_choice") ToolChoice toolChoice,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("safe_prompt") Boolean safePrompt,
+			@JsonProperty("stop") List<String> stop,
+			@JsonProperty("random_seed") Integer randomSeed,
+			@JsonProperty("response_format") ResponseFormat responseFormat) {
 		 // @formatter:on
 
 		/**
@@ -622,9 +714,12 @@ public class MistralAiApi {
 		public enum ToolChoice {
 
 			// @formatter:off
-			 @JsonProperty("auto") AUTO,
-			 @JsonProperty("any") ANY,
-			 @JsonProperty("none") NONE
+			@JsonProperty("auto")
+			AUTO,
+			@JsonProperty("any")
+			ANY,
+			@JsonProperty("none")
+			NONE
 			 // @formatter:on
 
 		}
@@ -655,12 +750,17 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionMessage(
 	// @formatter:off
-		 @JsonProperty("content") String content,
-		 @JsonProperty("role") Role role,
-		 @JsonProperty("name") String name,
-		 @JsonProperty("tool_calls") List<ToolCall> toolCalls,
-		 @JsonProperty("tool_call_id") String toolCallId) {
-		 // @formatter:on
+		@JsonProperty("content")
+		String content,
+		@JsonProperty("role")
+		Role role,
+		@JsonProperty("name")
+		String name,
+		@JsonProperty("tool_calls")
+		List<ToolCall> toolCalls,
+		@JsonProperty("tool_call_id")
+		String toolCallId) {
+		// @formatter:on
 
 		/**
 		 * Message comprising the conversation.
@@ -693,10 +793,14 @@ public class MistralAiApi {
 		public enum Role {
 
 			// @formatter:off
-			 @JsonProperty("system") SYSTEM,
-			 @JsonProperty("user") USER,
-			 @JsonProperty("assistant") ASSISTANT,
-			 @JsonProperty("tool") TOOL
+			@JsonProperty("system")
+			SYSTEM,
+			@JsonProperty("user")
+			USER,
+			@JsonProperty("assistant")
+			ASSISTANT,
+			@JsonProperty("tool")
+			TOOL
 			 // @formatter:on
 
 		}
@@ -746,12 +850,12 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletion(
 	// @formatter:off
-		 @JsonProperty("id") String id,
-		 @JsonProperty("object") String object,
-		 @JsonProperty("created") Long created,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("choices") List<Choice> choices,
-		 @JsonProperty("usage") Usage usage) {
+		@JsonProperty("id") String id,
+		@JsonProperty("object") String object,
+		@JsonProperty("created") Long created,
+		@JsonProperty("model") String model,
+		@JsonProperty("choices") List<Choice> choices,
+		@JsonProperty("usage") Usage usage) {
 		 // @formatter:on
 
 		/**
@@ -765,9 +869,9 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record Choice(
 		// @formatter:off
-			 @JsonProperty("index") Integer index,
-			 @JsonProperty("message") ChatCompletionMessage message,
-			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+			@JsonProperty("index") Integer index,
+			@JsonProperty("message") ChatCompletionMessage message,
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 			@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
 		}
@@ -838,11 +942,11 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
 	// @formatter:off
-		 @JsonProperty("id") String id,
-		 @JsonProperty("object") String object,
-		 @JsonProperty("created") Long created,
-		 @JsonProperty("model") String model,
-		 @JsonProperty("choices") List<ChunkChoice> choices) {
+		@JsonProperty("id") String id,
+		@JsonProperty("object") String object,
+		@JsonProperty("created") Long created,
+		@JsonProperty("model") String model,
+		@JsonProperty("choices") List<ChunkChoice> choices) {
 		 // @formatter:on
 
 		/**
@@ -856,9 +960,9 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ChunkChoice(
 		// @formatter:off
-			 @JsonProperty("index") Integer index,
-			 @JsonProperty("delta") ChatCompletionMessage delta,
-			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+			@JsonProperty("index") Integer index,
+			@JsonProperty("delta") ChatCompletionMessage delta,
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 		@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
 		}

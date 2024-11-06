@@ -36,6 +36,9 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
+	<properties>
+	</properties>
+
 	<dependencies>
 		
 		<!-- production dependencies -->
@@ -49,12 +52,6 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-retry</artifactId>
 			<version>${project.parent.version}</version>
-		</dependency>
-
-		<!-- NOTE: Required only by the @ConstructorBinding. -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot</artifactId>
 		</dependency>
 
 		<dependency>
@@ -133,7 +130,8 @@
             <artifactId>ollama</artifactId>
             <scope>test</scope>
         </dependency>
-		
+
+
 	</dependencies>
 
 </project>

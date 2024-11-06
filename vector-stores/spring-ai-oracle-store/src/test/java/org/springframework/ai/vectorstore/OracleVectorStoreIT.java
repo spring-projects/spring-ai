@@ -28,6 +28,7 @@ import javax.sql.DataSource;
 
 import oracle.jdbc.pool.OracleDataSource;
 import org.junit.Assert;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -55,9 +56,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY;
 
 @Testcontainers
+@Disabled("Oracle image is 2GB")
 public class OracleVectorStoreIT {
 
 	@Container
@@ -119,7 +120,8 @@ public class OracleVectorStoreIT {
 	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
 	public void addAndSearch(String distanceType) {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + DEFAULT_SEARCH_ACCURACY)
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy="
+					+ org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -224,7 +226,8 @@ public class OracleVectorStoreIT {
 	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
 	public void documentUpdate(String distanceType) {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + DEFAULT_SEARCH_ACCURACY)
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy="
+					+ org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -263,7 +266,8 @@ public class OracleVectorStoreIT {
 	@ValueSource(strings = { "COSINE", "DOT" })
 	public void searchWithThreshold(String distanceType) {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + DEFAULT_SEARCH_ACCURACY)
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy="
+					+ org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);

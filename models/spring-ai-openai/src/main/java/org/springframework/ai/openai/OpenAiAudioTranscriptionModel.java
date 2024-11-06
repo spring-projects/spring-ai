@@ -118,7 +118,7 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			var transcription = transcriptionEntity.getBody();
 
 			if (transcription == null) {
-				this.logger.warn("No transcription returned for request: {}", audioResource);
+				logger.warn("No transcription returned for request: {}", audioResource);
 				return new AudioTranscriptionResponse(null);
 			}
 
@@ -139,7 +139,7 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			var transcription = transcriptionEntity.getBody();
 
 			if (transcription == null) {
-				this.logger.warn("No transcription returned for request: {}", audioResource);
+				logger.warn("No transcription returned for request: {}", audioResource);
 				return new AudioTranscriptionResponse(null);
 			}
 

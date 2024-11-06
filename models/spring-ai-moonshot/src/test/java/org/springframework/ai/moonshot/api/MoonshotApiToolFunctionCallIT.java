@@ -139,7 +139,7 @@ public class MoonshotApiToolFunctionCallIT {
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = this.moonshotApi.chatCompletionEntity(functionResponseRequest);
 
-		this.logger.info("Final response: " + chatCompletion2.getBody());
+		logger.info("Final response: " + chatCompletion2.getBody());
 
 		assertThat(Objects.requireNonNull(chatCompletion2.getBody()).choices()).isNotEmpty();
 

@@ -56,9 +56,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.StringUtils;
 
-import static org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT;
-import static org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue;
-
 /**
  * <p>
  * Integration of Oracle database 23ai as a Vector Store.
@@ -217,10 +214,13 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 				final byte[] json = toJson(document.getMetadata());
 				final VECTOR embeddingVector = toVECTOR(document.getEmbedding());
 
-				setParameterValue(ps, 1, Types.VARCHAR, document.getId());
-				setParameterValue(ps, 2, Types.VARCHAR, content);
-				setParameterValue(ps, 3, OracleType.JSON.getVendorTypeNumber(), json);
-				setParameterValue(ps, 4, OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
+				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 1, Types.VARCHAR,
+						document.getId());
+				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 2, Types.VARCHAR, content);
+				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 3,
+						OracleType.JSON.getVendorTypeNumber(), json);
+				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 4,
+						OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
 			}
 
 			@Override
@@ -357,7 +357,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 							@Override
 							public void setValues(PreparedStatement ps, int i) throws SQLException {
-								setParameterValue(ps, 1, OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
+								org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 1,
+										OracleType.VECTOR.getVendorTypeNumber(), embeddingVector);
 							}
 
 							@Override
@@ -381,17 +382,25 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 						select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
 						from %s
 						%sorder by distance
-						fetch first %d rows only""", this.distanceType == DOT ? "(1+" : "", this.distanceType.name(),
-						this.distanceType == DOT ? ")/2" : "", this.tableName, jsonPathFilter, request.getTopK())
+						fetch first %d rows only""",
+						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+								? "(1+" : "",
+						this.distanceType.name(),
+						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+								? ")/2" : "",
+						this.tableName, jsonPathFilter, request.getTopK())
 						: String.format(
 								"""
 										select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
 										from %s
 										%sorder by distance
 										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
-								this.distanceType == DOT ? "(1+" : "", this.distanceType.name(),
-								this.distanceType == DOT ? ")/2" : "", this.tableName, jsonPathFilter,
-								request.getTopK(), this.searchAccuracy);
+								this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+										? "(1+" : "",
+								this.distanceType.name(),
+								this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+										? ")/2" : "",
+								this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy);
 
 				logger.debug("SQL query: " + sql);
 
@@ -406,60 +415,69 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 						select id, content, metadata, embedding, %sVECTOR_DISTANCE(embedding, ?, %s)%s as distance
 						from %s
 						%sorder by distance
-						fetch EXACT first %d rows only""", this.distanceType == DOT ? "(1+" : "",
-						this.distanceType.name(), this.distanceType == DOT ? ")/2" : "", this.tableName, jsonPathFilter,
-						request.getTopK());
+						fetch EXACT first %d rows only""",
+						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+								? "(1+" : "",
+						this.distanceType.name(),
+						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+								? ")/2" : "",
+						this.tableName, jsonPathFilter, request.getTopK());
 
 				logger.debug("SQL query: " + sql);
 
 				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector);
 			}
 			else {
-				if (!this.forcedNormalization
-						|| (this.distanceType != OracleVectorStoreDistanceType.COSINE && this.distanceType != DOT)) {
+				if (!this.forcedNormalization || (this.distanceType != OracleVectorStoreDistanceType.COSINE
+						&& this.distanceType != org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT)) {
 					throw new RuntimeException(
 							"Similarity threshold filtering requires all vectors to be normalized, see the forcedNormalization parameter for this Vector store. Also only COSINE and DOT distance types are supported.");
 				}
 
-				final double distance = this.distanceType == DOT ? (1d - request.getSimilarityThreshold()) * 2d - 1d
-						: 1d - request.getSimilarityThreshold();
+				final double distance = this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+						? (1d - request.getSimilarityThreshold()) * 2d - 1d : 1d - request.getSimilarityThreshold();
 
 				if (StringUtils.hasText(nativeFilterExpression)) {
 					jsonPathFilter = String.format(" and JSON_EXISTS( metadata, '%s' )", nativeFilterExpression);
 				}
 
-				final String sql = this.distanceType == DOT ? (this.searchAccuracy == DEFAULT_SEARCH_ACCURACY
-						? String.format(
-								"""
-										select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
-										from %s
-										where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
-										order by distance
-										fetch first %d rows only""",
-								this.tableName, jsonPathFilter, request.getTopK())
-						: String.format(
-								"""
-										select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
-										from %s
-										where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
-										order by distance
-										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
-								this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy)
+				final String sql = this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+						? (this.searchAccuracy == DEFAULT_SEARCH_ACCURACY
+								? String.format(
+										"""
+												select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
+												from %s
+												where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
+												order by distance
+												fetch first %d rows only""",
+										this.tableName, jsonPathFilter, request.getTopK())
+								: String.format(
+										"""
+												select id, content, metadata, embedding, (1+VECTOR_DISTANCE(embedding, ?, DOT))/2 as distance
+												from %s
+												where VECTOR_DISTANCE(embedding, ?, DOT) <= ?%s
+												order by distance
+												fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
+										this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy)
 
-				) : (this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? String.format("""
-						select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
-						from %s
-						where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
-						order by distance
-						fetch first %d rows only""", this.tableName, jsonPathFilter, request.getTopK())
-						: String.format(
-								"""
-										select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
-										from %s
-										where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
-										order by distance
-										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
-								this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy));
+						)
+						: (this.searchAccuracy == DEFAULT_SEARCH_ACCURACY
+								? String.format(
+										"""
+												select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
+												from %s
+												where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
+												order by distance
+												fetch first %d rows only""",
+										this.tableName, jsonPathFilter, request.getTopK())
+								: String.format(
+										"""
+												select id, content, metadata, embedding, VECTOR_DISTANCE(embedding, ?, COSINE) as distance
+												from %s
+												where VECTOR_DISTANCE(embedding, ?, COSINE) <= ?%s
+												order by distance
+												fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
+										this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy));
 
 				logger.debug("SQL query: " + sql);
 
@@ -503,10 +521,10 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 					this.jdbcTemplate.execute(String.format("""
 							create vector index if not exists vector_index_%s on %s (embedding)
 							organization neighbor partitions
-							            distance %s
-							            with target accuracy %d
-							            parameters (type IVF, neighbor partitions 10)""", this.tableName,
-							this.tableName, this.distanceType.name(),
+									distance %s
+									with target accuracy %d
+									parameters (type IVF, neighbor partitions 10)""", this.tableName, this.tableName,
+							this.distanceType.name(),
 							this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 : this.searchAccuracy));
 					break;
 
@@ -585,7 +603,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * "https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/understand-inverted-file-flat-vector-indexes.html">Oracle
 		 * Database documentation</a>
 		 */
-		IVF;
+		IVF
 
 	}
 

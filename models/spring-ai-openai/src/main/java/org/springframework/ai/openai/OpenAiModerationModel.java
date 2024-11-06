@@ -106,7 +106,7 @@ public class OpenAiModerationModel implements ModerationModel {
 			OpenAiModerationApi.OpenAiModerationRequest openAiModerationRequest) {
 		OpenAiModerationApi.OpenAiModerationResponse moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
-			this.logger.warn("No moderation response returned for request: {}", openAiModerationRequest);
+			logger.warn("No moderation response returned for request: {}", openAiModerationRequest);
 			return new ModerationResponse(new Generation());
 		}
 

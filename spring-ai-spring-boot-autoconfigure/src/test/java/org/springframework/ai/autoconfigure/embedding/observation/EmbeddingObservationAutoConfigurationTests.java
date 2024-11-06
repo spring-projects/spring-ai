@@ -37,16 +37,14 @@ class EmbeddingObservationAutoConfigurationTests {
 
 	@Test
 	void meterObservationHandlerEnabled() {
-		this.contextRunner.withBean(CompositeMeterRegistry.class).run(context -> {
-			assertThat(context).hasSingleBean(EmbeddingModelMeterObservationHandler.class);
-		});
+		this.contextRunner.withBean(CompositeMeterRegistry.class)
+			.run(context -> assertThat(context).hasSingleBean(EmbeddingModelMeterObservationHandler.class));
 	}
 
 	@Test
 	void meterObservationHandlerDisabled() {
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(EmbeddingModelMeterObservationHandler.class);
-		});
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(EmbeddingModelMeterObservationHandler.class));
 	}
 
 }

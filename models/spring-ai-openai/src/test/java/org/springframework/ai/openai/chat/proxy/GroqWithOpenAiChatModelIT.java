@@ -52,7 +52,6 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.chat.ActorsFilms;
-import org.springframework.ai.openai.chat.OpenAiChatModelIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -70,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Disabled("Due to rate limiting it is hard to run it in one go")
 class GroqWithOpenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(GroqWithOpenAiChatModelIT.class);
 
 	private static final String GROQ_BASE_URL = "https://api.groq.com/openai";
 
@@ -253,7 +252,7 @@ class GroqWithOpenAiChatModelIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -276,7 +275,7 @@ class GroqWithOpenAiChatModelIT {
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.withResponseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 

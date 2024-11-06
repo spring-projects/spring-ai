@@ -31,7 +31,7 @@ import org.springframework.ai.image.ImageOptions;
  * @since 1.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class QianFanImageOptions implements ImageOptions {
+public final class QianFanImageOptions implements ImageOptions {
 
 	/**
 	 * The number of images to generate. Must be between 1 and 4.
@@ -188,7 +188,7 @@ public class QianFanImageOptions implements ImageOptions {
 				+ ", user='" + this.user + '\'' + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final QianFanImageOptions options;
 

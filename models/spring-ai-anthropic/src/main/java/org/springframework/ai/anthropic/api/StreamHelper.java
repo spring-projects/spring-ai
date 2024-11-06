@@ -178,6 +178,7 @@ public class StreamHelper {
 			}
 		}
 		else if (event.type().equals(EventType.MESSAGE_STOP)) {
+			// pass through
 		}
 		else {
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of());

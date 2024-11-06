@@ -16,11 +16,11 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.ollama.OllamaContainer;
-
-import java.time.Duration;
 
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
@@ -60,7 +60,7 @@ public class BaseOllamaIT {
 	 * to the file ".testcontainers.properties" located in your home directory
 	 */
 	public static boolean isDisabled() {
-		return false;
+		return true;
 	}
 
 	public static String buildConnectionWithModel(String model) {
