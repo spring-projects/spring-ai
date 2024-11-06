@@ -75,8 +75,9 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.text("country")));
 
 		// country == "BG"
+		String expected = "meta_country eq 'BG'";
 		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("meta_country eq 'BG'");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
