@@ -62,7 +62,7 @@ public class MoonshotRetryTests {
 
 	@BeforeEach
 	public void beforeEach() {
-		RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+		RetryTemplate retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
 		retryTemplate.registerListener(this.retryListener);
 

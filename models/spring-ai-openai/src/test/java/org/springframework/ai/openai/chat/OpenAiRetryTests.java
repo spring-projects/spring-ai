@@ -62,6 +62,7 @@ import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.api.OpenAiImageApi.Data;
 import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageRequest;
 import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageResponse;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
@@ -103,23 +104,9 @@ public class OpenAiRetryTests {
 
 	private OpenAiImageModel imageModel;
 
-	public static final RetryTemplate SHORT_RETRY_TEMPLATE = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(TransientAiException.class)
-		.fixedBackoff(Duration.ofMillis(100))
-		.withListener(new RetryListener() {
-
-			@Override
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			}
-		})
-		.build();
-
 	@BeforeEach
 	public void beforeEach() {
-		this.retryTemplate = SHORT_RETRY_TEMPLATE;
+		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
