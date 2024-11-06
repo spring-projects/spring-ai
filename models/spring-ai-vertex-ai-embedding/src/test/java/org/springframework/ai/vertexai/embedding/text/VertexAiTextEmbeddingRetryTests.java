@@ -73,7 +73,7 @@ public class VertexAiTextEmbeddingRetryTests {
 
 	@BeforeEach
 	public void setUp() {
-		this.retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
