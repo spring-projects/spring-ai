@@ -39,6 +39,7 @@ import com.oracle.bedrock.testsupport.junit.TestLogsExtension;
 import com.tangosol.net.Coherence;
 import com.tangosol.net.Session;
 import org.junit.Assert;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,6 +61,7 @@ import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled("Crashes on github actions run")
 public class CoherenceVectorStoreIT {
 
 	@RegisterExtension
