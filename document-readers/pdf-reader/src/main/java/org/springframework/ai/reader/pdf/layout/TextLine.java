@@ -22,8 +22,8 @@ class TextLine {
 
 	private static final char SPACE_CHARACTER = ' ';
 
-	private int lineLength;
-	private char[] line;
+	private final int lineLength;
+	private final char[] line;
 	private int lastIndex;
 
 	TextLine(int lineLength) {
