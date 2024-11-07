@@ -77,8 +77,8 @@ class TextLine {
 		}
 	}
 
-	private boolean isSpaceCharacterAtIndex(int index) {
-		return this.line[index] == SPACE_CHARACTER;
+	private boolean isNotSpaceCharacterAtIndex(int index) {
+		return this.line[index] != SPACE_CHARACTER;
 	}
 
 	private boolean isNewIndexGreaterThanLastIndex(int index) {
@@ -90,7 +90,7 @@ class TextLine {
 		if (!this.isNewIndexGreaterThanLastIndex(index)) {
 			nextValidIndex = this.lastIndex + 1;
 		}
-		if (!isCharacterPartOfPreviousWord && index > 0 && !this.isSpaceCharacterAtIndex(index - 1)) {
+		if (!isCharacterPartOfPreviousWord && index > 0 && this.isNotSpaceCharacterAtIndex(index - 1)) {
 			nextValidIndex = nextValidIndex + 1;
 		}
 		this.lastIndex = nextValidIndex;

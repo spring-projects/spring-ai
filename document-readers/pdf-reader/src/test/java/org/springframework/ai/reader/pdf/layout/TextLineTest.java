@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 class TextLineTest {
@@ -87,5 +88,31 @@ class TextLineTest {
 	void testGetLine() {
 		TextLine textLine = new TextLine(100);
 		assertEquals(" ".repeat(100 / ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT), textLine.getLine());
+	}
+
+	@Test
+	void testNegativeLineLength() {
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+			new TextLine(-100);
+		});
+		assertEquals("Line length cannot be negative", exception.getMessage());
+	}
+
+	@Test
+	void testComputeIndexForCharacter_CloseToPreviousWord() {
+		TextLine textLine = new TextLine(100);
+		Character character = new Character('A', 10, true, false, true, true);
+		textLine.writeCharacterAtIndex(character);
+		assertEquals(" A" + " ".repeat(23), textLine.getLine());
+	}
+
+	@Test
+	void testComputeIndexForCharacter_CloseToPreviousWord_WriteTwoCharacters() {
+		TextLine textLine = new TextLine(100);
+		Character character = new Character('A', 10, true, false, true, true);
+		Character anotherCharacter = new Character('B', 1, true, false, true, true);
+		textLine.writeCharacterAtIndex(character);
+		textLine.writeCharacterAtIndex(anotherCharacter);
+		assertEquals(" AB" + " ".repeat(22), textLine.getLine());
 	}
 }
