@@ -16,14 +16,13 @@
 
 package org.springframework.ai.reader.pdf;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Test;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,15 +36,15 @@ public class PagePdfDocumentReaderTests {
 
 		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
 				PdfDocumentReaderConfig.builder()
-					.withPageTopMargin(0)
-					.withPageBottomMargin(0)
-					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
-						.withNumberOfTopTextLinesToDelete(0)
-						.withNumberOfBottomTextLinesToDelete(3)
-						.withNumberOfTopPagesToSkipBeforeDelete(0)
-						.build())
-					.withPagesPerDocument(1)
-					.build());
+						.withPageTopMargin(0)
+						.withPageBottomMargin(0)
+						.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
+								.withNumberOfTopTextLinesToDelete(0)
+								.withNumberOfBottomTextLinesToDelete(3)
+								.withNumberOfTopPagesToSkipBeforeDelete(0)
+								.build())
+						.withPagesPerDocument(1)
+						.build());
 
 		List<Document> docs = pdfReader.get();
 
@@ -55,6 +54,16 @@ public class PagePdfDocumentReaderTests {
 
 		assertThat(allText).doesNotContain(
 				List.of("Page  1 of 4", "Page  2 of 4", "Page  3 of 4", "Page  4 of 4", "PDF  Bookmark   Sample"));
+	}
+
+	@Test
+	void testIndexOutOfBound() {
+		new PagePdfDocumentReader("classpath:/sample2.pdf",
+				PdfDocumentReaderConfig.builder()
+						.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
+								.build())
+						.withPagesPerDocument(1)
+						.build()).get();
 	}
 
 }
