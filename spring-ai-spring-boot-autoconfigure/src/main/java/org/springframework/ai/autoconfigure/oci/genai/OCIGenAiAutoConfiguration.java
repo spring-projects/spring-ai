@@ -48,7 +48,7 @@ import org.springframework.util.StringUtils;
 @AutoConfiguration
 @ConditionalOnClass({ GenerativeAiInferenceClient.class, OCIEmbeddingModel.class })
 @EnableConfigurationProperties({ OCIConnectionProperties.class, OCIEmbeddingModelProperties.class,
-		OCICohereChatModelProperties.class, })
+		OCICohereChatModelProperties.class })
 public class OCIGenAiAutoConfiguration {
 
 	private static BasicAuthenticationDetailsProvider authenticationProvider(OCIConnectionProperties properties)

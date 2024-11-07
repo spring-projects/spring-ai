@@ -170,7 +170,7 @@ public class OCICohereChatModel implements ChatModel {
 	}
 
 	private List<Generation> getGenerations(Prompt prompt, OCICohereChatOptions options) {
-		com.oracle.bmc.generativeaiinference.responses.ChatResponse cr = genAi
+		com.oracle.bmc.generativeaiinference.responses.ChatResponse cr = this.genAi
 			.chat(toCohereChatRequest(prompt, options));
 		return toGenerations(cr, options);
 
