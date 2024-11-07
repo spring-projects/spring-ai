@@ -92,48 +92,6 @@ public class CoherenceVectorStoreIT {
 		.withPropertyValues("test.spring.ai.vectorstore.coherence.distanceType=COSINE",
 				"test.spring.ai.vectorstore.coherence.indexType=NONE");
 
-	@SpringBootConfiguration
-	@EnableAutoConfiguration
-	public static class TestClient {
-
-		@Value("${test.spring.ai.vectorstore.coherence.distanceType}")
-		CoherenceVectorStore.DistanceType distanceType;
-
-		@Value("${test.spring.ai.vectorstore.coherence.indexType}")
-		CoherenceVectorStore.IndexType indexType;
-
-		@Bean
-		public VectorStore vectorStore(EmbeddingModel embeddingModel, Session session) {
-			return new CoherenceVectorStore(embeddingModel, session).setDistanceType(distanceType)
-				.setIndexType(indexType)
-				.setForcedNormalization(distanceType == CoherenceVectorStore.DistanceType.COSINE
-						|| distanceType == CoherenceVectorStore.DistanceType.IP);
-		}
-
-		@Bean
-		public Session session(Coherence coherence) {
-			return coherence.getSession();
-		}
-
-		@Bean
-		public Coherence coherence() {
-			return Coherence.clusterMember().start().join();
-		}
-
-		@Bean
-		public EmbeddingModel embeddingModel() {
-			try {
-				TransformersEmbeddingModel tem = new TransformersEmbeddingModel();
-				tem.afterPropertiesSet();
-				return tem;
-			}
-			catch (Exception e) {
-				throw new RuntimeException("Failed initializing embedding model", e);
-			}
-		}
-
-	}
-
 	private static void truncateMap(ApplicationContext context, String mapName) {
 		Session session = context.getBean(Session.class);
 		session.getMap(mapName).truncate();
@@ -153,24 +111,24 @@ public class CoherenceVectorStoreIT {
 	@ParameterizedTest(name = "Distance {0}, Index {1} : {displayName}")
 	@MethodSource("distanceAndIndex")
 	public void addAndSearch(CoherenceVectorStore.DistanceType distanceType, CoherenceVectorStore.IndexType indexType) {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.coherence.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.coherence.distanceType=" + distanceType)
 			.withPropertyValues("test.spring.ai.vectorstore.coherence.indexType=" + indexType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-				vectorStore.add(documents);
+				vectorStore.add(this.documents);
 
 				List<Document> results = vectorStore
 					.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
@@ -184,7 +142,7 @@ public class CoherenceVectorStoreIT {
 	@MethodSource("distanceAndIndex")
 	public void searchWithFilters(CoherenceVectorStore.DistanceType distanceType,
 			CoherenceVectorStore.IndexType indexType) {
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.coherence.distanceType=" + distanceType)
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.coherence.distanceType=" + distanceType)
 			.withPropertyValues("test.spring.ai.vectorstore.coherence.indexType=" + indexType)
 			.run(context -> {
 
@@ -250,7 +208,7 @@ public class CoherenceVectorStoreIT {
 
 	@Test
 	public void documentUpdate() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
@@ -286,11 +244,11 @@ public class CoherenceVectorStoreIT {
 
 	@Test
 	public void searchWithThreshold() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			List<Document> fullResult = vectorStore
 				.similaritySearch(SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThresholdAll());
@@ -310,7 +268,7 @@ public class CoherenceVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());
 
 			truncateMap(context, ((CoherenceVectorStore) vectorStore).getMapName());
 		});
@@ -336,6 +294,48 @@ public class CoherenceVectorStoreIT {
 			previous = current;
 		}
 		return true;
+	}
+
+	@SpringBootConfiguration
+	@EnableAutoConfiguration
+	public static class TestClient {
+
+		@Value("${test.spring.ai.vectorstore.coherence.distanceType}")
+		CoherenceVectorStore.DistanceType distanceType;
+
+		@Value("${test.spring.ai.vectorstore.coherence.indexType}")
+		CoherenceVectorStore.IndexType indexType;
+
+		@Bean
+		public VectorStore vectorStore(EmbeddingModel embeddingModel, Session session) {
+			return new CoherenceVectorStore(embeddingModel, session).setDistanceType(this.distanceType)
+				.setIndexType(this.indexType)
+				.setForcedNormalization(this.distanceType == CoherenceVectorStore.DistanceType.COSINE
+						|| this.distanceType == CoherenceVectorStore.DistanceType.IP);
+		}
+
+		@Bean
+		public Session session(Coherence coherence) {
+			return coherence.getSession();
+		}
+
+		@Bean
+		public Coherence coherence() {
+			return Coherence.clusterMember().start().join();
+		}
+
+		@Bean
+		public EmbeddingModel embeddingModel() {
+			try {
+				TransformersEmbeddingModel tem = new TransformersEmbeddingModel();
+				tem.afterPropertiesSet();
+				return tem;
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Failed initializing embedding model", e);
+			}
+		}
+
 	}
 
 }

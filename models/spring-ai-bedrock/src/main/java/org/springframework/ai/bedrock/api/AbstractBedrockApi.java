@@ -291,7 +291,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				})
 				.onDefault(event -> {
 					logger.error("Unknown or unhandled event: " + event.toString());
-					eventSink.emitError(new Throwable("Unknown or unhandled event: " + event.toString()),DEFAULT_EMIT_FAILURE_HANDLER);
+					eventSink.emitError(new Throwable("Unknown or unhandled event: " + event.toString()), DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.build();
 

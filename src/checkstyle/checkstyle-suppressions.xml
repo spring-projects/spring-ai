@@ -29,5 +29,7 @@
 	<suppress files="FiltersParser\.java" checks="MultipleVariableDeclarations"/>
 	<suppress files="FiltersLexer\.java" checks="MultipleVariableDeclarations"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
+	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
+	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
 
 </suppressions>

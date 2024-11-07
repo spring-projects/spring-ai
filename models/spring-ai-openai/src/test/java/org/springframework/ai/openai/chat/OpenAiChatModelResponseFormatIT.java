@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -42,7 +41,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -161,7 +159,8 @@ public class OpenAiChatModelResponseFormatIT {
 		}
 
 		var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
-
+		// @formatter:off
+		// CHECKSTYLE:OFF
 		var expectedJsonSchema = """
 				{
 				  "$schema" : "https://json-schema.org/draft/2020-12/schema",
@@ -197,6 +196,8 @@ public class OpenAiChatModelResponseFormatIT {
 				  "required" : [ "steps", "final_answer" ],
 				  "additionalProperties" : false
 				}""";
+		// @formatter:on
+		// CHECKSTYLE:ON
 		var jsonSchema1 = outputConverter.getJsonSchema();
 
 		assertThat(jsonSchema1).isNotNull();
