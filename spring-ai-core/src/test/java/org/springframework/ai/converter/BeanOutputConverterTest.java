@@ -17,11 +17,14 @@
 package org.springframework.ai.converter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sebastian Ullrich
  * @author Kirk Lund
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @ExtendWith(MockitoExtension.class)
 class BeanOutputConverterTest {
@@ -112,6 +116,15 @@ class BeanOutputConverterTest {
 
 	}
 
+	@JsonPropertyOrder({ "string_property", "foo_property", "bar_property" })
+	record TestClassWithJsonPropertyOrder(
+			@JsonProperty("string_property") @JsonPropertyDescription("string_property_description") String someString,
+
+			@JsonProperty(required = true, value = "foo_property") String foo,
+
+			@JsonProperty(required = true, value = "bar_property") String bar) {
+	}
+
 	@Nested
 	class ConverterTest {
 
@@ -153,6 +166,20 @@ class BeanOutputConverterTest {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonAnnotations.class);
 			var testClass = converter.convert("{ \"string_property\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void verifySchemaPropertyOrder() throws Exception {
+			var converter = new BeanOutputConverter<>(TestClassWithJsonPropertyOrder.class);
+			String jsonSchema = converter.getJsonSchema();
+
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode schemaNode = mapper.readTree(jsonSchema);
+
+			List<String> actualOrder = new ArrayList<>();
+			schemaNode.get("properties").fieldNames().forEachRemaining(actualOrder::add);
+
+			assertThat(actualOrder).containsExactly("string_property", "foo_property", "bar_property");
 		}
 
 		@Test

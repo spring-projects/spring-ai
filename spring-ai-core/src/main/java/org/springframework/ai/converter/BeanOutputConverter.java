@@ -54,6 +54,7 @@ import org.springframework.lang.NonNull;
  * @author Kirk Lund
  * @author Josh Long
  * @author Sebastien Deleuze
+ * @author Soby Chacko
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
@@ -125,7 +126,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Generates the JSON schema for the target type.
 	 */
 	private void generateSchema() {
-		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
+				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
 		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
 				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
 				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)

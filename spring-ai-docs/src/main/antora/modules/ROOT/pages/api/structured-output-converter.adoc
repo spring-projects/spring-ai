@@ -139,6 +139,21 @@ Generation generation = chatModel.call(
 ActorsFilms actorsFilms = this.beanOutputConverter.convert(this.generation.getOutput().getContent());
 ----
 
+=== Property Ordering in Generated Schema
+
+The `BeanOutputConverter` supports custom property ordering in the generated JSON schema through the `@JsonPropertyOrder` annotation.
+This annotation allows you to specify the exact sequence in which properties should appear in the schema, regardless of their declaration order in the class or record.
+
+For example, to ensure specific ordering of properties in the `ActorsFilms` record:
+
+[source,java]
+----
+@JsonPropertyOrder({"actor", "movies"})
+record ActorsFilms(String actor, List<String> movies) {}
+----
+
+This annotation works with both records and regular Java classes.
+
 ==== Generic Bean Types
 
 Use the `ParameterizedTypeReference` constructor to specify a more complex target class structure.
