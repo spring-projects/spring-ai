@@ -201,6 +201,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-coherence-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-milvus-store</artifactId>
@@ -406,6 +412,12 @@
                 <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-coherence-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
