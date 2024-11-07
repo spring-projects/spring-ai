@@ -50,7 +50,6 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = OllamaChatModelObservationIT.Config.class)
-@DisabledIf("isDisabled")
 public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
@@ -166,7 +165,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi openAiApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

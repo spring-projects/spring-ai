@@ -53,8 +53,6 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers
-@DisabledIf("isDisabled")
 class OllamaChatModelIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
@@ -241,7 +239,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

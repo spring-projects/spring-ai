@@ -34,8 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Thomas Vitale
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 public class OllamaApiModelsIT extends BaseOllamaIT {
 
 	private static final String MODEL = "all-minilm";
@@ -44,7 +42,7 @@ public class OllamaApiModelsIT extends BaseOllamaIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		ollamaApi = buildOllamaApiWithModel(MODEL);
+		ollamaApi = initializeOllama(MODEL);
 	}
 
 	@Test

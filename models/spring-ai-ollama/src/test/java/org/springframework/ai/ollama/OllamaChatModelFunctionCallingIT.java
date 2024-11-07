@@ -46,9 +46,7 @@ import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(classes = OllamaChatModelFunctionCallingIT.Config.class)
-@DisabledIf("isDisabled")
 class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
@@ -120,7 +118,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

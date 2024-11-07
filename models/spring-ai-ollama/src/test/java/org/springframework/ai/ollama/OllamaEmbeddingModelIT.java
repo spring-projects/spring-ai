@@ -38,8 +38,6 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@DisabledIf("isDisabled")
-@Testcontainers
 class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
@@ -100,7 +98,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

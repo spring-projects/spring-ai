@@ -40,8 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest
-@Testcontainers
-@DisabledIf("isDisabled")
 class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelMultimodalIT.class);
@@ -80,7 +78,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

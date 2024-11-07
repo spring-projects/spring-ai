@@ -42,17 +42,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 public class OllamaApiIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
 
-	static OllamaApi ollamaApi;
-
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		ollamaApi = buildOllamaApiWithModel(MODEL);
+		initializeOllama(MODEL);
 	}
 
 	@Test
@@ -63,7 +59,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.withStream(false)
 			.build();
 
-		GenerateResponse response = ollamaApi.generate(request);
+		GenerateResponse response = getOllamaApi().generate(request);
 
 		System.out.println(response);
 
@@ -87,7 +83,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.withOptions(OllamaOptions.create().withTemperature(0.9))
 			.build();
 
-		ChatResponse response = ollamaApi.chat(request);
+		ChatResponse response = getOllamaApi().chat(request);
 
 		System.out.println(response);
 
@@ -108,7 +104,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
 			.build();
 
-		Flux<ChatResponse> response = ollamaApi.streamingChat(request);
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
 		System.out.println(responses);
@@ -128,7 +124,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	public void embedText() {
 		EmbeddingsRequest request = new EmbeddingsRequest(MODEL, "I like to eat apples");
 
-		EmbeddingsResponse response = ollamaApi.embed(request);
+		EmbeddingsResponse response = getOllamaApi().embed(request);
 
 		assertThat(response).isNotNull();
 		assertThat(response.embeddings()).hasSize(1);

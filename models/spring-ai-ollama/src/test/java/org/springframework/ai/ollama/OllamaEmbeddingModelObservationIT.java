@@ -47,7 +47,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = OllamaEmbeddingModelObservationIT.Config.class)
-@DisabledIf("isDisabled")
 public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
@@ -100,7 +99,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi openAiApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

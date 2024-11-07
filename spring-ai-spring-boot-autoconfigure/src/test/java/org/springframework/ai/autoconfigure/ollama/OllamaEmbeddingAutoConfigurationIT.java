@@ -38,24 +38,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
- * @since 0.8.0
+ * @since 1.0.0
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 public class OllamaEmbeddingAutoConfigurationIT extends BaseOllamaIT {
 
 	private static final String MODEL_NAME = OllamaModel.NOMIC_EMBED_TEXT.getName();
 
-	static String baseUrl;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.ollama.embedding.options.model=" + MODEL_NAME,
-				"spring.ai.ollama.base-url=" + baseUrl)
+				"spring.ai.ollama.base-url=" + getBaseUrl())
 		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class));
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		baseUrl = buildConnectionWithModel(MODEL_NAME);
+		initializeOllama(MODEL_NAME);
 	}
 
 	@Test

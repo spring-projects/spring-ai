@@ -51,11 +51,9 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	private static final String MODEL_NAME = "qwen2.5:3b";
 
-	static String baseUrl;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + baseUrl,
+				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
 				"spring.ai.ollama.chat.options.model=" + MODEL_NAME,
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
@@ -64,7 +62,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	@BeforeAll
 	public static void beforeAll() {
-		baseUrl = buildConnectionWithModel(MODEL_NAME);
+		initializeOllama(MODEL_NAME);
 	}
 
 	@Test

@@ -42,8 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
 	private static final String MODEL = "qwen2.5:3b";
@@ -56,7 +54,7 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		ollamaApi = buildOllamaApiWithModel(MODEL);
+		ollamaApi = initializeOllama(MODEL);
 	}
 
 	@SuppressWarnings("null")
