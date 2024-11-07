@@ -29,10 +29,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-public class PagePdfDocumentReaderTests {
+class PagePdfDocumentReaderTests {
 
 	@Test
-	public void classpathRead() {
+	void classpathRead() {
 
 		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
 				PdfDocumentReaderConfig.builder()
@@ -50,7 +50,7 @@ public class PagePdfDocumentReaderTests {
 
 		assertThat(docs).hasSize(4);
 
-		String allText = docs.stream().map(d -> d.getContent()).collect(Collectors.joining(System.lineSeparator()));
+		String allText = docs.stream().map(Document::getContent).collect(Collectors.joining(System.lineSeparator()));
 
 		assertThat(allText).doesNotContain(
 				List.of("Page  1 of 4", "Page  2 of 4", "Page  3 of 4", "Page  4 of 4", "PDF  Bookmark   Sample"));
@@ -58,12 +58,13 @@ public class PagePdfDocumentReaderTests {
 
 	@Test
 	void testIndexOutOfBound() {
-		new PagePdfDocumentReader("classpath:/sample2.pdf",
+		var documents = new PagePdfDocumentReader("classpath:/sample2.pdf",
 				PdfDocumentReaderConfig.builder()
 						.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
 								.build())
 						.withPagesPerDocument(1)
 						.build()).get();
-	}
 
+		assertThat(documents).hasSize(64);
+	}
 }
