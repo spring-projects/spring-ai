@@ -83,32 +83,21 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 	}
 
 	private String getOperationSymbol(Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return "operator:And \n";
-			case OR:
-				return "operator:Or \n";
-			case EQ:
-				return "operator:Equal \n";
-			case NE:
-				return "operator:NotEqual \n";
-			case LT:
-				return "operator:LessThan \n";
-			case LTE:
-				return "operator:LessThanEqual \n";
-			case GT:
-				return "operator:GreaterThan \n";
-			case GTE:
-				return "operator:GreaterThanEqual \n";
-			case IN:
-				throw new IllegalStateException(
-						"The 'IN' operator should have been transformed into chain of OR/EQ expressions.");
-			case NIN:
-				throw new IllegalStateException(
-						"The 'NIN' operator should have been transformed into chain of AND/NEQ expressions.");
-			default:
-				throw new UnsupportedOperationException("Not supported expression type:" + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> "operator:And \n";
+			case OR -> "operator:Or \n";
+			case EQ -> "operator:Equal \n";
+			case NE -> "operator:NotEqual \n";
+			case LT -> "operator:LessThan \n";
+			case LTE -> "operator:LessThanEqual \n";
+			case GT -> "operator:GreaterThan \n";
+			case GTE -> "operator:GreaterThanEqual \n";
+			case IN -> throw new IllegalStateException(
+					"The 'IN' operator should have been transformed into chain of OR/EQ expressions.");
+			case NIN -> throw new IllegalStateException(
+					"The 'NIN' operator should have been transformed into chain of AND/NEQ expressions.");
+			default -> throw new UnsupportedOperationException("Not supported expression type:" + exp.type());
+		};
 	}
 
 	@Override

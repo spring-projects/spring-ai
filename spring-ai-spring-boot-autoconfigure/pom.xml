@@ -21,7 +21,6 @@
 	</scm>
 
 	<properties>
-		<disable.checks>false</disable.checks>
 	</properties>
 
 	<dependencies>
@@ -233,14 +232,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Vertex AI PaLM2 -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vertex-ai-palm2</artifactId>
-			<version>${project.parent.version}</version>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- Vertex AI Embedding -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -413,6 +404,13 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
 			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.oracle.oci.sdk</groupId>
+			<artifactId>oci-java-sdk-common</artifactId>
+			<version>${oci-sdk-version}</version>
 			<scope>test</scope>
 		</dependency>
 

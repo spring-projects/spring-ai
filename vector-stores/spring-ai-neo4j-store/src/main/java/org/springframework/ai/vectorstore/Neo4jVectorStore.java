@@ -48,10 +48,13 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Jihoon Kim
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
+
+	public static final int DEFAULT_TRANSACTION_SIZE = 10_000;
 
 	public static final String DEFAULT_LABEL = "Document";
 
@@ -117,7 +120,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 							SET u.%2$s = row.id,
 								u += row.properties
 						WITH row, u
-						CALL db.create.setNodeVectorProperty(u, $embeddingProperty, row.embedding)
+						CALL db.create.setNodeVectorProperty(u, $embeddingProperty, row[$embeddingProperty])
 					""".formatted(this.config.label, this.config.idProperty);
 			session.executeWrite(
 					tx -> tx.run(statement, Map.of("rows", rows, "embeddingProperty", this.config.embeddingProperty))
@@ -137,7 +140,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 						MATCH (n:%s) WHERE n.%s IN $ids
 						CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF $transactionSize ROWS
 						""".formatted(this.config.label, this.config.idProperty),
-						Map.of("ids", idList, "transactionSize", 10_000))
+						Map.of("ids", idList, "transactionSize", DEFAULT_TRANSACTION_SIZE))
 				.consume();
 			return Optional.of(idList.size() == summary.counters().nodesDeleted());
 		}

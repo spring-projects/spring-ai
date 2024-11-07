@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
@@ -81,6 +83,8 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 public class OpenAiRetryTests {
 
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiRetryTests.class);
+
 	private TestRetryListener retryListener;
 
 	private RetryTemplate retryTemplate;
@@ -101,7 +105,7 @@ public class OpenAiRetryTests {
 
 	@BeforeEach
 	public void beforeEach() {
-		this.retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 

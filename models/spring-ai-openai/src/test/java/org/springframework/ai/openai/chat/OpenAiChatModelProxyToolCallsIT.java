@@ -60,7 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatModelProxyToolCallsIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelProxyToolCallsIT.class);
 
 	private static final String DEFAULT_MODEL = "gpt-4o-mini";
 

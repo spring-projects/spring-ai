@@ -34,7 +34,7 @@ public class Generation implements ModelResult<AssistantMessage> {
 	private ChatGenerationMetadata chatGenerationMetadata;
 
 	/**
-	 * @deprecated Use {@link #Generation(AssitantMessage)} constructor instead.
+	 * @deprecated Use {@link #Generation(AssistantMessage)} constructor instead.
 	 */
 	@Deprecated
 	public Generation(String text) {
@@ -42,7 +42,7 @@ public class Generation implements ModelResult<AssistantMessage> {
 	}
 
 	/**
-	 * @deprecated Use {@link #Generation(AssitantMessage)} constructor instead.
+	 * @deprecated Use {@link #Generation(AssistantMessage)} constructor instead.
 	 */
 	@Deprecated
 	public Generation(String text, Map<String, Object> properties) {
@@ -70,7 +70,7 @@ public class Generation implements ModelResult<AssistantMessage> {
 	}
 
 	/**
-	 * @deprecated Use {@link #Generation(AssitantMessage, ChatGenerationMetadata)}
+	 * @deprecated Use {@link #Generation(AssistantMessage, ChatGenerationMetadata)}
 	 * constructor instead.
 	 * @param chatGenerationMetadata
 	 * @return

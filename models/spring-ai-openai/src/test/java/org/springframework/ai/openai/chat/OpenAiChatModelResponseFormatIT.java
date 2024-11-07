@@ -33,8 +33,8 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
+import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -80,7 +80,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("List 8 planets. Use JSON response",
 				OpenAiChatOptions.builder()
-					.withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_OBJECT))
+					.withResponseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
 					.build());
 
 		ChatResponse response = this.openAiChatModel.call(prompt);

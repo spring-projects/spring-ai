@@ -22,10 +22,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.bmc.generativeaiinference.GenerativeAiInference;
-import com.oracle.bmc.generativeaiinference.model.DedicatedServingMode;
 import com.oracle.bmc.generativeaiinference.model.EmbedTextDetails;
 import com.oracle.bmc.generativeaiinference.model.EmbedTextResult;
-import com.oracle.bmc.generativeaiinference.model.OnDemandServingMode;
 import com.oracle.bmc.generativeaiinference.model.ServingMode;
 import com.oracle.bmc.generativeaiinference.requests.EmbedTextRequest;
 import io.micrometer.observation.ObservationRegistry;
@@ -128,15 +126,6 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 		return embeddingResponse;
 	}
 
-	private ServingMode servingMode(OCIEmbeddingOptions embeddingOptions) {
-		return switch (embeddingOptions.getServingMode()) {
-			case "dedicated" -> DedicatedServingMode.builder().endpointId(embeddingOptions.getModel()).build();
-			case "on-demand" -> OnDemandServingMode.builder().modelId(embeddingOptions.getModel()).build();
-			default -> throw new IllegalArgumentException(
-					"unknown serving mode for OCI embedding model: " + embeddingOptions.getServingMode());
-		};
-	}
-
 	private List<EmbedTextRequest> createRequests(List<String> inputs, OCIEmbeddingOptions embeddingOptions) {
 		int size = inputs.size();
 		List<EmbedTextRequest> requests = new ArrayList<>();
@@ -148,8 +137,9 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private EmbedTextRequest createRequest(List<String> inputs, OCIEmbeddingOptions embeddingOptions) {
+		ServingMode servingMode = ServingModeHelper.get(this.options.getServingMode(), this.options.getModel());
 		EmbedTextDetails embedTextDetails = EmbedTextDetails.builder()
-			.servingMode(servingMode(embeddingOptions))
+			.servingMode(servingMode)
 			.compartmentId(embeddingOptions.getCompartment())
 			.inputs(inputs)
 			.truncate(Objects.requireNonNullElse(embeddingOptions.getTruncate(), EmbedTextDetails.Truncate.End))

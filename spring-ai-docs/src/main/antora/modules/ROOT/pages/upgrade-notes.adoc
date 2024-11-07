@@ -301,3 +301,9 @@ You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://mar
 </dependency>
 ----
 
+== Upgrading to 1.0.0.M4
+
+* PaLM API support removal
+
+As a follow up to the announcement to https://ai.google.dev/palm_docs/deprecation[deprecate PaLM API], the PaLM API support is removed.
+

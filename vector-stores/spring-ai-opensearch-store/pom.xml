@@ -39,7 +39,6 @@
 	<properties>
 		<!-- testing -->
 		<hikari-cp.version>4.0.3</hikari-cp.version>
-		<disable.checks>false</disable.checks>
 	</properties>
 
 	<dependencies>

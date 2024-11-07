@@ -140,33 +140,24 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	}
 
 	private String tagValueDelimiter(Expression expression) {
-		switch (expression.type()) {
-			case IN:
-				return " | ";
-			case EQ:
-				return " ";
-			default:
-				throw new UnsupportedOperationException(
-						MessageFormat.format("Tag operand {0} not supported", expression.type()));
-		}
+		return switch (expression.type()) {
+			case IN -> " | ";
+			case EQ -> " ";
+			default -> throw new UnsupportedOperationException(
+					MessageFormat.format("Tag operand {0} not supported", expression.type()));
+		};
 	}
 
 	private Numeric numeric(Expression expression, Value value) {
-		switch (expression.type()) {
-			case EQ:
-				return new Numeric(inclusive(value), inclusive(value));
-			case GT:
-				return new Numeric(exclusive(value), POSITIVE_INFINITY);
-			case GTE:
-				return new Numeric(inclusive(value), POSITIVE_INFINITY);
-			case LT:
-				return new Numeric(NEGATIVE_INFINITY, exclusive(value));
-			case LTE:
-				return new Numeric(NEGATIVE_INFINITY, inclusive(value));
-			default:
-				throw new UnsupportedOperationException(MessageFormat
-					.format("Expression type {0} not supported for numeric fields", expression.type()));
-		}
+		return switch (expression.type()) {
+			case EQ -> new Numeric(inclusive(value), inclusive(value));
+			case GT -> new Numeric(exclusive(value), POSITIVE_INFINITY);
+			case GTE -> new Numeric(inclusive(value), POSITIVE_INFINITY);
+			case LT -> new Numeric(NEGATIVE_INFINITY, exclusive(value));
+			case LTE -> new Numeric(NEGATIVE_INFINITY, inclusive(value));
+			default -> throw new UnsupportedOperationException(
+					MessageFormat.format("Expression type {0} not supported for numeric fields", expression.type()));
+		};
 	}
 
 	private NumericBoundary inclusive(Value value) {

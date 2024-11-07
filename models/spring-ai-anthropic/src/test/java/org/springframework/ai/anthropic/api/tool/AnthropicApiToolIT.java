@@ -56,7 +56,7 @@ public class AnthropicApiToolIT {
 
 	public static final ConcurrentHashMap<String, Function> FUNCTIONS = new ConcurrentHashMap<>();
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiLegacyToolIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiToolIT.class);
 
 	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
 

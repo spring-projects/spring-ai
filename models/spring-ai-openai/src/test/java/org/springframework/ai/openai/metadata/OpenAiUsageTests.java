@@ -83,7 +83,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenReasoningTokensIsNull() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null));
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getReasoningTokens()).isEqualTo(0);
 	}
@@ -91,9 +91,57 @@ class OpenAiUsageTests {
 	@Test
 	void whenCompletionTokenDetailsIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(50));
+				new OpenAiApi.Usage.CompletionTokenDetails(50, null, null, null));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getReasoningTokens()).isEqualTo(50);
+	}
+
+	@Test
+	void whenAcceptedPredictionTokensIsNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getAcceptedPredictionTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void whenAcceptedPredictionTokensIsPresent() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
+				new OpenAiApi.Usage.CompletionTokenDetails(null, 75, null, null));
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getAcceptedPredictionTokens()).isEqualTo(75);
+	}
+
+	@Test
+	void whenAudioTokensIsNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getAudioTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void whenAudioTokensIsPresent() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, 125, null));
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getAudioTokens()).isEqualTo(125);
+	}
+
+	@Test
+	void whenRejectedPredictionTokensIsNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getRejectedPredictionTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void whenRejectedPredictionTokensIsPresent() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, 25));
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getRejectedPredictionTokens()).isEqualTo(25);
 	}
 
 	@Test

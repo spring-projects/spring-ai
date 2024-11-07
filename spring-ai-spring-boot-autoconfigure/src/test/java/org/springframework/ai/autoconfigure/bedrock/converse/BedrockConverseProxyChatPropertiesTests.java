@@ -71,12 +71,12 @@ public class BedrockConverseProxyChatPropertiesTests {
 			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty());
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.converse.chat..enabled=true")
+		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.converse.chat.enabled=true")
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
 			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty());
 
 		// Explicitly disable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.converse.chat..enabled=false")
+		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.converse.chat.enabled=false")
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
 			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty());
 	}

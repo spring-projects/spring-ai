@@ -80,30 +80,19 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 	}
 
 	private String getOperationSymbol(Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " and ";
-			case OR:
-				return " or ";
-			case EQ:
-				return " eq ";
-			case NE:
-				return " ne ";
-			case LT:
-				return " lt ";
-			case LTE:
-				return " le ";
-			case GT:
-				return " gt ";
-			case GTE:
-				return " ge ";
-			case IN:
-				return " search.in";
-			case NIN:
-				return " not search.in";
-			default:
-				throw new RuntimeException("Not supported expression type: " + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> " and ";
+			case OR -> " or ";
+			case EQ -> " eq ";
+			case NE -> " ne ";
+			case LT -> " lt ";
+			case LTE -> " le ";
+			case GT -> " gt ";
+			case GTE -> " ge ";
+			case IN -> " search.in";
+			case NIN -> " not search.in";
+			default -> throw new RuntimeException("Not supported expression type: " + exp.type());
+		};
 	}
 
 	@Override

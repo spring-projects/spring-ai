@@ -36,7 +36,6 @@
     </scm>
 
 	<properties>
-		<disable.checks>false</disable.checks>
 	</properties>
 
     <dependencies>

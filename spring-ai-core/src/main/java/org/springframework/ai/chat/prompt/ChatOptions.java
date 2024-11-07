@@ -22,7 +22,8 @@ import org.springframework.ai.model.ModelOptions;
 import org.springframework.lang.Nullable;
 
 /**
- * The ChatOptions represent the common options, portable across different chat models.
+ * {@link ModelOptions} representing the common options that are portable across different
+ * chat models.
  */
 public interface ChatOptions extends ModelOptions {
 

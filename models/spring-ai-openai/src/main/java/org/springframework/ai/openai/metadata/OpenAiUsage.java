@@ -72,6 +72,26 @@ public class OpenAiUsage implements Usage {
 		return reasoningTokens != null ? reasoningTokens.longValue() : 0;
 	}
 
+	public Long getAcceptedPredictionTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer acceptedPredictionTokens = completionTokenDetails != null
+				? completionTokenDetails.acceptedPredictionTokens() : null;
+		return acceptedPredictionTokens != null ? acceptedPredictionTokens.longValue() : 0;
+	}
+
+	public Long getAudioTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer audioTokens = completionTokenDetails != null ? completionTokenDetails.audioTokens() : null;
+		return audioTokens != null ? audioTokens.longValue() : 0;
+	}
+
+	public Long getRejectedPredictionTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer rejectedPredictionTokens = completionTokenDetails != null
+				? completionTokenDetails.rejectedPredictionTokens() : null;
+		return rejectedPredictionTokens != null ? rejectedPredictionTokens.longValue() : 0;
+	}
+
 	@Override
 	public Long getTotalTokens() {
 		Integer totalTokens = getUsage().totalTokens();

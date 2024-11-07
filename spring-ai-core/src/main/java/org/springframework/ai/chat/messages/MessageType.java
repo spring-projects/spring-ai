@@ -17,36 +17,36 @@
 package org.springframework.ai.chat.messages;
 
 /**
- * The MessageType enum represents the type of message in a chat application. It can be
- * one of the following: USER, ASSISTANT, SYSTEM, FUNCTION.
+ * Enumeration representing types of {@link Message Messages} in a chat application. It
+ * can be one of the following: USER, ASSISTANT, SYSTEM, FUNCTION.
  */
 public enum MessageType {
 
 	/**
-	 * A message of the type 'user' passed as input Messages with the user role are from
-	 * the end-user or developer.
+	 * A {@link Message} of type {@literal user}, having the user role and originating
+	 * from an end-user or developer.
 	 * @see UserMessage
 	 */
 	USER("user"),
 
 	/**
-	 * A message of the type 'assistant' passed as input Messages with the message is
-	 * generated as a response to the user.
+	 * A {@link Message} of type {@literal assistant} passed in subsequent input
+	 * {@link Message Messages} as the {@link Message} generated in response to the user.
 	 * @see AssistantMessage
 	 */
 	ASSISTANT("assistant"),
 
 	/**
-	 * A message of the type 'system' passed as input Messages with high level
-	 * instructions for the conversation, such as behave like a certain character or
-	 * provide answers in a specific format.
+	 * A {@link Message} of type {@literal system} passed as input {@link Message
+	 * Messages} containing high-level instructions for the conversation, such as behave
+	 * like a certain character or provide answers in a specific format.
 	 * @see SystemMessage
 	 */
 	SYSTEM("system"),
 
 	/**
-	 * A message of the type 'function' passed as input Messages with a function content
-	 * in a chat application.
+	 * A {@link Message} of type {@literal function} passed as input {@link Message
+	 * Messages} with function content in a chat application.
 	 * @see ToolResponseMessage
 	 */
 	TOOL("tool");

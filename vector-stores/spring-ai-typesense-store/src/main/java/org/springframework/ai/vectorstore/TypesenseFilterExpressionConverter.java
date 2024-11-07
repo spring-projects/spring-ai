@@ -35,31 +35,20 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 	}
 
 	private String getOperationSymbol(Filter.Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " && ";
-			case OR:
-				return " || ";
-			case EQ:
-				return " "; // in typesense "EQ" operator looks like -> country:USA
-			case NE:
-				return " != ";
-			case LT:
-				return " < ";
-			case LTE:
-				return " <= ";
-			case GT:
-				return " > ";
-			case GTE:
-				return " >= ";
-			case IN:
-				return " "; // in typesense "IN" operator looks like -> country: [USA, UK]
-			case NIN:
-				return " != "; // in typesense "NIN" operator looks like -> country:
+		return switch (exp.type()) {
+			case AND -> " && ";
+			case OR -> " || ";
+			case EQ -> " "; // in typesense "EQ" operator looks like -> country:USA
+			case NE -> " != ";
+			case LT -> " < ";
+			case LTE -> " <= ";
+			case GT -> " > ";
+			case GTE -> " >= ";
+			case IN -> " "; // in typesense "IN" operator looks like -> country: [USA, UK]
+			case NIN -> " != "; // in typesense "NIN" operator looks like -> country:
 			// !=[USA, UK]
-			default:
-				throw new RuntimeException("Not supported expression type:" + exp.type());
-		}
+			default -> throw new RuntimeException("Not supported expression type:" + exp.type());
+		};
 	}
 
 	@Override

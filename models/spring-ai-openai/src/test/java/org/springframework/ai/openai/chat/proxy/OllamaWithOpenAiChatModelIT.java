@@ -55,7 +55,6 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.chat.ActorsFilms;
-import org.springframework.ai.openai.chat.OpenAiChatModelIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -73,7 +72,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
 class OllamaWithOpenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaWithOpenAiChatModelIT.class);
 
 	private static final String DEFAULT_OLLAMA_MODEL = "mistral";
 

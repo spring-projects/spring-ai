@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Soby Chacko
+ * @author Jihoon Kim
  * @since 1.0.0
  *
  */
@@ -59,7 +60,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	/**
 	 * Embeds a batch of texts into vectors.
 	 * @param texts list of texts to embed.
-	 * @return list of list of embedded vectors.
+	 * @return list of embedded vectors.
 	 */
 	default List<float[]> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
