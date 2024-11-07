@@ -305,17 +305,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private SchemaField schemaField(MetadataField field) {
 		String fieldName = jsonPath(field.name);
-		switch (field.fieldType) {
-			case NUMERIC:
-				return NumericField.of(fieldName).as(field.name);
-			case TAG:
-				return TagField.of(fieldName).as(field.name);
-			case TEXT:
-				return TextField.of(fieldName).as(field.name);
-			default:
-				throw new IllegalArgumentException(
-						MessageFormat.format("Field {0} has unsupported type {1}", field.name, field.fieldType));
-		}
+		return switch (field.fieldType) {
+			case NUMERIC -> NumericField.of(fieldName).as(field.name);
+			case TAG -> TagField.of(fieldName).as(field.name);
+			case TEXT -> TextField.of(fieldName).as(field.name);
+			default -> throw new IllegalArgumentException(
+					MessageFormat.format("Field {0} has unsupported type {1}", field.name, field.fieldType));
+		};
 	}
 
 	private VectorAlgorithm vectorAlgorithm() {

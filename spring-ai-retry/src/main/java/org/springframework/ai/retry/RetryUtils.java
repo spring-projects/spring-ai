@@ -83,4 +83,22 @@ public abstract class RetryUtils {
 		})
 		.build();
 
+	/**
+	 * Useful in testing scenarios where you don't want to wait long for retry and now
+	 * show stack trace
+	 */
+	public static final RetryTemplate SHORT_RETRY_TEMPLATE = RetryTemplate.builder()
+		.maxAttempts(10)
+		.retryOn(TransientAiException.class)
+		.fixedBackoff(Duration.ofMillis(100))
+		.withListener(new RetryListener() {
+
+			@Override
+			public <T extends Object, E extends Throwable> void onError(RetryContext context,
+					RetryCallback<T, E> callback, Throwable throwable) {
+				logger.warn("Retry error. Retry count:" + context.getRetryCount());
+			}
+		})
+		.build();
+
 }

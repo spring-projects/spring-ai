@@ -84,7 +84,7 @@ public class ZhiPuAiRetryTests {
 
 	@BeforeEach
 	public void beforeEach() {
-		this.retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 

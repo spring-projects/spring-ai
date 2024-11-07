@@ -270,11 +270,6 @@ NOTE: Adhere to the OpenAI link:https://platform.openai.com/docs/guides/structur
 
 You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
 
---
-[tabs]
-======
-Java::
-+
 [source,java]
 ----
 record MathReasoning(
@@ -306,41 +301,8 @@ String content = this.response.getResult().getOutput().getContent();
 
 MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 ----
-Kotlin::
-+
-[source,kotlin]
-----
-data class MathReasoning(
-	@get:JsonProperty(required = true, value = "steps") val steps: Steps,
-	@get:JsonProperty(required = true, value = "final_answer") val finalAnswer: String) {
 
-	data class Steps(@get:JsonProperty(required = true, value = "items") val items: Array<Items>) {
-
-		data class Items(
-			@get:JsonProperty(required = true, value = "explanation") val explanation: String,
-			@get:JsonProperty(required = true, value = "output") val output: String)
-	}
-}
-
-val outputConverter = BeanOutputConverter(MathReasoning::class.java)
-
-val jsonSchema = outputConverter.jsonSchema;
-
-val prompt = Prompt("how can I solve 8x + 7 = -23",
-	OpenAiChatOptions.builder()
-		.withModel(ChatModel.GPT_4_O_MINI)
-		.withResponseFormat(ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
-		.build())
-
-val response = openAiChatModel.call(prompt)
-val content = response.getResult().getOutput().getContent()
-
-val mathReasoning = outputConverter.convert(content)
-----
-======
---
-
-NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation (`@get:JsonProperty(required = true,...)` with Kotlin in order to generate the annotation on the related getters, see link:https://kotlinlang.org/docs/annotations.html#annotation-use-site-targets[related documentation]).
+NOTE: Ensure you use the `@JsonProperty(required = true,...)` annotation. 
 This is crucial for generating a schema that accurately marks fields as `required`. 
 Although this is optional for JSON Schema, OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/all-fields-must-be-required[mandates] it for the structured response to function correctly.
 

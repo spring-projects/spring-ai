@@ -223,6 +223,23 @@ class BedrockConverseChatClientIT {
 	}
 
 	@Test
+	void functionCallWithAdvisorTest() {
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel)
+				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
+				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.advisors(new SimpleLoggerAdvisor())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
 	void defaultFunctionCallTest() {
 
 		// @formatter:off

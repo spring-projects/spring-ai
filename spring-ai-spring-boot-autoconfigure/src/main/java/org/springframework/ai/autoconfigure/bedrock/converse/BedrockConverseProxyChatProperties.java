@@ -16,7 +16,6 @@
 
 package org.springframework.ai.autoconfigure.bedrock.converse;
 
-import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -38,12 +37,6 @@ public class BedrockConverseProxyChatProperties {
 	 */
 	private boolean enabled = true;
 
-	/**
-	 * The generative id to use. See the {@link BedrockProxyChatModel} for the supported
-	 * models.
-	 */
-	private String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
-
 	@NestedConfigurationProperty
 	private PortableFunctionCallingOptions options = PortableFunctionCallingOptions.builder()
 		.withTemperature(0.7)
@@ -57,14 +50,6 @@ public class BedrockConverseProxyChatProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
-	}
-
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
 	}
 
 	public PortableFunctionCallingOptions getOptions() {

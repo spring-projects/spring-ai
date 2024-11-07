@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.retry.NonTransientAiException;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -43,7 +44,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnClass(RetryTemplate.class)
+@ConditionalOnClass(RetryUtils.class)
 @EnableConfigurationProperties({ SpringAiRetryProperties.class })
 public class SpringAiRetryAutoConfiguration {
 

@@ -84,7 +84,8 @@ public record AdvisedRequest(
 
 	public AdvisedRequest {
 		Assert.notNull(chatModel, "chatModel cannot be null");
-		Assert.hasText(userText, "userText cannot be null or empty");
+		Assert.isTrue(StringUtils.hasText(userText) || !CollectionUtils.isEmpty(messages),
+				"userText cannot be null or empty unless messages are provided and contain Tool Response message.");
 		Assert.notNull(media, "media cannot be null");
 		Assert.noNullElements(media, "media cannot contain null elements");
 		Assert.notNull(functionNames, "functionNames cannot be null");

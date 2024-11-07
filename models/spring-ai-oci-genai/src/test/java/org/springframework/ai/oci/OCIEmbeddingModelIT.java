@@ -29,9 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = org.springframework.ai.oci.BaseEmbeddingModelTest.OCI_COMPARTMENT_ID_KEY,
 		matches = ".+")
-public class OCIEmbeddingModelIT extends BaseEmbeddingModelTest {
+class OCIEmbeddingModelIT extends BaseEmbeddingModelTest {
 
-	private final OCIEmbeddingModel embeddingModel = get();
+	private final OCIEmbeddingModel embeddingModel = getEmbeddingModel();
 
 	private final List<String> content = List.of("How many states are in the USA?", "How many states are in India?");
 

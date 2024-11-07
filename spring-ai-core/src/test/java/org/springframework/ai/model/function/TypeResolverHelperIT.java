@@ -23,9 +23,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.function.context.config.FunctionContextUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
 
@@ -41,11 +41,12 @@ class TypeResolverHelperIT {
 	@ValueSource(strings = { "weatherClassDefinition", "weatherFunctionDefinition", "standaloneWeatherFunction" })
 	void beanInputTypeResolutionTest(String beanName) {
 		assertThat(this.applicationContext).isNotNull();
-		BeanDefinition beanDefinition = this.applicationContext.getBeanDefinition(beanName);
-		Type beanType = beanDefinition.getResolvableType().getType();
-		Class<?> functionInputClass = TypeResolverHelper.getFunctionArgumentType(beanType, 0).getRawClass();
-		assertThat(functionInputClass).isNotNull();
-		assertThat(functionInputClass.getTypeName()).isEqualTo(WeatherRequest.class.getName());
+		Type beanType = FunctionContextUtils.findType(this.applicationContext.getBeanFactory(), beanName);
+		assertThat(beanType).isNotNull();
+		Type functionInputType = TypeResolverHelper.getFunctionArgumentType(beanType, 0);
+		assertThat(functionInputType).isNotNull();
+		assertThat(functionInputType.getTypeName()).isEqualTo(WeatherRequest.class.getName());
+
 	}
 
 	public record WeatherRequest(String city) {

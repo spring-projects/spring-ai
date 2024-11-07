@@ -31,7 +31,8 @@
 //// **** xref:api/chat/functions/moonshot-chat-functions.adoc[Function Calling]
 *** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 *** xref:api/chat/ollama-chat.adoc[Ollama]
-**** xref:api/chat/functions/ollama-chat-functions.adoc[Function Calling]
+*** OCI Generative AI
+**** xref:api/chat/oci-genai/cohere-chat.adoc[Cohere]
 *** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/functions/openai-chat-functions.adoc[Function Calling]
 *** xref:api/chat/qianfan-chat.adoc[QianFan]
