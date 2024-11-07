@@ -74,6 +74,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author luocongqiu
  * @author Thomas Vitale
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -97,7 +98,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
-		Assert.notNull(observationRegistry, "modelManagementOptions must not be null");
+		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
 		this.chatApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
@@ -118,8 +119,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			.withKeyValue("eval-duration", response.evalDuration())
 			.withKeyValue("eval-count", response.evalCount())
 			.withKeyValue("load-duration", response.loadDuration())
-			.withKeyValue("eval-duration", response.promptEvalDuration())
-			.withKeyValue("eval-count", response.promptEvalCount())
+			.withKeyValue("prompt-eval-duration", response.promptEvalDuration())
+			.withKeyValue("prompt-eval-count", response.promptEvalCount())
 			.withKeyValue("total-duration", response.totalDuration())
 			.withKeyValue("done", response.done())
 			.build();
