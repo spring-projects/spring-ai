@@ -17,11 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class TextLineTest {
 
 	public static Stream<Arguments> testWriteCharacterAtIndexValidIndex() {
-		return Stream.of(
-				Arguments.of(new Character('A', 0, false, false, false, false)),
+		return Stream.of(Arguments.of(new Character('A', 0, false, false, false, false)),
 				Arguments.of(new Character('A', 10, true, false, false, false)),
-				Arguments.of(new Character('A', 0, false, true, false, false))
-		);
+				Arguments.of(new Character('A', 0, false, true, false, false)));
 	}
 
 	@ParameterizedTest
@@ -72,7 +70,6 @@ class TextLineTest {
 		assertEquals(" ".repeat(10) + "A" + " ".repeat(14), textLine.getLine());
 	}
 
-
 	@Test
 	void testWriteCharacterAtIndex_CloseToPreviousWord() {
 		TextLine textLine = new TextLine(100);
@@ -90,7 +87,8 @@ class TextLineTest {
 	@Test
 	void testGetLine() {
 		TextLine textLine = new TextLine(100);
-		assertEquals(" ".repeat(100 / ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT), textLine.getLine());
+		assertEquals(" ".repeat(100 / ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT),
+				textLine.getLine());
 	}
 
 	@Test
@@ -118,4 +116,5 @@ class TextLineTest {
 		textLine.writeCharacterAtIndex(anotherCharacter);
 		assertEquals(" AB" + " ".repeat(22), textLine.getLine());
 	}
+
 }
