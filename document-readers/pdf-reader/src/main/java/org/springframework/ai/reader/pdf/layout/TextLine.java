@@ -18,6 +18,11 @@ package org.springframework.ai.reader.pdf.layout;
 
 import java.util.Arrays;
 
+/*
+ * @author Soby Chacko
+ */
+
+
 class TextLine {
 
 	private static final char SPACE_CHARACTER = ' ';
