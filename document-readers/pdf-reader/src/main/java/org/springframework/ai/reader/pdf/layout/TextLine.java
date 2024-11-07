@@ -23,7 +23,9 @@ class TextLine {
 	private static final char SPACE_CHARACTER = ' ';
 
 	private final int lineLength;
+
 	private final char[] line;
+
 	private int lastIndex;
 
 	TextLine(int lineLength) {
@@ -36,9 +38,6 @@ class TextLine {
 	}
 
 	public void writeCharacterAtIndex(final Character character) {
-		if (character == null) {
-			throw new IllegalArgumentException("Character cannot be null");
-		}
 		character.setIndex(this.computeIndexForCharacter(character));
 		int index = character.getIndex();
 		char characterValue = character.getCharacterValue();
@@ -91,7 +90,7 @@ class TextLine {
 		if (!this.isNewIndexGreaterThanLastIndex(index)) {
 			nextValidIndex = this.lastIndex + 1;
 		}
-		if (!isCharacterPartOfPreviousWord && index > 0 && this.isSpaceCharacterAtIndex(index - 1)) {
+		if (!isCharacterPartOfPreviousWord && index > 0 && !this.isSpaceCharacterAtIndex(index - 1)) {
 			nextValidIndex = nextValidIndex + 1;
 		}
 		this.lastIndex = nextValidIndex;
