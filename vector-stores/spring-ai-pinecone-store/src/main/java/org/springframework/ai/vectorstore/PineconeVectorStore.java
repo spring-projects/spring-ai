@@ -324,7 +324,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			this.clientConfig = new PineconeClientConfig().withApiKey(builder.apiKey)
 				.withEnvironment(builder.environment)
 				.withProjectName(builder.projectId)
-				.withApiKey(builder.apiKey)
 				.withServerSideTimeoutSec((int) builder.serverSideTimeout.toSeconds());
 		}
 
