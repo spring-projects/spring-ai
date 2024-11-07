@@ -43,8 +43,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
-@DisabledIf("isDisabled")
 public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
