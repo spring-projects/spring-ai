@@ -415,6 +415,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-coherence-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-watsonx-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
