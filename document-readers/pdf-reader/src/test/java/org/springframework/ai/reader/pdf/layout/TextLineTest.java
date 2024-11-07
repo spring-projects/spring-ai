@@ -65,7 +65,7 @@ class TextLineTest {
 		TextLine textLine = new TextLine(100);
 		Character character = new Character('A', 10, false, false, false, false);
 		textLine.writeCharacterAtIndex(character);
-		assertEquals(" ".repeat(11) + "A" + " ".repeat(13), textLine.getLine());
+		assertEquals(" ".repeat(10) + "A" + " ".repeat(14), textLine.getLine());
 	}
 
 
@@ -74,7 +74,7 @@ class TextLineTest {
 		TextLine textLine = new TextLine(100);
 		Character character = new Character('A', 10, false, false, true, false);
 		textLine.writeCharacterAtIndex(character);
-		assertEquals(" ".repeat(11) + "A" + " ".repeat(13), textLine.getLine());
+		assertEquals(" ".repeat(10) + "A" + " ".repeat(14), textLine.getLine());
 	}
 
 	@Test
