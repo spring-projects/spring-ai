@@ -22,10 +22,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT;
@@ -48,19 +46,15 @@ import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
-@DisabledIf("isDisabled")
 public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWrapperIT.class);
 
 	private static final String MODEL_NAME = "qwen2.5:3b";
 
-	static String baseUrl;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + baseUrl,
+				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
 				"spring.ai.ollama.chat.options.model=" + MODEL_NAME,
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
@@ -70,7 +64,7 @@ public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 
 	@BeforeAll
 	public static void beforeAll() {
-		baseUrl = buildConnectionWithModel(MODEL_NAME);
+		initializeOllama(MODEL_NAME);
 	}
 
 	@Test

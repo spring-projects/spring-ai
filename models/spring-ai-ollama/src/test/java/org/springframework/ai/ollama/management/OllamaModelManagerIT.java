@@ -22,8 +22,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaModel;
@@ -35,8 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Thomas Vitale
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 class OllamaModelManagerIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
@@ -45,7 +41,7 @@ class OllamaModelManagerIT extends BaseOllamaIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		var ollamaApi = buildOllamaApiWithModel(MODEL);
+		var ollamaApi = initializeOllama(MODEL);
 		modelManager = new OllamaModelManager(ollamaApi);
 	}
 
@@ -144,7 +140,7 @@ class OllamaModelManagerIT extends BaseOllamaIT {
 		var isModelAvailable = modelManager.isModelAvailable(model);
 		assertThat(isModelAvailable).isFalse();
 
-		new OllamaModelManager(buildOllamaApi(),
+		new OllamaModelManager(getOllamaApi(),
 				new ModelManagementOptions(PullModelStrategy.WHEN_MISSING, List.of(model), Duration.ofMinutes(5), 0));
 
 		isModelAvailable = modelManager.isModelAvailable(model);

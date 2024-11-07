@@ -21,8 +21,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
@@ -38,24 +36,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
- * @since 0.8.0
+ * @since 1.0.0
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 public class OllamaEmbeddingAutoConfigurationIT extends BaseOllamaIT {
 
 	private static final String MODEL_NAME = OllamaModel.NOMIC_EMBED_TEXT.getName();
 
-	static String baseUrl;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.ollama.embedding.options.model=" + MODEL_NAME,
-				"spring.ai.ollama.base-url=" + baseUrl)
+				"spring.ai.ollama.base-url=" + getBaseUrl())
 		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class));
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		baseUrl = buildConnectionWithModel(MODEL_NAME);
+		initializeOllama(MODEL_NAME);
 	}
 
 	@Test

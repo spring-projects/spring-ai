@@ -44,7 +44,7 @@ class FunctionCallbackWrapperKotlinIT : BaseOllamaIT() {
 
 	private val MODEL_NAME = "qwen2.5:3b"
 
-	val contextRunner = buildConnectionWithModel(MODEL_NAME).let { baseUrl ->
+	val contextRunner = buildOllamaApiWithModel(MODEL_NAME).let { baseUrl ->
 		ApplicationContextRunner().withPropertyValues(
 			"spring.ai.ollama.baseUrl=$baseUrl",
 			"spring.ai.ollama.chat.options.model=$MODEL_NAME",
