@@ -36,8 +36,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
-@DisabledIf("isDisabled")
 class FunctionCallbackWrapperKotlinIT : BaseOllamaIT() {
 
 	private val logger = LoggerFactory.getLogger(FunctionCallbackWrapperKotlinIT::class.java)
