@@ -43,7 +43,7 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(BedrockConverseProxyChatAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withPropertyValues(
+		.withPropertyValues("spring.ai.bedrock.converse.chat.enabled=true",
 				"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0",
 				"spring.ai.bedrock.converse.chat.options.temperature=0.5")
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));

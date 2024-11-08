@@ -35,7 +35,7 @@ public class BedrockConverseProxyChatProperties {
 	/**
 	 * Enable Bedrock Converse chat model.
 	 */
-	private boolean enabled = true;
+	private boolean enabled = false;
 
 	@NestedConfigurationProperty
 	private PortableFunctionCallingOptions options = PortableFunctionCallingOptions.builder()

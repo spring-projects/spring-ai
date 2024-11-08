@@ -35,6 +35,7 @@ public class BedrockConverseProxyChatPropertiesTests {
 
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
+				"spring.ai.bedrock.converse.chat.enabled=true",
 				"spring.ai.bedrock.converse.chat.options.model=MODEL_XYZ",
 
 				"spring.ai.bedrock.converse.chat.options.max-tokens=123",
@@ -65,10 +66,10 @@ public class BedrockConverseProxyChatPropertiesTests {
 	@Test
 	public void chatCompletionDisabled() {
 
-		// It is enabled by default
+		// It is disabled by default
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
-			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty());
+			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty());
 
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.converse.chat.enabled=true")

@@ -53,7 +53,7 @@ import org.springframework.context.annotation.Import;
 @EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
 @ConditionalOnClass({ BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
 @ConditionalOnProperty(prefix = BedrockConverseProxyChatProperties.CONFIG_PREFIX, name = "enabled",
-		havingValue = "true", matchIfMissing = true)
+		havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockConverseProxyChatAutoConfiguration {
 

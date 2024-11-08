@@ -55,7 +55,7 @@ class FunctionCallWithFunctionBeanIT {
 	void functionCallTest() {
 
 		this.contextRunner
-			.withPropertyValues(
+			.withPropertyValues("spring.ai.bedrock.converse.chat.enabled=true",
 					"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.run(context -> {
 
@@ -84,7 +84,7 @@ class FunctionCallWithFunctionBeanIT {
 	void functionStreamTest() {
 
 		this.contextRunner
-			.withPropertyValues(
+			.withPropertyValues("spring.ai.bedrock.converse.chat.enabled=true",
 					"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.run(context -> {
 

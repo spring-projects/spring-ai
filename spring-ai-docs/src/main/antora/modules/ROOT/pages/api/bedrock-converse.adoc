@@ -73,7 +73,7 @@ The prefix `spring.ai.bedrock.converse.chat` is the property prefix that configu
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.converse.chat.enabled | Enable Bedrock Converse chat model. | true
+| spring.ai.bedrock.converse.chat.enabled | Enable Bedrock Converse chat model. | false
 | spring.ai.bedrock.converse.chat.options.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | anthropic.claude-3-sonnet-20240229-v1:0
 | spring.ai.bedrock.converse.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0] | 0.8
 | spring.ai.bedrock.converse.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. | AWS Bedrock default
