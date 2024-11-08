@@ -153,7 +153,7 @@ public record AdvisedRequest(
 			if (!CollectionUtils.isEmpty(this.systemParams())) {
 				processedSystemText = new PromptTemplate(processedSystemText, this.systemParams()).render();
 			}
-			messages.add(new SystemMessage(processedSystemText));
+			messages.add(0,new SystemMessage(processedSystemText));
 		}
 
 		String formatParam = (String) this.adviseContext().get("formatParam");
