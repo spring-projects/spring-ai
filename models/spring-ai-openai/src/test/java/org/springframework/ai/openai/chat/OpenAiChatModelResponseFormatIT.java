@@ -17,11 +17,13 @@
 package org.springframework.ai.openai.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -40,10 +42,12 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 @SpringBootTest(classes = OpenAiChatModelResponseFormatIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -140,11 +144,13 @@ public class OpenAiChatModelResponseFormatIT {
 	@Test
 	void jsonSchemaBeanConverter() throws JsonMappingException, JsonProcessingException {
 
+		@JsonPropertyOrder({ "steps", "final_answer" })
 		record MathReasoning(@JsonProperty(required = true, value = "steps") Steps steps,
 				@JsonProperty(required = true, value = "final_answer") String finalAnswer) {
 
 			record Steps(@JsonProperty(required = true, value = "items") Items[] items) {
 
+				@JsonPropertyOrder({ "output", "explanation" })
 				record Items(@JsonProperty(required = true, value = "explanation") String explanation,
 						@JsonProperty(required = true, value = "output") String output) {
 
@@ -156,9 +162,45 @@ public class OpenAiChatModelResponseFormatIT {
 
 		var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 
+		var expectedJsonSchema = """
+				{
+				  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+				  "type" : "object",
+				  "properties" : {
+				    "steps" : {
+				      "type" : "object",
+				      "properties" : {
+				        "items" : {
+				          "type" : "array",
+				          "items" : {
+				            "type" : "object",
+				            "properties" : {
+				              "output" : {
+				                "type" : "string"
+				              },
+				              "explanation" : {
+				                "type" : "string"
+				              }
+				            },
+				            "required" : [ "output", "explanation" ],
+				            "additionalProperties" : false
+				          }
+				        }
+				      },
+				      "required" : [ "items" ],
+				      "additionalProperties" : false
+				    },
+				    "final_answer" : {
+				      "type" : "string"
+				    }
+				  },
+				  "required" : [ "steps", "final_answer" ],
+				  "additionalProperties" : false
+				}""";
 		var jsonSchema1 = outputConverter.getJsonSchema();
 
-		System.out.println(jsonSchema1);
+		assertThat(jsonSchema1).isNotNull();
+		assertThat(jsonSchema1).isEqualTo(expectedJsonSchema);
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiChatOptions.builder()
@@ -174,11 +216,16 @@ public class OpenAiChatModelResponseFormatIT {
 
 		logger.info("Response content: {}", content);
 
+		assertThat(isValidJson(content)).isTrue();
+
+		// Check if the order is correct as specified in the schema. Steps should come
+		// first before final answer.
+		assertThat(content.startsWith("{\"steps\":{\"items\":["));
+
 		MathReasoning mathReasoning = outputConverter.convert(content);
 
-		System.out.println(mathReasoning);
-
-		assertThat(isValidJson(content)).isTrue();
+		assertThat(mathReasoning).isNotNull();
+		logger.info(mathReasoning.toString());
 	}
 
 	@SpringBootConfiguration

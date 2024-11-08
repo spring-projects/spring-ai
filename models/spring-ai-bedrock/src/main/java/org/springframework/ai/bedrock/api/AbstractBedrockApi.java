@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
-import reactor.core.publisher.Sinks.EmitResult;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
@@ -69,6 +68,10 @@ import org.springframework.util.Assert;
 public abstract class AbstractBedrockApi<I, O, SO> {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractBedrockApi.class);
+
+	public static final EmitFailureHandler DEFAULT_EMIT_FAILURE_HANDLER = EmitFailureHandler
+	.busyLooping(Duration.ofSeconds(10));
+
 
 	private final String modelId;
 	private final ObjectMapper objectMapper;
@@ -264,7 +267,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 			body = SdkBytes.fromUtf8String(this.objectMapper.writeValueAsString(request));
 		}
 		catch (JsonProcessingException e) {
-			eventSink.tryEmitError(e);
+			eventSink.emitError(e, DEFAULT_EMIT_FAILURE_HANDLER);
 			return eventSink.asFlux();
 		}
 
@@ -279,16 +282,16 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 					try {
 						logger.debug("Received chunk: " + chunk.bytes().asString(StandardCharsets.UTF_8));
 						SO response = this.objectMapper.readValue(chunk.bytes().asByteArray(), clazz);
-						eventSink.tryEmitNext(response);
+						eventSink.emitNext(response, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
 					catch (Exception e) {
 						logger.error("Failed to unmarshall", e);
-						eventSink.tryEmitError(e);
+						eventSink.emitError(e, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
 				})
 				.onDefault(event -> {
 					logger.error("Unknown or unhandled event: " + event.toString());
-					eventSink.tryEmitError(new Throwable("Unknown or unhandled event: " + event.toString()));
+					eventSink.emitError(new Throwable("Unknown or unhandled event: " + event.toString()),DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.build();
 
@@ -296,18 +299,12 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.builder()
 				.onComplete(
 						() -> {
-							EmitResult emitResult = eventSink.tryEmitComplete();
-							while (!emitResult.isSuccess()) {
-								System.out.println("Emitting complete:" + emitResult);
-								emitResult = eventSink.tryEmitComplete();
-							}
-							eventSink.emitComplete(EmitFailureHandler.busyLooping(Duration.ofSeconds(3)));
-							// EmitResult emitResult = eventSink.tryEmitComplete();
-							logger.debug("\nCompleted streaming response.");
+							eventSink.emitComplete(DEFAULT_EMIT_FAILURE_HANDLER);
+							logger.info("Completed streaming response.");
 						})
 				.onError(error -> {
 					logger.error("\n\nError streaming response: " + error.getMessage());
-					eventSink.tryEmitError(error);
+					eventSink.emitError(error, DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.onEventStream(stream -> stream.subscribe(
 						(ResponseStream e) -> e.accept(visitor)))
