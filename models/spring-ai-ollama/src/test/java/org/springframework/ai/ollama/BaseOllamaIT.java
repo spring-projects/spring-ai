@@ -42,7 +42,7 @@ public abstract class BaseOllamaIT {
 	// Environment variable to control whether to create a new container or use existing
 	// Ollama instance
 	private static final boolean SKIP_CONTAINER_CREATION = Boolean
-		.parseBoolean(System.getenv().getOrDefault("OLLAMA_SKIP_CONTAINER", "false"));
+		.parseBoolean(System.getenv().getOrDefault("OLLAMA_WITH_REUSE", "false"));
 
 	private static OllamaContainer ollamaContainer;
 
