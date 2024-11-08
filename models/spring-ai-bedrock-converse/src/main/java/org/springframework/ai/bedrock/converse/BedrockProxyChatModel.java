@@ -36,7 +36,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
-import reactor.core.publisher.Sinks.EmitResult;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
@@ -524,6 +523,9 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		});
 	}
 
+	public static final EmitFailureHandler DEFAULT_EMIT_FAILURE_HANDLER = EmitFailureHandler
+		.busyLooping(Duration.ofSeconds(10));
+
 	/**
 	 * Invoke the model and return the response stream.
 	 *
@@ -541,26 +543,19 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		ConverseStreamResponseHandler.Visitor visitor = ConverseStreamResponseHandler.Visitor.builder()
 			.onDefault(output -> {
 				logger.debug("Received converse stream output:{}", output);
-				eventSink.tryEmitNext(output);
+				eventSink.emitNext(output, DEFAULT_EMIT_FAILURE_HANDLER);
 			})
 			.build();
 
 		ConverseStreamResponseHandler responseHandler = ConverseStreamResponseHandler.builder()
 			.onEventStream(stream -> stream.subscribe(e -> e.accept(visitor)))
 			.onComplete(() -> {
-				EmitResult emitResult = eventSink.tryEmitComplete();
-
-				while (!emitResult.isSuccess()) {
-					logger.info("Emitting complete:{}", emitResult);
-					emitResult = eventSink.tryEmitComplete();
-				}
-
-				eventSink.emitComplete(EmitFailureHandler.busyLooping(Duration.ofSeconds(3)));
+				eventSink.emitComplete(DEFAULT_EMIT_FAILURE_HANDLER);
 				logger.info("Completed streaming response.");
 			})
 			.onError(error -> {
 				logger.error("Error handling Bedrock converse stream response", error);
-				eventSink.tryEmitError(error);
+				eventSink.emitError(error, DEFAULT_EMIT_FAILURE_HANDLER);
 			})
 			.build();
 
