@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-
 package org.springframework.ai.autoconfigure.ollama.tool
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.DisabledIf
 import org.slf4j.LoggerFactory
+
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
@@ -29,29 +29,37 @@ import org.springframework.ai.model.function.FunctionCallback
 import org.springframework.ai.model.function.FunctionCallbackWrapper
 import org.springframework.ai.model.function.FunctionCallingOptions
 import org.springframework.ai.ollama.OllamaChatModel
+import org.springframework.ai.ollama.api.OllamaModel
 import org.springframework.ai.ollama.api.OllamaOptions
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.testcontainers.junit.jupiter.Testcontainers
 
 class FunctionCallbackWrapperKotlinIT : BaseOllamaIT() {
 
+	companion object {
+
+		private val MODEL_NAME = OllamaModel.LLAMA3_2.getName();
+
+		@JvmStatic
+		@BeforeAll
+		fun beforeAll() {
+			initializeOllama(MODEL_NAME)
+		}
+	}
+
 	private val logger = LoggerFactory.getLogger(FunctionCallbackWrapperKotlinIT::class.java)
 
-	private val MODEL_NAME = "qwen2.5:3b"
-
-	val contextRunner = buildOllamaApiWithModel(MODEL_NAME).let { baseUrl ->
-		ApplicationContextRunner().withPropertyValues(
-			"spring.ai.ollama.baseUrl=$baseUrl",
+	private val contextRunner = ApplicationContextRunner()
+		.withPropertyValues(
+			"spring.ai.ollama.baseUrl=${getBaseUrl()}",
 			"spring.ai.ollama.chat.options.model=$MODEL_NAME",
 			"spring.ai.ollama.chat.options.temperature=0.5",
 			"spring.ai.ollama.chat.options.topK=10"
 		)
-			.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration::class.java))
-			.withUserConfiguration(Config::class.java)
-	}
+		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration::class.java))
+		.withUserConfiguration(Config::class.java)
 
 	@Test
 	fun functionCallTest() {
