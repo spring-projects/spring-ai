@@ -120,9 +120,9 @@ class BeanOutputConverterTest {
 	record TestClassWithJsonPropertyOrder(
 			@JsonProperty("string_property") @JsonPropertyDescription("string_property_description") String someString,
 
-			@JsonProperty(required = true, value = "foo_property") String foo,
+			@JsonProperty(required = true, value = "bar_property") String bar,
 
-			@JsonProperty(required = true, value = "bar_property") String bar) {
+			@JsonProperty(required = true, value = "foo_property") String foo) {
 	}
 
 	@Nested
