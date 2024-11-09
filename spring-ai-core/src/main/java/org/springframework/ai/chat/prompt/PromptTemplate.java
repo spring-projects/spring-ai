@@ -19,6 +19,7 @@ package org.springframework.ai.chat.prompt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,37 +55,17 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
 		}
-		try {
-			this.st = new ST(this.template, '{', '}');
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		initST(this.template, Collections.emptyMap());
 	}
 
 	public PromptTemplate(String template) {
 		this.template = template;
-		// If the template string is not valid, an exception will be thrown
-		try {
-			this.st = new ST(this.template, '{', '}');
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		initST(this.template, Collections.emptyMap());
 	}
 
 	public PromptTemplate(String template, Map<String, Object> model) {
 		this.template = template;
-		// If the template string is not valid, an exception will be thrown
-		try {
-			this.st = new ST(this.template, '{', '}');
-			for (Entry<String, Object> entry : model.entrySet()) {
-				add(entry.getKey(), entry.getValue());
-			}
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		initST(this.template, model);
 	}
 
 	public PromptTemplate(Resource resource, Map<String, Object> model) {
@@ -94,11 +75,15 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
 		}
+		initST(this.template, model);
+	}
+
+	private void initST(String template, Map<String, Object> model) {
 		// If the template string is not valid, an exception will be thrown
 		try {
-			this.st = new ST(this.template, '{', '}');
+			this.st = new ST(template, '{', '}');
 			for (Entry<String, Object> entry : model.entrySet()) {
-				this.add(entry.getKey(), entry.getValue());
+				add(entry.getKey(), entry.getValue());
 			}
 		}
 		catch (Exception ex) {
