@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -234,7 +235,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY")));
 		}
 
 		@Bean

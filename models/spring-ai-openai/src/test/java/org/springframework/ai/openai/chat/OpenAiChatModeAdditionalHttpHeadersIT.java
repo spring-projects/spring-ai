@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -67,7 +68,7 @@ public class OpenAiChatModeAdditionalHttpHeadersIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi("Invalid API Key");
+			return new OpenAiApi(new StaticApiKey("Invalid API Key"));
 		}
 
 		@Bean

@@ -39,6 +39,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -421,7 +422,7 @@ class OpenSearchVectorStoreIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY"))));
 		}
 
 	}

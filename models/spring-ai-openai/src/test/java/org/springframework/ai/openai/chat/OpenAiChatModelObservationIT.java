@@ -24,6 +24,7 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.model.security.StaticApiKey;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -169,7 +170,7 @@ public class OpenAiChatModelObservationIT {
 
 		@Bean
 		public OpenAiApi openAiApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY")));
 		}
 
 		@Bean

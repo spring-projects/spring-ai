@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.security.StaticApiKey;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -380,7 +381,7 @@ class GroqWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(GROQ_BASE_URL, System.getenv("GROQ_API_KEY"));
+			return new OpenAiApi(GROQ_BASE_URL, new StaticApiKey(System.getenv("GROQ_API_KEY")));
 		}
 
 		@Bean

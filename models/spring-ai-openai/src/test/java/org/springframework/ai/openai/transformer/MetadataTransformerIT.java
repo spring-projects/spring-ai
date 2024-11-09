@@ -26,6 +26,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.transformer.ContentFormatTransformer;
@@ -163,7 +164,7 @@ public class MetadataTransformerIT {
 				throw new IllegalArgumentException(
 						"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 			}
-			return new OpenAiApi(apiKey);
+			return new OpenAiApi(new StaticApiKey(apiKey));
 		}
 
 		@Bean

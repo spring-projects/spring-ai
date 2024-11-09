@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -104,7 +105,7 @@ public class OpenAiEmbeddingModelObservationIT {
 
 		@Bean
 		public OpenAiApi openAiApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY")));
 		}
 
 		@Bean

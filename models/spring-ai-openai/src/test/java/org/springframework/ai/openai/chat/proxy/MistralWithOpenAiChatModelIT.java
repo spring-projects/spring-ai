@@ -31,6 +31,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.security.ApiKey;
+import org.springframework.ai.model.security.StaticApiKey;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -385,7 +387,7 @@ class MistralWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(MISTRAL_BASE_URL, System.getenv("MISTRAL_AI_API_KEY"));
+			return new OpenAiApi(MISTRAL_BASE_URL, new StaticApiKey(System.getenv("MISTRAL_AI_API_KEY")));
 		}
 
 		@Bean

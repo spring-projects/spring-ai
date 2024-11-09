@@ -29,6 +29,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -157,7 +158,7 @@ public class OpenAiAutoConfiguration {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties,
 				modelType);
 
-		return new OpenAiApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
+		return new OpenAiApi(resolved.baseUrl(), new StaticApiKey(resolved.apiKey()), resolved.headers(),
 				chatProperties.getCompletionsPath(), OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH,
 				restClientBuilder, webClientBuilder, responseErrorHandler);
 	}
@@ -169,7 +170,7 @@ public class OpenAiAutoConfiguration {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, embeddingProperties,
 				modelType);
 
-		return new OpenAiApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
+		return new OpenAiApi(resolved.baseUrl(), new StaticApiKey(resolved.apiKey()), resolved.headers(),
 				OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH, embeddingProperties.getEmbeddingsPath(),
 				restClientBuilder, webClientBuilder, responseErrorHandler);
 	}

@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
@@ -401,7 +402,8 @@ class OllamaWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(baseUrl, "");
+			return new OpenAiApi(baseUrl, new StaticApiKey(""));
+
 		}
 
 		@Bean
