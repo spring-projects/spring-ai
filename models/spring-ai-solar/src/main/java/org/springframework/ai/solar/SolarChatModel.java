@@ -69,19 +69,18 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Creates an instance of the SolarChatModel.
-	 * @param SolarApi The SolarApi instance to be used for interacting with the
-	 * Solar Chat API.
+	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar
+	 * Chat API.
 	 * @throws IllegalArgumentException if SolarApi is null
 	 */
 	public SolarChatModel(SolarApi SolarApi) {
-		this(SolarApi,
-				SolarChatOptions.builder().withModel(SolarApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(SolarApi, SolarChatOptions.builder().withModel(SolarApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
 	}
 
 	/**
 	 * Initializes an instance of the SolarChatModel.
-	 * @param SolarApi The SolarApi instance to be used for interacting with the
-	 * Solar Chat API.
+	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar
+	 * Chat API.
 	 * @param options The SolarChatOptions to configure the chat client.
 	 */
 	public SolarChatModel(SolarApi SolarApi, SolarChatOptions options) {
@@ -90,8 +89,8 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Initializes a new instance of the SolarChatModel.
-	 * @param SolarApi The SolarApi instance to be used for interacting with the
-	 * Solar Chat API.
+	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar
+	 * Chat API.
 	 * @param options The SolarChatOptions to configure the chat client.
 	 * @param retryTemplate The retry template.
 	 */
@@ -101,8 +100,8 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Initializes a new instance of the SolarChatModel.
-	 * @param SolarApi The SolarApi instance to be used for interacting with the
-	 * Solar Chat API.
+	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar
+	 * Chat API.
 	 * @param options The SolarChatOptions to configure the chat client.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
@@ -124,37 +123,38 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 		SolarApi.ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(SolarConstants.PROVIDER_NAME)
-				.requestOptions(buildRequestOptions(request))
-				.build();
+			.prompt(prompt)
+			.provider(SolarConstants.PROVIDER_NAME)
+			.requestOptions(buildRequestOptions(request))
+			.build();
 
 		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					ResponseEntity<SolarApi.ChatCompletion> completionEntity = this.retryTemplate
-							.execute(ctx -> this.solarApi.chatCompletionEntity(request));
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				ResponseEntity<SolarApi.ChatCompletion> completionEntity = this.retryTemplate
+					.execute(ctx -> this.solarApi.chatCompletionEntity(request));
 
-					var chatCompletion = completionEntity.getBody();
-					if (chatCompletion == null) {
-						logger.warn("No chat completion returned for prompt: {}", prompt);
-						return new ChatResponse(List.of());
-					}
+				var chatCompletion = completionEntity.getBody();
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-					// @formatter:off
+			// @formatter:off
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id(),
 							"role", SolarApi.ChatCompletionMessage.Role.ASSISTANT
 					);
 					// @formatter:on
 
-					var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(), metadata);
-					List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
-					ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
-					observationContext.setResponse(chatResponse);
-					return chatResponse;
-				});
+				var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(),
+						metadata);
+				List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
+				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
+				observationContext.setResponse(chatResponse);
+				return chatResponse;
+			});
 	}
 
 	/**
@@ -162,12 +162,16 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 	 */
 	public SolarApi.ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		var chatCompletionMessages = prompt.getInstructions()
-				.stream()
-				.map(m -> new SolarApi.ChatCompletionMessage(m.getContent(),
-						SolarApi.ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-				.toList();
-		var systemMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == SolarApi.ChatCompletionMessage.Role.SYSTEM).toList();
-		var userMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() != SolarApi.ChatCompletionMessage.Role.SYSTEM).toList();
+			.stream()
+			.map(m -> new SolarApi.ChatCompletionMessage(m.getContent(),
+					SolarApi.ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
+			.toList();
+		var systemMessageList = chatCompletionMessages.stream()
+			.filter(msg -> msg.role() == SolarApi.ChatCompletionMessage.Role.SYSTEM)
+			.toList();
+		var userMessageList = chatCompletionMessages.stream()
+			.filter(msg -> msg.role() != SolarApi.ChatCompletionMessage.Role.SYSTEM)
+			.toList();
 
 		if (systemMessageList.size() > 1) {
 			throw new IllegalArgumentException("Only one system message is allowed in the prompt");
@@ -196,28 +200,28 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	private ChatOptions buildRequestOptions(SolarApi.ChatCompletionRequest request) {
 		return ChatOptionsBuilder.builder()
-				.withModel(request.model())
-				.withFrequencyPenalty(request.frequencyPenalty())
-				.withMaxTokens(request.maxTokens())
-				.withPresencePenalty(request.presencePenalty())
-				.withStopSequences(request.stop())
-				.withTemperature(request.temperature())
-				.withTopP(request.topP())
-				.build();
+			.withModel(request.model())
+			.withFrequencyPenalty(request.frequencyPenalty())
+			.withMaxTokens(request.maxTokens())
+			.withPresencePenalty(request.presencePenalty())
+			.withStopSequences(request.stop())
+			.withTemperature(request.temperature())
+			.withTopP(request.topP())
+			.build();
 	}
 
 	private ChatResponseMetadata from(SolarApi.ChatCompletion result, String model) {
 		Assert.notNull(result, "Solar ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-				.withId(result.id() != null ? result.id() : "")
-				.withUsage(result.usage() != null ? SolarUsage.from(result.usage()) : new EmptyUsage())
-				.withModel(model)
-				.withKeyValue("created", result.created() != null ? result.created() : 0L)
-				.build();
+			.withId(result.id() != null ? result.id() : "")
+			.withUsage(result.usage() != null ? SolarUsage.from(result.usage()) : new EmptyUsage())
+			.withModel(model)
+			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.build();
 	}
 
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
 		this.observationConvention = observationConvention;
 	}
-}
 
+}

@@ -15,4 +15,5 @@ public class SolarConstants {
 
 	private SolarConstants() {
 	}
+
 }

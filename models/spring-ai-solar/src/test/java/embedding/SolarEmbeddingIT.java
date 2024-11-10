@@ -71,4 +71,5 @@ class SolarEmbeddingIT {
 
 		Assertions.assertThat(this.embeddingModel.dimensions()).isEqualTo(4096);
 	}
+
 }

@@ -64,4 +64,5 @@ public class SolarChatModelIT {
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 	}
+
 }

@@ -37,4 +37,5 @@ public class SolarTestConfiguration {
 	public EmbeddingModel solarEmbeddingModel(SolarApi api) {
 		return new SolarEmbeddingModel(api);
 	}
+
 }

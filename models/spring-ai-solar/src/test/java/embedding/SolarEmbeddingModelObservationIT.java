@@ -60,9 +60,7 @@ public class SolarEmbeddingModelObservationIT {
 
 	@Test
 	void observationForEmbeddingOperation() {
-		var options = SolarEmbeddingOptions.builder()
-			.withModel(SolarApi.DEFAULT_EMBEDDING_MODEL)
-			.build();
+		var options = SolarEmbeddingOptions.builder().withModel(SolarApi.DEFAULT_EMBEDDING_MODEL).build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
 
@@ -105,10 +103,11 @@ public class SolarEmbeddingModelObservationIT {
 		}
 
 		@Bean
-		public SolarEmbeddingModel solarEmbeddingModel(SolarApi solarApi,
-				TestObservationRegistry observationRegistry) {
+		public SolarEmbeddingModel solarEmbeddingModel(SolarApi solarApi, TestObservationRegistry observationRegistry) {
 			return new SolarEmbeddingModel(solarApi, MetadataMode.EMBED, SolarEmbeddingOptions.builder().build(),
 					RetryTemplate.defaultInstance(), observationRegistry);
 		}
+
 	}
+
 }

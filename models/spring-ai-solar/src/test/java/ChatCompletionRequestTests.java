@@ -49,4 +49,5 @@ public class ChatCompletionRequestTests {
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.temperature()).isEqualTo(99.9);
 	}
+
 }

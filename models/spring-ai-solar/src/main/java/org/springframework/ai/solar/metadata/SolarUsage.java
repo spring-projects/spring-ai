@@ -61,4 +61,5 @@ public class SolarUsage implements Usage {
 	public String toString() {
 		return getUsage().toString();
 	}
+
 }

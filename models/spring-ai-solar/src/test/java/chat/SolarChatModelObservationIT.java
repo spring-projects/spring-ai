@@ -95,8 +95,7 @@ public class SolarChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.QIANFAN.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					SolarApi.DEFAULT_CHAT_MODEL)
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), SolarApi.DEFAULT_CHAT_MODEL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
@@ -132,8 +131,10 @@ public class SolarChatModelObservationIT {
 
 		@Bean
 		public SolarChatModel solarChatModel(SolarApi solarApi, TestObservationRegistry observationRegistry) {
-			return new SolarChatModel(solarApi, SolarChatOptions.builder().build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+			return new SolarChatModel(solarApi, SolarChatOptions.builder().build(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
+
 	}
+
 }

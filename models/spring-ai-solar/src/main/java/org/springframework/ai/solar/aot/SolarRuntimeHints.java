@@ -10,7 +10,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 /**
- * The SolarRuntimeHints class is responsible for registering runtime hints for Solar API classes.
+ * The SolarRuntimeHints class is responsible for registering runtime hints for Solar API
+ * classes.
  *
  * @author Seungheon Ji
  */
@@ -23,5 +24,5 @@ public class SolarRuntimeHints implements RuntimeHintsRegistrar {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}
-}
 
+}

@@ -128,43 +128,43 @@ public class SolarEmbeddingModel extends AbstractEmbeddingModel {
 				requestOptions.getModel());
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-				.embeddingRequest(request)
-				.provider(SolarConstants.PROVIDER_NAME)
-				.requestOptions(requestOptions)
-				.build();
+			.embeddingRequest(request)
+			.provider(SolarConstants.PROVIDER_NAME)
+			.requestOptions(requestOptions)
+			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					SolarApi.EmbeddingList apiEmbeddingResponse = this.retryTemplate
-							.execute(ctx -> this.solarApi.embeddings(apiRequest).getBody());
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				SolarApi.EmbeddingList apiEmbeddingResponse = this.retryTemplate
+					.execute(ctx -> this.solarApi.embeddings(apiRequest).getBody());
 
-					if (apiEmbeddingResponse == null) {
-						logger.warn("No embeddings returned for request: {}", request);
-						return new EmbeddingResponse(List.of());
-					}
+				if (apiEmbeddingResponse == null) {
+					logger.warn("No embeddings returned for request: {}", request);
+					return new EmbeddingResponse(List.of());
+				}
 
-					if (apiEmbeddingResponse.errorNsg() != null) {
-						logger.error("Error message returned for request: {}", apiEmbeddingResponse.errorNsg());
-						throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.errorCode()
-								+ ", message:" + apiEmbeddingResponse.errorNsg());
-					}
+				if (apiEmbeddingResponse.errorNsg() != null) {
+					logger.error("Error message returned for request: {}", apiEmbeddingResponse.errorNsg());
+					throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.errorCode()
+							+ ", message:" + apiEmbeddingResponse.errorNsg());
+				}
 
-					var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
-							SolarUsage.from(apiEmbeddingResponse.usage()));
+				var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
+						SolarUsage.from(apiEmbeddingResponse.usage()));
 
-					List<Embedding> embeddings = apiEmbeddingResponse.data()
-							.stream()
-							.map(e -> new Embedding(e.embedding(), e.index()))
-							.toList();
+				List<Embedding> embeddings = apiEmbeddingResponse.data()
+					.stream()
+					.map(e -> new Embedding(e.embedding(), e.index()))
+					.toList();
 
-					EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, metadata);
+				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, metadata);
 
-					observationContext.setResponse(embeddingResponse);
+				observationContext.setResponse(embeddingResponse);
 
-					return embeddingResponse;
-				});
+				return embeddingResponse;
+			});
 	}
 
 	/**
@@ -181,12 +181,12 @@ public class SolarEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return SolarEmbeddingOptions.builder()
-				.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-				.build();
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.build();
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		this.observationConvention = observationConvention;
 	}
-}
 
+}

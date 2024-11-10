@@ -10,8 +10,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * SolarChatOptions represents the options for performing chat completion using the Solar API.
- * It provides methods to set and retrieve various options like model, frequency penalty, max tokens, etc.
+ * SolarChatOptions represents the options for performing chat completion using the Solar
+ * API. It provides methods to set and retrieve various options like model, frequency
+ * penalty, max tokens, etc.
  *
  * @author Seunghyeon Ji
  * @since 1.0
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SolarChatOptions implements ChatOptions {
+
 	// @formatter:off
 	/**
 	 * ID of the model to use.
@@ -68,15 +70,15 @@ public class SolarChatOptions implements ChatOptions {
 
 	public static SolarChatOptions fromOptions(SolarChatOptions fromOptions) {
 		return SolarChatOptions.builder()
-				.withModel(fromOptions.getModel())
-				.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-				.withMaxTokens(fromOptions.getMaxTokens())
-				.withPresencePenalty(fromOptions.getPresencePenalty())
-				.withResponseFormat(fromOptions.getResponseFormat())
-				.withStop(fromOptions.getStop())
-				.withTemperature(fromOptions.getTemperature())
-				.withTopP(fromOptions.getTopP())
-				.build();
+			.withModel(fromOptions.getModel())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withResponseFormat(fromOptions.getResponseFormat())
+			.withStop(fromOptions.getStop())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.build();
 	}
 
 	@Override
@@ -320,5 +322,7 @@ public class SolarChatOptions implements ChatOptions {
 		public SolarChatOptions build() {
 			return this.options;
 		}
+
 	}
+
 }

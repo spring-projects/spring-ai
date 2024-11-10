@@ -41,17 +41,10 @@ public class SolarApiIT {
 
 	@Test
 	void chatCompletionEntity() {
-		SolarApi.ChatCompletionMessage chatCompletionMessage = new SolarApi.ChatCompletionMessage(
-				"Hello world",
-				SolarApi.ChatCompletionMessage.Role.USER
-		);
+		SolarApi.ChatCompletionMessage chatCompletionMessage = new SolarApi.ChatCompletionMessage("Hello world",
+				SolarApi.ChatCompletionMessage.Role.USER);
 		ResponseEntity<SolarApi.ChatCompletion> response = this.solarApi.chatCompletionEntity(
-				new SolarApi.ChatCompletionRequest(
-					List.of(chatCompletionMessage),
-					SolarApi.DEFAULT_CHAT_MODEL,
-					false
-				)
-		);
+				new SolarApi.ChatCompletionRequest(List.of(chatCompletionMessage), SolarApi.DEFAULT_CHAT_MODEL, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -66,4 +59,5 @@ public class SolarApiIT {
 		assertThat(Objects.requireNonNull(response.getBody()).data()).hasSize(1);
 		assertThat(response.getBody().data().get(0).embedding()).hasSize(4096);
 	}
+
 }

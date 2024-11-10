@@ -75,29 +75,16 @@ public class SolarRetryTests {
 
 	@Test
 	public void solarChatTransientError() {
-		List<SolarApi.ChatCompletion.Choice> choices = List.of(
-				new SolarApi.ChatCompletion.Choice(
-						0,
-						new SolarApi.ChatCompletion.Message("assistant", "Response"),
-						null,
-						"STOP"
-				)
-		);
+		List<SolarApi.ChatCompletion.Choice> choices = List.of(new SolarApi.ChatCompletion.Choice(0,
+				new SolarApi.ChatCompletion.Message("assistant", "Response"), null, "STOP"));
 
-		SolarApi.ChatCompletion expectedChatCompletion = new SolarApi.ChatCompletion(
-				"id",
-				"chat.completion",
-				666L,
-				SolarApi.DEFAULT_CHAT_MODEL,
-				choices,
-				new SolarApi.Usage(10, 10, 10),
-				null
-		);
+		SolarApi.ChatCompletion expectedChatCompletion = new SolarApi.ChatCompletion("id", "chat.completion", 666L,
+				SolarApi.DEFAULT_CHAT_MODEL, choices, new SolarApi.Usage(10, 10, 10), null);
 
 		given(this.solarApi.chatCompletionEntity(isA(SolarApi.ChatCompletionRequest.class)))
-				.willThrow(new TransientAiException("Transient Error 1"))
-				.willThrow(new TransientAiException("Transient Error 2"))
-				.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
+			.willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
 		var result = this.chatClient.call(new Prompt("text"));
 
@@ -117,8 +104,8 @@ public class SolarRetryTests {
 	@Test
 	public void solarEmbeddingTransientError() {
 		SolarApi.Embedding embedding = new SolarApi.Embedding(1, new float[] { 9.9f, 8.8f });
-		SolarApi.EmbeddingList expectedEmbeddings = new SolarApi.EmbeddingList("embedding_list", List.of(embedding), "model", null, null,
-				new SolarApi.Usage(10, 10, 10));
+		SolarApi.EmbeddingList expectedEmbeddings = new SolarApi.EmbeddingList("embedding_list", List.of(embedding),
+				"model", null, null, new SolarApi.Usage(10, 10, 10));
 
 		given(this.solarApi.embeddings(isA(SolarApi.EmbeddingRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
@@ -143,7 +130,9 @@ public class SolarRetryTests {
 	}
 
 	private static class TestRetryListener implements RetryListener {
+
 		int onErrorRetryCount = 0;
+
 		int onSuccessRetryCount = 0;
 
 		@Override
@@ -156,5 +145,7 @@ public class SolarRetryTests {
 				Throwable throwable) {
 			this.onErrorRetryCount = context.getRetryCount();
 		}
+
 	}
+
 }
