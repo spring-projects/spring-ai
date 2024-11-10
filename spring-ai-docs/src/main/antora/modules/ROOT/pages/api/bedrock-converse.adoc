@@ -1,6 +1,6 @@
 = Bedrock Converse API
 
-link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html[Amazon Bedrock] Converse API provides a unified interface for conversational AI models with enhanced capabilities including function/tool calling, multimodal inputs, and streaming responses.
+link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html[Amazon Bedrock Converse API] provides a unified interface for conversational AI models with enhanced capabilities including function/tool calling, multimodal inputs, and streaming responses.
 
 The Bedrock Converse API has the following high-level features:
 
@@ -8,15 +8,28 @@ The Bedrock Converse API has the following high-level features:
 * Multimodal Input: Ability to process both text and image inputs in conversations
 * Streaming Support: Real-time streaming of model responses
 * System Messages: Support for system-level instructions and context setting
-* Metrics Integration: Built-in support for observation and metrics tracking
-
-The https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted service.
+// * Metrics Integration: Built-in support for observation and metrics tracking
 
 TIP: The Bedrock Converse API provides a unified interface across multiple model providers while handling AWS-specific authentication and infrastructure concerns.
 
+[NOTE]
+====
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all chat conversation implementations in Spring AI. 
+While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the Converse API for several key benefits:
+
+- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
+- Model Flexibility: Seamlessly switch between different conversation models without code changes
+- Extended Functionality: Support for model-specific parameters through dedicated structures
+- Tool Support: Native integration with function calling and tool usage capabilities
+- Multimodal Capabilities: Built-in support for vision and other multimodal features
+- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+
+The Converse API does not support embedding operations, so these will remain in the current API and the embedding model functionality in the existing `InvokeModel API` will be maintained
+====
+
 == Prerequisites
 
-Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+Refer to https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html[Getting started with Amazon Bedrock] for setting up API access
 
 * Obtain AWS credentials: If you don't have an AWS account and AWS CLI configured yet, this video guide can help you configure it: link:https://youtu.be/gswVHTrRX8I?si=buaY7aeI0l3-bBVb[AWS CLI & SDK Setup in Less Than 4 Minutes!]. You should be able to obtain your access and security keys.
 
@@ -74,7 +87,7 @@ The prefix `spring.ai.bedrock.converse.chat` is the property prefix that configu
 | Property | Description | Default
 
 | spring.ai.bedrock.converse.chat.enabled | Enable Bedrock Converse chat model. | true
-| spring.ai.bedrock.converse.chat.options.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | anthropic.claude-3-sonnet-20240229-v1:0
+| spring.ai.bedrock.converse.chat.options.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | None. Select your https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/models[modelId] from the AWS Bedrock console.
 | spring.ai.bedrock.converse.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0] | 0.8
 | spring.ai.bedrock.converse.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. | AWS Bedrock default
 | spring.ai.bedrock.converse.chat.options.top-k | Number of token choices for generating the next token. | AWS Bedrock default
@@ -135,6 +148,8 @@ spring.ai.bedrock.aws.region=eu-central-1
 spring.ai.bedrock.aws.timeout=10m
 spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
 spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
+# session token is only required for temporary credentials
+spring.ai.bedrock.aws.session-token=${AWS_SESSION_TOKEN}
 
 spring.ai.bedrock.converse.chat.options.temperature=0.8
 spring.ai.bedrock.converse.chat.options.top-k=15
