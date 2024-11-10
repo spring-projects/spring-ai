@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
@@ -35,6 +36,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * Memory is retrieved added as a collection of messages to the prompt
  *
  * @author Christian Tzolov
+ * @author Donghyun Kim
  * @since 1.0.0
  */
 public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
@@ -93,10 +95,11 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		// 3. Create a new request with the advised messages.
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request).withMessages(advisedMessages).build();
 
-		// 4. Add the new user input to the conversation memory.
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
-		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
-
+		// 4. Add the new user input to the conversation memory when user text exist.
+		if (StringUtils.hasText(request.userText())) {
+			UserMessage userMessage = new UserMessage(request.userText(), request.media());
+			this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
+		}
 		return advisedRequest;
 	}
 
