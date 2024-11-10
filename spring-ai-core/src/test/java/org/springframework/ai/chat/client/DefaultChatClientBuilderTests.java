@@ -22,7 +22,9 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
@@ -32,6 +34,21 @@ import static org.mockito.Mockito.mock;
  * @author Thomas Vitale
  */
 class DefaultChatClientBuilderTests {
+
+	@Test
+	void whenCloneBuilder() {
+		var chatModel = mock(ChatModel.class);
+		var originalBuilder = new DefaultChatClientBuilder(chatModel);
+		originalBuilder.defaultSystem("first instructions");
+		var clonedBuilder = (DefaultChatClientBuilder) originalBuilder.clone();
+		originalBuilder.defaultSystem("second instructions");
+
+		assertThat(clonedBuilder).isNotSameAs(originalBuilder);
+		var clonedBuilderRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils
+			.getField(clonedBuilder, "defaultRequest");
+		assertThat(clonedBuilderRequestSpec).isNotNull();
+		assertThat(clonedBuilderRequestSpec.getSystemText()).isEqualTo("first instructions");
+	}
 
 	@Test
 	void whenChatModelIsNullThenThrows() {

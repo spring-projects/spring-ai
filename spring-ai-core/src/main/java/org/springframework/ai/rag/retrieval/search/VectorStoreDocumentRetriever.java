@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.rag.retrieval.source;
+package org.springframework.ai.rag.retrieval.search;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -28,7 +28,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * A document retriever that uses a vector store to search for documents. It supports
+ * Document retriever that uses a vector store to search for documents. It supports
  * filtering based on metadata, similarity threshold, and top-k results.
  *
  * <p>
@@ -39,15 +39,13 @@ import org.springframework.util.Assert;
  *     .topK(5)
  *     .filterExpression(filterExpression)
  *     .build();
- * List<Document> documents = retriever.retrieve("example query");
+ * List<Document> documents = retriever.retrieve(new Query("example query"));
  * }</pre>
  *
  * @author Thomas Vitale
  * @since 1.0.0
- * @see VectorStore
- * @see Filter.Expression
  */
-public class VectorStoreDocumentRetriever implements DocumentRetriever {
+public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 
 	private final VectorStore vectorStore;
 

@@ -289,6 +289,8 @@ public interface ChatClient {
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
 
+		Builder clone();
+
 		ChatClient build();
 
 	}

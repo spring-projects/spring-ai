@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.rag.retrieval.source;
+package org.springframework.ai.rag.retrieval.search;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +41,8 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
 
 /**
  * Unit tests for {@link VectorStoreDocumentRetriever}.
+ *
+ * @author Thomas Vitale
  */
 class VectorStoreDocumentRetrieverTests {
 
@@ -61,7 +63,7 @@ class VectorStoreDocumentRetrieverTests {
 			.filterExpression(new Filter.Expression(EQ, new Filter.Key("location"), new Filter.Value("Rivendell")))
 			.build();
 
-		documentRetriever.retrieve("query");
+		documentRetriever.retrieve(new Query("query"));
 
 		var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
 		verify(mockVectorStore).similaritySearch(searchRequestCaptor.capture());
@@ -85,11 +87,11 @@ class VectorStoreDocumentRetrieverTests {
 			.build();
 
 		TenantContextHolder.setTenantIdentifier("tenant1");
-		documentRetriever.retrieve("query");
+		documentRetriever.retrieve(new Query("query"));
 		TenantContextHolder.clear();
 
 		TenantContextHolder.setTenantIdentifier("tenant2");
-		documentRetriever.retrieve("query");
+		documentRetriever.retrieve(new Query("query"));
 		TenantContextHolder.clear();
 
 		var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
@@ -120,7 +122,7 @@ class VectorStoreDocumentRetrieverTests {
 		var mockVectorStore = mock(VectorStore.class);
 		var documentRetriever = VectorStoreDocumentRetriever.builder().vectorStore(mockVectorStore).build();
 
-		documentRetriever.retrieve("test query");
+		documentRetriever.retrieve(new Query("test query"));
 
 		var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
 		verify(mockVectorStore).similaritySearch(searchRequestCaptor.capture());

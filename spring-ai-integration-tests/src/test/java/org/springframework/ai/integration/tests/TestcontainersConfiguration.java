@@ -13,16 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.ai.integration.tests;
+
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
- * RAG Module: Information Retrieval.
- * <p>
- * This package includes submodules for handling the retrieval process in
- * retrieval-augmented generation flows.
+ * Test configuration for Testcontainers-based Dev Services.
+ *
+ * @author Thomas Vitale
  */
-@NonNullApi
-@NonNullFields
-package org.springframework.ai.rag.retrieval;
+@TestConfiguration(proxyBeanMethods = false)
+class TestcontainersConfiguration {
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+	@Bean
+	@ServiceConnection
+	PostgreSQLContainer<?> pgvectorContainer() {
+		return new PostgreSQLContainer<>("pgvector/pgvector:pg17");
+	}
+
+}
