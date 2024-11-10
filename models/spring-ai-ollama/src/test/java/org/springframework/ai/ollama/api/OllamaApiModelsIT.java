@@ -21,8 +21,6 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.http.HttpStatus;
@@ -34,8 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Thomas Vitale
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 public class OllamaApiModelsIT extends BaseOllamaIT {
 
 	private static final String MODEL = "all-minilm";
@@ -44,7 +40,7 @@ public class OllamaApiModelsIT extends BaseOllamaIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		ollamaApi = buildOllamaApiWithModel(MODEL);
+		ollamaApi = initializeOllama(MODEL);
 	}
 
 	@Test

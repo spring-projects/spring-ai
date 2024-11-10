@@ -23,7 +23,6 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -50,7 +49,6 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = OllamaChatModelObservationIT.Config.class)
-@DisabledIf("isDisabled")
 public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
@@ -166,7 +164,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi openAiApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

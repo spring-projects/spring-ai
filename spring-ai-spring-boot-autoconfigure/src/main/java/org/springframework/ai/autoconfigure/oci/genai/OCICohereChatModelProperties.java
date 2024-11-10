@@ -41,7 +41,7 @@ public class OCICohereChatModelProperties {
 		.build();
 
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {

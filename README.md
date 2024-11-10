@@ -128,7 +128,8 @@ Checkstyles are currently disabled, but you can enable them by doing the followi
 - [Flight Booking Assistant](https://github.com/tzolov/playground-flight-booking) - Spring AI powered expert system demo
 - [Spring AI Chat Bot CLI](https://github.com/tzolov/spring-ai-cli-chatbot) - chatbot with Retrieval-Augmented Generation (RAG) and conversational memory capabilities
 - [Spring AI Samples (community driven) Thomas Vitale](https://github.com/ThomasVitale/llm-apps-java-spring-ai) - Samples showing how to build Java applications powered by Generative AI and Large Language Models (LLMs)
-- [spring-ai-examples - (community driven) Craig Walls ](https://github.com/habuma/spring-ai-examples)
+- [Spring Ai Examples - (community driven) Craig Walls ](https://github.com/habuma/spring-ai-examples)
+- [Practical AI examples using Spring AI with UI frontend - (community driven) Marcus Hellberg](https://github.com/marcushellberg/spring-ai-examples)
 
 ### Workshops
 

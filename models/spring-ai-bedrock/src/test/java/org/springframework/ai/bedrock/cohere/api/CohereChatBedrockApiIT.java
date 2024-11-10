@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.cohere.api;
 import java.time.Duration;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -71,6 +72,7 @@ public class CohereChatBedrockApiIT {
 	}
 
 	@Test
+	@Disabled("Due to model version has reached the end of its life")
 	public void chatCompletion() {
 
 		var request = CohereChatRequest
@@ -95,6 +97,7 @@ public class CohereChatBedrockApiIT {
 		assertThat(response.generations().get(0).text()).isNotEmpty();
 	}
 
+	@Disabled("Due to model version has reached the end of its life")
 	@Test
 	public void chatCompletionStream() {
 

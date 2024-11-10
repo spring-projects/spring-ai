@@ -19,8 +19,6 @@ package org.springframework.ai.ollama;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -38,8 +36,6 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@DisabledIf("isDisabled")
-@Testcontainers
 class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
@@ -100,7 +96,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

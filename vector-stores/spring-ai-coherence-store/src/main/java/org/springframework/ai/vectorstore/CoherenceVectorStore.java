@@ -231,7 +231,7 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 		this.documentChunks = this.session.getMap(this.mapName);
 		switch (this.indexType) {
 			case HNSW -> this.documentChunks
-				.addIndex(new HnswIndex<>(DocumentChunk::vector, this.distanceType.name(), dimensions));
+				.addIndex(new HnswIndex<>(DocumentChunk::vector, this.distanceType.name(), this.dimensions));
 			case BINARY -> this.documentChunks.addIndex(new BinaryQuantIndex<>(DocumentChunk::vector));
 		}
 	}
@@ -255,7 +255,7 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 	}
 
 	String getMapName() {
-		return mapName;
+		return this.mapName;
 	}
 
 }

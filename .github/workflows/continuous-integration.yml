@@ -40,7 +40,8 @@ jobs:
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        run: mvn -s settings.xml -Pintegration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 --batch-mode --update-snapshots deploy
+          OLLAMA_TESTS_ENABLED: "false"
+        run: mvn -s settings.xml -Pintegration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 -DOLLAMA_TESTS_ENABLED=false --batch-mode --update-snapshots deploy
 
       - name: Generate Java docs
         run: mvn javadoc:aggregate
