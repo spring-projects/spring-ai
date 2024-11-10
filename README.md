@@ -33,7 +33,7 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 * [ChatClient API](https://docs.spring.io/spring-ai/reference/api/chatclient.html) - Fluent API for communicating with AI Chat Models, idiomatically similar to the WebClient and RestClient APIs.
 * [Advisors API](https://docs.spring.io/spring-ai/reference/api/advisors.html) - Encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases.
 * Support for [Chat Conversation Memory](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_chat_memory) and [Retrieval Augmented Generation (RAG)](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_retrieval_augmented_generation).
-* Spring Boot Auto Configuration and Starters for all AI Models and Vector Stores - use the [start.spring.io](https://start.spring.io/) to select the Model or Vector-store of choice. 
+* Spring Boot Auto Configuration and Starters for all AI Models and Vector Stores - use the [start.spring.io](https://start.spring.io/) to select the Model or Vector-store of choice.
 
 ## Breaking changes
 
@@ -136,7 +136,7 @@ Checkstyles are currently disabled, but you can enable them by doing the followi
 - [Spring AI Zero to Hero Workshop](https://github.com/asaikali/spring-ai-zero-to-hero) - Example applications showing how to use Spring AI to build Generative AI projects.
 - (outdated) [Workshop material for Azure OpenAI](https://github.com/Azure-Samples/spring-ai-azure-workshop) - contains step-by-step examples from 'hello world' to 'retrieval augmented generation'
 
-### Talks and Videos 
+### Talks and Videos
 
 Some selected videos.  Search YouTube! for more.
 
@@ -161,3 +161,9 @@ Some selected videos.  Search YouTube! for more.
 
 - Spring AI Introduction: Building AI Applications in Java with Spring
 <br>[![Watch the video](https://img.youtube.com/vi/yyvjT0v3lpY/default.jpg)](https://www.youtube.com/watch?v=yyvjT0v3lpY&ab_channel=DanVega)
+
+
+### Books
+
+- Spring AI for Your Organization - GCP Vertex AI Edition: A clear guide for integrating Spring AI with Google Vertex AI, ideal for both seasoned backend developers and newcomers.
+<br>[![Read the book](https://d2sofvawe08yqg.cloudfront.net/springai/s_featured?1720872547)](https://leanpub.com/springai)
