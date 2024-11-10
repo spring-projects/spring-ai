@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.rag.retrieval.source;
+package org.springframework.ai.rag.retrieval.search;
 
 import java.util.List;
 import java.util.function.Function;
@@ -23,7 +23,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
 /**
- * API for retrieving {@link Document}s from an underlying data source.
+ * Component responsible for retrieving {@link Document}s from an underlying data source,
+ * such as a search engine, a vector store, a database, or a knowledge graph.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
@@ -32,22 +33,18 @@ import org.springframework.ai.rag.Query;
 public interface DocumentRetriever extends Function<Query, List<Document>> {
 
 	/**
-	 * Retrieves {@link Document}s from an underlying data source using the given
-	 * {@link Query}.
+	 * Retrieves relevant documents from an underlying data source based on the given
+	 * query.
+	 * @param query The query to use for retrieving documents
+	 * @return The list of relevant documents
 	 */
 	List<Document> retrieve(Query query);
 
 	/**
-	 * Retrieves {@link Document}s from an underlying data source using the given query
-	 * string.
-	 */
-	default List<Document> retrieve(String query) {
-		return retrieve(new Query(query));
-	}
-
-	/**
-	 * Retrieves {@link Document}s from an underlying data source using the given
-	 * {@link Query}.
+	 * Retrieves relevant documents from an underlying data source based on the given
+	 * query.
+	 * @param query The query to use for retrieving documents
+	 * @return The list of relevant documents
 	 */
 	default List<Document> apply(Query query) {
 		return retrieve(query);

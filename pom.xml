@@ -123,6 +123,8 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
+
+		<module>spring-ai-integration-tests</module>
 	</modules>
 
 	<organization>

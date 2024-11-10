@@ -15,14 +15,15 @@
  */
 
 /**
- * RAG Module: Information Retrieval.
+ * RAG Module: Query Analysis.
  * <p>
- * This package includes submodules for handling the retrieval process in
- * retrieval-augmented generation flows.
+ * This package encompasses all components involved in the pre-retrieval phase of a
+ * retrieval augmented generation flow. Queries are transformed, expanded, or constructed
+ * so to enhance the effectiveness and accuracy of the subsequent retrieval phase.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.rag.retrieval;
+package org.springframework.ai.rag.analysis;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

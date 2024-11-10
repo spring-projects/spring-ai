@@ -16,20 +16,14 @@
 
 /**
  * This package contains the core interfaces and classes supporting Retrieval Augmented
- * Generation.
+ * Generation flows.
  * <p>
- * It's based on the Modular RAG Architecture and provides the necessary building blocks
- * to define and execute RAG flows. It includes three levels of abstraction:
- * <ol>
- * <li>Module</li>
- * <li>Sub-Module</li>
- * <li>Operator</li>
- * </ol>
+ * It's inspired by the Modular RAG Architecture and provides the necessary building
+ * blocks to define and execute RAG flows.
  *
  * @see <a href="http://export.arxiv.org/abs/2407.21059">arXiv:2407.21059</a>
  * @see <a href="https://export.arxiv.org/abs/2312.10997">arXiv:2312.10997</a>
  */
-
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.rag;

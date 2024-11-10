@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.ai.integration.tests;
+
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
 
 /**
- * RAG Sub-Module: Source.
- * <p>
- * This package provides the functional building blocks for retrieving documents from a
- * data source.
+ * Test application for integration tests.
+ *
+ * @author Thomas Vitale
  */
+@SpringBootApplication
+@Import(TestcontainersConfiguration.class)
+public class TestApplication {
 
-@NonNullApi
-@NonNullFields
-package org.springframework.ai.rag.retrieval.source;
-
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+}
