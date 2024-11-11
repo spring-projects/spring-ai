@@ -51,6 +51,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Mariusz Bernacki
  * @author Thomas Vitale
+ * @author Donghyun Kim
  * @since 1.0.0
  */
 public class AnthropicApi {
@@ -136,11 +137,12 @@ public class AnthropicApi {
 			.build();
 
 		this.webClient = webClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(jsonContentHeaders)
-			.defaultStatusHandler(HttpStatusCode::isError,
-					resp -> Mono.just(new RuntimeException("Response exception, Status: [" + resp.statusCode()
-							+ "], Body:[" + resp.bodyToMono(java.lang.String.class) + "]")))
-			.build();
+				.defaultHeaders(jsonContentHeaders)
+				.defaultStatusHandler(HttpStatusCode::isError,
+						resp -> resp
+								.bodyToMono(java.lang.String.class)
+								.map((body) -> new RuntimeException("Response exception, Status: [" + resp.statusCode() +"], Body:[" + body + "]")))
+				.build();
 	}
 
 	/**

@@ -20,6 +20,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.chat.model.ChatModel;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
@@ -30,9 +33,11 @@ import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Christian Tzolov
+ * @author Donghyun Kim
  */
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class AnthropicApiIT {
@@ -70,4 +75,13 @@ public class AnthropicApiIT {
 		bla.stream().forEach(r -> System.out.println(r));
 	}
 
+	@Test
+	void apiErrorMessage(){
+		ChatModel model = new AnthropicChatModel(new AnthropicApi("FAKE_KEY"), new AnthropicChatOptions());
+		String expectedMessage = "Response exception, Status: [401 UNAUTHORIZED], Body:[{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"invalid x-api-key\"}}]";
+
+		assertThatExceptionOfType(RuntimeException.class)
+				.isThrownBy(() ->model.stream().blockLast())
+				.withMessageContaining(expectedMessage);
+	}
 }
