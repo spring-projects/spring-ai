@@ -17,7 +17,9 @@
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +58,19 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 	}
 
 	public static <I, O> Builder<I, O> builder(Function<I, O> function) {
+		return new Builder<>(function);
+	}
+
+	public static <Void, O> Builder<Void, O> builder(Supplier<O> supplier) {
+		Function<Void, O> function = (input) -> supplier.get();
+		return new Builder<>(function);
+	}
+
+	public static <I, Void> Builder<I, Void> builder(Consumer<I> consumer) {
+		Function<I, Void> function = (input) -> {
+			consumer.accept(input);
+			return null;
+		};
 		return new Builder<>(function);
 	}
 

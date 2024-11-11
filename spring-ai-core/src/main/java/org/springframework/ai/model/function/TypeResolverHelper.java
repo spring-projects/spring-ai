@@ -20,7 +20,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
@@ -188,6 +190,12 @@ public abstract class TypeResolverHelper {
 		}
 		else if (BiFunction.class.isAssignableFrom(resolvableClass)) {
 			functionArgumentResolvableType = functionType.as(BiFunction.class);
+		}
+		else if (Supplier.class.isAssignableFrom(resolvableClass)) {
+			return ResolvableType.forClass(Void.class);
+		}
+		else if (Consumer.class.isAssignableFrom(resolvableClass)) {
+			functionArgumentResolvableType = functionType.as(Consumer.class);
 		}
 		else if (KotlinDetector.isKotlinPresent()) {
 			if (KotlinDelegate.isKotlinFunction(resolvableClass)) {

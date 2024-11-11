@@ -51,6 +51,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -358,8 +359,13 @@ public abstract class ModelOptionsUtils {
 		}
 
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
-		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
-			// version of it).
+
+		if (ClassUtils.isVoidType(clazz) && node.get("properties") == null) {
+			node.putObject("properties");
+		}
+
+		// Required for OpenAPI 3.0 (at least Vertex AI version of it).
+		if (toUpperCaseTypeValues) {
 			toUpperCaseTypeValues(node);
 		}
 

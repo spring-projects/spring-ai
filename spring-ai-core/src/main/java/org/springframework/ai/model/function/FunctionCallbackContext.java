@@ -17,7 +17,9 @@
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import kotlin.jvm.functions.Function1;
@@ -123,6 +125,22 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 		}
 		if (bean instanceof Function<?, ?> function) {
 			return FunctionCallbackWrapper.builder(function)
+				.withName(beanName)
+				.withSchemaType(this.schemaType)
+				.withDescription(functionDescription)
+				.withInputType(functionInputClass)
+				.build();
+		}
+		if (bean instanceof Consumer<?> consumer) {
+			return FunctionCallbackWrapper.builder(consumer)
+				.withName(beanName)
+				.withSchemaType(this.schemaType)
+				.withDescription(functionDescription)
+				.withInputType(functionInputClass)
+				.build();
+		}
+		if (bean instanceof Supplier<?> supplier) {
+			return FunctionCallbackWrapper.builder(supplier)
 				.withName(beanName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
