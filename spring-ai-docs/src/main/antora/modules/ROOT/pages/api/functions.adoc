@@ -265,7 +265,7 @@ Here is the current weather for the requested cities:
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] test demo this approach.
 
-=== Register functions on the fly
+=== Register functions: On the fly
 
 In addition to the auto-configuration, you can register callback functions, dynamically:
 
@@ -287,6 +287,88 @@ NOTE: The on the fly functions are enabled by default for the duration of this r
 This approach allows to choose dynamically different functions to be called based on the user input.
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `ChatClient` and use it in a prompt request.
+
+=== Register functions: MethodFunctionCallback
+
+The `MethodFunctionCallback` enables method invocation through reflection while automatically handling JSON schema generation and parameter conversion. 
+It's particularly useful for integrating Java methods as callable functions within AI model interactions.
+
+The `MethodFunctionCallback` implements the `FunctionCallback` interface and provides:
+
+- Automatic JSON schema generation for method parameters
+- Support for both static and instance methods
+- Any number of parameters (including none) and return values (including void)
+- Any parameter/return types (primitives, objects, collections)
+- Special handling for `ToolContext` parameters
+
+The basic MethodFunctionCallback configuration looks like this:
+
+[source,java]
+----
+// Create using builder pattern
+MethodFunctionCallback callback = MethodFunctionCallback.builder()
+    .functionObject(targetObject)     // Required for instance methods
+    .method(method)                   // Required: The method to invoke
+    .description("Method description") // Required: Helps AI understand the function
+    .mapper(objectMapper)             // Optional: Custom ObjectMapper
+    .build();
+----
+
+Here are a few usage examples:
+
+[tabs]
+======
+Static Method Invocation::
++
+[source,java]
+----
+public class WeatherService {
+    public static String getWeather(String city, TemperatureUnit unit) {
+        return "Temperature in " + city + ": 20" + unit;
+    }
+}
+
+// Usage
+Method method = ReflectionUtils.findMethod(
+    WeatherService.class, "getWeather", String.class, TemperatureUnit.class);
+
+MethodFunctionCallback callback = MethodFunctionCallback.builder()
+    .method(method)
+    .description("Get weather information for a city")
+    .build();
+----
+Instance Method with ToolContext::
++
+[source,java]
+----
+public class DeviceController {
+    public void setDeviceState(String deviceId, boolean state, ToolContext context) {
+        Map<String, Object> contextData = context.getContext();
+        // Implementation using context data
+    }
+}
+
+// Usage
+DeviceController controller = new DeviceController();
+Method method = ReflectionUtils.findMethod(
+    DeviceController.class, "setDeviceState", String.class, boolean.class, ToolContext.class);
+
+String response = ChatClient.create(chatModel).prompt()
+    .user("Turn on the living room lights")
+    .functions(MethodFunctionCallback.builder()
+        .functionObject(controller)
+        .method(method)
+        .description("Control device state")
+        .build())
+    .toolContext(Map.of("location", "home"))
+    .call()
+    .content();
+----
+
+======
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/client/OpenAiChatClientMethodFunctionCallbackIT.java[OpenAiChatClientMethodFunctionCallbackIT]
+integration test provides additional examples of how to use the MethodFunctionCallback.
 
 === Tool Context
 

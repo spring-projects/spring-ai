@@ -43,6 +43,12 @@
 	<dependencies>
 
 		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-jsonSchema</artifactId>
+			<version>${jackson-module-jsonSchema.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>io.swagger.core.v3</groupId>
 			<artifactId>swagger-annotations</artifactId>
 			<version>${swagger-annotations.version}</version>
@@ -171,7 +177,8 @@
 						<configuration>
 							<sourceDirectory>${basedir}/src/main/resources/antlr4</sourceDirectory>
 							<outputDirectory>${basedir}/src/main/java</outputDirectory>
-							<!-- <outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory> -->
+							<!--
+							<outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory> -->
 							<visitor>true</visitor>
 						</configuration>
 						<executions>
