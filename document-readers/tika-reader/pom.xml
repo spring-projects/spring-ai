@@ -37,7 +37,7 @@
 	</scm>
 
 	<properties>
-		<tika.version>3.0.0-BETA2</tika.version>
+		<tika.version>3.0.0</tika.version>
 	</properties>
 
 	<dependencies>
