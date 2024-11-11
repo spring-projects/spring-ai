@@ -36,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -49,6 +49,156 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 	@Autowired
 	ChatModel chatModel;
+
+	@BeforeEach
+	void beforeEach() {
+		arguments.clear();
+	}
+
+	@Test
+	void methodGetWeatherStatic() {
+
+		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherStatic", String.class, Unit.class);
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(MethodFunctionCallback.builder()
+					.method(method)
+					.description("Get the weather in location")
+					.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void methodTurnLightNoResponse() {
+
+		TestFunctionClass targetObject = new TestFunctionClass();
+
+		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLight", String.class, boolean.class);
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn light on in the living room.")
+				.functions(MethodFunctionCallback.builder()
+					.functionObject(targetObject)
+					.method(method)
+					.description("Can turn lights on or off by room name")
+					.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(arguments).containsEntry("roomName", "living room");
+		assertThat(arguments).containsEntry("on", true);
+	}
+
+	@Test
+	void methodGetWeatherNonStatic() {
+
+		TestFunctionClass targetObject = new TestFunctionClass();
+
+		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
+				Unit.class);
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(MethodFunctionCallback.builder()
+					.functionObject(targetObject)
+					.method(method)
+					.description("Get the weather in location")
+					.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void methodGetWeatherToolContext() {
+
+		TestFunctionClass targetObject = new TestFunctionClass();
+
+		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherWithContext", String.class,
+				Unit.class, ToolContext.class);
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(MethodFunctionCallback.builder()
+					.functionObject(targetObject)
+					.method(method)
+					.description("Get the weather in location")
+					.build())
+				.toolContext(Map.of("tool", "value"))
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+		assertThat(arguments).containsEntry("tool", "value");
+	}
+
+	@Test
+	void methodGetWeatherToolContextButNonContextMethod() {
+
+		TestFunctionClass targetObject = new TestFunctionClass();
+
+		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
+				Unit.class);
+
+		// @formatter:off
+		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(MethodFunctionCallback.builder()
+						.functionObject(targetObject)
+						.method(method)
+						.description("Get the weather in location")
+						.build())
+				.toolContext(Map.of("tool", "value"))
+				.call()
+				.content())
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Configured method does not accept ToolContext as input parameter!");
+		// @formatter:on
+	}
+
+	@Test
+	void methodNoParameters() {
+
+		TestFunctionClass targetObject = new TestFunctionClass();
+
+		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLivingRoomLightOn");
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn light on in the living room.")
+				.functions(MethodFunctionCallback.builder()
+					.functionObject(targetObject)
+					.method(method)
+					.description("Can turn lights on in the Living Room")
+					.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
+	}
 
 	record MyRecord(String foo, String bar) {
 	}
@@ -105,156 +255,6 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 			arguments.put("turnLivingRoomLightOn", true);
 		}
 
-	}
-
-	@BeforeEach
-	void beforeEach() {
-		arguments.clear();
-	}
-
-	@Test
-	void methodGetWeatherStatic() {
-
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherStatic", String.class, Unit.class);
-		// @formatter:off
-		String response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.method(method)						
-					.description("Get the weather in location")
-					.build())
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info("Response: {}", response);
-
-		assertThat(response).contains("30", "10", "15");
-	}
-
-	@Test
-	void methodTurnLightNoResponse() {
-
-		TestFunctionClass targetObject = new TestFunctionClass();
-
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLight", String.class, boolean.class);
-
-		// @formatter:off
-		String response = ChatClient.create(this.chatModel).prompt()
-				.user("Turn light on in the living room.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)						
-					.description("Can turn lights on or off by room name")
-					.build())
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info("Response: {}", response);
-
-		assertThat(arguments).containsEntry("roomName", "living room");
-		assertThat(arguments).containsEntry("on", true);
-	}
-
-	@Test
-	void methodGetWeatherNonStatic() {
-
-		TestFunctionClass targetObject = new TestFunctionClass();
-
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
-
-		// @formatter:off
-		String response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)						
-					.description("Get the weather in location")
-					.build())
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info("Response: {}", response);
-
-		assertThat(response).contains("30", "10", "15");
-	}
-
-	@Test
-	void methodGetWeatherToolContext() {
-
-		TestFunctionClass targetObject = new TestFunctionClass();
-
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherWithContext", String.class,
-				Unit.class, ToolContext.class);
-
-		// @formatter:off
-		String response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)						
-					.description("Get the weather in location")
-					.build())
-				.toolContext(Map.of("tool", "value"))
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info("Response: {}", response);
-
-		assertThat(response).contains("30", "10", "15");
-		assertThat(arguments).containsEntry("tool", "value");
-	}
-
-	@Test
-	void methodGetWeatherToolContextButNonContextMethod() {
-
-		TestFunctionClass targetObject = new TestFunctionClass();
-
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
-
-		// @formatter:off
-		assertThrows("Configured method does not accept ToolContext as input parameter!",IllegalArgumentException.class, () -> {
-			ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)						
-					.description("Get the weather in location")
-					.build())
-				.toolContext(Map.of("tool", "value"))
-				.call()
-				.content();
-		});
-		// @formatter:on
-	}
-
-	@Test
-	void methodNoParameters() {
-
-		TestFunctionClass targetObject = new TestFunctionClass();
-
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLivingRoomLightOn");
-
-		// @formatter:off
-		String response = ChatClient.create(this.chatModel).prompt()
-				.user("Turn light on in the living room.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)						
-					.description("Can turn lights on in the Living Room")
-					.build())
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info("Response: {}", response);
-
-		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
 	}
 
 }
