@@ -256,6 +256,31 @@
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 		<disable.checks>true</disable.checks>
+
+		<!-- Individual vector store skip flags with smoke tests enabled by default -->
+		<skip.vectorstore.azure-cosmos-db>true</skip.vectorstore.azure-cosmos-db>
+		<skip.vectorstore.azure>true</skip.vectorstore.azure>
+		<skip.vectorstore.cassandra>true</skip.vectorstore.cassandra>
+		<skip.vectorstore.chroma>false</skip.vectorstore.chroma> <!-- smoke test -->
+		<skip.vectorstore.coherence>true</skip.vectorstore.coherence>
+		<skip.vectorstore.elasticsearch>true</skip.vectorstore.elasticsearch>
+		<skip.vectorstore.gemfire>true</skip.vectorstore.gemfire>
+		<skip.vectorstore.hanadb>true</skip.vectorstore.hanadb>
+		<skip.vectorstore.milvus>true</skip.vectorstore.milvus>
+		<skip.vectorstore.mongodb-atlas>true</skip.vectorstore.mongodb-atlas>
+		<skip.vectorstore.neo4j>true</skip.vectorstore.neo4j>
+		<skip.vectorstore.opensearch>true</skip.vectorstore.opensearch>
+		<skip.vectorstore.oracle>true</skip.vectorstore.oracle>
+		<skip.vectorstore.pgvector>false</skip.vectorstore.pgvector> <!-- smoke test -->
+		<skip.vectorstore.pinecone>true</skip.vectorstore.pinecone>
+		<skip.vectorstore.qdrant>true</skip.vectorstore.qdrant>
+		<skip.vectorstore.redis>true</skip.vectorstore.redis>
+		<skip.vectorstore.typesense>true</skip.vectorstore.typesense>
+		<skip.vectorstore.weaviate>true</skip.vectorstore.weaviate>
+
+		<!-- Container module ITs - skipped by default -->
+		<skip.docker-compose>true</skip.docker-compose>
+		<skip.testcontainers>true</skip.testcontainers>
 	</properties>
 
 	<build>
@@ -615,6 +640,31 @@
 					</plugin>
 				</plugins>
 			</build>
+		</profile>
+		<!-- Profile to enable all vector store tests -->
+		<profile>
+			<id>full-vectorstore-tests</id>
+			<properties>
+				<skip.vectorstore.azure-cosmos-db>false</skip.vectorstore.azure-cosmos-db>
+				<skip.vectorstore.azure>false</skip.vectorstore.azure>
+				<skip.vectorstore.cassandra>false</skip.vectorstore.cassandra>
+				<skip.vectorstore.chroma>false</skip.vectorstore.chroma>
+				<skip.vectorstore.coherence>false</skip.vectorstore.coherence>
+				<skip.vectorstore.elasticsearch>false</skip.vectorstore.elasticsearch>
+				<skip.vectorstore.gemfire>false</skip.vectorstore.gemfire>
+				<skip.vectorstore.hanadb>false</skip.vectorstore.hanadb>
+				<skip.vectorstore.milvus>false</skip.vectorstore.milvus>
+				<skip.vectorstore.mongodb-atlas>false</skip.vectorstore.mongodb-atlas>
+				<skip.vectorstore.neo4j>false</skip.vectorstore.neo4j>
+				<skip.vectorstore.opensearch>false</skip.vectorstore.opensearch>
+				<skip.vectorstore.oracle>false</skip.vectorstore.oracle>
+				<skip.vectorstore.pgvector>false</skip.vectorstore.pgvector>
+				<skip.vectorstore.pinecone>false</skip.vectorstore.pinecone>
+				<skip.vectorstore.qdrant>false</skip.vectorstore.qdrant>
+				<skip.vectorstore.redis>false</skip.vectorstore.redis>
+				<skip.vectorstore.typesense>false</skip.vectorstore.typesense>
+				<skip.vectorstore.weaviate>false</skip.vectorstore.weaviate>
+			</properties>
 		</profile>
 		<profile>
 			<id>test-coverage</id>
