@@ -69,6 +69,7 @@ class DefaultAdvisorObservationConventionTests {
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(),
 						AdvisorObservationContext.Type.AROUND.name()),
+				KeyValue.of(LowCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"),
 				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), SpringAiKind.ADVISOR.value()));
 	}
 
@@ -81,7 +82,6 @@ class DefaultAdvisorObservationConventionTests {
 			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
-			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"))
 			.contains(KeyValue.of(HighCardinalityKeyNames.ADVISOR_ORDER.asString(), "678"));
 	}
 

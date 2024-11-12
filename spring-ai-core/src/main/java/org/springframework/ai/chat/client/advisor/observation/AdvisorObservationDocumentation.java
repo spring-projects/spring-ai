@@ -68,11 +68,7 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 			public String asString() {
 				return "spring.ai.advisor.type";
 			}
-		}
-
-	}
-
-	public enum HighCardinalityKeyNames implements KeyName {
+		},
 
 		/**
 		 * Advisor name.
@@ -83,6 +79,11 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 				return "spring.ai.advisor.name";
 			}
 		},
+
+	}
+
+	public enum HighCardinalityKeyNames implements KeyName {
+
 		/**
 		 * Advisor order in the advisor chain.
 		 */
