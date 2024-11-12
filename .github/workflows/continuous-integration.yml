@@ -96,10 +96,17 @@ jobs:
         run: |
           echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
 
-      - name: Run Container Integration Tests
+      - name: Build Dependencies
+        run: |
+          mvn -s settings.xml clean install \
+          -DskipTests \
+          -pl spring-ai-spring-boot-docker-compose,spring-ai-spring-boot-testcontainers \
+          -am --batch-mode
+
+      - name: Run docker-compost and testcontainers Integration Tests
         run: |
           mvn -s settings.xml -Pintegration-tests verify \
           -Dskip.docker-compose=false \
           -Dskip.testcontainers=false \
           -pl spring-ai-spring-boot-docker-compose,spring-ai-spring-boot-testcontainers \
-          -am --batch-mode
+          --batch-mode
