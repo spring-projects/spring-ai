@@ -257,7 +257,7 @@
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 		<disable.checks>true</disable.checks>
 
-		<!-- Individual vector store skip flags with smoke tests enabled by default -->
+		<!-- Individual vector store IT skip flags with smoke tests enabled by default -->
 		<skip.vectorstore.azure-cosmos-db>true</skip.vectorstore.azure-cosmos-db>
 		<skip.vectorstore.azure>true</skip.vectorstore.azure>
 		<skip.vectorstore.cassandra>true</skip.vectorstore.cassandra>
@@ -281,6 +281,10 @@
 		<!-- Container module ITs - skipped by default -->
 		<skip.docker-compose>true</skip.docker-compose>
 		<skip.testcontainers>true</skip.testcontainers>
+
+		<!-- Ollama Model IT tests - skipped by default -->
+		<skip.model.ollama>true</skip.model.ollama>
+
 	</properties>
 
 	<build>

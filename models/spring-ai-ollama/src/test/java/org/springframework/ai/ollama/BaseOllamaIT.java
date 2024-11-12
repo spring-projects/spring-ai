@@ -30,7 +30,6 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.util.Assert;
 
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "OLLAMA_TESTS_ENABLED", matches = "true")
 public abstract class BaseOllamaIT {
 
 	private static final String OLLAMA_LOCAL_URL = "http://localhost:11434";
