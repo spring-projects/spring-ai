@@ -89,6 +89,16 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
+			assertThat(vectorStore).isNotNull();
+			assertThat(vectorStore).hasFieldOrPropertyWithValue("mappingJson", """
+					{
+						"properties":{
+							"embedding":{
+								"type":"knn_vector",
+								"dimension":384
+							}
+						}
+					}""");
 
 			vectorStore.add(this.documents);
 
