@@ -30,6 +30,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.ResolvableType;
 import org.springframework.util.Assert;
 
 /**
@@ -46,8 +48,9 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 
 	private final BiFunction<I, ToolContext, O> biFunction;
 
-	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
+	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema,
+			ParameterizedTypeReference<I> inputType, Function<O, String> responseConverter, ObjectMapper objectMapper,
+			BiFunction<I, ToolContext, O> function) {
 		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
 		this.biFunction = function;
@@ -87,7 +90,7 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 
 		private String description;
 
-		private Class<I> inputType;
+		private ParameterizedTypeReference<I> inputType;
 
 		private SchemaType schemaType = SchemaType.JSON_SCHEMA;
 
@@ -119,20 +122,20 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 			this.consumer = consumer;
 		}
 
-		@SuppressWarnings("unchecked")
-		private static <I, O> Class<I> resolveInputType(BiFunction<I, ToolContext, O> biFunction) {
-			return (Class<I>) TypeResolverHelper
-				.getBiFunctionInputClass((Class<BiFunction<I, ToolContext, O>>) biFunction.getClass());
+		private static <I, O> ParameterizedTypeReference<I> resolveInputType(BiFunction<I, ToolContext, O> biFunction) {
+
+			ResolvableType rt = TypeResolverHelper.getFunctionArgumentType(ResolvableType.forInstance(biFunction), 0);
+			return ParameterizedTypeReference.forType(rt.getType());
 		}
 
-		@SuppressWarnings("unchecked")
-		private static <I, O> Class<I> resolveInputType(Function<I, O> function) {
-			return (Class<I>) TypeResolverHelper.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
+		private static <I, O> ParameterizedTypeReference<I> resolveInputType(Function<I, O> function) {
+			ResolvableType rt = TypeResolverHelper.getFunctionArgumentType(ResolvableType.forInstance(function), 0);
+			return ParameterizedTypeReference.forType(rt.getType());
 		}
 
-		@SuppressWarnings("unchecked")
-		private static <I> Class<I> resolveInputType(Consumer<I> consumer) {
-			return (Class<I>) TypeResolverHelper.getConsumerInputClass((Class<Consumer<I>>) consumer.getClass());
+		private static <I> ParameterizedTypeReference<I> resolveInputType(Consumer<I> consumer) {
+			ResolvableType rt = TypeResolverHelper.getFunctionArgumentType(ResolvableType.forInstance(consumer), 0);
+			return ParameterizedTypeReference.forType(rt.getType());
 		}
 
 		public Builder<I, O> withName(String name) {
@@ -149,7 +152,12 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 
 		@SuppressWarnings("unchecked")
 		public Builder<I, O> withInputType(Class<?> inputType) {
-			this.inputType = (Class<I>) inputType;
+			this.inputType = ParameterizedTypeReference.forType((Class<I>) inputType);
+			return this;
+		}
+
+		public Builder<I, O> withInputType(ResolvableType inputType) {
+			this.inputType = ParameterizedTypeReference.forType(inputType.getType());
 			return this;
 		}
 

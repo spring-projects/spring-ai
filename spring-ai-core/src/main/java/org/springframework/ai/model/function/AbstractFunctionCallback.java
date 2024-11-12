@@ -24,6 +24,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.ModelOptionsUtils.CustomizedTypeReference;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 
 /**
@@ -47,7 +49,7 @@ abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolConte
 
 	private final String description;
 
-	private final Class<I> inputType;
+	private final ParameterizedTypeReference<I> inputType;
 
 	private final String inputTypeSchema;
 
@@ -70,8 +72,8 @@ abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolConte
 	 * @param objectMapper Used to convert the function's input and output types to and
 	 * from JSON.
 	 */
-	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, ObjectMapper objectMapper) {
+	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema,
+			ParameterizedTypeReference<I> inputType, Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
 		Assert.notNull(inputType, "InputType must not be null");
@@ -116,9 +118,9 @@ abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolConte
 		return this.andThen(this.responseConverter).apply(request, null);
 	}
 
-	private <T> T fromJson(String json, Class<T> targetClass) {
+	private <T> T fromJson(String json, ParameterizedTypeReference<T> targetClass) {
 		try {
-			return this.objectMapper.readValue(json, targetClass);
+			return this.objectMapper.readValue(json, CustomizedTypeReference.forType(targetClass));
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

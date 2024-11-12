@@ -304,6 +304,26 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		});
 	}
 
+	@Test
+	void trainScheduler() {
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage(
+					"Please schedule a train from San Francisco to Los Angeles on 2023-12-25");
+
+			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.withFunction("trainReservation")
+				.build();
+
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+
+			logger.info("Response: {}", response.getResult().getOutput().getContent());
+		});
+	}
+
 	@Configuration
 	static class Config {
 
@@ -372,6 +392,28 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				logger.info("Turning light on in the living room");
 				feedback.put("turnLivingRoomLightOnSupplier", Boolean.TRUE);
 				return "Done";
+			};
+		}
+
+		record TrainSearchSchedule(String from, String to, String date) {
+		}
+
+		record TrainSearchScheduleResponse(String from, String to, String date, String trainNumber) {
+		}
+
+		record TrainSearchRequest<T>(T data) {
+		}
+
+		record TrainSearchResponse<T>(T data) {
+		}
+
+		@Bean
+		@Description("Schedule a train reservation")
+		public Function<TrainSearchRequest<TrainSearchSchedule>, TrainSearchResponse<TrainSearchScheduleResponse>> trainReservation() {
+			return (TrainSearchRequest<TrainSearchSchedule> request) -> {
+				logger.info("Turning light to [" + request.data().from() + "] in " + request.data().to());
+				return new TrainSearchResponse<>(
+						new TrainSearchScheduleResponse(request.data().from(), request.data().to(), "", "123"));
 			};
 		}
 

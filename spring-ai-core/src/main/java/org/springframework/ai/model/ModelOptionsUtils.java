@@ -18,6 +18,7 @@ package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -50,8 +51,8 @@ import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -335,11 +336,11 @@ public abstract class ModelOptionsUtils {
 
 	/**
 	 * Generates JSON Schema (version 2020_12) for the given class.
-	 * @param clazz the class to generate JSON Schema for.
+	 * @param parameterizedType the class to generate JSON Schema for.
 	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
 	 * @return the generated JSON Schema as a String.
 	 */
-	public static String getJsonSchema(Class<?> clazz, boolean toUpperCaseTypeValues) {
+	public static String getJsonSchema(ParameterizedTypeReference<?> parameterizedType, boolean toUpperCaseTypeValues) {
 
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
 
@@ -358,9 +359,10 @@ public abstract class ModelOptionsUtils {
 			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
 		}
 
-		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
+		ObjectNode node = SCHEMA_GENERATOR_CACHE.get()
+			.generateSchema(CustomizedTypeReference.forType(parameterizedType).getType());
 
-		if (ClassUtils.isVoidType(clazz) && node.get("properties") == null) {
+		if ((parameterizedType.getType() == Void.class) && node.get("properties") == null) {
 			node.putObject("properties");
 		}
 
@@ -409,6 +411,25 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static <T> T mergeOption(T runtimeValue, T defaultValue) {
 		return ObjectUtils.isEmpty(runtimeValue) ? defaultValue : runtimeValue;
+	}
+
+	public static class CustomizedTypeReference<T> extends TypeReference<T> {
+
+		private final Type type;
+
+		CustomizedTypeReference(ParameterizedTypeReference<T> typeRef) {
+			this.type = typeRef.getType();
+		}
+
+		@Override
+		public Type getType() {
+			return this.type;
+		}
+
+		public static <T> CustomizedTypeReference<T> forType(ParameterizedTypeReference<T> typeRef) {
+			return new CustomizedTypeReference<>(typeRef);
+		}
+
 	}
 
 }

@@ -124,11 +124,13 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 			}
 		}
 		if (bean instanceof Function<?, ?> function) {
+			// ResolvableType.forInstance(function);
 			return FunctionCallbackWrapper.builder(function)
 				.withName(beanName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+				.withInputType(functionInputType)
+				// .withInputType(functionInputClass)
 				.build();
 		}
 		if (bean instanceof Consumer<?> consumer) {
@@ -136,7 +138,8 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				.withName(beanName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+				.withInputType(functionInputType)
+				// .withInputType(functionInputClass)
 				.build();
 		}
 		if (bean instanceof Supplier<?> supplier) {
@@ -144,7 +147,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				.withName(beanName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+				.withInputType(functionInputType)
 				.build();
 		}
 		else if (bean instanceof BiFunction<?, ?, ?>) {
@@ -152,7 +155,8 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				.withName(beanName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+				.withInputType(functionInputType)
+				// .withInputType(functionInputClass)
 				.build();
 		}
 		else {

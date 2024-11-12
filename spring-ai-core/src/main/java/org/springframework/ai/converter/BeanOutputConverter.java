@@ -16,7 +16,6 @@
 
 package org.springframework.ai.converter;
 
-import java.lang.reflect.Type;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,6 +36,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.model.ModelOptionsUtils.CustomizedTypeReference;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
@@ -94,7 +94,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param typeRef The target class type reference.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef) {
-		this(new CustomizedTypeReference<>(typeRef), null);
+		this(CustomizedTypeReference.forType(typeRef), null);
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, ObjectMapper objectMapper) {
-		this(new CustomizedTypeReference<>(typeRef), objectMapper);
+		this(CustomizedTypeReference.forType(typeRef), objectMapper);
 	}
 
 	/**
@@ -218,21 +218,6 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public String getJsonSchema() {
 		return this.jsonSchema;
-	}
-
-	private static class CustomizedTypeReference<T> extends TypeReference<T> {
-
-		private final Type type;
-
-		CustomizedTypeReference(ParameterizedTypeReference<T> typeRef) {
-			this.type = typeRef.getType();
-		}
-
-		@Override
-		public Type getType() {
-			return this.type;
-		}
-
 	}
 
 }
