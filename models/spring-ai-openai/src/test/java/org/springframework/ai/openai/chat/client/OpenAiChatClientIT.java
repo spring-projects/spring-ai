@@ -21,6 +21,8 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Disabled;
@@ -255,6 +257,50 @@ class OpenAiChatClientIT extends AbstractIT {
 		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallSupplier() {
+
+		Map<String, Object> state = new ConcurrentHashMap<>();
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn the light on in the living room")
+				.function("turnLivingRoomLightOnSupplier", "Turns light on in the living room", () -> state.put("foo", "bar"))
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+		assertThat(state).containsEntry("foo", "bar");
+	}
+
+	@Test
+	void functionCallConsumer() {
+
+		Map<String, Object> state = new ConcurrentHashMap<>();
+
+		record LightInfo(String roomName, boolean isOn) {
+		}
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn the light on in the kitchen and in the living room")
+				.function("turnLight", "Turn light on or off in a room",  new Consumer<LightInfo>() {
+					@Override
+					public void accept(LightInfo lightInfo) {
+						logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
+						state.put(lightInfo.roomName(), lightInfo.isOn());
+					}
+				})
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+		assertThat(state).containsEntry("kitchen", Boolean.TRUE);
+		assertThat(state).containsEntry("living room", Boolean.TRUE);
 	}
 
 	@Test

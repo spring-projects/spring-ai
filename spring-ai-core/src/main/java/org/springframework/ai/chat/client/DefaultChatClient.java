@@ -874,6 +874,38 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		public <I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.Supplier<O> supplier) {
+
+			Assert.hasText(name, "name cannot be null or empty");
+			Assert.hasText(description, "description cannot be null or empty");
+			Assert.notNull(supplier, "supplier cannot be null");
+
+			var fcw = FunctionCallbackWrapper.builder(supplier)
+				.withDescription(description)
+				.withName(name)
+				.withInputType(Void.class)
+				.build();
+			this.functionCallbacks.add(fcw);
+			return this;
+		}
+
+		public <I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.Consumer<I> consumer) {
+
+			Assert.hasText(name, "name cannot be null or empty");
+			Assert.hasText(description, "description cannot be null or empty");
+			Assert.notNull(consumer, "consumer cannot be null");
+
+			var fcw = FunctionCallbackWrapper.builder(consumer)
+				.withDescription(description)
+				.withName(name)
+				// .withResponseConverter(Object::toString)
+				.build();
+			this.functionCallbacks.add(fcw);
+			return this;
+		}
+
 		public ChatClientRequestSpec functions(String... functionBeanNames) {
 			Assert.notNull(functionBeanNames, "functionBeanNames cannot be null");
 			Assert.noNullElements(functionBeanNames, "functionBeanNames cannot contain null elements");

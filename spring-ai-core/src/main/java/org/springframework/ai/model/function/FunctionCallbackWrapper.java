@@ -66,12 +66,8 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 		return new Builder<>(function);
 	}
 
-	public static <I, Void> Builder<I, Void> builder(Consumer<I> consumer) {
-		Function<I, Void> function = (input) -> {
-			consumer.accept(input);
-			return null;
-		};
-		return new Builder<>(function);
+	public static <I, O> Builder<I, O> builder(Consumer<I> consumer) {
+		return new Builder<>(consumer);
 	}
 
 	@Override
@@ -84,6 +80,8 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 		private final BiFunction<I, ToolContext, O> biFunction;
 
 		private final Function<I, O> function;
+
+		private final Consumer<I> consumer;
 
 		private String name;
 
@@ -104,12 +102,21 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 			Assert.notNull(biFunction, "Function must not be null");
 			this.biFunction = biFunction;
 			this.function = null;
+			this.consumer = null;
 		}
 
 		public Builder(Function<I, O> function) {
 			Assert.notNull(function, "Function must not be null");
 			this.biFunction = null;
 			this.function = function;
+			this.consumer = null;
+		}
+
+		public Builder(Consumer<I> consumer) {
+			Assert.notNull(consumer, "Consumer must not be null");
+			this.biFunction = null;
+			this.function = null;
+			this.consumer = consumer;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -121,6 +128,11 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 		@SuppressWarnings("unchecked")
 		private static <I, O> Class<I> resolveInputType(Function<I, O> function) {
 			return (Class<I>) TypeResolverHelper.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
+		}
+
+		@SuppressWarnings("unchecked")
+		private static <I> Class<I> resolveInputType(Consumer<I> consumer) {
+			return (Class<I>) TypeResolverHelper.getConsumerInputClass((Class<Consumer<I>>) consumer.getClass());
 		}
 
 		public Builder<I, O> withName(String name) {
@@ -183,8 +195,11 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 				if (this.function != null) {
 					this.inputType = resolveInputType(this.function);
 				}
-				else {
+				else if (this.biFunction != null) {
 					this.inputType = resolveInputType(this.biFunction);
+				}
+				else {
+					this.inputType = resolveInputType(this.consumer);
 				}
 			}
 
@@ -193,8 +208,23 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 				this.inputTypeSchema = ModelOptionsUtils.getJsonSchema(this.inputType, upperCaseTypeValues);
 			}
 
-			BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
-					: (request, context) -> this.function.apply(request);
+			BiFunction<I, ToolContext, O> finalBiFunction = null;
+			if (this.biFunction != null) {
+				finalBiFunction = this.biFunction;
+			}
+			else if (this.function != null) {
+				finalBiFunction = (request, context) -> this.function.apply(request);
+			}
+			else {
+				finalBiFunction = (request, context) -> {
+					this.consumer.accept(request);
+					return null;
+				};
+			}
+
+			// BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ?
+			// this.biFunction
+			// : (request, context) -> this.function.apply(request);
 
 			return new FunctionCallbackWrapper<>(this.name, this.description, this.inputTypeSchema, this.inputType,
 					this.responseConverter, this.objectMapper, finalBiFunction);

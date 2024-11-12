@@ -1468,6 +1468,25 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenSupplierFunctionThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		spec = spec.function("name", "description", () -> "hello");
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+	}
+
+	@Test
+	void whenConsumerFunctionThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		Consumer<String> consumer = input -> System.out.println(input);
+		spec = spec.function("name", "description", consumer);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+	}
+
+	@Test
 	void whenFunctionBeanNamesElementIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();

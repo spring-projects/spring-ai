@@ -79,7 +79,6 @@ public class OpenAiTestConfiguration {
 	@Bean
 	public OpenAiImageModel openAiImageModel(OpenAiImageApi imageApi) {
 		OpenAiImageModel openAiImageModel = new OpenAiImageModel(imageApi);
-		// openAiImageModel.setModel("foobar");
 		return openAiImageModel;
 	}
 

@@ -223,6 +223,10 @@ public interface ChatClient {
 		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
+		<I, O> ChatClientRequestSpec function(String name, String description, java.util.function.Supplier<O> supplier);
+
+		<I, O> ChatClientRequestSpec function(String name, String description, java.util.function.Consumer<I> consumer);
+
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);

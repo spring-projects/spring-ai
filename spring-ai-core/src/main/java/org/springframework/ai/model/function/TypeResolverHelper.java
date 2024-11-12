@@ -65,6 +65,16 @@ public abstract class TypeResolverHelper {
 	}
 
 	/**
+	 * Returns the input class of a given Consumer class.
+	 * @param consumerClass The consumer class.
+	 * @return The input class of the consumer.
+	 */
+	public static Class<?> getConsumerInputClass(Class<? extends Consumer<?>> consumerClass) {
+		ResolvableType resolvableType = ResolvableType.forClass(consumerClass).as(Consumer.class);
+		return (resolvableType == ResolvableType.NONE ? Object.class : resolvableType.getGeneric(0).toClass());
+	}
+
+	/**
 	 * Returns the output class of a given function class.
 	 * @param functionClass The function class.
 	 * @return The output class of the function.
