@@ -209,8 +209,8 @@ public class OpenSearchVectorStoreObservationIT {
 						new OpenSearchClient(ApacheHttpClient5TransportBuilder
 							.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
 							.build()),
-						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536,
-						true, observationRegistry, null, new TokenCountBatchingStrategy());
+						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION, true,
+						observationRegistry, null, new TokenCountBatchingStrategy());
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);

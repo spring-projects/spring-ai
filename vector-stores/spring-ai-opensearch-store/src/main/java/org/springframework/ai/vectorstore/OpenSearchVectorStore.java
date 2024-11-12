@@ -71,12 +71,12 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
-	public static final String DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536 = """
+	public static final String DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION = """
 			{
 				"properties":{
 					"embedding":{
 						"type":"knn_vector",
-						"dimension":1536
+						"dimension":%s
 					}
 				}
 			}
@@ -102,8 +102,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
-		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536,
-				initializeSchema);
+		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION, initializeSchema);
 	}
 
 	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson,
@@ -265,7 +264,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	@Override
 	public void afterPropertiesSet() {
 		if (this.initializeSchema && !exists(this.index)) {
-			createIndexMapping(this.index, this.mappingJson);
+			createIndexMapping(this.index, String.format(this.mappingJson, this.embeddingModel.dimensions()));
 		}
 	}
 

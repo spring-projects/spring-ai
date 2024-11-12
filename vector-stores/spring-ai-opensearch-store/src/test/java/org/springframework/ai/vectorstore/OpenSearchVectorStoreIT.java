@@ -411,7 +411,7 @@ class OpenSearchVectorStoreIT {
 						new OpenSearchClient(ApacheHttpClient5TransportBuilder
 							.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
 							.build()),
-						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536,
+						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION,
 						true);
 			}
 			catch (URISyntaxException e) {
