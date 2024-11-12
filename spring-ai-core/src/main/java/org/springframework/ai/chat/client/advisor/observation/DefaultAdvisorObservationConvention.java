@@ -62,7 +62,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(AdvisorObservationContext context) {
-		return KeyValues.of(springAiKind(), advisorType(context));
+		return KeyValues.of(springAiKind(), advisorType(context), advisorName(context));
 	}
 
 	protected KeyValue advisorType(AdvisorObservationContext context) {
@@ -70,8 +70,11 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	}
 
 	protected KeyValue springAiKind() {
-		return KeyValue.of(AdvisorObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
-				SpringAiKind.ADVISOR.value());
+		return KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND, SpringAiKind.ADVISOR.value());
+	}
+
+	protected KeyValue advisorName(AdvisorObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
 	}
 
 	// ------------------------
@@ -80,11 +83,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(AdvisorObservationContext context) {
-		return KeyValues.of(advisorName(context), advisorOrder(context));
-	}
-
-	protected KeyValue advisorName(AdvisorObservationContext context) {
-		return KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
+		return KeyValues.of(advisorOrder(context));
 	}
 
 	protected KeyValue advisorOrder(AdvisorObservationContext context) {
