@@ -49,23 +49,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	private Map<String, Object> dynamicModel = new HashMap<>();
 
 	public PromptTemplate(Resource resource) {
-		try (InputStream inputStream = resource.getInputStream()) {
-			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to read resource", ex);
-		}
-		initST(this.template, Collections.emptyMap());
-	}
-
-	public PromptTemplate(String template) {
-		this.template = template;
-		initST(this.template, Collections.emptyMap());
-	}
-
-	public PromptTemplate(String template, Map<String, Object> model) {
-		this.template = template;
-		initST(this.template, model);
+		this(resource, Collections.emptyMap());
 	}
 
 	public PromptTemplate(Resource resource, Map<String, Object> model) {
@@ -75,6 +59,15 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
 		}
+		initST(this.template, model);
+	}
+
+	public PromptTemplate(String template) {
+		this(template, Collections.emptyMap());
+	}
+
+	public PromptTemplate(String template, Map<String, Object> model) {
+		this.template = template;
 		initST(this.template, model);
 	}
 
