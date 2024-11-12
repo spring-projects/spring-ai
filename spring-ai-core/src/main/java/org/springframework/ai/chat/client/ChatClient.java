@@ -212,20 +212,38 @@ public interface ChatClient {
 
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
+		/**
+		 * @deprecated Use
+		 * {@link #function(String, String, Class, java.util.function.Function)} instead.
+		 * Because of JVM type erasure, for lambda to work, the inputType class is
+		 * required to be provided explicitly.
+		 */
+		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
-
-		<I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.BiFunction<I, ToolContext, O> function);
-
-		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
 
 		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
+		/**
+		 * @deprecated Use
+		 * {@link #functions(String, String, Class,java.util.function.BiFunction)} Because
+		 * of JVM type erasure, for lambda to work, the inputType class is required to be
+		 * provided explicitly.
+		 */
+		@Deprecated
+		<I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.BiFunction<I, ToolContext, O> function);
+
+		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
+				java.util.function.BiFunction<I, ToolContext, O> function);
+
+		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
+
 		<I, O> ChatClientRequestSpec function(String name, String description, java.util.function.Supplier<O> supplier);
 
-		<I, O> ChatClientRequestSpec function(String name, String description, java.util.function.Consumer<I> consumer);
+		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
+				java.util.function.Consumer<I> consumer);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
@@ -282,10 +300,35 @@ public interface ChatClient {
 
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
+		/**
+		 * @deprecated Use
+		 * {@link #defaultFunction(String, String, Class, java.util.function.Function)}
+		 * instead. Because of JVM type erasure, for lambda to work, the inputType class
+		 * is required to be provided explicitly.
+		 */
+		@Deprecated
 		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
 
+		<I, O> Builder defaultFunction(String name, String description, Class<I> inputType,
+				java.util.function.Function<I, O> function);
+
+		/**
+		 * @deprecated Use
+		 * {@link #defaultFunction(String, String, Class, java.util.function.BiFunction)}
+		 * instead. Because of JVM type erasure, for lambda to work, the inputType class
+		 * is required to be provided explicitly.
+		 */
+		@Deprecated
 		<I, O> Builder defaultFunction(String name, String description,
 				java.util.function.BiFunction<I, ToolContext, O> function);
+
+		<I, O> Builder defaultFunction(String name, String description, Class<I> inputType,
+				java.util.function.BiFunction<I, ToolContext, O> function);
+
+		<I, O> Builder defaultFunction(String name, String description, java.util.function.Supplier<O> supplier);
+
+		<I, O> Builder defaultFunction(String name, String description, Class<I> inputType,
+				java.util.function.Consumer<I> consumer);
 
 		Builder defaultFunctions(String... functionNames);
 

@@ -249,7 +249,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.call()
 				.content();
 		// @formatter:on
@@ -287,12 +287,9 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn the light on in the kitchen and in the living room")
-				.function("turnLight", "Turn light on or off in a room",  new Consumer<LightInfo>() {
-					@Override
-					public void accept(LightInfo lightInfo) {
+				.function("turnLight", "Turn light on or off in a room",  LightInfo.class, (LightInfo lightInfo) -> {
 						logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
 						state.put(lightInfo.roomName(), lightInfo.isOn());
-					}
 				})
 				.call()
 				.content();
@@ -308,7 +305,8 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.defaultFunction("getCurrentWeather", "Get the weather in location",
+					MockWeatherService.Request.class, new MockWeatherService())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
 			.build()
 			.prompt().call().content();
@@ -325,7 +323,8 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", 
+				MockWeatherService.Request.class, new MockWeatherService())
 				.stream()
 				.content();
 		// @formatter:on

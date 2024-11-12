@@ -212,7 +212,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.call()
 				.content();
 		// @formatter:on
@@ -228,7 +228,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.advisors(new SimpleLoggerAdvisor())
 				.call()
 				.content();
@@ -244,7 +244,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-			.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+			.defaultFunction("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 			.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
 			.build()
 			.prompt()
@@ -263,7 +263,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.stream()
 				.content();
 		// @formatter:on
@@ -280,7 +280,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.stream()
 				.content();
 		// @formatter:on

@@ -836,11 +836,40 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		/**
+		 * @deprecated since 1.0.0 in favor of
+		 * {@link #function(String, String, Class, java.util.function.Function)} Because
+		 * of JVM type erasure, the inputType class is required to be provided explicitly.
+		 */
+		@Deprecated(since = "1.0.0", forRemoval = true)
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function) {
 			return this.function(name, description, null, function);
 		}
 
+		public <I, O> ChatClientRequestSpec function(String name, String description, @Nullable Class<I> inputType,
+				java.util.function.Function<I, O> function) {
+
+			Assert.hasText(name, "name cannot be null or empty");
+			Assert.hasText(description, "description cannot be null or empty");
+			Assert.notNull(function, "function cannot be null");
+
+			var fcw = FunctionCallbackWrapper.builder(function)
+				.withDescription(description)
+				.withName(name)
+				.withInputType(inputType)
+				.withResponseConverter(Object::toString)
+				.build();
+			this.functionCallbacks.add(fcw);
+			return this;
+		}
+
+		/**
+		 * @deprecated since 1.0.0 in favor of
+		 * {@link #function(String, String, Class, java.util.function.BiFunction)} Because
+		 * of JVM type erasure, the inputType class is required to be provided explicitly.
+		 */
+		@Deprecated
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
 
@@ -857,14 +886,14 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		public <I, O> ChatClientRequestSpec function(String name, String description, @Nullable Class<I> inputType,
-				java.util.function.Function<I, O> function) {
+		public <I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
+				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
 
 			Assert.hasText(name, "name cannot be null or empty");
 			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(function, "function cannot be null");
+			Assert.notNull(biFunction, "biFunction cannot be null");
 
-			var fcw = FunctionCallbackWrapper.builder(function)
+			FunctionCallbackWrapper<I, O> fcw = FunctionCallbackWrapper.builder(biFunction)
 				.withDescription(description)
 				.withName(name)
 				.withInputType(inputType)
@@ -890,7 +919,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		public <I, O> ChatClientRequestSpec function(String name, String description,
+		public <I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Consumer<I> consumer) {
 
 			Assert.hasText(name, "name cannot be null or empty");
@@ -900,7 +929,7 @@ public class DefaultChatClient implements ChatClient {
 			var fcw = FunctionCallbackWrapper.builder(consumer)
 				.withDescription(description)
 				.withName(name)
-				// .withResponseConverter(Object::toString)
+				.withInputType(inputType)
 				.build();
 			this.functionCallbacks.add(fcw);
 			return this;

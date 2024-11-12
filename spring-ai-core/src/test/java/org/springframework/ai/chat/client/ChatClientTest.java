@@ -217,7 +217,7 @@ public class ChatClientTest {
 						.param("param1", "value1")
 						.param("param2", "value2"))
 				.defaultFunctions("fun1", "fun2")
-				.defaultFunction("fun3", "fun3description", mockFunction)
+				.defaultFunction("fun3", "fun3description", String.class, mockFunction)
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
@@ -344,7 +344,7 @@ public class ChatClientTest {
 						.param("param1", "value1")
 						.param("param2", "value2"))
 				.defaultFunctions("fun1", "fun2")
-				.defaultFunction("fun3", "fun3description", mockFunction)
+				.defaultFunction("fun3", "fun3description", String.class, mockFunction)
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
@@ -541,9 +541,9 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia().iterator().next().getData())
 			.isEqualTo("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
-		FunctionCallingOptions runtieOptions = (FunctionCallingOptions) this.promptCaptor.getValue().getOptions();
+		FunctionCallingOptions runtimeOptions = (FunctionCallingOptions) this.promptCaptor.getValue().getOptions();
 
-		assertThat(runtieOptions.getFunctions()).containsExactly("function1");
+		assertThat(runtimeOptions.getFunctions()).containsExactly("function1");
 		assertThat(options.getFunctions()).isEmpty();
 	}
 

@@ -143,14 +143,39 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	@Deprecated
 	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
 		this.defaultRequest.function(name, description, function);
 		return this;
 	}
 
+	public <I, O> Builder defaultFunction(String name, String description, Class<I> inputType,
+			java.util.function.Function<I, O> function) {
+		this.defaultRequest.function(name, description, inputType, function);
+		return this;
+	}
+
+	@Deprecated
 	public <I, O> Builder defaultFunction(String name, String description,
 			java.util.function.BiFunction<I, ToolContext, O> biFunction) {
 		this.defaultRequest.function(name, description, biFunction);
+		return this;
+	}
+
+	public <I, O> Builder defaultFunction(String name, String description, Class<I> inputType,
+			java.util.function.BiFunction<I, ToolContext, O> biFunction) {
+		this.defaultRequest.function(name, description, inputType, biFunction);
+		return this;
+	}
+
+	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Supplier<O> supplier) {
+		this.defaultRequest.function(name, description, supplier);
+		return this;
+	}
+
+	public <I, O> Builder defaultFunction(String name, String description, Class<I> inputType,
+			java.util.function.Consumer<I> consumer) {
+		this.defaultRequest.function(name, description, inputType, consumer);
 		return this;
 	}
 

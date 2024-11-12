@@ -224,7 +224,7 @@ class MistralAiChatClientIT {
 		String response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).withToolChoice(ToolChoice.AUTO).build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.call()
 				.content();
 		// @formatter:on
@@ -242,7 +242,7 @@ class MistralAiChatClientIT {
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
 				.defaultOptions(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
-				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.defaultFunction("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
 			.build()
 			.prompt().call().content();
@@ -262,7 +262,7 @@ class MistralAiChatClientIT {
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.function("getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 				.stream()
 				.content();
 		// @formatter:on

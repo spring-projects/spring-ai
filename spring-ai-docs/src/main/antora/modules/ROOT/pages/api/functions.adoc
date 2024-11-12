@@ -277,6 +277,7 @@ ChatResponse response = this.chatClient.prompt("What's the weather like in San F
     .functions(new FunctionCallbackWrapper<>(
 		"CurrentWeather", // name
 		"Get the weather in location", // function description
+        MockWeatherService.Request.class, // input type
 		new MockWeatherService()))
     .call()
     .chatResponse();
@@ -405,6 +406,7 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
     .functions(FunctionCallbackWrapper.builder(this.weatherFunction)
+        .withInputType(MockWeatherService.Request.class)
         .withName("getCurrentWeather")
         .withDescription("Get the weather in location")
         .build())

@@ -18,7 +18,6 @@ package org.springframework.ai.autoconfigure.openai.tool;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -61,7 +60,7 @@ public class FunctionCallbackInPrompt2IT {
 
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.function("CurrentWeatherService", "Get the weather in location", new MockWeatherService())
+					.function("CurrentWeatherService", "Get the weather in location", MockWeatherService.Request.class, new MockWeatherService())
 					.call().content();
 			// @formatter:on
 
@@ -80,7 +79,7 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
-					.function("CurrentWeatherService", "Get the weather in location",
+					.function("CurrentWeatherService", "Get the weather in location", MockWeatherService.Request.class,
 							new Function<MockWeatherService.Request, String>() {
 								@Override
 								public String apply(MockWeatherService.Request request) {
@@ -109,14 +108,11 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("Turn the light on in the kitchen and in the living room!")
-					.function("turnLight", "Turn light on or off in a room",
-							new Consumer<LightInfo>() {
-								@Override
-								public void accept(LightInfo lightInfo) {
-									logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
-									state.put(lightInfo.roomName(), lightInfo.isOn());
-												}
-							})
+					.function("turnLight", "Turn light on or off in a room",LightInfo.class,
+						lightInfo -> {
+							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
+							state.put(lightInfo.roomName(), lightInfo.isOn());
+						})
 					.call().content();
 			// @formatter:on
 			logger.info("Response: {}", content);
@@ -135,7 +131,8 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.function("CurrentWeatherService", "Get the weather in location", new MockWeatherService())
+					.function("CurrentWeatherService", "Get the weather in location", 
+						MockWeatherService.Request.class, new MockWeatherService())
 					.stream().content()
 					.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
