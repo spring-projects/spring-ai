@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
+import org.springframework.util.Assert;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
@@ -53,13 +54,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	public PromptTemplate(Resource resource, Map<String, Object> model) {
-		try (InputStream inputStream = resource.getInputStream()) {
-			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to read resource", ex);
-		}
-		initST(this.template, model);
+		this(readTemplateFromResource(resource), model);
 	}
 
 	public PromptTemplate(String template) {
@@ -67,20 +62,26 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	public PromptTemplate(String template, Map<String, Object> model) {
+		Assert.notNull(template, "template must not be null");
+		Assert.notNull(model, "model must not be null");
 		this.template = template;
-		initST(this.template, model);
-	}
-
-	private void initST(String template, Map<String, Object> model) {
 		// If the template string is not valid, an exception will be thrown
 		try {
 			this.st = new ST(template, '{', '}');
 			for (Entry<String, Object> entry : model.entrySet()) {
 				add(entry.getKey(), entry.getValue());
 			}
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			throw new IllegalArgumentException("The template string is not valid.", ex);
+		}
+	}
+
+	private static String readTemplateFromResource(Resource resource) {
+		Assert.notNull(resource, "resource must not be null");
+		try (InputStream inputStream = resource.getInputStream()) {
+			return StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
 		}
 	}
 
