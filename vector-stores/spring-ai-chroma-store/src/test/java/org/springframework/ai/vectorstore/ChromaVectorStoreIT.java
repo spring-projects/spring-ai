@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -83,7 +84,8 @@ public class ChromaVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 			// Remove all documents from the store
-			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+			assertThat(vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList()))
+				.isEqualTo(Optional.of(Boolean.TRUE));
 
 			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).hasSize(0);

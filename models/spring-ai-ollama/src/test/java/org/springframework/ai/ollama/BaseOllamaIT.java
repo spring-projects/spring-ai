@@ -19,7 +19,6 @@ package org.springframework.ai.ollama;
 import java.time.Duration;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 
