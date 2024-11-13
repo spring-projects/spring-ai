@@ -71,7 +71,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			for (Entry<String, Object> entry : model.entrySet()) {
 				add(entry.getKey(), entry.getValue());
 			}
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw new IllegalArgumentException("The template string is not valid.", ex);
 		}
 	}
@@ -80,7 +81,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		Assert.notNull(resource, "resource must not be null");
 		try (InputStream inputStream = resource.getInputStream()) {
 			return StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		} catch (IOException ex) {
+		}
+		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
 		}
 	}
