@@ -91,6 +91,8 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	static class Aws {
 
+		private String domainName;
+
 		private String host;
 
 		private String serviceName;
@@ -100,6 +102,14 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 		private String secretKey;
 
 		private String region;
+
+		public String getDomainName() {
+			return this.domainName;
+		}
+
+		public void setDomainName(String domainName) {
+			this.domainName = domainName;
+		}
 
 		public String getHost() {
 			return this.host;

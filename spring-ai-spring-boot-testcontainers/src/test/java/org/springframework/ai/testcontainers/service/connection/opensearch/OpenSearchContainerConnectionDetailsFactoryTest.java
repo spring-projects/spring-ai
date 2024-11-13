@@ -24,78 +24,85 @@ import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreAutoConfiguration;
+import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreProperties;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.lifecycle.TestcontainersLifecycleApplicationContextInitializer;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnectionAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-@SpringBootTest(properties = {
-		"spring.ai.vectorstore.opensearch.index-name=" + OpenSearchContainerConnectionDetailsFactoryTest.DOCUMENT_INDEX,
-		"spring.ai.vectorstore.opensearch.initialize-schema=true",
-		"spring.ai.vectorstore.opensearch.mapping-json="
-				+ OpenSearchContainerConnectionDetailsFactoryTest.MAPPING_JSON })
-@Testcontainers
 class OpenSearchContainerConnectionDetailsFactoryTest {
 
-	static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
-
-	static final String MAPPING_JSON = "{\"properties\":{\"embedding\":{\"type\":\"knn_vector\",\"dimension\":384}}}";
-
-	@Container
-	@ServiceConnection
-	private static final OpensearchContainer<?> opensearch = new OpensearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withInitializer(new TestcontainersLifecycleApplicationContextInitializer())
+		.withConfiguration(AutoConfigurations.of(ServiceConnectionAutoConfiguration.class,
+				OpenSearchVectorStoreAutoConfiguration.class))
+		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
+		.withUserConfiguration(Config.class)
+		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true",
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=auto-spring-ai-document-index",
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
+						{
+							"properties":{
+								"embedding":{
+									"type":"knn_vector",
+									"dimension":384
+								}
+							}
+						}
+						""");
 
 	private final List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
 			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
-	@Autowired
-	private OpenSearchVectorStore vectorStore;
-
 	@Test
 	public void addAndSearchTest() {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			vectorStore.add(this.documents);
 
-		this.vectorStore.add(this.documents);
+			Awaitility.await()
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+						hasSize(1));
 
-		Awaitility.await()
-			.until(() -> this.vectorStore
-				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
-					hasSize(1));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
 
-		List<Document> results = this.vectorStore
-			.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
+			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getMetadata()).hasSize(2);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-		assertThat(results).hasSize(1);
-		Document resultDoc = results.get(0);
-		assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-		assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
-		assertThat(resultDoc.getMetadata()).hasSize(2);
-		assertThat(resultDoc.getMetadata()).containsKey("meta2");
-		assertThat(resultDoc.getMetadata()).containsKey("distance");
+			// Remove all documents from the store
+			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
-		// Remove all documents from the store
-		this.vectorStore.delete(this.documents.stream().map(Document::getId).toList());
-
-		Awaitility.await()
-			.until(() -> this.vectorStore
-				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
-					hasSize(0));
+			Awaitility.await()
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+						hasSize(0));
+		});
 	}
 
 	private String getText(String uri) {
@@ -109,12 +116,17 @@ class OpenSearchContainerConnectionDetailsFactoryTest {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ImportAutoConfiguration(OpenSearchVectorStoreAutoConfiguration.class)
 	static class Config {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new TransformersEmbeddingModel();
+		}
+
+		@Bean
+		@ServiceConnection
+		OpensearchContainer<?> opensearch() {
+			return new OpensearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
 		}
 
 	}
