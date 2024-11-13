@@ -33,7 +33,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.tool.MockWeatherService;
@@ -63,11 +63,11 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.withModel(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -88,11 +88,11 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.withModel(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 

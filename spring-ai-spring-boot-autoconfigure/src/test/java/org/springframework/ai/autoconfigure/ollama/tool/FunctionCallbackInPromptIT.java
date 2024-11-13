@@ -33,7 +33,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -71,11 +71,11 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription(
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.function("CurrentWeatherService", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
@@ -98,11 +98,11 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription(
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.function("CurrentWeatherService", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 

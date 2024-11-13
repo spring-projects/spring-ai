@@ -29,7 +29,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -80,10 +79,11 @@ public class FunctionCallWithFunctionWrapperIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("WeatherInfo")
-				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-				.withDescription("Get the current weather in a given location")
+			return FunctionCallback.builder()
+				.description("Get the current weather in a given location")
+				.schemaType(SchemaType.OPEN_API_SCHEMA)
+				.function("WeatherInfo", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build();
 		}
 

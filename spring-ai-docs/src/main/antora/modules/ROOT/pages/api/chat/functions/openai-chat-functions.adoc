@@ -14,7 +14,7 @@ As a developer, you need to implement a function that takes the function call ar
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallbackWrapper.java[FunctionCallbackWrapper.java] utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 // Additionally, the Auto-Configuration provides a way to auto-register any Function<I, O> beans definition as function calling candidates in the `ChatModel`.
 
@@ -69,7 +69,7 @@ We start by describing the most POJO-friendly options.
 
 In this approach, you define a `@Bean` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 [source,java]
@@ -112,7 +112,7 @@ The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring
 
 ==== FunctionCallback Wrapper
 
-Another way to register a function is to create a `FunctionCallbackWrapper` like this:
+Another way to register a function is to create a `FunctionCallback` like this:
 
 [source,java]
 ----
@@ -122,9 +122,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-    return FunctionCallbackWrapper.builder(new MockWeatherService())
-        .withName("CurrentWeather") // (1) function name
-        .withDescription("Get the weather in location") // (2) function description
+    return FunctionCallback.builder()
+        .description("Get the weather in location") // (2) function description
+        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+        .inputType(MockWeatherService.Request.class) // (3) function input type
         .build();
 	}
 
@@ -132,11 +133,11 @@ static class Config {
 ----
 
 It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `OpenAiChatModel`.
-It also provides a description (2) and an optional response converter to convert the response into a text as expected by the model.
+It also provides a description (2) and an input type (3) used to generate the JSON schema for the function call.
 
 NOTE: By default, the response converter performs a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -165,7 +166,7 @@ Here is the current weather for the requested cities:
 - Paris, France: 15.0°C
 ----
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackWrapperIT.java[FunctionCallbackWrapperIT.java] test demo this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/OpenAiFunctionCallbackIT.java[OpenAiFunctionCallbackIT.java] test demo this approach.
 
 === Register/Call Functions with Prompt Options
 
@@ -178,10 +179,11 @@ OpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
-		"CurrentWeather", // name
-		"Get the weather in location", // function description
-		new MockWeatherService()))) // function code
+	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+        .description("Get the weather in location") // (2) function description
+        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+        .inputType(MockWeatherService.Request.class) // (3) function input type
+        .build())) // function code
 	.build();
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage, this.promptOptions));
@@ -192,32 +194,6 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 This approach allows to choose dynamically different functions to be called based on the user input.
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OpenAiChatModel` and use it in a prompt request.
-//
-// === Register Functions with Default Options
-//
-// You can programmatically register functions with the `OpenAiChatModel` using the `OpenAiChatOptions#withFunctionCallbacks`:
-//
-// [source,java]
-// ----
-//
-// OpenAiApi openaiApi = new OpenAiApi(apiKey);
-//
-// var defaultOptions = OpenAiChatOptions.builder()
-// 	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
-// 		"CurrentWeather", // name
-// 		"Get the weather in location", // function description
-// 		new MockWeatherService()))) // function code
-// 	.build();
-//
-// OpenAiChatModel chatModel = new OpenAiChatModel(openaiApi, defaultOptions);
-//
-// UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-//
-// ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-// 		OpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
-// ----
-//
-// NOTE: Functions are registered when OpenAiChatModel is created, by you must enable in the Prompt the functions to be used in the request.
 
 
 === Tool Context Support
@@ -254,9 +230,10 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 OpenAiChatOptions options = OpenAiChatOptions.builder()
     .withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-    .withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(this.weatherFunction)
-        .withName("getCurrentWeather")
-        .withDescription("Get the weather in location")
+    .withFunctionCallbacks(List.of(FunctionCallback.builder()
+        .function("getCurrentWeather", this.weatherFunction)
+        .description("Get the weather in location")
+        .inputType(MockWeatherService.Request.class)
         .build()))
     .withToolContext(Map.of("sessionId", "123", "userId", "user456"))
     .build();

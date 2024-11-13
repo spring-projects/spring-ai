@@ -18,7 +18,7 @@ Your function can in turn invoke other 3rd party services to provide the results
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallbackWrapper.java[FunctionCallbackWrapper.java] utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 == How it works
 
@@ -70,7 +70,7 @@ We start with describing the most POJO friendly options.
 
 In this approach you define `@Beans` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` wrapper that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 
@@ -115,9 +115,9 @@ It is a best practice to annotate the request object with information such that 
 The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/anthropic/tool/FunctionCallWithFunctionBeanIT.java.java[FunctionCallWithFunctionBeanIT.java] demonstrates this approach.
 
 
-==== FunctionCallback Wrapper
+==== FunctionCallback
 
-Another way to register a function is to create a `FunctionCallbackWrapper` wrapper like this:
+Another way to register a function is to create a `FunctionCallback` instance like this:
 
 [source,java]
 ----
@@ -127,9 +127,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-    return FunctionCallbackWrapper.builder(new MockWeatherService())
-        .withName("CurrentWeather") // (1) function name
-        .withDescription("Get the weather in location") // (2) function description
+    return FunctionCallback.builder()
+        .description("Get the weather in location") // (2) function description
+		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
 	}
 	...
@@ -137,11 +138,11 @@ static class Config {
 ----
 
 It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `AnthropicChatModel`.
-It also provides a description (2) and an optional response converter (3) to convert the response into a text as expected by the model.
+It also provides a description (2) and input type (3) used to generate the JSON schema for the function call.
 
 NOTE: By default, the response converter does a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -174,10 +175,11 @@ AnthropicChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 var promptOptions = AnthropicChatOptions.builder()
-	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
-		"CurrentWeather", // name
-		"Get the weather in location", // function description
-		new MockWeatherService()))) // function code
+	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+        .description("Get the weather in location") // (2) function description
+		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+		.inputType(MockWeatherService.Request.class) // (3) function signature
+        .build())) // function code
 	.build();
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage), this.promptOptions));

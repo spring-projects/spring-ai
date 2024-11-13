@@ -21,14 +21,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 
-class FunctionCallbackWrapperExtensionsTests {
+class FunctionCallbackExtensionsTests {
 
-	private val builder = mockk<FunctionCallbackWrapper.Builder<WeatherRequest, WeatherResponse>>()
+	private val spec = mockk<FunctionCallback.FunctionInvokingSpec<WeatherRequest, WeatherResponse>>()
 
 	@Test
-	fun withInputType() {
-		every { builder.withInputType(any<Class<*>>()) } returns builder
-		builder.withInputType<WeatherRequest>()
-		verify { builder.withInputType(WeatherRequest::class.java) }
+	fun inputType() {
+		every { spec.inputType(any<Class<*>>()) } returns spec
+		spec.inputType<WeatherRequest, WeatherResponse>()
+		verify { spec.inputType(WeatherRequest::class.java) }
 	}
 }

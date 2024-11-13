@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.anthropic.client;
+package org.springframework.ai.openai.chat.client;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,27 +25,30 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.MethodFunctionCallback;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-@SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
-@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+@SpringBootTest(classes = OpenAiTestConfiguration.class)
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
-class AnthropicChatClientMethodFunctionCallbackIT {
+class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatClientMethodFunctionCallbackIT.class);
+	private static final Logger logger = LoggerFactory
+		.getLogger(OpenAiChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
+
+	@Autowired
+	ChatModel chatModel;
 
 	@BeforeEach
 	void beforeEach() {
@@ -54,14 +57,13 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 	@Test
 	void methodGetWeatherStatic() {
-
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherStatic", String.class, Unit.class);
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
+					.method("getWeatherStatic",String.class, Unit.class)
+					.targetClass(TestFunctionClass.class)
 					.build())
 				.call()
 				.content();
@@ -77,15 +79,13 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLight", String.class, boolean.class);
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Can turn lights on or off by room name")
+					.method("turnLight", String.class, boolean.class)
+					.targetObject(targetObject)
 					.build())
 				.call()
 				.content();
@@ -102,16 +102,13 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
+					.method("getWeatherNonStatic",String.class, Unit.class)					
+					.targetObject(targetObject)
 					.build())
 				.call()
 				.content();
@@ -127,16 +124,13 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherWithContext", String.class,
-				Unit.class, ToolContext.class);
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
+					.method("getWeatherWithContext", String.class, Unit.class,  ToolContext.class)					
+					.targetObject(targetObject)
 					.build())
 				.toolContext(Map.of("tool", "value"))
 				.call()
@@ -154,17 +148,14 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
-
 		// @formatter:off
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-						.functionObject(targetObject)
-						.method(method)
-						.description("Get the weather in location")
-						.build())
+				.functions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.method("getWeatherNonStatic", String.class, Unit.class)
+					.targetObject(targetObject)
+					.build())
 				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content())
@@ -178,16 +169,14 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLivingRoomLightOn");
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Can turn lights on in the Living Room")
-					.build())
+					.method("turnLivingRoomLightOn")
+					.targetObject(targetObject)
+					.build())		
 				.call()
 				.content();
 		// @formatter:on
@@ -196,9 +185,6 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
 	}
-
-	@Autowired
-	ChatModel chatModel;
 
 	record MyRecord(String foo, String bar) {
 	}

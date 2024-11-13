@@ -29,7 +29,7 @@ import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -61,9 +61,10 @@ public class FunctionCallWithPromptFunctionIT {
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
 
 				var promptOptions = AzureOpenAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName("CurrentWeatherService")
-						.withDescription("Get the weather in location")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("CurrentWeatherService", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();
 

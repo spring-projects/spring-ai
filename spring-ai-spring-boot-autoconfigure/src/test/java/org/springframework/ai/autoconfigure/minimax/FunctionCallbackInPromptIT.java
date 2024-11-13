@@ -33,7 +33,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -63,10 +63,10 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = MiniMaxChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("CurrentWeatherService", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
@@ -89,10 +89,10 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = MiniMaxChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("CurrentWeatherService", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 

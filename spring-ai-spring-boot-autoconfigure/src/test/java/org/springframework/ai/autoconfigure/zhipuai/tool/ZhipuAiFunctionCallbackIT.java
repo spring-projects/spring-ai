@@ -33,7 +33,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -48,9 +47,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  */
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".*")
-public class FunctionCallbackWrapperIT {
+public class ZhipuAiFunctionCallbackIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWrapperIT.class);
+	private final Logger logger = LoggerFactory.getLogger(ZhipuAiFunctionCallbackIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.zhipuai.apiKey=" + System.getenv("ZHIPU_AI_API_KEY"))
@@ -112,10 +111,11 @@ public class FunctionCallbackWrapperIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("WeatherInfo")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			return FunctionCallback.builder()
+				.description("Get the weather in location")
+				.function("WeatherInfo", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
+				// .responseConverter(response -> "" + response.temp() + response.unit())
 				.build();
 		}
 

@@ -31,7 +31,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
@@ -62,10 +62,10 @@ public class FunctionCallbackInPromptIT {
 						"What's the weather like in San Francisco, Tokyo, and Paris?");
 
 				var promptOptions = OpenAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName("CurrentWeatherService")
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("CurrentWeatherService", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();
 
@@ -91,10 +91,10 @@ public class FunctionCallbackInPromptIT {
 						"What's the weather like in San Francisco, Tokyo, and Paris?");
 
 				var promptOptions = OpenAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName("CurrentWeatherService")
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("CurrentWeatherService", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();
 

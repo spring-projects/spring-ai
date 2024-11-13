@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 
@@ -67,10 +67,10 @@ public class ChatCompletionRequestTests {
 		var request = client.createRequest(new Prompt("Test message content",
 				OpenAiChatOptions.builder()
 					.withModel("PROMPT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
 				false);
@@ -94,10 +94,10 @@ public class ChatCompletionRequestTests {
 		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());
 
@@ -126,9 +126,10 @@ public class ChatCompletionRequestTests {
 		// Override the default options function with one from the prompt
 		request = client.createRequest(new Prompt("Test message content",
 				OpenAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Overridden function description")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Overridden function description")
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
 				false);

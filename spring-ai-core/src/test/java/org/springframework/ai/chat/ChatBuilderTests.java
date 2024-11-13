@@ -27,7 +27,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,9 +79,10 @@ public class ChatBuilderTests {
 		Set<String> functions = new HashSet<>();
 
 		String func = "func";
-		FunctionCallback cb = FunctionCallbackWrapper.<Integer, Integer>builder(i -> i)
-			.withName("cb")
-			.withDescription("cb")
+		FunctionCallback cb = FunctionCallback.builder()
+			.description("cb")
+			.function("cb", i -> i)
+			.inputType(Integer.class)
 			.build();
 
 		functions.add(func);

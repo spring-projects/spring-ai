@@ -43,7 +43,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.ToolCallHelper;
+import org.springframework.ai.model.function.FunctionCallingHelper;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -64,7 +64,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 	private static final String DEFAULT_MODEL = "gpt-4o-mini";
 
-	FunctionCallback functionDefinition = new ToolCallHelper.FunctionDefinition("getWeatherInLocation",
+	FunctionCallback functionDefinition = new FunctionCallingHelper.FunctionDefinition("getWeatherInLocation",
 			"Get the weather in location", """
 					{
 						"type": "object",
@@ -87,7 +87,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 	// Helper class that reuses some of the {@link AbstractToolCallSupport} functionality
 	// to help to implement the function call handling logic on the client side.
-	private ToolCallHelper toolCallHelper = new ToolCallHelper();
+	private FunctionCallingHelper functionCallingHelper = new FunctionCallingHelper();
 
 	@SuppressWarnings("unchecked")
 	private static Map<String, String> getFunctionArguments(String functionArguments) {
@@ -139,7 +139,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 			// Note that the tool call check could be platform specific because the finish
 			// reasons.
-			isToolCall = this.toolCallHelper.isToolCall(chatResponse,
+			isToolCall = this.functionCallingHelper.isToolCall(chatResponse,
 					Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 							OpenAiApi.ChatCompletionFinishReason.STOP.name()));
 
@@ -176,7 +176,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
 
-				List<Message> toolCallConversation = this.toolCallHelper
+				List<Message> toolCallConversation = this.functionCallingHelper
 					.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
 
 				assertThat(toolCallConversation).isNotEmpty();
@@ -236,7 +236,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 		return chatResponses.flatMap(chatResponse -> {
 
-			boolean isToolCall = this.toolCallHelper.isToolCall(chatResponse, finishReasons);
+			boolean isToolCall = this.functionCallingHelper.isToolCall(chatResponse, finishReasons);
 
 			if (isToolCall) {
 
@@ -261,7 +261,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
 
-				List<Message> toolCallConversation = this.toolCallHelper
+				List<Message> toolCallConversation = this.functionCallingHelper
 					.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
 
 				assertThat(toolCallConversation).isNotEmpty();
@@ -285,7 +285,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 		var prompt = new Prompt(messages, promptOptions);
 
-		ChatResponse chatResponse = this.toolCallHelper.processCall(this.chatModel, prompt,
+		ChatResponse chatResponse = this.functionCallingHelper.processCall(this.chatModel, prompt,
 				Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 						OpenAiApi.ChatCompletionFinishReason.STOP.name()),
 				toolCall -> {
@@ -319,7 +319,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 		var prompt = new Prompt(messages, promptOptions);
 
-		Flux<ChatResponse> responses = this.toolCallHelper.processStream(this.chatModel, prompt,
+		Flux<ChatResponse> responses = this.functionCallingHelper.processStream(this.chatModel, prompt,
 				Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 						OpenAiApi.ChatCompletionFinishReason.STOP.name()),
 				toolCall -> {

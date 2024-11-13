@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MockWeatherService;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,10 +67,10 @@ public class ChatCompletionRequestTests {
 		var request = client.createRequest(new Prompt("Test message content",
 				MiniMaxChatOptions.builder()
 					.withModel("PROMPT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
 				false);
@@ -94,10 +94,10 @@ public class ChatCompletionRequestTests {
 		var client = new MiniMaxChatModel(new MiniMaxApi("TEST"),
 				MiniMaxChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());
 
@@ -126,9 +126,10 @@ public class ChatCompletionRequestTests {
 		// Override the default options function with one from the prompt
 		request = client.createRequest(new Prompt("Test message content",
 				MiniMaxChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Overridden function description")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Overridden function description")
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
 				false);

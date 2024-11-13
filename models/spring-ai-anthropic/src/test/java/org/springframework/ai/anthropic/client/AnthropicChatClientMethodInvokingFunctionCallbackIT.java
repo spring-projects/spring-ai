@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.chat.client;
+package org.springframework.ai.anthropic.client;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,30 +25,27 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.MethodFunctionCallback;
-import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-@SpringBootTest(classes = OpenAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
-class OpenAiChatClientMethodFunctionCallbackIT {
+class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientMethodFunctionCallbackIT.class);
+	private static final Logger logger = LoggerFactory
+		.getLogger(AnthropicChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
-
-	@Autowired
-	ChatModel chatModel;
 
 	@BeforeEach
 	void beforeEach() {
@@ -56,15 +53,34 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 	}
 
 	@Test
-	void methodGetWeatherStatic() {
+	void methodGetWeatherGeneratedDescription() {
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherStatic", String.class, Unit.class);
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.method(method)
+				.functions(FunctionCallback.builder()
+					.method("getWeatherInLocation", String.class, Unit.class)
+					.targetClass(TestFunctionClass.class)
+					.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void methodGetWeatherStatic() {
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
+					.method("getWeatherStatic", String.class, Unit.class)
+					.targetClass(TestFunctionClass.class)
 					.build())
 				.call()
 				.content();
@@ -80,15 +96,13 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLight", String.class, boolean.class);
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
-					.description("Can turn lights on or off by room name")
+				.functions(FunctionCallback.builder()
+					.description("Turn light on in the living room.")
+					.method("turnLight", String.class, boolean.class)
+					.targetObject(targetObject)
 					.build())
 				.call()
 				.content();
@@ -105,16 +119,13 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
+					.method("getWeatherNonStatic",String.class, Unit.class)
+					.targetObject(targetObject)
 					.build())
 				.call()
 				.content();
@@ -130,17 +141,14 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherWithContext", String.class,
-				Unit.class, ToolContext.class);
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
-					.build())
+					.method("getWeatherWithContext", String.class, Unit.class, ToolContext.class)
+					.targetObject(targetObject)
+					.build())				
 				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content();
@@ -157,17 +165,14 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
-
 		// @formatter:off
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(MethodFunctionCallback.builder()
-						.functionObject(targetObject)
-						.method(method)
-						.description("Get the weather in location")
-						.build())
+				.functions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.method("getWeatherNonStatic", String.class, Unit.class)
+					.targetObject(targetObject)
+					.build())
 				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content())
@@ -181,15 +186,13 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var method = ReflectionUtils.findMethod(TestFunctionClass.class, "turnLivingRoomLightOn");
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.functions(MethodFunctionCallback.builder()
-					.functionObject(targetObject)
-					.method(method)
+				.functions(FunctionCallback.builder()
 					.description("Can turn lights on in the Living Room")
+					.method("turnLivingRoomLightOn")
+					.targetObject(targetObject)
 					.build())
 				.call()
 				.content();
@@ -199,6 +202,9 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
 	}
+
+	@Autowired
+	ChatModel chatModel;
 
 	record MyRecord(String foo, String bar) {
 	}
@@ -213,6 +219,10 @@ class OpenAiChatClientMethodFunctionCallbackIT {
 
 		public static void argumentLessReturnVoid() {
 			arguments.put("method called", "argumentLessReturnVoid");
+		}
+
+		public static String getWeatherInLocation(String city, Unit unit) {
+			return getWeatherStatic(city, unit);
 		}
 
 		public static String getWeatherStatic(String city, Unit unit) {

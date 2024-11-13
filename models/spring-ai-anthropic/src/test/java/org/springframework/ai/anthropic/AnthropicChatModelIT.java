@@ -48,7 +48,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -256,10 +256,11 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -283,10 +284,11 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 

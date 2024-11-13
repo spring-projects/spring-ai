@@ -108,9 +108,10 @@ var options = FunctionCallingOptions.builder()
         .withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
         .withTemperature(0.6)
         .withMaxTokens(300)
-        .withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new WeatherService())
-            .withName("getCurrentWeather")
-            .withDescription("Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+        .withFunctionCallbacks(List.of(FunctionCallback.builder()
+            .description("Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+            .function("getCurrentWeather", new WeatherService())
+            .inputType(WeatherService.Request.class)
             .build()))
         .build();
 

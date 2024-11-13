@@ -47,7 +47,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -254,10 +254,11 @@ class BedrockProxyChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = FunctionCallingOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -281,10 +282,11 @@ class BedrockProxyChatModelIT {
 
 		var promptOptions = FunctionCallingOptions.builder()
 			.withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 

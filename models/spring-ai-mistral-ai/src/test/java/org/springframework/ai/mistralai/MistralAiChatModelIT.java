@@ -42,7 +42,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -193,10 +193,10 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description("Get the weather in location")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -216,10 +216,10 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description("Get the weather in location")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 

@@ -29,7 +29,7 @@ import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -57,9 +57,10 @@ public class FunctionCallWithPromptFunctionIT {
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Return the temperature in Celsius.");
 
 				var promptOptions = FunctionCallingOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName("CurrentWeatherService")
-						.withDescription("Get the weather in location. Return temperature in 36°F or 36°C format.")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+						.function("CurrentWeatherService", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();
 

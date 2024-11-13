@@ -17,7 +17,7 @@ Your function can in turn invoke other 3rd party services to provide the results
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallbackWrapper.java[FunctionCallbackWrapper.java] utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 == How it works
 
@@ -68,7 +68,7 @@ We start with describing the most POJO friendly options.
 
 In this approach you define `@Beans` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` wrapper that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` instance that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 
@@ -113,7 +113,7 @@ The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring
 
 ==== FunctionCallback Wrapper
 
-Another way to register a function is to create a `FunctionCallbackWrapper` wrapper like this:
+Another way to register a function is to create a `FunctionCallback` instance like this:
 
 [source,java]
 ----
@@ -123,9 +123,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-		return FunctionCallbackWrapper.builder(new MockWeatherService())
-			.withName("CurrentWeather") // (1) function name
-			.withDescription("Get the current weather in a given location") // (2) function description
+		return FunctionCallback.builder()
+			.description("Get the current weather in a given location") // (2) function description
+			.function("CurrentWeather", new MockWeatherService()) // (1) function name
+			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build();
 	}
 	...
@@ -136,7 +137,7 @@ It wraps the 3rd party `MockWeatherService` function and registers it as a `Curr
 
 NOTE: The default response converter does a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class and internally generates an JSON schema for the function call.
+NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class and internally generates an JSON schema for the function call.
 
 === Specifying functions in Chat Options
 
@@ -179,10 +180,11 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?  Use Multi-turn function calling.");
 
 var promptOptions = AzureOpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-		.withName("CurrentWeather")
-		.withDescription("Get the weather in location")
-		.build()))
+	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.description("Get the current weather in a given location") // (2) function description
+			.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+			.inputType(MockWeatherService.Request.class) // (3) function input type
+			.build()))
 	.build();
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage), this.promptOptions));

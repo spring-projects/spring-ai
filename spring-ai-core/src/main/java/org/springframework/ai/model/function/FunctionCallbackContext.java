@@ -105,36 +105,36 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 
 		if (KotlinDetector.isKotlinPresent()) {
 			if (KotlinDelegate.isKotlinFunction(functionType.toClass())) {
-				return FunctionCallbackWrapper.builder(KotlinDelegate.wrapKotlinFunction(bean))
-					.withName(beanName)
-					.withSchemaType(this.schemaType)
-					.withDescription(functionDescription)
-					.withInputType(functionInputClass)
+				return FunctionCallback.builder()
+					.schemaType(this.schemaType)
+					.description(functionDescription)
+					.function(beanName, KotlinDelegate.wrapKotlinFunction(bean))
+					.inputType(functionInputClass)
 					.build();
 			}
 			else if (KotlinDelegate.isKotlinBiFunction(functionType.toClass())) {
-				return FunctionCallbackWrapper.builder(KotlinDelegate.wrapKotlinBiFunction(bean))
-					.withName(beanName)
-					.withSchemaType(this.schemaType)
-					.withDescription(functionDescription)
-					.withInputType(functionInputClass)
+				return FunctionCallback.builder()
+					.description(functionDescription)
+					.schemaType(this.schemaType)
+					.function(beanName, KotlinDelegate.wrapKotlinBiFunction(bean))
+					.inputType(functionInputClass)
 					.build();
 			}
 		}
 		if (bean instanceof Function<?, ?> function) {
-			return FunctionCallbackWrapper.builder(function)
-				.withName(beanName)
-				.withSchemaType(this.schemaType)
-				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+			return FunctionCallback.builder()
+				.schemaType(this.schemaType)
+				.description(functionDescription)
+				.function(beanName, function)
+				.inputType(functionInputClass)
 				.build();
 		}
 		else if (bean instanceof BiFunction<?, ?, ?>) {
-			return FunctionCallbackWrapper.builder((BiFunction<?, ToolContext, ?>) bean)
-				.withName(beanName)
-				.withSchemaType(this.schemaType)
-				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+			return FunctionCallback.builder()
+				.description(functionDescription)
+				.schemaType(this.schemaType)
+				.function(beanName, (BiFunction<?, ToolContext, ?>) bean)
+				.inputType(functionInputClass)
 				.build();
 		}
 		else {

@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.function;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,8 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,16 +55,11 @@ public class MethodFunctionCallbackTests {
 	@Test
 	public void staticMethod() throws NoSuchMethodException, SecurityException {
 
-		Method method = ReflectionUtils.findMethod(TestClassWithFunctionMethods.class, "myStaticMethod", String.class,
-				Unit.class, int.class, MyRecord.class, List.class);
-
-		assertThat(method).isNotNull();
-		assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
-
-		var functionCallback = MethodFunctionCallback.builder()
-			.method(method)
+		var functionCallback = FunctionCallback.builder()
 			.description("weather at location")
-			.mapper(new ObjectMapper())
+			.objectMapper(new ObjectMapper())
+			.method("myStaticMethod", String.class, Unit.class, int.class, MyRecord.class, List.class)
+			.targetClass(TestClassWithFunctionMethods.class)
 			.build();
 
 		String response = functionCallback.call(this.value);
@@ -86,16 +77,12 @@ public class MethodFunctionCallbackTests {
 	@Test
 	public void nonStaticMethod() throws NoSuchMethodException, SecurityException {
 
-		Method method = TestClassWithFunctionMethods.class.getMethod("myNonStaticMethod", String.class, Unit.class,
-				int.class, MyRecord.class, List.class);
+		var object = new TestClassWithFunctionMethods();
 
-		assertThat(Modifier.isStatic(method.getModifiers())).isFalse();
-
-		var functionCallback = MethodFunctionCallback.builder()
-			.functionObject(new TestClassWithFunctionMethods())
-			.method(method)
+		var functionCallback = FunctionCallback.builder()
 			.description("weather at location")
-			.mapper(new ObjectMapper())
+			.method("myNonStaticMethod", String.class, Unit.class, int.class, MyRecord.class, List.class)
+			.targetObject(object)
 			.build();
 
 		String response = functionCallback.call(this.value);
@@ -113,14 +100,11 @@ public class MethodFunctionCallbackTests {
 	@Test
 	public void noArgsNoReturnMethod() throws NoSuchMethodException, SecurityException {
 
-		Method method = TestClassWithFunctionMethods.class.getMethod("argumentLessReturnVoid");
-
-		assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
-
-		var functionCallback = MethodFunctionCallback.builder()
-			.method(method)
+		var functionCallback = FunctionCallback.builder()
 			.description("weather at location")
-			.mapper(new ObjectMapper())
+			.objectMapper(new ObjectMapper())
+			.method("argumentLessReturnVoid")
+			.targetClass(TestClassWithFunctionMethods.class)
 			.build();
 
 		String response = functionCallback.call(this.value);

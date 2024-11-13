@@ -34,7 +34,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
@@ -46,9 +45,9 @@ import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FunctionCallbackWrapperIT extends BaseOllamaIT {
+public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWrapperIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionCallbackIT.class);
 
 	private static final String MODEL_NAME = "qwen2.5:3b";
 
@@ -140,11 +139,11 @@ public class FunctionCallbackWrapperIT extends BaseOllamaIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("WeatherInfo")
-				.withDescription(
+			return FunctionCallback.builder()
+				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.function("WeatherInfo", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build();
 		}
 
