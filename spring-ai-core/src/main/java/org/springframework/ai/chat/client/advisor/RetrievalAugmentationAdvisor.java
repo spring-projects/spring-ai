@@ -80,7 +80,7 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 		this.queryTransformers = queryTransformers;
 		this.documentRetriever = documentRetriever;
 		this.queryAugmentor = queryAugmentor != null ? queryAugmentor : ContextualQueryAugmentor.builder().build();
-		this.protectFromBlocking = protectFromBlocking != null ? protectFromBlocking : false;
+		this.protectFromBlocking = protectFromBlocking != null ? protectFromBlocking : true;
 		this.order = order != null ? order : 0;
 	}
 

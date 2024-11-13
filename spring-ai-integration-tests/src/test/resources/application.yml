@@ -3,6 +3,7 @@ spring:
     web-application-type: none
   ai:
     openai:
+      api-key: ${OPENAI_API_KEY}
       chat:
         options:
           model: gpt-4o-mini
