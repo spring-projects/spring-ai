@@ -32,8 +32,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.huggingface.api.TextGenerationInferenceApi;
 import org.springframework.ai.huggingface.invoker.ApiClient;
 import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
+import org.springframework.ai.huggingface.model.CompatGenerateRequest;
 import org.springframework.ai.huggingface.model.GenerateParameters;
-import org.springframework.ai.huggingface.model.GenerateRequest;
 import org.springframework.ai.huggingface.model.GenerateResponse;
 
 /**
@@ -41,6 +41,7 @@ import org.springframework.ai.huggingface.model.GenerateResponse;
  * Endpoints for text generation.
  *
  * @author Mark Pollack
+ * @author Jihoon Kim
  */
 public class HuggingfaceChatModel implements ChatModel {
 
@@ -89,22 +90,24 @@ public class HuggingfaceChatModel implements ChatModel {
 	 */
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		GenerateRequest generateRequest = new GenerateRequest();
-		generateRequest.setInputs(prompt.getContents());
+		CompatGenerateRequest compatGenerateRequest = new CompatGenerateRequest();
+		compatGenerateRequest.setInputs(prompt.getContents());
 		GenerateParameters generateParameters = new GenerateParameters();
 		// TODO - need to expose API to set parameters per call.
 		generateParameters.setMaxNewTokens(this.maxNewTokens);
-		generateRequest.setParameters(generateParameters);
-		GenerateResponse generateResponse = this.textGenApi.generate(generateRequest);
-		String generatedText = generateResponse.getGeneratedText();
+		compatGenerateRequest.setParameters(generateParameters);
+		List<GenerateResponse> generateResponses = this.textGenApi.compatGenerate(compatGenerateRequest);
 		List<Generation> generations = new ArrayList<>();
-		AllOfGenerateResponseDetails allOfGenerateResponseDetails = generateResponse.getDetails();
-		Map<String, Object> detailsMap = this.objectMapper.convertValue(allOfGenerateResponseDetails,
-				new TypeReference<Map<String, Object>>() {
+		for (GenerateResponse generateResponse : generateResponses) {
+			String generatedText = generateResponse.getGeneratedText();
+			AllOfGenerateResponseDetails allOfGenerateResponseDetails = generateResponse.getDetails();
+			Map<String, Object> detailsMap = this.objectMapper.convertValue(allOfGenerateResponseDetails,
+					new TypeReference<Map<String, Object>>() {
 
-				});
-		Generation generation = new Generation(generatedText, detailsMap);
-		generations.add(generation);
+					});
+			Generation generation = new Generation(generatedText, detailsMap);
+			generations.add(generation);
+		}
 		return new ChatResponse(generations);
 	}
 
