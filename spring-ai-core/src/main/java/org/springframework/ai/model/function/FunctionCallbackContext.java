@@ -105,36 +105,36 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 
 		if (KotlinDetector.isKotlinPresent()) {
 			if (KotlinDelegate.isKotlinFunction(functionType.toClass())) {
-				return FunctionCallbackWrapper.builder(KotlinDelegate.wrapKotlinFunction(bean))
-					.withName(beanName)
-					.withSchemaType(this.schemaType)
-					.withDescription(functionDescription)
-					.withInputType(functionInputClass)
+				return FunctionCallback.builder(KotlinDelegate.wrapKotlinFunction(bean))
+					.name(beanName)
+					.schemaType(this.schemaType)
+					.description(functionDescription)
+					.inputType(functionInputClass)
 					.build();
 			}
 			else if (KotlinDelegate.isKotlinBiFunction(functionType.toClass())) {
-				return FunctionCallbackWrapper.builder(KotlinDelegate.wrapKotlinBiFunction(bean))
-					.withName(beanName)
-					.withSchemaType(this.schemaType)
-					.withDescription(functionDescription)
-					.withInputType(functionInputClass)
+				return FunctionCallback.builder(KotlinDelegate.wrapKotlinBiFunction(bean))
+					.name(beanName)
+					.schemaType(this.schemaType)
+					.description(functionDescription)
+					.inputType(functionInputClass)
 					.build();
 			}
 		}
 		if (bean instanceof Function<?, ?> function) {
-			return FunctionCallbackWrapper.builder(function)
-				.withName(beanName)
-				.withSchemaType(this.schemaType)
-				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+			return FunctionCallback.builder(function)
+				.name(beanName)
+				.schemaType(this.schemaType)
+				.description(functionDescription)
+				.inputType(functionInputClass)
 				.build();
 		}
 		else if (bean instanceof BiFunction<?, ?, ?>) {
-			return FunctionCallbackWrapper.builder((BiFunction<?, ToolContext, ?>) bean)
-				.withName(beanName)
-				.withSchemaType(this.schemaType)
-				.withDescription(functionDescription)
-				.withInputType(functionInputClass)
+			return FunctionCallback.builder((BiFunction<?, ToolContext, ?>) bean)
+				.name(beanName)
+				.schemaType(this.schemaType)
+				.description(functionDescription)
+				.inputType(functionInputClass)
 				.build();
 		}
 		else {

@@ -39,7 +39,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -70,10 +70,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+				.name("getCurrentWeather")
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -94,10 +95,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+				.name("getCurrentWeather")
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -116,10 +118,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+				.name("getCurrentWeather")
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -153,10 +156,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+				.name("getCurrentWeather")
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 

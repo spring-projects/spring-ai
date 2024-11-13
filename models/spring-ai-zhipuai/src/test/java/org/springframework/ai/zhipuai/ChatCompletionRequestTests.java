@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.zhipuai.api.MockWeatherService;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 
@@ -67,10 +67,11 @@ public class ChatCompletionRequestTests {
 		var request = client.createRequest(new Prompt("Test message content",
 				ZhiPuAiChatOptions.builder()
 					.withModel("PROMPT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.responseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build()),
 				false);
@@ -94,10 +95,11 @@ public class ChatCompletionRequestTests {
 		var client = new ZhiPuAiChatModel(new ZhiPuAiApi("TEST"),
 				ZhiPuAiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Get the weather in location")
-						.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.responseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build());
 
@@ -126,9 +128,10 @@ public class ChatCompletionRequestTests {
 		// Override the default options function with one from the prompt
 		request = client.createRequest(new Prompt("Test message content",
 				ZhiPuAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName(TOOL_FUNCTION_NAME)
-						.withDescription("Overridden function description")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
+						.description("Overridden function description")
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
 				false);

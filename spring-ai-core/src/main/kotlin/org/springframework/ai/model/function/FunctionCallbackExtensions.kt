@@ -16,11 +16,13 @@
 
 package org.springframework.ai.model.function
 
+import org.springframework.core.ParameterizedTypeReference
+
 /**
- * Extension for [FunctionCallbackWrapper.Builder.withInputType] providing a `withInputType<Foo>()`
+ * Extension for [FunctionCallback.Builder.inputType] providing a `inputType<Foo>()`
  * variant.
  *
  * @author Sebastien Deleuze
  */
-inline fun <reified T>  FunctionCallbackWrapper.Builder<*, *>.withInputType() =
-	withInputType(T::class.java)
+inline fun <reified T : Any>  FunctionCallback.Builder<*, *>.inputType() =
+	this.inputType(object : ParameterizedTypeReference<T>() {})

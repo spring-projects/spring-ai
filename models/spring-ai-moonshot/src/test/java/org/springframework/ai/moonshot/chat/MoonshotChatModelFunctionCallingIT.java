@@ -34,7 +34,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.moonshot.MoonshotChatOptions;
 import org.springframework.ai.moonshot.MoonshotTestConfiguration;
 import org.springframework.ai.moonshot.api.MockWeatherService;
@@ -63,10 +63,11 @@ class MoonshotChatModelFunctionCallingIT {
 
 		var promptOptions = MoonshotChatOptions.builder()
 			.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+				.name("getCurrentWeather")
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -86,11 +87,10 @@ class MoonshotChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MoonshotChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
+				.name("getCurrentWeather")
+				.description("Get the weather in location")
+				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 

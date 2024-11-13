@@ -836,9 +836,24 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		/**
+		 * @deprecated in favor of
+		 * {@link #function(String, String, Class, java.util.function.Function)}
+		 */
+		@Deprecated
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function) {
-			return this.function(name, description, null, function);
+			Assert.hasText(name, "name cannot be null or empty");
+			Assert.hasText(description, "description cannot be null or empty");
+			Assert.notNull(function, "function cannot be null");
+
+			var fcw = FunctionCallbackWrapper.builder(function)
+				.withDescription(description)
+				.withName(name)
+				.withResponseConverter(Object::toString)
+				.build();
+			this.functionCallbacks.add(fcw);
+			return this;
 		}
 
 		public <I, O> ChatClientRequestSpec function(String name, String description,
@@ -848,7 +863,7 @@ public class DefaultChatClient implements ChatClient {
 			Assert.hasText(description, "description cannot be null or empty");
 			Assert.notNull(biFunction, "biFunction cannot be null");
 
-			FunctionCallbackWrapper<I, O> fcw = FunctionCallbackWrapper.builder(biFunction)
+			var fcw = FunctionCallbackWrapper.builder(biFunction)
 				.withDescription(description)
 				.withName(name)
 				.withResponseConverter(Object::toString)
@@ -864,11 +879,11 @@ public class DefaultChatClient implements ChatClient {
 			Assert.hasText(description, "description cannot be null or empty");
 			Assert.notNull(function, "function cannot be null");
 
-			var fcw = FunctionCallbackWrapper.builder(function)
-				.withDescription(description)
-				.withName(name)
-				.withInputType(inputType)
-				.withResponseConverter(Object::toString)
+			var fcw = FunctionCallback.builder(function)
+				.description(description)
+				.name(name)
+				.inputType(inputType)
+				.responseConverter(Object::toString)
 				.build();
 			this.functionCallbacks.add(fcw);
 			return this;

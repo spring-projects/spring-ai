@@ -37,7 +37,7 @@ import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -73,9 +73,10 @@ public class WeatherServicePromptIT {
 
 				var promptOptions = MistralAiChatOptions.builder()
 					.withToolChoice(ToolChoice.AUTO)
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MyWeatherService())
-						.withName("CurrentWeatherService")
-						.withDescription("Get the current weather in requested location")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MyWeatherService())
+						.name("CurrentWeatherService")
+						.description("Get the current weather in requested location")
+						.inputType(MyWeatherService.Request.class)
 						.build()))
 					.build();
 
@@ -100,9 +101,10 @@ public class WeatherServicePromptIT {
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 
 				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MyWeatherService())
-						.withName("CurrentWeatherService")
-						.withDescription("Get the current weather in requested location")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MyWeatherService())
+						.name("CurrentWeatherService")
+						.description("Get the current weather in requested location")
+						.inputType(MyWeatherService.Request.class)
 						.build()))
 
 					.build();

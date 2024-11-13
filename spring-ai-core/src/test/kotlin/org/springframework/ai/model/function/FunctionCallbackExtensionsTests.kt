@@ -20,15 +20,16 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import org.springframework.core.ParameterizedTypeReference
 
-class FunctionCallbackWrapperExtensionsTests {
+class FunctionCallbackExtensionsTests {
 
-	private val builder = mockk<FunctionCallbackWrapper.Builder<WeatherRequest, WeatherResponse>>()
+	private val builder = mockk<FunctionCallback.Builder<WeatherRequest, WeatherResponse>>()
 
 	@Test
-	fun withInputType() {
-		every { builder.withInputType(any<Class<*>>()) } returns builder
-		builder.withInputType<WeatherRequest>()
-		verify { builder.withInputType(WeatherRequest::class.java) }
+	fun inputType() {
+		every { builder.inputType(any<ParameterizedTypeReference<*>>()) } returns builder
+		builder.inputType<WeatherRequest>()
+		verify { builder.inputType(any<ParameterizedTypeReference<*>>()) }
 	}
 }

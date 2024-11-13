@@ -31,7 +31,7 @@ As a developer, you need to implement a function that takes the function call ar
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatClient`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallbackWrapper.java[FunctionCallbackWrapper.java] utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 == How it works
 
@@ -101,7 +101,7 @@ We start by describing the most POJO-friendly options.
 
 In this approach, you define a `@Bean` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is used function name.
 
 --
@@ -182,9 +182,9 @@ data class Request(val location: String, val unit: Unit)
 
 It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
-==== FunctionCallback Wrapper
+==== FunctionCallback
 
-Another way to register a function is to create a `FunctionCallbackWrapper` like this:
+Another way to register a function is to create a `FunctionCallback` like this:
 
 --
 [tabs]
@@ -199,9 +199,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-        return FunctionCallbackWrapper.builder(new MockWeatherService())
-            .withName("CurrentWeather") // (1) function name
-            .withDescription("Get the weather in location") // (2) function description
+        return FunctionCallback.builder(new MockWeatherService())
+            .name("CurrentWeather") // (1) function name
+            .description("Get the weather in location") // (2) function description
+            .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build();
 	}
 }
@@ -218,11 +219,11 @@ class Config {
 	@Bean
 	fun weatherFunctionInfo(): FunctionCallback {
 
-        return FunctionCallbackWrapper.builder(MockWeatherService())
-            .withName("CurrentWeather") // (1) function name
-            .withDescription("Get the weather in location") // (2) function description
-            // (3) Required due to Kotlin SAM conversion beeing an opaque lambda
-            .withInputType<MockWeatherService.Request>()
+        return FunctionCallback.builder(MockWeatherService())
+            .name("CurrentWeather") // (1) function name
+            .description("Get the weather in location") // (2) function description
+            // (3) Required due to Kotlin SAM conversion being an opaque lambda
+            .inputType<MockWeatherService.Request>()
             .build();
 	}
 }
@@ -236,7 +237,7 @@ It also provides a description (2) and an optional response converter to convert
 
 NOTE: By default, the response converter performs a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionCallback.Builder` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Enable functions by bean name
 
@@ -274,10 +275,11 @@ In addition to the auto-configuration, you can register callback functions, dyna
 ChatClient chatClient = ...
 
 ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-    .functions(new FunctionCallbackWrapper<>(
-		"CurrentWeather", // name
-		"Get the weather in location", // function description
-		new MockWeatherService()))
+    .functions(FunctionCallback.builder(new MockWeatherService())
+            .name("CurrentWeather") // (1) function name
+            .description("Get the weather in location") // (2) function description
+            .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
+            .build())
     .call()
     .chatResponse();
 ----
@@ -404,9 +406,10 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 
 ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-    .functions(FunctionCallbackWrapper.builder(this.weatherFunction)
-        .withName("getCurrentWeather")
-        .withDescription("Get the weather in location")
+    .functions(FunctionCallback.builder(this.weatherFunction)
+        .name("getCurrentWeather")
+        .description("Get the weather in location")
+        .inputType(MockWeatherService.Request.class)
         .build())
     .toolContext(Map.of("sessionId", "1234", "userId", "5678"))
     .call()
