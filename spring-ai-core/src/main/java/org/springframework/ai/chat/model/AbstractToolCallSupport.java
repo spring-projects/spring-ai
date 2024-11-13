@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -240,10 +241,11 @@ public abstract class AbstractToolCallSupport {
 	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
 		var finishReason = (generation.getMetadata().getFinishReason() != null)
 				? generation.getMetadata().getFinishReason() : "";
-		return generation.getOutput().hasToolCalls() && toolCallFinishReasons.stream()
+		ChatGenerationMetadata metadata = generation.getMetadata();
+		return generation.getOutput().hasToolCalls() && (toolCallFinishReasons.stream()
 			.map(s -> s.toLowerCase())
 			.toList()
-			.contains(finishReason.toLowerCase());
+			.contains(finishReason.toLowerCase()) || metadata != null);
 	}
 
 	/**
