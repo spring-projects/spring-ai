@@ -360,8 +360,8 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @return true if the generation is a tool call
 	 */
 	@Override
-	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
-		if (!super.isToolCall(generation, toolCallFinishReasons)) {
+	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons, ChatResponse chatResponse) {
+		if (!super.isToolCall(generation, toolCallFinishReasons, chatResponse)) {
 			return false;
 		}
 		return generation.getOutput()
