@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.integration.tests.rag.augmentation;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -25,8 +29,6 @@ import org.springframework.ai.rag.augmentation.ContextualQueryAugmentor;
 import org.springframework.ai.rag.augmentation.QueryAugmentor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +53,7 @@ class ContextualQueryAugmentorIT {
 					"Iorek loved to explore the snowy landscape and dreamt of one day going on an adventure around the North Pole."));
 
 		Query augmentedQuery = queryAugmentor.augment(query, documents);
-		String response = openAiChatModel.call(augmentedQuery.text());
+		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
 		System.out.println(response);
@@ -66,7 +68,7 @@ class ContextualQueryAugmentorIT {
 		Query query = new Query("What is Iorek's dream?");
 		List<Document> documents = List.of();
 		Query augmentedQuery = queryAugmentor.augment(query, documents);
-		String response = openAiChatModel.call(augmentedQuery.text());
+		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
 		System.out.println(response);
@@ -79,7 +81,7 @@ class ContextualQueryAugmentorIT {
 		Query query = new Query("What is Iorek's dream?");
 		List<Document> documents = List.of();
 		Query augmentedQuery = queryAugmentor.augment(query, documents);
-		String response = openAiChatModel.call(augmentedQuery.text());
+		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
 		System.out.println(response);

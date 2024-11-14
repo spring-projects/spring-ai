@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.integration.tests.client.advisor;
+
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -38,8 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,15 +67,15 @@ class RetrievalAugmentationAdvisorIT {
 
 	@BeforeEach
 	void setUp() {
-		DocumentReader markdownReader = new MarkdownDocumentReader(knowledgeBaseResource,
+		DocumentReader markdownReader = new MarkdownDocumentReader(this.knowledgeBaseResource,
 				MarkdownDocumentReaderConfig.defaultConfig());
-		knowledgeBaseDocuments = markdownReader.read();
-		pgVectorStore.add(knowledgeBaseDocuments);
+		this.knowledgeBaseDocuments = markdownReader.read();
+		this.pgVectorStore.add(this.knowledgeBaseDocuments);
 	}
 
 	@AfterEach
 	void tearDown() {
-		pgVectorStore.delete(knowledgeBaseDocuments.stream().map(Document::getId).toList());
+		this.pgVectorStore.delete(this.knowledgeBaseDocuments.stream().map(Document::getId).toList());
 	}
 
 	@Test
@@ -81,10 +83,10 @@ class RetrievalAugmentationAdvisorIT {
 		String question = "Where does the adventure of Anacletus and Birba take place?";
 
 		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
-			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(pgVectorStore).build())
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
 			.build();
 
-		ChatResponse chatResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(question)
 			.advisors(ragAdvisor)
@@ -106,13 +108,13 @@ class RetrievalAugmentationAdvisorIT {
 
 		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
 			.queryTransformers(TranslationQueryTransformer.builder()
-				.chatClientBuilder(ChatClient.builder(openAiChatModel))
+				.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
 				.targetLanguage("english")
 				.build())
-			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(pgVectorStore).build())
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
 			.build();
 
-		ChatResponse chatResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(question)
 			.advisors(ragAdvisor)
@@ -132,7 +134,7 @@ class RetrievalAugmentationAdvisorIT {
 		EvaluationRequest evaluationRequest = new EvaluationRequest(question,
 				chatResponse.getMetadata().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT),
 				chatResponse.getResult().getOutput().getContent());
-		RelevancyEvaluator evaluator = new RelevancyEvaluator(ChatClient.builder(openAiChatModel));
+		RelevancyEvaluator evaluator = new RelevancyEvaluator(ChatClient.builder(this.openAiChatModel));
 		EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 		assertThat(evaluationResponse.isPass()).isTrue();
 	}

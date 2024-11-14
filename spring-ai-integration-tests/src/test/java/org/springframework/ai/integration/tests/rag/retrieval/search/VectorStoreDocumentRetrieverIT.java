@@ -13,12 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.integration.tests.rag.retrieval.search;
+
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.rag.Query;
@@ -28,9 +33,6 @@ import org.springframework.ai.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
@@ -64,18 +66,18 @@ class VectorStoreDocumentRetrieverIT {
 
 	@BeforeEach
 	void setUp() {
-		pgVectorStore.add(List.copyOf(documents.values()));
+		this.pgVectorStore.add(List.copyOf(documents.values()));
 	}
 
 	@AfterEach
 	void tearDown() {
-		pgVectorStore.delete(documents.values().stream().map(Document::getId).toList());
+		this.pgVectorStore.delete(documents.values().stream().map(Document::getId).toList());
 	}
 
 	@Test
 	void withFilter() {
 		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
-			.vectorStore(pgVectorStore)
+			.vectorStore(this.pgVectorStore)
 			.similarityThreshold(0.50)
 			.topK(3)
 			.filterExpression(
@@ -95,7 +97,7 @@ class VectorStoreDocumentRetrieverIT {
 	@Test
 	void withNoFilter() {
 		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
-			.vectorStore(pgVectorStore)
+			.vectorStore(this.pgVectorStore)
 			.similarityThreshold(0.50)
 			.topK(3)
 			.build();

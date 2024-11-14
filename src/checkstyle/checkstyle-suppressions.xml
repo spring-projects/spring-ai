@@ -32,5 +32,7 @@
 	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="MethodFunctionCallbackTests.java" checks="RegexpSinglelineJava"/>
+	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
+
 
 </suppressions>

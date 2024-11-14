@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.integration.tests.rag.analysis.query.expansion;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -25,8 +29,6 @@ import org.springframework.ai.rag.analysis.query.expansion.MultiQueryExpander;
 import org.springframework.ai.rag.analysis.query.expansion.QueryExpander;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,7 +48,7 @@ class MultiQueryExpanderIT {
 	void whenExpanderWithDefaults() {
 		Query query = new Query("What is the weather in Rome?");
 		QueryExpander queryExpander = MultiQueryExpander.builder()
-			.chatClientBuilder(ChatClient.builder(openAiChatModel))
+			.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
 			.build();
 
 		List<Query> queries = queryExpander.apply(query);
@@ -60,7 +62,7 @@ class MultiQueryExpanderIT {
 	void whenExpanderWithCustomQueryNumber() {
 		Query query = new Query("What is the weather in Rome?");
 		QueryExpander queryExpander = MultiQueryExpander.builder()
-			.chatClientBuilder(ChatClient.builder(openAiChatModel))
+			.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
 			.numberOfQueries(4)
 			.build();
 
@@ -75,7 +77,7 @@ class MultiQueryExpanderIT {
 	void whenExpanderWithOriginalQueryIncluded() {
 		Query query = new Query("What is the weather in Rome?");
 		QueryExpander queryExpander = MultiQueryExpander.builder()
-			.chatClientBuilder(ChatClient.builder(openAiChatModel))
+			.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
 			.numberOfQueries(3)
 			.includeOriginal(true)
 			.build();

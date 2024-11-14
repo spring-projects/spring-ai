@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.integration.tests.rag.analysis.query.transformation;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -44,7 +46,7 @@ class TranslationQueryTransformerIT {
 	void whenTransformerWithDefaults() {
 		Query query = new Query("Hvad er Danmarks hovedstad?");
 		QueryTransformer queryTransformer = TranslationQueryTransformer.builder()
-			.chatClientBuilder(ChatClient.builder(openAiChatModel))
+			.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
 			.targetLanguage("english")
 			.build();
 

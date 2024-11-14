@@ -86,7 +86,7 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 
 		var translatedQuery = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
-				.param("targetLanguage", targetLanguage)
+				.param("targetLanguage", this.targetLanguage)
 				.param("query", query.text()))
 			.options(ChatOptionsBuilder.builder().withTemperature(0.0).build())
 			.call()

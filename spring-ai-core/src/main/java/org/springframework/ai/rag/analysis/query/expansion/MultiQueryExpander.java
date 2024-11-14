@@ -102,7 +102,7 @@ public final class MultiQueryExpander implements QueryExpander {
 
 		var response = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
-				.param("number", numberOfQueries)
+				.param("number", this.numberOfQueries)
 				.param("query", query.text()))
 			.call()
 			.content();
