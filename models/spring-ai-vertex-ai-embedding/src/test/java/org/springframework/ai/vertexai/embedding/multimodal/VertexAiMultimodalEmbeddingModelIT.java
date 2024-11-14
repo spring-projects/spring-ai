@@ -16,6 +16,10 @@
 
 package org.springframework.ai.vertexai.embedding.multimodal;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -104,10 +108,12 @@ class VertexAiMultimodalEmbeddingModelIT {
 	}
 
 	@Test
-	void textMediaEmbedding() {
+	void textMediaEmbedding() throws MalformedURLException {
 		assertThat(this.multiModelEmbeddingModel).isNotNull();
 
-		var document = Document.builder().withMedia(new Media(MimeTypeUtils.TEXT_PLAIN, "Hello World")).build();
+		var document = Document.builder()
+			.withMedia(new Media(MimeTypeUtils.TEXT_PLAIN, URI.create("http://example.com/image.png").toURL()))
+			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
 

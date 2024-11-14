@@ -36,7 +36,6 @@ class CassandraVectorStorePropertiesTests {
 		assertThat(props.getContentColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME);
 		assertThat(props.getEmbeddingColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_EMBEDDING_COLUMN_NAME);
 		assertThat(props.getIndexName()).isNull();
-		assertThat(props.getDisallowSchemaCreation()).isTrue();
 		assertThat(props.getFixedThreadPoolExecutorSize())
 			.isEqualTo(CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY);
 	}
@@ -49,7 +48,6 @@ class CassandraVectorStorePropertiesTests {
 		props.setContentColumnName("my_content");
 		props.setEmbeddingColumnName("my_vector");
 		props.setIndexName("my_sai");
-		props.setDisallowSchemaCreation(true);
 		props.setFixedThreadPoolExecutorSize(10);
 
 		assertThat(props.getKeyspace()).isEqualTo("my_keyspace");
@@ -57,7 +55,6 @@ class CassandraVectorStorePropertiesTests {
 		assertThat(props.getContentColumnName()).isEqualTo("my_content");
 		assertThat(props.getEmbeddingColumnName()).isEqualTo("my_vector");
 		assertThat(props.getIndexName()).isEqualTo("my_sai");
-		assertThat(props.getDisallowSchemaCreation()).isTrue();
 		assertThat(props.getFixedThreadPoolExecutorSize()).isEqualTo(10);
 	}
 

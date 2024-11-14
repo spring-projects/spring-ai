@@ -26,6 +26,7 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -172,9 +173,9 @@ public class WatsonxAiChatModelTest {
 		given(mockChatApi.generate(any(WatsonxAiChatRequest.class)))
 			.willReturn(ResponseEntity.of(Optional.of(fakeResponse)));
 
-		Generation expectedGenerator = new Generation("LLM response")
-			.withGenerationMetadata(ChatGenerationMetadata.from("max_tokens",
-					Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning")))));
+		Generation expectedGenerator = new Generation(new AssistantMessage("LLM response"),
+				ChatGenerationMetadata.from("max_tokens",
+						Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning")))));
 
 		ChatResponse expectedResponse = new ChatResponse(List.of(expectedGenerator));
 		ChatResponse response = chatModel.call(prompt);
@@ -205,10 +206,9 @@ public class WatsonxAiChatModelTest {
 		Flux<WatsonxAiChatResponse> fakeResponse = Flux.just(fakeResponseFirst, fakeResponseSecond);
 		given(mockChatApi.generateStreaming(any(WatsonxAiChatRequest.class))).willReturn(fakeResponse);
 
-		Generation firstGen = new Generation("LLM resp")
-			.withGenerationMetadata(ChatGenerationMetadata.from("max_tokens",
-					Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning")))));
-		Generation secondGen = new Generation("onse");
+		Generation firstGen = new Generation(new AssistantMessage("LLM resp"), ChatGenerationMetadata.from("max_tokens",
+				Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning")))));
+		Generation secondGen = new Generation(new AssistantMessage("onse"));
 
 		Flux<ChatResponse> response = chatModel.stream(prompt);
 

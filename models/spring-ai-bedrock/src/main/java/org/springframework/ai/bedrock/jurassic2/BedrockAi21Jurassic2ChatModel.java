@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.jurassic2;
 import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -68,8 +69,8 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
 		return new ChatResponse(response.completions()
 			.stream()
-			.map(completion -> new Generation(completion.data().text())
-				.withGenerationMetadata(ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
+			.map(completion -> new Generation(new AssistantMessage(completion.data().text()),
+					ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
 			.toList());
 	}
 

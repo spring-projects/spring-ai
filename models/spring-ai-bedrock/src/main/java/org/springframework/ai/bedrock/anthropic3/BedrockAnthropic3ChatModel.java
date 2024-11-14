@@ -114,16 +114,13 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 				inputTokens.set(response.message().usage().inputTokens());
 			}
 			String content = response.type() == StreamingType.CONTENT_BLOCK_DELTA ? response.delta().text() : "";
-
-			var generation = new Generation(content);
-
+			ChatGenerationMetadata chatGenerationMetadata = null;
 			if (response.type() == StreamingType.MESSAGE_DELTA) {
-				generation = generation.withGenerationMetadata(ChatGenerationMetadata
-					.from(response.delta().stopReason(), new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
-							response.usage().outputTokens())));
+				chatGenerationMetadata = ChatGenerationMetadata.from(response.delta().stopReason(),
+						new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
+								response.usage().outputTokens()));
 			}
-
-			return new ChatResponse(List.of(generation));
+			return new ChatResponse(List.of(new Generation(new AssistantMessage(content), chatGenerationMetadata)));
 		});
 	}
 

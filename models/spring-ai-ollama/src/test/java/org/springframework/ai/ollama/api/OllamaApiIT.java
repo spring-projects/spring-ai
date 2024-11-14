@@ -24,13 +24,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
-import org.springframework.ai.ollama.api.OllamaApi.GenerateRequest;
-import org.springframework.ai.ollama.api.OllamaApi.GenerateResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 
@@ -47,23 +46,6 @@ public class OllamaApiIT extends BaseOllamaIT {
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
 		initializeOllama(MODEL);
-	}
-
-	@Test
-	public void generation() {
-		var request = GenerateRequest
-			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withModel(MODEL)
-			.withStream(false)
-			.build();
-
-		GenerateResponse response = getOllamaApi().generate(request);
-
-		System.out.println(response);
-
-		assertThat(response).isNotNull();
-		assertThat(response.model()).contains(MODEL);
-		assertThat(response.response()).contains("Sofia");
 	}
 
 	@Test

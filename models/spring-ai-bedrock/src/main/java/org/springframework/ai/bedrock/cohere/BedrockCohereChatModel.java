@@ -25,6 +25,7 @@ import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -61,7 +62,10 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
-		List<Generation> generations = response.generations().stream().map(g -> new Generation(g.text())).toList();
+		List<Generation> generations = response.generations()
+			.stream()
+			.map(g -> new Generation(new AssistantMessage(g.text())))
+			.toList();
 
 		return new ChatResponse(generations);
 	}
@@ -73,9 +77,9 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 				String finishReason = g.finishReason().name();
 				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
 				return new ChatResponse(List
-					.of(new Generation("").withGenerationMetadata(ChatGenerationMetadata.from(finishReason, usage))));
+					.of(new Generation(new AssistantMessage(""), ChatGenerationMetadata.from(finishReason, usage))));
 			}
-			return new ChatResponse(List.of(new Generation(g.text())));
+			return new ChatResponse(List.of(new Generation(new AssistantMessage(g.text()))));
 		});
 	}
 
