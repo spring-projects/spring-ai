@@ -398,25 +398,10 @@ public class OpenAiApi {
 		GPT_4_TURBO_PREVIEW("gpt-4-turbo-preview"),
 
 		/**
-		 * GPT-4 with the ability to understand images, in addition to all other GPT-4
-		 * Turbo capabilities. Currently points to gpt-4-1106-vision-preview. Returns a
-		 * maximum of 4,096 output tokens Context window: 128k tokens
-		 */
-		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by GPT_4_O
-		GPT_4_VISION_PREVIEW("gpt-4-vision-preview"),
-
-		/**
 		 * Currently points to gpt-4-0613. Snapshot of gpt-4 from June 13th 2023 with
 		 * improved function calling support. Context window: 8k tokens
 		 */
 		GPT_4("gpt-4"),
-
-		/**
-		 * Currently points to gpt-4-32k-0613. Snapshot of gpt-4-32k from June 13th 2023
-		 * with improved function calling support. Context window: 32k tokens
-		 */
-		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by GPT_4_O
-		GPT_4_32K("gpt-4-32k"),
 
 		/**
 		 * Currently points to gpt-3.5-turbo-0125. model with higher accuracy at
@@ -483,11 +468,6 @@ public class OpenAiApi {
 		 */
 		@JsonProperty("tool_calls")
 		TOOL_CALLS,
-		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call")
-		FUNCTION_CALL,
 		/**
 		 * Only for compatibility with Mistral AI API.
 		 */

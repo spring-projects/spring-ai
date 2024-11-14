@@ -43,12 +43,6 @@ public class FiltersLexer extends Lexer {
 
 	public static final String[] ruleNames = makeRuleNames();
 
-	/**
-	 * @deprecated Use {@link #VOCABULARY} instead.
-	 */
-	@Deprecated
-	public static final String[] tokenNames;
-
 	public static final String _serializedATN = "\u0004\u0000\u001a\u00e5\u0006\uffff\uffff\u0002\u0000\u0007\u0000\u0002"
 			+ "\u0001\u0007\u0001\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002"
 			+ "\u0004\u0007\u0004\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002"
@@ -241,12 +235,6 @@ public class FiltersLexer extends Lexer {
 	}
 
 	@Override
-	@Deprecated
-	public String[] getTokenNames() {
-		return tokenNames;
-	}
-
-	@Override
 
 	public Vocabulary getVocabulary() {
 		return VOCABULARY;
@@ -284,20 +272,6 @@ public class FiltersLexer extends Lexer {
 
 	static {
 		RuntimeMetaData.checkVersion("4.13.1", RuntimeMetaData.VERSION);
-	}
-
-	static {
-		tokenNames = new String[_SYMBOLIC_NAMES.length];
-		for (int i = 0; i < tokenNames.length; i++) {
-			tokenNames[i] = VOCABULARY.getLiteralName(i);
-			if (tokenNames[i] == null) {
-				tokenNames[i] = VOCABULARY.getSymbolicName(i);
-			}
-
-			if (tokenNames[i] == null) {
-				tokenNames[i] = "<INVALID>";
-			}
-		}
 	}
 
 	static {

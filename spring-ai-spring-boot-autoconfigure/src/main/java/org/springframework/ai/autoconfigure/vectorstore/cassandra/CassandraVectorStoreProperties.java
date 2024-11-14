@@ -89,18 +89,6 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 		this.embeddingColumnName = embeddingColumnName;
 	}
 
-	@Deprecated
-	public boolean getDisallowSchemaCreation() {
-		logger.warn("getDisallowSchemaCreation() is deprecated, use isInitializeSchema()");
-		return !super.isInitializeSchema();
-	}
-
-	@Deprecated
-	public void setDisallowSchemaCreation(boolean disallowSchemaCreation) {
-		logger.warn("setDisallowSchemaCreation(boolean) is deprecated, use setInitializeSchema(boolean)");
-		super.setInitializeSchema(!disallowSchemaCreation);
-	}
-
 	public boolean getReturnEmbeddings() {
 		return this.returnEmbeddings;
 	}

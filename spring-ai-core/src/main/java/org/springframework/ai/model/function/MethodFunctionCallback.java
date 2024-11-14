@@ -167,6 +167,7 @@ public class MethodFunctionCallback implements FunctionCallback {
 				return ModelOptionsUtils.toJsonString(response);
 
 			}
+
 			return "" + response;
 		}
 		catch (Exception e) {

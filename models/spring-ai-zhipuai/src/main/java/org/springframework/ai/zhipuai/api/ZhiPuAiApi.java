@@ -280,11 +280,6 @@ public class ZhiPuAiApi {
 		@JsonProperty("tool_calls")
 		TOOL_CALLS,
 		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call")
-		FUNCTION_CALL,
-		/**
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")

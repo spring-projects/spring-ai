@@ -81,18 +81,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 	/**
 	 * Constructs a new QdrantVectorStore.
-	 * @param config The configuration for the store.
-	 * @param embeddingModel The client for embedding operations.
-	 * @deprecated since 1.0.0 in favor of {@link QdrantVectorStore}.
-	 */
-	@Deprecated(since = "1.0.0", forRemoval = true)
-	public QdrantVectorStore(QdrantClient qdrantClient, QdrantVectorStoreConfig config, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(qdrantClient, config.collectionName, embeddingModel, initializeSchema);
-	}
-
-	/**
-	 * Constructs a new QdrantVectorStore.
 	 * @param qdrantClient A {@link QdrantClient} instance for interfacing with Qdrant.
 	 * @param collectionName The name of the collection to use in Qdrant.
 	 * @param embeddingModel The client for embedding operations.
@@ -280,68 +268,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		return VectorStoreObservationContext.builder(VectorStoreProvider.QDRANT.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.collectionName);
-
-	}
-
-	/**
-	 * Configuration class for the QdrantVectorStore.
-	 *
-	 * @deprecated since 1.0.0 in favor of {@link QdrantVectorStore}.
-	 */
-	@Deprecated(since = "1.0.0", forRemoval = true)
-	public static final class QdrantVectorStoreConfig {
-
-		private final String collectionName;
-
-		/*
-		 * Constructor using the builder.
-		 *
-		 * @param builder The configuration builder.
-		 */
-
-		private QdrantVectorStoreConfig(Builder builder) {
-			this.collectionName = builder.collectionName;
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		public static Builder builder() {
-			return new Builder();
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		public static QdrantVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		public final static class Builder {
-
-			private String collectionName;
-
-			private Builder() {
-			}
-
-			/**
-			 * @param collectionName REQUIRED. The name of the collection.
-			 */
-			public Builder withCollectionName(String collectionName) {
-				this.collectionName = collectionName;
-				return this;
-			}
-
-			/**
-			 * {@return the immutable configuration}
-			 */
-			public QdrantVectorStoreConfig build() {
-				Assert.notNull(this.collectionName, "collectionName cannot be null");
-				return new QdrantVectorStoreConfig(this);
-			}
-
-		}
 
 	}
 

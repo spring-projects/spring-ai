@@ -224,10 +224,7 @@ public class MiniMaxApi {
 		ABAB_6_5_T_Chat("abab6.5t-chat"),
 		ABAB_6_5_G_Chat("abab6.5g-chat"),
 		ABAB_5_5_Chat("abab5.5-chat"),
-		ABAB_5_5_S_Chat("abab5.5s-chat"),
-
-		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by ABAB_6_5_S_Chat
-		ABAB_6_Chat("abab6-chat");
+		ABAB_5_5_S_Chat("abab5.5s-chat");
 
 		public final String  value;
 
@@ -269,11 +266,6 @@ public class MiniMaxApi {
 		 */
 		@JsonProperty("tool_calls")
 		TOOL_CALLS,
-		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call")
-		FUNCTION_CALL,
 		/**
 		 * Only for compatibility with Mistral AI API.
 		 */
