@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.chat.memory.cassandra;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.datastax.driver.core.utils.UUIDs;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Mick Semb Wever
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 @Testcontainers
@@ -57,7 +59,7 @@ class CassandraChatMemoryAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
 			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
-
+			.withPropertyValues("spring.ai.chat.memory.cassandra.time-to-live=" + getTimeToLive())
 			.run(context -> {
 				CassandraChatMemory memory = context.getBean(CassandraChatMemory.class);
 
@@ -84,6 +86,20 @@ class CassandraChatMemoryAutoConfigurationIT {
 					.isEqualTo(MessageType.ASSISTANT);
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getContent()).isEqualTo("test answer");
 
+				CassandraChatMemoryProperties properties = context.getBean(CassandraChatMemoryProperties.class);
+				assertThat(properties.getTimeToLive()).isEqualTo(getTimeToLive());
+			});
+	}
+
+	@Test
+	void compareTimeToLive_ISO8601Format() {
+		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
+			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
+			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
+			.withPropertyValues("spring.ai.chat.memory.cassandra.time-to-live=" + getTimeToLiveString())
+			.run(context -> {
+				CassandraChatMemoryProperties properties = context.getBean(CassandraChatMemoryProperties.class);
+				assertThat(properties.getTimeToLive()).isEqualTo(Duration.parse(getTimeToLiveString()));
 			});
 	}
 
@@ -93,6 +109,14 @@ class CassandraChatMemoryAutoConfigurationIT {
 
 	private String getContactPointPort() {
 		return String.valueOf(cassandraContainer.getContactPoint().getPort());
+	}
+
+	private Duration getTimeToLive() {
+		return Duration.ofSeconds(12000);
+	}
+
+	private String getTimeToLiveString() {
+		return "PT1M";
 	}
 
 }
