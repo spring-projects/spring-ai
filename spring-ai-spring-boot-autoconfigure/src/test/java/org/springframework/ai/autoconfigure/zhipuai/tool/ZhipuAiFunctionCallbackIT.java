@@ -111,11 +111,12 @@ public class ZhipuAiFunctionCallbackIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder(new MockWeatherService())
-				.name("WeatherInfo")
+			return FunctionCallback.builder()
 				.description("Get the weather in location")
+				.function(new MockWeatherService())
+				.name("WeatherInfo")
 				.inputType(MockWeatherService.Request.class)
-				.responseConverter(response -> "" + response.temp() + response.unit())
+				// .responseConverter(response -> "" + response.temp() + response.unit())
 				.build();
 		}
 

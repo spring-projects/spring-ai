@@ -127,9 +127,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-    return FunctionCallback.builder(new MockWeatherService())
-        .name("CurrentWeather") // (1) function name
+    return FunctionCallback.builder()
         .description("Get the weather in location") // (2) function description
+		.function(new MockWeatherService())
+        .name("CurrentWeather") // (1) function name
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
 	}
@@ -175,11 +176,12 @@ AnthropicChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 var promptOptions = AnthropicChatOptions.builder()
-	.withFunctionCallbacks(List.of(new MockWeatherService())
-        .name("CurrentWeather") // (1) function name
+	.withFunctionCallbacks(List.of(FunctionCallback.builder()
         .description("Get the weather in location") // (2) function description
+		.function(new MockWeatherService())
+        .name("CurrentWeather") // (1) function name
 		.inputType(MockWeatherService.Request.class) // (3) function signature
-        .build()) // function code
+        .build())) // function code
 	.build();
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage), this.promptOptions));

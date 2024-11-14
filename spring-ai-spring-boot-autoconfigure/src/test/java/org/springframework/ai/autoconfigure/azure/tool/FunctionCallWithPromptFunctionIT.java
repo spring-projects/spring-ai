@@ -61,9 +61,10 @@ public class FunctionCallWithPromptFunctionIT {
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
 
 				var promptOptions = AzureOpenAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name("CurrentWeatherService")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
+						.function(new MockWeatherService())
+						.name("CurrentWeatherService")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();

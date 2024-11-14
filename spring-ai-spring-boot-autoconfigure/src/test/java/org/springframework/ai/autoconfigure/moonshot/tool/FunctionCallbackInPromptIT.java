@@ -64,11 +64,11 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = MoonshotChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-					.name("CurrentWeatherService")
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description("Get the weather in location")
+					.function(new MockWeatherService())
+					.name("CurrentWeatherService")
 					.inputType(MockWeatherService.Request.class)
-					.responseConverter(response -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
 
@@ -91,11 +91,11 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = MoonshotChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-					.name("CurrentWeatherService")
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description("Get the weather in location")
+					.function(new MockWeatherService())
+					.name("CurrentWeatherService")
 					.inputType(MockWeatherService.Request.class)
-					.responseConverter(response -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
 

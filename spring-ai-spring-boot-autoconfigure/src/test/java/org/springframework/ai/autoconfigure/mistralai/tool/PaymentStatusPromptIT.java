@@ -64,12 +64,12 @@ public class PaymentStatusPromptIT {
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
 				var promptOptions = MistralAiChatOptions.builder()
-					.withFunctionCallbacks(
-							List.of(FunctionCallback.builder(transaction -> new Status(DATA.get(transaction).status()))
-								.name("retrievePaymentStatus")
-								.description("Get payment status of a transaction")
-								.inputType(Transaction.class)
-								.build()))
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get payment status of a transaction")
+						.function(transaction -> new Status(DATA.get(transaction).status()))
+						.name("retrievePaymentStatus")
+						.inputType(Transaction.class)
+						.build()))
 					.build();
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));

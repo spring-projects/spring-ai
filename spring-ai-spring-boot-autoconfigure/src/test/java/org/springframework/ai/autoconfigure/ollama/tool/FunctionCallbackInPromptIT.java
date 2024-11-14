@@ -71,12 +71,12 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-					.name("CurrentWeatherService")
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+					.function(new MockWeatherService())
+					.name("CurrentWeatherService")
 					.inputType(MockWeatherService.Request.class)
-					.responseConverter(response -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
 
@@ -99,12 +99,12 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-					.name("CurrentWeatherService")
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+					.function(new MockWeatherService())
+					.name("CurrentWeatherService")
 					.inputType(MockWeatherService.Request.class)
-					.responseConverter(response -> "" + response.temp() + response.unit())
 					.build()))
 				.build();
 

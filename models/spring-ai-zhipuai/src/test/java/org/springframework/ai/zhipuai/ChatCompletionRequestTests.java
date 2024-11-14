@@ -67,11 +67,11 @@ public class ChatCompletionRequestTests {
 		var request = client.createRequest(new Prompt("Test message content",
 				ZhiPuAiChatOptions.builder()
 					.withModel("PROMPT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
+						.function(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
 						.inputType(MockWeatherService.Request.class)
-						.responseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build()),
 				false);
@@ -95,11 +95,11 @@ public class ChatCompletionRequestTests {
 		var client = new ZhiPuAiChatModel(new ZhiPuAiApi("TEST"),
 				ZhiPuAiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
+						.function(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
 						.inputType(MockWeatherService.Request.class)
-						.responseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build());
 
@@ -128,9 +128,10 @@ public class ChatCompletionRequestTests {
 		// Override the default options function with one from the prompt
 		request = client.createRequest(new Prompt("Test message content",
 				ZhiPuAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Overridden function description")
+						.function(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),

@@ -52,9 +52,10 @@ public final class BedrockConverseChatModelMain2 {
 				"What's the weather like in Paris? Return the temperature in Celsius.",
 				PortableFunctionCallingOptions.builder()
 					.withModel(modelId)
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name("getCurrentWeather")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
+						.function(new MockWeatherService())
+						.name("getCurrentWeather")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());

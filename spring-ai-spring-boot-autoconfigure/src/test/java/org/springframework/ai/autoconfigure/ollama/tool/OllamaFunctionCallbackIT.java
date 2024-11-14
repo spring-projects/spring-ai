@@ -139,12 +139,12 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder(new MockWeatherService())
-				.name("WeatherInfo")
+			return FunctionCallback.builder()
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+				.function(new MockWeatherService())
+				.name("WeatherInfo")
 				.inputType(MockWeatherService.Request.class)
-				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build();
 		}
 

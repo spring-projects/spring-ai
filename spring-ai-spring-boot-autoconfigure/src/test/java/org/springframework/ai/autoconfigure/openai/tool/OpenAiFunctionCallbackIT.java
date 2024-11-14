@@ -106,10 +106,10 @@ public class OpenAiFunctionCallbackIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder(new MockWeatherService())
-				.name("WeatherInfo")
+			return FunctionCallback.builder()
 				.description("Get the weather in location")
-				.responseConverter(response -> "" + response.temp() + response.unit())
+				.function(new MockWeatherService())
+				.name("WeatherInfo")
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

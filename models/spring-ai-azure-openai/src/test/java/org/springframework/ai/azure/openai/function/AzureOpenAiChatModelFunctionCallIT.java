@@ -70,11 +70,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-				.name("getCurrentWeather")
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
+				.function(new MockWeatherService())
+				.name("getCurrentWeather")
 				.inputType(MockWeatherService.Request.class)
-				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -95,11 +95,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-				.name("getCurrentWeather")
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
+				.function(new MockWeatherService())
+				.name("getCurrentWeather")
 				.inputType(MockWeatherService.Request.class)
-				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -118,11 +118,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-				.name("getCurrentWeather")
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
+				.function(new MockWeatherService())
+				.name("getCurrentWeather")
 				.inputType(MockWeatherService.Request.class)
-				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 
@@ -156,11 +156,11 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-				.name("getCurrentWeather")
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
+				.function(new MockWeatherService())
+				.name("getCurrentWeather")
 				.inputType(MockWeatherService.Request.class)
-				.responseConverter(response -> "" + response.temp() + response.unit())
 				.build()))
 			.build();
 

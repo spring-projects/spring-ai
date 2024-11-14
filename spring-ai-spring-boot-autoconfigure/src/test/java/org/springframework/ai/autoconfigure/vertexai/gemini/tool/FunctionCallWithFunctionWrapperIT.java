@@ -79,10 +79,11 @@ public class FunctionCallWithFunctionWrapperIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder(new MockWeatherService())
-				.name("WeatherInfo")
-				.schemaType(SchemaType.OPEN_API_SCHEMA)
+			return FunctionCallback.builder()
 				.description("Get the current weather in a given location")
+				.schemaType(SchemaType.OPEN_API_SCHEMA)
+				.function(new MockWeatherService())
+				.name("WeatherInfo")
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

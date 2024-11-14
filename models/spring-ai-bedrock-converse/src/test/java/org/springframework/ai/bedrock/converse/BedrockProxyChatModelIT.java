@@ -254,10 +254,11 @@ class BedrockProxyChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = FunctionCallingOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-				.name("getCurrentWeather")
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.function(new MockWeatherService())
+				.name("getCurrentWeather")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -282,10 +283,11 @@ class BedrockProxyChatModelIT {
 
 		var promptOptions = FunctionCallingOptions.builder()
 			.withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
-			.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-				.name("getCurrentWeather")
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.function(new MockWeatherService())
+				.name("getCurrentWeather")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

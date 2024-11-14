@@ -879,11 +879,12 @@ public class DefaultChatClient implements ChatClient {
 			Assert.hasText(description, "description cannot be null or empty");
 			Assert.notNull(function, "function cannot be null");
 
-			var fcw = FunctionCallback.builder(function)
+			var fcw = FunctionCallback.builder()
 				.description(description)
+				.responseConverter(Object::toString)
+				.function(function)
 				.name(name)
 				.inputType(inputType)
-				.responseConverter(Object::toString)
 				.build();
 			this.functionCallbacks.add(fcw);
 			return this;

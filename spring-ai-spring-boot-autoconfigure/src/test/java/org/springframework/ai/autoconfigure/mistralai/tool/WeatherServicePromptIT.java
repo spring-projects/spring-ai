@@ -73,9 +73,10 @@ public class WeatherServicePromptIT {
 
 				var promptOptions = MistralAiChatOptions.builder()
 					.withToolChoice(ToolChoice.AUTO)
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MyWeatherService())
-						.name("CurrentWeatherService")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the current weather in requested location")
+						.function(new MyWeatherService())
+						.name("CurrentWeatherService")
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 					.build();
@@ -101,9 +102,10 @@ public class WeatherServicePromptIT {
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 
 				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MyWeatherService())
-						.name("CurrentWeatherService")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the current weather in requested location")
+						.function(new MyWeatherService())
+						.name("CurrentWeatherService")
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 

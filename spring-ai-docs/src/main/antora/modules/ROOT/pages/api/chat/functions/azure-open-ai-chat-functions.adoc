@@ -123,9 +123,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-		return FunctionCallback.builder(new MockWeatherService())
-			.name("CurrentWeather") // (1) function name
+		return FunctionCallback.builder()
 			.description("Get the current weather in a given location") // (2) function description
+			.function(new MockWeatherService())
+			.name("CurrentWeather") // (1) function name
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build();
 	}
@@ -180,9 +181,10 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?  Use Multi-turn function calling.");
 
 var promptOptions = AzureOpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-			.name("CurrentWeather") // (1) function name
+	.withFunctionCallbacks(List.of(FunctionCallback.builder()
 			.description("Get the current weather in a given location") // (2) function description
+			.function(new MockWeatherService())
+			.name("CurrentWeather") // (1) function name
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build()))
 	.build();

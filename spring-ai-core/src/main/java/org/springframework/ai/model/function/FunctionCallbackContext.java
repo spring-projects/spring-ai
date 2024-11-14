@@ -105,35 +105,39 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 
 		if (KotlinDetector.isKotlinPresent()) {
 			if (KotlinDelegate.isKotlinFunction(functionType.toClass())) {
-				return FunctionCallback.builder(KotlinDelegate.wrapKotlinFunction(bean))
-					.name(beanName)
+				return FunctionCallback.builder()
 					.schemaType(this.schemaType)
 					.description(functionDescription)
+					.function(KotlinDelegate.wrapKotlinFunction(bean))
+					.name(beanName)
 					.inputType(functionInputClass)
 					.build();
 			}
 			else if (KotlinDelegate.isKotlinBiFunction(functionType.toClass())) {
-				return FunctionCallback.builder(KotlinDelegate.wrapKotlinBiFunction(bean))
-					.name(beanName)
-					.schemaType(this.schemaType)
+				return FunctionCallback.builder()
 					.description(functionDescription)
+					.schemaType(this.schemaType)
+					.function(KotlinDelegate.wrapKotlinBiFunction(bean))
+					.name(beanName)
 					.inputType(functionInputClass)
 					.build();
 			}
 		}
 		if (bean instanceof Function<?, ?> function) {
-			return FunctionCallback.builder(function)
-				.name(beanName)
+			return FunctionCallback.builder()
 				.schemaType(this.schemaType)
 				.description(functionDescription)
+				.function(function)
+				.name(beanName)
 				.inputType(functionInputClass)
 				.build();
 		}
 		else if (bean instanceof BiFunction<?, ?, ?>) {
-			return FunctionCallback.builder((BiFunction<?, ToolContext, ?>) bean)
-				.name(beanName)
-				.schemaType(this.schemaType)
+			return FunctionCallback.builder()
 				.description(functionDescription)
+				.schemaType(this.schemaType)
+				.function((BiFunction<?, ToolContext, ?>) bean)
+				.name(beanName)
 				.inputType(functionInputClass)
 				.build();
 		}

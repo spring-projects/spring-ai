@@ -24,7 +24,7 @@ import org.springframework.core.ParameterizedTypeReference
 
 class FunctionCallbackExtensionsTests {
 
-	private val builder = mockk<FunctionCallback.Builder<WeatherRequest, WeatherResponse>>()
+	private val builder = mockk<FunctionCallback.FunctionInvokerBuilder<WeatherRequest, WeatherResponse>>()
 
 	@Test
 	fun inputType() {

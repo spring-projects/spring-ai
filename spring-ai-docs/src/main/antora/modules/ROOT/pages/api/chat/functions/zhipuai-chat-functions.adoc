@@ -127,9 +127,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-    return FunctionCallback.builder(new MockWeatherService())
-        .name("CurrentWeather") // (1) function name
+    return FunctionCallback.builder()
         .description("Get the weather in location") // (2) function description
+		.function(new MockWeatherService())
+        .name("CurrentWeather") // (1) function name
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
 	}
@@ -185,9 +186,10 @@ ZhiPuAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = ZhiPuAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-        .name("CurrentWeather") // (1) function name
+	.withFunctionCallbacks(List.of(FunctionCallback.builder()
         .description("Get the weather in location") // (2) function description
+		.function(new MockWeatherService())
+        .name("CurrentWeather") // (1) function name
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build())) // function code
 	.build();

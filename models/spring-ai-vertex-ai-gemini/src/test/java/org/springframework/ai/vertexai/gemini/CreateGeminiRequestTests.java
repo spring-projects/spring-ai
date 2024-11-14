@@ -117,10 +117,10 @@ public class CreateGeminiRequestTests {
 		var request = client.createGeminiRequest(new Prompt("Test message content",
 				VertexAiGeminiChatOptions.builder()
 					.withModel("PROMPT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
-						.responseConverter(response -> "" + response.temp() + response.unit())
+						.function(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
@@ -146,11 +146,11 @@ public class CreateGeminiRequestTests {
 		var client = new VertexAiGeminiChatModel(this.vertexAI,
 				VertexAiGeminiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
+						.function(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
 						.inputType(MockWeatherService.Request.class)
-						.responseConverter(response -> "" + response.temp() + response.unit())
 						.build()))
 					.build());
 
@@ -180,9 +180,10 @@ public class CreateGeminiRequestTests {
 		// Override the default options function with one from the prompt
 		request = client.createGeminiRequest(new Prompt("Test message content",
 				VertexAiGeminiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Overridden function description")
+						.function(new MockWeatherService())
+						.name(TOOL_FUNCTION_NAME)
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),

@@ -17,7 +17,9 @@
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -82,78 +84,92 @@ public interface FunctionCallback {
 
 	/**
 	 * Creates a new {@link FunctionCallback.Builder} instance used to build a default
-	 * {@link FunctionCallback} instance.
-	 * @param <I> Function Input type
-	 * @param <O> Function Output type
-	 * @param function Function to be called by the model.
+	 * {@link FunctionCallback} instance. *
 	 * @return Returns a new {@link FunctionCallback.Builder} instance.
 	 */
-	static <I, O> FunctionCallback.Builder<I, O> builder(Function<I, O> function) {
-		return new DefaultFunctionCallbackBuilder<>(function);
+	static FunctionCallback.Builder builder() {
+		return new DefaultFunctionCallbackBuilder();
 	}
 
-	/**
-	 * Creates a new {@link FunctionCallback.Builder} instance used to build a default
-	 * {@link FunctionCallback} instance.
-	 * @param <I> Function Input type
-	 * @param <O> Function Output type
-	 * @param biFunction The BiFunction to be called by the model.
-	 * @return Returns a new {@link FunctionCallback.Builder} instance.
-	 */
-	static <I, O> FunctionCallback.Builder<I, O> builder(BiFunction<I, ToolContext, O> biFunction) {
-		return new DefaultFunctionCallbackBuilder<>(biFunction);
-	}
-
-	interface Builder<I, O> {
-
-		/**
-		 * Function name. Unique within the model.
-		 */
-		Builder<I, O> name(String name);
+	interface Builder {
 
 		/**
 		 * Function description. This description is used by the model do decide if the
 		 * function should be called or not.
 		 */
-		Builder<I, O> description(String description);
-
-		/**
-		 * Function input type. The input type is used to validate the function input
-		 * arguments.
-		 * @see #inputType(ParameterizedTypeReference)
-		 */
-		Builder<I, O> inputType(Class<?> inputType);
-
-		/**
-		 * Function input type retaining generic types. The input type is used to validate
-		 * the function input arguments.
-		 */
-		Builder<I, O> inputType(ParameterizedTypeReference<?> inputType);
+		Builder description(String description);
 
 		/**
 		 * Specifies what {@link SchemaType} is used by the AI model to validate the
 		 * function input arguments. Most models use JSON Schema, except Vertex AI that
 		 * uses OpenAPI types.
 		 */
-		Builder<I, O> schemaType(SchemaType schemaType);
+		Builder schemaType(SchemaType schemaType);
 
 		/**
 		 * Function response converter. The default implementation converts the output
 		 * into String before sending it to the Model. Provide a custom function
 		 * responseConverter implementation to override this.
 		 */
-		Builder<I, O> responseConverter(Function<O, String> responseConverter);
+		Builder responseConverter(Function<?, String> responseConverter);
 
 		/**
 		 * You can provide the Input Type Schema directly. In this case it won't be
 		 * generated from the inputType.
 		 */
-		Builder<I, O> inputTypeSchema(String inputTypeSchema);
+		Builder inputTypeSchema(String inputTypeSchema);
 
 		/**
 		 * Custom object mapper for JSON operations.
 		 */
-		Builder<I, O> objectMapper(ObjectMapper objectMapper);
+		Builder objectMapper(ObjectMapper objectMapper);
+
+		<I, O> FunctionInvokerBuilder<I, O> function(Function<I, O> function);
+
+		<O> FunctionInvokerBuilder<?, O> supplier(Supplier<O> function);
+
+		<I> FunctionInvokerBuilder<I, ?> consumer(Consumer<I> consumer);
+
+		<I, O> FunctionInvokerBuilder<I, O> function(BiFunction<I, ToolContext, O> biFunction);
+
+		MethodInvokerBuilder method(String methodName);
+
+	}
+
+	interface FunctionInvokerBuilder<I, O> {
+
+		/**
+		 * Function name. Unique within the model.
+		 */
+		FunctionInvokerBuilder<I, O> name(String name);
+
+		/**
+		 * Function input type. The input type is used to validate the function input
+		 * arguments.
+		 * @see #inputType(ParameterizedTypeReference)
+		 */
+		FunctionInvokerBuilder<I, O> inputType(Class<?> inputType);
+
+		/**
+		 * Function input type retaining generic types. The input type is used to validate
+		 * the function input arguments.
+		 */
+		FunctionInvokerBuilder<I, O> inputType(ParameterizedTypeReference<?> inputType);
+
+		/**
+		 * Builds the {@link FunctionCallback} instance.
+		 */
+		FunctionCallback build();
+
+	}
+
+	interface MethodInvokerBuilder {
+
+		MethodInvokerBuilder targetObject(Object methodObject);
+
+		MethodInvokerBuilder targetClass(Class<?> targetClass);
+
+		MethodInvokerBuilder argumentTypes(Class<?>... arguments);
 
 		/**
 		 * Builds the {@link FunctionCallback} instance.

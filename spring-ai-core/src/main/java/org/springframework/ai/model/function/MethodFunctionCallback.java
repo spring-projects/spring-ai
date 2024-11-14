@@ -87,7 +87,7 @@ public class MethodFunctionCallback implements FunctionCallback {
 	 */
 	private boolean isToolContextMethod = false;
 
-	public MethodFunctionCallback(Object functionObject, Method method, String description, ObjectMapper mapper) {
+	MethodFunctionCallback(Object functionObject, Method method, String description, ObjectMapper mapper) {
 
 		Assert.notNull(method, "Method must not be null");
 		Assert.notNull(mapper, "ObjectMapper must not be null");
@@ -254,55 +254,6 @@ public class MethodFunctionCallback implements FunctionCallback {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Creates a new {@link Builder} for the {@link MethodFunctionCallback}.
-	 * @return The builder.
-	 */
-	public static MethodFunctionCallback.Builder builder() {
-		return new Builder();
-	}
-
-	/**
-	 * Builder for the {@link MethodFunctionCallback}.
-	 */
-	public static class Builder {
-
-		private Method method;
-
-		private String description;
-
-		private ObjectMapper mapper = ModelOptionsUtils.OBJECT_MAPPER;
-
-		private Object functionObject = null;
-
-		public MethodFunctionCallback.Builder functionObject(Object functionObject) {
-			this.functionObject = functionObject;
-			return this;
-		}
-
-		public MethodFunctionCallback.Builder method(Method method) {
-			Assert.notNull(method, "Method must not be null");
-			this.method = method;
-			return this;
-		}
-
-		public MethodFunctionCallback.Builder description(String description) {
-			Assert.hasText(description, "Description must not be empty");
-			this.description = description;
-			return this;
-		}
-
-		public MethodFunctionCallback.Builder mapper(ObjectMapper mapper) {
-			this.mapper = mapper;
-			return this;
-		}
-
-		public MethodFunctionCallback build() {
-			return new MethodFunctionCallback(this.functionObject, this.method, this.description, this.mapper);
-		}
-
 	}
 
 }

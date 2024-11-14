@@ -29,7 +29,6 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.core.ResolvableType;
 import org.springframework.util.Assert;
 
 /**
