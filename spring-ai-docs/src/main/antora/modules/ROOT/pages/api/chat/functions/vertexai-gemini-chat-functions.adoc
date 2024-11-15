@@ -132,7 +132,7 @@ static class Config {
 		return FunctionCallbackWrapper.builder(new MockWeatherService())
 			.withName("CurrentWeather") // (1) function name
 			.withDescription("Get the current weather in a given location") // (2) function description
-			.withSchemaType(SchemaType.OPEN_API) // (3) schema type. Compulsory for Gemini function calling.
+			.withSchemaType(SchemaType.OPEN_API_SCHEMA) // (3) schema type. Compulsory for Gemini function calling.
 			.build();
 	}
 	...
@@ -189,7 +189,7 @@ UserMessage userMessage = new UserMessage("What's the weather like in San Franci
 var promptOptions = VertexAiGeminiChatOptions.builder()
 	.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 		.withName("CurrentWeather")
-		.withSchemaType(SchemaType.OPEN_API) // IMPORTANT!!
+		.withSchemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
 		.withDescription("Get the weather in location")
 		.build()))
 	.build();
