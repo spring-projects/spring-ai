@@ -42,6 +42,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -212,6 +213,25 @@ class AnthropicChatClientIT {
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius."))
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallWithGeneratedDescription() {
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(FunctionCallback.builder()
+					.function("getCurrentWeatherInLocation", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.call()
 				.content();
 		// @formatter:on

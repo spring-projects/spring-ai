@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -31,9 +33,11 @@ import org.springframework.ai.model.function.FunctionCallback.FunctionInvokerBui
 import org.springframework.ai.model.function.FunctionCallback.MethodInvokerBuilder;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.ParsingUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
@@ -41,6 +45,8 @@ import org.springframework.util.ReflectionUtils;
  */
 
 public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder {
+
+	private final static Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);
 
 	private String description;
 
@@ -151,7 +157,6 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		@Override
 		public FunctionCallback build() {
 
-			Assert.hasText(description, "Description must not be empty");
 			Assert.notNull(objectMapper, "ObjectMapper must not be null");
 			Assert.hasText(this.name, "Name must not be empty");
 			Assert.notNull(responseConverter, "ResponseConverter must not be null");
@@ -165,8 +170,15 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
 					: (request, context) -> this.function.apply(request);
 
-			return new FunctionCallbackWrapper(this.name, description, inputTypeSchema, this.inputType,
+			return new FunctionCallbackWrapper(this.name, this.getDescription(), inputTypeSchema, this.inputType,
 					(Function<I, String>) responseConverter, objectMapper, finalBiFunction);
+		}
+
+		private String getDescription() {
+			if (StringUtils.hasText(description)) {
+				return description;
+			}
+			return generateDescription(this.name);
 		}
 
 	}
@@ -215,10 +227,29 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			Assert.isTrue(this.targetClass != null || this.targetObject != null,
 					"Target class or object must not be null");
 			var method = ReflectionUtils.findMethod(targetClass, methodName, argumentTypes);
-			return new MethodFunctionCallback(this.targetObject, method, description, objectMapper, this.name,
+			return new MethodFunctionCallback(this.targetObject, method, this.getDescription(), objectMapper, this.name,
 					responseConverter);
 		}
 
+		private String getDescription() {
+			if (StringUtils.hasText(description)) {
+				return description;
+			}
+
+			return generateDescription(StringUtils.hasText(this.name) ? this.name : this.methodName);
+		}
+
+	}
+
+	private String generateDescription(String fromName) {
+
+		String generatedDescription = ParsingUtils.reConcatenateCamelCase(fromName, " ");
+
+		logger.warn("Description is not set! A best effort attempt to generate a description:'{}' from the:'{}'",
+				generatedDescription, fromName);
+		logger.warn("It is recommended to set the Description explicitly! Use the 'description()' method!");
+
+		return generatedDescription;
 	}
 
 }

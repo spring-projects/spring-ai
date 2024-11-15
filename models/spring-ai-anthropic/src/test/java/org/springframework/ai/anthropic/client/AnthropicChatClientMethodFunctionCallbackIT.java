@@ -52,6 +52,25 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 	}
 
 	@Test
+	void methodGetWeatherGeneratedDescription() {
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(FunctionCallback.builder()
+					.method("getWeatherInLocation", String.class, Unit.class)
+					.targetClass(TestFunctionClass.class)
+					.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
 	void methodGetWeatherStatic() {
 
 		// @formatter:off
@@ -199,6 +218,10 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		public static void argumentLessReturnVoid() {
 			arguments.put("method called", "argumentLessReturnVoid");
+		}
+
+		public static String getWeatherInLocation(String city, Unit unit) {
+			return getWeatherStatic(city, unit);
 		}
 
 		public static String getWeatherStatic(String city, Unit unit) {

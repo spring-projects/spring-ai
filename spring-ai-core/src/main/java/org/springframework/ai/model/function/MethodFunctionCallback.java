@@ -122,7 +122,7 @@ public class MethodFunctionCallback implements FunctionCallback {
 
 		this.inputSchema = this.generateJsonSchema(methodParameters);
 
-		logger.info("Generated JSON Schema: {}", this.inputSchema);
+		logger.debug("Generated JSON Schema: {}", this.inputSchema);
 	}
 
 	@Override
