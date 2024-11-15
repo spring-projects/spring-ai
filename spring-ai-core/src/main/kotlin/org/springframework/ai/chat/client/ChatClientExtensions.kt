@@ -16,10 +16,17 @@
 
 package org.springframework.ai.chat.client
 
+import org.springframework.ai.chat.model.ChatResponse
+import org.springframework.core.ParameterizedTypeReference
+
 /**
- * Extension for [ChatClient] providing a `entity<Foo>()` variant.
+ * Extensions for [ChatClient] providing a reified generic adapters for `entity` and `responseEntity`
  *
  * @author Josh Long
  */
 
-inline fun <reified T> ChatClient.CallResponseSpec.entity(): T = entity(T::class.java) as T
+inline fun <reified T> ChatClient.CallResponseSpec.entity(): T =
+	entity(object : ParameterizedTypeReference<T>() {}) as T
+
+inline fun <reified T> ChatClient.CallResponseSpec.responseEntity(): ResponseEntity<ChatResponse, T> =
+	responseEntity(object : ParameterizedTypeReference<T>() {}) 

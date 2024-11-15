@@ -20,21 +20,28 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import org.springframework.ai.chat.model.ChatResponse
+import org.springframework.core.ParameterizedTypeReference
 
 class ChatClientExtensionsTests {
-
-	private val crs = mockk<ChatClient.CallResponseSpec>()
 
 	data class Joke(val setup: String, val punchline: String)
 
 	@Test
-	fun withEntityType() {
-		val joke = Joke(
-			setup = "Why did the scarecrow win an award?",
-			punchline = "Because he was outstanding in his field!"
-		)
-		every { crs.entity(any<Class<*>>()) } returns joke 
+	fun responseEntity() {
+		val crs = mockk<ChatClient.CallResponseSpec>()
+		val re = mockk<ResponseEntity<ChatResponse, Joke>>()
+		every { crs.responseEntity<Joke>() } returns re
+		crs.responseEntity<Joke>()
+		verify { crs.responseEntity(object : ParameterizedTypeReference<Joke>() {}) }
+	}
+	
+	@Test
+	fun entity() {
+		val crs = mockk<ChatClient.CallResponseSpec>()
+		val joke =  mockk<Joke>()
+		every { crs.entity(any<ParameterizedTypeReference<Joke>>()) } returns joke 
 		crs.entity<Joke>()
-		verify { crs.entity(Joke::class.java) }
+		verify { crs.entity(object : ParameterizedTypeReference<Joke>(){}) }
 	}
 }
