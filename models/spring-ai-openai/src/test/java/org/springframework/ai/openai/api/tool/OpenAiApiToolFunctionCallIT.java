@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
@@ -51,7 +52,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 	MockWeatherService weatherService = new MockWeatherService();
 
-	OpenAiApi completionApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+	OpenAiApi completionApi = new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY")));
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
 		try {

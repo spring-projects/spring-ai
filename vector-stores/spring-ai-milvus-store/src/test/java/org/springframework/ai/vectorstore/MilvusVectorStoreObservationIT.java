@@ -30,6 +30,7 @@ import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.milvus.MilvusContainer;
@@ -188,7 +189,7 @@ public class MilvusVectorStoreObservationIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY"))));
 		}
 
 	}

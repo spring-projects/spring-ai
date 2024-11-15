@@ -28,6 +28,8 @@ import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.security.ApiKey;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
@@ -56,7 +58,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @RestClientTest(OpenAiChatModelWithChatResponseMetadataTests.Config.class)
 public class OpenAiChatModelWithChatResponseMetadataTests {
 
-	private static String TEST_API_KEY = "sk-1234567890";
+	private static ApiKey TEST_API_KEY = new StaticApiKey("sk-1234567890");
 
 	@Autowired
 	private OpenAiChatModel openAiChatClient;
@@ -135,7 +137,7 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 
 		this.server.expect(requestTo("/v1/chat/completions"))
 			.andExpect(method(HttpMethod.POST))
-			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
+			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY.getValue()))
 			.andRespond(withSuccess(getJson(), MediaType.APPLICATION_JSON).headers(httpHeaders));
 
 	}

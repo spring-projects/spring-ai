@@ -28,6 +28,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.model.security.ApiKey;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -75,13 +78,15 @@ public class OpenAiApi {
 
 	private final WebClient webClient;
 
+	private final ApiKey apiKey;
+
 	private OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api with base URL set to https://api.openai.com
 	 * @param apiKey OpenAI apiKey.
 	 */
-	public OpenAiApi(String apiKey) {
+	public OpenAiApi(ApiKey apiKey) {
 		this(OpenAiApiConstants.DEFAULT_BASE_URL, apiKey);
 	}
 
@@ -90,7 +95,7 @@ public class OpenAiApi {
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 */
-	public OpenAiApi(String baseUrl, String apiKey) {
+	public OpenAiApi(String baseUrl, ApiKey apiKey) {
 		this(baseUrl, apiKey, RestClient.builder(), WebClient.builder());
 	}
 
@@ -101,7 +106,7 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 */
-	public OpenAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
+	public OpenAiApi(String baseUrl, ApiKey apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder) {
 		this(baseUrl, apiKey, restClientBuilder, webClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
@@ -114,7 +119,7 @@ public class OpenAiApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
+	public OpenAiApi(String baseUrl, ApiKey apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		this(baseUrl, apiKey, "/v1/chat/completions", "/v1/embeddings", restClientBuilder, webClientBuilder,
 				responseErrorHandler);
@@ -130,7 +135,7 @@ public class OpenAiApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiApi(String baseUrl, String apiKey, String completionsPath, String embeddingsPath,
+	public OpenAiApi(String baseUrl, ApiKey apiKey, String completionsPath, String embeddingsPath,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -149,7 +154,7 @@ public class OpenAiApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers, String completionsPath,
+	public OpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -157,11 +162,11 @@ public class OpenAiApi {
 		Assert.hasText(embeddingsPath, "Embeddings Path must not be null");
 		Assert.notNull(headers, "Headers must not be null");
 
+		this.apiKey = apiKey;
 		this.completionsPath = completionsPath;
 		this.embeddingsPath = embeddingsPath;
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			h.setBearerAuth(apiKey);
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
@@ -208,12 +213,12 @@ public class OpenAiApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
-		return this.restClient.post()
-			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
-			.body(chatRequest)
-			.retrieve()
-			.toEntity(ChatCompletion.class);
+		return this.restClient.post().uri(this.completionsPath).headers(headers -> {
+			headers.addAll(additionalHttpHeader);
+			if (!additionalHttpHeader.containsKey(HttpHeaders.AUTHORIZATION)) {
+				headers.setBearerAuth(apiKey.getValue());
+			}
+		}).body(chatRequest).retrieve().toEntity(ChatCompletion.class);
 	}
 
 	/**
@@ -242,9 +247,12 @@ public class OpenAiApi {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
-		return this.webClient.post()
-			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+		return this.webClient.post().uri(this.completionsPath).headers(headers -> {
+			headers.addAll(additionalHttpHeader);
+			if (!additionalHttpHeader.containsKey(HttpHeaders.AUTHORIZATION)) {
+				headers.setBearerAuth(apiKey.getValue());
+			}
+		})
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -318,6 +326,7 @@ public class OpenAiApi {
 
 		return this.restClient.post()
 			.uri(this.embeddingsPath)
+			.headers(headers -> headers.setBearerAuth(apiKey.getValue()))
 			.body(embeddingRequest)
 			.retrieve()
 			.toEntity(new ParameterizedTypeReference<>() {

@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.ai.model.security.StaticApiKey;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -55,16 +56,18 @@ public class OpenAiCompatibleChatModelIT {
 	static Stream<ChatModel> openAiCompatibleApis() {
 		Stream.Builder<ChatModel> builder = Stream.builder();
 
-		builder.add(new OpenAiChatModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")), forModelName("gpt-3.5-turbo")));
+		builder.add(new OpenAiChatModel(new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY"))),
+				forModelName("gpt-3.5-turbo")));
 
 		if (System.getenv("GROQ_API_KEY") != null) {
-			builder.add(new OpenAiChatModel(new OpenAiApi("https://api.groq.com/openai", System.getenv("GROQ_API_KEY")),
+			builder.add(new OpenAiChatModel(
+					new OpenAiApi("https://api.groq.com/openai", new StaticApiKey(System.getenv("GROQ_API_KEY"))),
 					forModelName("llama3-8b-8192")));
 		}
 
 		if (System.getenv("OPEN_ROUTER_API_KEY") != null) {
 			builder.add(new OpenAiChatModel(
-					new OpenAiApi("https://openrouter.ai/api", System.getenv("OPEN_ROUTER_API_KEY")),
+					new OpenAiApi("https://openrouter.ai/api", new StaticApiKey(System.getenv("OPEN_ROUTER_API_KEY"))),
 					forModelName("meta-llama/llama-3-8b-instruct")));
 		}
 

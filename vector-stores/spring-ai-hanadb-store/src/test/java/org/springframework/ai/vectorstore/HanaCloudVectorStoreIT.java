@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
@@ -124,7 +125,7 @@ public class HanaCloudVectorStoreIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY"))));
 		}
 
 	}

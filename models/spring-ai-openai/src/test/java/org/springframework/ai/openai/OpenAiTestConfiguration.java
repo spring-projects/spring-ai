@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai;
 
+import org.springframework.ai.model.security.StaticApiKey;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -30,7 +31,7 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiApi openAiApi() {
-		return new OpenAiApi(getApiKey());
+		return new OpenAiApi(new StaticApiKey(getApiKey()));
 	}
 
 	@Bean

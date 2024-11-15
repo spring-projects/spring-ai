@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.model.security.StaticApiKey;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -39,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiApiIT {
 
-	OpenAiApi openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+	OpenAiApi openAiApi = new OpenAiApi(new StaticApiKey(System.getenv("OPENAI_API_KEY")));
 
 	@Test
 	void chatCompletionEntity() {
