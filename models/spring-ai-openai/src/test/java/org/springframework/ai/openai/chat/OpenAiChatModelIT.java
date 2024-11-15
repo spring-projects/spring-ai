@@ -330,8 +330,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the weather in location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -356,8 +355,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the weather in location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

@@ -259,8 +259,7 @@ class AnthropicChatModelIT {
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -288,8 +287,7 @@ class AnthropicChatModelIT {
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

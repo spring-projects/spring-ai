@@ -115,8 +115,7 @@ public class MoonshotFunctionCallbackIT {
 
 			return FunctionCallback.builder()
 				.description("Get the weather in location")
-				.function(new MockWeatherService())
-				.name("WeatherInfo")
+				.function("WeatherInfo", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

@@ -71,8 +71,7 @@ public class FunctionCallWithPromptFunctionIT {
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.schemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
 						.description("Get the weather in location")
-						.function(new MockWeatherService())
-						.name("CurrentWeatherService")
+						.function("CurrentWeatherService", new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();

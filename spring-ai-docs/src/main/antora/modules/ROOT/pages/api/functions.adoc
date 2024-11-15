@@ -201,8 +201,7 @@ static class Config {
 
         return FunctionCallback.builder()
             .description("Get the weather in location") // (2) function description
-            .function(new MockWeatherService())
-            .name("CurrentWeather") // (1) function name
+            .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
             .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build();
 	}
@@ -222,8 +221,7 @@ class Config {
 
         return FunctionCallback.builder()
             .description("Get the weather in location") // (2) function description
-            .function(MockWeatherService())
-            .name("CurrentWeather") // (1) function name
+            .function("CurrentWeather", MockWeatherService()) // (1) function name and instance
             // (3) Required due to Kotlin SAM conversion being an opaque lambda
             .inputType<MockWeatherService.Request>()
             .build();
@@ -279,8 +277,7 @@ ChatClient chatClient = ...
 ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
     .functions(FunctionCallback.builder()
             .description("Get the weather in location") // (2) function description
-            .function(new MockWeatherService())
-            .name("CurrentWeather") // (1) function name
+            .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
             .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build())
     .call()
@@ -405,9 +402,9 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 
 ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-    .functions(FunctionCallback.builder(this.weatherFunction)
-        .name("getCurrentWeather")
+    .functions(FunctionCallback.builder()
         .description("Get the weather in location")
+        .function("getCurrentWeather", this.weatherFunction)
         .inputType(MockWeatherService.Request.class)
         .build())
     .toolContext(Map.of("sessionId", "1234", "userId", "5678"))

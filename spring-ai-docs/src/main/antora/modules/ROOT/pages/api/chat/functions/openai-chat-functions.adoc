@@ -124,8 +124,7 @@ static class Config {
 
     return FunctionCallback.builder()
         .description("Get the weather in location") // (2) function description
-        .function(new MockWeatherService())
-        .name("CurrentWeather") // (1) function name
+        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .inputType(MockWeatherService.Request.class) // (3) function input type
         .build();
 	}
@@ -182,8 +181,7 @@ UserMessage userMessage = new UserMessage("What's the weather like in San Franci
 var promptOptions = OpenAiChatOptions.builder()
 	.withFunctionCallbacks(List.of(FunctionCallback.builder()
         .description("Get the weather in location") // (2) function description
-        .function(new MockWeatherService())
-        .name("CurrentWeather") // (1) function name
+        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .inputType(MockWeatherService.Request.class) // (3) function input type
         .build())) // function code
 	.build();
@@ -232,8 +230,8 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 OpenAiChatOptions options = OpenAiChatOptions.builder()
     .withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-    .withFunctionCallbacks(List.of(FunctionCallback.builder(this.weatherFunction)
-        .name("getCurrentWeather")
+    .withFunctionCallbacks(List.of(FunctionCallback.builder()
+        .function("getCurrentWeather", this.weatherFunction)
         .description("Get the weather in location")
         .inputType(MockWeatherService.Request.class)
         .build()))

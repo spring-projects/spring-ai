@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,16 +88,30 @@ public class MethodFunctionCallback implements FunctionCallback {
 	 */
 	private boolean isToolContextMethod = false;
 
-	MethodFunctionCallback(Object functionObject, Method method, String description, ObjectMapper mapper) {
+	/**
+	 * Optional function name. If not provided the method name is used as the function.
+	 */
+	private final String name;
+
+	/**
+	 *
+	 */
+	private final Function<Object, String> responseConverter;
+
+	MethodFunctionCallback(Object functionObject, Method method, String description, ObjectMapper mapper, String name,
+			Function<Object, String> responseConverter) {
 
 		Assert.notNull(method, "Method must not be null");
 		Assert.notNull(mapper, "ObjectMapper must not be null");
 		Assert.hasText(description, "Description must not be empty");
+		Assert.notNull(responseConverter, "Response converter must not be null");
 
 		this.method = method;
 		this.description = description;
 		this.mapper = mapper;
 		this.functionObject = functionObject;
+		this.name = name;
+		this.responseConverter = responseConverter;
 
 		Assert.isTrue(this.functionObject != null || Modifier.isStatic(this.method.getModifiers()),
 				"Function object must be provided for non-static methods!");
@@ -112,7 +127,7 @@ public class MethodFunctionCallback implements FunctionCallback {
 
 	@Override
 	public String getName() {
-		return this.method.getName();
+		return org.springframework.util.StringUtils.hasText(this.name) ? this.name : this.method.getName();
 	}
 
 	@Override
@@ -167,7 +182,8 @@ public class MethodFunctionCallback implements FunctionCallback {
 				return ModelOptionsUtils.toJsonString(response);
 
 			}
-			return "" + response;
+
+			return responseConverter.apply(response);
 		}
 		catch (Exception e) {
 			ReflectionUtils.handleReflectionException(e);

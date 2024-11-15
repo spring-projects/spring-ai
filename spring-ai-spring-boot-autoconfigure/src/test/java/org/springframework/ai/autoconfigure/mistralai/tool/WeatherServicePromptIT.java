@@ -75,8 +75,7 @@ public class WeatherServicePromptIT {
 					.withToolChoice(ToolChoice.AUTO)
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the current weather in requested location")
-						.function(new MyWeatherService())
-						.name("CurrentWeatherService")
+						.function("CurrentWeatherService", new MyWeatherService())
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 					.build();
@@ -86,8 +85,6 @@ public class WeatherServicePromptIT {
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
-				// assertThat(response.getResult().getOutput().getContent()).contains("30.0",
-				// "10.0", "15.0");
 			});
 	}
 
@@ -104,8 +101,7 @@ public class WeatherServicePromptIT {
 				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the current weather in requested location")
-						.function(new MyWeatherService())
-						.name("CurrentWeatherService")
+						.function("CurrentWeatherService", new MyWeatherService())
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 

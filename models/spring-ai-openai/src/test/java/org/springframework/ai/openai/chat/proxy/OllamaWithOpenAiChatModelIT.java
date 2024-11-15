@@ -270,8 +270,7 @@ class OllamaWithOpenAiChatModelIT {
 		var promptOptions = OpenAiChatOptions.builder()
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the weather in location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -295,8 +294,7 @@ class OllamaWithOpenAiChatModelIT {
 		var promptOptions = OpenAiChatOptions.builder()
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the weather in location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.build()))
 			.build();
 

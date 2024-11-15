@@ -66,8 +66,7 @@ public class PaymentStatusPromptIT {
 				var promptOptions = MistralAiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get payment status of a transaction")
-						.function(transaction -> new Status(DATA.get(transaction).status()))
-						.name("retrievePaymentStatus")
+						.function("retrievePaymentStatus", transaction -> new Status(DATA.get(transaction).status()))
 						.inputType(Transaction.class)
 						.build()))
 					.build();

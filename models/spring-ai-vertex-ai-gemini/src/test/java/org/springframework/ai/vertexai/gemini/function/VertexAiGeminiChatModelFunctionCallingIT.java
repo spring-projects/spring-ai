@@ -86,8 +86,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
 				.inputTypeSchema(openApiSchema)
-				.function(new MockWeatherService())
-				.name("get_current_weather")
+				.function("get_current_weather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -112,16 +111,14 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					FunctionCallback.builder()
 						.schemaType(SchemaType.OPEN_API_SCHEMA)
 						.description("Get the current weather in a given location.")
-						.function(new MockWeatherService())
-						.name("get_current_weather")
+						.function("get_current_weather", new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build(),
 					FunctionCallback.builder()
 						.schemaType(SchemaType.OPEN_API_SCHEMA)
 						.description(
 								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
-						.function(new PaymentStatus())
-						.name("get_payment_status")
+						.function("get_payment_status", new PaymentStatus())
 						.inputType(PaymentInfoRequest.class)
 						.build()))
 			.build();
@@ -155,16 +152,14 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					FunctionCallback.builder()
 						.schemaType(SchemaType.OPEN_API_SCHEMA)
 						.description("Get the current weather in a given location.")
-						.function(new MockWeatherService())
-						.name("get_current_weather")
+						.function("get_current_weather", new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build(),
 					FunctionCallback.builder()
 						.schemaType(SchemaType.OPEN_API_SCHEMA)
 						.description(
 								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
-						.function(new PaymentStatus())
-						.name("get_payment_status")
+						.function("get_payment_status", new PaymentStatus())
 						.inputType(PaymentInfoRequest.class)
 						.build()))
 			.build();
@@ -197,8 +192,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.schemaType(SchemaType.OPEN_API_SCHEMA)
 				.description("Get the current weather in a given location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

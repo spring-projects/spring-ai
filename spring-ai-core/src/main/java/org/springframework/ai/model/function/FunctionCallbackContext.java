@@ -108,8 +108,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				return FunctionCallback.builder()
 					.schemaType(this.schemaType)
 					.description(functionDescription)
-					.function(KotlinDelegate.wrapKotlinFunction(bean))
-					.name(beanName)
+					.function(beanName, KotlinDelegate.wrapKotlinFunction(bean))
 					.inputType(functionInputClass)
 					.build();
 			}
@@ -117,8 +116,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				return FunctionCallback.builder()
 					.description(functionDescription)
 					.schemaType(this.schemaType)
-					.function(KotlinDelegate.wrapKotlinBiFunction(bean))
-					.name(beanName)
+					.function(beanName, KotlinDelegate.wrapKotlinBiFunction(bean))
 					.inputType(functionInputClass)
 					.build();
 			}
@@ -127,8 +125,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 			return FunctionCallback.builder()
 				.schemaType(this.schemaType)
 				.description(functionDescription)
-				.function(function)
-				.name(beanName)
+				.function(beanName, function)
 				.inputType(functionInputClass)
 				.build();
 		}
@@ -136,8 +133,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 			return FunctionCallback.builder()
 				.description(functionDescription)
 				.schemaType(this.schemaType)
-				.function((BiFunction<?, ToolContext, ?>) bean)
-				.name(beanName)
+				.function(beanName, (BiFunction<?, ToolContext, ?>) bean)
 				.inputType(functionInputClass)
 				.build();
 		}

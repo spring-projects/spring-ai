@@ -66,8 +66,7 @@ public class FunctionCallbackInPromptIT {
 			var promptOptions = ZhiPuAiChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description("Get the weather in location")
-					.function(new MockWeatherService())
-					.name("CurrentWeatherService")
+					.function("CurrentWeatherService", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					// .responseConverter(response -> "" + response.temp() +
 					// response.unit())
@@ -95,11 +94,8 @@ public class FunctionCallbackInPromptIT {
 			var promptOptions = ZhiPuAiChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description("Get the weather in location")
-					.function(new MockWeatherService())
-					.name("CurrentWeatherService")
+					.function("CurrentWeatherService", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
-					// .responseConverter(response -> "" + response.temp() +
-					// response.unit())
 					.build()))
 				.build();
 

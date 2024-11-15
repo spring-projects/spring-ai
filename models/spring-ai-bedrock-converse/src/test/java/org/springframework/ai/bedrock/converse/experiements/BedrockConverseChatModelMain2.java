@@ -54,8 +54,7 @@ public final class BedrockConverseChatModelMain2 {
 					.withModel(modelId)
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
-						.function(new MockWeatherService())
-						.name("getCurrentWeather")
+						.function("getCurrentWeather", new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());

@@ -17,9 +17,7 @@ package org.springframework.ai.model.function;
 
 import java.lang.reflect.Type;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +47,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 	private SchemaType schemaType = SchemaType.JSON_SCHEMA;
 
 	// By default the response is converted to a JSON string.
-	private Function<?, String> responseConverter = ModelOptionsUtils::toJsonString;
+	private Function<Object, String> responseConverter = input -> (input instanceof String) ? "" + input
+			: ModelOptionsUtils.toJsonString(input);
 
 	// optional
 	private String inputTypeSchema;
@@ -75,7 +74,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 	}
 
 	@Override
-	public Builder responseConverter(Function<?, String> responseConverter) {
+	public Builder responseConverter(Function<Object, String> responseConverter) {
 		Assert.notNull(responseConverter, "ResponseConverter must not be null");
 		this.responseConverter = responseConverter;
 		return this;
@@ -96,25 +95,13 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 	}
 
 	@Override
-	public <I, O> FunctionInvokerBuilder<I, O> function(Function<I, O> function) {
-		return new FunctionInvokerBuilderImpl<>(function);
+	public <I, O> FunctionInvokerBuilder<I, O> function(String name, Function<I, O> function) {
+		return new FunctionInvokerBuilderImpl<>(name, function);
 	}
 
 	@Override
-	public <O> FunctionInvokerBuilder<?, O> supplier(Supplier<O> function) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'supplier'");
-	}
-
-	@Override
-	public <I> FunctionInvokerBuilder<I, ?> consumer(Consumer<I> consumer) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'consumer'");
-	}
-
-	@Override
-	public <I, O> FunctionInvokerBuilder<I, O> function(BiFunction<I, ToolContext, O> biFunction) {
-		return new FunctionInvokerBuilderImpl<>(biFunction);
+	public <I, O> FunctionInvokerBuilder<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction) {
+		return new FunctionInvokerBuilderImpl<>(name, biFunction);
 	}
 
 	@Override
@@ -124,7 +111,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 	public class FunctionInvokerBuilderImpl<I, O> implements FunctionInvokerBuilder<I, O> {
 
-		private String name;
+		private final String name;
 
 		private Type inputType;
 
@@ -132,21 +119,18 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		private final Function<I, O> function;
 
-		private FunctionInvokerBuilderImpl(BiFunction<I, ToolContext, O> biFunction) {
+		private FunctionInvokerBuilderImpl(String name, BiFunction<I, ToolContext, O> biFunction) {
+			Assert.hasText(name, "Name must not be empty");
+			this.name = name;
 			this.biFunction = biFunction;
 			this.function = null;
 		}
 
-		private FunctionInvokerBuilderImpl(Function<I, O> function) {
-			this.biFunction = null;
-			this.function = function;
-		}
-
-		@Override
-		public FunctionInvokerBuilder<I, O> name(String name) {
+		private FunctionInvokerBuilderImpl(String name, Function<I, O> function) {
 			Assert.hasText(name, "Name must not be empty");
 			this.name = name;
-			return this;
+			this.biFunction = null;
+			this.function = function;
 		}
 
 		@Override
@@ -189,6 +173,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 	public class MethodInvokerBuilderImpl implements FunctionCallback.MethodInvokerBuilder {
 
+		private String name;
+
 		private final String methodName;
 
 		private Class<?> targetClass;
@@ -202,6 +188,12 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			Assert.notNull(argumentTypes, "Argument types must not be null");
 			this.methodName = methodName;
 			this.argumentTypes = argumentTypes;
+		}
+
+		public MethodInvokerBuilder name(String name) {
+			Assert.hasText(name, "Name must not be empty");
+			this.name = name;
+			return this;
 		}
 
 		public MethodInvokerBuilder targetClass(Class<?> targetClass) {
@@ -223,7 +215,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			Assert.isTrue(this.targetClass != null || this.targetObject != null,
 					"Target class or object must not be null");
 			var method = ReflectionUtils.findMethod(targetClass, methodName, argumentTypes);
-			return new MethodFunctionCallback(this.targetObject, method, description, objectMapper);
+			return new MethodFunctionCallback(this.targetObject, method, description, objectMapper, this.name,
+					responseConverter);
 		}
 
 	}

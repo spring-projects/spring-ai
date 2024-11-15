@@ -882,8 +882,7 @@ public class DefaultChatClient implements ChatClient {
 			var fcw = FunctionCallback.builder()
 				.description(description)
 				.responseConverter(Object::toString)
-				.function(function)
-				.name(name)
+				.function(name, function)
 				.inputType(inputType)
 				.build();
 			this.functionCallbacks.add(fcw);

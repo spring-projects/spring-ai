@@ -74,8 +74,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.function(new MockWeatherService())
-					.name("CurrentWeatherService")
+					.function("CurrentWeatherService", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
@@ -102,8 +101,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.withFunctionCallbacks(List.of(FunctionCallback.builder()
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.function(new MockWeatherService())
-					.name("CurrentWeatherService")
+					.function("CurrentWeatherService", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();

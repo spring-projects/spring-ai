@@ -72,8 +72,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.withDeploymentName(this.selectedModel)
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -97,8 +96,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.withDeploymentName(this.selectedModel)
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -120,8 +118,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.withDeploymentName(this.selectedModel)
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -158,8 +155,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.withDeploymentName(this.selectedModel)
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.description("Get the current weather in a given location")
-				.function(new MockWeatherService())
-				.name("getCurrentWeather")
+				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

@@ -63,8 +63,7 @@ public class FunctionCallWithPromptFunctionIT {
 				var promptOptions = AzureOpenAiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
-						.function(new MockWeatherService())
-						.name("CurrentWeatherService")
+						.function("CurrentWeatherService", new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();

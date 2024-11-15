@@ -82,8 +82,7 @@ public class FunctionCallWithFunctionWrapperIT {
 			return FunctionCallback.builder()
 				.description("Get the current weather in a given location")
 				.schemaType(SchemaType.OPEN_API_SCHEMA)
-				.function(new MockWeatherService())
-				.name("WeatherInfo")
+				.function("WeatherInfo", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

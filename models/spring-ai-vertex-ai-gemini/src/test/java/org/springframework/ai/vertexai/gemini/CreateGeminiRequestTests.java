@@ -119,8 +119,7 @@ public class CreateGeminiRequestTests {
 					.withModel("PROMPT_MODEL")
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
-						.function(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
@@ -148,8 +147,7 @@ public class CreateGeminiRequestTests {
 					.withModel("DEFAULT_MODEL")
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Get the weather in location")
-						.function(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());
@@ -182,8 +180,7 @@ public class CreateGeminiRequestTests {
 				VertexAiGeminiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
 						.description("Overridden function description")
-						.function(new MockWeatherService())
-						.name(TOOL_FUNCTION_NAME)
+						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),

@@ -17,9 +17,7 @@
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -111,7 +109,7 @@ public interface FunctionCallback {
 		 * into String before sending it to the Model. Provide a custom function
 		 * responseConverter implementation to override this.
 		 */
-		Builder responseConverter(Function<?, String> responseConverter);
+		Builder responseConverter(Function<Object, String> responseConverter);
 
 		/**
 		 * You can provide the Input Type Schema directly. In this case it won't be
@@ -124,24 +122,15 @@ public interface FunctionCallback {
 		 */
 		Builder objectMapper(ObjectMapper objectMapper);
 
-		<I, O> FunctionInvokerBuilder<I, O> function(Function<I, O> function);
+		<I, O> FunctionInvokerBuilder<I, O> function(String name, Function<I, O> function);
 
-		<O> FunctionInvokerBuilder<?, O> supplier(Supplier<O> function);
-
-		<I> FunctionInvokerBuilder<I, ?> consumer(Consumer<I> consumer);
-
-		<I, O> FunctionInvokerBuilder<I, O> function(BiFunction<I, ToolContext, O> biFunction);
+		<I, O> FunctionInvokerBuilder<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction);
 
 		MethodInvokerBuilder method(String methodName, Class<?>... argumentTypes);
 
 	}
 
 	interface FunctionInvokerBuilder<I, O> {
-
-		/**
-		 * Function name. Unique within the model.
-		 */
-		FunctionInvokerBuilder<I, O> name(String name);
 
 		/**
 		 * Function input type. The input type is used to validate the function input
@@ -165,8 +154,24 @@ public interface FunctionCallback {
 
 	interface MethodInvokerBuilder {
 
+		/**
+		 * Optional function name. If not provided the method name is used as the
+		 * function.
+		 * @param name Function name. Unique within the model.
+		 */
+		MethodInvokerBuilder name(String name);
+
+		/**
+		 * For non static objects the target object is used to invoke the method.
+		 * @param methodObject target object where the method is defined.
+		 */
 		MethodInvokerBuilder targetObject(Object methodObject);
 
+		/**
+		 * Target class where the method is defined. Used for static methods. For non
+		 * static methods the target object is used.
+		 * @param targetClass method target class.
+		 */
 		MethodInvokerBuilder targetClass(Class<?> targetClass);
 
 		/**

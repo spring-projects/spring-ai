@@ -81,8 +81,7 @@ public class ChatBuilderTests {
 		String func = "func";
 		FunctionCallback cb = FunctionCallback.builder()
 			.description("cb")
-			.function(i -> i)
-			.name("cb")
+			.function("cb", i -> i)
 			.inputType(Integer.class)
 			.build();
 
