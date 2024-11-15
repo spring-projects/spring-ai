@@ -17,6 +17,7 @@
 package org.springframework.ai.vertexai.embedding;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
@@ -58,19 +59,14 @@ public class VertexAiEmbeddingConnectionDetails {
 
 	private final String publisher;
 
-	private PredictionServiceSettings predictionServiceSettings;
+	private final PredictionServiceSettings predictionServiceSettings;
 
-	public VertexAiEmbeddingConnectionDetails(String endpoint, String projectId, String location, String publisher) {
+	public VertexAiEmbeddingConnectionDetails(String projectId, String location, String publisher,
+			PredictionServiceSettings predictionServiceSettings) {
 		this.projectId = projectId;
 		this.location = location;
 		this.publisher = publisher;
-
-		try {
-			this.predictionServiceSettings = PredictionServiceSettings.newBuilder().setEndpoint(endpoint).build();
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		this.predictionServiceSettings = predictionServiceSettings;
 	}
 
 	public static Builder builder() {
@@ -125,6 +121,11 @@ public class VertexAiEmbeddingConnectionDetails {
 		 */
 		private String publisher;
 
+		/**
+		 * Allows the connection settings to be customised
+		 */
+		private PredictionServiceSettings predictionServiceSettings;
+
 		public Builder withApiEndpoint(String endpoint) {
 			this.endpoint = endpoint;
 			return this;
@@ -145,6 +146,11 @@ public class VertexAiEmbeddingConnectionDetails {
 			return this;
 		}
 
+		public Builder withPredictionServiceSettings(PredictionServiceSettings predictionServiceSettings) {
+			this.predictionServiceSettings = predictionServiceSettings;
+			return this;
+		}
+
 		public VertexAiEmbeddingConnectionDetails build() {
 			if (!StringUtils.hasText(this.endpoint)) {
 				if (!StringUtils.hasText(this.location)) {
@@ -160,7 +166,19 @@ public class VertexAiEmbeddingConnectionDetails {
 				this.publisher = DEFAULT_PUBLISHER;
 			}
 
-			return new VertexAiEmbeddingConnectionDetails(this.endpoint, this.projectId, this.location, this.publisher);
+			if (this.predictionServiceSettings == null) {
+				try {
+					this.predictionServiceSettings = PredictionServiceSettings.newBuilder()
+						.setEndpoint(endpoint)
+						.build();
+				}
+				catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
+			return new VertexAiEmbeddingConnectionDetails(this.projectId, this.location, this.publisher,
+					this.predictionServiceSettings);
 		}
 
 	}
