@@ -314,8 +314,7 @@ You need the `FunctionCallback.Builder` to create `MethodFunctionCallback` like 
 FunctionCallback callback = FunctionCallback.builder()
     .description("Method description") // Required: Helps AI understand the function
     .objectMapper(objectMapper)             // Optional: Custom ObjectMapper
-    .method("MethodName")             // Required: The method to invoke
-    .argumentTypes(Class<?>...argumentTypes) // Required unless method has no arguments
+    .method("MethodName", Class<?>...argumentTypes) // Required: The method to invoke and its argument types
     .targetObject(targetObject)       // Required only for instance methods
     .build();
 ----
@@ -337,9 +336,8 @@ public class WeatherService {
 // Usage
 FunctionCallback callback = FunctionCallback.builder()
     .description("Get weather information for a city")
-    .method("getWeather")
+    .method("getWeather", String.class, TemperatureUnit.class)
     .targetClass(WeatherService.class)
-    .argumentTypes(String.class, TemperatureUnit.class)
     .build();
 ----
 Instance Method with ToolContext::
@@ -360,8 +358,7 @@ String response = ChatClient.create(chatModel).prompt()
     .user("Turn on the living room lights")
     .functions(FunctionCallback.builder()
         .description("Control device state")
-        .method("setDeviceState")
-        .argumentTypes(String.class,boolean.class,ToolContext.class)
+        .method("setDeviceState", String.class,boolean.class,ToolContext.class)
         .targetObject(controller)
         .build())
     .toolContext(Map.of("location", "home"))

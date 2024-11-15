@@ -118,9 +118,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 	}
 
 	@Override
-	public MethodInvokerBuilder method(String methodName) {
-		Assert.hasText(methodName, "Method name must not be empty");
-		return new MethodInvokerBuilderImpl(methodName);
+	public MethodInvokerBuilder method(String methodName, Class<?>... argumentTypes) {
+		return new MethodInvokerBuilderImpl(methodName, argumentTypes);
 	}
 
 	public class FunctionInvokerBuilderImpl<I, O> implements FunctionInvokerBuilder<I, O> {
@@ -196,10 +195,13 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		private Object targetObject;
 
-		private Class<?>[] arguments = new Class[0];
+		private final Class<?>[] argumentTypes;
 
-		private MethodInvokerBuilderImpl(String methodName) {
+		private MethodInvokerBuilderImpl(String methodName, Class<?>... argumentTypes) {
+			Assert.hasText(methodName, "Method name must not be null");
+			Assert.notNull(argumentTypes, "Argument types must not be null");
 			this.methodName = methodName;
+			this.argumentTypes = argumentTypes;
 		}
 
 		public MethodInvokerBuilder targetClass(Class<?> targetClass) {
@@ -217,17 +219,10 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		}
 
 		@Override
-		public MethodInvokerBuilder argumentTypes(Class<?>... arguments) {
-			Assert.notNull(arguments, "Arguments must not be null");
-			this.arguments = arguments;
-			return this;
-		}
-
-		@Override
 		public FunctionCallback build() {
 			Assert.isTrue(this.targetClass != null || this.targetObject != null,
 					"Target class or object must not be null");
-			var method = ReflectionUtils.findMethod(targetClass, methodName, arguments);
+			var method = ReflectionUtils.findMethod(targetClass, methodName, argumentTypes);
 			return new MethodFunctionCallback(this.targetObject, method, description, objectMapper);
 		}
 

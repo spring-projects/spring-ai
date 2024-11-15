@@ -132,7 +132,7 @@ public interface FunctionCallback {
 
 		<I, O> FunctionInvokerBuilder<I, O> function(BiFunction<I, ToolContext, O> biFunction);
 
-		MethodInvokerBuilder method(String methodName);
+		MethodInvokerBuilder method(String methodName, Class<?>... argumentTypes);
 
 	}
 
@@ -168,8 +168,6 @@ public interface FunctionCallback {
 		MethodInvokerBuilder targetObject(Object methodObject);
 
 		MethodInvokerBuilder targetClass(Class<?> targetClass);
-
-		MethodInvokerBuilder argumentTypes(Class<?>... arguments);
 
 		/**
 		 * Builds the {@link FunctionCallback} instance.

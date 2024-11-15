@@ -58,9 +58,8 @@ public class MethodFunctionCallbackTests {
 		var functionCallback = FunctionCallback.builder()
 			.description("weather at location")
 			.objectMapper(new ObjectMapper())
-			.method("myStaticMethod")
+			.method("myStaticMethod", String.class, Unit.class, int.class, MyRecord.class, List.class)
 			.targetClass(TestClassWithFunctionMethods.class)
-			.argumentTypes(String.class, Unit.class, int.class, MyRecord.class, List.class)
 			.build();
 
 		String response = functionCallback.call(this.value);
@@ -82,9 +81,8 @@ public class MethodFunctionCallbackTests {
 
 		var functionCallback = FunctionCallback.builder()
 			.description("weather at location")
-			.method("myNonStaticMethod")
+			.method("myNonStaticMethod", String.class, Unit.class, int.class, MyRecord.class, List.class)
 			.targetObject(object)
-			.argumentTypes(String.class, Unit.class, int.class, MyRecord.class, List.class)
 			.build();
 
 		String response = functionCallback.call(this.value);
