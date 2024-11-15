@@ -16,6 +16,7 @@
 package org.springframework.ai.model.function;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -43,20 +44,34 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-
 public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);
 
+	/**
+	 * The description of the function callback. Used to hint the LLM model about the
+	 * tool's purpose and when to use it.
+	 */
 	private String description;
 
+	/**
+	 * The schema type to use for the input type schema generation. The default is JSON
+	 * Schema. Note: Vertex AI requires the input type schema to be in Open API schema
+	 */
 	private SchemaType schemaType = SchemaType.JSON_SCHEMA;
 
-	// By default the response is converted to a JSON string.
+	/**
+	 * The function to convert the response object to a string. The default is to convert
+	 * the response to a JSON string.
+	 */
 	private Function<Object, String> responseConverter = input -> (input instanceof String) ? "" + input
 			: ModelOptionsUtils.toJsonString(input);
 
-	// optional
+	/**
+	 * (Optional) Instead of generating the input type schema from the input type or
+	 * method argument types, you can provide the schema directly. This will override the
+	 * generated schema.
+	 */
 	private String inputTypeSchema;
 
 	private ObjectMapper objectMapper = JsonMapper.builder()
@@ -127,6 +142,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		private FunctionInvokerBuilderImpl(String name, BiFunction<I, ToolContext, O> biFunction) {
 			Assert.hasText(name, "Name must not be empty");
+			Assert.notNull(biFunction, "BiFunction must not be null");
 			this.name = name;
 			this.biFunction = biFunction;
 			this.function = null;
@@ -134,6 +150,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		private FunctionInvokerBuilderImpl(String name, Function<I, O> function) {
 			Assert.hasText(name, "Name must not be empty");
+			Assert.notNull(function, "Function must not be null");
 			this.name = name;
 			this.biFunction = null;
 			this.function = function;
@@ -227,6 +244,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			Assert.isTrue(this.targetClass != null || this.targetObject != null,
 					"Target class or object must not be null");
 			var method = ReflectionUtils.findMethod(targetClass, methodName, argumentTypes);
+			Assert.notNull(method,
+					"Method: '" + methodName + "' with arguments:" + Arrays.toString(argumentTypes) + " not found!");
 			return new MethodFunctionCallback(this.targetObject, method, this.getDescription(), objectMapper, this.name,
 					responseConverter);
 		}

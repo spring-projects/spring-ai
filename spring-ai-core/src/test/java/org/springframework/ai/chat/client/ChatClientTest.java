@@ -40,6 +40,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
@@ -217,7 +218,11 @@ public class ChatClientTest {
 						.param("param1", "value1")
 						.param("param2", "value2"))
 				.defaultFunctions("fun1", "fun2")
-				.defaultFunction("fun3", "fun3description", mockFunction)
+				.defaultFunctions(FunctionCallback.builder()
+						.description("fun3description")
+						.function("fun3", mockFunction)
+						.inputType(String.class)
+						.build())
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
@@ -344,7 +349,11 @@ public class ChatClientTest {
 						.param("param1", "value1")
 						.param("param2", "value2"))
 				.defaultFunctions("fun1", "fun2")
-				.defaultFunction("fun3", "fun3description", mockFunction)
+				.defaultFunctions(FunctionCallback.builder()
+						.description("fun3description")
+						.function("fun3", mockFunction)
+						.inputType(String.class)
+						.build())
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")

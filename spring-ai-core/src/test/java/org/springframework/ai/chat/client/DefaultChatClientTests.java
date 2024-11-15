@@ -1350,31 +1350,39 @@ class DefaultChatClientTests {
 		assertThat(defaultSpec.getChatOptions()).isEqualTo(options);
 	}
 
+	// FunctionCallback.builder().description("description").function(null,input->"hello").inputType(String.class).build()
+
 	@Test
 	void whenFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function(null, "description", input -> "hello"))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("name cannot be null or empty");
+		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
+			.description("description")
+			.function(null, input -> "hello")
+			.inputType(String.class)
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
 	}
 
 	@Test
 	void whenFunctionNameIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("", "description", input -> "hello"))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("name cannot be null or empty");
+		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
+			.description("description")
+			.function("", input -> "hello")
+			.inputType(String.class)
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
 	}
 
 	@Test
 	void whenFunctionDescriptionIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", null, input -> "hello"))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("description cannot be null or empty");
+		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
+			.description(null)
+			.function("", input -> "hello")
+			.inputType(String.class)
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
 	}
 
 	@Test

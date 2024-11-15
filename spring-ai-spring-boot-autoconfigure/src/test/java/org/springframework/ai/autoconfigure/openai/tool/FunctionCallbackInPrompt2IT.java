@@ -16,7 +16,6 @@
 
 package org.springframework.ai.autoconfigure.openai.tool;
 
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -58,7 +58,11 @@ public class FunctionCallbackInPrompt2IT {
 
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.function("CurrentWeatherService", "Get the weather in location", new MockWeatherService())
+					.functions(FunctionCallback.builder()
+							.description("Get the weather in location")
+							.function("CurrentWeatherService", new MockWeatherService())
+							.inputType(MockWeatherService.Request.class)
+							.build())
 					.call().content();
 			// @formatter:on
 
@@ -78,13 +82,11 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
-					.function("CurrentWeatherService", "Get the weather in location",
-							new Function<MockWeatherService.Request, String>() {
-								@Override
-								public String apply(MockWeatherService.Request request) {
-									return "18 degrees Celsius";
-								}
-							})
+					.functions(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("CurrentWeatherService", input -> "18 degrees Celsius")
+						.inputType(MockWeatherService.Request.class)
+					.build())
 					.call().content();
 			// @formatter:on
 				logger.info("Response: {}", content);

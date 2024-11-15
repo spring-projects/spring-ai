@@ -211,8 +211,11 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius."))
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(FunctionCallback.builder()
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -246,7 +249,11 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.defaultFunctions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius."))
 				.build()
 			.prompt()
@@ -265,7 +272,11 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.stream()
 				.content();
 		// @formatter:on
