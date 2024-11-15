@@ -21,8 +21,8 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback.FunctionInvokerBuilder;
-import org.springframework.ai.model.function.FunctionCallback.MethodInvokerBuilder;
+import org.springframework.ai.model.function.FunctionCallback.FunctionInvokingSpec;
+import org.springframework.ai.model.function.FunctionCallback.MethodInvokingSpec;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,7 +96,7 @@ class DefaultFunctionCallbackBuilderTests {
 
 	@Test
 	void whenFunctionThenReturn() {
-		FunctionInvokerBuilder<?, ?> functionBuilder = FunctionCallback.builder()
+		FunctionInvokingSpec<?, ?> functionBuilder = FunctionCallback.builder()
 			.function("functionName", input -> "output");
 		assertThat(functionBuilder).isNotNull();
 	}
@@ -173,7 +173,7 @@ class DefaultFunctionCallbackBuilderTests {
 
 	@Test
 	void whenBiFunctionThenReturn() {
-		FunctionInvokerBuilder<?, ?> functionBuilder = FunctionCallback.builder()
+		FunctionInvokingSpec<?, ?> functionBuilder = FunctionCallback.builder()
 			.function("functionName", (input, context) -> "output");
 		assertThat(functionBuilder).isNotNull();
 	}
@@ -194,13 +194,13 @@ class DefaultFunctionCallbackBuilderTests {
 
 	@Test
 	void whenMethodThenReturn() {
-		MethodInvokerBuilder methodInvokeBuilder = FunctionCallback.builder().method("methodName");
+		MethodInvokingSpec methodInvokeBuilder = FunctionCallback.builder().method("methodName");
 		assertThat(methodInvokeBuilder).isNotNull();
 	}
 
 	@Test
 	void whenMethodWithArgumentTypesThenReturn() {
-		MethodInvokerBuilder methodInvokeBuilder = FunctionCallback.builder()
+		MethodInvokingSpec methodInvokeBuilder = FunctionCallback.builder()
 			.method("methodName", String.class, Integer.class);
 		assertThat(methodInvokeBuilder).isNotNull();
 	}

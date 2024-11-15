@@ -122,28 +122,28 @@ public interface FunctionCallback {
 		 */
 		Builder objectMapper(ObjectMapper objectMapper);
 
-		<I, O> FunctionInvokerBuilder<I, O> function(String name, Function<I, O> function);
+		<I, O> FunctionInvokingSpec<I, O> function(String name, Function<I, O> function);
 
-		<I, O> FunctionInvokerBuilder<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction);
+		<I, O> FunctionInvokingSpec<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction);
 
-		MethodInvokerBuilder method(String methodName, Class<?>... argumentTypes);
+		MethodInvokingSpec method(String methodName, Class<?>... argumentTypes);
 
 	}
 
-	interface FunctionInvokerBuilder<I, O> {
+	interface FunctionInvokingSpec<I, O> {
 
 		/**
 		 * Function input type. The input type is used to validate the function input
 		 * arguments.
 		 * @see #inputType(ParameterizedTypeReference)
 		 */
-		FunctionInvokerBuilder<I, O> inputType(Class<?> inputType);
+		FunctionInvokingSpec<I, O> inputType(Class<?> inputType);
 
 		/**
 		 * Function input type retaining generic types. The input type is used to validate
 		 * the function input arguments.
 		 */
-		FunctionInvokerBuilder<I, O> inputType(ParameterizedTypeReference<?> inputType);
+		FunctionInvokingSpec<I, O> inputType(ParameterizedTypeReference<?> inputType);
 
 		/**
 		 * Builds the {@link FunctionCallback} instance.
@@ -152,27 +152,27 @@ public interface FunctionCallback {
 
 	}
 
-	interface MethodInvokerBuilder {
+	interface MethodInvokingSpec {
 
 		/**
 		 * Optional function name. If not provided the method name is used as the
 		 * function.
 		 * @param name Function name. Unique within the model.
 		 */
-		MethodInvokerBuilder name(String name);
+		MethodInvokingSpec name(String name);
 
 		/**
 		 * For non static objects the target object is used to invoke the method.
 		 * @param methodObject target object where the method is defined.
 		 */
-		MethodInvokerBuilder targetObject(Object methodObject);
+		MethodInvokingSpec targetObject(Object methodObject);
 
 		/**
 		 * Target class where the method is defined. Used for static methods. For non
 		 * static methods the target object is used.
 		 * @param targetClass method target class.
 		 */
-		MethodInvokerBuilder targetClass(Class<?> targetClass);
+		MethodInvokingSpec targetClass(Class<?> targetClass);
 
 		/**
 		 * Builds the {@link FunctionCallback} instance.

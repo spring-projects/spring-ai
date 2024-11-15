@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.anthropic.client;
+package org.springframework.ai.openai.chat.client;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,11 +25,11 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -37,14 +37,18 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-@SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
-@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+@SpringBootTest(classes = OpenAiTestConfiguration.class)
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
-class AnthropicChatClientMethodFunctionCallbackIT {
+class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatClientMethodFunctionCallbackIT.class);
+	private static final Logger logger = LoggerFactory
+		.getLogger(OpenAiChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
+
+	@Autowired
+	ChatModel chatModel;
 
 	@BeforeEach
 	void beforeEach() {
@@ -52,33 +56,13 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 	}
 
 	@Test
-	void methodGetWeatherGeneratedDescription() {
-
-		// @formatter:off
-		String response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.method("getWeatherInLocation", String.class, Unit.class)
-					.targetClass(TestFunctionClass.class)
-					.build())
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info("Response: {}", response);
-
-		assertThat(response).contains("30", "10", "15");
-	}
-
-	@Test
 	void methodGetWeatherStatic() {
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
 				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
-					.method("getWeatherStatic", String.class, Unit.class)
+					.method("getWeatherStatic",String.class, Unit.class)
 					.targetClass(TestFunctionClass.class)
 					.build())
 				.call()
@@ -99,7 +83,7 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
 				.functions(FunctionCallback.builder()
-					.description("Turn light on in the living room.")
+					.description("Can turn lights on or off by room name")
 					.method("turnLight", String.class, boolean.class)
 					.targetObject(targetObject)
 					.build())
@@ -123,7 +107,7 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
 				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
-					.method("getWeatherNonStatic",String.class, Unit.class)
+					.method("getWeatherNonStatic",String.class, Unit.class)					
 					.targetObject(targetObject)
 					.build())
 				.call()
@@ -145,9 +129,9 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
 				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
-					.method("getWeatherWithContext", String.class, Unit.class, ToolContext.class)
+					.method("getWeatherWithContext", String.class, Unit.class,  ToolContext.class)					
 					.targetObject(targetObject)
-					.build())				
+					.build())
 				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content();
@@ -192,7 +176,7 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 					.description("Can turn lights on in the Living Room")
 					.method("turnLivingRoomLightOn")
 					.targetObject(targetObject)
-					.build())
+					.build())		
 				.call()
 				.content();
 		// @formatter:on
@@ -201,9 +185,6 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
 	}
-
-	@Autowired
-	ChatModel chatModel;
 
 	record MyRecord(String foo, String bar) {
 	}
@@ -218,10 +199,6 @@ class AnthropicChatClientMethodFunctionCallbackIT {
 
 		public static void argumentLessReturnVoid() {
 			arguments.put("method called", "argumentLessReturnVoid");
-		}
-
-		public static String getWeatherInLocation(String city, Unit unit) {
-			return getWeatherStatic(city, unit);
 		}
 
 		public static String getWeatherStatic(String city, Unit unit) {

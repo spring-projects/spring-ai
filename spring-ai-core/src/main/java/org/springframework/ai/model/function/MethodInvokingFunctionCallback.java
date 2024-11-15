@@ -52,9 +52,9 @@ import org.springframework.util.ReflectionUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MethodFunctionCallback implements FunctionCallback {
+public class MethodInvokingFunctionCallback implements FunctionCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(MethodFunctionCallback.class);
+	private static final Logger logger = LoggerFactory.getLogger(MethodInvokingFunctionCallback.class);
 
 	/**
 	 * Object instance that contains the method to be invoked. If the method is static
@@ -98,8 +98,8 @@ public class MethodFunctionCallback implements FunctionCallback {
 	 */
 	private final Function<Object, String> responseConverter;
 
-	MethodFunctionCallback(Object functionObject, Method method, String description, ObjectMapper mapper, String name,
-			Function<Object, String> responseConverter) {
+	MethodInvokingFunctionCallback(Object functionObject, Method method, String description, ObjectMapper mapper,
+			String name, Function<Object, String> responseConverter) {
 
 		Assert.notNull(method, "Method must not be null");
 		Assert.notNull(mapper, "ObjectMapper must not be null");

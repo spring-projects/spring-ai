@@ -42,13 +42,13 @@ import org.springframework.util.CollectionUtils;
  * call handling logic on the client side. Used when the withProxyToolCalls(true) option
  * is enabled.
  */
-public class ToolCallHelper extends AbstractToolCallSupport {
+public class FunctionCallingHelper extends AbstractToolCallSupport {
 
-	public ToolCallHelper() {
+	public FunctionCallingHelper() {
 		this(null, PortableFunctionCallingOptions.builder().build(), List.of());
 	}
 
-	public ToolCallHelper(FunctionCallbackContext functionCallbackContext,
+	public FunctionCallingHelper(FunctionCallbackContext functionCallbackContext,
 			FunctionCallingOptions functionCallingOptions, List<FunctionCallback> toolFunctionCallbacks) {
 		super(functionCallbackContext, functionCallingOptions, toolFunctionCallbacks);
 	}

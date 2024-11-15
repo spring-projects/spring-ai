@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -30,8 +31,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback.Builder;
-import org.springframework.ai.model.function.FunctionCallback.FunctionInvokerBuilder;
-import org.springframework.ai.model.function.FunctionCallback.MethodInvokerBuilder;
+import org.springframework.ai.model.function.FunctionCallback.FunctionInvokingSpec;
+import org.springframework.ai.model.function.FunctionCallback.MethodInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.ParsingUtils;
@@ -64,8 +65,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 	 * The function to convert the response object to a string. The default is to convert
 	 * the response to a JSON string.
 	 */
-	private Function<Object, String> responseConverter = input -> (input instanceof String) ? "" + input
-			: ModelOptionsUtils.toJsonString(input);
+	private Function<Object, String> responseConverter = response -> (response instanceof String) ? "" + response
+			: this.toJsonString(response);
 
 	/**
 	 * (Optional) Instead of generating the input type schema from the input type or
@@ -79,6 +80,15 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 		.build();
+
+	private String toJsonString(Object object) {
+		try {
+			return this.objectMapper.writeValueAsString(object);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public Builder description(String description) {
@@ -116,21 +126,21 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 	}
 
 	@Override
-	public <I, O> FunctionInvokerBuilder<I, O> function(String name, Function<I, O> function) {
-		return new FunctionInvokerBuilderImpl<>(name, function);
+	public <I, O> FunctionInvokingSpec<I, O> function(String name, Function<I, O> function) {
+		return new DefaultFunctionInvokingSpec<>(name, function);
 	}
 
 	@Override
-	public <I, O> FunctionInvokerBuilder<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction) {
-		return new FunctionInvokerBuilderImpl<>(name, biFunction);
+	public <I, O> FunctionInvokingSpec<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction) {
+		return new DefaultFunctionInvokingSpec<>(name, biFunction);
 	}
 
 	@Override
-	public MethodInvokerBuilder method(String methodName, Class<?>... argumentTypes) {
-		return new MethodInvokerBuilderImpl(methodName, argumentTypes);
+	public MethodInvokingSpec method(String methodName, Class<?>... argumentTypes) {
+		return new DefaultMethodInvokingSpec(methodName, argumentTypes);
 	}
 
-	public class FunctionInvokerBuilderImpl<I, O> implements FunctionInvokerBuilder<I, O> {
+	class DefaultFunctionInvokingSpec<I, O> implements FunctionInvokingSpec<I, O> {
 
 		private final String name;
 
@@ -140,7 +150,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		private final Function<I, O> function;
 
-		private FunctionInvokerBuilderImpl(String name, BiFunction<I, ToolContext, O> biFunction) {
+		private DefaultFunctionInvokingSpec(String name, BiFunction<I, ToolContext, O> biFunction) {
 			Assert.hasText(name, "Name must not be empty");
 			Assert.notNull(biFunction, "BiFunction must not be null");
 			this.name = name;
@@ -148,7 +158,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			this.function = null;
 		}
 
-		private FunctionInvokerBuilderImpl(String name, Function<I, O> function) {
+		private DefaultFunctionInvokingSpec(String name, Function<I, O> function) {
 			Assert.hasText(name, "Name must not be empty");
 			Assert.notNull(function, "Function must not be null");
 			this.name = name;
@@ -157,14 +167,14 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		}
 
 		@Override
-		public FunctionInvokerBuilder<I, O> inputType(Class<?> inputType) {
+		public FunctionInvokingSpec<I, O> inputType(Class<?> inputType) {
 			Assert.notNull(inputType, "InputType must not be null");
 			this.inputType = inputType;
 			return this;
 		}
 
 		@Override
-		public FunctionInvokerBuilder<I, O> inputType(ParameterizedTypeReference<?> inputType) {
+		public FunctionInvokingSpec<I, O> inputType(ParameterizedTypeReference<?> inputType) {
 			Assert.notNull(inputType, "InputType must not be null");
 			this.inputType = inputType.getType();
 			;
@@ -187,8 +197,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
 					: (request, context) -> this.function.apply(request);
 
-			return new FunctionCallbackWrapper(this.name, this.getDescription(), inputTypeSchema, this.inputType,
-					(Function<I, String>) responseConverter, objectMapper, finalBiFunction);
+			return new FunctionInvokingFunctionCallback(this.name, this.getDescription(), inputTypeSchema,
+					this.inputType, (Function<I, String>) responseConverter, objectMapper, finalBiFunction);
 		}
 
 		private String getDescription() {
@@ -200,7 +210,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 	}
 
-	public class MethodInvokerBuilderImpl implements FunctionCallback.MethodInvokerBuilder {
+	class DefaultMethodInvokingSpec implements FunctionCallback.MethodInvokingSpec {
 
 		private String name;
 
@@ -212,27 +222,27 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		private final Class<?>[] argumentTypes;
 
-		private MethodInvokerBuilderImpl(String methodName, Class<?>... argumentTypes) {
+		private DefaultMethodInvokingSpec(String methodName, Class<?>... argumentTypes) {
 			Assert.hasText(methodName, "Method name must not be null");
 			Assert.notNull(argumentTypes, "Argument types must not be null");
 			this.methodName = methodName;
 			this.argumentTypes = argumentTypes;
 		}
 
-		public MethodInvokerBuilder name(String name) {
+		public MethodInvokingSpec name(String name) {
 			Assert.hasText(name, "Name must not be empty");
 			this.name = name;
 			return this;
 		}
 
-		public MethodInvokerBuilder targetClass(Class<?> targetClass) {
+		public MethodInvokingSpec targetClass(Class<?> targetClass) {
 			Assert.notNull(targetClass, "Target class must not be null");
 			this.targetClass = targetClass;
 			return this;
 		}
 
 		@Override
-		public MethodInvokerBuilder targetObject(Object methodObject) {
+		public MethodInvokingSpec targetObject(Object methodObject) {
 			Assert.notNull(methodObject, "Method object must not be null");
 			this.targetObject = methodObject;
 			this.targetClass = methodObject.getClass();
@@ -246,8 +256,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			var method = ReflectionUtils.findMethod(targetClass, methodName, argumentTypes);
 			Assert.notNull(method,
 					"Method: '" + methodName + "' with arguments:" + Arrays.toString(argumentTypes) + " not found!");
-			return new MethodFunctionCallback(this.targetObject, method, this.getDescription(), objectMapper, this.name,
-					responseConverter);
+			return new MethodInvokingFunctionCallback(this.targetObject, method, this.getDescription(), objectMapper,
+					this.name, responseConverter);
 		}
 
 		private String getDescription() {
@@ -264,9 +274,9 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		String generatedDescription = ParsingUtils.reConcatenateCamelCase(fromName, " ");
 
-		logger.warn("Description is not set! A best effort attempt to generate a description:'{}' from the:'{}'",
+		logger.info("Description is not set! A best effort attempt to generate a description:'{}' from the:'{}'",
 				generatedDescription, fromName);
-		logger.warn("It is recommended to set the Description explicitly! Use the 'description()' method!");
+		logger.info("It is recommended to set the Description explicitly! Use the 'description()' method!");
 
 		return generatedDescription;
 	}

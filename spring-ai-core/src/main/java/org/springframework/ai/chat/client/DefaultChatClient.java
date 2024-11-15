@@ -836,11 +836,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		/**
-		 * @deprecated in favor of
-		 * {@link #function(String, String, Class, java.util.function.Function)}
-		 */
-		@Deprecated
+		@Override
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function) {
 			Assert.hasText(name, "name cannot be null or empty");
@@ -856,6 +852,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
 
@@ -872,6 +869,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public <I, O> ChatClientRequestSpec function(String name, String description, @Nullable Class<I> inputType,
 				java.util.function.Function<I, O> function) {
 
