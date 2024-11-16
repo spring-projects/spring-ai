@@ -112,7 +112,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), this.chatOptions);
+		return new Prompt(instructionsCopy(), null == this.chatOptions ? null : this.chatOptions.copy());
 	}
 
 	private List<Message> instructionsCopy() {
