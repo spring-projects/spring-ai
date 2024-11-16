@@ -171,7 +171,7 @@ class OpenAiChatModelProxyToolCallsIT {
 							argumentsMap.get("unit").toString());
 
 					toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName,
-							ModelOptionsUtils.toJsonString(functionResponse)));
+							ModelOptionsUtils.toJsonString(functionResponse), null));
 				}
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
@@ -256,7 +256,7 @@ class OpenAiChatModelProxyToolCallsIT {
 					String functionResponse = customFunction.apply(toolCall);
 
 					toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(),
-							ModelOptionsUtils.toJsonString(functionResponse)));
+							ModelOptionsUtils.toJsonString(functionResponse), null));
 				}
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());

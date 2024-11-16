@@ -41,7 +41,7 @@ import org.springframework.util.Assert;
  * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
  */
-abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
+public abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
 
 	private final String name;
 
@@ -114,6 +114,23 @@ abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolConte
 		I request = fromJson(functionArguments, this.inputType);
 		// extend conversation with function response.
 		return this.andThen(this.responseConverter).apply(request, null);
+	}
+
+	@Override
+	public O callReturnRaw(String functionInput, ToolContext toolContext) {
+		I request = fromJson(functionInput, this.inputType);
+		return this.apply(request, toolContext);
+	}
+
+	@Override
+	public O callReturnRaw(String functionInput) {
+		I request = fromJson(functionInput, this.inputType);
+		return this.apply(request, null);
+	}
+
+	@Override
+	public String convertResultObject2String(Object rowObjectResult) {
+		return this.responseConverter.apply((O) rowObjectResult);
 	}
 
 	private <T> T fromJson(String json, Class<T> targetClass) {

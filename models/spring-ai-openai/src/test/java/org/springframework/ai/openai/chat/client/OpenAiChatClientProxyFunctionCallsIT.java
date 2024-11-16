@@ -162,7 +162,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 							argumentsMap.get("unit").toString());
 
 					toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName,
-							ModelOptionsUtils.toJsonString(functionResponse)));
+							ModelOptionsUtils.toJsonString(functionResponse), null));
 				}
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());

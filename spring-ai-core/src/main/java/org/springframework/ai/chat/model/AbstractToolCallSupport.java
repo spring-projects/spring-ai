@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.ai.agent.Agent;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -206,10 +207,19 @@ public abstract class AbstractToolCallSupport {
 				throw new IllegalStateException("No function callback found for function name: " + functionName);
 			}
 
-			String functionResponse = this.functionCallbackRegister.get(functionName)
-				.call(functionArguments, toolContext);
+			FunctionCallback functionCallback = this.functionCallbackRegister.get(functionName);
+			Object returnRawObject = functionCallback.callReturnRaw(functionArguments, toolContext);
+			// transfer task to agent
+			if (returnRawObject instanceof Agent) {
+				toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName, "ok",
+						(Agent) returnRawObject));
+			}
+			else {
+				String functionResponse = functionCallback.convertResultObject2String(returnRawObject);
+				toolResponses
+					.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName, functionResponse, null));
+			}
 
-			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName, functionResponse));
 		}
 
 		return new ToolResponseMessage(toolResponses, Map.of());

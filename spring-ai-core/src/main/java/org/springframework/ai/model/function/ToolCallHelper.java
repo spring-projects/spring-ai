@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
+import org.springframework.ai.agent.Agent;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -94,7 +96,7 @@ public class ToolCallHelper extends AbstractToolCallSupport {
 					String functionResponse = customFunction.apply(toolCall);
 
 					toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(),
-							ModelOptionsUtils.toJsonString(functionResponse)));
+							ModelOptionsUtils.toJsonString(functionResponse), null));
 				}
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
@@ -136,7 +138,7 @@ public class ToolCallHelper extends AbstractToolCallSupport {
 			String functionResponse = customFunction.apply(toolCall);
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(),
-					ModelOptionsUtils.toJsonString(functionResponse)));
+					ModelOptionsUtils.toJsonString(functionResponse), null));
 		}
 
 		ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
@@ -175,6 +177,16 @@ public class ToolCallHelper extends AbstractToolCallSupport {
 		public String call(String functionInput) {
 			throw new UnsupportedOperationException(
 					"FunctionDefinition provides only metadata. It doesn't implement the call method.");
+		}
+
+		@Override
+		public Object callReturnRaw(String functionInput) {
+			return null;
+		}
+
+		@Override
+		public String convertResultObject2String(Object rowObjectResult) {
+			return "";
 		}
 
 	}

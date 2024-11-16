@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.messages;
 
+import org.springframework.ai.agent.Agent;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,7 +71,7 @@ public class ToolResponseMessage extends AbstractMessage {
 				+ ", metadata=" + this.metadata + '}';
 	}
 
-	public record ToolResponse(String id, String name, String responseData) {
+	public record ToolResponse(String id, String name, String responseData, Agent agent) {
 
 	}
 

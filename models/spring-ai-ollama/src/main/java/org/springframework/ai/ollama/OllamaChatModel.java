@@ -21,16 +21,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.springframework.ai.agent.Agent;
+import org.springframework.ai.chat.messages.*;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
@@ -170,6 +169,23 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
 				&& isToolCall(response, Set.of("stop"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
+
+			// process agent transfer
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation
+				.get(toolCallConversation.size() - 1);
+			List<Agent> agentList = toolResponseMessage.getResponses().stream().flatMap(toolResponse -> {
+				if (null == toolResponse.agent()) {
+					return Stream.empty();
+				}
+				else {
+					return Stream.of(toolResponse.agent());
+				}
+			}).toList();
+			if (!CollectionUtils.isEmpty(agentList)) {
+				Agent agent = agentList.get(0);
+				// transfer task to other agent
+				return agent.call(prompt);
+			}
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
 			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
@@ -227,6 +243,22 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
 				if (isToolCall(response, Set.of("stop"))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
+					// process agent transfer
+					ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation
+							.get(toolCallConversation.size() - 1);
+					List<Agent> agentList = toolResponseMessage.getResponses().stream().flatMap(toolResponse -> {
+						if (null == toolResponse.agent()) {
+							return Stream.empty();
+						}
+						else {
+							return Stream.of(toolResponse.agent());
+						}
+					}).toList();
+					if (!CollectionUtils.isEmpty(agentList)) {
+						Agent agent = agentList.get(0);
+						// transfer task to other agent
+						return agent.stream(prompt);
+					}
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.
 					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));

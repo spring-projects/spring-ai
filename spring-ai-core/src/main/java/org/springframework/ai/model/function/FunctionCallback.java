@@ -61,16 +61,48 @@ public interface FunctionCallback {
 	 * @param functionInput JSON string with the function arguments to be passed to the
 	 * function. The arguments are defined as JSON schema usually registered with the the
 	 * model. Arguments are provided by the AI model.
-	 * @param tooContext Map with the function context. The context is used to pass
+	 * @param toolContext Map with the function context. The context is used to pass
 	 * additional user provided state in addition to the arguments provided by the AI
 	 * model.
 	 * @return String containing the function call response.
 	 */
-	default String call(String functionInput, ToolContext tooContext) {
-		if (tooContext != null) {
+	default String call(String functionInput, ToolContext toolContext) {
+		if (toolContext != null) {
 			throw new UnsupportedOperationException("Function context is not supported!");
 		}
 		return call(functionInput);
 	}
+
+	/**
+	 * @param functionInput JSON string with the function arguments to be passed to the
+	 * function. The arguments are defined as JSON schema usually registered with the the
+	 * model. Arguments are provided by the AI model.
+	 * @return raw object return by function call
+	 */
+	Object callReturnRaw(String functionInput);
+
+	/**
+	 * @param functionInput JSON string with the function arguments to be passed to the
+	 * function. The arguments are defined as JSON schema usually registered with the the
+	 * model. Arguments are provided by the AI model.
+	 * @param toolContext Map with the function context. The context is used to pass
+	 * additional user provided state in addition to the arguments provided by the AI
+	 * model.
+	 * @return raw object return by function call
+	 */
+	default Object callReturnRaw(String functionInput, ToolContext toolContext) {
+		if (toolContext != null) {
+			throw new UnsupportedOperationException("Function context is not supported!");
+		}
+		return callReturnRaw(functionInput);
+	}
+
+	/**
+	 * After calling the callReturnRaw function, serialize the returned raw object into a
+	 * String type
+	 * @param rowObjectResult row object return by function call
+	 * @return Serialize to string
+	 */
+	String convertResultObject2String(Object rowObjectResult);
 
 }
