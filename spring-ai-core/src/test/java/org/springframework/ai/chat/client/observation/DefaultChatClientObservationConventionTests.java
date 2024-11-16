@@ -108,6 +108,16 @@ class DefaultChatClientObservationConventionTests {
 				// TODO Auto-generated method stub
 				throw new UnsupportedOperationException("Unimplemented method 'call'");
 			}
+
+			@Override
+			public Object callReturnRaw(String functionInput) {
+				return null;
+			}
+
+			@Override
+			public String convertResultObject2String(Object rowObjectResult) {
+				return "";
+			}
 		};
 	}
 
