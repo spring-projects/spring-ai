@@ -20,8 +20,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
 
@@ -43,6 +46,16 @@ import org.springframework.util.ReflectionUtils;
  * @author Sebastien Dekeuze
  */
 public abstract class TypeResolverHelper {
+
+	/**
+	 * Returns the input class of a given Consumer class.
+	 * @param consumerClass The consumer class.
+	 * @return The input class of the consumer.
+	 */
+	public static Class<?> getConsumerInputClass(Class<? extends Consumer<?>> consumerClass) {
+		ResolvableType resolvableType = ResolvableType.forClass(consumerClass).as(Consumer.class);
+		return (resolvableType == ResolvableType.NONE ? Object.class : resolvableType.getGeneric(0).toClass());
+	}
 
 	/**
 	 * Returns the input class of a given function class.
@@ -199,12 +212,21 @@ public abstract class TypeResolverHelper {
 		else if (BiFunction.class.isAssignableFrom(resolvableClass)) {
 			functionArgumentResolvableType = functionType.as(BiFunction.class);
 		}
+		else if (Supplier.class.isAssignableFrom(resolvableClass)) {
+			functionArgumentResolvableType = functionType.as(Supplier.class);
+		}
+		else if (Consumer.class.isAssignableFrom(resolvableClass)) {
+			functionArgumentResolvableType = functionType.as(Consumer.class);
+		}
 		else if (KotlinDetector.isKotlinPresent()) {
 			if (KotlinDelegate.isKotlinFunction(resolvableClass)) {
 				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinFunctionType(functionType);
 			}
 			else if (KotlinDelegate.isKotlinBiFunction(resolvableClass)) {
 				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinBiFunctionType(functionType);
+			}
+			else if (KotlinDelegate.isKotlinSupplier(resolvableClass)) {
+				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinSupplierType(functionType);
 			}
 		}
 
@@ -217,6 +239,14 @@ public abstract class TypeResolverHelper {
 	}
 
 	private static class KotlinDelegate {
+
+		public static boolean isKotlinSupplier(Class<?> clazz) {
+			return Function0.class.isAssignableFrom(clazz);
+		}
+
+		public static ResolvableType adaptToKotlinSupplierType(ResolvableType resolvableType) {
+			return resolvableType.as(Function0.class);
+		}
 
 		public static boolean isKotlinFunction(Class<?> clazz) {
 			return Function1.class.isAssignableFrom(clazz);

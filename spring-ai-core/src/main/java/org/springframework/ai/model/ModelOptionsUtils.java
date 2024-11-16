@@ -395,6 +395,11 @@ public abstract class ModelOptionsUtils {
 		}
 
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
+
+		if ((inputType == Void.class) && !node.has("properties")) {
+			node.putObject("properties");
+		}
+
 		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
 			// version of it).
 			toUpperCaseTypeValues(node);

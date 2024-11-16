@@ -17,9 +17,12 @@
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
+import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
 
@@ -30,6 +33,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Description;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.KotlinDetector;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -71,7 +75,8 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 	public FunctionCallback getFunctionCallback(@NonNull String beanName, @Nullable String defaultDescription) {
 
 		ResolvableType functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
-		ResolvableType functionInputType = TypeResolverHelper.getFunctionArgumentType(functionType, 0);
+		ResolvableType functionInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(functionType))
+				? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(functionType, 0);
 
 		Class<?> functionInputClass = functionInputType.toClass();
 		String functionDescription = defaultDescription;
@@ -109,7 +114,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 					.schemaType(this.schemaType)
 					.description(functionDescription)
 					.function(beanName, KotlinDelegate.wrapKotlinFunction(bean))
-					.inputType(functionInputClass)
+					.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 					.build();
 			}
 			else if (KotlinDelegate.isKotlinBiFunction(functionType.toClass())) {
@@ -117,7 +122,15 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 					.description(functionDescription)
 					.schemaType(this.schemaType)
 					.function(beanName, KotlinDelegate.wrapKotlinBiFunction(bean))
-					.inputType(functionInputClass)
+					.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
+					.build();
+			}
+			else if (KotlinDelegate.isKotlinSupplier(functionType.toClass())) {
+				return FunctionCallback.builder()
+					.description(functionDescription)
+					.schemaType(this.schemaType)
+					.function(beanName, KotlinDelegate.wrapKotlinSupplier(bean))
+					.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 					.build();
 			}
 		}
@@ -126,7 +139,7 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				.schemaType(this.schemaType)
 				.description(functionDescription)
 				.function(beanName, function)
-				.inputType(functionInputClass)
+				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 				.build();
 		}
 		else if (bean instanceof BiFunction<?, ?, ?>) {
@@ -134,7 +147,23 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 				.description(functionDescription)
 				.schemaType(this.schemaType)
 				.function(beanName, (BiFunction<?, ToolContext, ?>) bean)
-				.inputType(functionInputClass)
+				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
+				.build();
+		}
+		else if (bean instanceof Supplier<?> supplier) {
+			return FunctionCallback.builder()
+				.description(functionDescription)
+				.schemaType(this.schemaType)
+				.function(beanName, supplier)
+				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
+				.build();
+		}
+		else if (bean instanceof Consumer<?> consumer) {
+			return FunctionCallback.builder()
+				.description(functionDescription)
+				.schemaType(this.schemaType)
+				.function(beanName, consumer)
+				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 				.build();
 		}
 		else {
@@ -149,6 +178,15 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 	}
 
 	private static class KotlinDelegate {
+
+		public static boolean isKotlinSupplier(Class<?> clazz) {
+			return Function0.class.isAssignableFrom(clazz);
+		}
+
+		@SuppressWarnings("unchecked")
+		public static Supplier<?> wrapKotlinSupplier(Object function) {
+			return () -> ((Function0<Object>) function).invoke();
+		}
 
 		public static boolean isKotlinFunction(Class<?> clazz) {
 			return Function1.class.isAssignableFrom(clazz);

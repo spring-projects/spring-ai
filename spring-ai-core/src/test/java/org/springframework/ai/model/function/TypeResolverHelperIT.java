@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.function;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,7 +40,7 @@ public class TypeResolverHelperIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "weatherClassDefinition", "weatherFunctionDefinition", "standaloneWeatherFunction",
-			"scannedStandaloneWeatherFunction", "componentWeatherFunction" })
+			"scannedStandaloneWeatherFunction", "componentWeatherFunction", "weatherConsumer" })
 	void beanInputTypeResolutionWithResolvableType(String beanName) {
 		assertThat(this.applicationContext).isNotNull();
 		ResolvableType functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
@@ -87,6 +88,13 @@ public class TypeResolverHelperIT {
 		@Bean
 		StandaloneWeatherFunction standaloneWeatherFunction() {
 			return new StandaloneWeatherFunction();
+		}
+
+		@Bean
+		Consumer<WeatherRequest> weatherConsumer() {
+			return (weatherRequest) -> {
+				System.out.println(weatherRequest);
+			};
 		}
 
 	}

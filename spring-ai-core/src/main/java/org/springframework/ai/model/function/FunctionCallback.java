@@ -17,7 +17,9 @@
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -140,6 +142,16 @@ public interface FunctionCallback {
 		 * Builds a {@link BiFunction} invoking {@link FunctionCallback} instance.
 		 */
 		<I, O> FunctionInvokingSpec<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction);
+
+		/**
+		 * Builds a {@link Supplier} invoking {@link FunctionCallback} instance.
+		 */
+		<O> FunctionInvokingSpec<Void, O> function(String name, Supplier<O> supplier);
+
+		/**
+		 * Builds a {@link Consumer} invoking {@link FunctionCallback} instance.
+		 */
+		<I> FunctionInvokingSpec<I, Void> function(String name, Consumer<I> consumer);
 
 		/**
 		 * Builds a Method invoking {@link FunctionCallback} instance.
