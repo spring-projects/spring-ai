@@ -82,13 +82,22 @@ public interface FunctionCallback {
 
 	/**
 	 * Creates a new {@link FunctionCallback.Builder} instance used to build a default
-	 * {@link FunctionCallback} instance. *
+	 * {@link FunctionCallback} instance.
 	 * @return Returns a new {@link FunctionCallback.Builder} instance.
 	 */
 	static FunctionCallback.Builder builder() {
 		return new DefaultFunctionCallbackBuilder();
 	}
 
+	/**
+	 * Builder for creating a {@link FunctionCallback} instance. This is a hierarchical
+	 * builder with the following structure:
+	 * <ul>
+	 * <li>{@link Builder} - The root builder interface.
+	 * <li>{@link FunctionInvokingSpec} - The function invoking builder interface.
+	 * <li>{@link MethodInvokingSpec} - The method invoking builder interface.
+	 * </ul>
+	 */
 	interface Builder {
 
 		/**
@@ -122,14 +131,26 @@ public interface FunctionCallback {
 		 */
 		Builder objectMapper(ObjectMapper objectMapper);
 
+		/**
+		 * Builds a {@link Function} invoking {@link FunctionCallback} instance.
+		 */
 		<I, O> FunctionInvokingSpec<I, O> function(String name, Function<I, O> function);
 
+		/**
+		 * Builds a {@link BiFunction} invoking {@link FunctionCallback} instance.
+		 */
 		<I, O> FunctionInvokingSpec<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction);
 
+		/**
+		 * Builds a {@link Method} invoking {@link FunctionCallback} instance.
+		 */
 		MethodInvokingSpec method(String methodName, Class<?>... argumentTypes);
 
 	}
 
+	/**
+	 * {@link Function} invoking builder interface.
+	 */
 	interface FunctionInvokingSpec<I, O> {
 
 		/**
@@ -152,6 +173,9 @@ public interface FunctionCallback {
 
 	}
 
+	/**
+	 * {@link Method} invoking builder interface.
+	 */
 	interface MethodInvokingSpec {
 
 		/**

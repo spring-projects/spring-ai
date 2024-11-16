@@ -213,14 +213,14 @@ public interface ChatClient {
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
 		/**
-		 * @deprecated use {@link #function(FunctionCallback)} instead.
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
 		 */
 		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
 
 		/**
-		 * @deprecated use {@link #function(FunctionCallback)} instead.
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
 		 */
 		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description,
@@ -229,7 +229,7 @@ public interface ChatClient {
 		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
 
 		/**
-		 * @deprecated use {@link #function(FunctionCallback)} instead.
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
 		 */
 		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
@@ -291,13 +291,13 @@ public interface ChatClient {
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
 		/**
-		 * @deprecated use {@link #defaultFunction(FunctionCallback)} instead.
+		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
 		 */
 		@Deprecated
 		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
 
 		/**
-		 * @deprecated use {@link #defaultFunction(FunctionCallback)} instead.
+		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
 		 */
 		@Deprecated
 		<I, O> Builder defaultFunction(String name, String description,

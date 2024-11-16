@@ -39,7 +39,9 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @deprecated in favor of {@link FunctionCallbackWrapper.Builder}
  */
+@Deprecated
 public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
 
 	private final BiFunction<I, ToolContext, O> biFunction;
@@ -57,7 +59,7 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 	}
 
 	/**
-	 * @deprecated use {@link FunctionCallback#builder(BiFunction)} instead.
+	 * @deprecated use {@link FunctionCallback#builder()} instead.
 	 */
 	@Deprecated
 	public static <I, O> Builder<I, O> builder(BiFunction<I, ToolContext, O> biFunction) {
@@ -65,7 +67,7 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 	}
 
 	/**
-	 * @deprecated use {@link FunctionCallback#builder(Function)} instead.
+	 * @deprecated use {@link FunctionCallback#builder()} instead.
 	 */
 	@Deprecated
 	public static <I, O> Builder<I, O> builder(Function<I, O> function) {
