@@ -39,7 +39,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.ToolCallHelper;
+import org.springframework.ai.model.function.FunctionCallingHelper;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
@@ -64,7 +64,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
 
-	FunctionCallback functionDefinition = new ToolCallHelper.FunctionDefinition("getWeatherInLocation",
+	FunctionCallback functionDefinition = new FunctionCallingHelper.FunctionDefinition("getWeatherInLocation",
 			"Get the weather in location", """
 					{
 						"type": "object",
@@ -87,7 +87,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 
 	// Helper class that reuses some of the {@link AbstractToolCallSupport} functionality
 	// to help to implement the function call handling logic on the client side.
-	private ToolCallHelper toolCallHelper = new ToolCallHelper();
+	private FunctionCallingHelper functionCallingHelper = new FunctionCallingHelper();
 
 	// Function which will be called by the AI model.
 	private String getWeatherInLocation(String location, String unit) {
@@ -130,7 +130,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 
 			// Note that the tool call check could be platform specific because the finish
 			// reasons.
-			isToolCall = this.toolCallHelper.isToolCall(chatResponse,
+			isToolCall = this.functionCallingHelper.isToolCall(chatResponse,
 					Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 							OpenAiApi.ChatCompletionFinishReason.STOP.name()));
 
@@ -167,7 +167,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 
 				ToolResponseMessage toolMessageResponse = new ToolResponseMessage(toolResponses, Map.of());
 
-				messages = this.toolCallHelper.buildToolCallConversation(messages, assistantMessage,
+				messages = this.functionCallingHelper.buildToolCallConversation(messages, assistantMessage,
 						toolMessageResponse);
 
 				assertThat(messages).isNotEmpty();

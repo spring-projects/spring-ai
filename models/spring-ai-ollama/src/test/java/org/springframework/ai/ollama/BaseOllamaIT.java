@@ -19,7 +19,6 @@ package org.springframework.ai.ollama;
 import java.time.Duration;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 
@@ -30,7 +29,6 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.util.Assert;
 
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "OLLAMA_TESTS_ENABLED", matches = "true")
 public abstract class BaseOllamaIT {
 
 	private static final String OLLAMA_LOCAL_URL = "http://localhost:11434";

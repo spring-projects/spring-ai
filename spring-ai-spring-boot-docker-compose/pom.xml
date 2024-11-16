@@ -36,6 +36,7 @@
     </scm>
 
 	<properties>
+		<spring-ai-docker-compose.skipITs>false</spring-ai-docker-compose.skipITs>
 	</properties>
 
     <dependencies>
@@ -176,4 +177,24 @@
 
     </dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>${maven-failsafe-plugin.version}</version>
+				<configuration>
+					<skipITs>${skip.docker-compose}</skipITs>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

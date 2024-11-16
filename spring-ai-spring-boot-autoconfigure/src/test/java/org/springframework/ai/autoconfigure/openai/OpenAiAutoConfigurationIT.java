@@ -86,7 +86,7 @@ public class OpenAiAutoConfigurationIT {
 				.isTrue();
 			assertThat(response.length).isNotEqualTo(0);
 
-			logger.info("Response: " + Arrays.toString(response));
+			logger.debug("Response: " + Arrays.toString(response));
 		});
 	}
 

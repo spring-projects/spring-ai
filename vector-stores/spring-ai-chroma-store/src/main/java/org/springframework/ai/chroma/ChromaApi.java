@@ -28,7 +28,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chroma.ChromaApi.QueryRequest.Include;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -188,17 +187,15 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
-	public List<String> deleteEmbeddings(String collectionId, DeleteEmbeddingsRequest deleteRequest) {
-
+	public int deleteEmbeddings(String collectionId, DeleteEmbeddingsRequest deleteRequest) {
 		return this.restClient.post()
 			.uri("/api/v1/collections/{collection_id}/delete", collectionId)
 			.headers(this::httpHeaders)
 			.body(deleteRequest)
 			.retrieve()
-			.toEntity(new ParameterizedTypeReference<List<String>>() {
-
-			})
-			.getBody();
+			.toEntity(String.class)
+			.getStatusCode()
+			.value();
 	}
 
 	public Long countEmbeddings(String collectionId) {

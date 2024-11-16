@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.function;
 
+import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -38,25 +39,16 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
- *
  */
 public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
 
 	private final BiFunction<I, ToolContext, O> biFunction;
 
-	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
+	FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Type inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
 		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
 		this.biFunction = function;
-	}
-
-	public static <I, O> Builder<I, O> builder(BiFunction<I, ToolContext, O> biFunction) {
-		return new Builder<>(biFunction);
-	}
-
-	public static <I, O> Builder<I, O> builder(Function<I, O> function) {
-		return new Builder<>(function);
 	}
 
 	@Override
@@ -64,6 +56,26 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 		return this.biFunction.apply(input, context);
 	}
 
+	/**
+	 * @deprecated use {@link FunctionCallback#builder(BiFunction)} instead.
+	 */
+	@Deprecated
+	public static <I, O> Builder<I, O> builder(BiFunction<I, ToolContext, O> biFunction) {
+		return new Builder<>(biFunction);
+	}
+
+	/**
+	 * @deprecated use {@link FunctionCallback#builder(Function)} instead.
+	 */
+	@Deprecated
+	public static <I, O> Builder<I, O> builder(Function<I, O> function) {
+		return new Builder<>(function);
+	}
+
+	/**
+	 * @deprecated in favor of {@link DefaultFunctionCallbackBuilder}
+	 */
+	@Deprecated
 	public static class Builder<I, O> {
 
 		private final BiFunction<I, ToolContext, O> biFunction;
@@ -85,13 +97,13 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 
 		private ObjectMapper objectMapper;
 
-		public Builder(BiFunction<I, ToolContext, O> biFunction) {
+		private Builder(BiFunction<I, ToolContext, O> biFunction) {
 			Assert.notNull(biFunction, "Function must not be null");
 			this.biFunction = biFunction;
 			this.function = null;
 		}
 
-		public Builder(Function<I, O> function) {
+		private Builder(Function<I, O> function) {
 			Assert.notNull(function, "Function must not be null");
 			this.biFunction = null;
 			this.function = function;

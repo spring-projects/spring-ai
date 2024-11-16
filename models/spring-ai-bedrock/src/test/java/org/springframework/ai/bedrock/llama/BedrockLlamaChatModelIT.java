@@ -92,8 +92,11 @@ class BedrockLlamaChatModelIT {
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		String message = """
+				Describe 3 of the most feared and legendary pirates from the Golden Age of Piracy, particularly
+				those known for their intimidating tactics and whose stories influenced popular culture.
+				""";
+		UserMessage userMessage = new UserMessage(message);
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
@@ -111,7 +114,7 @@ class BedrockLlamaChatModelIT {
 
 		String format = outputConverter.getFormat();
 		String template = """
-				List five {subject}
+				List exactly five {subject}, no more and no less.
 				{format}
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template,

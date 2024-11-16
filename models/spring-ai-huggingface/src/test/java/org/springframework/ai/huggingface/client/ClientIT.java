@@ -43,6 +43,10 @@ public class ClientIT {
 				lastname: Smith
 				address: #1 Samuel St.
 				Just generate the JSON object without explanations:
+				Your response should be in JSON format.
+				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+				Do not include markdown code blocks in your response.
+				Remove the ```json markdown from the output.
 				[/INST]
 				""";
 		Prompt prompt = new Prompt(mistral7bInstruct);
@@ -50,9 +54,9 @@ public class ClientIT {
 		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
 		String expectedResponse = """
 				{
-					"name": "John",
-					"lastname": "Smith",
-					"address": "#1 Samuel St."
+				  "name": "John",
+				  "lastname": "Smith",
+				  "address": "#1 Samuel St."
 				}""";
 		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo(expectedResponse);
 		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsKey("generated_tokens");

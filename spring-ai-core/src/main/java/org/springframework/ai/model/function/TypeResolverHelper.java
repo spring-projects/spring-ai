@@ -152,6 +152,16 @@ public abstract class TypeResolverHelper {
 			rootBeanDefinition.setResolvedFactoryMethod(uniqueCandidate);
 			return rootBeanDefinition.getResolvableType();
 		}
+		// Support for @Component
+		if (beanDefinition.getFactoryMethodName() == null && beanDefinition.getBeanClassName() != null) {
+			try {
+				return ResolvableType.forClass(
+						ClassUtils.forName(beanDefinition.getBeanClassName(), applicationContext.getClassLoader()));
+			}
+			catch (ClassNotFoundException ex) {
+				throw new IllegalArgumentException("Impossible to resolve the type of bean " + beanName, ex);
+			}
+		}
 		throw new IllegalArgumentException("Impossible to resolve the type of bean " + beanName);
 	}
 

@@ -32,14 +32,14 @@ import org.springframework.core.ResolvableType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-class TypeResolverHelperIT {
+public class TypeResolverHelperIT {
 
 	@Autowired
 	GenericApplicationContext applicationContext;
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "weatherClassDefinition", "weatherFunctionDefinition", "standaloneWeatherFunction",
-			"scannedStandaloneWeatherFunction" })
+			"scannedStandaloneWeatherFunction", "componentWeatherFunction" })
 	void beanInputTypeResolutionWithResolvableType(String beanName) {
 		assertThat(this.applicationContext).isNotNull();
 		ResolvableType functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
@@ -70,7 +70,8 @@ class TypeResolverHelperIT {
 	}
 
 	@Configuration
-	@ComponentScan("org.springframework.ai.model.function.config")
+	@ComponentScan({ "org.springframework.ai.model.function.config",
+			"org.springframework.ai.model.function.component" })
 	public static class TypeResolverHelperConfiguration {
 
 		@Bean

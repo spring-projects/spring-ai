@@ -176,6 +176,11 @@ You can use the following properties in your Spring Boot configuration to custom
 |spring.ai.vectorstore.milvus.index-type | The type of the index to be created for the Milvus collection.  | IVF_FLAT
 |spring.ai.vectorstore.milvus.metric-type | The metric type to be used for the Milvus collection.  | COSINE
 |spring.ai.vectorstore.milvus.index-parameters | The index parameters to be used for the Milvus collection.  | {"nlist":1024}
+|spring.ai.vectorstore.milvus.id-field-name | The ID field name for the collection | doc_id
+|spring.ai.vectorstore.milvus.is-auto-id | Boolean flag to indicate if the auto-id is used for the ID field | false
+|spring.ai.vectorstore.milvus.content-field-name | The content field name for the collection | content
+|spring.ai.vectorstore.milvus.metadata-field-name | The metadata field name for the collection | metadata
+|spring.ai.vectorstore.milvus.embedding-field-name | The embedding field name for the collection | embedding
 |spring.ai.vectorstore.milvus.client.host |  The name or address of the host. | localhost
 |spring.ai.vectorstore.milvus.client.port |  The connection port. | 19530
 |spring.ai.vectorstore.milvus.client.uri |  The uri of Milvus instance | -

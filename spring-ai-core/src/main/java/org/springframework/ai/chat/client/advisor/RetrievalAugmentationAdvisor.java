@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,15 +37,16 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
+import org.springframework.ai.rag.analysis.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.augmentation.ContextualQueryAugmentor;
 import org.springframework.ai.rag.augmentation.QueryAugmentor;
-import org.springframework.ai.rag.retrieval.source.DocumentRetriever;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * This advisor implements common Retrieval Augmented Generation (RAG) flows using the
+ * Advisor that implements common Retrieval Augmented Generation (RAG) flows using the
  * building blocks defined in the {@link org.springframework.ai.rag} package and following
  * the Modular RAG Architecture.
  * <p>
@@ -55,9 +58,11 @@ import org.springframework.util.StringUtils;
  * @see <a href="http://export.arxiv.org/abs/2407.21059">arXiv:2407.21059</a>
  * @see <a href="https://export.arxiv.org/abs/2312.10997">arXiv:2312.10997</a>
  */
-public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	public static final String DOCUMENT_CONTEXT = "rag_document_context";
+
+	private final List<QueryTransformer> queryTransformers;
 
 	private final DocumentRetriever documentRetriever;
 
@@ -67,12 +72,15 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 
 	private final int order;
 
-	public RetrievalAugmentationAdvisor(DocumentRetriever documentRetriever, @Nullable QueryAugmentor queryAugmentor,
-			@Nullable Boolean protectFromBlocking, @Nullable Integer order) {
+	public RetrievalAugmentationAdvisor(List<QueryTransformer> queryTransformers, DocumentRetriever documentRetriever,
+			@Nullable QueryAugmentor queryAugmentor, @Nullable Boolean protectFromBlocking, @Nullable Integer order) {
+		Assert.notNull(queryTransformers, "queryTransformers cannot be null");
+		Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
 		Assert.notNull(documentRetriever, "documentRetriever cannot be null");
+		this.queryTransformers = queryTransformers;
 		this.documentRetriever = documentRetriever;
 		this.queryAugmentor = queryAugmentor != null ? queryAugmentor : ContextualQueryAugmentor.builder().build();
-		this.protectFromBlocking = protectFromBlocking != null ? protectFromBlocking : false;
+		this.protectFromBlocking = protectFromBlocking != null ? protectFromBlocking : true;
 		this.order = order != null ? order : 0;
 	}
 
@@ -119,30 +127,45 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 		Map<String, Object> context = new HashMap<>(request.adviseContext());
 
 		// 0. Create a query from the user text and parameters.
-		Query query = new Query(new PromptTemplate(request.userText(), request.userParams()).render());
+		Query originalQuery = new Query(new PromptTemplate(request.userText(), request.userParams()).render());
 
-		// 1. Retrieve similar documents for the original query.
-		List<Document> documents = this.documentRetriever.retrieve(query);
+		// 1. Transform original user query based on a chain of query transformers.
+		Query transformedQuery = originalQuery;
+		for (var queryTransformer : this.queryTransformers) {
+			transformedQuery = queryTransformer.apply(transformedQuery);
+		}
+
+		// 2. Retrieve similar documents for the original query.
+		List<Document> documents = this.documentRetriever.retrieve(transformedQuery);
 		context.put(DOCUMENT_CONTEXT, documents);
 
-		// 2. Augment user query with the contextual data.
-		Query augmentedQuery = this.queryAugmentor.augment(query, documents);
+		// 3. Augment user query with the document contextual data.
+		Query augmentedQuery = this.queryAugmentor.augment(transformedQuery, documents);
 
 		return AdvisedRequest.from(request).withUserText(augmentedQuery.text()).withAdviseContext(context).build();
 	}
 
 	private AdvisedResponse after(AdvisedResponse advisedResponse) {
-		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
+		ChatResponse.Builder chatResponseBuilder;
+		if (advisedResponse.response() == null) {
+			chatResponseBuilder = ChatResponse.builder();
+		}
+		else {
+			chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
+		}
 		chatResponseBuilder.withMetadata(DOCUMENT_CONTEXT, advisedResponse.adviseContext().get(DOCUMENT_CONTEXT));
 		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
 	}
 
 	private Predicate<AdvisedResponse> onFinishReason() {
-		return advisedResponse -> advisedResponse.response()
-			.getResults()
-			.stream()
-			.anyMatch(result -> result != null && result.getMetadata() != null
-					&& StringUtils.hasText(result.getMetadata().getFinishReason()));
+		return advisedResponse -> {
+			ChatResponse chatResponse = advisedResponse.response();
+			return chatResponse != null && chatResponse.getResults() != null
+					&& chatResponse.getResults()
+						.stream()
+						.anyMatch(result -> result != null && result.getMetadata() != null
+								&& StringUtils.hasText(result.getMetadata().getFinishReason()));
+		};
 	}
 
 	@Override
@@ -157,6 +180,8 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 
 	public static final class Builder {
 
+		private final List<QueryTransformer> queryTransformers = new ArrayList<>();
+
 		private DocumentRetriever documentRetriever;
 
 		private QueryAugmentor queryAugmentor;
@@ -166,6 +191,18 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 		private Integer order;
 
 		private Builder() {
+		}
+
+		public Builder queryTransformers(List<QueryTransformer> queryTransformers) {
+			Assert.notNull(queryTransformers, "queryTransformers cannot be null");
+			this.queryTransformers.addAll(queryTransformers);
+			return this;
+		}
+
+		public Builder queryTransformers(QueryTransformer... queryTransformers) {
+			Assert.notNull(queryTransformers, "queryTransformers cannot be null");
+			this.queryTransformers.addAll(Arrays.asList(queryTransformers));
+			return this;
 		}
 
 		public Builder documentRetriever(DocumentRetriever documentRetriever) {
@@ -189,7 +226,7 @@ public class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAr
 		}
 
 		public RetrievalAugmentationAdvisor build() {
-			return new RetrievalAugmentationAdvisor(this.documentRetriever, this.queryAugmentor,
+			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.documentRetriever, this.queryAugmentor,
 					this.protectFromBlocking, this.order);
 		}
 

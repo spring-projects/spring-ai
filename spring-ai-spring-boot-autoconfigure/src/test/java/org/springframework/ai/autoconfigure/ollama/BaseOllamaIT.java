@@ -30,9 +30,13 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.util.Assert;
 
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "OLLAMA_TESTS_ENABLED", matches = "true")
+@EnabledIfEnvironmentVariable(named = "OLLAMA_AUTOCONF_TESTS_ENABLED", matches = "true")
 public abstract class BaseOllamaIT {
 
+	static {
+		System.out.println("OLLAMA_AUTOCONF_TESTS_ENABLED=" + System.getenv("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+		System.out.println("System property=" + System.getProperty("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+	}
 	private static final String OLLAMA_LOCAL_URL = "http://localhost:11434";
 
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(10);

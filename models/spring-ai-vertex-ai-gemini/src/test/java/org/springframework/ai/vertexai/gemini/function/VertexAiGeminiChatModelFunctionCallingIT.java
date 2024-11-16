@@ -35,8 +35,8 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,11 +83,11 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			// .withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("get_current_weather")
-				.withDescription("Get the current weather in a given location")
-				.withInputTypeSchema(openApiSchema)
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description("Get the current weather in a given location")
+				.inputTypeSchema(openApiSchema)
+				.function("get_current_weather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -108,16 +108,18 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 			.withFunctionCallbacks(List.of(
-					FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_current_weather")
-						.withDescription("Get the current weather in a given location.")
+					FunctionCallback.builder()
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description("Get the current weather in a given location.")
+						.function("get_current_weather", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build(),
-					FunctionCallbackWrapper.builder(new PaymentStatus())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_payment_status")
-						.withDescription(
+					FunctionCallback.builder()
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description(
 								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.function("get_payment_status", new PaymentStatus())
+						.inputType(PaymentInfoRequest.class)
 						.build()))
 			.build();
 
@@ -147,16 +149,18 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 			.withFunctionCallbacks(List.of(
-					FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_current_weather")
-						.withDescription("Get the current weather in a given location.")
+					FunctionCallback.builder()
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description("Get the current weather in a given location.")
+						.function("get_current_weather", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build(),
-					FunctionCallbackWrapper.builder(new PaymentStatus())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_payment_status")
-						.withDescription(
+					FunctionCallback.builder()
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description(
 								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.function("get_payment_status", new PaymentStatus())
+						.inputType(PaymentInfoRequest.class)
 						.build()))
 			.build();
 
@@ -185,10 +189,11 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.schemaType(SchemaType.OPEN_API_SCHEMA)
+				.description("Get the current weather in a given location")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 

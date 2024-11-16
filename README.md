@@ -35,13 +35,20 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 * Support for [Chat Conversation Memory](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_chat_memory) and [Retrieval Augmented Generation (RAG)](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_retrieval_augmented_generation).
 * Spring Boot Auto Configuration and Starters for all AI Models and Vector Stores - use the [start.spring.io](https://start.spring.io/) to select the Model or Vector-store of choice. 
 
-## Breaking changes
-
-* Refer to the [upgrade notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html) to see how to upgrade to 1.0.0.M1 or higher.
-
 ## Getting Started
 
 Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/reference/getting-started.html) for instruction on adding your dependencies.
+
+## Project Resources
+
+* [Documentation](https://docs.spring.io/spring-ai/reference/)
+* [Issues](https://github.com/spring-projects/spring-ai/issues)
+<!-- * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback! -->
+* [Awesome Spring AI](https://github.com/danvega/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
+
+## Breaking changes
+
+* Refer to the [upgrade notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html) to see how to upgrade to 1.0.0.M1 or higher.
 
 ## Cloning the repo
 
@@ -100,64 +107,5 @@ Checkstyles are currently disabled, but you can enable them by doing the followi
 ./mvnw clean package -DskipTests -Ddisable.checks=false
 ```
 
-## Project Links
-
-* [Documentation](https://docs.spring.io/spring-ai/reference/)
-* [Issues](https://github.com/spring-projects/spring-ai/issues)
-<!-- * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback! -->
 
 
-## Educational Resources
-
-
-### Spring AI blogs:
-- [Leverage the Power of 45k, free, Hugging Face Models with Spring AI and Ollama](https://spring.io/blog/2024/10/22/leverage-the-power-of-45k-free-hugging-face-models-with-spring-ai-and-ollama)
-- [Supercharging Your AI Applications with Spring AI Advisors](https://spring.io/blog/2024/10/02/supercharging-your-ai-applications-with-spring-ai-advisors)
-- [Spring AI with NVIDIA LLM API](https://spring.io/blog/2024/08/20/spring-ai-with-nvidia-llm-api)
-- [Spring AI Embraces OpenAI's Structured Outputs: Enhancing JSON Response Reliability](https://spring.io/blog/2024/08/09/spring-ai-embraces-openais-structured-outputs-enhancing-json-response)
-- [Spring AI with Groq - a blazingly fast AI inference engine](https://spring.io/blog/2024/07/31/spring-ai-with-groq-a-blazingly-fast-ai-inference-engine)
-- [Spring AI with Ollama Tool Support](https://spring.io/blog/2024/07/26/spring-ai-with-ollama-tool-support)
-- [Spring AI - Structured Output](https://spring.io/blog/2024/05/09/spring-ai-structured-output)
-- [Spring AI - Multimodality - Orbis Sensualium Pictus](https://spring.io/blog/2024/04/19/spring-ai-multimodality-orbis-sensualium-pictus)
-- [Function Calling in Java and Spring AI using the latest Mistral AI API](https://spring.io/blog/2024/03/06/function-calling-in-java-and-spring-ai-using-the-latest-mistral-ai-api)
-- [AI Meets Spring Petclinic: Implementing an AI Assistant with Spring AI (Part I)](https://spring.io/blog/2024/09/26/ai-meets-spring-petclinic-implementing-an-ai-assistant-with-spring-ai-part-i)
-- [AI Meets Spring Petclinic: Implementing an AI Assistant with Spring AI (Part II)](https://spring.io/blog/2024/09/27/ai-meets-spring-petclinic-implementing-an-ai-assistant-with-spring-ai-part)
-
-### Code Examples
-
-- [Flight Booking Assistant](https://github.com/tzolov/playground-flight-booking) - Spring AI powered expert system demo
-- [Spring AI Chat Bot CLI](https://github.com/tzolov/spring-ai-cli-chatbot) - chatbot with Retrieval-Augmented Generation (RAG) and conversational memory capabilities
-- [Spring AI Samples (community driven) Thomas Vitale](https://github.com/ThomasVitale/llm-apps-java-spring-ai) - Samples showing how to build Java applications powered by Generative AI and Large Language Models (LLMs)
-- [Spring Ai Examples - (community driven) Craig Walls ](https://github.com/habuma/spring-ai-examples)
-- [Practical AI examples using Spring AI with UI frontend - (community driven) Marcus Hellberg](https://github.com/marcushellberg/spring-ai-examples)
-
-### Workshops
-
-- [Spring AI Zero to Hero Workshop](https://github.com/asaikali/spring-ai-zero-to-hero) - Example applications showing how to use Spring AI to build Generative AI projects.
-- (outdated) [Workshop material for Azure OpenAI](https://github.com/Azure-Samples/spring-ai-azure-workshop) - contains step-by-step examples from 'hello world' to 'retrieval augmented generation'
-
-### Talks and Videos 
-
-Some selected videos.  Search YouTube! for more.
-
-- Spring AI: Seamlessly Integrating AI into Your Enterprise Java Applications (2024 - Devoxx.be)
-<br>[![Spring AI: Seamlessly Integrating AI into Your Enterprise Java Applications](https://img.youtube.com/vi/kfRyY0wsZHM/default.jpg)](https://youtu.be/kfRyY0wsZHM?si=qzIshk0GJqVTyrNm)
-
-- Spring AI Is All You Need (2024 - GOTO Amsterdam)
-<br>[![Watch Spring Tips video](https://img.youtube.com/vi/vuhMti8B5H0/default.jpg)](https://youtu.be/vuhMti8B5H0?si=qhRVLh4-EaUhm9oe)
-
-- Introducing Spring AI (2024 - Spring.IO)
-<br>[![Introducing Spring AI](https://img.youtube.com/vi/umKbaXsiCOY/default.jpg)](https://youtu.be/umKbaXsiCOY?si=FbqCtLIOgbihm6b6)
-
-- Spring AI at Spring.IO Keynotes (2024 - Spring.IO)
-<br>[![Watch](https://img.youtube.com/vi/XUz4LKZx83g/default.jpg)](https://youtu.be/XUz4LKZx83g?t=2940)
-
-- Spring Tips: Spring AI
-<br>[![Watch Spring Tips video](https://img.youtube.com/vi/aNKDoiOUo9M/default.jpg)](https://www.youtube.com/watch?v=aNKDoiOUo9M)
-* Overview of Spring AI @ Devoxx 2023
-<br>[![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
-* Introducing Spring AI - Add Generative AI to your Spring Applications
-<br>[![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
-
-- Spring AI Introduction: Building AI Applications in Java with Spring
-<br>[![Watch the video](https://img.youtube.com/vi/yyvjT0v3lpY/default.jpg)](https://www.youtube.com/watch?v=yyvjT0v3lpY&ab_channel=DanVega)

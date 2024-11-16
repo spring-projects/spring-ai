@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
@@ -29,14 +32,13 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Augments the user query with contextual data.
+ * Augments the user query with contextual data from the content of the provided
+ * documents.
  *
  * <p>
  * Example usage: <pre>{@code
  * QueryAugmentor augmentor = ContextualQueryAugmentor.builder()
- *    .promptTemplate(promptTemplate)
- *    .emptyContextPromptTemplate(emptyContextPromptTemplate)
- *    .allowEmptyContext(allowEmptyContext)
+ *    .allowEmptyContext(false)
  *    .build();
  * Query augmentedQuery = augmentor.augment(query, documents);
  * }</pre>
@@ -44,7 +46,9 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class ContextualQueryAugmentor implements QueryAugmentor {
+public final class ContextualQueryAugmentor implements QueryAugmentor {
+
+	private static final Logger logger = LoggerFactory.getLogger(ContextualQueryAugmentor.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			Context information is below.
@@ -92,6 +96,8 @@ public class ContextualQueryAugmentor implements QueryAugmentor {
 		Assert.notNull(query, "query cannot be null");
 		Assert.notNull(documents, "documents cannot be null");
 
+		logger.debug("Augmenting query with contextual data");
+
 		if (documents.isEmpty()) {
 			return augmentQueryWhenEmptyContext(query);
 		}
@@ -110,8 +116,10 @@ public class ContextualQueryAugmentor implements QueryAugmentor {
 
 	private Query augmentQueryWhenEmptyContext(Query query) {
 		if (this.allowEmptyContext) {
+			logger.debug("Empty context is allowed. Returning the original query.");
 			return query;
 		}
+		logger.debug("Empty context is not allowed. Returning a specific query for empty context.");
 		return new Query(this.emptyContextPromptTemplate.render());
 	}
 

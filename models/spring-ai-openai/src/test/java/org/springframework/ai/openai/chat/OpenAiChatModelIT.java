@@ -48,7 +48,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -328,10 +328,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description("Get the weather in location")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -353,10 +353,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.description("Get the weather in location")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 

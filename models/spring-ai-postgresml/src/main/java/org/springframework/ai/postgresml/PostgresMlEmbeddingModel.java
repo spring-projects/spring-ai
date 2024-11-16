@@ -88,56 +88,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		this.createExtension = createExtension;
 	}
 
-	/**
-	 * a constructor
-	 * @param jdbcTemplate JdbcTemplate
-	 * @param transformer huggingface sentence-transformer name
-	 */
-	@Deprecated(since = "0.8.0", forRemoval = true)
-	public PostgresMlEmbeddingModel(JdbcTemplate jdbcTemplate, String transformer) {
-		this(jdbcTemplate, transformer, VectorType.PG_ARRAY);
-	}
-
-	/**
-	 * a constructor
-	 * @deprecated Use the constructor with {@link PostgresMlEmbeddingOptions} instead.
-	 * @param jdbcTemplate JdbcTemplate
-	 * @param transformer huggingface sentence-transformer name
-	 * @param vectorType vector type in PostgreSQL
-	 */
-	@Deprecated(since = "0.8.0", forRemoval = true)
-	public PostgresMlEmbeddingModel(JdbcTemplate jdbcTemplate, String transformer, VectorType vectorType) {
-		this(jdbcTemplate, transformer, vectorType, Map.of(), MetadataMode.EMBED, false);
-	}
-
-	/**
-	 * a constructor * @deprecated Use the constructor with
-	 * {@link PostgresMlEmbeddingOptions} instead.
-	 * @param jdbcTemplate JdbcTemplate
-	 * @param transformer huggingface sentence-transformer name
-	 * @param vectorType vector type in PostgreSQL
-	 * @param kwargs optional arguments
-	 */
-	@Deprecated(since = "0.8.0", forRemoval = true)
-	public PostgresMlEmbeddingModel(JdbcTemplate jdbcTemplate, String transformer, VectorType vectorType,
-			Map<String, Object> kwargs, MetadataMode metadataMode, boolean createExtension) {
-		Assert.notNull(jdbcTemplate, "jdbc template must not be null.");
-		Assert.notNull(transformer, "transformer must not be null.");
-		Assert.notNull(vectorType, "vectorType must not be null.");
-		Assert.notNull(kwargs, "kwargs must not be null.");
-		Assert.notNull(metadataMode, "metadataMode must not be null.");
-
-		this.jdbcTemplate = jdbcTemplate;
-
-		this.defaultOptions = PostgresMlEmbeddingOptions.builder()
-			.withTransformer(transformer)
-			.withVectorType(vectorType)
-			.withMetadataMode(metadataMode)
-			.withKwargs(ModelOptionsUtils.toJsonString(kwargs))
-			.build();
-		this.createExtension = createExtension;
-	}
-
 	@SuppressWarnings("null")
 	@Override
 	public float[] embed(String text) {

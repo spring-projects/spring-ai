@@ -105,54 +105,6 @@ public class OllamaApi {
 	}
 
 	/**
-	 * Generate a completion for the given prompt.
-	 * @param completionRequest Completion request.
-	 * @return Completion response.
-	 * @deprecated Use {@link #chat(ChatRequest)} instead.
-	 */
-	@Deprecated(since = "1.0.0-M2", forRemoval = true)
-	public GenerateResponse generate(GenerateRequest completionRequest) {
-		Assert.notNull(completionRequest, REQUEST_BODY_NULL_ERROR);
-		Assert.isTrue(!completionRequest.stream(), "Stream mode must be disabled.");
-
-		return this.restClient.post()
-			.uri("/api/generate")
-			.body(completionRequest)
-			.retrieve()
-			.onStatus(this.responseErrorHandler)
-			.body(GenerateResponse.class);
-	}
-
-	// --------------------------------------------------------------------------
-	// Generate & Streaming Generate
-	// --------------------------------------------------------------------------
-
-	/**
-	 * Generate a streaming completion for the given prompt.
-	 * @param completionRequest Completion request. The request must set the stream
-	 * property to true.
-	 * @return Completion response as a {@link Flux} stream.
-	 * @deprecated Use {@link #streamingChat(ChatRequest)} instead.
-	 */
-	@Deprecated(since = "1.0.0-M2", forRemoval = true)
-	public Flux<GenerateResponse> generateStreaming(GenerateRequest completionRequest) {
-		Assert.notNull(completionRequest, REQUEST_BODY_NULL_ERROR);
-		Assert.isTrue(completionRequest.stream(), "Request must set the stream property to true.");
-
-		return this.webClient.post()
-			.uri("/api/generate")
-			.body(Mono.just(completionRequest), GenerateRequest.class)
-			.retrieve()
-			.bodyToFlux(GenerateResponse.class)
-			.handle((data, sink) -> {
-				if (logger.isTraceEnabled()) {
-					logger.trace(data);
-				}
-				sink.next(data);
-			});
-	}
-
-	/**
 	 * Generate the next message in a chat with a provided model.
 	 * This is a streaming endpoint (controlled by the 'stream' request property), so
 	 * there will be a series of responses. The final response object will include
@@ -183,7 +135,7 @@ public class OllamaApi {
 
 		return this.webClient.post()
 			.uri("/api/chat")
-			.body(Mono.just(chatRequest), GenerateRequest.class)
+			.body(Mono.just(chatRequest), ChatRequest.class)
 			.retrieve()
 			.bodyToFlux(ChatResponse.class)
 			.handle((data, sink) -> {
@@ -208,28 +160,6 @@ public class OllamaApi {
 			.retrieve()
 			.onStatus(this.responseErrorHandler)
 			.body(EmbeddingsResponse.class);
-	}
-
-	// --------------------------------------------------------------------------
-	// Chat & Streaming Chat
-	// --------------------------------------------------------------------------
-
-	/**
-	 * Generate embeddings from a model.
-	 * @param embeddingRequest Embedding request.
-	 * @return Embedding response.
-	 * @deprecated Use {@link #embed(EmbeddingsRequest)} instead.
-	 */
-	@Deprecated(since = "1.0.0-M2", forRemoval = true)
-	public EmbeddingResponse embeddings(EmbeddingRequest embeddingRequest) {
-		Assert.notNull(embeddingRequest, REQUEST_BODY_NULL_ERROR);
-
-		return this.restClient.post()
-			.uri("/api/embeddings")
-			.body(embeddingRequest)
-			.retrieve()
-			.onStatus(this.responseErrorHandler)
-			.body(EmbeddingResponse.class);
 	}
 
 	/**
@@ -319,192 +249,6 @@ public class OllamaApi {
 			}
 		}
 
-	}
-
-	/**
-	 * The request object sent to the /generate endpoint.
-	 *
-	 * @param model (required) The model to use for completion.
-	 * @param prompt (required) The prompt(s) to generate completions for.
-	 * @param format (optional) The format to return the response in. Currently, the only
-	 * accepted value is "json".
-	 * @param options (optional) additional model parameters listed in the documentation
-	 * for the Model file such as temperature.
-	 * @param system (optional) system prompt to (overrides what is defined in the Model file).
-	 * @param template (optional) the full prompt or prompt template (overrides what is
-	 *  defined in the Model file).
-	 * @param context the context parameter returned from a previous request to /generate,
-	 * this can be used to keep a short conversational memory.
-	 * @param stream (optional) if false the response will be returned as a single
-	 * response object, rather than a stream of objects.
-	 * @param raw (optional) if true no formatting will be applied to the prompt and no
-	 * context will be returned. You may choose to use the raw parameter if you are
-	 * specifying a full templated prompt in your request to the API, and are managing
-	 * history yourself.
-	 * @param images (optional) a list of base64-encoded images (for multimodal models such as llava).
-	 * @param keepAlive (optional) controls how long the model will stay loaded into memory following the request (default: 5m).
-	 */
-	@Deprecated(since = "1.0.0-M2", forRemoval = true)
-	@JsonInclude(Include.NON_NULL)
-	public record GenerateRequest(
-			@JsonProperty("model") String model,
-			@JsonProperty("prompt") String prompt,
-			@JsonProperty("format") String format,
-			@JsonProperty("options") Map<String, Object> options,
-			@JsonProperty("system") String system,
-			@JsonProperty("template") String template,
-			@JsonProperty("context") List<Integer> context,
-			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("raw") Boolean raw,
-			@JsonProperty("images") List<String> images,
-			@JsonProperty("keep_alive") String keepAlive) {
-
-		/**
-		 * Shortcut constructor to create a CompletionRequest without options.
-		 * @param model The model used for completion.
-		 * @param prompt The prompt(s) to generate completions for.
-		 * @param stream Whether to stream the response.
-		 */
-		public GenerateRequest(String model, String prompt, Boolean stream) {
-			this(model, prompt, null, null, null, null, null, stream, null, null, null);
-		}
-
-		/**
-		 * Shortcut constructor to create a CompletionRequest without options.
-		 * @param model The model used for completion.
-		 * @param prompt The prompt(s) to generate completions for.
-		 * @param enableJsonFormat Whether to return the response in json format.
-		 * @param stream Whether to stream the response.
-		 */
-		public GenerateRequest(String model, String prompt, boolean enableJsonFormat, Boolean stream) {
-			this(model, prompt, (enableJsonFormat) ? "json" : null, null, null, null, null, stream, null, null, null);
-		}
-
-		/**
-		 * Create a CompletionRequest builder.
-		 * @param prompt The prompt(s) to generate completions for.
-		 */
-		public static Builder builder(String prompt) {
-			return new Builder(prompt);
-		}
-
-		public static class Builder {
-
-			private final String prompt;
-
-			private String model;
-
-			private String format;
-			private Map<String, Object> options;
-			private String system;
-			private String template;
-			private List<Integer> context;
-			private Boolean stream;
-			private Boolean raw;
-			private List<String> images;
-			private String keepAlive;
-
-			public Builder(String prompt) {
-				this.prompt = prompt;
-			}
-
-			public Builder withModel(String model) {
-				this.model = model;
-				return this;
-			}
-
-			public Builder withFormat(String format) {
-				this.format = format;
-				return this;
-			}
-
-			public Builder withOptions(Map<String, Object> options) {
-				this.options = options;
-				return this;
-			}
-
-			public Builder withOptions(OllamaOptions options) {
-				this.options = options.toMap();
-				return this;
-			}
-
-			public Builder withSystem(String system) {
-				this.system = system;
-				return this;
-			}
-
-			public Builder withTemplate(String template) {
-				this.template = template;
-				return this;
-			}
-
-			public Builder withContext(List<Integer> context) {
-				this.context = context;
-				return this;
-			}
-
-			public Builder withStream(Boolean stream) {
-				this.stream = stream;
-				return this;
-			}
-
-			public Builder withRaw(Boolean raw) {
-				this.raw = raw;
-				return this;
-			}
-
-			public Builder withImages(List<String> images) {
-				this.images = images;
-				return this;
-			}
-
-			public Builder withKeepAlive(String keepAlive) {
-				this.keepAlive = keepAlive;
-				return this;
-			}
-
-			public GenerateRequest build() {
-				return new GenerateRequest(this.model, this.prompt, this.format, this.options, this.system, this.template, this.context, this.stream, this.raw, this.images, this.keepAlive);
-			}
-
-		}
-	}
-
-	/**
-	 * The response object returned from the /generate endpoint. To calculate how fast the
-	 * response is generated in tokens per second (token/s), divide eval_count /
-	 * eval_duration.
-	 *
-	 * @param model The model used for completion.
-	 * @param createdAt When the request was made.
-	 * @param response The completion response. Empty if the response was streamed, if not
-	 * streamed, this will contain the full response
-	 * @param done Whether this is the final response. If true, this response may be
-	 * followed by another response with the following, additional fields: context,
-	 * prompt_eval_count, prompt_eval_duration, eval_count, eval_duration.
-	 * @param context Encoding of the conversation used in this response, this can be sent
-	 * in the next request to keep a conversational memory.
-	 * @param totalDuration Time spent generating the response.
-	 * @param loadDuration Time spent loading the model.
-	 * @param promptEvalCount Number of times the prompt was evaluated.
-	 * @param promptEvalDuration Time spent evaluating the prompt.
-	 * @param evalCount Number of tokens in the response.
-	 * @param evalDuration Time spent generating the response.
-	 */
-	@Deprecated(since = "1.0.0-M2", forRemoval = true)
-	@JsonInclude(Include.NON_NULL)
-	public record GenerateResponse(
-			@JsonProperty("model") String model,
-			@JsonProperty("created_at") Instant createdAt,
-			@JsonProperty("response") String response,
-			@JsonProperty("done") Boolean done,
-			@JsonProperty("context") List<Integer> context,
-			@JsonProperty("total_duration") Duration totalDuration,
-			@JsonProperty("load_duration") Duration loadDuration,
-			@JsonProperty("prompt_eval_count") Integer promptEvalCount,
-			@JsonProperty("prompt_eval_duration") Duration promptEvalDuration,
-			@JsonProperty("eval_count") Integer evalCount,
-			@JsonProperty("eval_duration") Duration evalDuration) {
 	}
 
 	/**
@@ -828,45 +572,6 @@ public class OllamaApi {
 		public EmbeddingsRequest(String model, String input) {
 			this(model, List.of(input), null, null, null);
 		}
-	}
-
-	/**
-	 * Generate embeddings from a model.
-	 *
-	 * @param model The name of model to generate embeddings from.
-	 * @param prompt The text generate embeddings for
-	 * @param keepAlive Controls how long the model will stay loaded into memory following the request (default: 5m).
-	 * @param options Additional model parameters listed in the documentation for the
-	 * @deprecated Use {@link EmbeddingsRequest} instead.
-	 */
-	@Deprecated(since = "1.0.0-M2", forRemoval = true)
-	@JsonInclude(Include.NON_NULL)
-	public record EmbeddingRequest(
-			@JsonProperty("model") String model,
-			@JsonProperty("prompt") String prompt,
-			@JsonProperty("keep_alive") Duration keepAlive,
-			@JsonProperty("options") Map<String, Object> options) {
-
-		/**
-		 * Shortcut constructor to create a EmbeddingRequest without options.
-		 * @param model The name of model to generate embeddings from.
-		 * @param prompt The text to generate embeddings for.
-		 */
-		public EmbeddingRequest(String model, String prompt) {
-			this(model, prompt, null, null);
-		}
-	}
-
-	/**
-	 * The response object returned from the /embedding endpoint.
-	 *
-	 * @param embedding The embedding generated from the model.
-	 * @deprecated Use {@link EmbeddingsResponse} instead.
-	 */
-	@Deprecated(since = "1.0.0-M2", forRemoval = true)
-	@JsonInclude(Include.NON_NULL)
-	public record EmbeddingResponse(
-			@JsonProperty("embedding") List<Float> embedding) {
 	}
 
 	/**

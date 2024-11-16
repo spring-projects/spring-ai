@@ -29,6 +29,7 @@ import io.qdrant.client.grpc.Collections.VectorParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
@@ -53,8 +54,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 0.8.1
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+") })
 public class QdrantVectorStoreIT {
 
 	private static final String COLLECTION_NAME = "test_collection";

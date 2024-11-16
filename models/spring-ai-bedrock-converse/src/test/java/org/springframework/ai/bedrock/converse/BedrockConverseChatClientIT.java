@@ -37,6 +37,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -212,7 +213,11 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("getCurrentWeather", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
+						.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -228,7 +233,11 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("getCurrentWeather", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
+						.build())
 				.advisors(new SimpleLoggerAdvisor())
 				.call()
 				.content();
@@ -244,7 +253,11 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-			.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+			.defaultFunctions(FunctionCallback.builder()
+				.description("Get the weather in location")
+				.function("getCurrentWeather", new MockWeatherService())
+				.inputType(MockWeatherService.Request.class)
+				.build())			
 			.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
 			.build()
 			.prompt()
@@ -263,7 +276,11 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())				
 				.stream()
 				.content();
 		// @formatter:on
@@ -280,7 +297,11 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in Paris? Return the temperature in Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.stream()
 				.content();
 		// @formatter:on

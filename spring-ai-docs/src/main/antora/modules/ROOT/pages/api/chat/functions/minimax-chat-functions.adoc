@@ -14,7 +14,7 @@ As a developer, you need to implement a function that takes the function call ar
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallbackWrapper.java[FunctionCallbackWrapper.java] utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 // Additionally, the Auto-Configuration provides a way to auto-register any Function<I, O> beans definition as function calling candidates in the `ChatModel`.
 
@@ -71,7 +71,7 @@ We start with describing the most POJO friendly options.
 
 In this approach you define `@Beans` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` wrapper that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` instance that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 
@@ -117,7 +117,7 @@ The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring
 
 ==== FunctionCallback Wrapper
 
-Another way register a function is to create `FunctionCallbackWrapper` wrapper like this:
+Another way register a function is to create `FunctionCallback` instance like this:
 
 [source,java]
 ----
@@ -127,9 +127,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-    return FunctionCallbackWrapper.builder(new MockWeatherService())
-        .withName("CurrentWeather") // (1) function name
-        .withDescription("Get the weather in location") // (2) function description
+    return FunctionCallback.builder()
+        .description("Get the weather in location") // (2) function description
+		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
 	}
 	...
@@ -137,11 +138,11 @@ static class Config {
 ----
 
 It wraps the 3rd party, `MockWeatherService` function and registers it as a `CurrentWeather` function with the `MiniMaxChatModel`.
-It also provides a description (2) and an optional response converter (3) to convert the response into a text as expected by the model.
+It also provides a description (2) and the function signature (3) to let the model know what arguments the function expects.
 
 NOTE: By default, the response converter does a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -170,7 +171,7 @@ Here is the current weather for the requested cities:
 - Paris, France: 15.0°C
 ----
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/minimax/tool/FunctionCallbackWrapperIT.java[FunctionCallbackWrapperIT.java] test demo this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/minimax/tool/MiniMaxFunctionCallbackIT.java[MiniMaxFunctionCallbackIT.java] test demo this approach.
 
 
 === Register/Call Functions with Prompt Options
@@ -184,10 +185,11 @@ MiniMaxChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = MiniMaxChatOptions.builder()
-	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
-		"CurrentWeather", // name
-		"Get the weather in location", // function description
-		new MockWeatherService()))) // function code
+	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+        .description("Get the weather in location") // (2) function description
+		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+		.inputType(MockWeatherService.Request.class) // (3) function signature
+        .build())) // function code
 	.build();
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage), this.promptOptions));
@@ -198,29 +200,3 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 This approach allows to dynamically chose different functions to be called based on the user input.
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/minimax/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `MiniMaxChatModel` and use it in a prompt request.
-//
-// === Register Functions with Default Options
-//
-// You can programmatically register functions with the `MiniMaxChatModel` using the `MiniMaxChatOptions#withFunctionCallbacks`:
-//
-// [source,java]
-// ----
-//
-// MiniMaxApi miniMaxApi = new MiniMaxApi(apiKey);
-//
-// var defaultOptions = MiniMaxChatOptions.builder()
-// 	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
-// 		"CurrentWeather", // name
-// 		"Get the weather in location", // function description
-// 		new MockWeatherService()))) // function code
-// 	.build();
-//
-// MiniMaxChatModel chatModel = new MiniMaxChatModel(miniMaxApi, defaultOptions);
-//
-// UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-//
-// ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-// 		MiniMaxChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
-// ----
-//
-// NOTE: Functions are registered when MiniMaxChatModel is created, by you must enable in the Prompt the functions to be used in the request.

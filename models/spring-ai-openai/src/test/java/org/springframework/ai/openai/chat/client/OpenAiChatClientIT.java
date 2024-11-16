@@ -37,6 +37,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -244,10 +245,16 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void functionCallTest() {
 
+		FunctionCallback functionCallback = FunctionCallback.builder()
+			.description("Get the weather in location")
+			.function("getCurrentWeather", new MockWeatherService())
+			.inputType(MockWeatherService.Request.class)
+			.build();
+
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(functionCallback)
 				.call()
 				.content();
 		// @formatter:on
@@ -262,7 +269,11 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.defaultFunctions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
 			.build()
 			.prompt().call().content();
@@ -279,7 +290,11 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(FunctionCallback.builder()
+					.description("Get the weather in location")
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.stream()
 				.content();
 		// @formatter:on

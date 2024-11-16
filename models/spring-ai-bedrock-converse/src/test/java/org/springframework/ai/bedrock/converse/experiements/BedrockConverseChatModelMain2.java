@@ -26,7 +26,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.MockWeatherService;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 
 /**
@@ -52,9 +52,10 @@ public final class BedrockConverseChatModelMain2 {
 				"What's the weather like in Paris? Return the temperature in Celsius.",
 				PortableFunctionCallingOptions.builder()
 					.withModel(modelId)
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName("getCurrentWeather")
-						.withDescription("Get the weather in location")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("getCurrentWeather", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());
 
@@ -68,11 +69,6 @@ public final class BedrockConverseChatModelMain2 {
 		Flux<ConverseStreamOutput> responses = chatModel.converseStream(streamRequest);
 		List<ConverseStreamOutput> responseList = responses.collectList().block();
 		System.out.println(responseList);
-
-		// Flux<ChatResponse> responses2 = ConverseApiUtils.toChatResponse(responses);
-		// List<ChatResponse> responseList2 = responses2.collectList().block();
-		// System.out.println(responseList2);
-
 	}
 
 }

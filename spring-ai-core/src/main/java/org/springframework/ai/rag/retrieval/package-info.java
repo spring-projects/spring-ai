@@ -15,11 +15,11 @@
  */
 
 /**
- * RAG Module: Retrieval.
+ * RAG Module: Information Retrieval.
  * <p>
- * This package includes submodules for handling the retrieval process in RAG flows.
+ * This package includes submodules for handling the retrieval process in
+ * retrieval-augmented generation flows.
  */
-
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.rag.retrieval;

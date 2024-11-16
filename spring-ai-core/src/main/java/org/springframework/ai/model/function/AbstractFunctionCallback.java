@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.function;
 
+import java.lang.reflect.Type;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -41,13 +42,13 @@ import org.springframework.util.Assert;
  * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
  */
-public abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
+abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
 
 	private final String name;
 
 	private final String description;
 
-	private final Class<I> inputType;
+	private final Type inputType;
 
 	private final String inputTypeSchema;
 
@@ -70,7 +71,7 @@ public abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, To
 	 * @param objectMapper Used to convert the function's input and output types to and
 	 * from JSON.
 	 */
-	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Class<I> inputType,
+	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Type inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
@@ -133,9 +134,9 @@ public abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, To
 		return this.responseConverter.apply((O) rowObjectResult);
 	}
 
-	private <T> T fromJson(String json, Class<T> targetClass) {
+	private <T> T fromJson(String json, Type targetType) {
 		try {
-			return this.objectMapper.readValue(json, targetClass);
+			return this.objectMapper.readValue(json, this.objectMapper.constructType(targetType));
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

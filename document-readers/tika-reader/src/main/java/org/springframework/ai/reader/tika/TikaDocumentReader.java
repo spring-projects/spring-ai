@@ -37,7 +37,7 @@ import org.springframework.util.StringUtils;
 /**
  * A document reader that leverages Apache Tika to extract text from a variety of document
  * formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of
- * supported formats, refer to: https://tika.apache.org/3.0.0-BETA2/formats.html.
+ * supported formats, refer to: https://tika.apache.org/3.0.0/formats.html.
  *
  * This reader directly provides the extracted text without any additional formatting. All
  * extracted texts are encapsulated within a {@link Document} instance.

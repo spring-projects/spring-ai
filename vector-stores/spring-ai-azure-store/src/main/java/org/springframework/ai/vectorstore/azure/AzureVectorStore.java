@@ -349,6 +349,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.setSortable(true));
 		fields.add(new SearchField(EMBEDDING_FIELD_NAME, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
 			.setSearchable(true)
+			.setHidden(false)
 			.setVectorSearchDimensions(dimensions)
 			// This must match a vector search configuration name.
 			.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));

@@ -36,6 +36,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ContextualQueryAugmentorTests {
 
 	@Test
+	void whenPromptHasMissingContextPlaceholderThenThrow() {
+		PromptTemplate customPromptTemplate = new PromptTemplate("You are the boss. Query: {query}");
+		assertThatThrownBy(() -> ContextualQueryAugmentor.builder().promptTemplate(customPromptTemplate).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("The following placeholders must be present in the prompt template")
+			.hasMessageContaining("context");
+	}
+
+	@Test
+	void whenPromptHasMissingQueryPlaceholderThenThrow() {
+		PromptTemplate customPromptTemplate = new PromptTemplate("You are the boss. Context: {context}");
+		assertThatThrownBy(() -> ContextualQueryAugmentor.builder().promptTemplate(customPromptTemplate).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("The following placeholders must be present in the prompt template")
+			.hasMessageContaining("query");
+	}
+
+	@Test
 	void whenQueryIsNullThenThrow() {
 		QueryAugmentor augmenter = ContextualQueryAugmentor.builder().build();
 		assertThatThrownBy(() -> augmenter.augment(null, List.of())).isInstanceOf(IllegalArgumentException.class)

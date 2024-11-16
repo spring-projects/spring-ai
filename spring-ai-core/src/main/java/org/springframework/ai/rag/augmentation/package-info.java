@@ -15,12 +15,13 @@
  */
 
 /**
- * RAG Module: Augmentation.
+ * RAG Module: Query Augmentation.
  * <p>
- * This package provides the functional building blocks for augmenting a user query with
- * contextual data.
+ * This package encompasses all components involved in the augmentation phase of a
+ * retrieval augmented generation flow. The goal of this phase is to enrich the user query
+ * with additional context that can be used to improve the quality of the generated
+ * response.
  */
-
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.rag.augmentation;

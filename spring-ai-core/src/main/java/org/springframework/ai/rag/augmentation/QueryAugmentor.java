@@ -23,7 +23,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
 /**
- * Component for augmenting a query with contextual data based on a specific strategy.
+ * Component responsible for augmenting an input query with additional contextual data
+ * that can be used by a large language model to answer the query.
  *
  * @author Thomas Vitale
  * @since 1.0.0
