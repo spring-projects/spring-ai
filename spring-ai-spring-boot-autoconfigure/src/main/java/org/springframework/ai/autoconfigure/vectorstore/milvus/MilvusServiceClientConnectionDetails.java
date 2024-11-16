@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.milvus;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
+ * Connection details for a Milvus service client.
+ *
  * @author Eddú Meléndez
  */
 public interface MilvusServiceClientConnectionDetails extends ConnectionDetails {

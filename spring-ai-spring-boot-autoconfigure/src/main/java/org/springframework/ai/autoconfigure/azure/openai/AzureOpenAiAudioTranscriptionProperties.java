@@ -21,6 +21,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for Azure OpenAI audio transcription.
+ *
  * @author Piotr Olaszewski
  */
 @ConfigurationProperties(AzureOpenAiAudioTranscriptionProperties.CONFIG_PREFIX)

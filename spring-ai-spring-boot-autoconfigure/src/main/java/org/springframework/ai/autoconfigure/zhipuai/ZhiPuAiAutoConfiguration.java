@@ -46,6 +46,8 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for ZhiPuAI.
+ *
  * @author Geng Rong
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })

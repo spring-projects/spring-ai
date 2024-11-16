@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for MiniMax chat model.
+ *
  * @author Geng Rong
  */
 @ConfigurationProperties(MiniMaxChatProperties.CONFIG_PREFIX)

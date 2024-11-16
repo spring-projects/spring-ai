@@ -31,10 +31,19 @@ public abstract class AbstractConversionServiceOutputConverter<T> implements Str
 
 	private final DefaultConversionService conversionService;
 
+	/**
+	 * Create a new {@link AbstractConversionServiceOutputConverter} instance.
+	 * @param conversionService the {@link DefaultConversionService} to use for converting
+	 * the output.
+	 */
 	public AbstractConversionServiceOutputConverter(DefaultConversionService conversionService) {
 		this.conversionService = conversionService;
 	}
 
+	/**
+	 * Return the ConversionService used by this converter.
+	 * @return the ConversionService used by this converter.
+	 */
 	public DefaultConversionService getConversionService() {
 		return this.conversionService;
 	}

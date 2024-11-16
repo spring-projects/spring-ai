@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Provides classes for observing image data.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.image.observation;

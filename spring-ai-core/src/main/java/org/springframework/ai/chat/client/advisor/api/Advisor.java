@@ -39,6 +39,7 @@ public interface Advisor extends Ordered {
 	int DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER = Ordered.HIGHEST_PRECEDENCE + 1000;
 
 	/**
+	 * Return the name of the advisor.
 	 * @return the advisor name.
 	 */
 	String getName();

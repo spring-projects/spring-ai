@@ -22,6 +22,8 @@ import org.springframework.ai.oci.OCIEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for OCI embedding model.
+ *
  * @author Anders Swanson
  */
 @ConfigurationProperties(OCIEmbeddingModelProperties.CONFIG_PREFIX)

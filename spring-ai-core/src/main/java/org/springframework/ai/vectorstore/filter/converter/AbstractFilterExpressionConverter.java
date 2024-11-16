@@ -42,12 +42,22 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		return this.convertOperand(expression);
 	}
 
+	/**
+	 * Convert the given operand into a string representation.
+	 * @param operand the operand to convert
+	 * @return the string representation of the operand
+	 */
 	protected String convertOperand(Operand operand) {
 		var context = new StringBuilder();
 		this.convertOperand(operand, context);
 		return context.toString();
 	}
 
+	/**
+	 * Convert the given operand into a string representation.
+	 * @param operand the operand to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void convertOperand(Operand operand, StringBuilder context) {
 
 		if (operand instanceof Filter.Group group) {
@@ -73,6 +83,11 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		}
 	}
 
+	/**
+	 * Convert the given expression into a string representation.
+	 * @param expression the expression to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doNot(Filter.Expression expression, StringBuilder context) {
 		// Default behavior is to convert the NOT expression into its semantically
 		// equivalent negation expression.
@@ -81,10 +96,25 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		this.convertOperand(FilterHelper.negate(expression), context);
 	}
 
+	/**
+	 * Convert the given expression into a string representation.
+	 * @param expression the expression to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected abstract void doExpression(Filter.Expression expression, StringBuilder context);
 
+	/**
+	 * Convert the given key into a string representation.
+	 * @param filterKey the key to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected abstract void doKey(Filter.Key filterKey, StringBuilder context);
 
+	/**
+	 * Convert the given value into a string representation.
+	 * @param filterValue the value to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doValue(Filter.Value filterValue, StringBuilder context) {
 		if (filterValue.value() instanceof List list) {
 			doStartValueRange(filterValue, context);
@@ -102,6 +132,11 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		}
 	}
 
+	/**
+	 * Convert the given value into a string representation.
+	 * @param value the value to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doSingleValue(Object value, StringBuilder context) {
 		if (value instanceof String) {
 			context.append(String.format("\"%s\"", value));
@@ -111,36 +146,76 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		}
 	}
 
+	/**
+	 * Convert the given group into a string representation.
+	 * @param group the group to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doGroup(Group group, StringBuilder context) {
 		this.doStartGroup(group, context);
 		this.convertOperand(group.content(), context);
 		this.doEndGroup(group, context);
 	}
 
+	/**
+	 * Convert the given group into a string representation.
+	 * @param group the group to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doStartGroup(Group group, StringBuilder context) {
 	}
 
+	/**
+	 * Convert the given group into a string representation.
+	 * @param group the group to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doEndGroup(Group group, StringBuilder context) {
 	}
 
+	/**
+	 * Convert the given value range into a string representation.
+	 * @param listValue the value range to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doStartValueRange(Filter.Value listValue, StringBuilder context) {
 		context.append("[");
 	}
 
+	/**
+	 * Convert the given value range into a string representation.
+	 * @param listValue the value range to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doEndValueRange(Filter.Value listValue, StringBuilder context) {
 		context.append("]");
 	}
 
+	/**
+	 * Convert the given value range into a string representation.
+	 * @param listValue the value range to convert
+	 * @param context the context to append the string representation to
+	 */
 	protected void doAddValueRangeSpitter(Filter.Value listValue, StringBuilder context) {
 		context.append(",");
 	}
 
 	// Utilities
+	/**
+	 * Check if the given string has outer quotes.
+	 * @param str the string to check
+	 * @return true if the string has outer quotes, false otherwise
+	 */
 	protected boolean hasOuterQuotes(String str) {
 		str = str.trim();
 		return (str.startsWith("\"") && str.endsWith("\"")) || (str.startsWith("'") && str.endsWith("'"));
 	}
 
+	/**
+	 * Remove the outer quotes from the given string.
+	 * @param in the string to remove the outer quotes from
+	 * @return the string without the outer quotes
+	 */
 	protected String removeOuterQuotes(String in) {
 		return in.substring(1, in.length() - 1);
 	}

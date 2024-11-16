@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Java class for Watsonx.ai Embedding Results object.
  *
+ * @param embedding the embedding
  * @author Pablo Sanchidrian Herrera
  * @since 1.0.0
  */

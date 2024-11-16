@@ -32,24 +32,99 @@ public enum VectorStoreProvider {
 	// @formatter:off
 
 	// Please, keep the alphabetical sorting.
+	/**
+	 * Vector store provided by Azure.
+	 */
 	AZURE("azure"),
+
+	/**
+	 * Vector store provided by Cassandra.
+	 */
 	CASSANDRA("cassandra"),
+
+	/**
+	 * Vector store provided by Chroma.
+	 */
 	CHROMA("chroma"),
+
+	/**
+	 * Vector store provided by CosmosDB.
+	 */
 	COSMOSDB("cosmosdb"),
+
+	/**
+	 * Vector store provided by Elasticsearch.
+	 */
 	ELASTICSEARCH("elasticsearch"),
+
+	/**
+	 * Vector store provided by GemFire.
+	 */
 	GEMFIRE("gemfire"),
+
+	/**
+	 * Vector store provided by HANA.
+	 */
 	HANA("hana"),
+
+	/**
+	 * Vector store provided by Milvus.
+	 */
 	MILVUS("milvus"),
+
+	/**
+	 * Vector store provided by MongoDB.
+	 */
 	MONGODB("mongodb"),
+
+	/**
+	 * Vector store provided by Neo4j.
+	 */
 	NEO4J("neo4j"),
+
+	/**
+	 * Vector store provided by OpenSearch.
+	 */
 	OPENSEARCH("opensearch"),
+
+	/**
+	 * Vector store provided by Oracle.
+	 */
 	ORACLE("oracle"),
+
+	/**
+	 * Vector store provided by PGVector.
+	 */
 	PG_VECTOR("pg_vector"),
+
+	/**
+	 * Vector store provided by Pinecone.
+	 */
 	PINECONE("pinecone"),
+
+	/**
+	 * Vector store provided by Qdrand.
+	 */
 	QDRANT("qdrant"),
+
+	/**
+	 * Vector store provided by Redis.
+	 */
 	REDIS("redis"),
+
+	/**
+	 * Vector store provided by simple.
+	 */
 	SIMPLE("simple"),
+
+	/**
+	 * Vector store provided by Typesense.
+	 */
 	TYPESENSE("typesense"),
+
+	/**
+	 * Vector store provided by Weaviate.
+	 */
 	WEAVIATE("weaviate");
 
 	// @formatter:on
@@ -60,6 +135,10 @@ public enum VectorStoreProvider {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the vector store provider.
+	 * @return the value of the vector store provider
+	 */
 	public String value() {
 		return this.value;
 	}

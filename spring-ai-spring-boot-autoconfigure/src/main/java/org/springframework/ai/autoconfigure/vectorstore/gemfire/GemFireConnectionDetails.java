@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
+ * Connection details for a GemFire service.
+ *
  * @author Geet Rawat
  */
 public interface GemFireConnectionDetails extends ConnectionDetails {

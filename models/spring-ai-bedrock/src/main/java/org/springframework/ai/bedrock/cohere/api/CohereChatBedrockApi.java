@@ -354,6 +354,7 @@ public class CohereChatBedrockApi extends
 		 * Generated result along with the likelihoods for tokens requested.
 		 *
 		 * @param id An identifier for the generation. (Always returned).
+		 * @param eventType The type of event that occurred. (Always returned).
 		 * @param likelihood The likelihood of the output. The value is the average of the token likelihoods in
 		 * token_likelihoods. Returned if you specify the return_likelihoods input parameter.
 		 * @param tokenLikelihoods An array of per token likelihoods. Returned if you specify the return_likelihoods
@@ -370,7 +371,7 @@ public class CohereChatBedrockApi extends
 		@JsonInclude(Include.NON_NULL)
 		public record Generation(
 				@JsonProperty("id") String id,
-				@JsonProperty("event_type") String event_type,
+				@JsonProperty("event_type") String eventType,
 				@JsonProperty("likelihood") Float likelihood,
 				@JsonProperty("token_likelihoods") List<TokenLikelihood> tokenLikelihoods,
 				@JsonProperty("finish_reason") FinishReason finishReason,
@@ -403,6 +404,7 @@ public class CohereChatBedrockApi extends
 			}
 
 			/**
+			 * Token likelihood.
 			 * @param token The token.
 			 * @param likelihood The likelihood of the token.
 			 */

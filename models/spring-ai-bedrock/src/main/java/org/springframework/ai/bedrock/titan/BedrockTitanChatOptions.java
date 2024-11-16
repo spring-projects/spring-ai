@@ -26,6 +26,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
+ * Options for the Titan Chat API.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 0.8.0

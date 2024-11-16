@@ -36,6 +36,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Redis Vector Store.
+ *
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko

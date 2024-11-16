@@ -48,6 +48,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
+ * The Anthropic API client.
+ *
  * @author Christian Tzolov
  * @author Mariusz Bernacki
  * @author Thomas Vitale
@@ -102,6 +104,7 @@ public class AnthropicApi {
 	 * @param baseUrl api base URL.
 	 * @param anthropicApiKey Anthropic api Key.
 	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
@@ -115,7 +118,9 @@ public class AnthropicApi {
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
 	 * @param anthropicApiKey Anthropic api Key.
+	 * @param anthropicVersion Anthropic version.
 	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
@@ -220,29 +225,61 @@ public class AnthropicApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		/**
+		 * The claude-3-5-sonnet-20241022 model.
+		 */
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-20241022"),
 
+		/**
+		 * The CLAUDE_3_OPUS
+		 */
 		CLAUDE_3_OPUS("claude-3-opus-20240229"),
+
+		/**
+		 * The CLAUDE_3_SONNET
+		 */
 		CLAUDE_3_SONNET("claude-3-sonnet-20240229"),
+
+		/**
+		 * The CLAUDE_3_HAIKU
+		 */
 		CLAUDE_3_HAIKU("claude-3-haiku-20240307"),
 
 		// Legacy models
+		/**
+		 * The CLAUDE_2_1
+		 */
 		CLAUDE_2_1("claude-2.1"),
+
+		/**
+		 * The CLAUDE_2_0
+		 */
 		CLAUDE_2("claude-2.0"),
 
+		/**
+		 * The CLAUDE_INSTANT_1_2
+		 */
 		CLAUDE_INSTANT_1_2("claude-instant-1.2");
 		// @formatter:on
 
-		public final String value;
+		private final String value;
 
 		ChatModel(String value) {
 			this.value = value;
 		}
 
+		/**
+		 * Get the value of the model.
+		 * @return The value of the model.
+		 */
 		public String getValue() {
 			return this.value;
 		}
 
+		/**
+		 * Get the name of the model.
+		 * @return The name of the model.
+		 */
 		@Override
 		public String getName() {
 			return this.value;
@@ -256,16 +293,21 @@ public class AnthropicApi {
 	public enum Role {
 
 		// @formatter:off
-		@JsonProperty("user")
-		USER,
-		@JsonProperty("assistant")
-		ASSISTANT
+		/**
+		 * The user role.
+		 */
+		@JsonProperty("user") USER,
+
+		/**
+		 * The assistant role.
+		 */
+		@JsonProperty("assistant") ASSISTANT
 		// @formatter:on
 
 	}
 
 	/**
-	 * The evnt type of the streamed chunk.
+	 * The event type of the streamed chunk.
 	 */
 	public enum EventType {
 
@@ -288,37 +330,37 @@ public class AnthropicApi {
 		MESSAGE_STOP,
 
 		/**
-		 *
+		 * Content block start event.
 		 */
 		@JsonProperty("content_block_start")
 		CONTENT_BLOCK_START,
 
 		/**
-		 *
+		 * Content block delta event.
 		 */
 		@JsonProperty("content_block_delta")
 		CONTENT_BLOCK_DELTA,
 
 		/**
-		 *
+		 * A final content block stop event.
 		 */
 		@JsonProperty("content_block_stop")
 		CONTENT_BLOCK_STOP,
 
 		/**
-		 *
+		 * Error event.
 		 */
 		@JsonProperty("error")
 		ERROR,
 
 		/**
-		 *
+		 * Ping event.
 		 */
 		@JsonProperty("ping")
 		PING,
 
 		/**
-		 * Artifically created event to aggregate tool use events.
+		 * Artificially created event to aggregate tool use events.
 		 */
 		TOOL_USE_AGGREATE
 
@@ -345,6 +387,8 @@ public class AnthropicApi {
 	}
 
 	/**
+	 * Chat completion request object.
+	 *
 	 * @param model The model that will complete your prompt. See the list of
 	 * <a href="https://docs.anthropic.com/claude/docs/models-overview">models</a> for
 	 * additional details and options.
@@ -419,6 +463,8 @@ public class AnthropicApi {
 		}
 
 		/**
+		 * Metadata about the request.
+		 *
 		 * @param userId An external identifier for the user who is associated with the
 		 * request. This should be a uuid, hash value, or other opaque identifier.
 		 * Anthropic may use this id to help detect abuse. Do not include any identifying
@@ -570,12 +616,20 @@ public class AnthropicApi {
 	}
 
 	/**
+	 * The content block of the message.
+	 *
 	 * @param type the content type can be "text", "image", "tool_use", "tool_result" or
 	 * "text_delta".
 	 * @param source The source of the media content. Applicable for "image" types only.
 	 * @param text The text of the message. Applicable for "text" types only.
 	 * @param index The index of the content block. Applicable only for streaming
 	 * responses.
+	 * @param id The id of the tool use. Applicable only for tool_use response.
+	 * @param name The name of the tool use. Applicable only for tool_use response.
+	 * @param input The input of the tool use. Applicable only for tool_use response.
+	 * @param toolUseId The id of the tool use. Applicable only for tool_result response.
+	 * @param content The content of the tool result. Applicable only for tool_result
+	 * response.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlock(
@@ -598,28 +652,61 @@ public class AnthropicApi {
 		) {
 		// @formatter:on
 
+		/**
+		 * Create content block
+		 * @param mediaType The media type of the content.
+		 * @param data The content data.
+		 */
 		public ContentBlock(String mediaType, String data) {
 			this(new Source(mediaType, data));
 		}
 
+		/**
+		 * Create content block
+		 * @param source The source of the content.
+		 */
 		public ContentBlock(Source source) {
 			this(Type.IMAGE, source, null, null, null, null, null, null, null);
 		}
 
+		/**
+		 * Create content block
+		 * @param text The text of the content.
+		 */
 		public ContentBlock(String text) {
 			this(Type.TEXT, null, text, null, null, null, null, null, null);
 		}
 
 		// Tool result
+		/**
+		 * Create content block
+		 * @param type The type of the content.
+		 * @param toolUseId The id of the tool use.
+		 * @param content The content of the tool result.
+		 */
 		public ContentBlock(Type type, String toolUseId, String content) {
 			this(type, null, null, null, null, null, null, toolUseId, content);
 		}
 
+		/**
+		 * Create content block
+		 * @param type The type of the content.
+		 * @param source The source of the content.
+		 * @param text The text of the content.
+		 * @param index The index of the content block.
+		 */
 		public ContentBlock(Type type, Source source, String text, Integer index) {
 			this(type, source, text, index, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
+		/**
+		 * Create content block
+		 * @param type The type of the content.
+		 * @param id The id of the tool use.
+		 * @param name The name of the tool use.
+		 * @param input The input of the tool use.
+		 */
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
 			this(type, null, null, null, id, name, input, null, null);
 		}
@@ -671,6 +758,10 @@ public class AnthropicApi {
 				this.value = value;
 			}
 
+			/**
+			 * Get the value of the type.
+			 * @return The value of the type.
+			 */
 			public String getValue() {
 				return this.value;
 			}
@@ -694,6 +785,11 @@ public class AnthropicApi {
 			@JsonProperty("data") String data) {
 			// @formatter:on
 
+			/**
+			 * Create source
+			 * @param mediaType The media type of the content.
+			 * @param data The content data.
+			 */
 			public Source(String mediaType, String data) {
 				this("base64", mediaType, data);
 			}
@@ -706,6 +802,13 @@ public class AnthropicApi {
 	/// CONTENT_BLOCK EVENTS
 	///////////////////////////////////////
 
+	/**
+	 * Tool description.
+	 *
+	 * @param name The name of the tool.
+	 * @param description A description of the tool.
+	 * @param inputSchema The input schema of the tool.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(
 	// @formatter:off
@@ -718,6 +821,8 @@ public class AnthropicApi {
 	// CB START EVENT
 
 	/**
+	 * Chat completion response object.
+	 * 
 	 * @param id Unique object identifier. The format and length of IDs may change over
 	 * time.
 	 * @param type Object type. For Messages, this is always "message".
@@ -783,10 +888,18 @@ public class AnthropicApi {
 			return EventType.TOOL_USE_AGGREATE;
 		}
 
+		/**
+		 * Get tool content blocks.
+		 * @return The tool content blocks.
+		 */
 		public List<ContentBlockStartEvent.ContentBlockToolUse> getToolContentBlocks() {
 			return this.toolContentBlocks;
 		}
 
+		/**
+		 * Check if the event is empty.
+		 * @return True if the event is empty, false otherwise.
+		 */
 		public boolean isEmpty() {
 			return (this.index == null || this.id == null || this.name == null
 					|| !StringUtils.hasText(this.partialJson));
@@ -836,6 +949,12 @@ public class AnthropicApi {
 
 	// MESSAGE START EVENT
 
+	/**
+	 * Content block start event.
+	 * @param type The event type.
+	 * @param index The index of the content block.
+	 * @param contentBlock The content block body.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockStartEvent(
 			// @formatter:off
@@ -851,6 +970,13 @@ public class AnthropicApi {
 			String type();
 		}
 
+		/**
+		 * Tool use content block.
+		 * @param type The content block type.
+		 * @param id The tool use id.
+		 * @param name The tool use name.
+		 * @param input The tool use input.
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ContentBlockToolUse(
 			@JsonProperty("type") String type,
@@ -859,6 +985,11 @@ public class AnthropicApi {
 			@JsonProperty("input") Map<String, Object> input) implements ContentBlockBody {
 		}
 
+		/**
+		 * Text content block.
+		 * @param type The content block type.
+		 * @param text The text content.
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ContentBlockText(
 			@JsonProperty("type") String type,
@@ -869,6 +1000,13 @@ public class AnthropicApi {
 
 	// MESSAGE DELTA EVENT
 
+	/**
+	 * Content block delta event.
+	 *
+	 * @param type The event type.
+	 * @param index The index of the content block.
+	 * @param delta The content block delta body.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockDeltaEvent(
 	// @formatter:off
@@ -884,12 +1022,22 @@ public class AnthropicApi {
 			String type();
 		}
 
+		/**
+		 * Text content block delta.
+		 * @param type The content block type.
+		 * @param text The text content.
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ContentBlockDeltaText(
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockDeltaBody {
 		}
 
+		/**
+		 * JSON content block delta.
+		 * @param type The content block type.
+		 * @param partialJson The partial JSON content.
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ContentBlockDeltaJson(
 			@JsonProperty("type") String type,
@@ -900,6 +1048,12 @@ public class AnthropicApi {
 
 	// MESSAGE STOP EVENT
 
+	/**
+	 * Content block stop event.
+	 *
+	 * @param type The event type.
+	 * @param index The index of the content block.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockStopEvent(
 	// @formatter:off
@@ -908,6 +1062,12 @@ public class AnthropicApi {
 	}
 	// @formatter:on
 
+	/**
+	 * Message start event.
+	 *
+	 * @param type The event type.
+	 * @param message The message body.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record MessageStartEvent(// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -915,6 +1075,13 @@ public class AnthropicApi {
 	}
 	// @formatter:on
 
+	/**
+	 * Message delta event.
+	 *
+	 * @param type The event type.
+	 * @param delta The message delta body.
+	 * @param usage The message delta usage.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record MessageDeltaEvent(
 	// @formatter:off
@@ -922,12 +1089,21 @@ public class AnthropicApi {
 		@JsonProperty("delta") MessageDelta delta,
 		@JsonProperty("usage") MessageDeltaUsage usage) implements StreamEvent {
 
+		/**
+		 * Message delta.
+		 * @param stopReason The stop reason.
+		 * @param stopSequence The stop sequence.
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record MessageDelta(
 			@JsonProperty("stop_reason") String stopReason,
 			@JsonProperty("stop_sequence") String stopSequence) {
 		}
 
+		/**
+		 * Message delta usage.
+		 * @param outputTokens The output tokens.
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record MessageDeltaUsage(
 			@JsonProperty("output_tokens") Integer outputTokens) {
@@ -935,6 +1111,11 @@ public class AnthropicApi {
 	}
 	// @formatter:on
 
+	/**
+	 * Message stop event.
+	 *
+	 * @param type The event type.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record MessageStopEvent(
 	// @formatter:off
@@ -945,12 +1126,23 @@ public class AnthropicApi {
 	///////////////////////////////////////
 	/// ERROR EVENT
 	///////////////////////////////////////
+	/**
+	 * Error event.
+	 *
+	 * @param type The event type.
+	 * @param error The error body.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ErrorEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
 		@JsonProperty("error") Error error) implements StreamEvent {
 
+		/**
+		 * Error body.
+		 * @param type The error type.
+		 * @param message The error message.
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Error(
 			@JsonProperty("type") String type,
@@ -962,6 +1154,11 @@ public class AnthropicApi {
 	///////////////////////////////////////
 	/// PING EVENT
 	///////////////////////////////////////
+	/**
+	 * Ping event.
+	 *
+	 * @param type The event type.
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record PingEvent(
 	// @formatter:off

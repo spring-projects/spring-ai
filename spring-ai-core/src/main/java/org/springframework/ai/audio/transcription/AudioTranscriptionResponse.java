@@ -21,6 +21,8 @@ import java.util.List;
 import org.springframework.ai.model.ModelResponse;
 
 /**
+ * A response containing an audio transcription result.
+ *
  * @author Michael Lavelle
  * @author Piotr Olaszewski
  * @since 0.8.1

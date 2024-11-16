@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Azure Vector Store.
+ *
  * @author Christian Tzolov
  */
 @ConfigurationProperties(AzureVectorStoreProperties.CONFIG_PREFIX)

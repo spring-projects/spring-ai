@@ -24,6 +24,8 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.util.StringUtils;
 
 /**
+ * Options for the Vertex AI Text Embedding service.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */

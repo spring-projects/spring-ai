@@ -27,6 +27,9 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.lang.Nullable;
 
 /**
+ * Abstract base class for {@link VectorStore} implementations that provides observation
+ * capabilities.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -39,12 +42,20 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Nullable
 	private final VectorStoreObservationConvention customObservationConvention;
 
+	/**
+	 * Create a new {@link AbstractObservationVectorStore} instance.
+	 * @param observationRegistry the observation registry to use
+	 */
 	public AbstractObservationVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention) {
 		this.observationRegistry = observationRegistry;
 		this.customObservationConvention = customObservationConvention;
 	}
 
+	/**
+	 * Create a new {@link AbstractObservationVectorStore} instance.
+	 * @param documents the documents to add
+	 */
 	@Override
 	public void add(List<Document> documents) {
 

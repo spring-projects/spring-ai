@@ -31,19 +31,74 @@ public enum AiProvider {
 	// @formatter:off
 
 	// Please, keep the alphabetical sorting.
+	/**
+	 * AI system provided by Anthropic.
+	 */
 	ANTHROPIC("anthropic"),
+
+	/**
+	 * AI system provided by Azure.
+	 */
 	AZURE_OPENAI("azure-openai"),
-	MISTRAL_AI("mistral_ai"),
-	OCI_GENAI("oci_genai"),
-	OLLAMA("ollama"),
-	OPENAI("openai"),
-	MINIMAX("minimax"),
-	MOONSHOT("moonshot"),
-	QIANFAN("qianfan"),
-	ZHIPUAI("zhipuai"),
-	SPRING_AI("spring_ai"),
-	VERTEX_AI("vertex_ai"),
+
+	/**
+	 * AI system provided by Bedrock Converse.
+	 */
 	BEDROCK_CONVERSE("bedrock_converse"),
+
+	/**
+	 * AI system provided by Mistral.
+	 */
+	MISTRAL_AI("mistral_ai"),
+
+	/**
+	 * AI system provided by Oracle OCI.
+	 */
+	OCI_GENAI("oci_genai"),
+
+	/**
+	 * AI system provided by Ollama.
+	 */
+	OLLAMA("ollama"),
+
+	/**
+	 * AI system provided by OpenAI.
+	 */
+	OPENAI("openai"),
+
+	/**
+	 * AI system provided by Minimax.
+	 */
+	MINIMAX("minimax"),
+
+	/**
+	 * AI system provided by Moonshot.
+	 */
+	MOONSHOT("moonshot"),
+
+	/**
+	 * AI system provided by Qianfan.
+	 */
+	QIANFAN("qianfan"),
+
+	/**
+	 * AI system provided by Zhipuai.
+	 */
+	ZHIPUAI("zhipuai"),
+
+	/**
+	 * AI system provided by Spring AI.
+	 */
+	SPRING_AI("spring_ai"),
+
+	/**
+	 * AI system provided by Vertex AI.
+	 */
+	VERTEX_AI("vertex_ai"),
+
+	/**
+	 * AI system provided by ONNX.
+	 */
 	ONNX("onnx");
 
 	private final String value;
@@ -52,6 +107,10 @@ public enum AiProvider {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the provider.
+	 * @return the value of the provider
+	 */
 	public String value() {
 		return this.value;
 	}

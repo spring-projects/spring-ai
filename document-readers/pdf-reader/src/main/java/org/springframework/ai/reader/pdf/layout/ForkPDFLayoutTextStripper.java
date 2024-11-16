@@ -100,7 +100,6 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	 * In order to get rid of the warning: TextPositionComparator class should implement
 	 * Comparator<TextPosition> instead of Comparator
 	 */
-	@SuppressWarnings("unchecked")
 	private void sortTextPositionList(final List<TextPosition> textList) {
 		TextPositionComparator comparator = new TextPositionComparator();
 		Collections.sort(textList, comparator);

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Provides classes for observing model data.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.model.observation;

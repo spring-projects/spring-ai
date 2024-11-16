@@ -25,6 +25,8 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.GranularityType;
 
 /**
+ * OpenAI Audio Transcription Options.
+ *
  * @author Michael Lavelle
  * @author Christian Tzolov
  * @author Piotr Olaszewski

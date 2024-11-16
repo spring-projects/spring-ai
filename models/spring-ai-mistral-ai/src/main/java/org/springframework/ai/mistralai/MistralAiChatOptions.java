@@ -37,6 +37,8 @@ import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.util.Assert;
 
 /**
+ * Options for the Mistral AI Chat API.
+ *
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale

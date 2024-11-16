@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/**
+ * Chat client.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.chat.client;

@@ -70,6 +70,8 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationCont
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 
 /**
+ * Cosmos DB implementation.
+ *
  * @author Theo van Kraay
  * @author Soby Chacko
  * @since 1.0.0

@@ -23,6 +23,9 @@ import java.util.Set;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
+ * FunctionCallingOptions is a set of options that can be used to configure the function
+ * calling behavior of the ChatModel.
+ *
  * @author Christian Tzolov
  */
 public interface FunctionCallingOptions extends ChatOptions {

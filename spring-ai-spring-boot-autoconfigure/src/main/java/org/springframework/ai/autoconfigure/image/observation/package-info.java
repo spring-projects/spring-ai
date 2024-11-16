@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Auto-configuration for image observation.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.autoconfigure.image.observation;

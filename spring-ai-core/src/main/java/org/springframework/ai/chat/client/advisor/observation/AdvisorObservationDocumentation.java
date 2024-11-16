@@ -22,6 +22,8 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
+ * AI Advisor observation documentation.
+ * 
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -48,6 +50,9 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 
 	};
 
+	/**
+	 * Low cardinality key names.
+	 */
 	public enum LowCardinalityKeyNames implements KeyName {
 
 		/**
@@ -82,6 +87,9 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 
 	}
 
+	/**
+	 * High cardinality key names.
+	 */
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**

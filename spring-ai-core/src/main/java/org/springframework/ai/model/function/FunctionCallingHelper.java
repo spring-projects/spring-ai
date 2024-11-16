@@ -152,6 +152,10 @@ public class FunctionCallingHelper extends AbstractToolCallSupport {
 	/**
 	 * Helper used to provide only the function definition, without the actual function
 	 * call implementation.
+	 *
+	 * @param name the function name
+	 * @param description the function description
+	 * @param inputTypeSchema the input type schema
 	 */
 	public static record FunctionDefinition(String name, String description,
 			String inputTypeSchema) implements FunctionCallback {

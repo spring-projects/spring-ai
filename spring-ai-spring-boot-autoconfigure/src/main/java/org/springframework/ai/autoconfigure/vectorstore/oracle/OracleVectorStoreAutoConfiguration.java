@@ -35,6 +35,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Oracle Vector Store.
+ *
  * @author Loïc Lefèvre
  * @author Eddú Meléndez
  * @author Christian Tzolov

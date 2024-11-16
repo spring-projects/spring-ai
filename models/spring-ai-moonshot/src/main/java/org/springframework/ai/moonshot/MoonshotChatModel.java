@@ -72,6 +72,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
+ * MoonshotChatModel is a {@link ChatModel} implementation that uses the Moonshot
+ *
  * @author Geng Rong
  */
 public class MoonshotChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {

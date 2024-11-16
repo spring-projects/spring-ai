@@ -31,11 +31,13 @@ public interface Content {
 
 	/**
 	 * Get the content of the message.
+	 * @return the content of the message
 	 */
 	String getContent(); // TODO consider getText
 
 	/**
-	 * return Get the metadata associated with the content.
+	 * Get the metadata associated with the content.
+	 * @return the metadata associated with the content
 	 */
 	Map<String, Object> getMetadata();
 

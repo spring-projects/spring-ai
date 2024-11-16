@@ -38,6 +38,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Cassandra Vector Store.
+ *
  * @author Mick Semb Wever
  * @author Christian Tzolov
  * @author Soby Chacko

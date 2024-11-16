@@ -20,6 +20,8 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
+ * Converts a {@link Filter} into a JSON Path expression.
+ *
  * @author Loïc Lefèvre
  * @see <a href=
  * "https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/json-path-expressions.html#GUID-8656CAB9-C293-4A99-BB62-F38F3CFC4C13">JSON

@@ -43,6 +43,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Oracle Cloud Infrastructure Generative
+ * AI.
+ *
  * @author Anders Swanson
  */
 @AutoConfiguration

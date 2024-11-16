@@ -35,6 +35,8 @@ import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.util.Assert;
 
 /**
+ * Options for the Vertex AI Gemini Chat API.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Grogdunn

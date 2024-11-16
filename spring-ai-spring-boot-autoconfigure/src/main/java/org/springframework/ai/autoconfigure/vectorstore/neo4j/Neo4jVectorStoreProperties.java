@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.Neo4jVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Neo4j Vector Store.
+ *
  * @author Jingzhou Ou
  * @author Josh Long
  */

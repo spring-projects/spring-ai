@@ -38,6 +38,9 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
+ * Implementation of the {@link ChatModel} and {@link StreamingChatModel} interfaces that
+ * uses the Titan Chat API.
+ *
  * @author Christian Tzolov
  * @since 0.8.0
  */

@@ -26,6 +26,8 @@ import org.springframework.ai.util.ParsingUtils;
 import org.springframework.lang.Nullable;
 
 /**
+ * Default implementation of the {@link AdvisorObservationConvention}.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */

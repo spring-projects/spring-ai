@@ -25,6 +25,8 @@ import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Cassandra Vector Store.
+ *
  * @author Mick Semb Wever
  * @since 1.0.0
  */

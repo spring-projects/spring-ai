@@ -109,6 +109,10 @@ public enum VectorStoreObservationAttributes {
 		this.value = value;
 	}
 
+	/**
+	 * Return the string value of the attribute.
+	 * @return the string value of the attribute
+	 */
 	public String value() {
 		return this.value;
 	}

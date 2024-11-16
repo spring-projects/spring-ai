@@ -36,10 +36,19 @@ import org.springframework.util.StreamUtils;
  */
 public abstract class AbstractMessage implements Message {
 
+	/**
+	 * The key for the message type in the metadata.
+	 */
 	public static final String MESSAGE_TYPE = "messageType";
 
+	/**
+	 * The message type of the message.
+	 */
 	protected final MessageType messageType;
 
+	/**
+	 * The content of the message.
+	 */
 	protected final String textContent;
 
 	/**
@@ -47,6 +56,13 @@ public abstract class AbstractMessage implements Message {
 	 */
 	protected final Map<String, Object> metadata;
 
+	/**
+	 * Create a new AbstractMessage with the given message type, text content, and
+	 * metadata.
+	 * @param messageType the message type
+	 * @param textContent the text content
+	 * @param metadata the metadata
+	 */
 	protected AbstractMessage(MessageType messageType, String textContent, Map<String, Object> metadata) {
 		Assert.notNull(messageType, "Message type must not be null");
 		if (messageType == MessageType.SYSTEM || messageType == MessageType.USER) {
@@ -58,6 +74,12 @@ public abstract class AbstractMessage implements Message {
 		this.metadata.put(MESSAGE_TYPE, messageType);
 	}
 
+	/**
+	 * Create a new AbstractMessage with the given message type, resource, and metadata.
+	 * @param messageType the message type
+	 * @param resource the resource
+	 * @param metadata the metadata
+	 */
 	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> metadata) {
 		Assert.notNull(resource, "Resource must not be null");
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -71,16 +93,28 @@ public abstract class AbstractMessage implements Message {
 		this.metadata.put(MESSAGE_TYPE, messageType);
 	}
 
+	/**
+	 * Get the content of the message.
+	 * @return the content of the message
+	 */
 	@Override
 	public String getContent() {
 		return this.textContent;
 	}
 
+	/**
+	 * Get the metadata of the message.
+	 * @return the metadata of the message
+	 */
 	@Override
 	public Map<String, Object> getMetadata() {
 		return this.metadata;
 	}
 
+	/**
+	 * Get the message type of the message.
+	 * @return the message type of the message
+	 */
 	@Override
 	public MessageType getMessageType() {
 		return this.messageType;

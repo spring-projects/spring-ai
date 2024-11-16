@@ -22,6 +22,8 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**
+ * Represents the usage of a Vertex AI model.
+ *
  * @author Christian Tzolov
  * @since 0.8.1
  *

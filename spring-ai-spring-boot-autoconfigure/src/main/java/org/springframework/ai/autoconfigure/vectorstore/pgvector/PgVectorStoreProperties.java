@@ -23,6 +23,8 @@ import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for PostgreSQL Vector Store.
+ *
  * @author Christian Tzolov
  * @author Muthukumaran Navaneethakrishnan
  * @author Soby Chacko

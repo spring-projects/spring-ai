@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/**
+ * Provides the API for chat client advisors.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.chat.client.advisor.api;

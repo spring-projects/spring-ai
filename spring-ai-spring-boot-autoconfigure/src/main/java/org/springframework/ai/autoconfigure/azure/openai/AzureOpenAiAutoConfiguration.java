@@ -49,6 +49,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Azure OpenAI.
+ *
  * @author Piotr Olaszewski
  * @author Soby Chacko
  */

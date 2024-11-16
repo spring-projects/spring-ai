@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.qdrant;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
+ * Connection details for a Qdrant service client.
+ *
  * @author Eddú Meléndez
  */
 public interface QdrantConnectionDetails extends ConnectionDetails {

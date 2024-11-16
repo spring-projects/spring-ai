@@ -19,6 +19,8 @@ package org.springframework.ai.vertexai.gemini.common;
 import org.springframework.ai.observation.conventions.AiProvider;
 
 /**
+ * Constants for Vertex AI Gemini.
+ *
  * @author Soby Chacko
  */
 public final class VertexAiGeminiConstants {

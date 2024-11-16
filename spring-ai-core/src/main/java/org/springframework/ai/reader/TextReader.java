@@ -33,6 +33,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
 /**
+ * A {@link DocumentReader} that reads text from a {@link Resource}.
+ *
  * @author Craig Walls
  * @author Christian Tzolov
  */

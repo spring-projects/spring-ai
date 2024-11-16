@@ -17,6 +17,8 @@
 package org.springframework.ai.autoconfigure.oci.genai;
 
 /**
+ * OCI serving mode.
+ *
  * @author Anders Swanson
  */
 public enum ServingMode {

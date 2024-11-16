@@ -441,6 +441,12 @@ public class ChromaApi {
 
 	/**
 	 * Single query embedding response.
+	 *
+	 * @param id The id of the document.
+	 * @param embedding The embedding of the document.
+	 * @param document The content of the document.
+	 * @param metadata The metadata of the document.
+	 * @param distances The distance of the document to the query embedding.
 	 */
 	public record Embedding(String id, float[] embedding, String document, Map<String, Object> metadata,
 			Double distances) {

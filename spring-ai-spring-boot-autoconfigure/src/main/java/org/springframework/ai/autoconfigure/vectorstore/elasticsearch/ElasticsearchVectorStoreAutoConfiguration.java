@@ -35,6 +35,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Elasticsearch Vector Store.
+ *
  * @author Eddú Meléndez
  * @author Wei Jiang
  * @author Josh Long

@@ -22,6 +22,8 @@ import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStorePropert
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for MongoDB Atlas Vector Store.
+ *
  * @author Eddú Meléndez
  * @author Christian Tzolov
  * @author Ignacio López

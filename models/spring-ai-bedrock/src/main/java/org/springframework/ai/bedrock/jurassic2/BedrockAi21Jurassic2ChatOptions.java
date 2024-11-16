@@ -408,6 +408,13 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 	/**
 	 * Penalty object for frequency, presence, and count penalties.
+	 *
+	 * @param scale The scale of the penalty.
+	 * @param applyToNumbers Whether to apply the penalty to numbers.
+	 * @param applyToPunctuations Whether to apply the penalty to punctuations.
+	 * @param applyToStopwords Whether to apply the penalty to stopwords.
+	 * @param applyToWhitespaces Whether to apply the penalty to whitespaces.
+	 * @param applyToEmojis Whether to apply the penalty to emojis.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Penalty(@JsonProperty("scale") Double scale, @JsonProperty("applyToNumbers") Boolean applyToNumbers,

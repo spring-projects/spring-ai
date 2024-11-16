@@ -33,6 +33,8 @@ import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.util.Assert;
 
 /**
+ * Options for Moonshot chat completions.
+ *
  * @author Geng Rong
  * @author Thomas Vitale
  */

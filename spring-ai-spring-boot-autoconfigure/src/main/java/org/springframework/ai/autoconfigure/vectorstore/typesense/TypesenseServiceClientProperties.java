@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.typesense;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Typesense service client.
+ *
  * @author Pablo Sanchidrian Herrera
  */
 @ConfigurationProperties(TypesenseServiceClientProperties.CONFIG_PREFIX)

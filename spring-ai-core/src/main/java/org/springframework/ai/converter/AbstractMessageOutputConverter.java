@@ -30,10 +30,18 @@ public abstract class AbstractMessageOutputConverter<T> implements StructuredOut
 
 	private MessageConverter messageConverter;
 
+	/**
+	 * Create a new AbstractMessageOutputConverter.
+	 * @param messageConverter the message converter to use
+	 */
 	public AbstractMessageOutputConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
 	}
 
+	/**
+	 * Return the message converter used by this output converter.
+	 * @return the message converter
+	 */
 	public MessageConverter getMessageConverter() {
 		return this.messageConverter;
 	}

@@ -84,6 +84,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * Vertex AI Gemini Chat Model implementation.
+ *
  * @author Christian Tzolov
  * @author Grogdunn
  * @author luocongqiu

@@ -25,6 +25,8 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.util.Assert;
 
 /**
+ * Options for the Titan Embedding API.
+ *
  * @author Wei Jiang
  * @author Thomas Vitale
  */

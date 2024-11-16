@@ -30,8 +30,17 @@ public enum AiTokenType {
 
 // @formatter:off
 
+	/**
+	 * Input token.
+	 */
 	INPUT("input"),
+	/**
+	 * Output token.
+	 */
 	OUTPUT("output"),
+	/**
+	 * Total token.
+	 */
 	TOTAL("total");
 
 	private final String value;
@@ -40,6 +49,10 @@ public enum AiTokenType {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the token type.
+	 * @return the value of the token type
+	 */
 	public String value() {
 		return this.value;
 	}

@@ -19,6 +19,8 @@ package org.springframework.ai.audio.transcription;
 import org.springframework.ai.model.MutableResponseMetadata;
 
 /**
+ * Metadata associated with an audio transcription response.
+ *
  * @author Piotr Olaszewski
  */
 public class AudioTranscriptionResponseMetadata extends MutableResponseMetadata {

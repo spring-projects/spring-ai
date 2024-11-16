@@ -17,6 +17,8 @@
 package org.springframework.ai.autoconfigure.chat.memory;
 
 /**
+ * Configuration properties for the common chat memory.
+ *
  * @author Mick Semb Wever
  * @since 1.0.0
  */

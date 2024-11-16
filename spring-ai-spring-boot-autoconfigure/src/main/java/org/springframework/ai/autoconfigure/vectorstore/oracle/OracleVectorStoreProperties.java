@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.OracleVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Oracle Vector Store.
+ *
  * @author Loïc Lefèvre
  */
 @ConfigurationProperties(OracleVectorStoreProperties.CONFIG_PREFIX)

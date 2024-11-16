@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.chroma;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
+ * Connection details for a Chroma service.
+ *
  * @author Eddú Meléndez
  */
 public interface ChromaConnectionDetails extends ConnectionDetails {

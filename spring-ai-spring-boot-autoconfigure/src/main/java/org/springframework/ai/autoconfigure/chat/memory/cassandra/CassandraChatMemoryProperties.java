@@ -27,6 +27,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.lang.Nullable;
 
 /**
+ * Configuration properties for Cassandra chat memory.
+ *
  * @author Mick Semb Wever
  * @since 1.0.0
  */

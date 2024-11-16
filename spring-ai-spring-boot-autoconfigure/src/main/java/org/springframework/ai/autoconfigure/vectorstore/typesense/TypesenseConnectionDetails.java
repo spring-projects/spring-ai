@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.typesense;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
+ * Connection details for a Typesense service client.
+ *
  * @author Pablo Sanchidrian Herrera
  */
 public interface TypesenseConnectionDetails extends ConnectionDetails {
