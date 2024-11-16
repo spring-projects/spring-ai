@@ -37,6 +37,12 @@ import org.springframework.ai.vectorstore.filter.FilterHelper;
  */
 public abstract class AbstractFilterExpressionConverter implements FilterExpressionConverter {
 
+	/**
+	 * Create a new AbstractFilterExpressionConverter.
+	 */
+	public AbstractFilterExpressionConverter() {
+	}
+
 	@Override
 	public String convertExpression(Expression expression) {
 		return this.convertOperand(expression);
