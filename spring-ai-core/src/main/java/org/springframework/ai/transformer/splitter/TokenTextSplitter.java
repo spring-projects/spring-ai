@@ -28,6 +28,8 @@ import com.knuddels.jtokkit.api.IntArrayList;
 import org.springframework.util.Assert;
 
 /**
+ * A {@link TextSplitter} that splits text into chunks of a target size in tokens.
+ *
  * @author Raphael Yu
  * @author Christian Tzolov
  * @author Ricken Bazolo

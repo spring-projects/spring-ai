@@ -40,6 +40,8 @@ import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.util.Assert;
 
 /**
+ * Options for the OpenAI Chat API.
+ *
  * @author Christian Tzolov
  * @author Mariusz Bernacki
  * @author Thomas Vitale

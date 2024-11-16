@@ -29,6 +29,8 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 /**
+ * PostgresML Embedding Options.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  */

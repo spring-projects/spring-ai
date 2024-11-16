@@ -115,6 +115,9 @@ public interface ChatClient {
 
 	}
 
+	/**
+	 * Specification for a prompt system.
+	 */
 	interface PromptSystemSpec {
 
 		PromptSystemSpec text(String text);

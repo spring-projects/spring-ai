@@ -42,6 +42,8 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * Default implementation of the {@link FunctionCallback.Builder}.
+ * 
  * @author Christian Tzolov
  * @since 1.0.0
  */

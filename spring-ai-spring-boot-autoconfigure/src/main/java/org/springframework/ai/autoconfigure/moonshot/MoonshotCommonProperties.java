@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.moonshot;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Parent properties for Moonshot.
+ *
  * @author Geng Rong
  */
 @ConfigurationProperties(MoonshotCommonProperties.CONFIG_PREFIX)

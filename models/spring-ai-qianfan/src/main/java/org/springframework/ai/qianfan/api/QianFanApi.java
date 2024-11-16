@@ -268,12 +268,15 @@ public class QianFanApi extends AuthApi {
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
+	 * @param system The system ID to use.
 	 * @param model ID of the model to use.
 	 * @param frequencyPenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
+	 * @param presencePenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
+	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 * @param responseFormat An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 * @param stop Up to 4 sequences where the API will stop generating further tokens.
@@ -406,6 +409,7 @@ public class QianFanApi extends AuthApi {
 	 * used in conjunction with the seed request parameter to understand when backend changes have been made that might
 	 * impact determinism.
 	 * @param object The object type, which is always chat.completion.
+	 * @param finishReason The reason the chat completion finished.
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
@@ -421,6 +425,7 @@ public class QianFanApi extends AuthApi {
 	/**
 	 * Usage statistics for the completion request.
 	 *
+	 * @param completionTokens Number of tokens in the completion.
 	 * @param promptTokens Number of tokens in the prompt.
 	 * @param totalTokens Total number of tokens used in the request (prompt + completion).
 	 */
@@ -440,6 +445,9 @@ public class QianFanApi extends AuthApi {
 	 * @param created The Unix timestamp (in seconds) of when the chat completion was created. Each chunk has the same
 	 * timestamp.
 	 * @param result Result of chat completion message.
+	 * @param finishReason The reason the chat completion finished.
+	 * @param end If true, the chat completion is finished.
+	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
@@ -458,6 +466,7 @@ public class QianFanApi extends AuthApi {
 	 * Creates an embedding vector representing the input text.
 	 *
 	 * @param texts Input text to embed, encoded as a string or array of tokens.
+	 * @param model ID of the model to use.
 	 * @param user A unique identifier representing your end-user, which can help QianFan to
 	 * 		monitor and detect abuse.
 	 */
@@ -544,6 +553,8 @@ public class QianFanApi extends AuthApi {
 	 * @param object Must have value "embedding_list".
 	 * @param data List of entities.
 	 * @param model ID of the model to use.
+	 * @param errorCode Error code if any.
+	 * @param errorNsg Error message if any.
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)

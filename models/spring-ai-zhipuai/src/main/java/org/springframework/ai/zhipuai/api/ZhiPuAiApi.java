@@ -499,7 +499,10 @@ public class ZhiPuAiApi {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present. Use the {@link ToolChoiceBuilder} to create the tool choice value.
 	 * @param user A unique identifier representing your end-user, which can help ZhiPuAI to monitor and detect abuse.
-	 *
+	 * @param requestId A unique identifier for the request. If set, the request will be logged and can be used for
+	 * debugging purposes.
+	 * @param doSample If set, the model will use sampling to generate the next token. If not set, the model will use
+	 * greedy decoding to generate the next token.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -705,6 +708,7 @@ public class ZhiPuAiApi {
 			}
 
 			/**
+			 * The image content of the message.
 			 * @param url Either a URL of the image or the base64 encoded image data.
 			 * The base64 encoded image data must have a special prefix in the following format:
 			 * "data:{mimetype};base64,{base64-encoded-image-data}".
@@ -944,7 +948,8 @@ public class ZhiPuAiApi {
 
 	/**
 	 * Creates an embedding vector representing the input text.
-	 *
+	 * 
+	 * @param <T> Type of the input.
 	 * @param input Input text to embed, encoded as a string or array of tokens.
 	 * @param model ID of the model to use.
 	 */

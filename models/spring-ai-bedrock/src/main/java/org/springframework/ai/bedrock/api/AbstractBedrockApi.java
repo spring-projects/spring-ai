@@ -69,6 +69,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractBedrockApi.class);
 
+	/**
+	 * Default emit failure handler.
+	 */
 	public static final EmitFailureHandler DEFAULT_EMIT_FAILURE_HANDLER = EmitFailureHandler
 	.busyLooping(Duration.ofSeconds(10));
 
@@ -167,6 +170,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
+	 * Get the model id.
 	 * @return The model id.
 	 */
 	public String getModelId() {
@@ -174,6 +178,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
+	 * Get the AWS region.
 	 * @return The AWS region.
 	 */
 	public Region getRegion() {

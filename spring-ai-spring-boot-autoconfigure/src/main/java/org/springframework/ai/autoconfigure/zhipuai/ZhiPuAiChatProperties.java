@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for ZhiPuAI chat model.
+ *
  * @author Geng Rong
  */
 @ConfigurationProperties(ZhiPuAiChatProperties.CONFIG_PREFIX)

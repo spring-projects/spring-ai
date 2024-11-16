@@ -44,6 +44,9 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for QianFan Chat, Embedding, and Image
+ * Models.
+ *
  * @author Geng Rong
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })

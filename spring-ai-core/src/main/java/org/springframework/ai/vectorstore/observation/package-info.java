@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Provides classes for observing and storing vector data.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.vectorstore.observation;

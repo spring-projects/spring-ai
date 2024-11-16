@@ -26,9 +26,21 @@ import io.micrometer.common.lang.Nullable;
 
 public class AbstractResponseMetadata {
 
+	/**
+	 * AI metadata string format.
+	 */
 	protected static final String AI_METADATA_STRING = "{ id: %1$s, usage: %2$s, rateLimit: %3$s }";
 
+	/**
+	 * Metadata map.
+	 */
 	protected final Map<String, Object> map = new ConcurrentHashMap<>();
+
+	/**
+	 * Create a new {@link AbstractResponseMetadata} instance.
+	 */
+	public AbstractResponseMetadata() {
+	}
 
 	/**
 	 * Gets an entry from the context. Returns {@code null} when entry is not present.

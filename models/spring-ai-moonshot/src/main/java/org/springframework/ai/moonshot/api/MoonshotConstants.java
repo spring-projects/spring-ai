@@ -19,6 +19,8 @@ package org.springframework.ai.moonshot.api;
 import org.springframework.ai.observation.conventions.AiProvider;
 
 /**
+ * Constants for Moonshot API.
+ *
  * @author Geng Rong
  */
 public final class MoonshotConstants {

@@ -111,8 +111,11 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	}
 
 	/**
-	 * @return the number of dimensions of the embedded vectors. It is generative
-	 * specific.
+	 * Get the number of dimensions of the embedded vectors. Note that by default, this
+	 * method will call the remote Embedding endpoint to get the dimensions of the
+	 * embedded vectors. If the dimensions are known ahead of time, it is recommended to
+	 * override this method.
+	 * @return the number of dimensions of the embedded vectors.
 	 */
 	default int dimensions() {
 		return embed("Test String").length;

@@ -43,6 +43,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
+ * A vector store implementation that stores and retrieves vectors in a Neo4j database.
+ *
  * @author Gerrit Meier
  * @author Michael Simons
  * @author Christian Tzolov

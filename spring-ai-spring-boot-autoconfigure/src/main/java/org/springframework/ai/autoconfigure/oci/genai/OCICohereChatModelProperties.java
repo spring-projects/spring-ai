@@ -21,6 +21,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for OCI Cohere chat model.
+ *
  * @author Anders Swanson
  */
 @ConfigurationProperties(OCICohereChatModelProperties.CONFIG_PREFIX)

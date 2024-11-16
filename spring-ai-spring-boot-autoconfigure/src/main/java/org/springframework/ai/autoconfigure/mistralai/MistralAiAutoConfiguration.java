@@ -46,6 +46,8 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Mistral AI.
+ *
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale

@@ -41,6 +41,10 @@ public enum AiObservationMetricAttributes {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the metric attribute.
+	 * @return the value of the metric attribute
+	 */
 	public String value() {
 		return this.value;
 	}

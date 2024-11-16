@@ -17,6 +17,8 @@
 package org.springframework.ai.embedding;
 
 /**
+ * Builder for {@link EmbeddingOptions}.
+ *
  * @author Thomas Vitale
  * @since 1.0.0
  */

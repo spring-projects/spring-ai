@@ -34,6 +34,8 @@ import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.util.Assert;
 
 /**
+ * Anthropic Chat API.
+ * 
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
@@ -260,6 +262,7 @@ public class AnthropicChatBedrockApi extends
 	/**
 	 * AnthropicChatResponse encapsulates the response parameters for the Anthropic chat model.
 	 *
+	 * @param type The type of the response.
 	 * @param completion The generated text.
 	 * @param stopReason The reason the model stopped generating text.
 	 * @param stop The stop sequence that caused the model to stop generating text.

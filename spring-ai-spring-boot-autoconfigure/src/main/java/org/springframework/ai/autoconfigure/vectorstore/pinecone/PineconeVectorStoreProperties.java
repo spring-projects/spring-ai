@@ -22,6 +22,8 @@ import org.springframework.ai.vectorstore.PineconeVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Pinecone Vector Store.
+ *
  * @author Christian Tzolov
  */
 @ConfigurationProperties(PineconeVectorStoreProperties.CONFIG_PREFIX)

@@ -304,6 +304,7 @@ public class TitanChatBedrockApi extends
 	 * @param inputTextTokenCount The number of tokens in the prompt.
 	 * @param totalOutputTextTokenCount The number of tokens in the response.
 	 * @param completionReason The reason the response finished being generated.
+	 * @param amazonBedrockInvocationMetrics The metrics for the invocation.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TitanChatResponseChunk(

@@ -35,6 +35,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Hana Cloud Vector Store.
+ *
  * @author Rahul Mittal
  * @author Christian Tzolov
  * @since 1.0.0

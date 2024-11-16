@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for StabilityAI Image Model.
+ *
  * @author Mark Pollack
  * @author Christian Tzolov
  * @since 0.8.0

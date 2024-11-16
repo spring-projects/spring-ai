@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
 /**
+ * Configuration properties for Milvus Vector Store.
+ *
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  */

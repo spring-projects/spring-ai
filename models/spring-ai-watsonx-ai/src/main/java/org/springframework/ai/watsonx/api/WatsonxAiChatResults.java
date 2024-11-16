@@ -22,6 +22,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Java class for Watsonx.ai Chat Results object.
  *
+ * @param generatedText the generated text
+ * @param generatedTokenCount the number of tokens generated
+ * @param inputTokenCount the number of tokens in the input
+ * @param stopReason the reason the generation stopped
  * @author Pablo Sanchidrian Herrera
  * @since 1.0.0
  */

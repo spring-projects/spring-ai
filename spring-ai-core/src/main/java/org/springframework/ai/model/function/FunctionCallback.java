@@ -142,7 +142,7 @@ public interface FunctionCallback {
 		<I, O> FunctionInvokingSpec<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction);
 
 		/**
-		 * Builds a {@link Method} invoking {@link FunctionCallback} instance.
+		 * Builds a Method invoking {@link FunctionCallback} instance.
 		 */
 		MethodInvokingSpec method(String methodName, Class<?>... argumentTypes);
 
@@ -150,6 +150,9 @@ public interface FunctionCallback {
 
 	/**
 	 * {@link Function} invoking builder interface.
+	 *
+	 * @param <I> Function input type.
+	 * @param <O> Function output type.
 	 */
 	interface FunctionInvokingSpec<I, O> {
 
@@ -174,7 +177,7 @@ public interface FunctionCallback {
 	}
 
 	/**
-	 * {@link Method} invoking builder interface.
+	 * Method invoking builder interface.
 	 */
 	interface MethodInvokingSpec {
 

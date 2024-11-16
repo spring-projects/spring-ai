@@ -70,6 +70,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
+ * Milvus based implementation of the
+ * {@link org.springframework.ai.vectorstore.VectorStore}.
+ *
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale

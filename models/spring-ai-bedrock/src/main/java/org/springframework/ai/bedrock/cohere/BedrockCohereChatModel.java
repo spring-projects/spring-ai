@@ -38,6 +38,8 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
+ * A {@link ChatModel} implementation that uses the Cohere Chat API.
+ *
  * @author Christian Tzolov
  * @since 0.8.0
  */

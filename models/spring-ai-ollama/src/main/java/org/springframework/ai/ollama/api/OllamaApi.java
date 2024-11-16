@@ -258,6 +258,7 @@ public class OllamaApi {
 	 * @param content The content of the message.
 	 * @param images The list of base64-encoded images to send with the message.
 	 * 				 Requires multimodal models such as llava or bakllava.
+	 * @param toolCalls The relevant tool call.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Message(
@@ -579,6 +580,9 @@ public class OllamaApi {
 	 * @param model The model used for generating the embeddings.
 	 * @param embeddings The list of embeddings generated from the model.
 	 * Each embedding (list of doubles) corresponds to a single input text.
+	 * @param totalDuration The total time spent generating the embeddings.
+	 * @param loadDuration The time spent loading the model.
+	 * @param promptEvalCount The number of tokens in the prompt.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingsResponse(

@@ -52,6 +52,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
+ * A ObservationVectorStore implementation that uses Typesense as the underlying storage.
+ *
  * @author Pablo Sanchidrian Herrera
  * @author Soby Chacko
  * @author Christian Tzolov

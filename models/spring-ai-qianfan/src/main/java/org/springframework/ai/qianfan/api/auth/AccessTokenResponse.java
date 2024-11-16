@@ -21,6 +21,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Represents the response received when requesting an access token.
  *
+ * @param accessToken the access token
+ * @param refreshToken the refresh token
+ * @param expiresIn the number of seconds until the token expires
+ * @param sessionKey the session key
+ * @param sessionSecret the session secret
+ * @param error the error code
+ * @param errorDescription the error description
+ * @param scope the scope
  * @author Geng Rong
  * @since 1.0
  */

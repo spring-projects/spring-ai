@@ -65,14 +65,27 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 */
 	private final Parser parser;
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 */
 	public MarkdownDocumentReader(String markdownResource) {
 		this(new DefaultResourceLoader().getResource(markdownResource), MarkdownDocumentReaderConfig.defaultConfig());
 	}
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 * @param config the configuration to use
+	 */
 	public MarkdownDocumentReader(String markdownResource, MarkdownDocumentReaderConfig config) {
 		this(new DefaultResourceLoader().getResource(markdownResource), config);
 	}
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 */
 	public MarkdownDocumentReader(Resource markdownResource, MarkdownDocumentReaderConfig config) {
 		this.markdownResource = markdownResource;
 		this.config = config;
@@ -115,6 +128,9 @@ public class MarkdownDocumentReader implements DocumentReader {
 			this.config = config;
 		}
 
+		/**
+		 * Visits the document node and initializes the current document builder.
+		 */
 		@Override
 		public void visit(org.commonmark.node.Document document) {
 			this.currentDocumentBuilder = Document.builder();

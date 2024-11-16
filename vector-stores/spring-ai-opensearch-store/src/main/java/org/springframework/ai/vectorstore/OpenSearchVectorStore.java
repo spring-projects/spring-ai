@@ -56,6 +56,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
+ * An ObservationVectorStore implementation that stores vectors in OpenSearch.
+ *
  * @author Jemin Huh
  * @author Soby Chacko
  * @author Christian Tzolov

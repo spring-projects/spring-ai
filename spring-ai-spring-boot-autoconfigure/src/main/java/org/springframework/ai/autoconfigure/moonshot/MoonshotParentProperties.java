@@ -17,6 +17,8 @@
 package org.springframework.ai.autoconfigure.moonshot;
 
 /**
+ * Parent properties for Moonshot.
+ *
  * @author Geng Rong
  */
 public class MoonshotParentProperties {

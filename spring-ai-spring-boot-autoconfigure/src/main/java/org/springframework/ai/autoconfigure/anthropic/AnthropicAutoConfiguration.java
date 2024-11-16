@@ -43,6 +43,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Anthropic Chat Model.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0

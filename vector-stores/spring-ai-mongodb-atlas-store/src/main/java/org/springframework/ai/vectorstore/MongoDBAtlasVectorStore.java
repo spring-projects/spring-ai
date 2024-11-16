@@ -44,6 +44,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 
 /**
+ * A {@link VectorStore} implementation that uses MongoDB Atlas for storing and
+ *
  * @author Chris Smith
  * @author Soby Chacko
  * @author Christian Tzolov

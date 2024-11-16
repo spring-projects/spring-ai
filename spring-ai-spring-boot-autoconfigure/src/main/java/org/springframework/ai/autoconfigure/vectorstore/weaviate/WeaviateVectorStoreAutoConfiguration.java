@@ -37,6 +37,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Weaviate Vector Store.
+ *
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko

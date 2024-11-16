@@ -181,6 +181,7 @@ public class Anthropic3ChatBedrockApi extends
 		}
 
 		/**
+		 * Get the model id.
 		 * @return The model id.
 		 */
 		public String id() {
@@ -226,10 +227,18 @@ public class Anthropic3ChatBedrockApi extends
 			@JsonProperty("stop_sequences") List<String> stopSequences,
 			@JsonProperty("anthropic_version") String anthropicVersion) {
 
+		/**
+		 * Create a new {@link AnthropicChatRequest} instance.
+		 * @param messages A list of messages comprising the conversation so far.
+		 * @return the {@link AnthropicChatRequest}
+		 */
 		public static Builder builder(List<ChatCompletionMessage> messages) {
 			return new Builder(messages);
 		}
 
+		/**
+		 * Builder for {@link AnthropicChatRequest}.
+		 */
 		public static final class Builder {
 			private final List<ChatCompletionMessage> messages;
 			private String system;
@@ -239,45 +248,85 @@ public class Anthropic3ChatBedrockApi extends
 			private Double topP;
 			private List<String> stopSequences;
 			private String anthropicVersion;
-
+			
 			private Builder(List<ChatCompletionMessage> messages) {
 				this.messages = messages;
 			}
 
+			/**
+			 * Set the system prompt.
+			 * @param system A system prompt
+			 * @return this {@link Builder} instance
+			 */
 			public Builder withSystem(String system) {
 				this.system = system;
 				return this;
 			}
+
+			/**
+			 * Set the temperature.
+			 * @param temperature The temperature
+			 * @return this {@link Builder} instance
+			 */
 			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
+			/**
+			 * Set the max tokens.
+			 * @param maxTokens The max tokens
+			 * @return this {@link Builder} instance
+			 */
 			public Builder withMaxTokens(Integer maxTokens) {
 				this.maxTokens = maxTokens;
 				return this;
 			}
 
+			/**
+			 * Set the top k.
+			 * @param topK The top k
+			 * @return this {@link Builder} instance
+			 */
 			public Builder withTopK(Integer topK) {
 				this.topK = topK;
 				return this;
 			}
 
+			/**
+			 * Set the top p.
+			 * @param tpoP The top p
+			 * @return this {@link Builder} instance
+			 */
 			public Builder withTopP(Double tpoP) {
 				this.topP = tpoP;
 				return this;
 			}
 
+			/**
+			 * Set the stop sequences.
+			 * @param stopSequences The stop sequences
+			 * @return this {@link Builder} instance
+			 */
 			public Builder withStopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}
 
+			/**
+			 * Set the anthropic version.
+			 * @param anthropicVersion The anthropic version
+			 * @return this {@link Builder} instance
+			 */
 			public Builder withAnthropicVersion(String anthropicVersion) {
 				this.anthropicVersion = anthropicVersion;
 				return this;
 			}
 
+			/**
+			 * Build the {@link AnthropicChatRequest}.
+			 * @return the {@link AnthropicChatRequest}
+			 */
 			public AnthropicChatRequest build() {
 				return new AnthropicChatRequest(
 						this.messages,
@@ -294,6 +343,7 @@ public class Anthropic3ChatBedrockApi extends
 	}
 
 	/**
+	 * Encapsulates the Amazon Bedrock invocation metrics.
 	 * @param type the content type can be "text" or "image".
 	 * @param source The source of the media content. Applicable for "image" types only.
 	 * @param text The text of the message. Applicable for "text" types only.
@@ -310,14 +360,27 @@ public class Anthropic3ChatBedrockApi extends
 		) {
 		// @formatter:on
 
+		/**
+		 * Create a new media content.
+		 * @param mediaType The media type of the content.
+		 * @param data The base64-encoded data of the content.
+		 */
 		public MediaContent(String mediaType, String data) {
 			this(new Source(mediaType, data));
 		}
 
+		/**
+		 * Create a new media content.
+		 * @param source The source of the media content.
+		 */
 		public MediaContent(Source source) {
 			this(Type.IMAGE, source, null, null);
 		}
 
+		/**
+		 * Create a new media content.
+		 * @param text The text of the message.
+		 */
 		public MediaContent(String text) {
 			this(Type.TEXT, null, text, null);
 		}
@@ -357,6 +420,11 @@ public class Anthropic3ChatBedrockApi extends
 			@JsonProperty("data") String data) {
 			// @formatter:on
 
+			/**
+			 * Create a new source.
+			 * @param mediaType The media type of the content.
+			 * @param data The base64-encoded data of the content.
+			 */
 			public Source(String mediaType, String data) {
 				this("base64", mediaType, data);
 			}
@@ -426,6 +494,7 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param stopSequence The stop sequence that caused the model to stop generating
 	 * text.
 	 * @param usage Metrics about the model invocation.
+	 * @param amazonBedrockInvocationMetrics The metrics about the model invocation.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatResponse(// formatter:off
@@ -448,6 +517,7 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param contentBlock The generated text.
 	 * @param delta The delta.
 	 * @param usage The usage data.
+	 * @param amazonBedrockInvocationMetrics The metrics about the model invocation.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatStreamingResponse(// formatter:off

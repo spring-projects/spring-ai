@@ -27,6 +27,9 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.lang.Nullable;
 
 /**
+ * Abstract base class for {@link VectorStore} implementations that provides observation
+ * capabilities.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -39,12 +42,21 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Nullable
 	private final VectorStoreObservationConvention customObservationConvention;
 
+	/**
+	 * Create a new {@link AbstractObservationVectorStore} instance.
+	 * @param observationRegistry the observation registry to use
+	 * @param customObservationConvention the custom observation convention to use
+	 */
 	public AbstractObservationVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention) {
 		this.observationRegistry = observationRegistry;
 		this.customObservationConvention = customObservationConvention;
 	}
 
+	/**
+	 * Create a new {@link AbstractObservationVectorStore} instance.
+	 * @param documents the documents to add
+	 */
 	@Override
 	public void add(List<Document> documents) {
 
@@ -89,12 +101,31 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 			});
 	}
 
+	/**
+	 * Perform the actual add operation.
+	 * @param documents the documents to add
+	 */
 	public abstract void doAdd(List<Document> documents);
 
+	/**
+	 * Perform the actual delete operation.
+	 * @param idList the list of document IDs to delete
+	 * @return true if the documents were successfully deleted
+	 */
 	public abstract Optional<Boolean> doDelete(List<String> idList);
 
+	/**
+	 * Perform the actual similarity search operation.
+	 * @param request the search request
+	 * @return the list of documents that match the query request conditions
+	 */
 	public abstract List<Document> doSimilaritySearch(SearchRequest request);
 
+	/**
+	 * Create a new {@link VectorStoreObservationContext.Builder} instance.
+	 * @param operationName the operation name
+	 * @return the observation context builder
+	 */
 	public abstract VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName);
 
 }

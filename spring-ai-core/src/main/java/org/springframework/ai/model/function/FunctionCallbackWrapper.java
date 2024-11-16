@@ -37,6 +37,8 @@ import org.springframework.util.Assert;
  * String before sending it to the Model. Provide a custom function responseConverter
  * implementation to override this.
  *
+ * @param <I> the input type
+ * @param <O> the output type
  * @author Christian Tzolov
  * @author Sebastien Deleuze
  * @deprecated in favor of {@link FunctionCallbackWrapper.Builder}
@@ -67,6 +69,7 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 	}
 
 	/**
+	 * Create a new {@link FunctionCallbackWrapper} instance.
 	 * @deprecated use {@link FunctionCallback#builder()} instead.
 	 */
 	@Deprecated
@@ -75,6 +78,10 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 	}
 
 	/**
+	 * Builder for {@link FunctionCallbackWrapper}.
+	 *
+	 * @param <I> the input type
+	 * @param <O> the output type
 	 * @deprecated in favor of {@link DefaultFunctionCallbackBuilder}
 	 */
 	@Deprecated

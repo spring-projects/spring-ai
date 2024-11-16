@@ -20,6 +20,8 @@ import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStorePropert
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Redis Vector Store.
+ *
  * @author Julien Ruaux
  * @author Eddú Meléndez
  */

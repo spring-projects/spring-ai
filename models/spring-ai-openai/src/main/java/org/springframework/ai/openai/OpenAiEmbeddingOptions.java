@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
+ * OpenAI Embedding Options.
+ *
  * @author Christian Tzolov
  * @since 0.8.0
  */

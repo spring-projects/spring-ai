@@ -60,6 +60,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for OpenAI.
+ *
  * @author Christian Tzolov
  * @author Stefan Vassilev
  * @author Thomas Vitale

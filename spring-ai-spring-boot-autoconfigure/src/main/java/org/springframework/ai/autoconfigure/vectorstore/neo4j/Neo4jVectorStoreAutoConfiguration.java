@@ -33,6 +33,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Neo4j Vector Store.
+ *
  * @author Jingzhou Ou
  * @author Josh Long
  * @author Christian Tzolov

@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.GemFireVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for GemFire Vector Store.
+ *
  * @author Geet Rawat
  * @author Soby Chacko
  */

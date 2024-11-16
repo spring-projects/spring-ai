@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for Moonshot chat client.
+ *
  * @author Geng Rong
  */
 @ConfigurationProperties(MoonshotChatProperties.CONFIG_PREFIX)

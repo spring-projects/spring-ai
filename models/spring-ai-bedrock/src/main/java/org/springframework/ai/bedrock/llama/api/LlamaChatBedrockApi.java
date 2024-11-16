@@ -271,6 +271,7 @@ public class LlamaChatBedrockApi extends
 	 * has finished generating text for the input prompt. (2) length – The length of the tokens for the generated text
 	 * exceeds the value of max_gen_len in the call. The response is truncated to max_gen_len tokens. Consider
 	 * increasing the value of max_gen_len and trying again.
+	 * @param amazonBedrockInvocationMetrics The Amazon Bedrock invocation metrics.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record LlamaChatResponse(
