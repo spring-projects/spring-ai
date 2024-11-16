@@ -18,10 +18,14 @@ package org.springframework.ai.autoconfigure.openai.tool;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -52,179 +56,272 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
+				"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
 		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
+	private static Map<String, Object> feedback = new ConcurrentHashMap<>();
+
+	@BeforeEach
+	void setUp() {
+		feedback.clear();
+	}
+
+	@Test
+	void functionCallingVoidInput() {
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
+
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withFunction("turnLivingRoomLightOn").build()));
+
+			logger.info("Response: {}", response);
+			assertThat(feedback).hasSize(1);
+			assertThat(feedback.get("turnLivingRoomLightOn")).isEqualTo(Boolean.valueOf(true));
+		});
+	}
+
+	@Test
+	void functionCallingSupplier() {
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
+
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withFunction("turnLivingRoomLightOnSupplier").build()));
+
+			logger.info("Response: {}", response);
+			assertThat(feedback).hasSize(1);
+			assertThat(feedback.get("turnLivingRoomLightOnSupplier")).isEqualTo(Boolean.valueOf(true));
+		});
+	}
+
+	@Test
+	void functionCallingVoidOutput() {
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
+
+			ChatResponse response = chatModel
+				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withFunction("turnLight").build()));
+
+			logger.info("Response: {}", response);
+			assertThat(feedback).hasSize(2);
+			assertThat(feedback.get("kitchen")).isEqualTo(Boolean.valueOf(true));
+			assertThat(feedback.get("living room")).isEqualTo(Boolean.valueOf(true));
+		});
+	}
+
+	@Test
+	void functionCallingConsumer() {
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
+
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withFunction("turnLightConsumer").build()));
+
+			logger.info("Response: {}", response);
+			assertThat(feedback).hasSize(2);
+			assertThat(feedback.get("kitchen")).isEqualTo(Boolean.valueOf(true));
+			assertThat(feedback.get("living room")).isEqualTo(Boolean.valueOf(true));
+
+		});
+	}
+
+	@Test
+	void trainScheduler() {
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage(
+					"Please schedule a train from San Francisco to Los Angeles on 2023-12-25");
+
+			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.withFunction("trainReservation")
+				.build();
+
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+
+			logger.info("Response: {}", response.getResult().getOutput().getContent());
+		});
+	}
+
 	@Test
 	void functionCallWithDirectBiFunction() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
-			.run(context -> {
+		this.contextRunner.run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-				ChatClient chatClient = ChatClient.builder(chatModel).build();
+			ChatClient chatClient = ChatClient.builder(chatModel).build();
 
-				String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.functions("weatherFunctionWithContext")
-					.toolContext(Map.of("sessionId", "123"))
-					.call()
-					.content();
-				logger.info(content);
+			String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.functions("weatherFunctionWithContext")
+				.toolContext(Map.of("sessionId", "123"))
+				.call()
+				.content();
+			logger.info(content);
 
-				// Test weatherFunction
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder()
-							.withFunction("weatherFunctionWithContext")
-							.withToolContext(Map.of("sessionId", "123"))
-							.build()));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder()
+						.withFunction("weatherFunctionWithContext")
+						.withToolContext(Map.of("sessionId", "123"))
+						.build()));
 
-				logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-			});
+		});
 	}
 
 	@Test
 	void functionCallWithBiFunctionClass() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
-			.run(context -> {
+		this.contextRunner.run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-				ChatClient chatClient = ChatClient.builder(chatModel).build();
+			ChatClient chatClient = ChatClient.builder(chatModel).build();
 
-				String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.functions("weatherFunctionWithClassBiFunction")
-					.toolContext(Map.of("sessionId", "123"))
-					.call()
-					.content();
-				logger.info(content);
+			String content = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.functions("weatherFunctionWithClassBiFunction")
+				.toolContext(Map.of("sessionId", "123"))
+				.call()
+				.content();
+			logger.info(content);
 
-				// Test weatherFunction
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder()
-							.withFunction("weatherFunctionWithClassBiFunction")
-							.withToolContext(Map.of("sessionId", "123"))
-							.build()));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder()
+						.withFunction("weatherFunctionWithClassBiFunction")
+						.withToolContext(Map.of("sessionId", "123"))
+						.build()));
 
-				logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-			});
+		});
 	}
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
-			.run(context -> {
+		this.contextRunner.run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-				// Test weatherFunction
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
 
-				logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-				// Test weatherFunctionTwo
-				response = chatModel.call(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+			// Test weatherFunctionTwo
+			response = chatModel.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
-				logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-			});
+		});
 	}
 
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
-					"spring.ai.openai.chat.options.temperature=0.1")
-			.run(context -> {
+		this.contextRunner.run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-				// Test weatherFunction
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-					.withFunction("weatherFunction")
-					.build();
+			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.withFunction("weatherFunction")
+				.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-				logger.info("Response: {}", response.getResult().getOutput().getContent());
+			logger.info("Response: {}", response.getResult().getOutput().getContent());
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
-			});
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		});
 	}
 
 	@Test
 	void streamFunctionCallTest() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
-					"spring.ai.openai.chat.options.temperature=0.1")
-			.run(context -> {
+		this.contextRunner.run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-				// Test weatherFunction
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-				Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
 
-				String content = response.collectList()
-					.block()
-					.stream()
-					.map(ChatResponse::getResults)
-					.flatMap(List::stream)
-					.map(Generation::getOutput)
-					.map(AssistantMessage::getContent)
-					.collect(Collectors.joining());
-				logger.info("Response: {}", content);
+			String content = response.collectList()
+				.block()
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
+				.collect(Collectors.joining());
+			logger.info("Response: {}", content);
 
-				assertThat(content).contains("30", "10", "15");
+			assertThat(content).contains("30", "10", "15");
 
-				// Test weatherFunctionTwo
-				response = chatModel.stream(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+			// Test weatherFunctionTwo
+			response = chatModel.stream(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
-				content = response.collectList()
-					.block()
-					.stream()
-					.map(ChatResponse::getResults)
-					.flatMap(List::stream)
-					.map(Generation::getOutput)
-					.map(AssistantMessage::getContent)
-					.collect(Collectors.joining());
-				logger.info("Response: {}", content);
+			content = response.collectList()
+				.block()
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
+				.collect(Collectors.joining());
+			logger.info("Response: {}", content);
 
-				assertThat(content).isNotEmpty().withFailMessage("Content returned from OpenAI model is empty");
-				assertThat(content).contains("30", "10", "15");
+			assertThat(content).isNotEmpty().withFailMessage("Content returned from OpenAI model is empty");
+			assertThat(content).contains("30", "10", "15");
 
-			});
+		});
 	}
 
 	@Configuration
@@ -254,6 +351,70 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunctionTwo() {
 			MockWeatherService weatherService = new MockWeatherService();
 			return (weatherService::apply);
+		}
+
+		record LightInfo(String roomName, boolean isOn) {
+		}
+
+		@Bean
+		@Description("Turn light on or off in a room")
+		public Function<LightInfo, Void> turnLight() {
+			return (LightInfo lightInfo) -> {
+				logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
+				feedback.put(lightInfo.roomName(), lightInfo.isOn());
+				return null;
+			};
+		}
+
+		@Bean
+		@Description("Turn light on or off in a room")
+		public Consumer<LightInfo> turnLightConsumer() {
+			return (LightInfo lightInfo) -> {
+				logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
+				feedback.put(lightInfo.roomName(), lightInfo.isOn());
+			};
+		}
+
+		@Bean
+		@Description("Turns light on in the living room")
+		public Function<Void, String> turnLivingRoomLightOn() {
+			return (Void v) -> {
+				logger.info("Turning light on in the living room");
+				feedback.put("turnLivingRoomLightOn", Boolean.TRUE);
+				return "Done";
+			};
+		}
+
+		@Bean
+		@Description("Turns light on in the living room")
+		public Supplier<String> turnLivingRoomLightOnSupplier() {
+			return () -> {
+				logger.info("Turning light on in the living room");
+				feedback.put("turnLivingRoomLightOnSupplier", Boolean.TRUE);
+				return "Done";
+			};
+		}
+
+		record TrainSearchSchedule(String from, String to, String date) {
+		}
+
+		record TrainSearchScheduleResponse(String from, String to, String date, String trainNumber) {
+		}
+
+		record TrainSearchRequest<T>(T data) {
+		}
+
+		record TrainSearchResponse<T>(T data) {
+		}
+
+		@Bean
+		@Description("Schedule a train reservation")
+		public Function<TrainSearchRequest<TrainSearchSchedule>, TrainSearchResponse<TrainSearchScheduleResponse>> trainReservation() {
+			return (TrainSearchRequest<TrainSearchSchedule> request) -> {
+				logger.info("Turning light to [" + request.data().from() + "] in " + request.data().to());
+				return new TrainSearchResponse<>(
+						new TrainSearchScheduleResponse(request.data().from(), request.data().to(), "", "123"));
+			};
 		}
 
 	}

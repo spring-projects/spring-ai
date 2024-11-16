@@ -17,7 +17,9 @@
 package org.springframework.ai.model.function;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -142,6 +144,16 @@ public interface FunctionCallback {
 		<I, O> FunctionInvokingSpec<I, O> function(String name, BiFunction<I, ToolContext, O> biFunction);
 
 		/**
+		 * Builds a {@link Supplier} invoking {@link FunctionCallback} instance.
+		 */
+		<O> FunctionInvokingSpec<Void, O> function(String name, Supplier<O> supplier);
+
+		/**
+		 * Builds a {@link Consumer} invoking {@link FunctionCallback} instance.
+		 */
+		<I> FunctionInvokingSpec<I, Void> function(String name, Consumer<I> consumer);
+
+		/**
 		 * Builds a Method invoking {@link FunctionCallback} instance.
 		 */
 		MethodInvokingSpec method(String methodName, Class<?>... argumentTypes);
@@ -189,14 +201,14 @@ public interface FunctionCallback {
 		MethodInvokingSpec name(String name);
 
 		/**
-		 * For non static objects the target object is used to invoke the method.
+		 * For non-static objects the target object is used to invoke the method.
 		 * @param methodObject target object where the method is defined.
 		 */
 		MethodInvokingSpec targetObject(Object methodObject);
 
 		/**
-		 * Target class where the method is defined. Used for static methods. For non
-		 * static methods the target object is used.
+		 * Target class where the method is defined. Used for static methods. For
+		 * non-static methods the target object is used.
 		 * @param targetClass method target class.
 		 */
 		MethodInvokingSpec targetClass(Class<?> targetClass);

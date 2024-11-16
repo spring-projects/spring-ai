@@ -19,6 +19,7 @@ package org.springframework.ai.openai.chat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -58,6 +60,25 @@ class OpenAiChatModelFunctionCallingIT {
 
 	@Autowired
 	ChatModel chatModel;
+
+	@Test
+	void functionCallSupplier() {
+
+		Map<String, Object> state = new ConcurrentHashMap<>();
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn the light on in the living room")
+				.functions(FunctionCallback.builder()
+						.function("turnsLightOnInTheLivingRoom", () -> state.put("Light", "ON"))
+						.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+		assertThat(state).containsEntry("Light", "ON");
+	}
 
 	@Test
 	void functionCallTest() {
