@@ -146,10 +146,11 @@ public abstract class AbstractToolCallSupport {
 
 			toolContextMap = new HashMap<>(functionCallOptions.getToolContext());
 
-			List<Message> beforeFunctionCallConversationHistory = new ArrayList<>(prompt.copy().getInstructions());
-			beforeFunctionCallConversationHistory.add(new AssistantMessage(assistantMessage.getContent(),
-					assistantMessage.getMetadata(), assistantMessage.getToolCalls()));
-			toolContextMap.put(ToolContext.TOOL_CONVERSATION_KEY, beforeFunctionCallConversationHistory);
+			List<Message> toolCallHistory = new ArrayList<>(prompt.copy().getInstructions());
+			toolCallHistory.add(new AssistantMessage(assistantMessage.getContent(), assistantMessage.getMetadata(),
+					assistantMessage.getToolCalls()));
+
+			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY, toolCallHistory);
 		}
 
 		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage,

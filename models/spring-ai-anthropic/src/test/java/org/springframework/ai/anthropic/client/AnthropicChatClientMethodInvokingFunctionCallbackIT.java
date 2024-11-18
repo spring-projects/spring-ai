@@ -160,8 +160,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		assertThat(response).contains("30", "10", "15");
 		assertThat(arguments).containsEntry("tool", "value");
-		assertThat(arguments).containsKey(ToolContext.TOOL_CONVERSATION_KEY);
-		List<Message> tootConversationMessages = (List<Message>) arguments.get(ToolContext.TOOL_CONVERSATION_KEY);
+		assertThat(arguments).containsKey(ToolContext.TOOL_CALL_HISTORY);
+		List<Message> tootConversationMessages = (List<Message>) arguments.get(ToolContext.TOOL_CALL_HISTORY);
 		assertThat(tootConversationMessages).hasSize(6);
 	}
 
@@ -257,7 +257,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		public String getWeatherWithContext(String city, Unit unit, ToolContext context) {
 			arguments.put("tool", context.getContext().get("tool"));
-			arguments.put(ToolContext.TOOL_CONVERSATION_KEY, context.getToolConversationHistory());
+			arguments.put(ToolContext.TOOL_CALL_HISTORY, context.getToolCallHistory());
 			return getWeatherStatic(city, unit);
 		}
 
