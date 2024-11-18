@@ -35,7 +35,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -472,13 +471,11 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		if (prompt.getOptions() != null) {
 			OpenAiChatOptions updatedRuntimeOptions = null;
 
-			if (prompt.getOptions() instanceof FunctionCallingOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(((FunctionCallingOptions) prompt.getOptions()),
-						FunctionCallingOptions.class, OpenAiChatOptions.class);
+			if (prompt.getOptions() instanceof FunctionCallingOptions options) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(options, FunctionCallingOptions.class, OpenAiChatOptions.class);
 			}
-			else if (prompt.getOptions() instanceof OpenAiChatOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						OpenAiChatOptions.class);
+			else if (prompt.getOptions() instanceof OpenAiChatOptions options) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(options, ChatOptions.class, OpenAiChatOptions.class);
 			}
 
 			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
