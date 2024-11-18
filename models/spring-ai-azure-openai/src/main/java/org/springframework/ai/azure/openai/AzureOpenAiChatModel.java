@@ -104,6 +104,7 @@ import org.springframework.util.CollectionUtils;
  * @author luocongqiu
  * @author timostark
  * @author Soby Chacko
+ * @author Jihoon Kim
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -160,7 +161,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
-		this(openAIClientBuilder, options, functionCallbackContext, List.of(), ObservationRegistry.NOOP);
+		this(openAIClientBuilder, options, functionCallbackContext, toolFunctionCallbacks, ObservationRegistry.NOOP);
 	}
 
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
@@ -234,10 +235,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 			Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
 				.getChatCompletionsStream(options.getModel(), options);
-
-			// For chunked responses, only the first chunk contains the choice role.
-			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)

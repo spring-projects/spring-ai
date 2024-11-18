@@ -48,6 +48,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Mariusz Bernacki
  * @author Christian Tzolov
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class StreamHelper {
@@ -85,10 +86,10 @@ public class StreamHelper {
 			}
 		}
 		else if (event.type() == EventType.CONTENT_BLOCK_DELTA) {
-			ContentBlockDeltaEvent contentBolckDelta = (ContentBlockDeltaEvent) event;
-			if (ContentBlock.Type.INPUT_JSON_DELTA.getValue().equals(contentBolckDelta.delta().type())) {
+			ContentBlockDeltaEvent contentBlockDelta = (ContentBlockDeltaEvent) event;
+			if (ContentBlock.Type.INPUT_JSON_DELTA.getValue().equals(contentBlockDelta.delta().type())) {
 				return eventAggregator
-					.appendPartialJson(((ContentBlockDeltaJson) contentBolckDelta.delta()).partialJson());
+					.appendPartialJson(((ContentBlockDeltaJson) contentBlockDelta.delta()).partialJson());
 			}
 		}
 		else if (event.type() == EventType.CONTENT_BLOCK_STOP) {
@@ -119,7 +120,7 @@ public class StreamHelper {
 				.withUsage(messageStartEvent.message().usage())
 				.withContent(new ArrayList<>());
 		}
-		else if (event.type().equals(EventType.TOOL_USE_AGGREATE)) {
+		else if (event.type().equals(EventType.TOOL_USE_AGGREGATE)) {
 			ToolUseAggregationEvent eventToolUseBuilder = (ToolUseAggregationEvent) event;
 
 			if (!CollectionUtils.isEmpty(eventToolUseBuilder.getToolContentBlocks())) {

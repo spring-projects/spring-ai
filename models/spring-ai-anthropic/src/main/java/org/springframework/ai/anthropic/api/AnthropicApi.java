@@ -80,7 +80,7 @@ public class AnthropicApi {
 
 	private final StreamHelper streamHelper = new StreamHelper();
 
-	private WebClient webClient;
+	private final WebClient webClient;
 
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
@@ -261,7 +261,7 @@ public class AnthropicApi {
 		/**
 		 * The CLAUDE_INSTANT_1_2
 		 */
-		CLAUDE_INSTANT_1_2("claude-instant-1.2");
+		@Deprecated CLAUDE_INSTANT_1_2("claude-instant-1.2");
 		// @formatter:on
 
 		private final String value;
@@ -366,7 +366,7 @@ public class AnthropicApi {
 		/**
 		 * Artificially created event to aggregate tool use events.
 		 */
-		TOOL_USE_AGGREATE
+		TOOL_USE_AGGREGATE
 
 	}
 
@@ -889,7 +889,7 @@ public class AnthropicApi {
 
 		@Override
 		public EventType type() {
-			return EventType.TOOL_USE_AGGREATE;
+			return EventType.TOOL_USE_AGGREGATE;
 		}
 
 		/**
