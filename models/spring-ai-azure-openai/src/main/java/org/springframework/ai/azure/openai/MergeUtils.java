@@ -210,9 +210,6 @@ public final class MergeUtils {
 				? left.getContentFilterResults() : right.getContentFilterResults();
 		setField(instance, "contentFilterResults", contentFilterResults);
 
-		var finishDetails = left.getFinishDetails() != null ? left.getFinishDetails() : right.getFinishDetails();
-		setField(instance, "finishDetails", finishDetails);
-
 		var enhancements = left.getEnhancements() != null ? left.getEnhancements() : right.getEnhancements();
 		setField(instance, "enhancements", enhancements);
 
