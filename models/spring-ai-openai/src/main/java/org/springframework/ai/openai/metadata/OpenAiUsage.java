@@ -26,6 +26,7 @@ import org.springframework.util.Assert;
  * @author John Blum
  * @author Thomas Vitale
  * @author David Frizelle
+ * @author Christian Tzolov
  * @since 0.7.0
  * @see <a href=
  * "https://platform.openai.com/docs/api-reference/completions/object">Completion
@@ -60,38 +61,6 @@ public class OpenAiUsage implements Usage {
 		return generationTokens != null ? generationTokens.longValue() : 0;
 	}
 
-	public Long getCachedTokens() {
-		OpenAiApi.Usage.PromptTokensDetails promptTokenDetails = getUsage().promptTokensDetails();
-		Integer cachedTokens = promptTokenDetails != null ? promptTokenDetails.cachedTokens() : null;
-		return cachedTokens != null ? cachedTokens.longValue() : 0;
-	}
-
-	public Long getReasoningTokens() {
-		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
-		Integer reasoningTokens = completionTokenDetails != null ? completionTokenDetails.reasoningTokens() : null;
-		return reasoningTokens != null ? reasoningTokens.longValue() : 0;
-	}
-
-	public Long getAcceptedPredictionTokens() {
-		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
-		Integer acceptedPredictionTokens = completionTokenDetails != null
-				? completionTokenDetails.acceptedPredictionTokens() : null;
-		return acceptedPredictionTokens != null ? acceptedPredictionTokens.longValue() : 0;
-	}
-
-	public Long getAudioTokens() {
-		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
-		Integer audioTokens = completionTokenDetails != null ? completionTokenDetails.audioTokens() : null;
-		return audioTokens != null ? audioTokens.longValue() : 0;
-	}
-
-	public Long getRejectedPredictionTokens() {
-		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
-		Integer rejectedPredictionTokens = completionTokenDetails != null
-				? completionTokenDetails.rejectedPredictionTokens() : null;
-		return rejectedPredictionTokens != null ? rejectedPredictionTokens.longValue() : 0;
-	}
-
 	@Override
 	public Long getTotalTokens() {
 		Integer totalTokens = getUsage().totalTokens();
@@ -103,9 +72,95 @@ public class OpenAiUsage implements Usage {
 		}
 	}
 
+	/**
+	 * @deprecated Use {@link #getPromptTokensDetails()} instead.
+	 */
+	@Deprecated
+	public Long getPromptTokensDetailsCachedTokens() {
+		OpenAiApi.Usage.PromptTokensDetails promptTokenDetails = getUsage().promptTokensDetails();
+		Integer cachedTokens = promptTokenDetails != null ? promptTokenDetails.cachedTokens() : null;
+		return cachedTokens != null ? cachedTokens.longValue() : 0;
+	}
+
+	public PromptTokensDetails getPromptTokensDetails() {
+		var details = getUsage().promptTokensDetails();
+		if (details == null) {
+			return new PromptTokensDetails(0, 0);
+		}
+		return new PromptTokensDetails(valueOrZero(details.audioTokens()), valueOrZero(details.cachedTokens()));
+	}
+
+	/**
+	 * @deprecated Use {@link #getCompletionTokenDetails()} instead.
+	 */
+	@Deprecated
+	public Long getReasoningTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer reasoningTokens = completionTokenDetails != null ? completionTokenDetails.reasoningTokens() : null;
+		return reasoningTokens != null ? reasoningTokens.longValue() : 0;
+	}
+
+	/**
+	 * @deprecated Use {@link #getCompletionTokenDetails()} instead.
+	 */
+	@Deprecated
+	public Long getAcceptedPredictionTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer acceptedPredictionTokens = completionTokenDetails != null
+				? completionTokenDetails.acceptedPredictionTokens() : null;
+		return acceptedPredictionTokens != null ? acceptedPredictionTokens.longValue() : 0;
+	}
+
+	/**
+	 * @deprecated Use {@link #getCompletionTokenDetails()} instead.
+	 */
+	@Deprecated
+	public Long getAudioTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer audioTokens = completionTokenDetails != null ? completionTokenDetails.audioTokens() : null;
+		return audioTokens != null ? audioTokens.longValue() : 0;
+	}
+
+	/**
+	 * @deprecated Use {@link #getCompletionTokenDetails()} instead.
+	 */
+	@Deprecated
+	public Long getRejectedPredictionTokens() {
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = getUsage().completionTokenDetails();
+		Integer rejectedPredictionTokens = completionTokenDetails != null
+				? completionTokenDetails.rejectedPredictionTokens() : null;
+		return rejectedPredictionTokens != null ? rejectedPredictionTokens.longValue() : 0;
+	}
+
+	public CompletionTokenDetails getCompletionTokenDetails() {
+		var details = getUsage().completionTokenDetails();
+		if (details == null) {
+			return new CompletionTokenDetails(0, 0, 0, 0);
+		}
+		return new CompletionTokenDetails(valueOrZero(details.reasoningTokens()),
+				valueOrZero(details.acceptedPredictionTokens()), valueOrZero(details.audioTokens()),
+				valueOrZero(details.rejectedPredictionTokens()));
+	}
+
+	public record PromptTokensDetails(// @formatter:off
+		Integer audioTokens,
+		Integer cachedTokens) {
+	}
+
+	public record CompletionTokenDetails(
+		Integer reasoningTokens,
+		Integer acceptedPredictionTokens,
+		Integer audioTokens,
+		Integer rejectedPredictionTokens) { // @formatter:on
+	}
+
 	@Override
 	public String toString() {
 		return getUsage().toString();
+	}
+
+	private int valueOrZero(Integer value) {
+		return value != null ? value : 0;
 	}
 
 }

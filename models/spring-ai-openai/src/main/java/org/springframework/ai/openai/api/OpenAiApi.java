@@ -1145,11 +1145,11 @@ public class OpenAiApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(// @formatter:off
-			@JsonProperty("completion_tokens") Integer completionTokens,
-			@JsonProperty("prompt_tokens") Integer promptTokens,
-			@JsonProperty("total_tokens") Integer totalTokens,
-			@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails,
-			@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails) { // @formatter:on
+		@JsonProperty("completion_tokens") Integer completionTokens,
+		@JsonProperty("prompt_tokens") Integer promptTokens,
+		@JsonProperty("total_tokens") Integer totalTokens,
+		@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails,
+		@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails) { // @formatter:on
 
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
 			this(completionTokens, promptTokens, totalTokens, null, null);
@@ -1158,11 +1158,13 @@ public class OpenAiApi {
 		/**
 		 * Breakdown of tokens used in the prompt
 		 *
+		 * @param audioTokens Audio input tokens present in the prompt.
 		 * @param cachedTokens Cached tokens present in the prompt.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record PromptTokensDetails(// @formatter:off
-				@JsonProperty("cached_tokens") Integer cachedTokens) { // @formatter:on
+			@JsonProperty("audio_tokens") Integer audioTokens,
+			@JsonProperty("cached_tokens") Integer cachedTokens) { // @formatter:on
 		}
 
 		/**
@@ -1178,10 +1180,10 @@ public class OpenAiApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record CompletionTokenDetails(// @formatter:off
-							@JsonProperty("reasoning_tokens") Integer reasoningTokens,
-							@JsonProperty("accepted_prediction_tokens") Integer acceptedPredictionTokens,
-							@JsonProperty("audio_tokens") Integer audioTokens,
-							@JsonProperty("rejected_prediction_tokens") Integer rejectedPredictionTokens) { // @formatter:on
+			@JsonProperty("reasoning_tokens") Integer reasoningTokens,
+			@JsonProperty("accepted_prediction_tokens") Integer acceptedPredictionTokens,
+			@JsonProperty("audio_tokens") Integer audioTokens,
+			@JsonProperty("rejected_prediction_tokens") Integer rejectedPredictionTokens) { // @formatter:on
 		}
 
 	}
@@ -1205,13 +1207,13 @@ public class OpenAiApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(// @formatter:off
-			@JsonProperty("id") String id,
-			@JsonProperty("choices") List<ChunkChoice> choices,
-			@JsonProperty("created") Long created,
-			@JsonProperty("model") String model,
-			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) { // @formatter:on
+		@JsonProperty("id") String id,
+		@JsonProperty("choices") List<ChunkChoice> choices,
+		@JsonProperty("created") Long created,
+		@JsonProperty("model") String model,
+		@JsonProperty("system_fingerprint") String systemFingerprint,
+		@JsonProperty("object") String object,
+		@JsonProperty("usage") Usage usage) { // @formatter:on
 
 		/**
 		 * Chat completion choice.
