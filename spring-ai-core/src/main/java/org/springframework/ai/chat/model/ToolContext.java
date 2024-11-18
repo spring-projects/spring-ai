@@ -17,7 +17,10 @@
 package org.springframework.ai.chat.model;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+
+import org.springframework.ai.chat.messages.Message;
 
 /**
  * Represents the context for tool execution in a function calling scenario.
@@ -38,6 +41,11 @@ import java.util.Map;
  */
 public class ToolContext {
 
+	/**
+	 * The key for the tool conversation history stored in the context map.
+	 */
+	public static final String TOOL_CONVERSATION_KEY = "TOOL_CONVERSATION_KEY";
+
 	private final Map<String, Object> context;
 
 	/**
@@ -55,6 +63,14 @@ public class ToolContext {
 	 */
 	public Map<String, Object> getContext() {
 		return this.context;
+	}
+
+	/**
+	 * Returns the tool conversation history from the context map.
+	 * @return The tool conversation history.
+	 */
+	public List<Message> getToolConversationHistory() {
+		return (List<Message>) this.context.get(TOOL_CONVERSATION_KEY);
 	}
 
 }
