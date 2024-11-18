@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic.client;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -158,6 +160,9 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		assertThat(response).contains("30", "10", "15");
 		assertThat(arguments).containsEntry("tool", "value");
+		assertThat(arguments).containsKey(ToolContext.TOOL_CALL_HISTORY);
+		List<Message> tootConversationMessages = (List<Message>) arguments.get(ToolContext.TOOL_CALL_HISTORY);
+		assertThat(tootConversationMessages).hasSize(6);
 	}
 
 	@Test
@@ -252,6 +257,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		public String getWeatherWithContext(String city, Unit unit, ToolContext context) {
 			arguments.put("tool", context.getContext().get("tool"));
+			arguments.put(ToolContext.TOOL_CALL_HISTORY, context.getToolCallHistory());
 			return getWeatherStatic(city, unit);
 		}
 
