@@ -17,11 +17,13 @@
 package org.springframework.ai.bedrock.converse;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -34,7 +36,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -75,6 +76,30 @@ public class BedrockProxyChatModelObservationIT {
 			.withTemperature(0.7)
 			// .withTopK(1)
 			.withTopP(1.0)
+			.build();
+
+		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
+
+		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+
+		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
+
+		validate(responseMetadata, "[\"end_turn\"]");
+	}
+
+	@Test
+	void observationForChatOperation2() {
+		var options = BedrockProxyChatOptions.builder()
+			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.maxTokens(2048)
+			.stopSequences(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
+			.additional("top_k", 100) // Additional parameter
+			// .additional("tool_choice", new JSONObject(Map.of("type", "auto"))) //
+			// Additional parameter
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -174,7 +199,7 @@ public class BedrockProxyChatModelObservationIT {
 				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.withRegion(Region.US_EAST_1)
 				.withObservationRegistry(observationRegistry)
-				.withDefaultOptions(FunctionCallingOptions.builder().withModel(modelId).build())
+				.withDefaultOptions(BedrockProxyChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

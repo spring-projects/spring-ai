@@ -45,6 +45,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
 
+import org.springframework.ai.bedrock.converse.BedrockProxyChatOptions;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -255,9 +256,9 @@ public final class ConverseApiUtils {
 		return event;
 	}
 
-	@SuppressWarnings("unchecked")
 	public static Document getChatOptionsAdditionalModelRequestFields(ChatOptions defaultOptions,
 			ModelOptions promptOptions) {
+
 		if (defaultOptions == null && promptOptions == null) {
 			return null;
 		}
@@ -266,9 +267,19 @@ public final class ConverseApiUtils {
 
 		if (defaultOptions != null) {
 			attributes.putAll(ModelOptionsUtils.objectToMap(defaultOptions));
+			if (defaultOptions instanceof BedrockProxyChatOptions bedrockProxyChatOptions) {
+				if (!CollectionUtils.isEmpty(bedrockProxyChatOptions.getAdditional())) {
+					attributes.putAll(bedrockProxyChatOptions.getAdditional());
+				}
+			}
 		}
 
 		if (promptOptions != null) {
+			if (promptOptions instanceof BedrockProxyChatOptions bedrockProxyChatOptions) {
+				if (!CollectionUtils.isEmpty(bedrockProxyChatOptions.getAdditional())) {
+					attributes.putAll(bedrockProxyChatOptions.getAdditional());
+				}
+			}
 			if (promptOptions instanceof ChatOptions runtimeOptions) {
 				attributes.putAll(ModelOptionsUtils.objectToMap(runtimeOptions));
 			}
@@ -283,6 +294,7 @@ public final class ConverseApiUtils {
 		attributes.remove("functions");
 		attributes.remove("toolContext");
 		attributes.remove("functionCallbacks");
+		attributes.remove("additional");
 
 		attributes.remove("temperature");
 		attributes.remove("topK");

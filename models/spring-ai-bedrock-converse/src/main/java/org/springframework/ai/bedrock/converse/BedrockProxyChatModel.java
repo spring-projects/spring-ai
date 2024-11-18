@@ -89,7 +89,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.util.Assert;
@@ -131,7 +130,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 	private final BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
-	private FunctionCallingOptions defaultOptions;
+	private BedrockProxyChatOptions defaultOptions;
 
 	/**
 	 * Observation registry used for instrumentation.
@@ -144,7 +143,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	private ChatModelObservationConvention observationConvention;
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, FunctionCallingOptions defaultOptions,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockProxyChatOptions defaultOptions,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
 			ObservationRegistry observationRegistry) {
 
@@ -305,17 +304,14 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			.map(sysMessage -> SystemContentBlock.builder().text(sysMessage.getContent()).build())
 			.toList();
 
-		FunctionCallingOptions updatedRuntimeOptions = (FunctionCallingOptions) this.defaultOptions.copy();
+		BedrockProxyChatOptions updatedRuntimeOptions = (BedrockProxyChatOptions) this.defaultOptions.copy();
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof FunctionCallingOptions) {
-				var functionCallingOptions = (FunctionCallingOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions)
-					.merge(functionCallingOptions);
+			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				updatedRuntimeOptions = (BedrockProxyChatOptions) updatedRuntimeOptions.merge(functionCallingOptions);
 			}
-			else if (prompt.getOptions() instanceof ChatOptions) {
-				var chatOptions = (ChatOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions).merge(chatOptions);
+			else if (prompt.getOptions() instanceof ChatOptions chatOptions) {
+				updatedRuntimeOptions = updatedRuntimeOptions.merge(chatOptions);
 			}
 		}
 
@@ -334,6 +330,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 					? updatedRuntimeOptions.getTemperature().floatValue() : null)
 			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
 			.build();
+
 		Document additionalModelRequestFields = ConverseApiUtils
 			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
 
@@ -586,7 +583,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 		private Duration timeout = Duration.ofMinutes(10);
 
-		private FunctionCallingOptions defaultOptions = new FunctionCallingOptionsBuilder().build();
+		private BedrockProxyChatOptions defaultOptions = BedrockProxyChatOptions.builder().build();
 
 		private FunctionCallbackContext functionCallbackContext;
 
@@ -621,7 +618,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			return this;
 		}
 
-		public Builder withDefaultOptions(FunctionCallingOptions defaultOptions) {
+		public Builder withDefaultOptions(BedrockProxyChatOptions defaultOptions) {
 			Assert.notNull(defaultOptions, "'defaultOptions' must not be null.");
 			this.defaultOptions = defaultOptions;
 			return this;
