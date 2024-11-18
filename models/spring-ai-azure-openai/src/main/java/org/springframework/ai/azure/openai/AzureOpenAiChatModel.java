@@ -30,29 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.ai.openai.models.ChatChoice;
-import com.azure.ai.openai.models.ChatCompletions;
-import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
-import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinition;
-import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsOptions;
-import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsToolCall;
-import com.azure.ai.openai.models.ChatCompletionsToolDefinition;
-import com.azure.ai.openai.models.ChatMessageContentItem;
-import com.azure.ai.openai.models.ChatMessageImageContentItem;
-import com.azure.ai.openai.models.ChatMessageImageUrl;
-import com.azure.ai.openai.models.ChatMessageTextContentItem;
-import com.azure.ai.openai.models.ChatRequestAssistantMessage;
-import com.azure.ai.openai.models.ChatRequestMessage;
-import com.azure.ai.openai.models.ChatRequestSystemMessage;
-import com.azure.ai.openai.models.ChatRequestToolMessage;
-import com.azure.ai.openai.models.ChatRequestUserMessage;
-import com.azure.ai.openai.models.CompletionsFinishReason;
-import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
-import com.azure.ai.openai.models.FunctionCall;
-import com.azure.ai.openai.models.FunctionDefinition;
+import com.azure.ai.openai.models.*;
 import com.azure.core.util.BinaryData;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -387,7 +365,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	private List<ChatCompletionsFunctionToolDefinition> getFunctionTools(Set<String> functionNames) {
 		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
 
-			FunctionDefinition functionDefinition = new FunctionDefinition(functionCallback.getName());
+			ChatCompletionsFunctionToolDefinitionFunction functionDefinition = new ChatCompletionsFunctionToolDefinitionFunction(
+					functionCallback.getName());
 			functionDefinition.setDescription(functionCallback.getDescription());
 			BinaryData parameters = BinaryData
 				.fromObject(ModelOptionsUtils.jsonToMap(functionCallback.getInputTypeSchema()));

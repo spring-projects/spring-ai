@@ -57,7 +57,7 @@ public final class MergeUtils {
 			ChatChoiceLogProbabilityInfo.class, int.class, CompletionsFinishReason.class };
 
 	private static final Class<?>[] chatResponseMessageConstructorArgumentTypes = new Class<?>[] { ChatRole.class,
-			String.class };
+			String.class, String.class };
 
 	private MergeUtils() {
 
@@ -210,9 +210,6 @@ public final class MergeUtils {
 				? left.getContentFilterResults() : right.getContentFilterResults();
 		setField(instance, "contentFilterResults", contentFilterResults);
 
-		var finishDetails = left.getFinishDetails() != null ? left.getFinishDetails() : right.getFinishDetails();
-		setField(instance, "finishDetails", finishDetails);
-
 		var enhancements = left.getEnhancements() != null ? left.getEnhancements() : right.getEnhancements();
 		setField(instance, "enhancements", enhancements);
 
@@ -239,8 +236,10 @@ public final class MergeUtils {
 			content = left.getContent();
 		}
 
+		String refusal = left.getRefusal() != null ? left.getRefusal() : right.getRefusal();
+
 		ChatResponseMessage instance = newInstance(chatResponseMessageConstructorArgumentTypes,
-				ChatResponseMessage.class, role, content);
+				ChatResponseMessage.class, role, refusal, content);
 
 		List<ChatCompletionsToolCall> toolCalls = new ArrayList<>();
 		if (left.getToolCalls() == null) {
