@@ -182,7 +182,7 @@ public class MethodInvokingFunctionCallback implements FunctionCallback {
 				return ModelOptionsUtils.toJsonString(response);
 			}
 
-			return responseConverter.apply(response);
+			return this.responseConverter.apply(response);
 		}
 		catch (Exception e) {
 			ReflectionUtils.handleReflectionException(e);

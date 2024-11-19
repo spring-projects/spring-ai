@@ -229,7 +229,7 @@ class MistralAiChatClientIT {
 						.description("Get the weather in location")
 						.function("getCurrentWeather", new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
-						.build())				
+						.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -275,7 +275,7 @@ class MistralAiChatClientIT {
 					.description("Get the weather in location")
 					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
-					.build())				
+					.build())
 				.stream()
 				.content();
 		// @formatter:on

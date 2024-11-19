@@ -275,7 +275,7 @@ class DefaultFunctionCallbackBuilderTests {
 		private T datum;
 
 		public T getDatum() {
-			return datum;
+			return this.datum;
 		}
 
 		public void setDatum(T value) {

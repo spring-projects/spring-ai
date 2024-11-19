@@ -85,7 +85,7 @@ public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallbac
 	 * @deprecated in favor of {@link DefaultFunctionCallbackBuilder}
 	 */
 	@Deprecated
-	public static class Builder<I, O> {
+	public static final class Builder<I, O> {
 
 		private final BiFunction<I, ToolContext, O> biFunction;
 

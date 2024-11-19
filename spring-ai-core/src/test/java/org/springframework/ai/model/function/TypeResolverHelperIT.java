@@ -92,9 +92,7 @@ public class TypeResolverHelperIT {
 
 		@Bean
 		Consumer<WeatherRequest> weatherConsumer() {
-			return (weatherRequest) -> {
-				System.out.println(weatherRequest);
-			};
+			return System.out::println;
 		}
 
 	}

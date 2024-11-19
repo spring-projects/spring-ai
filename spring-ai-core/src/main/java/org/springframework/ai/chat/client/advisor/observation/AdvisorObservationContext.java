@@ -199,7 +199,7 @@ public class AdvisorObservationContext extends Observation.Context {
 	/**
 	 * Builder for {@link AdvisorObservationContext}.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String advisorName;
 

@@ -142,7 +142,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 	@Override
 	public <O> FunctionInvokingSpec<Void, O> function(String name, Supplier<O> supplier) {
-		Function<Void, O> function = (input) -> supplier.get();
+		Function<Void, O> function = input -> supplier.get();
 		return new DefaultFunctionInvokingSpec<>(name, function).inputType(Void.class);
 	}
 
@@ -159,7 +159,18 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		return new DefaultMethodInvokingSpec(methodName, argumentTypes);
 	}
 
-	class DefaultFunctionInvokingSpec<I, O> implements FunctionInvokingSpec<I, O> {
+	private String generateDescription(String fromName) {
+
+		String generatedDescription = ParsingUtils.reConcatenateCamelCase(fromName, " ");
+
+		logger.info("Description is not set! A best effort attempt to generate a description:'{}' from the:'{}'",
+				generatedDescription, fromName);
+		logger.info("It is recommended to set the Description explicitly! Use the 'description()' method!");
+
+		return generatedDescription;
+	}
+
+	final class DefaultFunctionInvokingSpec<I, O> implements FunctionInvokingSpec<I, O> {
 
 		private final String name;
 
@@ -196,7 +207,6 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		public FunctionInvokingSpec<I, O> inputType(ParameterizedTypeReference<?> inputType) {
 			Assert.notNull(inputType, "InputType must not be null");
 			this.inputType = inputType.getType();
-			;
 			return this;
 		}
 
@@ -229,7 +239,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 	}
 
-	class DefaultMethodInvokingSpec implements FunctionCallback.MethodInvokingSpec {
+	final class DefaultMethodInvokingSpec implements FunctionCallback.MethodInvokingSpec {
 
 		private String name;
 
@@ -272,9 +282,9 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		public FunctionCallback build() {
 			Assert.isTrue(this.targetClass != null || this.targetObject != null,
 					"Target class or object must not be null");
-			var method = ReflectionUtils.findMethod(targetClass, methodName, argumentTypes);
-			Assert.notNull(method,
-					"Method: '" + methodName + "' with arguments:" + Arrays.toString(argumentTypes) + " not found!");
+			var method = ReflectionUtils.findMethod(this.targetClass, this.methodName, this.argumentTypes);
+			Assert.notNull(method, "Method: '" + this.methodName + "' with arguments:"
+					+ Arrays.toString(this.argumentTypes) + " not found!");
 			return new MethodInvokingFunctionCallback(this.targetObject, method, this.getDescription(), objectMapper,
 					this.name, responseConverter);
 		}
@@ -287,17 +297,6 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			return generateDescription(StringUtils.hasText(this.name) ? this.name : this.methodName);
 		}
 
-	}
-
-	private String generateDescription(String fromName) {
-
-		String generatedDescription = ParsingUtils.reConcatenateCamelCase(fromName, " ");
-
-		logger.info("Description is not set! A best effort attempt to generate a description:'{}' from the:'{}'",
-				generatedDescription, fromName);
-		logger.info("It is recommended to set the Description explicitly! Use the 'description()' method!");
-
-		return generatedDescription;
 	}
 
 }

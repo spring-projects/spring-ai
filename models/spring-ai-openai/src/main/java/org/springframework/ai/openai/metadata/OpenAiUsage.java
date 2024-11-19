@@ -142,6 +142,15 @@ public class OpenAiUsage implements Usage {
 				valueOrZero(details.rejectedPredictionTokens()));
 	}
 
+	@Override
+	public String toString() {
+		return getUsage().toString();
+	}
+
+	private int valueOrZero(Integer value) {
+		return value != null ? value : 0;
+	}
+
 	public record PromptTokensDetails(// @formatter:off
 		Integer audioTokens,
 		Integer cachedTokens) {
@@ -152,15 +161,6 @@ public class OpenAiUsage implements Usage {
 		Integer acceptedPredictionTokens,
 		Integer audioTokens,
 		Integer rejectedPredictionTokens) { // @formatter:on
-	}
-
-	@Override
-	public String toString() {
-		return getUsage().toString();
-	}
-
-	private int valueOrZero(Integer value) {
-		return value != null ? value : 0;
 	}
 
 }

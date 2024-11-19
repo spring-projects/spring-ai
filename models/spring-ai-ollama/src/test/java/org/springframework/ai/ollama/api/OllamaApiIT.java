@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;

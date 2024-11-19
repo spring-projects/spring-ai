@@ -124,7 +124,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
 				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
-					.method("getWeatherNonStatic",String.class, Unit.class)
+					.method("getWeatherNonStatic", String.class, Unit.class)
 					.targetObject(targetObject)
 					.build())
 				.call()
@@ -148,7 +148,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 					.description("Get the weather in location")
 					.method("getWeatherWithContext", String.class, Unit.class, ToolContext.class)
 					.targetObject(targetObject)
-					.build())				
+					.build())
 				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content();

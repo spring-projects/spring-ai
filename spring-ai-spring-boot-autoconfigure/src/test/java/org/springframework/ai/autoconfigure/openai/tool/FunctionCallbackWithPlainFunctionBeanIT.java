@@ -353,9 +353,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			return (weatherService::apply);
 		}
 
-		record LightInfo(String roomName, boolean isOn) {
-		}
-
 		@Bean
 		@Description("Turn light on or off in a room")
 		public Function<LightInfo, Void> turnLight() {
@@ -395,18 +392,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			};
 		}
 
-		record TrainSearchSchedule(String from, String to, String date) {
-		}
-
-		record TrainSearchScheduleResponse(String from, String to, String date, String trainNumber) {
-		}
-
-		record TrainSearchRequest<T>(T data) {
-		}
-
-		record TrainSearchResponse<T>(T data) {
-		}
-
 		@Bean
 		@Description("Schedule a train reservation")
 		public Function<TrainSearchRequest<TrainSearchSchedule>, TrainSearchResponse<TrainSearchScheduleResponse>> trainReservation() {
@@ -427,6 +412,21 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			return new MockWeatherService().apply(request);
 		}
 
+	}
+
+	record LightInfo(String roomName, boolean isOn) {
+	}
+
+	record TrainSearchSchedule(String from, String to, String date) {
+	}
+
+	record TrainSearchScheduleResponse(String from, String to, String date, String trainNumber) {
+	}
+
+	record TrainSearchRequest<T>(T data) {
+	}
+
+	record TrainSearchResponse<T>(T data) {
 	}
 
 }

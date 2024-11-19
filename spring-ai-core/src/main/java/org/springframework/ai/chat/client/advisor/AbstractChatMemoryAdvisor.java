@@ -235,7 +235,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 
 		/**
 		 * Set the conversation id.
-		 * @param conversationId the conversation id	
+		 * @param conversationId the conversation id
 		 * @return the builder
 		 */
 		public AbstractBuilder withConversationId(String conversationId) {

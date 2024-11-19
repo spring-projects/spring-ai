@@ -298,12 +298,14 @@ public class AnthropicApi {
 		/**
 		 * The user role.
 		 */
-		@JsonProperty("user") USER,
+		@JsonProperty("user")
+		USER,
 
 		/**
 		 * The assistant role.
 		 */
-		@JsonProperty("assistant") ASSISTANT
+		@JsonProperty("assistant")
+		ASSISTANT
 		// @formatter:on
 
 	}
@@ -824,7 +826,7 @@ public class AnthropicApi {
 
 	/**
 	 * Chat completion response object.
-	 * 
+	 *
 	 * @param id Unique object identifier. The format and length of IDs may change over
 	 * time.
 	 * @param type Object type. For Messages, this is always "message".

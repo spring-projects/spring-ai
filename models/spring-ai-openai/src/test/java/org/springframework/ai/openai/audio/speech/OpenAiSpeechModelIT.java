@@ -105,11 +105,10 @@ class OpenAiSpeechModelIT extends AbstractIT {
 		assertThat(responseFlux).isNotNull();
 		List<SpeechResponse> responses = responseFlux.collectList().block();
 		assertThat(responses).isNotNull();
-		responses.forEach(response -> {
-			// System.out.println("Audio data chunk size: " +
-			// response.getResult().getOutput().length);
-			assertThat(response.getResult().getOutput()).isNotEmpty();
-		});
+		responses.forEach(response ->
+		// System.out.println("Audio data chunk size: " +
+		// response.getResult().getOutput().length);
+		assertThat(response.getResult().getOutput()).isNotEmpty());
 	}
 
 }
