@@ -308,14 +308,12 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		FunctionCallingOptions updatedRuntimeOptions = (FunctionCallingOptions) this.defaultOptions.copy();
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof FunctionCallingOptions) {
-				var functionCallingOptions = (FunctionCallingOptions) prompt.getOptions();
+			if (prompt.getOptions() instanceof FunctionCallingOptions options) {
 				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions)
-					.merge(functionCallingOptions);
-			}
-			else if (prompt.getOptions() instanceof ChatOptions) {
-				var chatOptions = (ChatOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions).merge(chatOptions);
+					.merge(options);
+			} else {
+				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions)
+						.merge(prompt.getOptions());
 			}
 		}
 
