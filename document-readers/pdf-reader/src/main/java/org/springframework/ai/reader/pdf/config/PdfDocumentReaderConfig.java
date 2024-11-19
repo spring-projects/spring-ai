@@ -32,10 +32,9 @@ public final class PdfDocumentReaderConfig {
 	public static final int ALL_PAGES = 0;
 
 	public final boolean reversedParagraphPosition;
-
+ 	public final int pageTopMargin;
+	
 	public final int pagesPerDocument;
-
-	public final int pageTopMargin;
 
 	public final int pageBottomMargin;
 
@@ -50,7 +49,7 @@ public final class PdfDocumentReaderConfig {
 	}
 
 	/**
-	 * Start building a new configuration.
+	 * Start building a new configuration in spring framework.
 	 * @return The entry point for creating a new configuration.
 	 */
 	public static PdfDocumentReaderConfig.Builder builder() {
@@ -121,7 +120,7 @@ public final class PdfDocumentReaderConfig {
 		 * @return this builder
 		 */
 		public PdfDocumentReaderConfig.Builder withPageBottomMargin(int bottomMargin) {
-			Assert.isTrue(bottomMargin >= 0, "Page margins must be a positive value.");
+			Assert.isTrue(bottomMargin > = 0, "Page margins must be a positive value.");
 			this.pageBottomMargin = bottomMargin;
 			return this;
 		}
