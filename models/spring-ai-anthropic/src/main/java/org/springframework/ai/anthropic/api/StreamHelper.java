@@ -54,18 +54,19 @@ import org.springframework.util.StringUtils;
 public class StreamHelper {
 
 	public boolean isToolUseStart(StreamEvent event) {
-		if (event == null || event.type() == null || event.type() != EventType.CONTENT_BLOCK_START) {
-			return false;
-		}
-		return ContentBlock.Type.TOOL_USE.getValue().equals(((ContentBlockStartEvent) event).contentBlock().type());
+    if (isInvalidEvent(event, EventType.CONTENT_BLOCK_START)) {
+        return false;
+    }
+    ContentBlockStartEvent contentBlockStartEvent = (ContentBlockStartEvent) event;
+    	return ContentBlock.Type.TOOL_USE.getValue().equals(contentBlockStartEvent.contentBlock().type());	
 	}
 
 	public boolean isToolUseFinish(StreamEvent event) {
+    	return !isInvalidEvent(event, EventType.CONTENT_BLOCK_STOP);
+	}
 
-		if (event == null || event.type() == null || event.type() != EventType.CONTENT_BLOCK_STOP) {
-			return false;
-		}
-		return true;
+	private boolean isInvalidEvent(StreamEvent event, EventType expectedType) {
+    	return event == null || event.type() == null || event.type() != expectedType;	
 	}
 
 	public StreamEvent mergeToolUseEvents(StreamEvent previousEvent, StreamEvent event) {
