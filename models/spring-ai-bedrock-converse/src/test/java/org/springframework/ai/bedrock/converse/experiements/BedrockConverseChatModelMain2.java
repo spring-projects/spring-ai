@@ -69,6 +69,8 @@ public final class BedrockConverseChatModelMain2 {
 		Flux<ConverseStreamOutput> responses = chatModel.converseStream(streamRequest);
 		List<ConverseStreamOutput> responseList = responses.collectList().block();
 		System.out.println(responseList);
+		System.out.println("Response count: " + responseList.size());
+		responseList.forEach(System.out::println);
 	}
 
 }

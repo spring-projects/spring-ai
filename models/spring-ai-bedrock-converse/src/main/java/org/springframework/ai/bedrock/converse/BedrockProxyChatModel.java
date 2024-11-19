@@ -169,6 +169,10 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	 */
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return this.internalCall(prompt, null);
+	}
+
+	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse) {
 
 		ConverseRequest converseRequest = this.createRequest(prompt);
 
@@ -185,7 +189,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 				ConverseResponse converseResponse = this.bedrockRuntimeClient.converse(converseRequest);
 
-				var response = this.toChatResponse(converseResponse);
+				var response = this.toChatResponse(converseResponse, perviousChatResponse);
 
 				observationContext.setResponse(response);
 
@@ -195,7 +199,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
 				&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
 			var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 		}
 
 		return chatResponse;
@@ -402,7 +406,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	 * @param response The Bedrock Converse response.
 	 * @return The ChatResponse entity.
 	 */
-	private ChatResponse toChatResponse(ConverseResponse response) {
+	private ChatResponse toChatResponse(ConverseResponse response, ChatResponse perviousChatResponse) {
 
 		Assert.notNull(response, "'response' must not be null.");
 
@@ -448,8 +452,19 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			allGenerations.add(toolCallGeneration);
 		}
 
-		DefaultUsage usage = new DefaultUsage(response.usage().inputTokens().longValue(),
-				response.usage().outputTokens().longValue(), response.usage().totalTokens().longValue());
+		Long promptTokens = response.usage().inputTokens().longValue();
+		Long generationTokens = response.usage().outputTokens().longValue();
+		Long totalTokens = response.usage().totalTokens().longValue();
+
+		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
+				&& perviousChatResponse.getMetadata().getUsage() != null) {
+
+			promptTokens += perviousChatResponse.getMetadata().getUsage().getPromptTokens();
+			generationTokens += perviousChatResponse.getMetadata().getUsage().getGenerationTokens();
+			totalTokens += perviousChatResponse.getMetadata().getUsage().getTotalTokens();
+		}
+
+		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens);
 
 		Document modelResponseFields = response.additionalModelResponseFields();
 
@@ -473,13 +488,15 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	 */
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return this.internalStream(prompt, null);
+	}
+
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse) {
 		Assert.notNull(prompt, "'prompt' must not be null");
 
 		return Flux.deferContextual(contextView -> {
 
 			ConverseRequest converseRequest = this.createRequest(prompt);
-
-			// System.out.println(">>>>> CONVERSE REQUEST: " + converseRequest);
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
@@ -504,13 +521,13 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			Flux<ConverseStreamOutput> response = converseStream(converseStreamRequest);
 
 			// @formatter:off
-			Flux<ChatResponse> chatResponses = ConverseApiUtils.toChatResponse(response);
+			Flux<ChatResponse> chatResponses = ConverseApiUtils.toChatResponse(response, perviousChatResponse);
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 				if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
 						&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 				}
 				return Mono.just(chatResponse);
 			})
