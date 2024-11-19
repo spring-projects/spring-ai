@@ -93,6 +93,7 @@ import org.springframework.util.StringUtils;
  * @author Mariusz Bernacki
  * @author luocongqiu
  * @author Thomas Vitale
+ * @author Chanwook Song
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -414,9 +415,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
-		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message ->
 			switch (message.getMessageType()) {
-				case USER, SYSTEM:
+				case USER, SYSTEM -> {
 					Object content = message.getContent();
 					if (message instanceof UserMessage userMessage) {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
@@ -432,9 +433,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 							content = contentList;
 						}
 					}
-					return List.of(new ChatCompletionMessage(content,
-							ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
-				case ASSISTANT:
+
+					yield List.of(new ChatCompletionMessage(content, ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
+				}
+				case ASSISTANT -> {
 					var assistantMessage = (AssistantMessage) message;
 					List<ToolCall> toolCalls = null;
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
@@ -444,25 +446,27 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						}).toList();
 					}
 
-					return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+					yield List.of(new ChatCompletionMessage(assistantMessage.getContent(),
 							ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
-				case TOOL:
+				}
+				case TOOL -> {
 					ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 					toolMessage.getResponses().forEach(response ->
 							Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id")
 					);
 
-					return toolMessage.getResponses()
+					yield toolMessage.getResponses()
 							.stream()
 							.map(tr ->
-								new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-									tr.id(), null, null)
+									new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
+											tr.id(), null, null)
 							)
 							.toList();
-				default:
+				}
+				default ->
 					throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 			}
-		}).flatMap(List::stream).toList();
+		).flatMap(List::stream).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
