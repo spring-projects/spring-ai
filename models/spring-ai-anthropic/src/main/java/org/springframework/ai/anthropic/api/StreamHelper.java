@@ -54,8 +54,8 @@ import org.springframework.util.StringUtils;
 public class StreamHelper {
 
 	public boolean isToolUseStart(StreamEvent event) {
-    if (isInvalidEvent(event, EventType.CONTENT_BLOCK_START)) {
-        return false;
+    	if (isInvalidEvent(event, EventType.CONTENT_BLOCK_START)) {
+        	return false;
     }
     ContentBlockStartEvent contentBlockStartEvent = (ContentBlockStartEvent) event;
     	return ContentBlock.Type.TOOL_USE.getValue().equals(contentBlockStartEvent.contentBlock().type());	
