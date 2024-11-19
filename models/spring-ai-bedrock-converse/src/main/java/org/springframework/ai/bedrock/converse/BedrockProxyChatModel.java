@@ -55,6 +55,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolConfiguration;
@@ -189,6 +190,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 				ConverseResponse converseResponse = this.bedrockRuntimeClient.converse(converseRequest);
 
+				logger.debug("ConverseResponse: {}", converseResponse);
+
 				var response = this.toChatResponse(converseResponse, perviousChatResponse);
 
 				observationContext.setResponse(response);
@@ -197,7 +200,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			});
 
 		if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
-				&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
+				&& this.isToolCall(chatResponse, Set.of(StopReason.TOOL_USE.toString()))) {
 			var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
 			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 		}
@@ -471,7 +474,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		ConverseMetrics metrics = response.metrics();
 
 		var chatResponseMetaData = ChatResponseMetadata.builder()
-			.withId(response.responseMetadata().requestId())
+			.withId(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
 			.withUsage(usage)
 			.build();
 
@@ -525,7 +528,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 				if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
-						&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
+						&& this.isToolCall(chatResponse, Set.of(StopReason.TOOL_USE.toString()))) {
+					
 					var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
 					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 				}
