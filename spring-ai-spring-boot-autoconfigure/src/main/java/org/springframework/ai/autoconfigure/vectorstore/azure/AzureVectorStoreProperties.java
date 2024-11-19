@@ -40,6 +40,8 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private double defaultSimilarityThreshold = -1;
 
+	private boolean useKeylessAuth;
+
 	public String getUrl() {
 		return this.url;
 	}
@@ -78,6 +80,14 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setDefaultSimilarityThreshold(double defaultSimilarityThreshold) {
 		this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+	}
+
+	public boolean isUseKeylessAuth() {
+		return this.useKeylessAuth;
+	}
+
+	public void setUseKeylessAuth(boolean useKeylessAuth) {
+		this.useKeylessAuth = useKeylessAuth;
 	}
 
 }

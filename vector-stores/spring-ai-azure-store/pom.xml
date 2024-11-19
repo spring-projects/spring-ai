@@ -59,6 +59,24 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.azure/azure-identity -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>${azure-identity.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.azure/azure-core -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-core</artifactId>
+			<version>${azure-core.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.azure/azure-json -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-json</artifactId>
+			<version>${azure-json.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>com.alibaba.fastjson2</groupId>
 			<artifactId>fastjson2</artifactId>
