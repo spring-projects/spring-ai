@@ -15,11 +15,11 @@
  */
 
 /**
- * RAG Sub-Module: Document Search.
+ * RAG Sub-Module: Query Router.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.rag.retrieval.search;
+package org.springframework.ai.rag.orchestration.routing;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

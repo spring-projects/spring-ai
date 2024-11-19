@@ -14,34 +14,33 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.rag.retrieval.search;
+package org.springframework.ai.rag.generation.augmentation;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
 /**
- * Component responsible for retrieving {@link Document}s from an underlying data source,
- * such as a search engine, a vector store, a database, or a knowledge graph.
+ * A component for augmenting an input query with additional data, useful to provide a
+ * large language model with the necessary context to answer the user query.
  *
- * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface DocumentRetriever extends Function<Query, List<Document>> {
+public interface QueryAugmenter extends BiFunction<Query, List<Document>, Query> {
 
 	/**
-	 * Retrieves relevant documents from an underlying data source based on the given
-	 * query.
-	 * @param query The query to use for retrieving documents
-	 * @return The list of relevant documents
+	 * Augments the user query with contextual data.
+	 * @param query The user query to augment
+	 * @param documents The contextual data to use for augmentation
+	 * @return The augmented query
 	 */
-	List<Document> retrieve(Query query);
+	Query augment(Query query, List<Document> documents);
 
-	default List<Document> apply(Query query) {
-		return retrieve(query);
+	default Query apply(Query query, List<Document> documents) {
+		return augment(query, documents);
 	}
 
 }

@@ -15,11 +15,14 @@
  */
 
 /**
- * RAG Sub-Module: Document Search.
+ * RAG Module: Orchestration.
+ * <p>
+ * This package includes components for controlling the execution flow in a Retrieval
+ * Augmented Generation system.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.rag.retrieval.search;
+package org.springframework.ai.rag.orchestration;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

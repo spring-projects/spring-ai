@@ -33,7 +33,8 @@ import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.rag.analysis.query.transformation.TranslationQueryTransformer;
+import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
+import org.springframework.ai.rag.preretrieval.query.transformation.TranslationQueryTransformer;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
@@ -110,6 +111,36 @@ class RetrievalAugmentationAdvisorIT {
 			.queryTransformers(TranslationQueryTransformer.builder()
 				.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
 				.targetLanguage("english")
+				.build())
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
+			.build();
+
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt()
+			.system("Answer the question in English")
+			.user(question)
+			.advisors(ragAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(chatResponse).isNotNull();
+
+		String response = chatResponse.getResult().getOutput().getContent();
+		System.out.println(response);
+		assertThat(response).containsIgnoringCase("Highlands");
+
+		evaluateRelevancy(question, chatResponse);
+	}
+
+	@Test
+	void ragWithMultiQuery() {
+		String question = "Where does the adventure of Anacletus and Birba take place?";
+
+		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
+			.queryExpander(MultiQueryExpander.builder()
+				.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
+				.numberOfQueries(2)
 				.build())
 			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
 			.build();

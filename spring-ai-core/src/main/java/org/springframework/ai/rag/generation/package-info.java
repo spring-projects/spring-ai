@@ -15,11 +15,14 @@
  */
 
 /**
- * RAG Sub-Module: Document Search.
+ * RAG Module: Generation.
+ * <p>
+ * This package includes components for handling the generation stage in Retrieval
+ * Augmented Generation flows.
  */
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.rag.retrieval.search;
+package org.springframework.ai.rag.generation;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

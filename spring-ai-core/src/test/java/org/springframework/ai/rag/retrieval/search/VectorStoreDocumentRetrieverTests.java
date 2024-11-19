@@ -54,6 +54,31 @@ class VectorStoreDocumentRetrieverTests {
 	}
 
 	@Test
+	void whenTopKIsZeroThenThrow() {
+		assertThatThrownBy(
+				() -> VectorStoreDocumentRetriever.builder().topK(0).vectorStore(mock(VectorStore.class)).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("topK must be greater than 0");
+	}
+
+	@Test
+	void whenTopKIsNegativeThenThrow() {
+		assertThatThrownBy(
+				() -> VectorStoreDocumentRetriever.builder().topK(-1).vectorStore(mock(VectorStore.class)).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("topK must be greater than 0");
+	}
+
+	@Test
+	void whenSimilarityThresholdIsNegativeThenThrow() {
+		assertThatThrownBy(() -> VectorStoreDocumentRetriever.builder()
+			.similarityThreshold(-1.0)
+			.vectorStore(mock(VectorStore.class))
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("similarityThreshold must be equal to or greater than 0.0");
+	}
+
+	@Test
 	void searchRequestParameters() {
 		var mockVectorStore = mock(VectorStore.class);
 		var documentRetriever = VectorStoreDocumentRetriever.builder()

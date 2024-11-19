@@ -16,11 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -29,8 +26,10 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.rag.analysis.query.transformation.QueryTransformer;
+import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,24 +44,6 @@ import static org.mockito.Mockito.mock;
 class RetrievalAugmentationAdvisorTests {
 
 	@Test
-	void whenQueryTransformerListIsNullThenThrow() {
-		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder()
-			.queryTransformers((List<QueryTransformer>) null)
-			.documentRetriever(mock(DocumentRetriever.class))
-			.build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("queryTransformers cannot be null");
-	}
-
-	@Test
-	void whenQueryTransformerArrayIsNullThenThrow() {
-		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder()
-			.queryTransformers((QueryTransformer[]) null)
-			.documentRetriever(mock(DocumentRetriever.class))
-			.build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("queryTransformers cannot be null");
-	}
-
-	@Test
 	void whenQueryTransformersContainNullElementsThenThrow() {
 		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder()
 			.queryTransformers(mock(QueryTransformer.class), null)
@@ -72,10 +53,10 @@ class RetrievalAugmentationAdvisorTests {
 	}
 
 	@Test
-	void whenDocumentRetrieverIsNullThenThrow() {
-		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder().documentRetriever(null).build())
+	void whenQueryRouterIsNullThenThrow() {
+		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder().queryRouter(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("documentRetriever cannot be null");
+			.hasMessageContaining("queryRouter cannot be null");
 	}
 
 	@Test
