@@ -27,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
@@ -41,7 +40,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
-public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
+public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 
 	// @formatter:off
 	/**
