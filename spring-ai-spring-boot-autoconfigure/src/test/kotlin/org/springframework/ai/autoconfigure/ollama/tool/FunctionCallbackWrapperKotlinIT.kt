@@ -26,7 +26,6 @@ import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.ai.model.function.FunctionCallback
-import org.springframework.ai.model.function.FunctionCallbackWrapper
 import org.springframework.ai.model.function.FunctionCallingOptions
 import org.springframework.ai.ollama.OllamaChatModel
 import org.springframework.ai.ollama.api.OllamaModel
@@ -106,13 +105,13 @@ class FunctionCallbackWrapperKotlinIT : BaseOllamaIT() {
 
 		@Bean
 		open fun weatherFunctionInfo(): FunctionCallback {
-
-			return FunctionCallbackWrapper.builder(MockKotlinWeatherService())
-				.withName("WeatherInfo")
-				.withInputType(KotlinRequest::class.java)
-				.withDescription(
-					"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-			.build();
+			return FunctionCallback.builder()
+				.description(
+					"Find the weather conditions, forecasts, and temperatures for a location, like a city or state."
+				)
+				.function("WeatherInfo", MockKotlinWeatherService())
+				.inputType(KotlinRequest::class.java)
+				.build()
 		}
 
 	}
