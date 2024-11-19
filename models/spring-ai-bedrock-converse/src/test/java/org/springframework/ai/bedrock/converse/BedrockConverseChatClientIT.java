@@ -274,7 +274,7 @@ class BedrockConverseChatClientIT {
 	void streamFunctionCallTest() {
 
 		// @formatter:off
-		Flux<String> response = ChatClient.create(this.chatModel).prompt()
+		Flux<ChatResponse> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
 				.functions(FunctionCallback.builder()
 					.description("Get the weather in location")
@@ -282,10 +282,20 @@ class BedrockConverseChatClientIT {
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.stream()
-				.content();
+				.chatResponse();
 		// @formatter:on
 
-		String content = response.collectList().block().stream().collect(Collectors.joining());
+		List<ChatResponse> chatResponses = response.collectList().block();
+
+		chatResponses.forEach(cr -> logger.info("Response: {}", cr));
+
+		List<ChatResponse> chatResponses2 = chatResponses.stream()
+			.filter(cr -> cr.getResult() != null)
+			.collect(Collectors.toList());
+
+		String content = chatResponses2.stream()
+			.map(cr -> cr.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");

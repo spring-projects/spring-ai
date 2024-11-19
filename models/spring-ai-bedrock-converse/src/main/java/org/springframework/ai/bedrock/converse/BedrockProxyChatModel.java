@@ -473,13 +473,15 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	 */
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return this.internalStream(prompt, null);
+	}
+
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse) {
 		Assert.notNull(prompt, "'prompt' must not be null");
 
 		return Flux.deferContextual(contextView -> {
 
 			ConverseRequest converseRequest = this.createRequest(prompt);
-
-			// System.out.println(">>>>> CONVERSE REQUEST: " + converseRequest);
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
@@ -504,13 +506,14 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			Flux<ConverseStreamOutput> response = converseStream(converseStreamRequest);
 
 			// @formatter:off
-			Flux<ChatResponse> chatResponses = ConverseApiUtils.toChatResponse(response);
+			Flux<ChatResponse> chatResponses = ConverseApiUtils.toChatResponse(response, perviousChatResponse);
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 				if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
 						&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
+					
 					var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 				}
 				return Mono.just(chatResponse);
 			})
