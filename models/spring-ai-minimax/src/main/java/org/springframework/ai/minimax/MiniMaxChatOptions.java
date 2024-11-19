@@ -45,7 +45,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
-public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
+public class MiniMaxChatOptions implements FunctionCallingOptions {
 
 	// @formatter:off
 	/**
