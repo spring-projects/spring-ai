@@ -142,7 +142,7 @@ public class EmbeddingConfig {
         return new TokenCountBatchingStrategy(
             EncodingType.CL100K_BASE,  // Specify the encoding type
             8000,                      // Set the maximum input token count
-            0.9                        // Set the threshold factor
+            0.1                        // Set the reserve percentage
         );
     }
 }
@@ -152,7 +152,7 @@ In this configuration:
 
 1. `EncodingType.CL100K_BASE`: Specifies the encoding type used for tokenization. This encoding type is used by the `JTokkitTokenCountEstimator` to accurately estimate token counts.
 2. `8000`: Sets the maximum input token count. This value should be less than or equal to the maximum context window size of your embedding model.
-3. `0.9`: Sets the threshold factor. This factor determines how full a batch can be before starting a new one. A value of 0.9 means each batch will be filled up to 90% of the maximum input token count.
+3. `0.1`: Sets the reserve percentage. The percentage of tokens to reserve from the max input token count. This creates a buffer for potential token count increases during processing.
 
 By default, this constructor uses `Document.DEFAULT_CONTENT_FORMATTER` for content formatting and `MetadataMode.NONE` for metadata handling. If you need to customize these parameters, you can use the full constructor with additional parameters.
 
