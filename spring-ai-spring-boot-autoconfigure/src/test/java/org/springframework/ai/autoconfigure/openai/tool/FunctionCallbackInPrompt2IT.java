@@ -16,6 +16,8 @@
 
 package org.springframework.ai.autoconfigure.openai.tool;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -70,6 +72,36 @@ public class FunctionCallbackInPrompt2IT {
 
 				assertThat(content).contains("30", "10", "15");
 			});
+	}
+
+	@Test
+	void lambdaFunctionCallTest() {
+		Map<String, Object> state = new ConcurrentHashMap<>();
+
+		record LightInfo(String roomName, boolean isOn) {
+		}
+
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// @formatter:off
+			String content = ChatClient.builder(chatModel).build().prompt()
+					.user("Turn the light on in the kitchen and in the living room!")
+					.functions(FunctionCallback.builder()
+						.description("Turn light on or off in a room")
+						.function("turnLight", (LightInfo lightInfo) -> {
+							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
+							state.put(lightInfo.roomName(), lightInfo.isOn());
+						})
+						.inputType(LightInfo.class)
+						.build())
+					.call().content();
+			// @formatter:on
+			logger.info("Response: {}", content);
+			assertThat(state).containsEntry("kitchen", Boolean.TRUE);
+			assertThat(state).containsEntry("living room", Boolean.TRUE);
+		});
 	}
 
 	@Test

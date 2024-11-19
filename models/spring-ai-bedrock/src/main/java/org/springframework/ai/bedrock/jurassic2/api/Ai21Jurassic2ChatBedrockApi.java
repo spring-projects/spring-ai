@@ -249,7 +249,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 		/**
 		 * Builder for {@link Ai21Jurassic2ChatRequest}.
 		 */
-		public static class Builder {
+		public static final class Builder {
 			private String prompt;
 			private Double temperature;
 			private Double topP;

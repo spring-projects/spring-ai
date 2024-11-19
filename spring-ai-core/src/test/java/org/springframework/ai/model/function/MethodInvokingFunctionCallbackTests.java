@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MethodFunctionCallbackTests {
+public class MethodInvokingFunctionCallbackTests {
 
 	private static final Map<String, Object> arguments = new ConcurrentHashMap<>();
 

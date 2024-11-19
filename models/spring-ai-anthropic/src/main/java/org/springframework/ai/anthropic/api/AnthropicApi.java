@@ -53,6 +53,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Mariusz Bernacki
  * @author Thomas Vitale
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class AnthropicApi {
@@ -79,7 +80,7 @@ public class AnthropicApi {
 
 	private final StreamHelper streamHelper = new StreamHelper();
 
-	private WebClient webClient;
+	private final WebClient webClient;
 
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
@@ -143,8 +144,9 @@ public class AnthropicApi {
 		this.webClient = webClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(HttpStatusCode::isError,
-					resp -> Mono.just(new RuntimeException("Response exception, Status: [" + resp.statusCode()
-							+ "], Body:[" + resp.bodyToMono(java.lang.String.class) + "]")))
+					resp -> resp.bodyToMono(String.class)
+						.flatMap(it -> Mono.error(new RuntimeException(
+								"Response exception, Status: [" + resp.statusCode() + "], Body:[" + it + "]"))))
 			.build();
 	}
 
@@ -259,7 +261,7 @@ public class AnthropicApi {
 		/**
 		 * The CLAUDE_INSTANT_1_2
 		 */
-		CLAUDE_INSTANT_1_2("claude-instant-1.2");
+		@Deprecated CLAUDE_INSTANT_1_2("claude-instant-1.2");
 		// @formatter:on
 
 		private final String value;
@@ -296,12 +298,14 @@ public class AnthropicApi {
 		/**
 		 * The user role.
 		 */
-		@JsonProperty("user") USER,
+		@JsonProperty("user")
+		USER,
 
 		/**
 		 * The assistant role.
 		 */
-		@JsonProperty("assistant") ASSISTANT
+		@JsonProperty("assistant")
+		ASSISTANT
 		// @formatter:on
 
 	}
@@ -362,7 +366,7 @@ public class AnthropicApi {
 		/**
 		 * Artificially created event to aggregate tool use events.
 		 */
-		TOOL_USE_AGGREATE
+		TOOL_USE_AGGREGATE
 
 	}
 
@@ -822,7 +826,7 @@ public class AnthropicApi {
 
 	/**
 	 * Chat completion response object.
-	 * 
+	 *
 	 * @param id Unique object identifier. The format and length of IDs may change over
 	 * time.
 	 * @param type Object type. For Messages, this is always "message".
@@ -885,7 +889,7 @@ public class AnthropicApi {
 
 		@Override
 		public EventType type() {
-			return EventType.TOOL_USE_AGGREATE;
+			return EventType.TOOL_USE_AGGREGATE;
 		}
 
 		/**

@@ -30,6 +30,7 @@ import org.springframework.lang.Nullable;
  * Configuration properties for Cassandra chat memory.
  *
  * @author Mick Semb Wever
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 @ConfigurationProperties(CassandraChatMemoryProperties.CONFIG_PREFIX)
@@ -47,7 +48,7 @@ public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
 
 	private String userColumn = CassandraChatMemoryConfig.DEFAULT_USER_COLUMN_NAME;
 
-	private Duration timeToLiveSeconds = null;
+	private Duration timeToLive = null;
 
 	public String getKeyspace() {
 		return this.keyspace;
@@ -82,12 +83,12 @@ public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	@Nullable
-	public Duration getTimeToLiveSeconds() {
-		return this.timeToLiveSeconds;
+	public Duration getTimeToLive() {
+		return this.timeToLive;
 	}
 
-	public void setTimeToLiveSeconds(Duration timeToLiveSeconds) {
-		this.timeToLiveSeconds = timeToLiveSeconds;
+	public void setTimeToLive(Duration timeToLive) {
+		this.timeToLive = timeToLive;
 	}
 
 }

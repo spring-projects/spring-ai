@@ -30,7 +30,9 @@ import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -123,28 +125,35 @@ public class OpenSearchVectorStoreAutoConfiguration {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnClass({ Region.class, ApacheHttpClient.class })
+	@ConditionalOnClass({ AwsCredentialsProvider.class, Region.class, ApacheHttpClient.class })
 	static class AwsOpenSearchConfiguration {
 
 		@Bean
+		@ConditionalOnMissingBean(AwsOpenSearchConnectionDetails.class)
+		PropertiesAwsOpenSearchConnectionDetails awsOpenSearchConnectionDetails(
+				OpenSearchVectorStoreProperties properties) {
+			return new PropertiesAwsOpenSearchConnectionDetails(properties);
+		}
+
+		@Bean
 		@ConditionalOnMissingBean
-		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties, AwsSdk2TransportOptions options) {
-			OpenSearchVectorStoreProperties.Aws aws = properties.getAws();
-			Region region = Region.of(aws.getRegion());
+		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties,
+				AwsOpenSearchConnectionDetails connectionDetails, AwsSdk2TransportOptions options) {
+			Region region = Region.of(connectionDetails.getRegion());
 
 			SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-			OpenSearchTransport transport = new AwsSdk2Transport(httpClient, aws.getHost(), aws.getServiceName(),
-					region, options);
+			OpenSearchTransport transport = new AwsSdk2Transport(httpClient,
+					connectionDetails.getHost(properties.getAws().getDomainName()),
+					properties.getAws().getServiceName(), region, options);
 			return new OpenSearchClient(transport);
 		}
 
 		@Bean
 		@ConditionalOnMissingBean
-		AwsSdk2TransportOptions options(OpenSearchVectorStoreProperties properties) {
-			OpenSearchVectorStoreProperties.Aws aws = properties.getAws();
+		AwsSdk2TransportOptions options(AwsOpenSearchConnectionDetails connectionDetails) {
 			return AwsSdk2TransportOptions.builder()
-				.setCredentials(StaticCredentialsProvider
-					.create(AwsBasicCredentials.create(aws.getAccessKey(), aws.getSecretKey())))
+				.setCredentials(StaticCredentialsProvider.create(
+						AwsBasicCredentials.create(connectionDetails.getAccessKey(), connectionDetails.getSecretKey())))
 				.build();
 		}
 
@@ -171,6 +180,39 @@ public class OpenSearchVectorStoreAutoConfiguration {
 		@Override
 		public String getPassword() {
 			return this.properties.getPassword();
+		}
+
+	}
+
+	static class PropertiesAwsOpenSearchConnectionDetails implements AwsOpenSearchConnectionDetails {
+
+		private final OpenSearchVectorStoreProperties.Aws aws;
+
+		public PropertiesAwsOpenSearchConnectionDetails(OpenSearchVectorStoreProperties properties) {
+			this.aws = properties.getAws();
+		}
+
+		@Override
+		public String getRegion() {
+			return this.aws.getRegion();
+		}
+
+		@Override
+		public String getAccessKey() {
+			return this.aws.getAccessKey();
+		}
+
+		@Override
+		public String getSecretKey() {
+			return this.aws.getSecretKey();
+		}
+
+		@Override
+		public String getHost(String domainName) {
+			if (StringUtils.hasText(domainName)) {
+				return "%s.%s".formatted(this.aws.getDomainName(), this.aws.getHost());
+			}
+			return this.aws.getHost();
 		}
 
 	}

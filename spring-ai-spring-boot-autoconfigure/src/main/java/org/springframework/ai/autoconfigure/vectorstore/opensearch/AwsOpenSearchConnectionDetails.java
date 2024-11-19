@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-/**
- * Provides the API for embedding observations.
- */
-@NonNullApi
-@NonNullFields
-package org.springframework.ai.embedding.observation;
+package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
+
+public interface AwsOpenSearchConnectionDetails extends ConnectionDetails {
+
+	String getRegion();
+
+	String getAccessKey();
+
+	String getSecretKey();
+
+	String getHost(String domainName);
+
+}

@@ -244,7 +244,7 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	/**
 	 * Builder for {@link Anthropic3ChatOptions}.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private final Anthropic3ChatOptions options = new Anthropic3ChatOptions();
 

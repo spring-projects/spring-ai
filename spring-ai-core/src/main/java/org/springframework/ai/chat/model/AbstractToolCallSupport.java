@@ -42,6 +42,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @author Grogdunn
  * @author Thomas Vitale
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public abstract class AbstractToolCallSupport {
@@ -86,7 +87,7 @@ public abstract class AbstractToolCallSupport {
 
 		if (!CollectionUtils.isEmpty(functionOptions.getFunctionCallbacks())) {
 			toolFunctionCallbacksCopy.addAll(functionOptions.getFunctionCallbacks());
-			// Make sure that that function callbacks are are registered directly to the
+			// Make sure that that function callbacks are registered directly to the
 			// functionCallbackRegister and not passed in the default options.
 			functionOptions.setFunctionCallbacks(List.of());
 		}

@@ -340,7 +340,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the generated JSON Schema as a String.
 	 * @deprecated use {@link #getJsonSchema(Type, boolean)} instead.
 	 */
-	@Deprecated
+	@Deprecated(since = "1.0 M4")
 	public static String getJsonSchema(Class<?> clazz, boolean toUpperCaseTypeValues) {
 
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
@@ -395,6 +395,11 @@ public abstract class ModelOptionsUtils {
 		}
 
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
+
+		if ((inputType == Void.class) && !node.has("properties")) {
+			node.putObject("properties");
+		}
+
 		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
 			// version of it).
 			toUpperCaseTypeValues(node);

@@ -248,7 +248,7 @@ public class Anthropic3ChatBedrockApi extends
 			private Double topP;
 			private List<String> stopSequences;
 			private String anthropicVersion;
-			
+
 			private Builder(List<ChatCompletionMessage> messages) {
 				this.messages = messages;
 			}

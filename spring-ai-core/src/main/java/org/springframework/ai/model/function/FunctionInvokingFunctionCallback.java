@@ -30,7 +30,7 @@ import org.springframework.util.Assert;
  * that can be consumed by the Model. The default implementation converts the output into
  * String before sending it to the Model. Provide a custom function responseConverter
  * implementation to override this.
- * 
+ *
  * @param <I> the input type
  * @param <O> the output type
  * @author Christian Tzolov

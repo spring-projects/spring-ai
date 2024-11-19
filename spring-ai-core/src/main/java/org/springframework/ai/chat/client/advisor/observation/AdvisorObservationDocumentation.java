@@ -23,7 +23,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
  * AI Advisor observation documentation.
- * 
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */

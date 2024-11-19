@@ -1,0 +1,240 @@
+= FunctionCallback
+
+== Overview
+
+The `FunctionCallback` interface in Spring AI provides a standardized way to implement Large Language Model (LLM) function calling capabilities. It allows developers to register custom functions that can be called by AI models when specific conditions or intents are detected in the prompts.
+
+== FunctionCallback Interface
+
+The main interface defines several key methods:
+
+* `getName()`: Returns the unique function name within the AI model context
+* `getDescription()`: Provides a description that helps the model decide when to invoke the function
+* `getInputTypeSchema()`: Defines the JSON schema for the function's input parameters
+* `call(String functionInput)`: Handles the actual function execution
+* `call(String functionInput, ToolContext toolContext)`: Extended version that supports additional context
+
+== Builder Pattern
+
+Spring AI provides a fluent builder API for creating `FunctionCallback` implementations.
+
+This is particularly useful for defining function callbacks that you can register, pragmatically, on the fly, with your `ChatClient` or `ChatModel` model calls.
+
+The builders helps with complex configurations, such as custom response handling, schema types (e.g. JSONSchema or OpenAPI), and object mapping.
+
+=== Function-Invoking Approach
+
+Converts any `java.util.function.Function`, `BiFunction`, `Supplier` or `Consumer` into a `FunctionCallback` that can be called by the AI model.
+
+NOTE: You can use lambda expressions or method references to define the function logic but you must provide the input type of the function using the `inputType(TYPE)`.
+
+==== Function<I, O>
+
+[source,java]
+----
+FunctionCallback callback = FunctionCallback.builder()
+    .description("Process a new order")
+    .function("processOrder", (Order order) -> processOrderLogic(order))
+    .inputType(Order.class)
+    .build();
+----
+
+==== BiFunction<I, ToolContext, O> with ToolContext
+
+[source,java]
+----
+FunctionCallback callback = FunctionCallback.builder()
+    .description("Process a new order with context")
+    .function("processOrder", (Order order, ToolContext context) -> 
+        processOrderWithContext(order, context))
+    .inputType(Order.class)
+    .build();
+----
+
+==== Supplier<O>
+
+Use `java.util.Supplier<O>` or `java.util.function.Function<Void, O>` to define functions that don't take any input:
+
+[source,java]
+----
+FunctionCallback.builder()
+    .description("Turns light onn in the living room")
+	.function("turnsLight", () -> state.put("Light", "ON"))
+    .inputType(Void.class)
+	.build();
+----
+
+==== Consumer<I>
+
+Use `java.util.Consumer<I>` or `java.util.function.Function<I, Void>` to define functions that don't produce output:
+
+[source,java]
+----
+record LightInfo(String roomName, boolean isOn) {}
+
+FunctionCallback.builder()
+    .description("Turns light on/off in a selected room")
+	.function("turnsLight", (LightInfo lightInfo) -> {
+				logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
+			})
+    .inputType(LightInfo.class)
+	.build();
+----
+
+==== Generics Input Type
+
+Use the `ParameterizedTypeReference` to define functions with generic input types:
+
+[source,java]
+----
+record TrainSearchRequest<T>(T data) {}
+
+record TrainSearchSchedule(String from, String to, String date) {}
+
+record TrainSearchScheduleResponse(String from, String to, String date, String trainNumber) {}
+
+FunctionCallback.builder()
+    .description("Schedule a train reservation")
+	.function("trainSchedule", (TrainSearchRequest<TrainSearchSchedule> request) -> {
+        logger.info("Schedule: " + request.data().from() + " to " + request.data().to());
+        return new TrainSearchScheduleResponse(request.data().from(), request.  data().to(), "", "123");
+    })
+    .inputType(new ParameterizedTypeReference<TrainSearchRequest<TrainSearchSchedule>>() {})
+	.build();
+----
+
+=== Method Invoking Approach
+
+Enables method invocation through reflection while automatically handling JSON schema generation and parameter conversion. It’s particularly useful for integrating Java methods as callable functions within AI model interactions.
+
+The method invoking implements the `FunctionCallback` interface and provides:
+
+- Automatic JSON schema generation for method parameters
+- Support for both static and instance methods
+- Any number of parameters (including none) and return values (including void)
+- Any parameter/return types (primitives, objects, collections)
+- Special handling for `ToolContext` parameters
+
+==== Static Method Invocation
+
+You can refer to a static method in a class by providing the method name, parameter types, and the target class.
+
+[source,java]
+----
+public class WeatherService {
+    public static String getWeather(String city, TemperatureUnit unit) {
+        return "Temperature in " + city + ": 20" + unit;
+    }
+}
+
+FunctionCallback callback = FunctionCallback.builder()
+    .description("Get weather information for a city")
+    .method("getWeather", String.class, TemperatureUnit.class)
+    .targetClass(WeatherService.class)
+    .build();
+----
+
+==== Object instance Method Invocation
+
+You can refer to an instance method in a class by providing the method name, parameter types, and the target object instance.
+
+[source,java]
+----
+public class DeviceController {
+    public void setDeviceState(String deviceId, boolean state, ToolContext context) {
+        Map<String, Object> contextData = context.getContext();
+        // Implementation using context data
+    }
+}
+
+DeviceController controller = new DeviceController();
+
+String response = ChatClient.create(chatModel).prompt()
+    .user("Turn on the living room lights")
+    .functions(FunctionCallback.builder()
+        .description("Control device state")
+        .method("setDeviceState", String.class,boolean.class,ToolContext.class)
+        .targetObject(controller)
+        .build())
+    .toolContext(Map.of("location", "home"))
+    .call()
+    .content();
+----
+
+TIP: Optionally, using the `.name()`, you can set a custom function name different from the method name.
+
+== Schema Type Support
+
+The framework supports different schema types for function parameter validation:
+
+* JSON Schema (default)
+* OpenAPI Schema (for Vertex AI compatibility)
+
+[source,java]
+----
+FunctionCallback.builder()
+    .schemaType(SchemaType.OPEN_API_SCHEMA)
+    // ... other configuration
+    .build();
+----
+
+=== Custom Response Handling
+
+[source,java]
+----
+FunctionCallback.builder()
+    .responseConverter(response -> 
+        customResponseFormatter.format(response))
+    // ... other configuration
+    .build();
+----
+
+=== Custom Object Mapping
+
+[source,java]
+----
+FunctionCallback.builder()
+    .objectMapper(customObjectMapper)
+    // ... other configuration
+    .build();
+----
+
+== Best Practices
+
+=== Descriptive Names and Descriptions
+
+* Provide unique function names
+* Write comprehensive descriptions to help the model understand when to invoke the function
+
+=== Input Type & Schema
+
+* For the function invoking approach, define input types explicitly and use `ParameterizedTypeReference` for generic types.
+* Consider using custom schema when auto-generated ones don't meet requirements.
+
+=== Error Handling
+
+* Implement proper error handling in function implementations and return the error message in the response
+* You can use the ToolContext to provide additional error context when needed
+
+=== Tool Context Usage
+
+* Use ToolContext when additional state or context is required that is provided from the User and not part of the function input generated by the AI model.
+* Use `BiFunction<I, ToolContext, O>` to access the ToolContext in the function invocation approach and add `ToolContext` parameter in the method invoking approach.
+
+
+== Notes on Schema Generation
+
+* The framework automatically generates JSON schemas from Java types
+* For function invoking, the schema is generated based on the input type for the function that needs to be set using `inputType(TYPE)`. Use `ParameterizedTypeReference` for generic types.
+* Generated schemas respect Jackson annotations on model classes
+* You can bypass the automatic generation by providing custom schemas using `inputTypeSchema()`
+
+== Common Pitfalls to Avoid
+
+=== Lack of Description
+* Always provide explicit descriptions instead of relying on auto-generated ones
+* Clear descriptions improve model's function selection accuracy
+
+=== Schema Mismatches
+* Ensure input types match the Function's input parameter types.
+* Use `ParameterizedTypeReference` for generic types.

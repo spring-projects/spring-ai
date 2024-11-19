@@ -20,8 +20,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
 
@@ -43,6 +46,16 @@ import org.springframework.util.ReflectionUtils;
  * @author Sebastien Dekeuze
  */
 public abstract class TypeResolverHelper {
+
+	/**
+	 * Returns the input class of a given Consumer class.
+	 * @param consumerClass The consumer class.
+	 * @return The input class of the consumer.
+	 */
+	public static Class<?> getConsumerInputClass(Class<? extends Consumer<?>> consumerClass) {
+		ResolvableType resolvableType = ResolvableType.forClass(consumerClass).as(Consumer.class);
+		return (resolvableType == ResolvableType.NONE ? Object.class : resolvableType.getGeneric(0).toClass());
+	}
 
 	/**
 	 * Returns the input class of a given function class.
@@ -108,51 +121,79 @@ public abstract class TypeResolverHelper {
 	 * resolvable.
 	 */
 	public static ResolvableType resolveBeanType(GenericApplicationContext applicationContext, String beanName) {
-		BeanDefinition beanDefinition;
+		BeanDefinition beanDefinition = getBeanDefinition(applicationContext, beanName);
+
+		// Try to resolve directly
+		ResolvableType functionType = beanDefinition.getResolvableType();
+		if (functionType.resolve() != null) {
+			return functionType;
+		}
+
+		// Handle root bean definitions with factory methods
+		if (beanDefinition instanceof RootBeanDefinition rootBeanDefinition) {
+			return resolveRootBeanDefinitionType(applicationContext, rootBeanDefinition);
+		}
+
+		// Handle @Component beans
+		return resolveComponentBeanType(applicationContext, beanDefinition, beanName);
+	}
+
+	private static BeanDefinition getBeanDefinition(GenericApplicationContext applicationContext, String beanName) {
 		try {
-			beanDefinition = applicationContext.getBeanDefinition(beanName);
+			return applicationContext.getBeanDefinition(beanName);
 		}
 		catch (NoSuchBeanDefinitionException ex) {
 			throw new IllegalArgumentException(
 					"Functional bean with name " + beanName + " does not exist in the context.");
 		}
-		ResolvableType functionType = beanDefinition.getResolvableType();
-		Class<?> resolvableClass = functionType.resolve();
-		if (resolvableClass != null) {
-			return functionType;
-		}
-		if (beanDefinition instanceof RootBeanDefinition rootBeanDefinition) {
-			Class<?> factoryClass;
-			boolean isStatic;
-			if (rootBeanDefinition.getFactoryBeanName() != null) {
-				factoryClass = applicationContext.getBeanFactory().getType(rootBeanDefinition.getFactoryBeanName());
-				isStatic = false;
-			}
-			else {
-				factoryClass = rootBeanDefinition.getBeanClass();
-				isStatic = true;
-			}
-			Assert.state(factoryClass != null, "Unresolvable factory class");
-			factoryClass = ClassUtils.getUserClass(factoryClass);
+	}
 
-			Method[] candidates = getCandidateMethods(factoryClass, rootBeanDefinition);
-			Method uniqueCandidate = null;
-			for (Method candidate : candidates) {
-				if ((!isStatic || isStaticCandidate(candidate, factoryClass))
-						&& rootBeanDefinition.isFactoryMethod(candidate)) {
-					if (uniqueCandidate == null) {
-						uniqueCandidate = candidate;
-					}
-					else if (isParamMismatch(uniqueCandidate, candidate)) {
-						uniqueCandidate = null;
-						break;
-					}
+	private static ResolvableType resolveRootBeanDefinitionType(GenericApplicationContext applicationContext,
+			RootBeanDefinition rootBeanDefinition) {
+
+		Class<?> factoryClass;
+		boolean isStatic;
+
+		if (rootBeanDefinition.getFactoryBeanName() != null) {
+			factoryClass = applicationContext.getBeanFactory().getType(rootBeanDefinition.getFactoryBeanName());
+			isStatic = false;
+		}
+		else {
+			factoryClass = rootBeanDefinition.getBeanClass();
+			isStatic = true;
+		}
+
+		Assert.state(factoryClass != null, "Unresolvable factory class");
+		factoryClass = ClassUtils.getUserClass(factoryClass);
+
+		Method uniqueCandidate = findUniqueFactoryMethod(factoryClass, isStatic, rootBeanDefinition);
+		rootBeanDefinition.setResolvedFactoryMethod(uniqueCandidate);
+		return rootBeanDefinition.getResolvableType();
+	}
+
+	private static Method findUniqueFactoryMethod(Class<?> factoryClass, boolean isStatic,
+			RootBeanDefinition rootBeanDefinition) {
+		Method[] candidates = getCandidateMethods(factoryClass, rootBeanDefinition);
+		Method uniqueCandidate = null;
+
+		for (Method candidate : candidates) {
+			if ((!isStatic || isStaticCandidate(candidate, factoryClass))
+					&& rootBeanDefinition.isFactoryMethod(candidate)) {
+				if (uniqueCandidate == null) {
+					uniqueCandidate = candidate;
+				}
+				else if (isParamMismatch(uniqueCandidate, candidate)) {
+					uniqueCandidate = null;
+					break;
 				}
 			}
-			rootBeanDefinition.setResolvedFactoryMethod(uniqueCandidate);
-			return rootBeanDefinition.getResolvableType();
 		}
-		// Support for @Component
+
+		return uniqueCandidate;
+	}
+
+	private static ResolvableType resolveComponentBeanType(GenericApplicationContext applicationContext,
+			BeanDefinition beanDefinition, String beanName) {
 		if (beanDefinition.getFactoryMethodName() == null && beanDefinition.getBeanClassName() != null) {
 			try {
 				return ResolvableType.forClass(
@@ -199,12 +240,21 @@ public abstract class TypeResolverHelper {
 		else if (BiFunction.class.isAssignableFrom(resolvableClass)) {
 			functionArgumentResolvableType = functionType.as(BiFunction.class);
 		}
+		else if (Supplier.class.isAssignableFrom(resolvableClass)) {
+			functionArgumentResolvableType = functionType.as(Supplier.class);
+		}
+		else if (Consumer.class.isAssignableFrom(resolvableClass)) {
+			functionArgumentResolvableType = functionType.as(Consumer.class);
+		}
 		else if (KotlinDetector.isKotlinPresent()) {
 			if (KotlinDelegate.isKotlinFunction(resolvableClass)) {
 				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinFunctionType(functionType);
 			}
 			else if (KotlinDelegate.isKotlinBiFunction(resolvableClass)) {
 				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinBiFunctionType(functionType);
+			}
+			else if (KotlinDelegate.isKotlinSupplier(resolvableClass)) {
+				functionArgumentResolvableType = KotlinDelegate.adaptToKotlinSupplierType(functionType);
 			}
 		}
 
@@ -216,7 +266,15 @@ public abstract class TypeResolverHelper {
 		return functionArgumentResolvableType.getGeneric(argumentIndex);
 	}
 
-	private static class KotlinDelegate {
+	private static final class KotlinDelegate {
+
+		public static boolean isKotlinSupplier(Class<?> clazz) {
+			return Function0.class.isAssignableFrom(clazz);
+		}
+
+		public static ResolvableType adaptToKotlinSupplierType(ResolvableType resolvableType) {
+			return resolvableType.as(Function0.class);
+		}
 
 		public static boolean isKotlinFunction(Class<?> clazz) {
 			return Function1.class.isAssignableFrom(clazz);

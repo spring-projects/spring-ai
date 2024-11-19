@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;

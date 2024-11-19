@@ -257,7 +257,7 @@ class BedrockConverseChatClientIT {
 				.description("Get the weather in location")
 				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
-				.build())			
+				.build())
 			.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
 			.build()
 			.prompt()
@@ -280,7 +280,7 @@ class BedrockConverseChatClientIT {
 					.description("Get the weather in location")
 					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
-					.build())				
+					.build())
 				.stream()
 				.content();
 		// @formatter:on

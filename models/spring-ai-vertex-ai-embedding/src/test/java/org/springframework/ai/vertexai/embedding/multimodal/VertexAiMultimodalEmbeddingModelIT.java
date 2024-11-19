@@ -18,7 +18,6 @@ package org.springframework.ai.vertexai.embedding.multimodal;
 
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

@@ -97,6 +97,7 @@
 * xref:api/prompt.adoc[]
 * xref:api/structured-output-converter.adoc[Structured Output]
 * xref:api/functions.adoc[Function Calling]
+** xref:api/function-callback.adoc[FunctionCallback API]
 * xref:api/multimodality.adoc[Multimodality]
 * xref:api/etl-pipeline.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]

@@ -28,7 +28,7 @@ In general, the custom functions need to provide a function `name`,  `descriptio
 
 As a developer, you need to implement a function that takes the function call arguments sent from the AI model, and responds with the result back to the model.  Your function can in turn invoke other 3rd party services to provide the results.
 
-Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatClient`.
+Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatClient` or registering the function dynamically in your prompt request.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
 The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
@@ -39,16 +39,20 @@ Suppose we want the AI model to respond with information that it does not have, 
 
 We can provide the AI model with metadata about our own functions that it can use to retrieve that information as it processes your prompt.
 
-For example, if during the processing of a prompt, the AI Model determines that it needs additional information about the temperature in a given location, it will start a server-side generated request/response interaction. The AI Model invokes a client side function.
-The AI Model provides method invocation details as JSON, and it is the responsibility of the client to execute that function and return the response.
+For example, if during the processing of a prompt, the AI Model determines that it needs additional information about the temperature in a given location, it will start a server-side generated request/response interaction. 
+Instead of returning the final response message, the AI Model returns at special Tool Call request, providing the function name and arguments (as JSON).
+It is the responsibility of the client to process this message and execute the named function and return the response
+as Tool Response message back to the AI Model.
 
 Spring AI greatly simplifies the code you need to write to support function invocation.
 It brokers the function invocation conversation for you.
-You can simply provide your function definition as a `@Bean` and then provide the bean name of the function in your prompt options.
+You can simply provide your function definition as a `@Bean` and then provide the bean name of the function in your prompt options or pass the function directly as a parameter in your prompt request options.
+
 You can also reference multiple function bean names in your prompt.
 
-== Quick Start
+=== Example Use Case
 
+Lets define a simple use case that we can use as an example to explain how function invocation works.
 Let's create a chatbot that answer questions by calling our own function.
 To support the response of the chatbot, we will register our own function that takes a location and returns the current weather in that location.
 
@@ -91,7 +95,9 @@ data class Response(val temp: Double, val unit: Unit) {}
 ======
 --
 
-=== Registering Functions as Beans
+== Server-Side Registration
+
+=== Functions as Beans
 
 Spring AI provides multiple ways to register custom functions as beans in the Spring context.
 
@@ -266,18 +272,23 @@ Here is the current weather for the requested cities:
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] test demo this approach.
 
-=== Register functions: On the fly
+== Client-Side Registration
 
-In addition to the auto-configuration, you can register callback functions, dynamically:
+In addition to the auto-configuration, you can register callback functions, dynamically.
+You can use either the function invoking or method invoking approaches to register functions with your `ChatClient` or `ChatModel` requests.
+
+The client-side registration enables you to register functions by default.
+
+=== Function Invoking
 
 [source,java]
 ----
 ChatClient chatClient = ...
-
+	
 ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
     .functions(FunctionCallback.builder()
             .description("Get the weather in location") // (2) function description
-            .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+            .function("currentWeather", (Request request) -> new Response(30.0, Unit.C)) // (1) function name and instance
             .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build())
     .call()
@@ -290,12 +301,12 @@ This approach allows to choose dynamically different functions to be called base
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `ChatClient` and use it in a prompt request.
 
-=== Register functions: Method Invoking FunctionCallback
+=== Method Invoking
 
-The `MethodFunctionCallback` enables method invocation through reflection while automatically handling JSON schema generation and parameter conversion. 
+The `MethodInvokingFunctionCallback` enables method invocation through reflection while automatically handling JSON schema generation and parameter conversion. 
 It's particularly useful for integrating Java methods as callable functions within AI model interactions.
 
-The `MethodFunctionCallback` implements the `FunctionCallback` interface and provides:
+The `MethodInvokingFunctionCallback` implements the `FunctionCallback` interface and provides:
 
 - Automatic JSON schema generation for method parameters
 - Support for both static and instance methods
@@ -303,16 +314,15 @@ The `MethodFunctionCallback` implements the `FunctionCallback` interface and pro
 - Any parameter/return types (primitives, objects, collections)
 - Special handling for `ToolContext` parameters
 
-You need the `FunctionCallback.Builder` to create `MethodFunctionCallback` like this:
+You need the `FunctionCallback.Builder` to create `MethodInvokingFunctionCallback` like this:
 
 [source,java]
 ----
 // Create using builder pattern
-FunctionCallback callback = FunctionCallback.builder()
-    .description("Method description") // Required: Helps AI understand the function
-    .objectMapper(objectMapper)             // Optional: Custom ObjectMapper
-    .method("MethodName", Class<?>...argumentTypes) // Required: The method to invoke and its argument types
-    .targetObject(targetObject)       // Required only for instance methods
+FunctionCallback methodInvokingCallback = FunctionCallback.builder()
+    .description("Function calling description") // Hints the AI to know when to call this method
+    .method("MethodName", Class<?>...argumentTypes) // The method to invoke and its argument types
+    .targetObject(targetObject)       // Required instance methods for static methods use targetClass
     .build();
 ----
 
@@ -365,16 +375,25 @@ String response = ChatClient.create(chatModel).prompt()
 
 ======
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/client/OpenAiChatClientMethodFunctionCallbackIT.java[OpenAiChatClientMethodFunctionCallbackIT]
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/client/OpenAiChatClientMethodInvokingFunctionCallbackIT.java[OpenAiChatClientMethodInvokingFunctionCallbackIT]
 integration test provides additional examples of how to use the FunctionCallback.Builder to create method invocation FunctionCallbacks.
 
-=== Tool Context
+== Tool Context
 
-Spring AI now supports passing additional contextual information to function callbacks through a tool context. This feature allows you to provide extra data that can be used within the function execution, enhancing the flexibility and power of function calling.
+Spring AI now supports passing additional contextual information to function callbacks through a tool context. 
+This feature allows you to provide extra, user provided, data that can be used within the function execution along with the function arguments passed by the AI model.
 
-The context information that is passed in as the second argument of a `java.util.BiFunction`.  The `ToolContext` contains as an immutable `Map<String,Object>` allowing you to access key-value pairs.
+image::function-calling-tool-context.jpg[Function calling with Tool Context, width=700, align="center"]
 
-==== How to Use Tool Context
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/ToolContext.java[ToolContext] class provides a way to pass additional context information.
+
+=== Using Tool Context
+
+In case of function-invoking, the context information that is passed in as the second argument of a `java.util.BiFunction`. 
+
+For method-invoking, the context information is passed as a method argument of type `ToolContext`.
+
+==== Function Invoking
 
 You can set the tool context when building your chat options and use a BiFunction for your callback:
 
@@ -415,3 +434,29 @@ ChatResponse response = chatClient.prompt("What's the weather like in San Franci
 In this example, the `weatherFunction` is defined as a BiFunction that takes both the request and the tool context as parameters. This allows you to access the context directly within the function logic.
 
 This approach allows you to pass session-specific or user-specific information to your functions, enabling more contextual and personalized responses.
+
+==== Method Invoking
+
+[source,java]
+----
+public class DeviceController {
+    public void setDeviceState(String deviceId, boolean state, ToolContext context) {
+        Map<String, Object> contextData = context.getContext();
+        // Implementation using context data
+    }
+}
+
+// Usage
+DeviceController controller = new DeviceController();
+
+String response = ChatClient.create(chatModel).prompt()
+    .user("Turn on the living room lights")
+    .functions(FunctionCallback.builder()
+        .description("Control device state")
+        .method("setDeviceState", String.class,boolean.class,ToolContext.class)
+        .targetObject(controller)
+        .build())
+    .toolContext(Map.of("location", "home"))
+    .call()
+    .content();
+----

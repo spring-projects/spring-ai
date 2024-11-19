@@ -168,7 +168,7 @@ public class VertexAiEmbeddingConnectionDetails {
 			if (this.predictionServiceSettings == null) {
 				try {
 					this.predictionServiceSettings = PredictionServiceSettings.newBuilder()
-						.setEndpoint(endpoint)
+						.setEndpoint(this.endpoint)
 						.build();
 				}
 				catch (IOException e) {

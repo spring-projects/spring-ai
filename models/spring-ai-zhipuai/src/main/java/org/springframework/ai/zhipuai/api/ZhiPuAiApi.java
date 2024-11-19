@@ -948,7 +948,7 @@ public class ZhiPuAiApi {
 
 	/**
 	 * Creates an embedding vector representing the input text.
-	 * 
+	 *
 	 * @param <T> Type of the input.
 	 * @param input Input text to embed, encoded as a string or array of tokens.
 	 * @param model ID of the model to use.

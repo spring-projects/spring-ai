@@ -20,7 +20,7 @@ import reactor.core.publisher.Flux;
 
 /**
  * Around advisor that runs around stream based requests.
- * 
+ *
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @since 1.0.0
