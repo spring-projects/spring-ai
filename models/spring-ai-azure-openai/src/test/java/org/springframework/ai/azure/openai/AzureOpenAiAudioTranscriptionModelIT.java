@@ -22,6 +22,7 @@ import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
@@ -35,12 +36,14 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * NOTE - Use deployment name "whisper
+ *
  * @author Piotr Olaszewski
  */
 @SpringBootTest(classes = AzureOpenAiAudioTranscriptionModelIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_DEPLOYMENT_NAME", matches = ".+")
+@EnabledIfEnvironmentVariables({
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_ENDPOINT", matches = ".+") })
 class AzureOpenAiAudioTranscriptionModelIT {
 
 	@Value("classpath:/speech/jfk.flac")
@@ -84,8 +87,12 @@ class AzureOpenAiAudioTranscriptionModelIT {
 
 		@Bean
 		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+			return new OpenAIClientBuilder()
+				.credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_TRANSCRIPTION_API_KEY")))
+				.endpoint(System.getenv("AZURE_OPENAI_TRANSCRIPTION_ENDPOINT"))
+				// new
+				// AzureKeyCredential("2FsJHcxEoyIMWlhT882lUYx6D1ovQeTHNyQjHKsBYtX9Pf9TynrAJQQJ99AKACfhMk5XJ3w3AAAAACOGDOWA"))
+				// .endpoint("https://mpoll-m3ot7gc7-swedencentral.cognitiveservices.azure.com/")
 				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
 				.buildClient();
 		}
@@ -93,9 +100,7 @@ class AzureOpenAiAudioTranscriptionModelIT {
 		@Bean
 		public AzureOpenAiAudioTranscriptionModel azureOpenAiChatModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiAudioTranscriptionModel(openAIClient,
-					AzureOpenAiAudioTranscriptionOptions.builder()
-						.withDeploymentName(System.getenv("AZURE_OPENAI_TRANSCRIPTION_DEPLOYMENT_NAME"))
-						.build());
+					AzureOpenAiAudioTranscriptionOptions.builder().withDeploymentName("whisper").build());
 		}
 
 	}

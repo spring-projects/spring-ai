@@ -48,8 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @SpringBootTest(classes = AzureOpenAiEmbeddingModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@RequiresAzureCredentials
 public class AzureOpenAiEmbeddingModelObservationIT {
 
 	@Autowired

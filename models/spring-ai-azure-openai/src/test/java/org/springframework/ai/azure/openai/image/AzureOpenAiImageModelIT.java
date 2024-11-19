@@ -22,6 +22,7 @@ import com.azure.core.credential.AzureKeyCredential;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 
 import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
 import org.springframework.ai.azure.openai.AzureOpenAiImageOptions;
@@ -39,9 +40,12 @@ import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * NOTE: use deployment ID dall-e-3
+ */
 @SpringBootTest(classes = AzureOpenAiImageModelIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_ENDPOINT", matches = ".+") })
 public class AzureOpenAiImageModelIT {
 
 	@Autowired
@@ -83,15 +87,16 @@ public class AzureOpenAiImageModelIT {
 
 		@Bean
 		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+			return new OpenAIClientBuilder()
+				.credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_IMAGE_API_KEY")))
+				.endpoint(System.getenv("AZURE_OPENAI_IMAGE_ENDPOINT"))
 				.buildClient();
 		}
 
 		@Bean
 		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiImageModel(openAIClient,
-					AzureOpenAiImageOptions.builder().withDeploymentName("Dalle3").build());
+					AzureOpenAiImageOptions.builder().withDeploymentName("dall-e-3").build());
 
 		}
 
