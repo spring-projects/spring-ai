@@ -21,6 +21,8 @@ import io.micrometer.common.KeyValues;
 
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.lang.Nullable;
@@ -64,7 +66,16 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(AdvisorObservationContext context) {
-		return KeyValues.of(springAiKind(), advisorType(context), advisorName(context));
+		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(), advisorType(context),
+				advisorName(context));
+	}
+
+	protected KeyValue aiOperationType(AdvisorObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE, AiOperationType.FRAMEWORK.value());
+	}
+
+	protected KeyValue aiProvider(AdvisorObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER, AiProvider.SPRING_AI.value());
 	}
 
 	protected KeyValue advisorType(AdvisorObservationContext context) {
