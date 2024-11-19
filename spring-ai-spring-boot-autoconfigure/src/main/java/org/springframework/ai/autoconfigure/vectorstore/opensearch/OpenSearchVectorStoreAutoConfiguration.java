@@ -30,7 +30,6 @@ import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
-import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -51,6 +50,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClas
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 @AutoConfiguration
 @ConditionalOnClass({ OpenSearchVectorStore.class, EmbeddingModel.class, OpenSearchClient.class })
@@ -188,7 +188,7 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 		private final OpenSearchVectorStoreProperties.Aws aws;
 
-		public PropertiesAwsOpenSearchConnectionDetails(OpenSearchVectorStoreProperties properties) {
+		PropertiesAwsOpenSearchConnectionDetails(OpenSearchVectorStoreProperties properties) {
 			this.aws = properties.getAws();
 		}
 

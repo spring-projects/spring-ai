@@ -30,7 +30,6 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotSame;
 
 @SuppressWarnings("unchecked")
 class PromptTests {
@@ -145,9 +144,9 @@ class PromptTests {
 		Prompt prompt = promptTemplate.create(model, chatOptions);
 
 		Prompt copiedPrompt = prompt.copy();
-		assertNotSame(prompt, copiedPrompt);
-		assertNotSame(prompt.getOptions(), copiedPrompt.getOptions());
-		assertNotSame(prompt.getInstructions(), copiedPrompt.getInstructions());
+		assertThat(prompt).isNotSameAs(copiedPrompt);
+		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
 	}
 
 }

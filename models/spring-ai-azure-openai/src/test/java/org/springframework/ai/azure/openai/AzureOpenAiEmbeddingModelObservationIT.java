@@ -24,7 +24,6 @@ import com.azure.core.credential.AzureKeyCredential;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingRequest;

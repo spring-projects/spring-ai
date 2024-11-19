@@ -16,10 +16,11 @@
 
 package org.springframework.ai.testcontainers.service.connection.opensearch;
 
+import org.testcontainers.containers.localstack.LocalStackContainer;
+
 import org.springframework.ai.autoconfigure.vectorstore.opensearch.AwsOpenSearchConnectionDetails;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
-import org.testcontainers.containers.localstack.LocalStackContainer;
 
 /**
  * @author Eddú Meléndez

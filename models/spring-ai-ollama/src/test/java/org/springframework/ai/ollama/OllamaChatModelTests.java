@@ -16,10 +16,6 @@
 
 package org.springframework.ai.ollama;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
@@ -31,6 +27,10 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Jihoon Kim
@@ -49,7 +49,7 @@ public class OllamaChatModelTests {
 	public void buildOllamaChatModel() {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
-					.withOllamaApi(ollamaApi)
+					.withOllamaApi(this.ollamaApi)
 					.withDefaultOptions(OllamaOptions.create().withModel(OllamaModel.LLAMA2))
 					.withModelManagementOptions(null)
 					.build());
@@ -64,12 +64,12 @@ public class OllamaChatModelTests {
 		Duration promptEvalDuration = Duration.ofSeconds(8);
 		Integer promptEvalCount = 808;
 
-		given(response.evalDuration()).willReturn(evalDuration);
-		given(response.evalCount()).willReturn(evalCount);
-		given(response.promptEvalDuration()).willReturn(promptEvalDuration);
-		given(response.promptEvalCount()).willReturn(promptEvalCount);
+		given(this.response.evalDuration()).willReturn(evalDuration);
+		given(this.response.evalCount()).willReturn(evalCount);
+		given(this.response.promptEvalDuration()).willReturn(promptEvalDuration);
+		given(this.response.promptEvalCount()).willReturn(promptEvalCount);
 
-		ChatResponseMetadata metadata = OllamaChatModel.from(response);
+		ChatResponseMetadata metadata = OllamaChatModel.from(this.response);
 
 		assertEquals(evalDuration, metadata.get("eval-duration"));
 		assertEquals(evalCount, metadata.get("eval-count"));

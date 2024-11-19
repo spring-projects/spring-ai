@@ -17,9 +17,10 @@
 package org.springframework.ai.docker.compose.service.connection.opensearch;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.utility.DockerImageName;
+
 import org.springframework.ai.autoconfigure.vectorstore.opensearch.AwsOpenSearchConnectionDetails;
 import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
-import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
