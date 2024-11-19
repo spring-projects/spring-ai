@@ -26,12 +26,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.agent.Agent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -195,6 +197,22 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
 				&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
 			var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
+			// process agent transfer
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation
+				.get(toolCallConversation.size() - 1);
+			List<Agent> agentList = toolResponseMessage.getResponses().stream().flatMap(toolResponse -> {
+				if (null == toolResponse.agent()) {
+					return Stream.empty();
+				}
+				else {
+					return Stream.of(toolResponse.agent());
+				}
+			}).toList();
+			if (!CollectionUtils.isEmpty(agentList)) {
+				Agent agent = agentList.get(0);
+				// transfer task to other agent
+				return agent.call(prompt);
+			}
 			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
 		}
 
@@ -510,6 +528,22 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 				if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
 						&& this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
+					// process agent transfer
+					ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation
+							.get(toolCallConversation.size() - 1);
+					List<Agent> agentList = toolResponseMessage.getResponses().stream().flatMap(toolResponse -> {
+						if (null == toolResponse.agent()) {
+							return Stream.empty();
+						}
+						else {
+							return Stream.of(toolResponse.agent());
+						}
+					}).toList();
+					if (!CollectionUtils.isEmpty(agentList)) {
+						Agent agent = agentList.get(0);
+						// transfer task to other agent
+						return agent.stream(prompt);
+					}
 					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 				}
 				return Mono.just(chatResponse);

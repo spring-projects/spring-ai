@@ -23,12 +23,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.agent.Agent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -235,6 +237,22 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
 				&& this.isToolCall(response, Set.of("tool_use"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
+			// process agent transfer
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation
+				.get(toolCallConversation.size() - 1);
+			List<Agent> agentList = toolResponseMessage.getResponses().stream().flatMap(toolResponse -> {
+				if (null == toolResponse.agent()) {
+					return Stream.empty();
+				}
+				else {
+					return Stream.of(toolResponse.agent());
+				}
+			}).toList();
+			if (!CollectionUtils.isEmpty(agentList)) {
+				Agent agent = agentList.get(0);
+				// transfer task to other agent
+				return agent.call(prompt);
+			}
 			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
 		}
 
@@ -266,6 +284,22 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 				if (!isProxyToolCalls(prompt, this.defaultOptions) && this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = handleToolCalls(prompt, chatResponse);
+//					process agent transfer
+					ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation.get(toolCallConversation.size() - 1);
+					List<Agent> agentList = toolResponseMessage.getResponses()
+							.stream()
+							.flatMap(toolResponse -> {
+								if (null == toolResponse.agent()) {
+									return Stream.empty();
+								} else {
+									return Stream.of(toolResponse.agent());
+								}
+							}).toList();
+					if(!CollectionUtils.isEmpty(agentList)) {
+						Agent agent = agentList.get(0);
+//				transfer task to other agent
+						return agent.stream(prompt);
+					}
 					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
 				}
 

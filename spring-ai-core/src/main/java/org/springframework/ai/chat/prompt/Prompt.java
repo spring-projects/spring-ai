@@ -23,11 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.model.ModelRequest;
 
 /**
@@ -118,7 +114,10 @@ public class Prompt implements ModelRequest<List<Message>> {
 	private List<Message> instructionsCopy() {
 		List<Message> messagesCopy = new ArrayList<>();
 		this.messages.forEach(message -> {
-			if (message instanceof UserMessage userMessage) {
+			if (message instanceof InstructionMessage instructionMessage) {
+				messagesCopy.add(new InstructionMessage(instructionMessage.getContent()));
+			}
+			else if (message instanceof UserMessage userMessage) {
 				messagesCopy
 					.add(new UserMessage(userMessage.getContent(), userMessage.getMedia(), message.getMetadata()));
 			}

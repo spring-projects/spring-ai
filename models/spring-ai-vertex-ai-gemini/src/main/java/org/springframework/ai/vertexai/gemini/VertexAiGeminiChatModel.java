@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -46,6 +47,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.springframework.ai.agent.Agent;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -317,6 +319,22 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(FinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
+			// process agent transfer
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation
+				.get(toolCallConversation.size() - 1);
+			List<Agent> agentList = toolResponseMessage.getResponses().stream().flatMap(toolResponse -> {
+				if (null == toolResponse.agent()) {
+					return Stream.empty();
+				}
+				else {
+					return Stream.of(toolResponse.agent());
+				}
+			}).toList();
+			if (!CollectionUtils.isEmpty(agentList)) {
+				Agent agent = agentList.get(0);
+				// transfer task to other agent
+				return agent.call(prompt);
+			}
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
 			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
@@ -361,6 +379,22 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 					if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
 							Set.of(FinishReason.STOP.name(), FinishReason.FINISH_REASON_UNSPECIFIED.name()))) {
 						var toolCallConversation = handleToolCalls(prompt, chatResponse);
+						// process agent transfer
+						ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolCallConversation
+							.get(toolCallConversation.size() - 1);
+						List<Agent> agentList = toolResponseMessage.getResponses().stream().flatMap(toolResponse -> {
+							if (null == toolResponse.agent()) {
+								return Stream.empty();
+							}
+							else {
+								return Stream.of(toolResponse.agent());
+							}
+						}).toList();
+						if (!CollectionUtils.isEmpty(agentList)) {
+							Agent agent = agentList.get(0);
+							// transfer task to other agent
+							return agent.stream(prompt);
+						}
 						// Recursively call the stream method with the tool call message
 						// conversation that contains the call responses.
 						return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
