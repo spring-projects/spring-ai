@@ -14,34 +14,31 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.rag.retrieval.search;
+package org.springframework.ai.rag.preretrieval.query.transformation;
 
-import java.util.List;
 import java.util.function.Function;
 
-import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
 /**
- * Component responsible for retrieving {@link Document}s from an underlying data source,
- * such as a search engine, a vector store, a database, or a knowledge graph.
+ * A component for transforming the input query to make it more effective for retrieval
+ * tasks, addressing challenges such as poorly formed queries, ambiguous terms, complex
+ * vocabulary, or unsupported languages.
  *
- * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface DocumentRetriever extends Function<Query, List<Document>> {
+public interface QueryTransformer extends Function<Query, Query> {
 
 	/**
-	 * Retrieves relevant documents from an underlying data source based on the given
-	 * query.
-	 * @param query The query to use for retrieving documents
-	 * @return The list of relevant documents
+	 * Transforms the given query according to the implemented strategy.
+	 * @param query The original query to transform
+	 * @return The transformed query
 	 */
-	List<Document> retrieve(Query query);
+	Query transform(Query query);
 
-	default List<Document> apply(Query query) {
-		return retrieve(query);
+	default Query apply(Query query) {
+		return transform(query);
 	}
 
 }

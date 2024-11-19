@@ -14,34 +14,35 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.rag.retrieval.search;
+package org.springframework.ai.rag.retrieval.join;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
 /**
- * Component responsible for retrieving {@link Document}s from an underlying data source,
- * such as a search engine, a vector store, a database, or a knowledge graph.
+ * A component for combining documents retrieved based on multiple queries and from
+ * multiple data sources into a single collection of documents. As part of the joining
+ * process, it can also handle duplicate documents and reciprocal ranking strategies.
  *
- * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface DocumentRetriever extends Function<Query, List<Document>> {
+public interface DocumentJoiner extends Function<Map<Query, List<List<Document>>>, List<Document>> {
 
 	/**
-	 * Retrieves relevant documents from an underlying data source based on the given
-	 * query.
-	 * @param query The query to use for retrieving documents
-	 * @return The list of relevant documents
+	 * Joins documents retrieved across multiple queries and daa sources.
+	 * @param documentsForQuery a map of queries and the corresponding list of documents
+	 * retrieved
+	 * @return a single collection of documents
 	 */
-	List<Document> retrieve(Query query);
+	List<Document> join(Map<Query, List<List<Document>>> documentsForQuery);
 
-	default List<Document> apply(Query query) {
-		return retrieve(query);
+	default List<Document> apply(Map<Query, List<List<Document>>> documentsForQuery) {
+		return join(documentsForQuery);
 	}
 
 }

@@ -14,34 +14,32 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.rag.retrieval.search;
+package org.springframework.ai.rag.preretrieval.query.expansion;
 
 import java.util.List;
 import java.util.function.Function;
 
-import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
 /**
- * Component responsible for retrieving {@link Document}s from an underlying data source,
- * such as a search engine, a vector store, a database, or a knowledge graph.
+ * A component for expanding the input query into a list of queries, addressing challenges
+ * such as poorly formed queries by providing alternative query formulations, or by
+ * breaking down complex problems into simpler sub-queries,
  *
- * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface DocumentRetriever extends Function<Query, List<Document>> {
+public interface QueryExpander extends Function<Query, List<Query>> {
 
 	/**
-	 * Retrieves relevant documents from an underlying data source based on the given
-	 * query.
-	 * @param query The query to use for retrieving documents
-	 * @return The list of relevant documents
+	 * Expands the given query into a list of queries.
+	 * @param query The original query to be expanded
+	 * @return A list of expanded queries
 	 */
-	List<Document> retrieve(Query query);
+	List<Query> expand(Query query);
 
-	default List<Document> apply(Query query) {
-		return retrieve(query);
+	default List<Query> apply(Query query) {
+		return expand(query);
 	}
 
 }

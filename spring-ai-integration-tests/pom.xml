@@ -49,6 +49,13 @@
 		</dependency>
 
 		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>context-propagation</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+
+		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
 			<version>${project.parent.version}</version>

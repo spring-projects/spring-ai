@@ -98,6 +98,11 @@
 
 		<dependency>
 			<groupId>io.micrometer</groupId>
+			<artifactId>context-propagation</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-tracing-bridge-otel</artifactId>
 			<optional>true</optional>
 		</dependency>

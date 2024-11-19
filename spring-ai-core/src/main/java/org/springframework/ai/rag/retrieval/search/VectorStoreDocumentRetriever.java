@@ -28,8 +28,9 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Document retriever that uses a vector store to search for documents. It supports
- * filtering based on metadata, similarity threshold, and top-k results.
+ * Retrieves documents from a vector store that are semantically similar to the input
+ * query. It supports filtering based on metadata, similarity threshold, and top-k
+ * results.
  *
  * <p>
  * Example usage: <pre>{@code
@@ -61,6 +62,9 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 	public VectorStoreDocumentRetriever(VectorStore vectorStore, @Nullable Double similarityThreshold,
 			@Nullable Integer topK, @Nullable Supplier<Filter.Expression> filterExpression) {
 		Assert.notNull(vectorStore, "vectorStore cannot be null");
+		Assert.isTrue(similarityThreshold == null || similarityThreshold >= 0.0,
+				"similarityThreshold must be equal to or greater than 0.0");
+		Assert.isTrue(topK == null || topK > 0, "topK must be greater than 0");
 		this.vectorStore = vectorStore;
 		this.similarityThreshold = similarityThreshold != null ? similarityThreshold
 				: SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL;
@@ -104,14 +108,11 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 		}
 
 		public Builder similarityThreshold(Double similarityThreshold) {
-			Assert.notNull(similarityThreshold, "similarityThreshold cannot be null");
 			this.similarityThreshold = similarityThreshold;
 			return this;
 		}
 
 		public Builder topK(Integer topK) {
-			Assert.notNull(topK, "topK cannot be null");
-			Assert.isTrue(topK > 0, "topK must be greater than 0");
 			this.topK = topK;
 			return this;
 		}
