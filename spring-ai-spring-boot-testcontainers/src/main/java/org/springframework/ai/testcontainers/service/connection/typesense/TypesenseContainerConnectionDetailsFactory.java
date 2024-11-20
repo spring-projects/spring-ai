@@ -16,7 +16,7 @@
 
 package org.springframework.ai.testcontainers.service.connection.typesense;
 
-import org.testcontainers.containers.Container;
+import org.testcontainers.typesense.TypesenseContainer;
 
 import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseConnectionDetails;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
@@ -26,24 +26,21 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
  * @author Eddú Meléndez
  */
 class TypesenseContainerConnectionDetailsFactory
-		extends ContainerConnectionDetailsFactory<Container<?>, TypesenseConnectionDetails> {
-
-	TypesenseContainerConnectionDetailsFactory() {
-		super("typesense/typesense");
-	}
+		extends ContainerConnectionDetailsFactory<TypesenseContainer, TypesenseConnectionDetails> {
 
 	@Override
-	protected TypesenseConnectionDetails getContainerConnectionDetails(ContainerConnectionSource<Container<?>> source) {
+	protected TypesenseConnectionDetails getContainerConnectionDetails(
+			ContainerConnectionSource<TypesenseContainer> source) {
 		return new TypesenseContainerConnectionDetails(source);
 	}
 
 	/**
 	 * {@link TypesenseConnectionDetails} backed by a {@link ContainerConnectionSource}.
 	 */
-	private static final class TypesenseContainerConnectionDetails extends ContainerConnectionDetails<Container<?>>
-			implements TypesenseConnectionDetails {
+	private static final class TypesenseContainerConnectionDetails
+			extends ContainerConnectionDetails<TypesenseContainer> implements TypesenseConnectionDetails {
 
-		private TypesenseContainerConnectionDetails(ContainerConnectionSource<Container<?>> source) {
+		private TypesenseContainerConnectionDetails(ContainerConnectionSource<TypesenseContainer> source) {
 			super(source);
 		}
 
@@ -59,12 +56,12 @@ class TypesenseContainerConnectionDetailsFactory
 
 		@Override
 		public int getPort() {
-			return getContainer().getMappedPort(8108);
+			return Integer.parseInt(getContainer().getHttpPort());
 		}
 
 		@Override
 		public String getApiKey() {
-			return getContainer().getEnvMap().get("TYPESENSE_API_KEY");
+			return getContainer().getApiKey();
 		}
 
 	}
