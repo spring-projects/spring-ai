@@ -56,8 +56,8 @@ public class BasicEvaluationTest {
 	protected void evaluateQuestionAndAnswer(String question, String answer, boolean factBased) {
 		assertThat(question).isNotNull();
 		assertThat(answer).isNotNull();
-		logger.info("Question: " + question);
-		logger.info("Answer:" + answer);
+		logger.info("Question: {}", question);
+		logger.info("Answer:{}", answer);
 		PromptTemplate userPromptTemplate = PromptTemplate.builder()
 			.resource(this.userEvaluatorResource)
 			.variables(Map.of("question", question, "answer", answer))
@@ -72,7 +72,7 @@ public class BasicEvaluationTest {
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		String yesOrNo = this.openAiChatModel.call(prompt).getResult().getOutput().getText();
-		logger.info("Is Answer related to question: " + yesOrNo);
+		logger.info("Is Answer related to question: {}", yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(this.qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
