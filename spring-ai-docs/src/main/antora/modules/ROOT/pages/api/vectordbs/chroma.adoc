@@ -112,7 +112,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property| Description | Default value
 
-|`spring.ai.vectorstore.chroma.client.host`| Server connection host | http://localhost
+|`spring.ai.vectorstore.chroma.client.host`| Server connection host | http://localhost[http://localhost]
 |`spring.ai.vectorstore.chroma.client.port`| Server connection port | `8000`
 |`spring.ai.vectorstore.chroma.client.key-token`| Access token (if configured) | -
 |`spring.ai.vectorstore.chroma.client.username`| Access username (if configured) | -
