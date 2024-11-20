@@ -128,7 +128,8 @@ public class ChromaApiIT {
 		this.chromaApi.upsertEmbeddings(newCollection.id(), new AddEmbeddingsRequest("id3", new float[] { 6f, 6f, 6f },
 				Map.of("key1", "value2", "key2", false, "key4", 23.4), "Small World"));
 
-		var result = this.chromaApi.getEmbeddings(newCollection.id(), new GetEmbeddingsRequest(List.of("id2")));
+		var result = this.chromaApi.getEmbeddings(newCollection.id(),
+				new ChromaApi.GetSimpleEmbeddingsRequest((List.of("id2"))));
 		assertThat(result.ids().get(0)).isEqualTo("id2");
 
 		queryResult = this.chromaApi.queryCollection(newCollection.id(),
@@ -163,8 +164,8 @@ public class ChromaApiIT {
 
 		assertThat(this.chromaApi.countEmbeddings(collection.id())).isEqualTo(3);
 
-		var queryResult = this.chromaApi.queryCollection(collection.id(),
-				new QueryRequest(new float[] { 1f, 1f, 1f }, 3));
+		var queryResult = this.chromaApi.simpleQueryCollection(collection.id(),
+				new ChromaApi.SimpleQueryRequest(new float[] { 1f, 1f, 1f }, 3));
 
 		assertThat(queryResult.ids().get(0)).hasSize(3);
 		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id1", "id2", "id3");

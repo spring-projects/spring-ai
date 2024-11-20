@@ -44,6 +44,7 @@ import org.springframework.web.client.RestClient;
  *
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Ilayaperumal Gopinathan
  */
 public class ChromaApi {
 
@@ -187,6 +188,17 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
+	public int deleteEmbeddings(String collectionId, SimpleDeleteEmbeddingsRequest deleteRequest) {
+		return this.restClient.post()
+			.uri("/api/v1/collections/{collection_id}/delete", collectionId)
+			.headers(this::httpHeaders)
+			.body(deleteRequest)
+			.retrieve()
+			.toEntity(String.class)
+			.getStatusCode()
+			.value();
+	}
+
 	public int deleteEmbeddings(String collectionId, DeleteEmbeddingsRequest deleteRequest) {
 		return this.restClient.post()
 			.uri("/api/v1/collections/{collection_id}/delete", collectionId)
@@ -219,6 +231,17 @@ public class ChromaApi {
 			.getBody();
 	}
 
+	public QueryResponse simpleQueryCollection(String collectionId, SimpleQueryRequest queryRequest) {
+
+		return this.restClient.post()
+			.uri("/api/v1/collections/{collection_id}/query", collectionId)
+			.headers(this::httpHeaders)
+			.body(queryRequest)
+			.retrieve()
+			.toEntity(QueryResponse.class)
+			.getBody();
+	}
+
 	//
 	// Chroma Client API (https://docs.trychroma.com/js_reference/Client)
 	//
@@ -229,6 +252,18 @@ public class ChromaApi {
 			.uri("/api/v1/collections/{collection_id}/get", collectionId)
 			.headers(this::httpHeaders)
 			.body(getEmbeddingsRequest)
+			.retrieve()
+			.toEntity(GetEmbeddingResponse.class)
+			.getBody();
+	}
+
+	public GetEmbeddingResponse getEmbeddings(String collectionId,
+			GetSimpleEmbeddingsRequest getSimpleEmbeddingsRequest) {
+
+		return this.restClient.post()
+			.uri("/api/v1/collections/{collection_id}/get", collectionId)
+			.headers(this::httpHeaders)
+			.body(getSimpleEmbeddingsRequest)
 			.retrieve()
 			.toEntity(GetEmbeddingResponse.class)
 			.getBody();
@@ -331,9 +366,14 @@ public class ChromaApi {
 	 */
 	public record DeleteEmbeddingsRequest(List<String> ids, Map<String, Object> where) {
 
-		public DeleteEmbeddingsRequest(List<String> ids) {
-			this(ids, Map.of());
-		}
+	}
+
+	/**
+	 * Request to delete embedding from a collection.
+	 *
+	 * @param ids The ids of the embeddings to delete. (Optional)
+	 */
+	public record SimpleDeleteEmbeddingsRequest(List<String> ids) {
 
 	}
 
@@ -351,10 +391,6 @@ public class ChromaApi {
 	public record GetEmbeddingsRequest(List<String> ids, Map<String, Object> where, int limit, int offset,
 			List<Include> include) {
 
-		public GetEmbeddingsRequest(List<String> ids) {
-			this(ids, Map.of(), 10, 0, Include.all);
-		}
-
 		public GetEmbeddingsRequest(List<String> ids, Map<String, Object> where) {
 			this(ids, where, 10, 0, Include.all);
 		}
@@ -363,6 +399,27 @@ public class ChromaApi {
 			this(ids, where, limit, offset, Include.all);
 		}
 
+	}
+
+	/**
+	 * Get embeddings from a collection.
+	 *
+	 * @param ids IDs of the embeddings to get.
+	 * @param limit Limit on the number of collection embeddings to get.
+	 * @param offset Offset on the embeddings to get.
+	 * @param include A list of what to include in the results. Can contain "embeddings",
+	 * "metadatas", "documents", "distances". Ids are always included. Defaults to
+	 * [metadatas, documents, distances].
+	 */
+	public record GetSimpleEmbeddingsRequest(List<String> ids, int limit, int offset, List<Include> include) {
+
+		public GetSimpleEmbeddingsRequest(List<String> ids) {
+			this(ids, 10, 0, Include.all);
+		}
+
+		public GetSimpleEmbeddingsRequest(List<String> ids, Map<String, Object> where) {
+			this(ids, 10, 0, Include.all);
+		}
 	}
 
 	/**
@@ -402,6 +459,47 @@ public class ChromaApi {
 
 		public QueryRequest(float[] queryEmbedding, int nResults, Map<String, Object> where) {
 			this(List.of(queryEmbedding), nResults, where, Include.all);
+		}
+
+		public enum Include {
+
+			@JsonProperty("metadatas")
+			METADATAS,
+
+			@JsonProperty("documents")
+			DOCUMENTS,
+
+			@JsonProperty("distances")
+			DISTANCES,
+
+			@JsonProperty("embeddings")
+			EMBEDDINGS;
+
+			public static final List<Include> all = List.of(METADATAS, DOCUMENTS, DISTANCES, EMBEDDINGS);
+
+		}
+
+	}
+
+	/**
+	 * Request to get the nResults nearest neighbor embeddings for provided
+	 * queryEmbeddings.
+	 *
+	 * @param queryEmbeddings The embeddings to get the closes neighbors of.
+	 * @param nResults The number of neighbors to return for each query_embedding or
+	 * query_texts.
+	 * @param include A list of what to include in the results. Can contain "embeddings",
+	 * "metadatas", "documents", "distances". Ids are always included. Defaults to
+	 * [metadatas, documents, distances].
+	 */
+	public record SimpleQueryRequest(@JsonProperty("query_embeddings") List<float[]> queryEmbeddings,
+			@JsonProperty("n_results") int nResults, List<Include> include) {
+
+		/**
+		 * Convenience to query for a single embedding instead of a batch of embeddings.
+		 */
+		public SimpleQueryRequest(float[] queryEmbedding, int nResults) {
+			this(List.of(queryEmbedding), nResults, Include.all);
 		}
 
 		public enum Include {

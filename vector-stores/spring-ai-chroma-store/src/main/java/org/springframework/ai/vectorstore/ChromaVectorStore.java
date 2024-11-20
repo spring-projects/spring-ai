@@ -162,7 +162,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
-		int status = this.chromaApi.deleteEmbeddings(this.collectionId, new DeleteEmbeddingsRequest(idList));
+		int status = this.chromaApi.deleteEmbeddings(this.collectionId,
+				new ChromaApi.SimpleDeleteEmbeddingsRequest(idList));
 		return Optional.of(status == 200);
 	}
 
@@ -178,8 +179,15 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		float[] embedding = this.embeddingModel.embed(query);
 		Map<String, Object> where = (StringUtils.hasText(nativeFilterExpression)) ? jsonToMap(nativeFilterExpression)
 				: Map.of();
-		var queryRequest = new ChromaApi.QueryRequest(embedding, request.getTopK(), where);
-		var queryResponse = this.chromaApi.queryCollection(this.collectionId, queryRequest);
+		ChromaApi.QueryResponse queryResponse = null;
+		if (where.isEmpty()) {
+			queryResponse = this.chromaApi.simpleQueryCollection(this.collectionId,
+					new ChromaApi.SimpleQueryRequest(embedding, request.getTopK()));
+		}
+		else {
+			queryResponse = this.chromaApi.queryCollection(this.collectionId,
+					new ChromaApi.QueryRequest(embedding, request.getTopK(), where));
+		}
 		var embeddings = this.chromaApi.toEmbeddingResponseList(queryResponse);
 
 		List<Document> responseDocuments = new ArrayList<>();
