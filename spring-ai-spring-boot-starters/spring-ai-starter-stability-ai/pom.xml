@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai</artifactId>
-        <version>1.0.0-M4</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-stability-ai-spring-boot-starter</artifactId>
