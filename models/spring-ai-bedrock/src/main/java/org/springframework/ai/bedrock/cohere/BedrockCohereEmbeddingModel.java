@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
@@ -37,9 +38,12 @@ import org.springframework.util.Assert;
  * this API. If this change in the future we will add it as metadata.
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 0.8.0
  */
 public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
+
+	private static final int COHERE_MAX_CHARACTERS = 2048;
 
 	private final CohereEmbeddingBedrockApi embeddingApi;
 
@@ -74,11 +78,34 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
+
+		List<String> instructions = request.getInstructions();
+		Assert.notEmpty(instructions, "At least one text is required!");
 
 		final BedrockCohereEmbeddingOptions optionsToUse = this.mergeOptions(request.getOptions());
 
-		var apiRequest = new CohereEmbeddingRequest(request.getInstructions(), optionsToUse.getInputType(),
+		List<String> truncatedInstructions = instructions.stream().map(text -> {
+			if (text == null || text.isEmpty()) {
+				return text;
+			}
+
+			if (text.length() <= COHERE_MAX_CHARACTERS) {
+				return text;
+			}
+
+			// Handle truncation based on option
+			return switch (optionsToUse.getTruncate()) {
+				case END -> text.substring(0, COHERE_MAX_CHARACTERS); // Keep first 2048 chars
+				case START -> text.substring(text.length() - COHERE_MAX_CHARACTERS); // Keep
+																					// last
+																					// 2048
+																					// chars
+				default -> text.substring(0, COHERE_MAX_CHARACTERS); // Default to END
+																	// behavior
+			};
+		}).collect(Collectors.toList());
+
+		var apiRequest = new CohereEmbeddingRequest(truncatedInstructions, optionsToUse.getInputType(),
 				optionsToUse.getTruncate());
 		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
 		var indexCounter = new AtomicInteger(0);

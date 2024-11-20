@@ -73,6 +73,8 @@ The prefix `spring.ai.bedrock.cohere.embedding` (defined in `BedrockCohereEmbedd
 | spring.ai.bedrock.cohere.embedding.options.truncate  | Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the model.  | NONE
 |====
 
+NOTE: When accessing Cohere via Amazon Bedrock, the functionality of truncating is not available.  This is an issue with Amazon Bedrock.   The Spring AI class `BedrockCohereEmbeddingModel` will truncate to 2048 character length, which is the maximum supported by the model.
+
 Look at the https://github.com/spring-projects/spring-ai/blob/056b95a00efa5b014a1f488329fbd07a46c02378/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereEmbeddingBedrockApi.java#L150[CohereEmbeddingModel] for other model IDs.
 Supported values are: `cohere.embed-multilingual-v3` and `cohere.embed-english-v3`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
