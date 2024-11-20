@@ -149,6 +149,13 @@ public class Document implements MediaContent {
 		return this.metadata;
 	}
 
+	/**
+	 * Return the embedding that were calculated.
+	 * @deprecated We are considering getting rid of this, please comment on
+	 * https://github.com/spring-projects/spring-ai/issues/1781
+	 * @return the embeddings
+	 */
+	@Deprecated(since = "1.0.0-M4")
 	public float[] getEmbedding() {
 		return this.embedding;
 	}
@@ -158,6 +165,13 @@ public class Document implements MediaContent {
 		this.embedding = embedding;
 	}
 
+	/**
+	 * Returns the content formatter associated with this document.
+	 * @deprecated We are considering getting rid of this, please comment on
+	 * https://github.com/spring-projects/spring-ai/issues/1782
+	 * @return the current ContentFormatter instance used for formatting the document
+	 * content.
+	 */
 	public ContentFormatter getContentFormatter() {
 		return this.contentFormatter;
 	}

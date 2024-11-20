@@ -95,13 +95,14 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 			// Handle truncation based on option
 			return switch (optionsToUse.getTruncate()) {
-				case END -> text.substring(0, COHERE_MAX_CHARACTERS); // Keep first 2048 chars
+				case END -> text.substring(0, COHERE_MAX_CHARACTERS); // Keep first 2048
+																		// chars
 				case START -> text.substring(text.length() - COHERE_MAX_CHARACTERS); // Keep
-																					// last
-																					// 2048
-																					// chars
+																						// last
+																						// 2048
+																						// chars
 				default -> text.substring(0, COHERE_MAX_CHARACTERS); // Default to END
-																	// behavior
+																		// behavior
 			};
 		}).collect(Collectors.toList());
 
