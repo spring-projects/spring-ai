@@ -54,7 +54,7 @@ The following service connection factories are provided in the `spring-ai-spring
 | Containers of type `QdrantContainer`
 
 | `TypesenseConnectionDetails`
-| Containers named "typesense/typesense"
+| Containers of type `TypesenseContainer`
 
 | `WeaviateConnectionDetails`
 | Containers of type `WeaviateContainer`
