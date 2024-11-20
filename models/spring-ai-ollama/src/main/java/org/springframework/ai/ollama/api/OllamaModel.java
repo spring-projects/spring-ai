@@ -28,6 +28,11 @@ import org.springframework.ai.model.ChatModelDescription;
 public enum OllamaModel implements ChatModelDescription {
 
 	/**
+	 * Qwen 2.5
+	 */
+	QWEN_2_5_7B("qwen2.5"),
+
+	/**
 	 * Llama 2 is a collection of language models ranging from 7B to 70B parameters.
 	 */
 	LLAMA2("llama2"),
@@ -46,6 +51,16 @@ public enum OllamaModel implements ChatModelDescription {
 	 * The Llama 3.2 3B language model from Meta.
 	 */
 	LLAMA3_2("llama3.2"),
+
+	/**
+	 * The Llama 3.2 Vision 11B language model from Meta.
+	 */
+	LLAMA3_2_VISION_11b("llama3.2-vision"),
+
+	/**
+	 * The Llama 3.2 Vision 90B language model from Meta.
+	 */
+	LLAMA3_2_VISION_90b("llama3.2-vision:90b"),
 
 	/**
 	 * The Llama 3.2 1B language model from Meta.

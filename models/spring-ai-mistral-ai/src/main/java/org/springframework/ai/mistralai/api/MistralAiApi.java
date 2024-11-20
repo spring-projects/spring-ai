@@ -270,7 +270,9 @@ public class MistralAiApi {
 		SMALL("mistral-small-latest"),
 		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral will be removing this model - see https://docs.mistral.ai/getting-started/models/models_overview/
 		MEDIUM("mistral-medium-latest"),
-		LARGE("mistral-large-latest");
+		LARGE("mistral-large-latest"),
+		PIXTRAL("pixtral-12b-2409"),
+		PIXTRAL_LARGE("pixtral-large-latest");
 		// @formatter:on
 
 		private final String value;

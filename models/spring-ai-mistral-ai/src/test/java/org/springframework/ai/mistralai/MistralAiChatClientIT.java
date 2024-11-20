@@ -290,7 +290,9 @@ class MistralAiChatClientIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getName();
+		// String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getName();
+		String model = MistralAiApi.ChatModel.PIXTRAL.getName();
+		// String model = MistralAiApi.ChatModel.PIXTRAL_LARGE.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().withModel(model).build())
