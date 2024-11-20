@@ -49,6 +49,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.matches;
 
 @SpringBootTest(classes = BedrockConverseTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
@@ -228,6 +229,41 @@ class BedrockConverseChatClientIT {
 	}
 
 	@Test
+	void functionCallWithUsageMetadataTest() {
+
+		// @formatter:off
+		ChatResponse response = ChatClient.create(this.chatModel)
+				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
+				.functions(FunctionCallback.builder()
+						.description("Get the weather in location")
+						.function("getCurrentWeather", new MockWeatherService())
+						.inputType(MockWeatherService.Request.class)
+						.build())
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		var metadata = response.getMetadata();
+
+		assertThat(metadata.getUsage()).isNotNull();
+
+		logger.info(metadata.getUsage().toString());
+
+		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(500);
+		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(3500);
+
+		assertThat(metadata.getUsage().getGenerationTokens()).isGreaterThan(0);
+		assertThat(metadata.getUsage().getGenerationTokens()).isLessThan(1500);
+
+		assertThat(metadata.getUsage().getTotalTokens())
+			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getGenerationTokens());
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+	}
+
+	@Test
 	void functionCallWithAdvisorTest() {
 
 		// @formatter:off
@@ -287,13 +323,24 @@ class BedrockConverseChatClientIT {
 
 		List<ChatResponse> chatResponses = response.collectList().block();
 
-		chatResponses.forEach(cr -> logger.info("Response: {}", cr));
+		// chatResponses.forEach(cr -> logger.info("Response: {}", cr));
+		var lastChatResponse = chatResponses.get(chatResponses.size() - 1);
+		var metadata = lastChatResponse.getMetadata();
+		assertThat(metadata.getUsage()).isNotNull();
 
-		List<ChatResponse> chatResponses2 = chatResponses.stream()
+		logger.info(metadata.getUsage().toString());
+
+		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(1500);
+		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(3500);
+
+		assertThat(metadata.getUsage().getGenerationTokens()).isGreaterThan(0);
+		assertThat(metadata.getUsage().getGenerationTokens()).isLessThan(1500);
+
+		assertThat(metadata.getUsage().getTotalTokens())
+			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getGenerationTokens());
+
+		String content = chatResponses.stream()
 			.filter(cr -> cr.getResult() != null)
-			.collect(Collectors.toList());
-
-		String content = chatResponses2.stream()
 			.map(cr -> cr.getResult().getOutput().getContent())
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
