@@ -128,7 +128,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		String response = chatResponse.getResult().getOutput().getContent();
 		System.out.println(response);
-		assertThat(response).containsIgnoringCase("Highlands");
+		assertThat(response.toLowerCase()).containsAnyOf("highlands", "højland");
 
 		evaluateRelevancy(question, chatResponse);
 	}
