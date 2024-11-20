@@ -43,9 +43,9 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * {@link ChromaVectorStore} is a concrete implementation of the {@link VectorStore}
@@ -134,7 +134,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(@NonNull List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 		if (CollectionUtils.isEmpty(documents)) {
 			return;
@@ -160,24 +160,23 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public Optional<Boolean> doDelete(@NonNull List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 		int status = this.chromaApi.deleteEmbeddings(this.collectionId, new DeleteEmbeddingsRequest(idList));
 		return Optional.of(status == 200);
 	}
 
 	@Override
-	public List<Document> doSimilaritySearch(SearchRequest request) {
-
-		String nativeFilterExpression = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+	public @NonNull List<Document> doSimilaritySearch(@NonNull SearchRequest request) {
 
 		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");
 
 		float[] embedding = this.embeddingModel.embed(query);
-		Map<String, Object> where = (StringUtils.hasText(nativeFilterExpression)) ? jsonToMap(nativeFilterExpression)
-				: Map.of();
+
+		Map<String, Object> where = (request.getFilterExpression() != null)
+				? jsonToMap(this.filterExpressionConverter.convertExpression(request.getFilterExpression())) : null;
+
 		var queryRequest = new ChromaApi.QueryRequest(embedding, request.getTopK(), where);
 		var queryResponse = this.chromaApi.queryCollection(this.collectionId, queryRequest);
 		var embeddings = this.chromaApi.toEmbeddingResponseList(queryResponse);
@@ -241,7 +240,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+	public @NonNull VectorStoreObservationContext.Builder createObservationContextBuilder(
+			@NonNull String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.collectionName + ":" + this.collectionId)

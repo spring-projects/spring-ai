@@ -93,6 +93,34 @@ public class ChromaVectorStoreIT {
 	}
 
 	@Test
+	public void simpleSearch() {
+		this.contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var document = Document.builder()
+				.withId("simpleDoc")
+				.withContent("The sky is blue because of Rayleigh scattering.")
+				.build();
+
+			vectorStore.add(List.of(document));
+
+			List<Document> results = vectorStore.similaritySearch("Why is the sky blue?");
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(document.getId());
+			assertThat(resultDoc.getContent()).isEqualTo("The sky is blue because of Rayleigh scattering.");
+
+			// Remove all documents from the store
+			assertThat(vectorStore.delete(List.of(document.getId()))).isEqualTo(Optional.of(Boolean.TRUE));
+
+			results = vectorStore.similaritySearch(SearchRequest.query("Why is the sky blue?"));
+			assertThat(results).hasSize(0);
+		});
+	}
+
+	@Test
 	public void addAndSearchWithFilters() {
 
 		this.contextRunner.run(context -> {
