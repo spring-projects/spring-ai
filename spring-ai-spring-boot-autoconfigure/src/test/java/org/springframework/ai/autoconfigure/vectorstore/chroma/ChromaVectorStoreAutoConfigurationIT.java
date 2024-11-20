@@ -55,7 +55,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 public class ChromaVectorStoreAutoConfigurationIT {
 
 	@Container
-	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0");
+	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.20");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ChromaVectorStoreAutoConfiguration.class))
