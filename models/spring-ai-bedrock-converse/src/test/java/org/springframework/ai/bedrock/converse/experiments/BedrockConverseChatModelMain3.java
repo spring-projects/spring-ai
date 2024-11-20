@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.bedrock.converse.experiements;
+package org.springframework.ai.bedrock.converse.experiments;
 
 import java.util.List;
 
-import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.MockWeatherService;
@@ -32,9 +30,9 @@ import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.Porta
 /**
  * Used for reverse engineering the protocol
  */
-public final class BedrockConverseChatModelMain2 {
+public final class BedrockConverseChatModelMain3 {
 
-	private BedrockConverseChatModelMain2() {
+	private BedrockConverseChatModelMain3() {
 
 	}
 
@@ -64,13 +62,10 @@ public final class BedrockConverseChatModelMain2 {
 			.withRegion(Region.US_EAST_1)
 			.build();
 
-		var streamRequest = chatModel.createStreamRequest(prompt);
+		var response = chatModel.call(prompt);
 
-		Flux<ConverseStreamOutput> responses = chatModel.converseStream(streamRequest);
-		List<ConverseStreamOutput> responseList = responses.collectList().block();
-		System.out.println(responseList);
-		System.out.println("Response count: " + responseList.size());
-		responseList.forEach(System.out::println);
+		System.out.println(response);
+
 	}
 
 }

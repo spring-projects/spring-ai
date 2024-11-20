@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.bedrock.converse.experiements;
+package org.springframework.ai.bedrock.converse.experiments;
 
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
