@@ -14,27 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.chroma;
+package org.springframework.ai.docker.compose.service.connection.weaviate;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateConnectionDetails;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ChromaDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class WeaviateDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	ChromaDockerComposeConnectionDetailsFactoryTests() {
-		super("chroma-compose.yaml", DockerImageName.parse("chromadb/chroma"));
+	WeaviateDockerComposeConnectionDetailsFactoryIT() {
+		super("weaviate-compose.yaml", DockerImageName.parse("semitechnologies/weaviate"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		ChromaConnectionDetails connectionDetails = run(ChromaConnectionDetails.class);
+		WeaviateConnectionDetails connectionDetails = run(WeaviateConnectionDetails.class);
 		assertThat(connectionDetails.getHost()).isNotNull();
-		assertThat(connectionDetails.getPort()).isGreaterThan(0);
 	}
 
 }

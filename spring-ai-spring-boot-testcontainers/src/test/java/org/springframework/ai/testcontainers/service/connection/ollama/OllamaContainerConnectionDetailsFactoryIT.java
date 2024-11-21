@@ -48,13 +48,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringJUnitConfig
 @Disabled("Slow on CPU. Only run manually.")
 @Testcontainers
-@TestPropertySource(properties = "spring.ai.ollama.embedding.options.model="
-		+ OllamaContainerConnectionDetailsFactoryTest.MODEL_NAME)
-class OllamaContainerConnectionDetailsFactoryTest {
+@TestPropertySource(
+		properties = "spring.ai.ollama.embedding.options.model=" + OllamaContainerConnectionDetailsFactoryIT.MODEL_NAME)
+class OllamaContainerConnectionDetailsFactoryIT {
 
 	static final String MODEL_NAME = "nomic-embed-text";
 
-	private static final Logger logger = LoggerFactory.getLogger(OllamaContainerConnectionDetailsFactoryTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaContainerConnectionDetailsFactoryIT.class);
 
 	@Container
 	@ServiceConnection

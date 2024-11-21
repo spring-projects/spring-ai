@@ -20,13 +20,13 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TypesenseDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class TypesenseDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	TypesenseDockerComposeConnectionDetailsFactoryTests() {
+	TypesenseDockerComposeConnectionDetailsFactoryIT() {
 		super("typesense-compose.yaml", DockerImageName.parse("typesense/typesense:26.0"));
 	}
 

@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 		"spring.ai.vectorstore.weaviate.filter-field.active=BOOLEAN",
 		"spring.ai.vectorstore.weaviate.filter-field.price=NUMBER",
 		"spring.ai.vectorstore.weaviate.initialize-schema=true" })
-class WeaviateContainerConnectionDetailsFactoryTest {
+class WeaviateContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection

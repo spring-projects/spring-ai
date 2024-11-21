@@ -51,7 +51,7 @@ import static org.assertj.core.api.Assertions.fail;
  */
 @DisabledIfProcessUnavailable({ "docker", "version" })
 @DisabledIfProcessUnavailable({ "docker", "compose" })
-public abstract class AbstractDockerComposeIntegrationTests {
+public abstract class AbstractDockerComposeIT {
 
 	@TempDir
 	private static Path tempDir;
@@ -60,7 +60,7 @@ public abstract class AbstractDockerComposeIntegrationTests {
 
 	private final DockerImageName dockerImageName;
 
-	protected AbstractDockerComposeIntegrationTests(String composeResource, DockerImageName dockerImageName) {
+	protected AbstractDockerComposeIT(String composeResource, DockerImageName dockerImageName) {
 		this.composeResource = new ClassPathResource(composeResource, getClass());
 		this.dockerImageName = dockerImageName;
 	}

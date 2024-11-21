@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.testcontainers.service.connection.milvus;
+package org.springframework.ai.testcontainers.service.connection.typesense;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.milvus.MilvusContainer;
 
 import org.springframework.ai.ResourceUtils;
-import org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreAutoConfiguration;
+import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseVectorStoreAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -42,16 +43,19 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
+@TestPropertySource(properties = { "spring.ai.vectorstore.typesense.embeddingDimension=384",
+		"spring.ai.vectorstore.typesense.initialize-schema=true",
+		"spring.ai.vectorstore.typesense.collectionName=myTestCollection" })
 @Testcontainers
-@TestPropertySource(properties = { "spring.ai.vectorstore.milvus.metricType=COSINE",
-		"spring.ai.vectorstore.milvus.indexType=IVF_FLAT", "spring.ai.vectorstore.milvus.embeddingDimension=384",
-		"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
-		"spring.ai.vectorstore.milvus.initialize-schema=true" })
-class MilvusContainerConnectionDetailsFactoryTest {
+class TypesenseContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+	private static final GenericContainer<?> typesense = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
+		.withExposedPorts(8108)
+		.withCommand("--data-dir", "/tmp", "--enable-cors")
+		.withEnv("TYPESENSE_API_KEY", "secret")
+		.withStartupTimeout(Duration.ofSeconds(100));
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
@@ -63,6 +67,7 @@ class MilvusContainerConnectionDetailsFactoryTest {
 
 	@Test
 	public void addAndSearch() {
+
 		this.vectorStore.add(this.documents);
 
 		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -75,7 +80,6 @@ class MilvusContainerConnectionDetailsFactoryTest {
 		assertThat(resultDoc.getMetadata()).hasSize(2);
 		assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-		// Remove all documents from the store
 		this.vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 		results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
@@ -83,7 +87,7 @@ class MilvusContainerConnectionDetailsFactoryTest {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ImportAutoConfiguration(MilvusVectorStoreAutoConfiguration.class)
+	@ImportAutoConfiguration(TypesenseVectorStoreAutoConfiguration.class)
 	static class Config {
 
 		@Bean

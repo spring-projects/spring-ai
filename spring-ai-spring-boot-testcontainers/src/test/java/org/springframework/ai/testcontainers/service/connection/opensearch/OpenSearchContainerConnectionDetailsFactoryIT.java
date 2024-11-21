@@ -47,7 +47,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-class OpenSearchContainerConnectionDetailsFactoryTest {
+class OpenSearchContainerConnectionDetailsFactoryIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withInitializer(new TestcontainersLifecycleApplicationContextInitializer())

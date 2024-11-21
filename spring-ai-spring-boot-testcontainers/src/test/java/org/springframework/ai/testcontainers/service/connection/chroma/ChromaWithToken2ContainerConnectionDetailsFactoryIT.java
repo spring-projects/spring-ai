@@ -45,13 +45,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @TestPropertySource(properties = { "spring.ai.vectorstore.chroma.collectionName=TestCollection",
 		"spring.ai.vectorstore.chroma.initialize-schema=true" })
-class ChromaWithTokenContainerConnectionDetailsFactoryTest {
+class ChromaWithToken2ContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
 	static ChromaDBContainer chroma = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE)
-		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS", "token")
-		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.token_authn.TokenAuthenticationServerProvider");
+		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS", "token")
+		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
+				"chromadb.auth.token.TokenConfigServerAuthCredentialsProvider")
+		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.token.TokenAuthServerProvider");
 
 	@Autowired
 	private VectorStore vectorStore;

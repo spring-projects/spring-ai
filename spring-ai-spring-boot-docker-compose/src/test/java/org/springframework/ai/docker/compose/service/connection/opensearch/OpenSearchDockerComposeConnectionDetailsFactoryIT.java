@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.weaviate;
+package org.springframework.ai.docker.compose.service.connection.opensearch;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchConnectionDetails;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class WeaviateDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class OpenSearchDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	WeaviateDockerComposeConnectionDetailsFactoryTests() {
-		super("weaviate-compose.yaml", DockerImageName.parse("semitechnologies/weaviate"));
+	OpenSearchDockerComposeConnectionDetailsFactoryIT() {
+		super("opensearch-compose.yaml", DockerImageName.parse("opensearchproject/opensearch"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		WeaviateConnectionDetails connectionDetails = run(WeaviateConnectionDetails.class);
-		assertThat(connectionDetails.getHost()).isNotNull();
+		OpenSearchConnectionDetails connectionDetails = run(OpenSearchConnectionDetails.class);
+		assertThat(connectionDetails.getUris()).isNotNull();
+		assertThat(connectionDetails.getUsername()).isEqualTo("admin");
+		assertThat(connectionDetails.getPassword()).isEqualTo("D3v3l0p-ment");
 	}
 
 }
