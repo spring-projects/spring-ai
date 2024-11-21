@@ -17,9 +17,11 @@
 package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.bedrock.BedrockUsage;
 import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
@@ -27,6 +29,8 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -42,6 +46,7 @@ import org.springframework.util.Assert;
  * uses the Titan Chat API.
  *
  * @author Christian Tzolov
+ * @author Jihoon Kim
  * @since 0.8.0
  */
 public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
@@ -63,13 +68,19 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		AtomicLong generationTokenCount = new AtomicLong(0L);
 		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
-		List<Generation> generations = response.results()
-			.stream()
-			.map(result -> new Generation(new AssistantMessage(result.outputText())))
-			.toList();
+		List<Generation> generations = response.results().stream().map(result -> {
+			generationTokenCount.addAndGet(result.tokenCount());
+			return new Generation(new AssistantMessage(result.outputText()));
+		}).toList();
 
-		return new ChatResponse(generations);
+		ChatResponseMetadata chatResponseMetadata = ChatResponseMetadata.builder()
+			.withModel(this.chatApi.getModelId())
+			.withUsage(new DefaultUsage(Long.parseLong(String.valueOf(response.inputTextTokenCount())),
+					generationTokenCount.get()))
+			.build();
+		return new ChatResponse(generations, chatResponseMetadata);
 	}
 
 	@Override
@@ -85,8 +96,15 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 				String completionReason = chunk.completionReason().name();
 				chatGenerationMetadata = ChatGenerationMetadata.from(completionReason, extractUsage(chunk));
 			}
+
+			ChatResponseMetadata chatResponseMetadata = ChatResponseMetadata.builder()
+				.withModel(this.chatApi.getModelId())
+				.withUsage(BedrockUsage.from(chunk.amazonBedrockInvocationMetrics()))
+				.build();
+
 			return new ChatResponse(
-					List.of(new Generation(new AssistantMessage(chunk.outputText()), chatGenerationMetadata)));
+					List.of(new Generation(new AssistantMessage(chunk.outputText()), chatGenerationMetadata)),
+					chatResponseMetadata);
 		});
 	}
 
