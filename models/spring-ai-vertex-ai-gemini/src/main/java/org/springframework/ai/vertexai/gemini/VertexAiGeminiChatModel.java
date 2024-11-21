@@ -92,6 +92,7 @@ import org.springframework.util.StringUtils;
  * @author Chris Turchin
  * @author Mark Pollack
  * @author Soby Chacko
+ * @author Jihoon Kim
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
@@ -304,7 +305,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 				List<Generation> generations = generateContentResponse.getCandidatesList()
 					.stream()
-					.map(this::responseCandiateToGeneration)
+					.map(this::responseCandidateToGeneration)
 					.flatMap(List::stream)
 					.toList();
 
@@ -352,7 +353,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 					List<Generation> generations = response.getCandidatesList()
 						.stream()
-						.map(this::responseCandiateToGeneration)
+						.map(this::responseCandidateToGeneration)
 						.flatMap(List::stream)
 						.toList();
 
@@ -380,21 +381,20 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		});
 	}
 
-	protected List<Generation> responseCandiateToGeneration(Candidate candidate) {
+	protected List<Generation> responseCandidateToGeneration(Candidate candidate) {
 
 		// TODO - The candidateIndex (e.g. choice must be asigned to the generation).
 		int candidateIndex = candidate.getIndex();
-		FinishReason candidateFinishReasonn = candidate.getFinishReason();
+		FinishReason candidateFinishReason = candidate.getFinishReason();
 
 		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
-				candidateFinishReasonn);
+				candidateFinishReason);
 
-		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.from(candidateFinishReasonn.name(),
-				null);
+		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.from(candidateFinishReason.name(), null);
 
-		boolean isFunctinCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
+		boolean isFunctionCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
 
-		if (isFunctinCall) {
+		if (isFunctionCall) {
 			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.getContent()
 				.getPartsList()
 				.stream()
