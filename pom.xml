@@ -266,7 +266,7 @@
 		<disable.checks>true</disable.checks>
 
 		<!-- Individual vector store IT skip flags with smoke tests enabled by default -->
-		<!-- <skip.vectorstore.azure-cosmos-db>true</skip.vectorstore.azure-cosmos-db>
+		<skip.vectorstore.azure-cosmos-db>true</skip.vectorstore.azure-cosmos-db>
 
 		<skip.vectorstore.azure>true</skip.vectorstore.azure>
 		<skip.vectorstore.cassandra>true</skip.vectorstore.cassandra>
@@ -285,14 +285,14 @@
 		<skip.vectorstore.qdrant>true</skip.vectorstore.qdrant>
 		<skip.vectorstore.redis>true</skip.vectorstore.redis>
 		<skip.vectorstore.typesense>true</skip.vectorstore.typesense>
-		<skip.vectorstore.weaviate>true</skip.vectorstore.weaviate> -->
+		<skip.vectorstore.weaviate>true</skip.vectorstore.weaviate>
 
 		<!-- Container module ITs - skipped by default -->
-		<!-- <skip.docker-compose>true</skip.docker-compose>
-		<skip.testcontainers>true</skip.testcontainers> -->
+		<skip.docker-compose>true</skip.docker-compose>
+		<skip.testcontainers>true</skip.testcontainers>
 
 		<!-- Ollama Model IT tests - skipped by default -->
-		<!-- <skip.model.ollama>true</skip.model.ollama> -->
+		<skip.model.ollama>true</skip.model.ollama>
 
 	</properties>
 
