@@ -55,11 +55,11 @@ import static org.hamcrest.Matchers.hasSize;
 @TestPropertySource(properties = { "spring.ai.vectorstore.opensearch.index-name=auto-spring-ai-document-index",
 		"spring.ai.vectorstore.opensearch.initialize-schema=true",
 		"spring.ai.vectorstore.opensearch.mapping-json="
-				+ AwsOpenSearchContainerConnectionDetailsFactoryTest.MAPPING_JSON,
+				+ AwsOpenSearchContainerConnectionDetailsFactoryIT.MAPPING_JSON,
 		"spring.ai.vectorstore.opensearch.aws.domain-name=testcontainers-domain",
 		"spring.ai.vectorstore.opensearch.aws.service-name=es" })
 @Testcontainers
-class AwsOpenSearchContainerConnectionDetailsFactoryTest {
+class AwsOpenSearchContainerConnectionDetailsFactoryIT {
 
 	static final String MAPPING_JSON = "{\"properties\":{\"embedding\":{\"type\":\"knn_vector\",\"dimension\":384}}}";
 

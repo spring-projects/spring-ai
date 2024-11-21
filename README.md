@@ -1,4 +1,5 @@
-# Spring AI [![build status](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml)
+# Spring AI [![build status](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml) [![build status](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml/badge.svg)](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml)
+
 
 The Spring AI project provides a Spring-friendly API and abstractions for developing AI applications.
 
@@ -8,9 +9,9 @@ Its goal is to apply to the AI domain Spring ecosystem design principles such as
 
 > At its core, Spring AI addresses the fundamental challenge of AI integration: Connecting your enterprise __Data__ and __APIs__ with the __AI Models__.
 
-For further information go to our [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/).
-
 The project draws inspiration from notable Python projects, such as [LangChain](https://docs.langchain.com/docs/) and [LlamaIndex](https://gpt-index.readthedocs.io/en/latest/getting_started/concepts.html), but Spring AI is not a direct port of those projects. The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
+
+You can check out the blog post [Why Spring AI](https://spring.io/blog/2024/11/19/why-spring-ai) for additional motivations.
 
 This is a high level feature overview.
 You can find more details in the [Reference Documentation](https://docs.spring.io/spring-ai/reference/)
@@ -68,17 +69,44 @@ To build with running unit tests
 ```
 
 To build including integration tests.
-Set API key environment variables for OpenAI and Azure OpenAI before running.
 
 ```shell
 ./mvnw clean verify -Pintegration-tests
 ```
 
+Note that you should set API key environment variables for OpenAI or other model providers before running.  If the API key isn't set for a specific model provider, the integration test is skipped.
+
 To run a specific integration test allowing for up to two attempts to succeed.  This is useful when a hosted service is not reliable or times out.
 ```shell
 ./mvnw -pl vector-stores/spring-ai-pgvector-store -Pintegration-tests -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
-
 ```
+
+### Integration Tests
+There are many integration tests ,so it often isn't realistic to run them all at once.
+
+A quick pass through the most important pathways that runs integration tests for
+
+* OpenAI models 
+* OpenAI autoconfiguration
+* PGVector
+* Chroma
+
+can be done with the profile `-Pci-fast-integration-tests` and is used in the main CI build of this project.
+
+A full integration test is done twice a day in the [Spring AI Integration Test Repository](https://github.com/spring-projects/spring-ai-integration-tests)
+
+One way to run integration tests on part of the code is to first do a quick compile and install of the project
+
+```shell
+./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
+```
+Then run the integration test for a specifi module using the `-pl` option
+```shell
+./mvnw verify -Pintegration-tests     -pl spring-ai-spring-boot-autoconfigure  
+```
+
+### Documentation
+
 To build the docs
 ```shell
 ./mvnw -pl spring-ai-docs antora

@@ -14,28 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.qdrant;
+package org.springframework.ai.docker.compose.service.connection.mongo;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class QdrantDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class MongoDbAtlasLocalDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	QdrantDockerComposeConnectionDetailsFactoryTests() {
-		super("qdrant-compose.yaml", DockerImageName.parse("qdrant/qdrant"));
+	protected MongoDbAtlasLocalDockerComposeConnectionDetailsFactoryIT() {
+		super("mongo-compose.yaml", DockerImageName.parse("mongodb/mongodb-atlas-local"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		QdrantConnectionDetails connectionDetails = run(QdrantConnectionDetails.class);
-		assertThat(connectionDetails.getHost()).isNotNull();
-		assertThat(connectionDetails.getPort()).isGreaterThan(0);
-		assertThat(connectionDetails.getApiKey()).isEqualTo("springai");
+		MongoConnectionDetails connectionDetails = run(MongoConnectionDetails.class);
+		assertThat(connectionDetails.getConnectionString()).isNotNull();
 	}
 
 }

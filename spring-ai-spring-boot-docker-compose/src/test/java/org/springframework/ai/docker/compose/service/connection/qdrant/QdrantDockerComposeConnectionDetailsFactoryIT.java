@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.ollama;
+package org.springframework.ai.docker.compose.service.connection.qdrant;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.ollama.OllamaConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantConnectionDetails;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class OllamaDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class QdrantDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	OllamaDockerComposeConnectionDetailsFactoryTests() {
-		super("ollama-compose.yaml", DockerImageName.parse("ollama/ollama"));
+	QdrantDockerComposeConnectionDetailsFactoryIT() {
+		super("qdrant-compose.yaml", DockerImageName.parse("qdrant/qdrant"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		OllamaConnectionDetails connectionDetails = run(OllamaConnectionDetails.class);
-		assertThat(connectionDetails.getBaseUrl()).startsWith("http://");
+		QdrantConnectionDetails connectionDetails = run(QdrantConnectionDetails.class);
+		assertThat(connectionDetails.getHost()).isNotNull();
+		assertThat(connectionDetails.getPort()).isGreaterThan(0);
+		assertThat(connectionDetails.getApiKey()).isEqualTo("springai");
 	}
 
 }

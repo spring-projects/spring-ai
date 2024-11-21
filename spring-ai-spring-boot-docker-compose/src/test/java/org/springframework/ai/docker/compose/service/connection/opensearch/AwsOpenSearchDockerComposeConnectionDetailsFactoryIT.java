@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.mongo;
+package org.springframework.ai.docker.compose.service.connection.opensearch;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.ai.autoconfigure.vectorstore.opensearch.AwsOpenSearchConnectionDetails;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class MongoDbAtlasLocalDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class AwsOpenSearchDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	protected MongoDbAtlasLocalDockerComposeConnectionDetailsFactoryTests() {
-		super("mongo-compose.yaml", DockerImageName.parse("mongodb/mongodb-atlas-local"));
+	AwsOpenSearchDockerComposeConnectionDetailsFactoryIT() {
+		super("localstack-compose.yaml", DockerImageName.parse("localstack/localstack:3.5.0"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		MongoConnectionDetails connectionDetails = run(MongoConnectionDetails.class);
-		assertThat(connectionDetails.getConnectionString()).isNotNull();
+		AwsOpenSearchConnectionDetails connectionDetails = run(AwsOpenSearchConnectionDetails.class);
+		assertThat(connectionDetails.getAccessKey()).isEqualTo("test");
+		assertThat(connectionDetails.getSecretKey()).isEqualTo("test");
+		assertThat(connectionDetails.getRegion()).isEqualTo("us-east-1");
 	}
 
 }

@@ -47,11 +47,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @TestPropertySource(properties = { "spring.ai.vectorstore.qdrant.collectionName=test_collection",
 		"spring.ai.vectorstore.qdrant.initialize-schema=true" })
-public class QdrantContainerWithApiKeyConnectionDetailsFactoryTest {
+public class QdrantContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	static QdrantContainer qdrantContainer = new QdrantContainer(QdrantImage.DEFAULT_IMAGE).withApiKey("test_api_key");
+	static QdrantContainer qdrantContainer = new QdrantContainer(QdrantImage.DEFAULT_IMAGE);
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

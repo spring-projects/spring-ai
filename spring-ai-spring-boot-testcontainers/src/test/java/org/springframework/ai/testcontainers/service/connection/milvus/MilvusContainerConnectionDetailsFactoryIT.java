@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.testcontainers.service.connection.chroma;
+package org.springframework.ai.testcontainers.service.connection.milvus;
 
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.milvus.MilvusContainer;
 
-import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoConfiguration;
+import org.springframework.ai.ResourceUtils;
+import org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -43,53 +43,48 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
 @Testcontainers
-@TestPropertySource(properties = { "spring.ai.vectorstore.chroma.collectionName=TestCollection",
-		"spring.ai.vectorstore.chroma.initialize-schema=true" })
-class ChromaContainerConnectionDetailsFactoryTest {
+@TestPropertySource(properties = { "spring.ai.vectorstore.milvus.metricType=COSINE",
+		"spring.ai.vectorstore.milvus.indexType=IVF_FLAT", "spring.ai.vectorstore.milvus.embeddingDimension=384",
+		"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
+		"spring.ai.vectorstore.milvus.initialize-schema=true" })
+class MilvusContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	static ChromaDBContainer chroma = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
+	static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+
+	List<Document> documents = List.of(
+			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
+			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
+					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	@Autowired
 	private VectorStore vectorStore;
 
 	@Test
-	public void addAndSearchWithFilters() {
-		var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-				Map.of("country", "Bulgaria"));
-		var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-				Map.of("country", "Netherlands"));
+	public void addAndSearch() {
+		this.vectorStore.add(this.documents);
 
-		this.vectorStore.add(List.of(bgDocument, nlDocument));
+		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
-		var request = SearchRequest.query("The World").withTopK(5);
-
-		List<Document> results = this.vectorStore.similaritySearch(request);
-		assertThat(results).hasSize(2);
-
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
 		assertThat(results).hasSize(1);
-		assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
-
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
-		assertThat(results).hasSize(1);
-		assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+		Document resultDoc = results.get(0);
+		assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
+		assertThat(resultDoc.getContent())
+			.contains("Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+		assertThat(resultDoc.getMetadata()).hasSize(2);
+		assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
 		// Remove all documents from the store
-		this.vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
+		this.vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+
+		results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+		assertThat(results).hasSize(0);
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ImportAutoConfiguration(ChromaVectorStoreAutoConfiguration.class)
+	@ImportAutoConfiguration(MilvusVectorStoreAutoConfiguration.class)
 	static class Config {
-
-		@Bean
-		public ObjectMapper objectMapper() {
-			return new ObjectMapper();
-		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

@@ -14,28 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.chroma;
+package org.springframework.ai.docker.compose.service.connection.ollama;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.ai.autoconfigure.ollama.OllamaConnectionDetails;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ChromaWithTokenDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class OllamaDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	ChromaWithTokenDockerComposeConnectionDetailsFactoryTests() {
-		super("chroma-with-token-compose.yaml", DockerImageName.parse("chromadb/chroma"));
+	OllamaDockerComposeConnectionDetailsFactoryIT() {
+		super("ollama-compose.yaml", DockerImageName.parse("ollama/ollama"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		ChromaConnectionDetails connectionDetails = run(ChromaConnectionDetails.class);
-		assertThat(connectionDetails.getHost()).isNotNull();
-		assertThat(connectionDetails.getPort()).isGreaterThan(0);
-		assertThat(connectionDetails.getKeyToken()).isEqualTo("secret");
+		OllamaConnectionDetails connectionDetails = run(OllamaConnectionDetails.class);
+		assertThat(connectionDetails.getBaseUrl()).startsWith("http://");
 	}
 
 }

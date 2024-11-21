@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.testcontainers.service.connection.qdrant;
+package org.springframework.ai.testcontainers.service.connection.chroma;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.qdrant.QdrantContainer;
 
-import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration;
+import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -37,7 +36,6 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
@@ -45,53 +43,53 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
 @Testcontainers
-@TestPropertySource(properties = { "spring.ai.vectorstore.qdrant.collectionName=test_collection",
-		"spring.ai.vectorstore.qdrant.initialize-schema=true" })
-public class QdrantContainerConnectionDetailsFactoryTest {
+@TestPropertySource(properties = { "spring.ai.vectorstore.chroma.collectionName=TestCollection",
+		"spring.ai.vectorstore.chroma.initialize-schema=true" })
+class ChromaContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	static QdrantContainer qdrantContainer = new QdrantContainer(QdrantImage.DEFAULT_IMAGE);
-
-	List<Document> documents = List.of(
-			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
-			new Document(getText("classpath:/test/data/time.shelter.txt")),
-			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
+	static ChromaDBContainer chroma = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
 
 	@Autowired
 	private VectorStore vectorStore;
 
-	public static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	@Test
-	public void addAndSearch() {
-		this.vectorStore.add(this.documents);
+	public void addAndSearchWithFilters() {
+		var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+				Map.of("country", "Bulgaria"));
+		var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+				Map.of("country", "Netherlands"));
 
-		List<Document> results = this.vectorStore
-			.similaritySearch(SearchRequest.query("What is Great Depression?").withTopK(1));
+		this.vectorStore.add(List.of(bgDocument, nlDocument));
 
+		var request = SearchRequest.query("The World").withTopK(5);
+
+		List<Document> results = this.vectorStore.similaritySearch(request);
+		assertThat(results).hasSize(2);
+
+		results = this.vectorStore
+			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
 		assertThat(results).hasSize(1);
-		Document resultDoc = results.get(0);
-		assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-		assertThat(resultDoc.getMetadata()).containsKeys("depression", "distance");
+		assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+		results = this.vectorStore
+			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 		// Remove all documents from the store
-		this.vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
-		results = this.vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
-		assertThat(results).hasSize(0);
+		this.vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ImportAutoConfiguration(QdrantVectorStoreAutoConfiguration.class)
+	@ImportAutoConfiguration(ChromaVectorStoreAutoConfiguration.class)
 	static class Config {
+
+		@Bean
+		public ObjectMapper objectMapper() {
+			return new ObjectMapper();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {

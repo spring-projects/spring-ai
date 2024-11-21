@@ -15,7 +15,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.ai</groupId>
@@ -238,14 +239,15 @@
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
 		<org.maven.antora-version>1.0.0-alpha.4</org.maven.antora-version>
-		<asciidoctorj-pdf.version>1.6.2</asciidoctorj-pdf.version>		<!-- FIXME build failure with version 2.3.9 -->
+		<asciidoctorj-pdf.version>1.6.2</asciidoctorj-pdf.version>		<!-- FIXME build failure with
+		version 2.3.9 -->
 		<asciidoctorj-epub.version>1.5.1</asciidoctorj-epub.version>
 		<spring-asciidoctor-backends.version>0.0.6</spring-asciidoctor-backends.version>
 
 		<!-- plugin versions -->
 		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-		<maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
+		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
 		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
 		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
@@ -265,35 +267,6 @@
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 		<disable.checks>true</disable.checks>
-
-		<!-- Individual vector store IT skip flags with smoke tests enabled by default -->
-		<skip.vectorstore.azure-cosmos-db>true</skip.vectorstore.azure-cosmos-db>
-
-		<skip.vectorstore.azure>true</skip.vectorstore.azure>
-		<skip.vectorstore.cassandra>true</skip.vectorstore.cassandra>
-		<skip.vectorstore.chroma>false</skip.vectorstore.chroma>
-		<skip.vectorstore.coherence>true</skip.vectorstore.coherence>
-		<skip.vectorstore.elasticsearch>true</skip.vectorstore.elasticsearch>
-		<skip.vectorstore.gemfire>true</skip.vectorstore.gemfire>
-		<skip.vectorstore.hanadb>true</skip.vectorstore.hanadb>
-		<skip.vectorstore.milvus>true</skip.vectorstore.milvus>
-		<skip.vectorstore.mongodb-atlas>true</skip.vectorstore.mongodb-atlas>
-		<skip.vectorstore.neo4j>true</skip.vectorstore.neo4j>
-		<skip.vectorstore.opensearch>true</skip.vectorstore.opensearch>
-		<skip.vectorstore.oracle>true</skip.vectorstore.oracle>
-		<skip.vectorstore.pgvector>false</skip.vectorstore.pgvector>
-		<skip.vectorstore.pinecone>true</skip.vectorstore.pinecone>
-		<skip.vectorstore.qdrant>true</skip.vectorstore.qdrant>
-		<skip.vectorstore.redis>true</skip.vectorstore.redis>
-		<skip.vectorstore.typesense>true</skip.vectorstore.typesense>
-		<skip.vectorstore.weaviate>true</skip.vectorstore.weaviate>
-
-		<!-- Container module ITs - skipped by default -->
-		<skip.docker-compose>true</skip.docker-compose>
-		<skip.testcontainers>true</skip.testcontainers>
-
-		<!-- Ollama Model IT tests - skipped by default -->
-		<skip.model.ollama>true</skip.model.ollama>
 
 	</properties>
 
@@ -443,7 +416,7 @@
 
 					<!-- Show test timing information -->
 					<reportFormat>plain</reportFormat>
-					
+
 					<!-- Output test execution times in the logs -->
 					<redirectTestOutputToFile>false</redirectTestOutputToFile>
 				</configuration>
@@ -539,27 +512,23 @@
 						<configuration>
 							<properties>
 								<owner>the original author or authors.</owner>
-								<email/>
+								<email />
 								<year>2024</year>
 							</properties>
 							<licenseSets>
 								<licenseSet>
 									<inlineHeader>
-										<!-- @formatter:off -->
-										Copyright 2023 - ${year} the original author or authors.
-
-										Licensed under the Apache License, Version 2.0 (the "License");
-										you may not use this file except in compliance with the License.
-										You may obtain a copy of the License at
-
-										https://www.apache.org/licenses/LICENSE-2.0
-
-										Unless required by applicable law or agreed to in writing, software
-										distributed under the License is distributed on an "AS IS" BASIS,
-										WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-										See the License for the specific language governing permissions and
-										limitations under the License.
-										<!-- @formatter:on -->
+										<!-- @formatter:off --> Copyright 2023 - ${year} the original author or
+										authors. Licensed under the Apache License, Version 2.0 (the
+										"License"); you may not use this file except in compliance
+										with the License. You may obtain a copy of the License at
+										https://www.apache.org/licenses/LICENSE-2.0 Unless required
+										by applicable law or agreed to in writing, software
+										distributed under the License is distributed on an "AS IS"
+										BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+										express or implied. See the License for the specific
+										language governing permissions and limitations under the
+										License. <!-- @formatter:on -->
 									</inlineHeader>
 									<excludes>
 										<exclude>**/.antlr/**</exclude>
@@ -606,8 +575,10 @@
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>${maven-javadoc-plugin.version}</version>
 						<configuration>
-							<excludePackageNames>org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
-							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+							<excludePackageNames>
+								org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
+							<overview>
+								${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 							<detectJavaApiLink>false</detectJavaApiLink>
 							<failOnError>false</failOnError>
 							<doclint>none</doclint>
@@ -655,30 +626,136 @@
 				</plugins>
 			</build>
 		</profile>
-		<!-- Profile to enable all vector store tests -->
+
 		<profile>
-			<id>full-vectorstore-tests</id>
-			<properties>
-				<skip.vectorstore.azure-cosmos-db>false</skip.vectorstore.azure-cosmos-db>
-				<skip.vectorstore.azure>false</skip.vectorstore.azure>
-				<skip.vectorstore.cassandra>false</skip.vectorstore.cassandra>
-				<skip.vectorstore.chroma>false</skip.vectorstore.chroma>
-				<skip.vectorstore.coherence>false</skip.vectorstore.coherence>
-				<skip.vectorstore.elasticsearch>false</skip.vectorstore.elasticsearch>
-				<skip.vectorstore.gemfire>false</skip.vectorstore.gemfire>
-				<skip.vectorstore.hanadb>false</skip.vectorstore.hanadb>
-				<skip.vectorstore.milvus>false</skip.vectorstore.milvus>
-				<skip.vectorstore.mongodb-atlas>false</skip.vectorstore.mongodb-atlas>
-				<skip.vectorstore.neo4j>false</skip.vectorstore.neo4j>
-				<skip.vectorstore.opensearch>false</skip.vectorstore.opensearch>
-				<skip.vectorstore.oracle>false</skip.vectorstore.oracle>
-				<skip.vectorstore.pgvector>false</skip.vectorstore.pgvector>
-				<skip.vectorstore.pinecone>false</skip.vectorstore.pinecone>
-				<skip.vectorstore.qdrant>false</skip.vectorstore.qdrant>
-				<skip.vectorstore.redis>false</skip.vectorstore.redis>
-				<skip.vectorstore.typesense>false</skip.vectorstore.typesense>
-				<skip.vectorstore.weaviate>false</skip.vectorstore.weaviate>
-			</properties>
+			<id>ci-fast-integration-tests</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-failsafe-plugin</artifactId>
+						<version>${maven-failsafe-plugin.version}</version>
+						<configuration>
+							<!-- <includes>
+								<include>org.springframework.ai.anthropic**/*IT.java</include>
+							</includes> -->
+
+							<excludes>
+								<!-- Models -->
+								 <exclude>org.springframework.ai.anthropic/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.azure.openai/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.bedrock/**/*IT.java</exclude>
+								 <exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.huggingface/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.minimax/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.moonshot/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>
+								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
+								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.qianfan/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.stabilityai/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.watsonx/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.zhipuai/**/*IT.java</exclude>
+
+								<!-- Vector Stores -->
+								<exclude>org.springframework.ai.vectorstore**/CosmosDB**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore.azure/**IT.java</exclude>
+								<exclude>org.springframework.ai.chat.memory/**/Cassandra**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Cassandra**IT.java</exclude>
+								<exclude>org.springframework.ai.chroma/**IT.java</exclude>
+								<!-- <exclude>org.springframework.ai.vectorstore/**/**Chroma**IT.java</exclude> -->
+								<exclude>org.springframework.ai.vectorstore**/Coherence**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Elasticsearch**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/GemFire**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Milvus**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Mongo**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Mongo**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Neo4j**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/OpenSearch**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Oracle**IT.java</exclude>
+								<!-- <exclude>org.springframework.ai.vectorstore**/PgVector**IT.java</exclude> -->
+								<exclude>org.springframework.ai.vectorstore**/Pinecone**IT.java</exclude>								
+								<exclude>org.springframework.ai.vectorstore.qdrant/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Qdrant**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Redis**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Typesense**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/Weaviate**IT.java</exclude>
+
+								<!-- Auto-configurations-->
+								 
+								 <!-- <exclude>org.springframework.ai.autoconfigure/**/**IT.java</exclude> -->
+
+								 <exclude>org.springframework.ai.autoconfigure.anthropic/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.azure/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.bedrock/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
+								 
+								 <exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
+
+
+								 <exclude>org.springframework.ai.autoconfigure.minimax/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.moonshot/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.oci/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
+								 <!-- <exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
+								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.qianfan/**/**IT.java</exclude>
+								 
+								 <exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
+								 
+								 <exclude>org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
+								 
+								 <exclude>org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>								 
+								 
+								 <exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.watsonxai/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
+								 
+								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
+								 
+								 <!-- Test Containers -->								 
+								 <exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>
+
+								 <!-- Test Docker Compose -->								 
+								 <exclude>package org.springframework.ai.docker.compose/**/**IT.java</exclude>
+
+								 <!-- AI Evaluation -->
+								 <exclude>org.springframework.ai.integration.tests/**/**IT.java</exclude>
+							</excludes>
+
+							<!-- <includes>
+								<include>**/*IT.java</include>
+							</includes>
+
+							<dependenciesToScan>
+								<dependency>org.springframework.ai:spring-ai-anthropic</dependency>
+							</dependenciesToScan> -->
+						</configuration>
+						<executions>
+							<execution>
+								<goals>
+									<goal>integration-test</goal>
+									<goal>verify</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>test-coverage</id>

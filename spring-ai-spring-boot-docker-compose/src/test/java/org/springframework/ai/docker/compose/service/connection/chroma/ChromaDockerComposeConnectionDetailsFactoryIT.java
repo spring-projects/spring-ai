@@ -14,28 +14,27 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.opensearch;
+package org.springframework.ai.docker.compose.service.connection.chroma;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchConnectionDetails;
-import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
+import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaConnectionDetails;
+import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class OpenSearchDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class ChromaDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	OpenSearchDockerComposeConnectionDetailsFactoryTests() {
-		super("opensearch-compose.yaml", DockerImageName.parse("opensearchproject/opensearch"));
+	ChromaDockerComposeConnectionDetailsFactoryIT() {
+		super("chroma-compose.yaml", DockerImageName.parse("chromadb/chroma"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		OpenSearchConnectionDetails connectionDetails = run(OpenSearchConnectionDetails.class);
-		assertThat(connectionDetails.getUris()).isNotNull();
-		assertThat(connectionDetails.getUsername()).isEqualTo("admin");
-		assertThat(connectionDetails.getPassword()).isEqualTo("D3v3l0p-ment");
+		ChromaConnectionDetails connectionDetails = run(ChromaConnectionDetails.class);
+		assertThat(connectionDetails.getHost()).isNotNull();
+		assertThat(connectionDetails.getPort()).isGreaterThan(0);
 	}
 
 }
