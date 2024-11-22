@@ -70,7 +70,7 @@
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>mockwebserver</artifactId>
-			<version>4.12.0</version>
+			<version>${okhttp3.version}</version>
 		</dependency>
 	</dependencies>
 </project>

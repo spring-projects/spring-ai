@@ -234,6 +234,7 @@
 
 		<!-- testing dependencies -->
 		<testcontainers.opensearch.version>2.0.1</testcontainers.opensearch.version>
+		<okhttp3.version>4.12.0</okhttp3.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
