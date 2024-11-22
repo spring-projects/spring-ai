@@ -58,7 +58,7 @@ Use `java.util.Supplier<O>` or `java.util.function.Function<Void, O>` to define 
 [source,java]
 ----
 FunctionCallback.builder()
-    .description("Turns light onn in the living room")
+    .description("Turns light on in the living room")
 	.function("turnsLight", () -> state.put("Light", "ON"))
     .inputType(Void.class)
 	.build();
