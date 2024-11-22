@@ -44,6 +44,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Oganes Bozoyan
  * @since 1.0.0
  */
 public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
@@ -76,6 +77,11 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize) {
 		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE);
+	}
+
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+			int chatHistoryWindowSize, int order) {
+		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE, order);
 	}
 
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
