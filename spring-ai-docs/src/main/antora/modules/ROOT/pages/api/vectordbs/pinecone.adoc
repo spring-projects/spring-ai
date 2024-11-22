@@ -74,7 +74,7 @@ spring.ai.vectorstore.pinecone.projectId=<your project id>
 spring.ai.vectorstore.pinecone.index-name=<your index name>
 
 # API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
+spring.ai.openai.api-key=<OpenAI Api-key>
 ----
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
