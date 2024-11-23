@@ -30,7 +30,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -55,20 +55,20 @@ public abstract class AbstractToolCallSupport {
 	protected final Map<String, FunctionCallback> functionCallbackRegister = new ConcurrentHashMap<>();
 
 	/**
-	 * The function callback context is used to resolve the function callbacks by name
+	 * The function callback resolver is used to resolve the function callbacks by name
 	 * from the Spring context. It is optional and usually used with Spring
 	 * auto-configuration.
 	 */
-	protected final FunctionCallbackContext functionCallbackContext;
+	protected final FunctionCallbackResolver functionCallbackResolver;
 
-	protected AbstractToolCallSupport(FunctionCallbackContext functionCallbackContext) {
-		this(functionCallbackContext, FunctionCallingOptions.builder().build(), List.of());
+	protected AbstractToolCallSupport(FunctionCallbackResolver functionCallbackResolver) {
+		this(functionCallbackResolver, FunctionCallingOptions.builder().build(), List.of());
 	}
 
-	protected AbstractToolCallSupport(FunctionCallbackContext functionCallbackContext,
+	protected AbstractToolCallSupport(FunctionCallbackResolver functionCallbackResolver,
 			FunctionCallingOptions functionCallingOptions, List<FunctionCallback> toolFunctionCallbacks) {
 
-		this.functionCallbackContext = functionCallbackContext;
+		this.functionCallbackResolver = functionCallbackResolver;
 
 		List<FunctionCallback> defaultFunctionCallbacks = merge(functionCallingOptions, toolFunctionCallbacks);
 
@@ -183,15 +183,14 @@ public abstract class AbstractToolCallSupport {
 		for (String functionName : functionNames) {
 			if (!this.functionCallbackRegister.containsKey(functionName)) {
 
-				if (this.functionCallbackContext != null) {
-					FunctionCallback functionCallback = this.functionCallbackContext.getFunctionCallback(functionName,
-							null);
+				if (this.functionCallbackResolver != null) {
+					FunctionCallback functionCallback = this.functionCallbackResolver.resolve(functionName);
 					if (functionCallback != null) {
 						this.functionCallbackRegister.put(functionName, functionCallback);
 					}
 					else {
 						throw new IllegalStateException(
-								"No function callback [" + functionName + "] fund in tht FunctionCallbackContext");
+								"No function callback [" + functionName + "] found in tht FunctionCallbackRegister");
 					}
 				}
 				else {

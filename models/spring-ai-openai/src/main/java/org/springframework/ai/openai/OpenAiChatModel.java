@@ -57,7 +57,7 @@ import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -155,12 +155,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
 	 * Chat API.
 	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @param functionCallbackContext The function callback context.
+	 * @param functionCallbackResolver The function callback resolver.
 	 * @param retryTemplate The retry template.
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		this(openAiApi, options, functionCallbackContext, List.of(), retryTemplate);
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+		this(openAiApi, options, functionCallbackResolver, List.of(), retryTemplate);
 	}
 
 	/**
@@ -168,14 +168,14 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
 	 * Chat API.
 	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @param functionCallbackContext The function callback context.
+	 * @param functionCallbackResolver The function callback resolver.
 	 * @param toolFunctionCallbacks The tool function callbacks.
 	 * @param retryTemplate The retry template.
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate) {
-		this(openAiApi, options, functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+		this(openAiApi, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
 				ObservationRegistry.NOOP);
 	}
 
@@ -184,16 +184,16 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
 	 * Chat API.
 	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @param functionCallbackContext The function callback context.
+	 * @param functionCallbackResolver The function callback resolver.
 	 * @param toolFunctionCallbacks The tool function callbacks.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 
-		super(functionCallbackContext, options, toolFunctionCallbacks);
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
 
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");

@@ -88,7 +88,7 @@ import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
@@ -146,10 +146,10 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
 			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, FunctionCallingOptions defaultOptions,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			ObservationRegistry observationRegistry) {
 
-		super(functionCallbackContext, defaultOptions, toolFunctionCallbacks);
+		super(functionCallbackResolver, defaultOptions, toolFunctionCallbacks);
 
 		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
 		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
@@ -608,7 +608,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 		private FunctionCallingOptions defaultOptions = new FunctionCallingOptionsBuilder().build();
 
-		private FunctionCallbackContext functionCallbackContext;
+		private FunctionCallbackResolver functionCallbackResolver;
 
 		private List<FunctionCallback> toolFunctionCallbacks;
 
@@ -647,8 +647,18 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			return this;
 		}
 
-		public Builder withFunctionCallbackContext(FunctionCallbackContext functionCallbackContext) {
-			this.functionCallbackContext = functionCallbackContext;
+		/**
+		 * @deprecated Use {@link #functionCallbackResolver(FunctionCallbackResolver)}
+		 * instead.
+		 */
+		@Deprecated
+		public Builder withFunctionCallbackContext(FunctionCallbackResolver functionCallbackResolver) {
+			this.functionCallbackResolver = functionCallbackResolver;
+			return this;
+		}
+
+		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
+			this.functionCallbackResolver = functionCallbackResolver;
 			return this;
 		}
 
@@ -707,7 +717,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			}
 
 			var bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-					this.bedrockRuntimeAsyncClient, this.defaultOptions, this.functionCallbackContext,
+					this.bedrockRuntimeAsyncClient, this.defaultOptions, this.functionCallbackResolver,
 					this.toolFunctionCallbacks, this.observationRegistry);
 
 			if (this.customObservationConvention != null) {

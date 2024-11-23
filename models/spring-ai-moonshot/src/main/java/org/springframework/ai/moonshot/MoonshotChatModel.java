@@ -51,7 +51,7 @@ import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletion;
@@ -128,12 +128,13 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	 * @param moonshotApi The Moonshot instance to be used for interacting with the
 	 * Moonshot Chat API.
 	 * @param options The MoonshotChatOptions to configure the chat client.
-	 * @param functionCallbackContext The function callback context.
+	 * @param functionCallbackResolver The function callback resolver to resolve the
+	 * function by its name.
 	 * @param retryTemplate The retry template.
 	 */
 	public MoonshotChatModel(MoonshotApi moonshotApi, MoonshotChatOptions options,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		this(moonshotApi, options, functionCallbackContext, List.of(), retryTemplate, ObservationRegistry.NOOP);
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+		this(moonshotApi, options, functionCallbackResolver, List.of(), retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	/**
@@ -141,15 +142,15 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	 * @param moonshotApi The Moonshot instance to be used for interacting with the
 	 * Moonshot Chat API.
 	 * @param options The MoonshotChatOptions to configure the chat client.
-	 * @param functionCallbackContext The function callback context.
+	 * @param functionCallbackResolver resolves the function by its name.
 	 * @param toolFunctionCallbacks The tool function callbacks.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
 	 */
 	public MoonshotChatModel(MoonshotApi moonshotApi, MoonshotChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-		super(functionCallbackContext, options, toolFunctionCallbacks);
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
 		Assert.notNull(moonshotApi, "MoonshotApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");

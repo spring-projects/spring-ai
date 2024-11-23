@@ -35,8 +35,9 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -207,23 +208,23 @@ public class VertexAiGeminiPaymentTransactionIT {
 		@Bean
 		public VertexAiGeminiChatModel vertexAiChatModel(VertexAI vertexAi, ApplicationContext context) {
 
-			FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
+			FunctionCallbackResolver functionCallbackResolver = springAiFunctionManager(context);
 
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
 							.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 							.withTemperature(0.1)
 							.build(),
-					functionCallbackContext);
+					functionCallbackResolver);
 		}
 
 		/**
-		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance
+		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance
 		 * must
 		 * different from the other JSON schema types.
 		 */
-		private FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-			FunctionCallbackContext manager = new FunctionCallbackContext();
+		private FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+			DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 			manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
 			manager.setApplicationContext(context);
 			return manager;

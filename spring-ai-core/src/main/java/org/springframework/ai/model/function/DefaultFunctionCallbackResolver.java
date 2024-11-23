@@ -27,6 +27,7 @@ import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -56,7 +57,7 @@ import org.springframework.util.StringUtils;
  * @author Christopher Smith
  * @author Sebastien Deleuze
  */
-public class FunctionCallbackContext implements ApplicationContextAware {
+public class DefaultFunctionCallbackResolver implements ApplicationContextAware, FunctionCallbackResolver {
 
 	private GenericApplicationContext applicationContext;
 
@@ -71,21 +72,20 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 		this.applicationContext = (GenericApplicationContext) applicationContext;
 	}
 
-	@SuppressWarnings({ "unchecked" })
-	public FunctionCallback getFunctionCallback(@NonNull String beanName, @Nullable String defaultDescription) {
+	@Override
+	public FunctionCallback resolve(@NonNull String beanName) {
 		ResolvableType functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
 		ResolvableType functionInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(functionType))
 				? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(functionType, 0);
 
-		String functionDescription = resolveFunctionDescription(beanName, defaultDescription,
-				functionInputType.toClass());
+		String functionDescription = resolveFunctionDescription(beanName, functionInputType.toClass());
 		Object bean = this.applicationContext.getBean(beanName);
 
 		return buildFunctionCallback(beanName, functionType, functionInputType, functionDescription, bean);
 	}
 
-	private String resolveFunctionDescription(String beanName, String defaultDescription, Class<?> functionInputClass) {
-		String functionDescription = defaultDescription;
+	private String resolveFunctionDescription(String beanName, Class<?> functionInputClass) {
+		String functionDescription = "";
 
 		if (!StringUtils.hasText(functionDescription)) {
 			Description descriptionAnnotation = this.applicationContext.findAnnotationOnBean(beanName,
@@ -176,12 +176,6 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 		}
 
 		throw new IllegalStateException("Unsupported function type");
-	}
-
-	public enum SchemaType {
-
-		JSON_SCHEMA, OPEN_API_SCHEMA
-
 	}
 
 	private static final class KotlinDelegate {

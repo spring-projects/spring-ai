@@ -62,7 +62,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -156,13 +156,13 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * @param anthropicApi the lower-level API for the Anthropic service.
 	 * @param defaultOptions the default options used for the chat completion requests.
 	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackContext the function callback context used to store the
-	 * state of the function calls.
+	 * @param functionCallbackResolver the function callback resolver used to resolve the
+	 * function by its name.
 	 */
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext) {
+			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver) {
 
-		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackContext, List.of());
+		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackResolver, List.of());
 	}
 
 	/**
@@ -170,15 +170,15 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * @param anthropicApi the lower-level API for the Anthropic service.
 	 * @param defaultOptions the default options used for the chat completion requests.
 	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackContext the function callback context used to store the
-	 * state of the function calls.
+	 * @param functionCallbackResolver the function callback resolver used to resolve the
+	 * function by its name.
 	 * @param toolFunctionCallbacks the tool function callbacks used to handle the tool
 	 * calls.
 	 */
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver,
 			List<FunctionCallback> toolFunctionCallbacks) {
-		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackContext, toolFunctionCallbacks,
+		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackResolver, toolFunctionCallbacks,
 				ObservationRegistry.NOOP);
 	}
 
@@ -187,16 +187,16 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * @param anthropicApi the lower-level API for the Anthropic service.
 	 * @param defaultOptions the default options used for the chat completion requests.
 	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackContext the function callback context used to store the
-	 * state of the function calls.
+	 * @param functionCallbackResolver the function callback resolver used to resolve the
+	 * function by its name.
 	 * @param toolFunctionCallbacks the tool function callbacks used to handle the tool
 	 * calls.
 	 */
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver,
 			List<FunctionCallback> toolFunctionCallbacks, ObservationRegistry observationRegistry) {
 
-		super(functionCallbackContext, defaultOptions, toolFunctionCallbacks);
+		super(functionCallbackResolver, defaultOptions, toolFunctionCallbacks);
 
 		Assert.notNull(anthropicApi, "AnthropicApi must not be null");
 		Assert.notNull(defaultOptions, "DefaultOptions must not be null");

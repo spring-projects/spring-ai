@@ -28,8 +28,9 @@ import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfigur
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -62,7 +63,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public BedrockProxyChatModel bedrockProxyChatModel(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties connectionProperties,
-			BedrockConverseProxyChatProperties chatProperties, FunctionCallbackContext functionCallbackContext,
+			BedrockConverseProxyChatProperties chatProperties, FunctionCallbackResolver functionCallbackResolver,
 			List<FunctionCallback> toolFunctionCallbacks, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<BedrockRuntimeClient> bedrockRuntimeClient,
@@ -74,7 +75,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			.withTimeout(connectionProperties.getTimeout())
 			.withDefaultOptions(chatProperties.getOptions())
 			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withFunctionCallbackContext(functionCallbackContext)
+			.functionCallbackResolver(functionCallbackResolver)
 			.withToolFunctionCallbacks(toolFunctionCallbacks)
 			.withBedrockRuntimeClient(bedrockRuntimeClient.getIfAvailable())
 			.withBedrockRuntimeAsyncClient(bedrockRuntimeAsyncClient.getIfAvailable())
@@ -87,8 +88,8 @@ public class BedrockConverseProxyChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}
