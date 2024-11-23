@@ -156,7 +156,9 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.from(ollamaResponse.doneReason(), null);
+					generationMetadata = ChatGenerationMetadata.builder()
+						.finishReason(ollamaResponse.doneReason())
+						.build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);
@@ -217,7 +219,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.from(chunk.doneReason(), null);
+					generationMetadata = ChatGenerationMetadata.builder().finishReason(chunk.doneReason()).build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);

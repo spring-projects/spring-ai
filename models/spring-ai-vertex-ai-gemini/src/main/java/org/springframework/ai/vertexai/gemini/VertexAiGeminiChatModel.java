@@ -390,7 +390,9 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
 				candidateFinishReason);
 
-		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.from(candidateFinishReason.name(), null);
+		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
+			.finishReason(candidateFinishReason.name())
+			.build();
 
 		boolean isFunctionCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
 

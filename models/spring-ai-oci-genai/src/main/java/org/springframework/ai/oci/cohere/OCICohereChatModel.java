@@ -181,7 +181,9 @@ public class OCICohereChatModel implements ChatModel {
 		BaseChatResponse cr = ociChatResponse.getChatResult().getChatResponse();
 		if (cr instanceof CohereChatResponse resp) {
 			List<Generation> generations = new ArrayList<>();
-			ChatGenerationMetadata metadata = ChatGenerationMetadata.from(resp.getFinishReason().getValue(), null);
+			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
+				.finishReason(resp.getFinishReason().getValue())
+				.build();
 			AssistantMessage message = new AssistantMessage(resp.getText(), Map.of());
 			generations.add(new Generation(message, metadata));
 			return generations;

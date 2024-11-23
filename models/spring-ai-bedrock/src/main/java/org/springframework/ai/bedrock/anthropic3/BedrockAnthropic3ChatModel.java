@@ -88,7 +88,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		List<Generation> generations = response.content()
 			.stream()
 			.map(content -> new Generation(new AssistantMessage(content.text()),
-					ChatGenerationMetadata.from(response.stopReason(), null)))
+					ChatGenerationMetadata.builder().finishReason(response.stopReason()).build()))
 			.toList();
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
@@ -116,9 +116,12 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 			String content = response.type() == StreamingType.CONTENT_BLOCK_DELTA ? response.delta().text() : "";
 			ChatGenerationMetadata chatGenerationMetadata = null;
 			if (response.type() == StreamingType.MESSAGE_DELTA) {
-				chatGenerationMetadata = ChatGenerationMetadata.from(response.delta().stopReason(),
-						new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
-								response.usage().outputTokens()));
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(response.delta().stopReason())
+					.metadata("usage",
+							new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
+									response.usage().outputTokens()))
+					.build();
 			}
 			return new ChatResponse(List.of(new Generation(new AssistantMessage(content), chatGenerationMetadata)));
 		});

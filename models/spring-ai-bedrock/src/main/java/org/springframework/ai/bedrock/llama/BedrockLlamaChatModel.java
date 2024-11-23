@@ -70,7 +70,10 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 		LlamaChatResponse response = this.chatApi.chatCompletion(request);
 
 		return new ChatResponse(List.of(new Generation(new AssistantMessage(response.generation()),
-				ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
+				ChatGenerationMetadata.builder()
+					.finishReason(response.stopReason().name())
+					.metadata("usage", extractUsage(response))
+					.build())));
 	}
 
 	@Override
@@ -83,7 +86,10 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
 			return new ChatResponse(List.of(new Generation(new AssistantMessage(response.generation()),
-					ChatGenerationMetadata.from(stopReason, extractUsage(response)))));
+					ChatGenerationMetadata.builder()
+						.finishReason(stopReason)
+						.metadata("usage", extractUsage(response))
+						.build())));
 		});
 	}
 
