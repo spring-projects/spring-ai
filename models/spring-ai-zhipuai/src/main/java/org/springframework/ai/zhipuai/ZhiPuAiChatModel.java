@@ -188,7 +188,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
 	}
 

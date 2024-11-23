@@ -459,7 +459,10 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	}
 
 	private ChatGenerationMetadata generateChoiceMetadata(ChatChoice choice) {
-		return ChatGenerationMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
+		return ChatGenerationMetadata.builder()
+			.finishReason(String.valueOf(choice.getFinishReason()))
+			.metadata("contentFilterResults", choice.getContentFilterResults())
+			.build();
 	}
 
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {

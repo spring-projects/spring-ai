@@ -111,7 +111,7 @@ class DefaultChatModelObservationConventionTests {
 			.build();
 		observationContext.setResponse(new ChatResponse(
 				List.of(new Generation(new AssistantMessage("response"),
-						ChatGenerationMetadata.from("this-is-the-end", null))),
+						ChatGenerationMetadata.builder().finishReason("this-is-the-end").build())),
 				ChatResponseMetadata.builder()
 					.withId("say33")
 					.withModel("mistral-42")
@@ -168,7 +168,8 @@ class DefaultChatModelObservationConventionTests {
 			.requestOptions(ChatOptionsBuilder.builder().withStopSequences(List.of()).build())
 			.build();
 		observationContext.setResponse(new ChatResponse(
-				List.of(new Generation(new AssistantMessage("response"), ChatGenerationMetadata.from("", null))),
+				List.of(new Generation(new AssistantMessage("response"),
+						ChatGenerationMetadata.builder().finishReason("").build())),
 				ChatResponseMetadata.builder().withId("").build()));
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
 			.stream()

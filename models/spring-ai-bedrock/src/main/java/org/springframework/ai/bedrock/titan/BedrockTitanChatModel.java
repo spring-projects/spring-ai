@@ -78,12 +78,17 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 			ChatGenerationMetadata chatGenerationMetadata = null;
 			if (chunk.amazonBedrockInvocationMetrics() != null) {
 				String completionReason = chunk.completionReason().name();
-				chatGenerationMetadata = ChatGenerationMetadata.from(completionReason,
-						chunk.amazonBedrockInvocationMetrics());
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(completionReason)
+					.metadata("usage", chunk.amazonBedrockInvocationMetrics())
+					.build();
 			}
 			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
 				String completionReason = chunk.completionReason().name();
-				chatGenerationMetadata = ChatGenerationMetadata.from(completionReason, extractUsage(chunk));
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(completionReason)
+					.metadata("usage", extractUsage(chunk))
+					.build();
 			}
 			return new ChatResponse(
 					List.of(new Generation(new AssistantMessage(chunk.outputText()), chatGenerationMetadata)));

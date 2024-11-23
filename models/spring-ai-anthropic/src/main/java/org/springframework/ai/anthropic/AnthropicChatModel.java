@@ -293,14 +293,14 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
 			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
-					ChatGenerationMetadata.from(chatCompletion.stopReason(), null)))
+					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
 			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
-					ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
+					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			allGenerations.add(generation);
 		}
 
@@ -324,7 +324,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 			Generation toolCallGeneration = new Generation(assistantMessage,
-					ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
+					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			allGenerations.add(toolCallGeneration);
 		}
 
