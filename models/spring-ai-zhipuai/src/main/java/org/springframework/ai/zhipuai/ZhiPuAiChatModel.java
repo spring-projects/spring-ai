@@ -54,7 +54,7 @@ import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
@@ -143,12 +143,12 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @param zhiPuAiApi The ZhiPuAiApi instance to be used for interacting with the
 	 * ZhiPuAI Chat API.
 	 * @param options The ZhiPuAiChatOptions to configure the chat model.
-	 * @param functionCallbackContext The function callback context.
+	 * @param functionCallbackResolver The function callback resolver.
 	 * @param retryTemplate The retry template.
 	 */
 	public ZhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi, ZhiPuAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		this(zhiPuAiApi, options, functionCallbackContext, List.of(), retryTemplate, ObservationRegistry.NOOP);
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+		this(zhiPuAiApi, options, functionCallbackResolver, List.of(), retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	/**
@@ -156,15 +156,15 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @param zhiPuAiApi The ZhiPuAiApi instance to be used for interacting with the
 	 * ZhiPuAI Chat API.
 	 * @param options The ZhiPuAiChatOptions to configure the chat model.
-	 * @param functionCallbackContext The function callback context.
+	 * @param functionCallbackResolver The function callback resolver.
 	 * @param toolFunctionCallbacks The tool function callbacks.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
 	 */
 	public ZhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi, ZhiPuAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-		super(functionCallbackContext, options, toolFunctionCallbacks);
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
 		Assert.notNull(zhiPuAiApi, "ZhiPuAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");

@@ -48,9 +48,9 @@ public class FunctionCallingHelper extends AbstractToolCallSupport {
 		this(null, PortableFunctionCallingOptions.builder().build(), List.of());
 	}
 
-	public FunctionCallingHelper(FunctionCallbackContext functionCallbackContext,
+	public FunctionCallingHelper(FunctionCallbackResolver functionCallbackResolver,
 			FunctionCallingOptions functionCallingOptions, List<FunctionCallback> toolFunctionCallbacks) {
-		super(functionCallbackContext, functionCallingOptions, toolFunctionCallbacks);
+		super(functionCallbackResolver, functionCallingOptions, toolFunctionCallbacks);
 	}
 
 	@Override

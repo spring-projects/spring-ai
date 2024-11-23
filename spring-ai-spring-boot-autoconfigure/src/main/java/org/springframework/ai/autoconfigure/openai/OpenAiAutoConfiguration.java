@@ -27,8 +27,9 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -113,7 +114,7 @@ public class OpenAiAutoConfiguration {
 	public OpenAiChatModel openAiChatModel(OpenAiConnectionProperties commonProperties,
 			OpenAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
@@ -121,7 +122,7 @@ public class OpenAiAutoConfiguration {
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "chat");
 
-		var chatModel = new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackContext,
+		var chatModel = new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackResolver,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
@@ -256,8 +257,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}

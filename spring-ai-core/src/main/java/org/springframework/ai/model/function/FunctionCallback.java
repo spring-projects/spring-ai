@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.core.ParameterizedTypeReference;
 
 /**
@@ -89,6 +88,23 @@ public interface FunctionCallback {
 	 */
 	static FunctionCallback.Builder builder() {
 		return new DefaultFunctionCallbackBuilder();
+	}
+
+	/**
+	 * Describes the type of the schema used to describe the input parameters of the
+	 * function.
+	 */
+	public enum SchemaType {
+
+		/**
+		 * JSON schema
+		 */
+		JSON_SCHEMA,
+		/**
+		 * Open API schema
+		 */
+		OPEN_API_SCHEMA
+
 	}
 
 	/**

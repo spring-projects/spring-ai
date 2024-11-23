@@ -25,7 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 
 /**
  * @author Jihoon Kim
@@ -37,7 +37,7 @@ public class AzureOpenAiChatModelTests {
 	OpenAIClientBuilder mockClient;
 
 	@Mock
-	FunctionCallbackContext functionCallbackContext;
+	FunctionCallbackResolver functionCallbackResolver;
 
 	@Test
 	public void createAzureOpenAiChatModelTest() {
@@ -51,7 +51,7 @@ public class AzureOpenAiChatModelTests {
 		List<FunctionCallback> functionCallbacks = List.of(new TestFunctionCallback(callbackFromConstructorParam));
 
 		AzureOpenAiChatModel openAiChatModel = new AzureOpenAiChatModel(this.mockClient, chatOptions,
-				this.functionCallbackContext, functionCallbacks);
+				this.functionCallbackResolver, functionCallbacks);
 
 		assert 2 == openAiChatModel.getFunctionCallbackRegister().size();
 

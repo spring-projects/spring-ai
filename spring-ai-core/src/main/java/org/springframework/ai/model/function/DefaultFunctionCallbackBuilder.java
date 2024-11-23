@@ -36,7 +36,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback.Builder;
 import org.springframework.ai.model.function.FunctionCallback.FunctionInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.MethodInvokingSpec;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.core.ParameterizedTypeReference;

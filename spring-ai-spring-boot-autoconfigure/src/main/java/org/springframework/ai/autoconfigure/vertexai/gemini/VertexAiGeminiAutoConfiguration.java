@@ -26,8 +26,9 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -94,21 +95,21 @@ public class VertexAiGeminiAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
+		FunctionCallbackResolver functionCallbackResolver = springAiFunctionManager(context);
 
 		VertexAiGeminiChatModel chatModel = new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(),
-				functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+				functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 		return chatModel;
 	}
 
 	/**
-	 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance must
+	 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
 	 * different from the other JSON schema types.
 	 */
-	private FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	private FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
 		manager.setApplicationContext(context);
 		return manager;

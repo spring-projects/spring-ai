@@ -27,7 +27,8 @@ import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -60,7 +61,7 @@ public class MiniMaxAutoConfiguration {
 			matchIfMissing = true)
 	public MiniMaxChatModel miniMaxChatModel(MiniMaxConnectionProperties commonProperties,
 			MiniMaxChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackResolver functionCallbackResolver,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
@@ -69,7 +70,7 @@ public class MiniMaxAutoConfiguration {
 				chatProperties.getApiKey(), commonProperties.getApiKey(),
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
-		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), functionCallbackContext,
+		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), functionCallbackResolver,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
@@ -113,8 +114,8 @@ public class MiniMaxAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}
