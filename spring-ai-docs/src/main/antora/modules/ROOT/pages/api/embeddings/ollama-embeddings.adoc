@@ -22,7 +22,7 @@ You can pull the models you want to use in your application from the https://oll
 ollama pull <model-name>
 ----
 
-You can also pull any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
+You can also pull any of the thousands, free, https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
 
 [source,shellscript]
 ----
@@ -166,7 +166,7 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
 Spring AI Ollama can automatically pull models when they are not available in your Ollama instance.
 This feature is particularly useful for development and testing as well as for deploying your applications to new environments.
 
-TIP: You can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
+TIP: You can also pull, by name, any of the thousands, free, https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
 
 There are three strategies for pulling models:
 
@@ -221,6 +221,21 @@ spring:
 ----
 
 This configuration will apply the pulling strategy to all models except embedding models.
+
+== HuggingFace Models
+
+Ollama can access, out of the box, all https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face] Embedding models.
+You can pull any of these models by name: `ollama pull hf.co/<username>/<model-repository>` or configure the auto-pulling strategy: xref:auto-pulling-models[Auto-pulling Models]:
+
+[source]
+----
+spring.ai.ollama.embedding.options.model=hf.co/mixedbread-ai/mxbai-embed-large-v1
+spring.ai.ollama.init.pull-model-strategy=always
+----
+
+- `spring.ai.ollama.embedding.options.model`: Specifies the https://huggingface.co/models?library=gguf&sort=trending[Hugging Face GGUF model] to use. 
+- `spring.ai.ollama.init.pull-model-strategy=always`: (optional) Enables automatic model pulling at startup time. 
+For production, you should pre-download the models to avoid delays: `ollama pull hf.co/mixedbread-ai/mxbai-embed-large-v1`.
 
 == Sample Controller
 
