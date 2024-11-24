@@ -10,18 +10,18 @@ The xref:_openai_api_compatibility[OpenAI API compatibility] section explains ho
 
 You first need access to an Ollama instance. There are a few options, including the following:
 
-* xref:https://ollama.com/download[Download and install Ollama] on your local machine.
+* link:https://ollama.com/download[Download and install Ollama] on your local machine.
 * Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
 * Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
-You can pull the models you want to use in your application from the xref:https://ollama.com/library[Ollama model library]:
+You can pull the models you want to use in your application from the link:https://ollama.com/library[Ollama model library]:
 
 [source,shellscript]
 ----
 ollama pull <model-name>
 ----
 
-You can also pull any of the thousands, free, https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
+You can also pull any of the thousands, free, link:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
 
 [source,shellscript]
 ----
@@ -166,7 +166,7 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 Spring AI Ollama can automatically pull models when they are not available in your Ollama instance.
 This feature is particularly useful for development and testing as well as for deploying your applications to new environments.
 
-TIP: You can also pull, by name, any of the thousands, free, https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
+TIP: You can also pull, by name, any of the thousands, free, link:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
 
 There are three strategies for pulling models:
 
