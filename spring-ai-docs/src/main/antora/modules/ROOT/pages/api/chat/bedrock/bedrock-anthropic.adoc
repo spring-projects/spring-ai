@@ -221,7 +221,7 @@ Flux<ChatResponse> response = this.chatModel.stream(
 
 === Low-level AnthropicChatBedrockApi Client [[low-level-api]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi] provides is lightweight Java client on top of AWS Bedrock link:https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html[Anthropic Claude models].
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi] provides a lightweight Java client on top of AWS Bedrock link:https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html[Anthropic Claude models].
 
 Following class diagram illustrates the AnthropicChatBedrockApi interface and building blocks:
 
