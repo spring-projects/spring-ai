@@ -163,9 +163,13 @@ String response = ChatClient.create(chatModel).prompt()
 
 TIP: Optionally, using the `.name()`, you can set a custom function name different from the method name.
 
-== Schema Type Support
+== Common Configurations
 
-The framework supports different schema types for function parameter validation:
+There are several common configurations that you can use to customize the function callbacks.
+
+=== Schema Type
+
+The framework supports different schema types for generating the schemas for the input parameters:
 
 * JSON Schema (default)
 * OpenAPI Schema (for Vertex AI compatibility)
@@ -180,6 +184,12 @@ FunctionCallback.builder()
 
 === Custom Response Handling
 
+You can provide a custom response converter to format the function response before sending it back to the AI model.
+Most AI Models expect an text response, so it is your responsibility to convert the function response to a text format.
+By default, the response is converted to a String.
+
+TIP: Many models cope well with JSON responses, so you can return a JSON string.
+
 [source,java]
 ----
 FunctionCallback.builder()
@@ -190,6 +200,9 @@ FunctionCallback.builder()
 ----
 
 === Custom Object Mapping
+
+Spring AI uses ObjectMapper for JSON serialization and deserialization. 
+You can provide a custom ObjectMapper to handle custom object mapping:
 
 [source,java]
 ----
