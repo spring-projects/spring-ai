@@ -14,7 +14,7 @@ Before ChatGPT, many people were fascinated by text-to-image generation models s
 
 The following table categorizes several models based on their input and output types:
 
-image::spring-ai-concepts-model-types.jpg[Model types, width=600, align="center"]
+image::../images/spring-ai-concepts-model-types.jpg[Model types, width=600, align="center"]
 
 Spring AI currently supports models that process input and output as language, image, and audio.
 The last row in the previous table, which accepts text as input and outputs numbers, is more commonly known as embedding text and represents the internal data structures used in an AI model.
@@ -78,7 +78,7 @@ The length of the embedding array is called the vector's dimensionality.
 
 By calculating the numerical distance between the vector representations of two pieces of text, an application can determine the similarity between the objects used to generate the embedding vectors.
 
-image::spring-ai-embeddings.jpg[Embeddings, width=900, align="center"]
+image::../images/spring-ai-embeddings.jpg[Embeddings, width=900, align="center"]
 
 As a Java developer exploring AI, it's not necessary to comprehend the intricate mathematical theories or the specific implementations behind these vector representations.
 A basic understanding of their role and function within AI systems suffices, particularly when you're integrating AI functionalities into your applications.
@@ -98,7 +98,7 @@ On input, models convert words to tokens. On output, they convert tokens back to
 
 In English, one token roughly corresponds to 75% of a word. For reference, Shakespeare's complete works, totaling around 900,000 words, translate to approximately 1.2 million tokens.
 
-image::spring-ai-concepts-tokens.png[Tokens, width=600, align="center"]
+image::../images/spring-ai-concepts-tokens.png[Tokens, width=600, align="center"]
 
 Perhaps more important is that Tokens = Money.
 In the context of hosted AI models, your charges are determined by the number of tokens used. Both input and output contribute to the overall token count.
@@ -120,7 +120,7 @@ Also, asking "`for JSON`" as part of the prompt is not 100% accurate.
 
 This intricacy has led to the emergence of a specialized field involving the creation of prompts to yield the intended output, followed by converting the resulting simple string into a usable data structure for application integration.
 
-image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=800, align="center"]
+image::../images/structured-output-architecture.jpg[Structured Output Converter Architecture, width=800, align="center"]
 
 The xref:api/structured-output-converter.adoc#_structuredoutputconverter[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
 
@@ -141,7 +141,7 @@ However, it is a challenging process for machine learning experts and extremely 
 This approach is colloquially referred to as "`stuffing the prompt.`"
 The Spring AI library helps you implement solutions based on the "`stuffing the prompt`" technique otherwise known as xref::concepts.adoc#concept-rag[Retrieval Augmented Generation (RAG)].
 
-image::spring-ai-prompt-stuffing.jpg[Prompt stuffing, width=700, align="center"]
+image::../images/spring-ai-prompt-stuffing.jpg[Prompt stuffing, width=700, align="center"]
 
 * **xref::concepts.adoc#concept-fc[Function Calling]**: This technique allows registering custom, user functions that connect the large language models to the APIs of external systems.
 Spring AI greatly simplifies code you need to write to support xref:api/functions.adoc[function calling].
@@ -167,7 +167,7 @@ The next phase in RAG is processing user input.
 When a user's question is to be answered by an AI model, the question and all the "`similar`" document pieces are placed into the prompt that is sent to the AI model.
 This is the reason to use a vector database. It is very good at finding similar content.
 
-image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
+image::../images/spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 
 * The xref::api/etl-pipeline.adoc[ETL Pipeline] provides further information about orchestrating the flow of extracting data from data sources and storing it in a structured vector store, ensuring data is in the optimal format for retrieval when passing it to the AI model.
 * The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` to enable the RAG capability in your application.
@@ -186,7 +186,7 @@ It handles the function invocation conversation for you.
 You can provide your function as a `@Bean` and then provide the bean name of the function in your prompt options to activate that function.
 Additionally, you can define and reference multiple functions in a single prompt.
 
-image::function-calling-basic-flow.jpg[Function calling, width=700, align="center"]
+image::../images/function-calling-basic-flow.jpg[Function calling, width=700, align="center"]
 
 1. Perform a chat request sending along function definition information.
 The latter provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
