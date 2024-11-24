@@ -378,6 +378,7 @@ String response = ChatClient.create(chatModel).prompt()
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/client/OpenAiChatClientMethodInvokingFunctionCallbackIT.java[OpenAiChatClientMethodInvokingFunctionCallbackIT]
 integration test provides additional examples of how to use the FunctionCallback.Builder to create method invocation FunctionCallbacks.
 
+[[Tool-Context]]
 == Tool Context
 
 Spring AI now supports passing additional contextual information to function callbacks through a tool context. 
