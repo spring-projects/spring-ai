@@ -174,7 +174,7 @@ public enum OllamaModel implements ChatModelDescription {
 	 */
 	@Override
 	public String getName() {
-		return this.id + (null == this.size ? "" : ":" + this.size);
+		return this.id + (this.size == null || this.size.isEmpty() ? "" : ":" + this.size);
 	}
 
 	/**
