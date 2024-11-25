@@ -44,6 +44,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Oganes Bozoyan
  * @since 1.0.0
  */
 public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
@@ -64,18 +65,27 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	private final String systemTextAdvise;
 
+	@Deprecated
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore) {
 		this(vectorStore, DEFAULT_SYSTEM_TEXT_ADVISE);
 	}
 
+	@Deprecated
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String systemTextAdvise) {
 		super(vectorStore);
 		this.systemTextAdvise = systemTextAdvise;
 	}
 
+	@Deprecated
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize) {
 		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE);
+	}
+
+	@Deprecated
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+			int chatHistoryWindowSize, int order) {
+		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE, order);
 	}
 
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
@@ -209,10 +219,25 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			return this;
 		}
 
+		public Builder withConversationId(String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
+		public Builder withChatMemoryRetrieveSize(Integer chatMemoryRetrieveSize) {
+			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
+			return this;
+		}
+
+		public Builder withOrder(Integer order) {
+			this.order = order;
+			return this;
+		}
+
 		@Override
 		public VectorStoreChatMemoryAdvisor build() {
 			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.systemTextAdvise);
+					this.systemTextAdvise, this.order);
 		}
 
 	}
