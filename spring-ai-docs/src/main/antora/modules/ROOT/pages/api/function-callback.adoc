@@ -34,8 +34,8 @@ NOTE: You can use lambda expressions or method references to define the function
 [source,java]
 ----
 FunctionCallback callback = FunctionCallback.builder()
-    .description("Process a new order")
     .function("processOrder", (Order order) -> processOrderLogic(order))
+    .description("Process a new order")
     .inputType(Order.class)
     .build();
 ----
@@ -47,9 +47,9 @@ Using Function with input type <I> and additional xref:api/functions.adoc#Tool-C
 [source,java]
 ----
 FunctionCallback callback = FunctionCallback.builder()
-    .description("Process a new order with context")
     .function("processOrder", (Order order, ToolContext context) -> 
         processOrderWithContext(order, context))
+    .description("Process a new order with context")
     .inputType(Order.class)
     .build();
 ----
@@ -61,8 +61,8 @@ Use `java.util.Supplier<O>` or `java.util.function.Function<Void, O>` to define 
 [source,java]
 ----
 FunctionCallback.builder()
-    .description("Turns light on in the living room")
 	.function("turnsLight", () -> state.put("Light", "ON"))
+    .description("Turns light on in the living room")
     .inputType(Void.class)
 	.build();
 ----
@@ -76,10 +76,10 @@ Use `java.util.Consumer<I>` or `java.util.function.Function<I, Void>` to define 
 record LightInfo(String roomName, boolean isOn) {}
 
 FunctionCallback.builder()
-    .description("Turns light on/off in a selected room")
 	.function("turnsLight", (LightInfo lightInfo) -> {
 				logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
 			})
+    .description("Turns light on/off in a selected room")
     .inputType(LightInfo.class)
 	.build();
 ----
@@ -97,11 +97,11 @@ record TrainSearchSchedule(String from, String to, String date) {}
 record TrainSearchScheduleResponse(String from, String to, String date, String trainNumber) {}
 
 FunctionCallback.builder()
-    .description("Schedule a train reservation")
 	.function("trainSchedule", (TrainSearchRequest<TrainSearchSchedule> request) -> {
         logger.info("Schedule: " + request.data().from() + " to " + request.data().to());
         return new TrainSearchScheduleResponse(request.data().from(), request.  data().to(), "", "123");
     })
+    .description("Schedule a train reservation")
     .inputType(new ParameterizedTypeReference<TrainSearchRequest<TrainSearchSchedule>>() {})
 	.build();
 ----
@@ -132,8 +132,8 @@ public class WeatherService {
 }
 
 FunctionCallback callback = FunctionCallback.builder()
-    .description("Get weather information for a city")
     .method("getWeather", String.class, TemperatureUnit.class)
+    .description("Get weather information for a city")
     .targetClass(WeatherService.class)
     .build();
 ----
@@ -156,8 +156,8 @@ DeviceController controller = new DeviceController();
 String response = ChatClient.create(chatModel).prompt()
     .user("Turn on the living room lights")
     .functions(FunctionCallback.builder()
-        .description("Control device state")
         .method("setDeviceState", String.class,boolean.class,ToolContext.class)
+        .description("Control device state")
         .targetObject(controller)
         .build())
     .toolContext(Map.of("location", "home"))

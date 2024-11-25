@@ -206,8 +206,8 @@ static class Config {
 	public FunctionCallback weatherFunctionInfo() {
 
         return FunctionCallback.builder()
-            .description("Get the weather in location") // (2) function description
             .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+            .description("Get the weather in location") // (2) function description
             .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build();
 	}
@@ -226,8 +226,8 @@ class Config {
 	fun weatherFunctionInfo(): FunctionCallback {
 
         return FunctionCallback.builder()
-            .description("Get the weather in location") // (2) function description
             .function("CurrentWeather", MockWeatherService()) // (1) function name and instance
+            .description("Get the weather in location") // (2) function description
             // (3) Required due to Kotlin SAM conversion being an opaque lambda
             .inputType<MockWeatherService.Request>()
             .build();
@@ -287,8 +287,8 @@ ChatClient chatClient = ...
 	
 ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
     .functions(FunctionCallback.builder()
-            .description("Get the weather in location") // (2) function description
             .function("currentWeather", (Request request) -> new Response(30.0, Unit.C)) // (1) function name and instance
+            .description("Get the weather in location") // (2) function description
             .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build())
     .call()
@@ -320,8 +320,8 @@ You need the `FunctionCallback.Builder` to create `MethodInvokingFunctionCallbac
 ----
 // Create using builder pattern
 FunctionCallback methodInvokingCallback = FunctionCallback.builder()
-    .description("Function calling description") // Hints the AI to know when to call this method
     .method("MethodName", Class<?>...argumentTypes) // The method to invoke and its argument types
+    .description("Function calling description") // Hints the AI to know when to call this method
     .targetObject(targetObject)       // Required instance methods for static methods use targetClass
     .build();
 ----
@@ -342,8 +342,8 @@ public class WeatherService {
 
 // Usage
 FunctionCallback callback = FunctionCallback.builder()
-    .description("Get weather information for a city")
     .method("getWeather", String.class, TemperatureUnit.class)
+    .description("Get weather information for a city")
     .targetClass(WeatherService.class)
     .build();
 ----
@@ -364,8 +364,8 @@ DeviceController controller = new DeviceController();
 String response = ChatClient.create(chatModel).prompt()
     .user("Turn on the living room lights")
     .functions(FunctionCallback.builder()
-        .description("Control device state")
         .method("setDeviceState", String.class,boolean.class,ToolContext.class)
+        .description("Control device state")
         .targetObject(controller)
         .build())
     .toolContext(Map.of("location", "home"))
@@ -423,8 +423,8 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
     .functions(FunctionCallback.builder()
-        .description("Get the weather in location")
         .function("getCurrentWeather", this.weatherFunction)
+        .description("Get the weather in location")
         .inputType(MockWeatherService.Request.class)
         .build())
     .toolContext(Map.of("sessionId", "1234", "userId", "5678"))
@@ -453,8 +453,8 @@ DeviceController controller = new DeviceController();
 String response = ChatClient.create(chatModel).prompt()
     .user("Turn on the living room lights")
     .functions(FunctionCallback.builder()
-        .description("Control device state")
         .method("setDeviceState", String.class,boolean.class,ToolContext.class)
+        .description("Control device state")
         .targetObject(controller)
         .build())
     .toolContext(Map.of("location", "home"))

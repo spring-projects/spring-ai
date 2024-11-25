@@ -194,8 +194,8 @@ class MistralAiChatModelIT {
 		var promptOptions = MistralAiChatOptions.builder()
 			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -217,8 +217,8 @@ class MistralAiChatModelIT {
 		var promptOptions = MistralAiChatOptions.builder()
 			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

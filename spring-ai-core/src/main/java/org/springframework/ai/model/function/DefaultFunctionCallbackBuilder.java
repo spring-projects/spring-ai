@@ -23,21 +23,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback.Builder;
 import org.springframework.ai.model.function.FunctionCallback.FunctionInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.MethodInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
-import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
@@ -53,82 +46,6 @@ import org.springframework.util.StringUtils;
 public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);
-
-	/**
-	 * The description of the function callback. Used to hint the LLM model about the
-	 * tool's purpose and when to use it.
-	 */
-	private String description;
-
-	/**
-	 * The schema type to use for the input type schema generation. The default is JSON
-	 * Schema. Note: Vertex AI requires the input type schema to be in Open API schema
-	 */
-	private SchemaType schemaType = SchemaType.JSON_SCHEMA;
-
-	/**
-	 * The function to convert the response object to a string. The default is to convert
-	 * the response to a JSON string.
-	 */
-	private Function<Object, String> responseConverter = response -> (response instanceof String) ? "" + response
-			: this.toJsonString(response);
-
-	/**
-	 * (Optional) Instead of generating the input type schema from the input type or
-	 * method argument types, you can provide the schema directly. This will override the
-	 * generated schema.
-	 */
-	private String inputTypeSchema;
-
-	private ObjectMapper objectMapper = JsonMapper.builder()
-		.addModules(JacksonUtils.instantiateAvailableModules())
-		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-		.build();
-
-	private String toJsonString(Object object) {
-		try {
-			return this.objectMapper.writeValueAsString(object);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Override
-	public Builder description(String description) {
-		Assert.hasText(description, "Description must not be empty");
-		this.description = description;
-		return this;
-	}
-
-	@Override
-	public Builder schemaType(SchemaType schemaType) {
-		Assert.notNull(schemaType, "SchemaType must not be null");
-		this.schemaType = schemaType;
-		return this;
-	}
-
-	@Override
-	public Builder responseConverter(Function<Object, String> responseConverter) {
-		Assert.notNull(responseConverter, "ResponseConverter must not be null");
-		this.responseConverter = responseConverter;
-		return this;
-	}
-
-	@Override
-	public Builder inputTypeSchema(String inputTypeSchema) {
-		Assert.hasText(inputTypeSchema, "InputTypeSchema must not be empty");
-		this.inputTypeSchema = inputTypeSchema;
-		return this;
-	}
-
-	@Override
-	public Builder objectMapper(ObjectMapper objectMapper) {
-		Assert.notNull(objectMapper, "ObjectMapper must not be null");
-		this.objectMapper = objectMapper;
-		return this;
-	}
 
 	@Override
 	public <I, O> FunctionInvokingSpec<I, O> function(String name, Function<I, O> function) {
@@ -170,7 +87,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		return generatedDescription;
 	}
 
-	final class DefaultFunctionInvokingSpec<I, O> implements FunctionInvokingSpec<I, O> {
+	final class DefaultFunctionInvokingSpec<I, O> extends DefaultCommonCallbackInvokingSpec<FunctionInvokingSpec<I, O>>
+			implements FunctionInvokingSpec<I, O> {
 
 		private final String name;
 
@@ -213,33 +131,35 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 		@Override
 		public FunctionCallback build() {
 
-			Assert.notNull(objectMapper, "ObjectMapper must not be null");
+			Assert.notNull(this.getObjectMapper(), "ObjectMapper must not be null");
 			Assert.hasText(this.name, "Name must not be empty");
-			Assert.notNull(responseConverter, "ResponseConverter must not be null");
+			Assert.notNull(this.getResponseConverter(), "ResponseConverter must not be null");
 			Assert.notNull(this.inputType, "InputType must not be null");
 
-			if (inputTypeSchema == null) {
+			if (this.getInputTypeSchema() == null) {
 				boolean upperCaseTypeValues = schemaType == SchemaType.OPEN_API_SCHEMA;
-				inputTypeSchema = ModelOptionsUtils.getJsonSchema(this.inputType, upperCaseTypeValues);
+				this.inputTypeSchema = ModelOptionsUtils.getJsonSchema(this.inputType, upperCaseTypeValues);
 			}
 
 			BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
 					: (request, context) -> this.function.apply(request);
 
-			return new FunctionInvokingFunctionCallback(this.name, this.getDescription(), inputTypeSchema,
-					this.inputType, (Function<I, String>) responseConverter, objectMapper, finalBiFunction);
+			return new FunctionInvokingFunctionCallback(this.name, this.getDescriptionExt(), this.getInputTypeSchema(),
+					this.inputType, (Function<I, String>) this.getResponseConverter(), this.getObjectMapper(),
+					finalBiFunction);
 		}
 
-		private String getDescription() {
-			if (StringUtils.hasText(description)) {
-				return description;
+		private String getDescriptionExt() {
+			if (StringUtils.hasText(this.getDescription())) {
+				return this.getDescription();
 			}
 			return generateDescription(this.name);
 		}
 
 	}
 
-	final class DefaultMethodInvokingSpec implements FunctionCallback.MethodInvokingSpec {
+	final class DefaultMethodInvokingSpec extends DefaultCommonCallbackInvokingSpec<MethodInvokingSpec>
+			implements FunctionCallback.MethodInvokingSpec {
 
 		private String name;
 
@@ -285,13 +205,13 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			var method = ReflectionUtils.findMethod(this.targetClass, this.methodName, this.argumentTypes);
 			Assert.notNull(method, "Method: '" + this.methodName + "' with arguments:"
 					+ Arrays.toString(this.argumentTypes) + " not found!");
-			return new MethodInvokingFunctionCallback(this.targetObject, method, this.getDescription(), objectMapper,
-					this.name, responseConverter);
+			return new MethodInvokingFunctionCallback(this.targetObject, method, this.getDescriptionExt(),
+					this.getObjectMapper(), this.name, this.getResponseConverter());
 		}
 
-		private String getDescription() {
-			if (StringUtils.hasText(description)) {
-				return description;
+		private String getDescriptionExt() {
+			if (StringUtils.hasText(this.getDescription())) {
+				return this.getDescription();
 			}
 
 			return generateDescription(StringUtils.hasText(this.name) ? this.name : this.methodName);

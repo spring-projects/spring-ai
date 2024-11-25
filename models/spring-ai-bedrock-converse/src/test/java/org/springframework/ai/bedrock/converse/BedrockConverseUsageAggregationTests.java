@@ -139,8 +139,8 @@ public class BedrockConverseUsageAggregationTests {
 			.willReturn(converseResponseFinal);
 
 		FunctionCallback functionCallback = FunctionCallback.builder()
-			.description("Gets the weather in location")
 			.function("getCurrentWeather", (Request request) -> "15.0°C")
+			.description("Gets the weather in location")
 			.inputType(Request.class)
 			.build();
 

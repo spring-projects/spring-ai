@@ -80,8 +80,8 @@ public class ChatBuilderTests {
 
 		String func = "func";
 		FunctionCallback cb = FunctionCallback.builder()
-			.description("cb")
 			.function("cb", i -> i)
+			.description("cb")
 			.inputType(Integer.class)
 			.build();
 

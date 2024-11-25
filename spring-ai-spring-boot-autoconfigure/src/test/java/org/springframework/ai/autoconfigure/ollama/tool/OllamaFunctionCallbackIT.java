@@ -140,9 +140,9 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		public FunctionCallback weatherFunctionInfo() {
 
 			return FunctionCallback.builder()
+				.function("WeatherInfo", new MockWeatherService())
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-				.function("WeatherInfo", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

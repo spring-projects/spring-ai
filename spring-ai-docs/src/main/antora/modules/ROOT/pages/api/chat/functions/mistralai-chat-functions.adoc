@@ -126,8 +126,8 @@ static class Config {
 	public FunctionCallback weatherFunctionInfo() {
 
     return FunctionCallback.builder()
-        .description("Get the weather in location") // (2) function description
 		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+        .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
 	}
@@ -174,8 +174,8 @@ UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 var promptOptions = MistralAiChatOptions.builder()
 	.withFunctionCallbacks(List.of(FunctionCallback.builder()
-        .description("Get the weather in location") // (2) function description
 		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+        .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build())) // function code
 	.build();

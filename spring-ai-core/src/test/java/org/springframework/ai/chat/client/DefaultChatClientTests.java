@@ -1357,8 +1357,8 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.description("description")
 			.function(null, input -> "hello")
+			.description("description")
 			.inputType(String.class)
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
 	}
@@ -1368,8 +1368,8 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.description("description")
 			.function("", input -> "hello")
+			.description("description")
 			.inputType(String.class)
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
 	}
@@ -1379,8 +1379,8 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
 			.description(null)
-			.function("", input -> "hello")
 			.inputType(String.class)
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
 	}

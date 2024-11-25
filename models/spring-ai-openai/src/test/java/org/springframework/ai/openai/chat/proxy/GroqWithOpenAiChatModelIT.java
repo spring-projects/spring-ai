@@ -250,8 +250,8 @@ class GroqWithOpenAiChatModelIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -273,8 +273,8 @@ class GroqWithOpenAiChatModelIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

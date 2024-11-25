@@ -246,8 +246,8 @@ class OpenAiChatClientIT extends AbstractIT {
 	void functionCallTest() {
 
 		FunctionCallback functionCallback = FunctionCallback.builder()
-			.description("Get the weather in location")
 			.function("getCurrentWeather", new MockWeatherService())
+			.description("Get the weather in location")
 			.inputType(MockWeatherService.Request.class)
 			.build();
 
@@ -270,8 +270,8 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
 				.defaultFunctions(FunctionCallback.builder()
-					.description("Get the weather in location")
 					.function("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
@@ -291,8 +291,8 @@ class OpenAiChatClientIT extends AbstractIT {
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
 				.functions(FunctionCallback.builder()
-					.description("Get the weather in location")
 					.function("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.stream()

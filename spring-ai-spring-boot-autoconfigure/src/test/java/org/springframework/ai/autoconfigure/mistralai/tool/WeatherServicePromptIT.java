@@ -74,8 +74,8 @@ public class WeatherServicePromptIT {
 				var promptOptions = MistralAiChatOptions.builder()
 					.withToolChoice(ToolChoice.AUTO)
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Get the current weather in requested location")
 						.function("CurrentWeatherService", new MyWeatherService())
+						.description("Get the current weather in requested location")
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 					.build();
@@ -100,8 +100,8 @@ public class WeatherServicePromptIT {
 
 				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Get the current weather in requested location")
 						.function("CurrentWeatherService", new MyWeatherService())
+						.description("Get the current weather in requested location")
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 
