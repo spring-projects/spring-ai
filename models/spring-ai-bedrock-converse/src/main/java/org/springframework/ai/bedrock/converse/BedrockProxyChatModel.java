@@ -529,7 +529,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 				if (!this.isProxyToolCalls(prompt, this.defaultOptions) && chatResponse != null
 						&& this.isToolCall(chatResponse, Set.of(StopReason.TOOL_USE.toString()))) {
-					
 					var toolCallConversation = this.handleToolCalls(prompt, chatResponse);
 					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 				}

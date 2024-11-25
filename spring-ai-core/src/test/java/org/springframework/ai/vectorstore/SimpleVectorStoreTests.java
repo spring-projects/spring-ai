@@ -16,14 +16,6 @@
 
 package org.springframework.ai.vectorstore;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.CleanupMode;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.core.io.Resource;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,6 +26,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.CleanupMode;
+import org.junit.jupiter.api.io.TempDir;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,12 +53,11 @@ class SimpleVectorStoreTests {
 
 	@BeforeEach
 	void setUp() {
-		mockEmbeddingModel = mock(EmbeddingModel.class);
-		when(mockEmbeddingModel.dimensions()).thenReturn(3);
-		when(mockEmbeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-		when(mockEmbeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-
-		vectorStore = new SimpleVectorStore(mockEmbeddingModel);
+		this.mockEmbeddingModel = mock(EmbeddingModel.class);
+		when(this.mockEmbeddingModel.dimensions()).thenReturn(3);
+		when(this.mockEmbeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		when(this.mockEmbeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		this.vectorStore = new SimpleVectorStore(this.mockEmbeddingModel);
 	}
 
 	@Test
@@ -68,9 +68,9 @@ class SimpleVectorStoreTests {
 			.withMetadata(Map.of("key", "value"))
 			.build();
 
-		vectorStore.add(List.of(doc));
+		this.vectorStore.add(List.of(doc));
 
-		List<Document> results = vectorStore.similaritySearch("test content");
+		List<Document> results = this.vectorStore.similaritySearch("test content");
 		assertThat(results).hasSize(1).first().satisfies(result -> {
 			assertThat(result.getId()).isEqualTo("1");
 			assertThat(result.getContent()).isEqualTo("test content");
@@ -83,21 +83,22 @@ class SimpleVectorStoreTests {
 		List<Document> docs = Arrays.asList(Document.builder().withId("1").withContent("first").build(),
 				Document.builder().withId("2").withContent("second").build());
 
-		vectorStore.add(docs);
+		this.vectorStore.add(docs);
 
-		List<Document> results = vectorStore.similaritySearch("first");
+		List<Document> results = this.vectorStore.similaritySearch("first");
 		assertThat(results).hasSize(2).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
 	}
 
 	@Test
 	void shouldHandleEmptyDocumentList() {
-		assertThatThrownBy(() -> vectorStore.add(Collections.emptyList())).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.vectorStore.add(Collections.emptyList()))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Documents list cannot be empty");
 	}
 
 	@Test
 	void shouldHandleNullDocumentList() {
-		assertThatThrownBy(() -> vectorStore.add(null)).isInstanceOf(NullPointerException.class)
+		assertThatThrownBy(() -> this.vectorStore.add(null)).isInstanceOf(NullPointerException.class)
 			.hasMessage("Documents list cannot be null");
 	}
 
@@ -105,32 +106,32 @@ class SimpleVectorStoreTests {
 	void shouldDeleteDocuments() {
 		Document doc = Document.builder().withId("1").withContent("test content").build();
 
-		vectorStore.add(List.of(doc));
-		assertThat(vectorStore.similaritySearch("test")).hasSize(1);
+		this.vectorStore.add(List.of(doc));
+		assertThat(this.vectorStore.similaritySearch("test")).hasSize(1);
 
-		vectorStore.delete(List.of("1"));
-		assertThat(vectorStore.similaritySearch("test")).isEmpty();
+		this.vectorStore.delete(List.of("1"));
+		assertThat(this.vectorStore.similaritySearch("test")).isEmpty();
 	}
 
 	@Test
 	void shouldHandleDeleteOfNonexistentDocument() {
-		vectorStore.delete(List.of("nonexistent-id"));
+		this.vectorStore.delete(List.of("nonexistent-id"));
 		// Should not throw exception and return true
-		assertThat(vectorStore.delete(List.of("nonexistent-id")).get()).isTrue();
+		assertThat(this.vectorStore.delete(List.of("nonexistent-id")).get()).isTrue();
 	}
 
 	@Test
 	void shouldPerformSimilaritySearchWithThreshold() {
 		// Configure mock to return different embeddings for different queries
-		when(mockEmbeddingModel.embed("query")).thenReturn(new float[] { 0.9f, 0.9f, 0.9f });
+		when(this.mockEmbeddingModel.embed("query")).thenReturn(new float[] { 0.9f, 0.9f, 0.9f });
 
 		Document doc = Document.builder().withId("1").withContent("test content").build();
 
-		vectorStore.add(List.of(doc));
+		this.vectorStore.add(List.of(doc));
 
 		SearchRequest request = SearchRequest.query("query").withSimilarityThreshold(0.99f).withTopK(5);
 
-		List<Document> results = vectorStore.similaritySearch(request);
+		List<Document> results = this.vectorStore.similaritySearch(request);
 		assertThat(results).isEmpty();
 	}
 
@@ -142,12 +143,12 @@ class SimpleVectorStoreTests {
 			.withMetadata(new HashMap<>(Map.of("key", "value")))
 			.build();
 
-		vectorStore.add(List.of(doc));
+		this.vectorStore.add(List.of(doc));
 
-		File saveFile = tempDir.resolve("vector-store.json").toFile();
-		vectorStore.save(saveFile);
+		File saveFile = this.tempDir.resolve("vector-store.json").toFile();
+		this.vectorStore.save(saveFile);
 
-		SimpleVectorStore loadedStore = new SimpleVectorStore(mockEmbeddingModel);
+		SimpleVectorStore loadedStore = new SimpleVectorStore(this.mockEmbeddingModel);
 		loadedStore.load(saveFile);
 
 		List<Document> results = loadedStore.similaritySearch("test content");
@@ -163,7 +164,7 @@ class SimpleVectorStoreTests {
 		Resource mockResource = mock(Resource.class);
 		when(mockResource.getInputStream()).thenThrow(new IOException("Resource not found"));
 
-		assertThatThrownBy(() -> vectorStore.load(mockResource)).isInstanceOf(RuntimeException.class)
+		assertThatThrownBy(() -> this.vectorStore.load(mockResource)).isInstanceOf(RuntimeException.class)
 			.hasCauseInstanceOf(IOException.class)
 			.hasMessageContaining("Resource not found");
 	}
@@ -172,7 +173,7 @@ class SimpleVectorStoreTests {
 	void shouldHandleSaveToInvalidLocation() {
 		File invalidFile = new File("/invalid/path/file.json");
 
-		assertThatThrownBy(() -> vectorStore.save(invalidFile)).isInstanceOf(RuntimeException.class)
+		assertThatThrownBy(() -> this.vectorStore.save(invalidFile)).isInstanceOf(RuntimeException.class)
 			.hasCauseInstanceOf(IOException.class);
 	}
 
@@ -185,7 +186,7 @@ class SimpleVectorStoreTests {
 			final String id = String.valueOf(i);
 			threads[i] = new Thread(() -> {
 				Document doc = Document.builder().withId(id).withContent("content " + id).build();
-				vectorStore.add(List.of(doc));
+				this.vectorStore.add(List.of(doc));
 			});
 			threads[i].start();
 		}
@@ -196,7 +197,7 @@ class SimpleVectorStoreTests {
 
 		SearchRequest request = SearchRequest.query("test").withTopK(numThreads);
 
-		List<Document> results = vectorStore.similaritySearch(request);
+		List<Document> results = this.vectorStore.similaritySearch(request);
 
 		assertThat(results).hasSize(numThreads);
 

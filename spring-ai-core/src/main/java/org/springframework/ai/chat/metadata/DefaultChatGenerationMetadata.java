@@ -101,13 +101,15 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null || getClass() != obj.getClass())
+		}
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
+		}
 		DefaultChatGenerationMetadata other = (DefaultChatGenerationMetadata) obj;
-		return Objects.equals(metadata, other.metadata) && Objects.equals(finishReason, other.finishReason)
-				&& Objects.equals(contentFilters, other.contentFilters);
+		return Objects.equals(this.metadata, other.metadata) && Objects.equals(this.finishReason, other.finishReason)
+				&& Objects.equals(this.contentFilters, other.contentFilters);
 	}
 
 	@Override

@@ -137,11 +137,12 @@ public final class SimpleVectorStoreContent implements Content {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
-
+		}
 		SimpleVectorStoreContent that = (SimpleVectorStoreContent) o;
 		return Objects.equals(this.id, that.id) && Objects.equals(this.content, that.content)
 				&& Objects.equals(this.metadata, that.metadata) && Arrays.equals(this.embedding, that.embedding);
@@ -159,7 +160,7 @@ public final class SimpleVectorStoreContent implements Content {
 	@Override
 	public String toString() {
 		return "SimpleVectorStoreContent{" + "id='" + this.id + '\'' + ", content='" + this.content + '\''
-				+ ", metadata=" + this.metadata + ", embedding=" + Arrays.toString(embedding) + '}';
+				+ ", metadata=" + this.metadata + ", embedding=" + Arrays.toString(this.embedding) + '}';
 	}
 
 }
