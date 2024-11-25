@@ -64,7 +64,7 @@ public class AnthropicApi {
 
 	public static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
 
-	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04";
+	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04,pdfs-2024-09-25";
 
 	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
 
@@ -230,17 +230,22 @@ public class AnthropicApi {
 		/**
 		 * The claude-3-5-sonnet-20241022 model.
 		 */
-		CLAUDE_3_5_SONNET("claude-3-5-sonnet-20241022"),
+		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
 
 		/**
 		 * The CLAUDE_3_OPUS
 		 */
-		CLAUDE_3_OPUS("claude-3-opus-20240229"),
+		CLAUDE_3_OPUS("claude-3-opus-latest"),
 
 		/**
 		 * The CLAUDE_3_SONNET
 		 */
 		CLAUDE_3_SONNET("claude-3-sonnet-20240229"),
+
+		/**
+		 * The CLAUDE 3.5 HAIKU
+		 */
+		CLAUDE_3_5_HAIKU("claude-3-5-haiku-latest"),
 
 		/**
 		 * The CLAUDE_3_HAIKU
@@ -296,18 +301,18 @@ public class AnthropicApi {
 	public enum Role {
 
 		// @formatter:off
-		/**
-		 * The user role.
-		 */
-		@JsonProperty("user")
-		USER,
+		 /**
+		  * The user role.
+		  */
+		 @JsonProperty("user")
+		 USER,
 
-		/**
-		 * The assistant role.
-		 */
-		@JsonProperty("assistant")
-		ASSISTANT
-		// @formatter:on
+		 /**
+		  * The assistant role.
+		  */
+		 @JsonProperty("assistant")
+		 ASSISTANT
+		 // @formatter:on
 
 	}
 
@@ -436,18 +441,18 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 	// @formatter:off
-		@JsonProperty("model") String model,
-		@JsonProperty("messages") List<AnthropicMessage> messages,
-		@JsonProperty("system") String system,
-		@JsonProperty("max_tokens") Integer maxTokens,
-		@JsonProperty("metadata") Metadata metadata,
-		@JsonProperty("stop_sequences") List<String> stopSequences,
-		@JsonProperty("stream") Boolean stream,
-		@JsonProperty("temperature") Double temperature,
-		@JsonProperty("top_p") Double topP,
-		@JsonProperty("top_k") Integer topK,
-		@JsonProperty("tools") List<Tool> tools) {
-		// @formatter:on
+		 @JsonProperty("model") String model,
+		 @JsonProperty("messages") List<AnthropicMessage> messages,
+		 @JsonProperty("system") String system,
+		 @JsonProperty("max_tokens") Integer maxTokens,
+		 @JsonProperty("metadata") Metadata metadata,
+		 @JsonProperty("stop_sequences") List<String> stopSequences,
+		 @JsonProperty("stream") Boolean stream,
+		 @JsonProperty("temperature") Double temperature,
+		 @JsonProperty("top_p") Double topP,
+		 @JsonProperty("top_k") Integer topK,
+		 @JsonProperty("tools") List<Tool> tools) {
+		 // @formatter:on
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
 				Double temperature, Boolean stream) {
@@ -615,9 +620,9 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicMessage(
 	// @formatter:off
-		@JsonProperty("content") List<ContentBlock> content,
-		@JsonProperty("role") Role role) {
-		 // @formatter:on
+		 @JsonProperty("content") List<ContentBlock> content,
+		 @JsonProperty("role") Role role) {
+		  // @formatter:on
 	}
 
 	/**
@@ -639,23 +644,23 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlock(
 	// @formatter:off
-		@JsonProperty("type") Type type,
-		@JsonProperty("source") Source source,
-		@JsonProperty("text") String text,
+		 @JsonProperty("type") Type type,
+		 @JsonProperty("source") Source source,
+		 @JsonProperty("text") String text,
 
-		// applicable only for streaming responses.
-		@JsonProperty("index") Integer index,
+		 // applicable only for streaming responses.
+		 @JsonProperty("index") Integer index,
 
-		// tool_use response only
-		@JsonProperty("id") String id,
-		@JsonProperty("name") String name,
-		@JsonProperty("input") Map<String, Object> input,
+		 // tool_use response only
+		 @JsonProperty("id") String id,
+		 @JsonProperty("name") String name,
+		 @JsonProperty("input") Map<String, Object> input,
 
-		// tool_result response only
-		@JsonProperty("tool_use_id") String toolUseId,
-		@JsonProperty("content") String content
-		) {
-		// @formatter:on
+		 // tool_result response only
+		 @JsonProperty("tool_use_id") String toolUseId,
+		 @JsonProperty("content") String content
+		 ) {
+		 // @formatter:on
 
 		/**
 		 * Create content block
@@ -664,6 +669,15 @@ public class AnthropicApi {
 		 */
 		public ContentBlock(String mediaType, String data) {
 			this(new Source(mediaType, data));
+		}
+
+		/**
+		 * Create content block
+		 * @param type The type of the content.
+		 * @param source The source of the content.
+		 */
+		public ContentBlock(Type type, Source source) {
+			this(type, source, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -755,7 +769,13 @@ public class AnthropicApi {
 			 * Image message.
 			 */
 			@JsonProperty("image")
-			IMAGE("image");
+			IMAGE("image"),
+
+			/**
+			 * Document message.
+			 */
+			@JsonProperty("document")
+			DOCUMENT("document");
 
 			public final String value;
 
@@ -785,10 +805,10 @@ public class AnthropicApi {
 		@JsonInclude(Include.NON_NULL)
 		public record Source(
 		// @formatter:off
-			@JsonProperty("type") String type,
-			@JsonProperty("media_type") String mediaType,
-			@JsonProperty("data") String data) {
-			// @formatter:on
+			 @JsonProperty("type") String type,
+			 @JsonProperty("media_type") String mediaType,
+			 @JsonProperty("data") String data) {
+			 // @formatter:on
 
 			/**
 			 * Create source
@@ -817,10 +837,10 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(
 	// @formatter:off
-		@JsonProperty("name") String name,
-		@JsonProperty("description") String description,
-		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
-		// @formatter:on
+		 @JsonProperty("name") String name,
+		 @JsonProperty("description") String description,
+		 @JsonProperty("input_schema") Map<String, Object> inputSchema) {
+		 // @formatter:on
 	}
 
 	// CB START EVENT
@@ -843,15 +863,15 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionResponse(
 	// @formatter:off
-		@JsonProperty("id") String id,
-		@JsonProperty("type") String type,
-		@JsonProperty("role") Role role,
-		@JsonProperty("content") List<ContentBlock> content,
-		@JsonProperty("model") String model,
-		@JsonProperty("stop_reason") String stopReason,
-		@JsonProperty("stop_sequence") String stopSequence,
-		@JsonProperty("usage") Usage usage) {
-		// @formatter:on
+		 @JsonProperty("id") String id,
+		 @JsonProperty("type") String type,
+		 @JsonProperty("role") Role role,
+		 @JsonProperty("content") List<ContentBlock> content,
+		 @JsonProperty("model") String model,
+		 @JsonProperty("stop_reason") String stopReason,
+		 @JsonProperty("stop_sequence") String stopSequence,
+		 @JsonProperty("usage") Usage usage) {
+		 // @formatter:on
 	}
 
 	// CB DELTA EVENT
@@ -865,143 +885,143 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(
 	// @formatter:off
-		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens) {
-		 // @formatter:off
-	}
+		 @JsonProperty("input_tokens") Integer inputTokens,
+		 @JsonProperty("output_tokens") Integer outputTokens) {
+		  // @formatter:off
+	 }
 
-	/// ECB STOP
+	 /// ECB STOP
 
-	/**
-	 * Special event used to aggregate multiple tool use events into a single event with
-	 * list of aggregated ContentBlockToolUse.
-	 */
-	public static class ToolUseAggregationEvent implements StreamEvent {
+	 /**
+	  * Special event used to aggregate multiple tool use events into a single event with
+	  * list of aggregated ContentBlockToolUse.
+	  */
+	 public static class ToolUseAggregationEvent implements StreamEvent {
 
-		private Integer index;
+		 private Integer index;
 
-		private String id;
+		 private String id;
 
-		private String name;
+		 private String name;
 
-		private String partialJson = "";
+		 private String partialJson = "";
 
-		private List<ContentBlockStartEvent.ContentBlockToolUse> toolContentBlocks = new ArrayList<>();
+		 private List<ContentBlockStartEvent.ContentBlockToolUse> toolContentBlocks = new ArrayList<>();
 
-		@Override
-		public EventType type() {
-			return EventType.TOOL_USE_AGGREGATE;
-		}
+		 @Override
+		 public EventType type() {
+			 return EventType.TOOL_USE_AGGREGATE;
+		 }
 
-		/**
-		 * Get tool content blocks.
-		 * @return The tool content blocks.
-		 */
-		public List<ContentBlockStartEvent.ContentBlockToolUse> getToolContentBlocks() {
-			return this.toolContentBlocks;
-		}
+		 /**
+		  * Get tool content blocks.
+		  * @return The tool content blocks.
+		  */
+		 public List<ContentBlockStartEvent.ContentBlockToolUse> getToolContentBlocks() {
+			 return this.toolContentBlocks;
+		 }
 
-		/**
-		 * Check if the event is empty.
-		 * @return True if the event is empty, false otherwise.
-		 */
-		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
-		}
+		 /**
+		  * Check if the event is empty.
+		  * @return True if the event is empty, false otherwise.
+		  */
+		 public boolean isEmpty() {
+			 return (this.index == null || this.id == null || this.name == null
+					 || !StringUtils.hasText(this.partialJson));
+		 }
 
-		ToolUseAggregationEvent withIndex(Integer index) {
-			this.index = index;
-			return this;
-		}
+		 ToolUseAggregationEvent withIndex(Integer index) {
+			 this.index = index;
+			 return this;
+		 }
 
-		ToolUseAggregationEvent withId(String id) {
-			this.id = id;
-			return this;
-		}
+		 ToolUseAggregationEvent withId(String id) {
+			 this.id = id;
+			 return this;
+		 }
 
-		ToolUseAggregationEvent withName(String name) {
-			this.name = name;
-			return this;
-		}
+		 ToolUseAggregationEvent withName(String name) {
+			 this.name = name;
+			 return this;
+		 }
 
-		ToolUseAggregationEvent appendPartialJson(String partialJson) {
-			this.partialJson = this.partialJson + partialJson;
-			return this;
-		}
+		 ToolUseAggregationEvent appendPartialJson(String partialJson) {
+			 this.partialJson = this.partialJson + partialJson;
+			 return this;
+		 }
 
-		void squashIntoContentBlock() {
-			Map<String, Object> map = (StringUtils.hasText(this.partialJson))
-					? ModelOptionsUtils.jsonToMap(this.partialJson) : Map.of();
-			this.toolContentBlocks.add(new ContentBlockStartEvent.ContentBlockToolUse("tool_use", this.id, this.name, map));
-			this.index = null;
-			this.id = null;
-			this.name = null;
-			this.partialJson = "";
-		}
+		 void squashIntoContentBlock() {
+			 Map<String, Object> map = (StringUtils.hasText(this.partialJson))
+					 ? ModelOptionsUtils.jsonToMap(this.partialJson) : Map.of();
+			 this.toolContentBlocks.add(new ContentBlockStartEvent.ContentBlockToolUse("tool_use", this.id, this.name, map));
+			 this.index = null;
+			 this.id = null;
+			 this.name = null;
+			 this.partialJson = "";
+		 }
 
-		@Override
-		public String toString() {
-			return "EventToolUseBuilder [index=" + this.index + ", id=" + this.id + ", name=" + this.name + ", partialJson="
-					+ this.partialJson + ", toolUseMap=" + this.toolContentBlocks + "]";
-		}
+		 @Override
+		 public String toString() {
+			 return "EventToolUseBuilder [index=" + this.index + ", id=" + this.id + ", name=" + this.name + ", partialJson="
+					 + this.partialJson + ", toolUseMap=" + this.toolContentBlocks + "]";
+		 }
 
-	}
+	 }
 
-	///////////////////////////////////////
-	/// MESSAGE EVENTS
-	///////////////////////////////////////
+	 ///////////////////////////////////////
+	 /// MESSAGE EVENTS
+	 ///////////////////////////////////////
 
-	// MESSAGE START EVENT
+	 // MESSAGE START EVENT
 
-	/**
-	 * Content block start event.
-	 * @param type The event type.
-	 * @param index The index of the content block.
-	 * @param contentBlock The content block body.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record ContentBlockStartEvent(
-			// @formatter:off
-		@JsonProperty("type") EventType type,
-		@JsonProperty("index") Integer index,
-		@JsonProperty("content_block") ContentBlockBody contentBlock) implements StreamEvent {
+	 /**
+	  * Content block start event.
+	  * @param type The event type.
+	  * @param index The index of the content block.
+	  * @param contentBlock The content block body.
+	  */
+	 @JsonInclude(Include.NON_NULL)
+	 public record ContentBlockStartEvent(
+			 // @formatter:off
+		 @JsonProperty("type") EventType type,
+		 @JsonProperty("index") Integer index,
+		 @JsonProperty("content_block") ContentBlockBody contentBlock) implements StreamEvent {
 
-		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
-				visible = true)
-		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
-				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text") })
-		public interface ContentBlockBody {
-			String type();
-		}
+		 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
+				 visible = true)
+		 @JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
+				 @JsonSubTypes.Type(value = ContentBlockText.class, name = "text") })
+		 public interface ContentBlockBody {
+			 String type();
+		 }
 
-		/**
-		 * Tool use content block.
-		 * @param type The content block type.
-		 * @param id The tool use id.
-		 * @param name The tool use name.
-		 * @param input The tool use input.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ContentBlockToolUse(
-			@JsonProperty("type") String type,
-			@JsonProperty("id") String id,
-			@JsonProperty("name") String name,
-			@JsonProperty("input") Map<String, Object> input) implements ContentBlockBody {
-		}
+		 /**
+		  * Tool use content block.
+		  * @param type The content block type.
+		  * @param id The tool use id.
+		  * @param name The tool use name.
+		  * @param input The tool use input.
+		  */
+		 @JsonInclude(Include.NON_NULL)
+		 public record ContentBlockToolUse(
+			 @JsonProperty("type") String type,
+			 @JsonProperty("id") String id,
+			 @JsonProperty("name") String name,
+			 @JsonProperty("input") Map<String, Object> input) implements ContentBlockBody {
+		 }
 
-		/**
-		 * Text content block.
-		 * @param type The content block type.
-		 * @param text The text content.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ContentBlockText(
-			@JsonProperty("type") String type,
-			@JsonProperty("text") String text) implements ContentBlockBody {
-		}
-	}
-	// @formatter:on
+		 /**
+		  * Text content block.
+		  * @param type The content block type.
+		  * @param text The text content.
+		  */
+		 @JsonInclude(Include.NON_NULL)
+		 public record ContentBlockText(
+			 @JsonProperty("type") String type,
+			 @JsonProperty("text") String text) implements ContentBlockBody {
+		 }
+	 }
+	 // @formatter:on
 
 	// MESSAGE DELTA EVENT
 
@@ -1015,41 +1035,41 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockDeltaEvent(
 	// @formatter:off
-		@JsonProperty("type") EventType type,
-		@JsonProperty("index") Integer index,
-		@JsonProperty("delta") ContentBlockDeltaBody delta) implements StreamEvent {
+		 @JsonProperty("type") EventType type,
+		 @JsonProperty("index") Integer index,
+		 @JsonProperty("delta") ContentBlockDeltaBody delta) implements StreamEvent {
 
-		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
-				visible = true)
-		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockDeltaText.class, name = "text_delta"),
-				@JsonSubTypes.Type(value = ContentBlockDeltaJson.class, name = "input_json_delta") })
-		public interface ContentBlockDeltaBody {
-			String type();
-		}
+		 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
+				 visible = true)
+		 @JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockDeltaText.class, name = "text_delta"),
+				 @JsonSubTypes.Type(value = ContentBlockDeltaJson.class, name = "input_json_delta") })
+		 public interface ContentBlockDeltaBody {
+			 String type();
+		 }
 
-		/**
-		 * Text content block delta.
-		 * @param type The content block type.
-		 * @param text The text content.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ContentBlockDeltaText(
-			@JsonProperty("type") String type,
-			@JsonProperty("text") String text) implements ContentBlockDeltaBody {
-		}
+		 /**
+		  * Text content block delta.
+		  * @param type The content block type.
+		  * @param text The text content.
+		  */
+		 @JsonInclude(Include.NON_NULL)
+		 public record ContentBlockDeltaText(
+			 @JsonProperty("type") String type,
+			 @JsonProperty("text") String text) implements ContentBlockDeltaBody {
+		 }
 
-		/**
-		 * JSON content block delta.
-		 * @param type The content block type.
-		 * @param partialJson The partial JSON content.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ContentBlockDeltaJson(
-			@JsonProperty("type") String type,
-			@JsonProperty("partial_json") String partialJson) implements ContentBlockDeltaBody {
-		}
-	}
-	// @formatter:on
+		 /**
+		  * JSON content block delta.
+		  * @param type The content block type.
+		  * @param partialJson The partial JSON content.
+		  */
+		 @JsonInclude(Include.NON_NULL)
+		 public record ContentBlockDeltaJson(
+			 @JsonProperty("type") String type,
+			 @JsonProperty("partial_json") String partialJson) implements ContentBlockDeltaBody {
+		 }
+	 }
+	 // @formatter:on
 
 	// MESSAGE STOP EVENT
 
@@ -1062,10 +1082,10 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlockStopEvent(
 	// @formatter:off
-		@JsonProperty("type") EventType type,
-		@JsonProperty("index") Integer index) implements StreamEvent {
-	}
-	// @formatter:on
+		 @JsonProperty("type") EventType type,
+		 @JsonProperty("index") Integer index) implements StreamEvent {
+	 }
+	 // @formatter:on
 
 	/**
 	 * Message start event.
@@ -1075,10 +1095,10 @@ public class AnthropicApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record MessageStartEvent(// @formatter:off
-		@JsonProperty("type") EventType type,
-		@JsonProperty("message") ChatCompletionResponse message) implements StreamEvent {
-	}
-	// @formatter:on
+		 @JsonProperty("type") EventType type,
+		 @JsonProperty("message") ChatCompletionResponse message) implements StreamEvent {
+	 }
+	 // @formatter:on
 
 	/**
 	 * Message delta event.
@@ -1090,31 +1110,31 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record MessageDeltaEvent(
 	// @formatter:off
-		@JsonProperty("type") EventType type,
-		@JsonProperty("delta") MessageDelta delta,
-		@JsonProperty("usage") MessageDeltaUsage usage) implements StreamEvent {
+		 @JsonProperty("type") EventType type,
+		 @JsonProperty("delta") MessageDelta delta,
+		 @JsonProperty("usage") MessageDeltaUsage usage) implements StreamEvent {
 
-		/**
-		 * Message delta.
-		 * @param stopReason The stop reason.
-		 * @param stopSequence The stop sequence.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record MessageDelta(
-			@JsonProperty("stop_reason") String stopReason,
-			@JsonProperty("stop_sequence") String stopSequence) {
-		}
+		 /**
+		  * Message delta.
+		  * @param stopReason The stop reason.
+		  * @param stopSequence The stop sequence.
+		  */
+		 @JsonInclude(Include.NON_NULL)
+		 public record MessageDelta(
+			 @JsonProperty("stop_reason") String stopReason,
+			 @JsonProperty("stop_sequence") String stopSequence) {
+		 }
 
-		/**
-		 * Message delta usage.
-		 * @param outputTokens The output tokens.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record MessageDeltaUsage(
-			@JsonProperty("output_tokens") Integer outputTokens) {
-		}
-	}
-	// @formatter:on
+		 /**
+		  * Message delta usage.
+		  * @param outputTokens The output tokens.
+		  */
+		 @JsonInclude(Include.NON_NULL)
+		 public record MessageDeltaUsage(
+			 @JsonProperty("output_tokens") Integer outputTokens) {
+		 }
+	 }
+	 // @formatter:on
 
 	/**
 	 * Message stop event.
@@ -1124,9 +1144,9 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record MessageStopEvent(
 	// @formatter:off
-		@JsonProperty("type") EventType type) implements StreamEvent {
-	}
-	// @formatter:on
+		 @JsonProperty("type") EventType type) implements StreamEvent {
+	 }
+	 // @formatter:on
 
 	///////////////////////////////////////
 	/// ERROR EVENT
@@ -1140,21 +1160,21 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ErrorEvent(
 	// @formatter:off
-		@JsonProperty("type") EventType type,
-		@JsonProperty("error") Error error) implements StreamEvent {
+		 @JsonProperty("type") EventType type,
+		 @JsonProperty("error") Error error) implements StreamEvent {
 
-		/**
-		 * Error body.
-		 * @param type The error type.
-		 * @param message The error message.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record Error(
-			@JsonProperty("type") String type,
-			@JsonProperty("message") String message) {
-		}
-	}
-	// @formatter:on
+		 /**
+		  * Error body.
+		  * @param type The error type.
+		  * @param message The error message.
+		  */
+		 @JsonInclude(Include.NON_NULL)
+		 public record Error(
+			 @JsonProperty("type") String type,
+			 @JsonProperty("message") String message) {
+		 }
+	 }
+	 // @formatter:on
 
 	///////////////////////////////////////
 	/// PING EVENT
@@ -1167,8 +1187,8 @@ public class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record PingEvent(
 	// @formatter:off
-		@JsonProperty("type") EventType type) implements StreamEvent {
-	}
-	// @formatter:on
+		 @JsonProperty("type") EventType type) implements StreamEvent {
+	 }
+	 // @formatter:on
 
 }

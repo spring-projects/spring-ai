@@ -258,8 +258,6 @@ class VertexAiGeminiChatModelIT {
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
-		System.out.println(response.getResult().getOutput().getContent());
-
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Spring AI", "portable API");
 	}
 

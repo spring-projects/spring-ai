@@ -37,6 +37,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.metadata.AnthropicUsage;
@@ -58,6 +59,7 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -355,6 +357,16 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	}
 
+	private Type getContentBlockTypeByMedia(Media media) {
+		if (media.getMimeType().toString().startsWith("image")) {
+			return Type.IMAGE;
+		}
+		else if (media.getMimeType().toString().contains("pdf")) {
+			return Type.DOCUMENT;
+		}
+		return Type.IMAGE;
+	}
+
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
 		Set<String> functionsForThisRequest = new HashSet<>();
@@ -367,11 +379,12 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getContent())));
 					if (message instanceof UserMessage userMessage) {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-							List<ContentBlock> mediaContent = userMessage.getMedia()
-								.stream()
-								.map(media -> new ContentBlock(media.getMimeType().toString(),
-										this.fromMediaData(media.getData())))
-								.toList();
+							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
+								Type contentBlockType = getContentBlockTypeByMedia(media);
+								var source = new Source(media.getMimeType().toString(),
+										this.fromMediaData(media.getData()));
+								return new ContentBlock(contentBlockType, source);
+							}).toList();
 							contents.addAll(mediaContent);
 						}
 					}
