@@ -61,8 +61,8 @@ public class FunctionCallbackInPrompt2IT {
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
 					.functions(FunctionCallback.builder()
-							.description("Get the weather in location")
 							.function("CurrentWeatherService", new MockWeatherService())
+							.description("Get the weather in location")
 							.inputType(MockWeatherService.Request.class)
 							.build())
 					.call().content();
@@ -89,11 +89,11 @@ public class FunctionCallbackInPrompt2IT {
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("Turn the light on in the kitchen and in the living room!")
 					.functions(FunctionCallback.builder()
-						.description("Turn light on or off in a room")
 						.function("turnLight", (LightInfo lightInfo) -> {
 							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
 							state.put(lightInfo.roomName(), lightInfo.isOn());
 						})
+						.description("Turn light on or off in a room")
 						.inputType(LightInfo.class)
 						.build())
 					.call().content();
@@ -115,8 +115,8 @@ public class FunctionCallbackInPrompt2IT {
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
 					.functions(FunctionCallback.builder()
-						.description("Get the weather in location")
 						.function("CurrentWeatherService", input -> "18 degrees Celsius")
+						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 					.build())
 					.call().content();

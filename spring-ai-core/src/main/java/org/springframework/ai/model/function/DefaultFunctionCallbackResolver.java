@@ -117,25 +117,25 @@ public class DefaultFunctionCallbackResolver implements ApplicationContextAware,
 		if (KotlinDetector.isKotlinPresent()) {
 			if (KotlinDelegate.isKotlinFunction(functionType.toClass())) {
 				return FunctionCallback.builder()
+					.function(beanName, KotlinDelegate.wrapKotlinFunction(bean))
 					.schemaType(this.schemaType)
 					.description(functionDescription)
-					.function(beanName, KotlinDelegate.wrapKotlinFunction(bean))
 					.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 					.build();
 			}
 			if (KotlinDelegate.isKotlinBiFunction(functionType.toClass())) {
 				return FunctionCallback.builder()
+					.function(beanName, KotlinDelegate.wrapKotlinBiFunction(bean))
 					.description(functionDescription)
 					.schemaType(this.schemaType)
-					.function(beanName, KotlinDelegate.wrapKotlinBiFunction(bean))
 					.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 					.build();
 			}
 			if (KotlinDelegate.isKotlinSupplier(functionType.toClass())) {
 				return FunctionCallback.builder()
+					.function(beanName, KotlinDelegate.wrapKotlinSupplier(bean))
 					.description(functionDescription)
 					.schemaType(this.schemaType)
-					.function(beanName, KotlinDelegate.wrapKotlinSupplier(bean))
 					.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 					.build();
 			}
@@ -143,33 +143,33 @@ public class DefaultFunctionCallbackResolver implements ApplicationContextAware,
 
 		if (bean instanceof Function<?, ?> function) {
 			return FunctionCallback.builder()
+				.function(beanName, function)
 				.schemaType(this.schemaType)
 				.description(functionDescription)
-				.function(beanName, function)
 				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 				.build();
 		}
 		if (bean instanceof BiFunction<?, ?, ?>) {
 			return FunctionCallback.builder()
+				.function(beanName, (BiFunction<?, ToolContext, ?>) bean)
 				.description(functionDescription)
 				.schemaType(this.schemaType)
-				.function(beanName, (BiFunction<?, ToolContext, ?>) bean)
 				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 				.build();
 		}
 		if (bean instanceof Supplier<?> supplier) {
 			return FunctionCallback.builder()
+				.function(beanName, supplier)
 				.description(functionDescription)
 				.schemaType(this.schemaType)
-				.function(beanName, supplier)
 				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 				.build();
 		}
 		if (bean instanceof Consumer<?> consumer) {
 			return FunctionCallback.builder()
+				.function(beanName, consumer)
 				.description(functionDescription)
 				.schemaType(this.schemaType)
-				.function(beanName, consumer)
 				.inputType(ParameterizedTypeReference.forType(functionInputType.getType()))
 				.build();
 		}

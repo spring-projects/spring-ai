@@ -276,9 +276,9 @@ class AnthropicChatModelIT {
 		var promptOptions = AnthropicChatOptions.builder()
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
-				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -304,9 +304,9 @@ class AnthropicChatModelIT {
 		var promptOptions = AnthropicChatOptions.builder()
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
-				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

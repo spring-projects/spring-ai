@@ -56,9 +56,9 @@ public class MethodInvokingFunctionCallbackTests {
 	public void staticMethod() throws NoSuchMethodException, SecurityException {
 
 		var functionCallback = FunctionCallback.builder()
+			.method("myStaticMethod", String.class, Unit.class, int.class, MyRecord.class, List.class)
 			.description("weather at location")
 			.objectMapper(new ObjectMapper())
-			.method("myStaticMethod", String.class, Unit.class, int.class, MyRecord.class, List.class)
 			.targetClass(TestClassWithFunctionMethods.class)
 			.build();
 
@@ -80,8 +80,8 @@ public class MethodInvokingFunctionCallbackTests {
 		var object = new TestClassWithFunctionMethods();
 
 		var functionCallback = FunctionCallback.builder()
-			.description("weather at location")
 			.method("myNonStaticMethod", String.class, Unit.class, int.class, MyRecord.class, List.class)
+			.description("weather at location")
 			.targetObject(object)
 			.build();
 
@@ -101,9 +101,9 @@ public class MethodInvokingFunctionCallbackTests {
 	public void noArgsNoReturnMethod() throws NoSuchMethodException, SecurityException {
 
 		var functionCallback = FunctionCallback.builder()
+			.method("argumentLessReturnVoid")
 			.description("weather at location")
 			.objectMapper(new ObjectMapper())
-			.method("argumentLessReturnVoid")
 			.targetClass(TestClassWithFunctionMethods.class)
 			.build();
 

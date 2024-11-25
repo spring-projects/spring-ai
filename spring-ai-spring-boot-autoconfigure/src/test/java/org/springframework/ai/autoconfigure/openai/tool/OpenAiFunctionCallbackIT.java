@@ -107,8 +107,8 @@ public class OpenAiFunctionCallbackIT {
 		public FunctionCallback weatherFunctionInfo() {
 
 			return FunctionCallback.builder()
-				.description("Get the weather in location")
 				.function("WeatherInfo", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}
