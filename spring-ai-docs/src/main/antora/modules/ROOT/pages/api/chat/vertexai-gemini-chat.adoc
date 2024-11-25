@@ -125,8 +125,8 @@ Read more about xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vert
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including `text`, `pdf`, `images`, `audio`, and other data formats. 
-This paradigm represents a significant advancement in AI models.
 
+=== Image, Audio, Video
 Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video. 
 For more details, refer to the blog post https://blog.google/technology/ai/google-gemini-ai/#introducing-gemini[Introducing Gemini].
 
@@ -145,6 +145,23 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
 
 ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage)));
 ----
+
+=== PDF
+
+Latest Vertex Gemini provides support for PDF input types..
+Use the `application/pdf` media type to attach a PDF file to the message:
+
+[source,java]
+----
+var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
+
+var userMessage = new UserMessage(
+        "You are a very professional document summarization specialist. Please summarize the given document.",
+        List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+
+var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+----
+
 
 == Sample Controller
 
