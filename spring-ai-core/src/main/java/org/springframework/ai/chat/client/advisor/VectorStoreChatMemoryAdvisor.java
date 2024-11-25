@@ -45,6 +45,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Oganes Bozoyan
  * @since 1.0.0
  */
 public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
@@ -65,20 +66,45 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	private final String systemTextAdvise;
 
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
+	/**
+	 * @deprecated use {@link Builder} instead.
+	 */
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore) {
 		this(vectorStore, DEFAULT_SYSTEM_TEXT_ADVISE);
 	}
 
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
+	/**
+	 * @deprecated use {@link Builder} instead.
+	 */
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String systemTextAdvise) {
 		super(vectorStore);
 		this.systemTextAdvise = systemTextAdvise;
 	}
 
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
+	/**
+	 * @deprecated use {@link Builder} instead.
+	 */
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize) {
 		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE);
 	}
 
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
+	/**
+	 * @deprecated use {@link Builder} instead.
+	 */
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+			int chatHistoryWindowSize, int order) {
+		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE, order);
+	}
+
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
+	/**
+	 * @deprecated use {@link Builder} instead.
+	 */
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize, String systemTextAdvise) {
 		this(vectorStore, defaultConversationId, chatHistoryWindowSize, systemTextAdvise,
@@ -95,7 +121,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	 * @param systemTextAdvise the system text advice used for the chat advisor system.
 	 * @param order the order of precedence for this advisor in the chain.
 	 */
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+	private VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize, String systemTextAdvise, int order) {
 		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.systemTextAdvise = systemTextAdvise;
@@ -222,7 +248,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		@Override
 		public VectorStoreChatMemoryAdvisor build() {
 			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.systemTextAdvise);
+					this.systemTextAdvise, this.order);
 		}
 
 	}
