@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -244,6 +245,22 @@ class VertexAiGeminiChatModelIT {
 		// "apple", "basket");
 
 		// https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/use-cases/intro_multimodal_use_cases.ipynb
+	}
+
+	@Test
+	void multiModalityPdfTest() throws IOException {
+
+		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
+
+		var userMessage = new UserMessage(
+				"You are a very professional document summarization specialist. Please summarize the given document.",
+				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+
+		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+
+		System.out.println(response.getResult().getOutput().getContent());
+
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Spring AI", "portable API");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
