@@ -87,9 +87,14 @@ public class AzureOpenAiImageModelIT {
 
 		@Bean
 		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder()
-				.credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_IMAGE_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_IMAGE_ENDPOINT"))
+			String apiKey = System.getenv("AZURE_OPENAI_IMAGE_API_KEY");
+			String endpoint = System.getenv("AZURE_OPENAI_IMAGE_ENDPOINT");
+
+			// System.out.println("API Key: " + apiKey);
+			// System.out.println("Endpoint: " + endpoint);
+
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(apiKey))
+				.endpoint(endpoint)
 				.buildClient();
 		}
 
