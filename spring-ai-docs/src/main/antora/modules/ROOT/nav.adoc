@@ -6,7 +6,7 @@
 * xref:api/index.adoc[AI Models]
 ** xref:api/chatmodel.adoc[Chat Models]
 *** xref:api/chat/comparison.adoc[Chat Models Comparison]
-*** xref:api/bedrock-converse.adoc[Amazon Bedrock Converse]
+*** xref:api/chat/bedrock-converse.adoc[Amazon Bedrock Converse]
 *** xref:api/bedrock-chat.adoc[Amazon Bedrock]
 **** xref:api/chat/bedrock/bedrock-anthropic3.adoc[Anthropic3]
 **** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic2]
