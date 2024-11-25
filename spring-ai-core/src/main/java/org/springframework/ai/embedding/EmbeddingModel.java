@@ -78,25 +78,23 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param options {@link EmbeddingOptions}.
 	 * @param batchingStrategy {@link BatchingStrategy}.
 	 * @return a list of float[] that represents the vectors for the incoming
-	 * {@link Document}s.
+	 * {@link Document}s. The returned list is expected to be in the same order of the
+	 * {@link Document} list.
 	 */
 	default List<float[]> embed(List<Document> documents, EmbeddingOptions options, BatchingStrategy batchingStrategy) {
 		Assert.notNull(documents, "Documents must not be null");
-		List<float[]> embeddings = new ArrayList<>();
-
+		List<float[]> embeddings = new ArrayList<>(documents.size());
 		List<List<Document>> batch = batchingStrategy.batch(documents);
-
 		for (List<Document> subBatch : batch) {
 			List<String> texts = subBatch.stream().map(Document::getContent).toList();
 			EmbeddingRequest request = new EmbeddingRequest(texts, options);
 			EmbeddingResponse response = this.call(request);
 			for (int i = 0; i < subBatch.size(); i++) {
-				Document document = subBatch.get(i);
-				float[] output = response.getResults().get(i).getOutput();
-				embeddings.add(output);
-				document.setEmbedding(output);
+				embeddings.add(response.getResults().get(i).getOutput());
 			}
 		}
+		Assert.isTrue(embeddings.size() == documents.size(),
+				"Embeddings must have the same number as that of the documents");
 		return embeddings;
 	}
 

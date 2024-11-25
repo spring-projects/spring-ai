@@ -197,9 +197,12 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			return;
 		}
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
-		List<WeaviateObject> weaviateObjects = documents.stream().map(this::toWeaviateObject).toList();
+		List<WeaviateObject> weaviateObjects = documents.stream()
+			.map(document -> toWeaviateObject(document, documents, embeddings))
+			.toList();
 
 		Result<ObjectGetResponse[]> response = this.weaviateClient.batch()
 			.objectsBatcher()
@@ -235,7 +238,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 	}
 
-	private WeaviateObject toWeaviateObject(Document document) {
+	private WeaviateObject toWeaviateObject(Document document, List<Document> documents, List<float[]> embeddings) {
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();
@@ -259,7 +262,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		return WeaviateObject.builder()
 			.className(this.weaviateObjectClass)
 			.id(document.getId())
-			.vector(EmbeddingUtils.toFloatArray(document.getEmbedding()))
+			.vector(EmbeddingUtils.toFloatArray(embeddings.get(documents.indexOf(document))))
 			.properties(fields)
 			.build();
 	}
@@ -382,10 +385,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		// Content
 		String content = (String) item.get(CONTENT_FIELD_NAME);
 
-		var document = new Document(id, content, metadata);
-		document.setEmbedding(EmbeddingUtils.toPrimitive(EmbeddingUtils.doubleToFloat(embedding)));
-
-		return document;
+		return new Document(id, content, metadata);
 	}
 
 	@Override

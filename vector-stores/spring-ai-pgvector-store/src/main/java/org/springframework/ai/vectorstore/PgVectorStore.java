@@ -195,10 +195,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		List<List<Document>> batchedDocuments = batchDocuments(documents);
-		batchedDocuments.forEach(this::insertOrUpdateBatch);
+		batchedDocuments.forEach(batchDocument -> insertOrUpdateBatch(batchDocument, documents, embeddings));
 	}
 
 	private List<List<Document>> batchDocuments(List<Document> documents) {
@@ -209,7 +210,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return batches;
 	}
 
-	private void insertOrUpdateBatch(List<Document> batch) {
+	private void insertOrUpdateBatch(List<Document> batch, List<Document> documents, List<float[]> embeddings) {
 		String sql = "INSERT INTO " + getFullyQualifiedTableName()
 				+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
 				+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
@@ -222,7 +223,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				var document = batch.get(i);
 				var content = document.getContent();
 				var json = toJson(document.getMetadata());
-				var embedding = document.getEmbedding();
+				var embedding = embeddings.get(documents.indexOf(document));
 				var pGvector = new PGvector(embedding);
 
 				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
@@ -504,10 +505,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			Map<String, Object> metadata = toMap(pgMetadata);
 			metadata.put(COLUMN_DISTANCE, distance);
 
-			Document document = new Document(id, content, metadata);
-			document.setEmbedding(toFloatArray(embedding));
-
-			return document;
+			return new Document(id, content, metadata);
 		}
 
 		private float[] toFloatArray(PGobject embedding) throws SQLException {

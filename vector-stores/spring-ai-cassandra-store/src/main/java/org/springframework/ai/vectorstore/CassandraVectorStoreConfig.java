@@ -90,6 +90,8 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	final boolean disallowSchemaChanges;
 
+	// TODO: Remove this flag as the document no longer holds embeddings.
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	final boolean returnEmbeddings;
 
 	final DocumentIdTranslator documentIdTranslator;
