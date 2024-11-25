@@ -191,7 +191,7 @@ public abstract class AbstractToolCallSupport {
 					}
 					else {
 						throw new IllegalStateException(
-								"No function callback [" + functionName + "] fund in tht FunctionCallbackRegister");
+								"No function callback [" + functionName + "] found in tht FunctionCallbackRegister");
 					}
 				}
 				else {

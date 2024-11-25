@@ -129,6 +129,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	 * Moonshot Chat API.
 	 * @param options The MoonshotChatOptions to configure the chat client.
 	 * @param functionCallbackResolver The function callback resolver to
+	 * resolve the function callbacks from the application context.
 	 * @param retryTemplate The retry template.
 	 */
 	public MoonshotChatModel(MoonshotApi moonshotApi, MoonshotChatOptions options,

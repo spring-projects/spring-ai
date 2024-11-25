@@ -155,7 +155,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
 	 * Chat API.
 	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @param functionCallbackResolver The function callback context.
+	 * @param functionCallbackResolver The function callback resolver.
 	 * @param retryTemplate The retry template.
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,

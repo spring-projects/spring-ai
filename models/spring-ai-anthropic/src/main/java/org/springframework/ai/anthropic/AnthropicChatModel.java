@@ -155,7 +155,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * @param defaultOptions the default options used for the chat completion requests.
 	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
 	 * @param functionCallbackResolver the function callback resolver used to resolve the
-	 * function by bean name.s
+	 * function by bean name
 	 */
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
 			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver) {
