@@ -73,20 +73,19 @@ public class DefaultFunctionCallbackResolver implements ApplicationContextAware,
 	}
 
 	@Override
-	public FunctionCallback getFunctionCallback(@NonNull String beanName, @Nullable String defaultDescription) {
+	public FunctionCallback resolve(@NonNull String beanName) {
 		ResolvableType functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
 		ResolvableType functionInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(functionType))
 				? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(functionType, 0);
 
-		String functionDescription = resolveFunctionDescription(beanName, defaultDescription,
-				functionInputType.toClass());
+		String functionDescription = resolveFunctionDescription(beanName, functionInputType.toClass());
 		Object bean = this.applicationContext.getBean(beanName);
 
 		return buildFunctionCallback(beanName, functionType, functionInputType, functionDescription, bean);
 	}
 
-	private String resolveFunctionDescription(String beanName, String defaultDescription, Class<?> functionInputClass) {
-		String functionDescription = defaultDescription;
+	private String resolveFunctionDescription(String beanName, Class<?> functionInputClass) {
+		String functionDescription = "";
 
 		if (!StringUtils.hasText(functionDescription)) {
 			Description descriptionAnnotation = this.applicationContext.findAnnotationOnBean(beanName,

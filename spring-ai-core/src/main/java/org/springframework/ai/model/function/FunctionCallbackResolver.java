@@ -16,11 +16,9 @@
 package org.springframework.ai.model.function;
 
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 /**
- * Strategy interface for resolving {@link FunctionCallback} instances as bean from the
- * application context.
+ * Strategy interface for resolving {@link FunctionCallback} instances.
  *
  * @author Christian Tzolov
  * @since 1.0.0
@@ -29,9 +27,9 @@ public interface FunctionCallbackResolver {
 
 	/**
 	 * Resolve the {@link FunctionCallback} instance by its bean name.
-	 * @param beanName the name of the bean to resolve
+	 * @param name the name of the function to resolve
 	 * @return the {@link FunctionCallback} instance
 	 */
-	FunctionCallback getFunctionCallback(@NonNull String beanName, @Nullable String defaultDescription);
+	FunctionCallback resolve(@NonNull String name);
 
 }

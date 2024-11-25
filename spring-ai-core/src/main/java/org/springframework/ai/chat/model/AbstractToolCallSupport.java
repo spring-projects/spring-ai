@@ -184,8 +184,7 @@ public abstract class AbstractToolCallSupport {
 			if (!this.functionCallbackRegister.containsKey(functionName)) {
 
 				if (this.functionCallbackResolver != null) {
-					FunctionCallback functionCallback = this.functionCallbackResolver.getFunctionCallback(functionName,
-							null);
+					FunctionCallback functionCallback = this.functionCallbackResolver.resolve(functionName);
 					if (functionCallback != null) {
 						this.functionCallbackRegister.put(functionName, functionCallback);
 					}
