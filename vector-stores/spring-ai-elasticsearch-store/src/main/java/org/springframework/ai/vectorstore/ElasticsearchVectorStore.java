@@ -72,6 +72,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -133,11 +134,14 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		for (Document document : documents) {
-			bulkRequestBuilder.operations(op -> op
-				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
+			ElasticSearchDocument doc = new ElasticSearchDocument(document.getId(), document.getContent(),
+					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+			bulkRequestBuilder.operations(
+					op -> op.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(doc)));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
@@ -280,6 +284,17 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			return this.options.getSimilarity().name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.options.getSimilarity()).value();
+	}
+
+	/**
+	 * The representation of {@link Document} along with its embedding.
+	 *
+	 * @param id The id of the document
+	 * @param content The content of the document
+	 * @param metadata The metadata of the document
+	 * @param embedding The vectors representing the content of the document
+	 */
+	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
 }

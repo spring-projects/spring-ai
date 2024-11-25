@@ -167,9 +167,9 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 	public void add(final List<Document> documents) {
 		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(documents.size() / 0.75f));
 		for (Document doc : documents) {
-			doc.setEmbedding(this.embeddingModel.embed(doc));
 			var id = toChunkId(doc.getId());
-			var chunk = new DocumentChunk(doc.getContent(), doc.getMetadata(), toFloat32Vector(doc.getEmbedding()));
+			var chunk = new DocumentChunk(doc.getContent(), doc.getMetadata(),
+					toFloat32Vector(this.embeddingModel.embed(doc)));
 			chunks.put(id, chunk);
 		}
 		this.documentChunks.putAll(chunks);

@@ -197,9 +197,12 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			return;
 		}
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
-		List<WeaviateObject> weaviateObjects = documents.stream().map(this::toWeaviateObject).toList();
+		List<WeaviateObject> weaviateObjects = documents.stream()
+			.map(document -> toWeaviateObject(document, documents, embeddings))
+			.toList();
 
 		Result<ObjectGetResponse[]> response = this.weaviateClient.batch()
 			.objectsBatcher()
@@ -235,7 +238,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 	}
 
-	private WeaviateObject toWeaviateObject(Document document) {
+	private WeaviateObject toWeaviateObject(Document document, List<Document> documents, List<float[]> embeddings) {
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();
@@ -259,7 +262,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		return WeaviateObject.builder()
 			.className(this.weaviateObjectClass)
 			.id(document.getId())
-			.vector(EmbeddingUtils.toFloatArray(document.getEmbedding()))
+			.vector(EmbeddingUtils.toFloatArray(embeddings.get(documents.indexOf(document))))
 			.properties(fields)
 			.build();
 	}
@@ -363,7 +366,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		Map<String, ?> additional = (Map<String, ?>) item.get(ADDITIONAL_FIELD_NAME);
 		double certainty = (Double) additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME);
 		String id = (String) additional.get(ADDITIONAL_ID_FIELD_NAME);
-		List<Double> embedding = ((List<Double>) additional.get(ADDITIONAL_VECTOR_FIELD_NAME)).stream().toList();
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
@@ -382,13 +384,13 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		// Content
 		String content = (String) item.get(CONTENT_FIELD_NAME);
 
+		// @formatter:off
 		return Document.builder()
 			.id(id)
 			.content(content)
 			.metadata(metadata)
-			.embedding(EmbeddingUtils.toPrimitive(EmbeddingUtils.doubleToFloat(embedding)))
 			.score(certainty)
-			.build();
+			.build(); // @formatter:on
 	}
 
 	@Override

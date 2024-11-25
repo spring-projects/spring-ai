@@ -124,11 +124,12 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param namespace The namespace to add the documents to
 	 */
 	public void add(List<Document> documents, String namespace) {
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 		List<Vector> upsertVectors = documents.stream()
 			.map(document -> Vector.newBuilder()
 				.setId(document.getId())
-				.addAllValues(EmbeddingUtils.toList(document.getEmbedding()))
+				.addAllValues(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))))
 				.setMetadata(metadataToStruct(document))
 				.build())
 			.toList();

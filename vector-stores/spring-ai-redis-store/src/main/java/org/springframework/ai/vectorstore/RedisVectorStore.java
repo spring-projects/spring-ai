@@ -163,12 +163,12 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	public void doAdd(List<Document> documents) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 
-			this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+					this.batchingStrategy);
 
 			for (Document document : documents) {
-				document.setEmbedding(document.getEmbedding());
 				var fields = new HashMap<String, Object>();
-				fields.put(this.config.embeddingFieldName, document.getEmbedding());
+				fields.put(this.config.embeddingFieldName, embeddings.get(documents.indexOf(document)));
 				fields.put(this.config.contentFieldName, document.getContent());
 				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);

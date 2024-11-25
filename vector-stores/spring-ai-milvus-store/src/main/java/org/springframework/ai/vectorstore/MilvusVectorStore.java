@@ -161,7 +161,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		for (Document document : documents) {
 			docIdArray.add(document.getId());
@@ -169,7 +170,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			// the content used to compute the embeddings
 			contentArray.add(document.getContent());
 			metadataArray.add(new JSONObject(document.getMetadata()));
-			embeddingArray.add(EmbeddingUtils.toList(document.getEmbedding()));
+			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();

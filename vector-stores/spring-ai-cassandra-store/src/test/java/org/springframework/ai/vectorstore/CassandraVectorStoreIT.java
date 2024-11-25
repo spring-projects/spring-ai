@@ -122,18 +122,12 @@ class CassandraVectorStoreIT {
 
 				List<Document> documents = documents();
 				store.add(documents);
-				for (Document d : documents) {
-					assertThat(d.getEmbedding()).satisfiesAnyOf(e -> assertThat(e).isNotNull(),
-							e -> assertThat(e).isNotEmpty());
-				}
 
 				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
-				assertThat(resultDoc.getEmbedding()).satisfiesAnyOf(e -> assertThat(e).isNull(),
-						e -> assertThat(e).isEmpty());
 
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
@@ -159,17 +153,12 @@ class CassandraVectorStoreIT {
 			try (CassandraVectorStore store = createTestStore(context, builder)) {
 				List<Document> documents = documents();
 				store.add(documents);
-				for (Document d : documents) {
-					assertThat(d.getEmbedding()).satisfiesAnyOf(e -> assertThat(e).isNotNull(),
-							e -> assertThat(e).isNotEmpty());
-				}
 
 				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
-				assertThat(resultDoc.getEmbedding()).isNotEmpty();
 
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");

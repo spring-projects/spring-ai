@@ -208,10 +208,11 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 		UploadRequest upload = new UploadRequest(documents.stream()
-			.map(document -> new UploadRequest.Embedding(document.getId(), document.getEmbedding(), DOCUMENT_FIELD,
-					document.getContent(), document.getMetadata()))
+			.map(document -> new UploadRequest.Embedding(document.getId(), embeddings.get(documents.indexOf(document)),
+					DOCUMENT_FIELD, document.getContent(), document.getMetadata()))
 			.toList());
 
 		String embeddingsJson = null;

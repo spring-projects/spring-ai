@@ -127,12 +127,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		try {
 
 			// Compute and assign an embedding to the document.
-			this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+					this.batchingStrategy);
 
 			List<PointStruct> points = documents.stream()
 				.map(document -> PointStruct.newBuilder()
 					.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
-					.setVectors(io.qdrant.client.VectorsFactory.vectors(document.getEmbedding()))
+					.setVectors(io.qdrant.client.VectorsFactory.vectors(embeddings.get(documents.indexOf(document))))
 					.putAllPayload(toPayload(document))
 					.build())
 				.toList();

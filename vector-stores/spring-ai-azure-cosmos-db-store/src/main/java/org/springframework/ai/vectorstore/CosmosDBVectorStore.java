@@ -204,13 +204,14 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public void doAdd(List<Document> documents) {
 
 		// Batch the documents based on the batching strategy
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID
 		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
-			CosmosItemOperation operation = CosmosBulkOperations
-				.getCreateItemOperation(mapCosmosDocument(doc, doc.getEmbedding()), new PartitionKey(doc.getId()));
+			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
+					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))), new PartitionKey(doc.getId()));
 			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
 			// with the operation
 		}).toList();

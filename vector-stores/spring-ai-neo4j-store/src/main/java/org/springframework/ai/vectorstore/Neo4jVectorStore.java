@@ -108,9 +108,12 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public void doAdd(List<Document> documents) {
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
-		var rows = documents.stream().map(this::documentToRecord).toList();
+		var rows = documents.stream()
+			.map(document -> documentToRecord(document, embeddings.get(documents.indexOf(document))))
+			.toList();
 
 		try (var session = this.driver.session()) {
 			var statement = """
@@ -204,8 +207,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		}
 	}
 
-	private Map<String, Object> documentToRecord(Document document) {
-		document.setEmbedding(document.getEmbedding());
+	private Map<String, Object> documentToRecord(Document document, float[] embedding) {
 
 		var row = new HashMap<String, Object>();
 
@@ -217,7 +219,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
 
-		row.put(this.config.embeddingProperty, Values.value(document.getEmbedding()));
+		row.put(this.config.embeddingProperty, Values.value(embedding));
 		return row;
 	}
 

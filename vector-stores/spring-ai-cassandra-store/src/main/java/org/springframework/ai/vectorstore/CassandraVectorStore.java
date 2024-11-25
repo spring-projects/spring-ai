@@ -181,7 +181,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	public void doAdd(List<Document> documents) {
 		var futures = new CompletableFuture[documents.size()];
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		int i = 0;
 		for (Document d : documents) {
@@ -196,7 +197,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 				builder = builder.setString(this.conf.schema.content(), d.getContent())
 					.setVector(this.conf.schema.embedding(),
-							CqlVector.newInstance(EmbeddingUtils.toList(d.getEmbedding())), Float.class);
+							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(documents.indexOf(d)))),
+							Float.class);
 
 				for (var metadataColumn : this.conf.schema.metadataColumns()
 					.stream()
@@ -265,10 +267,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				.score((double) score)
 				.build();
 
-			if (this.conf.returnEmbeddings) {
-				doc.setEmbedding(EmbeddingUtils
-					.toPrimitive(row.getVector(this.conf.schema.embedding(), Float.class).stream().toList()));
-			}
 			documents.add(doc);
 		}
 		return documents;

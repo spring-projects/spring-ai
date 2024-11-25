@@ -145,14 +145,14 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		List<String> contents = new ArrayList<>();
 		List<float[]> embeddings = new ArrayList<>();
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents,
+				EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
 
 		for (Document document : documents) {
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
 			contents.add(document.getContent());
-			document.setEmbedding(document.getEmbedding());
-			embeddings.add(document.getEmbedding());
+			embeddings.add(documentEmbeddings.get(documents.indexOf(document)));
 		}
 
 		this.chromaApi.upsertEmbeddings(this.collectionId,
@@ -192,12 +192,12 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 				if (metadata == null) {
 					metadata = new HashMap<>();
 				}
+
 				metadata.put(DocumentMetadata.DISTANCE.value(), distance);
 				Document document = Document.builder()
 					.id(id)
 					.content(content)
 					.metadata(metadata)
-					.embedding(chromaEmbedding.embedding())
 					.score(1.0 - distance)
 					.build();
 				responseDocuments.add(document);

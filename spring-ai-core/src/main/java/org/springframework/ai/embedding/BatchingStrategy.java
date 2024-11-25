@@ -31,7 +31,9 @@ public interface BatchingStrategy {
 
 	/**
 	 * {@link EmbeddingModel} implementations can call this method to optimize embedding
-	 * tokens. The incoming collection of {@link Document}s are split into su-batches.
+	 * tokens. The incoming collection of {@link Document}s are split into sub-batches. It
+	 * is important to preserve the order of the list of {@link Document}s when batching
+	 * as they are mapped to their corresponding embeddings by their order.
 	 * @param documents to batch
 	 * @return a list of sub-batches that contain {@link Document}s.
 	 */

@@ -125,14 +125,15 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			typesenseDoc.put(EMBEDDING_FIELD_NAME, document.getEmbedding());
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
 
 			return typesenseDoc;
 		}).toList();

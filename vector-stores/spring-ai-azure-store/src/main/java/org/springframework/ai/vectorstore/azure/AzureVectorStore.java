@@ -223,12 +223,13 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return; // nothing to do;
 		}
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		final var searchDocuments = documents.stream().map(document -> {
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
-			searchDocument.put(EMBEDDING_FIELD_NAME, document.getEmbedding());
+			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
 			searchDocument.put(CONTENT_FIELD_NAME, document.getContent());
 			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
 
@@ -327,7 +328,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 					.content(entry.content)
 					.metadata(metadata)
 					.score(result.getScore())
-					.embedding(EmbeddingUtils.toPrimitive(entry.embedding))
 					.build();
 			})
 			.collect(Collectors.toList());
