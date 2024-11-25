@@ -67,6 +67,7 @@ import org.springframework.core.io.Resource;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @author Ilayaperumal Gopinathan
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
@@ -74,7 +75,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private final ObjectMapper objectMapper;
 
-	protected Map<String, Document> store = new ConcurrentHashMap<>();
+	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
 
 	protected EmbeddingModel embeddingModel;
 
@@ -94,11 +95,17 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		Objects.requireNonNull(documents, "Documents list cannot be null");
+		if (documents.isEmpty()) {
+			throw new IllegalArgumentException("Documents list cannot be empty");
+		}
+
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
-			document.setEmbedding(embedding);
-			this.store.put(document.getId(), document);
+			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
+					document.getContent(), document.getMetadata(), embedding);
+			this.store.put(document.getId(), storeContent);
 		}
 	}
 
@@ -120,12 +127,12 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
-			.map(entry -> new Similarity(entry.getId(),
+			.map(entry -> new Similarity(entry,
 					EmbeddingMath.cosineSimilarity(userQueryEmbedding, entry.getEmbedding())))
 			.filter(s -> s.score >= request.getSimilarityThreshold())
 			.sorted(Comparator.<Similarity>comparingDouble(s -> s.score).reversed())
 			.limit(request.getTopK())
-			.map(s -> this.store.get(s.key))
+			.map(s -> s.getDocument())
 			.toList();
 	}
 
@@ -176,12 +183,11 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	 * @param file the file to load the vector store content
 	 */
 	public void load(File file) {
-		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
+		TypeReference<HashMap<String, SimpleVectorStoreContent>> typeRef = new TypeReference<>() {
 
 		};
 		try {
-			Map<String, Document> deserializedMap = this.objectMapper.readValue(file, typeRef);
-			this.store = deserializedMap;
+			this.store = this.objectMapper.readValue(file, typeRef);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -193,12 +199,11 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	 * @param resource the resource to load the vector store content
 	 */
 	public void load(Resource resource) {
-		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
+		TypeReference<HashMap<String, SimpleVectorStoreContent>> typeRef = new TypeReference<>() {
 
 		};
 		try {
-			Map<String, Document> deserializedMap = this.objectMapper.readValue(resource.getInputStream(), typeRef);
-			this.store = deserializedMap;
+			this.store = this.objectMapper.readValue(resource.getInputStream(), typeRef);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -232,13 +237,21 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	public static class Similarity {
 
-		private String key;
+		private SimpleVectorStoreContent content;
 
 		private double score;
 
-		public Similarity(String key, double score) {
-			this.key = key;
+		public Similarity(SimpleVectorStoreContent content, double score) {
+			this.content = content;
 			this.score = score;
+		}
+
+		Document getDocument() {
+			return Document.builder()
+				.withId(this.content.getId())
+				.withContent(this.content.getContent())
+				.withMetadata(this.content.getMetadata())
+				.build();
 		}
 
 	}
