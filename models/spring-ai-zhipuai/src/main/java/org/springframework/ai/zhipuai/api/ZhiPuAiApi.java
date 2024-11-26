@@ -329,11 +329,11 @@ public class ZhiPuAiApi {
 
 		// The type of the tool. Currently, only 'function' is supported.
 		@JsonProperty("type")
-		private Function function;
+		private Type type = Type.FUNCTION;
 
 		//	The function definition.
 		@JsonProperty("function")
-		private Type type = Type.FUNCTION;
+		private Function function;
 
 		public FunctionTool() {
 
