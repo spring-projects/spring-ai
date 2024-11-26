@@ -35,7 +35,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -94,6 +93,7 @@ import org.springframework.util.StringUtils;
  * @author Mariusz Bernacki
  * @author luocongqiu
  * @author Thomas Vitale
+ * @author Chanwook Song
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -415,54 +415,58 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
-		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
-			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
-				if (message instanceof UserMessage userMessage) {
-					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<MediaContent> contentList = new ArrayList<>(
-								List.of(new MediaContent(message.getContent())));
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message ->
+			switch (message.getMessageType()) {
+				case USER, SYSTEM -> {
+					Object content = message.getContent();
+					if (message instanceof UserMessage userMessage) {
+						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+							List<MediaContent> contentList = new ArrayList<>(
+									List.of(new MediaContent(message.getContent())));
 
-						contentList.addAll(userMessage.getMedia()
-							.stream()
-							.map(media -> new MediaContent(new MediaContent.ImageUrl(
-									this.fromMediaData(media.getMimeType(), media.getData()))))
-							.toList());
+							contentList.addAll(userMessage.getMedia()
+									.stream()
+									.map(media -> new MediaContent(new MediaContent.ImageUrl(
+											this.fromMediaData(media.getMimeType(), media.getData()))))
+									.toList());
 
-						content = contentList;
+							content = contentList;
+						}
 					}
-				}
 
-				return List.of(new ChatCompletionMessage(content,
-						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
-			}
-			else if (message.getMessageType() == MessageType.ASSISTANT) {
-				var assistantMessage = (AssistantMessage) message;
-				List<ToolCall> toolCalls = null;
-				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
-						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
-						return new ToolCall(toolCall.id(), toolCall.type(), function);
-					}).toList();
+					yield List.of(new ChatCompletionMessage(content, ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
-			}
-			else if (message.getMessageType() == MessageType.TOOL) {
-				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
+				case ASSISTANT -> {
+					var assistantMessage = (AssistantMessage) message;
+					List<ToolCall> toolCalls = null;
+					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+						toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
+							var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
+							return new ToolCall(toolCall.id(), toolCall.type(), function);
+						}).toList();
+					}
 
-				toolMessage.getResponses()
-					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
-				return toolMessage.getResponses()
-					.stream()
-					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null))
-					.toList();
+					yield List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+							ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
+				}
+				case TOOL -> {
+					ToolResponseMessage toolMessage = (ToolResponseMessage) message;
+					toolMessage.getResponses().forEach(response ->
+							Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id")
+					);
+
+					yield toolMessage.getResponses()
+							.stream()
+							.map(tr ->
+									new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
+											tr.id(), null, null)
+							)
+							.toList();
+				}
+				default ->
+					throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 			}
-			else {
-				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
-			}
-		}).flatMap(List::stream).toList();
+		).flatMap(List::stream).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
@@ -471,13 +475,11 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		if (prompt.getOptions() != null) {
 			OpenAiChatOptions updatedRuntimeOptions = null;
 
-			if (prompt.getOptions() instanceof FunctionCallingOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(((FunctionCallingOptions) prompt.getOptions()),
-						FunctionCallingOptions.class, OpenAiChatOptions.class);
+			if (prompt.getOptions() instanceof FunctionCallingOptions options) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(options, FunctionCallingOptions.class, OpenAiChatOptions.class);
 			}
-			else if (prompt.getOptions() instanceof OpenAiChatOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						OpenAiChatOptions.class);
+			else if (prompt.getOptions() instanceof OpenAiChatOptions options) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(options, ChatOptions.class, OpenAiChatOptions.class);
 			}
 
 			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));

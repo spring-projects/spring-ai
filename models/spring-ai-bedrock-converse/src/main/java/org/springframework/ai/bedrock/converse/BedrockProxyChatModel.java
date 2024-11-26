@@ -120,6 +120,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Chanwook Song
  * @since 1.0.0
  */
 public class BedrockProxyChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -242,69 +243,64 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		Set<String> functionsForThisRequest = new HashSet<>();
 
 		List<Message> instructionMessages = prompt.getInstructions()
-			.stream()
-			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
-			.map(message -> {
-				if (message.getMessageType() == MessageType.USER) {
-					List<ContentBlock> contents = new ArrayList<>();
-					if (message instanceof UserMessage) {
-						var userMessage = (UserMessage) message;
-						contents.add(ContentBlock.fromText(userMessage.getContent()));
+				.stream()
+				.filter(message -> message.getMessageType() != MessageType.SYSTEM)
+				.map(message -> switch (message.getMessageType()) {
+					case USER -> {
+						List<ContentBlock> contentBlocks = new ArrayList<>();
+						if (message instanceof UserMessage userMessage) {
+							contentBlocks.add(ContentBlock.fromText(userMessage.getContent()));
 
-						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
-								ContentBlock cb = ContentBlock.fromImage(ImageBlock.builder()
-									.format(media.getMimeType().getSubtype())
-									.source(ImageSource
-										.fromBytes(SdkBytes.fromByteArray(getContentMediaData(media.getData()))))
-									.build());
-								return cb;
-							}).toList();
-							contents.addAll(mediaContent);
+							if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+								List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media ->
+										ContentBlock.fromImage(ImageBlock.builder()
+												.format(media.getMimeType().getSubtype())
+												.source(ImageSource.fromBytes(SdkBytes.fromByteArray(getContentMediaData(media.getData()))))
+												.build())).toList();
+								contentBlocks.addAll(mediaContent);
+							}
 						}
+
+						yield Message.builder().content(contentBlocks).role(ConversationRole.USER).build();
 					}
-					return Message.builder().content(contents).role(ConversationRole.USER).build();
-				}
-				else if (message.getMessageType() == MessageType.ASSISTANT) {
-					AssistantMessage assistantMessage = (AssistantMessage) message;
-					List<ContentBlock> contentBlocks = new ArrayList<>();
-					if (StringUtils.hasText(message.getContent())) {
-						contentBlocks.add(ContentBlock.fromText(message.getContent()));
-					}
-					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-
-							var argumentsDocument = ConverseApiUtils
-								.convertObjectToDocument(ModelOptionsUtils.jsonToMap(toolCall.arguments()));
-
-							contentBlocks.add(ContentBlock.fromToolUse(ToolUseBlock.builder()
-								.toolUseId(toolCall.id())
-								.name(toolCall.name())
-								.input(argumentsDocument)
-								.build()));
-
+					case ASSISTANT -> {
+						AssistantMessage assistantMessage = (AssistantMessage) message;
+						List<ContentBlock> contentBlocks = new ArrayList<>();
+						if (StringUtils.hasText(message.getContent())) {
+							contentBlocks.add(ContentBlock.fromText(message.getContent()));
 						}
+						if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+							for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+								var argumentsDocument = ConverseApiUtils
+										.convertObjectToDocument(ModelOptionsUtils.jsonToMap(toolCall.arguments()));
+								contentBlocks.add(ContentBlock.fromToolUse(ToolUseBlock.builder()
+										.toolUseId(toolCall.id())
+										.name(toolCall.name())
+										.input(argumentsDocument)
+										.build()));
+							}
+						}
+
+						yield Message.builder().content(contentBlocks).role(ConversationRole.ASSISTANT).build();
 					}
-					return Message.builder().content(contentBlocks).role(ConversationRole.ASSISTANT).build();
-				}
-				else if (message.getMessageType() == MessageType.TOOL) {
-					List<ContentBlock> contentBlocks = ((ToolResponseMessage) message).getResponses()
-						.stream()
-						.map(toolResponse -> {
-							ToolResultBlock toolResultBlock = ToolResultBlock.builder()
-								.toolUseId(toolResponse.id())
-								.content(ToolResultContentBlock.builder().text(toolResponse.responseData()).build())
-								.build();
-							return ContentBlock.fromToolResult(toolResultBlock);
-						})
-						.toList();
-					return Message.builder().content(contentBlocks).role(ConversationRole.USER).build();
-				}
-				else {
-					throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
-				}
-			})
-			.toList();
+					case TOOL -> {
+						List<ContentBlock> contentBlocks = ((ToolResponseMessage) message).getResponses()
+								.stream()
+								.map(toolResponse -> {
+									ToolResultBlock toolResultBlock = ToolResultBlock.builder()
+											.toolUseId(toolResponse.id())
+											.content(ToolResultContentBlock.builder().text(toolResponse.responseData()).build())
+											.build();
+									return ContentBlock.fromToolResult(toolResultBlock);
+								})
+								.toList();
+
+						yield Message.builder().content(contentBlocks).role(ConversationRole.USER).build();
+					}
+					default ->
+							throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
+				})
+				.toList();
 
 		List<SystemContentBlock> systemMessages = prompt.getInstructions()
 			.stream()
@@ -315,14 +311,12 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		FunctionCallingOptions updatedRuntimeOptions = (FunctionCallingOptions) this.defaultOptions.copy();
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof FunctionCallingOptions) {
-				var functionCallingOptions = (FunctionCallingOptions) prompt.getOptions();
+			if (prompt.getOptions() instanceof FunctionCallingOptions options) {
 				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions)
-					.merge(functionCallingOptions);
-			}
-			else if (prompt.getOptions() instanceof ChatOptions) {
-				var chatOptions = (ChatOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions).merge(chatOptions);
+					.merge(options);
+			} else {
+				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions)
+						.merge(prompt.getOptions());
 			}
 		}
 
