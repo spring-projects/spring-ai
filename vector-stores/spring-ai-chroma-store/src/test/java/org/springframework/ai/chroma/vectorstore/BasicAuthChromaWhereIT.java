@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.chroma.vectorstore;
 
 import java.util.List;
 import java.util.Map;
@@ -24,13 +24,15 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.MountableFile;
 
-import org.springframework.ai.ChromaImage;
-import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.chroma.ChromaImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -40,12 +42,11 @@ import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * ChromaDB with static API Token Authentication:
- * https://docs.trychroma.com/deployment/auth
+ * ChromaDB with Basic Authentication:
+ * https://docs.trychroma.com/usage-guide#basic-authentication
  *
- * Test cases are based on the Chroma:
- * https://docs.trychroma.com/usage-guide#using-where-filters and the related
- * https://github.com/chroma-core/chroma/blob/main/examples/basic_functionality/in_not_in_filtering.ipynb
+ * The scr/test/resource/server.htpasswd file is generated with:
+ * <code>htpasswd -Bbn admin admin > server.htpasswd</code>
  *
  * @author Christian Tzolov
  * @author Eddú Meléndez
@@ -53,18 +54,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class TokenSecuredChromaWhereIT {
-
-	public static String CHROMA_SERVER_AUTH_CREDENTIALS = "test-token";
+public class BasicAuthChromaWhereIT {
 
 	/**
-	 * ChromaDB with static API Token Authentication:
-	 * https://docs.trychroma.com/deployment/auth
+	 * ChromaDB with Basic Authentication:
+	 * https://docs.trychroma.com/usage-guide#basic-authentication
 	 */
 	@Container
 	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE)
-		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
-		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.token_authn.TokenAuthenticationServerProvider");
+		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS_FILE", "/chroma/server.htpasswd")
+		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.basic_authn.BasicAuthenticationServerProvider")
+		.withCopyToContainer(MountableFile.forClasspathResource("server.htpasswd"), "/chroma/server.htpasswd");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -81,47 +81,17 @@ public class TokenSecuredChromaWhereIT {
 					new Document("2", "Article by Jack", Map.of("author", "jack")),
 					new Document("3", "Article by Jill", Map.of("author", "jill"))));
 
-			var request = SearchRequest.query("Give me articles by john").withTopK(5);
+			String query = "Give me articles by john";
 
-			List<Document> results = vectorStore.similaritySearch(request);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query(query).withTopK(5));
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("author in ['john', 'jill']"));
+			results = vectorStore.similaritySearch(SearchRequest.query(query)
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("author in ['john', 'jill']"));
 
 			assertThat(results).hasSize(2);
-			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");
-		});
-	}
-
-	@Test
-	public void withInFiltersExpressions() {
-
-		this.contextRunner.run(context -> {
-
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			vectorStore
-				.add(List.of(new Document("1", "Article by john", Map.of("author", "john", "article_type", "blog")),
-						new Document("2", "Article by Jack", Map.of("author", "jack", "article_type", "social")),
-						new Document("3", "Article by Jill", Map.of("author", "jill", "article_type", "paper"))));
-
-			var request = SearchRequest.query("Give me articles by john").withTopK(5);
-
-			List<Document> results = vectorStore.similaritySearch(request);
-			assertThat(results).hasSize(3);
-
-			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
-				.withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getId()).isEqualTo("1");
-
-			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
-				.withFilterExpression("author in ['john'] || 'article_type' == 'paper'"));
-
-			assertThat(results).hasSize(2);
-
 			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");
 		});
 	}
@@ -136,14 +106,16 @@ public class TokenSecuredChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestClient.Builder builder) {
-			var chromaApi = new ChromaApi(chromaContainer.getEndpoint(), builder);
-			chromaApi.withKeyToken(CHROMA_SERVER_AUTH_CREDENTIALS);
-			return chromaApi;
+			return new ChromaApi(chromaContainer.getEndpoint(), builder).withBasicAuthCredentials("admin", "password");
 		}
 
 		@Bean
 		public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-			return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection", true);
+			return ChromaVectorStore.builder(chromaApi)
+				.embeddingModel(embeddingModel)
+				.collectionName("TestCollection")
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean

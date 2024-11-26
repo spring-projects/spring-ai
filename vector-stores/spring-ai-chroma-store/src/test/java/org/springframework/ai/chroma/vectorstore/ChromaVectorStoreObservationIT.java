@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.chroma.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,8 +30,7 @@ import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.ChromaImage;
-import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.chroma.ChromaImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -39,6 +38,8 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -48,6 +49,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,7 +107,7 @@ public class ChromaVectorStoreObservationIT {
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "1536")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
-						"TestCollection:" + vectorStore.getCollectionId())
+						"TestCollection:" + ReflectionTestUtils.getField(vectorStore, "collectionId"))
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_NAMESPACE.asString())
 				.doesNotHaveHighCardinalityKeyValueWithKey(
 						HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString())
@@ -138,7 +140,7 @@ public class ChromaVectorStoreObservationIT {
 						"What is Great Depression")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "1536")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
-						"TestCollection:" + vectorStore.getCollectionId())
+						"TestCollection:" + ReflectionTestUtils.getField(vectorStore, "collectionId"))
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_NAMESPACE.asString())
 				.doesNotHaveHighCardinalityKeyValueWithKey(
 						HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString())
@@ -174,8 +176,13 @@ public class ChromaVectorStoreObservationIT {
 		@Bean
 		public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi,
 				ObservationRegistry observationRegistry) {
-			return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection", true, observationRegistry, null,
-					new TokenCountBatchingStrategy());
+			return ChromaVectorStore.builder(chromaApi)
+				.embeddingModel(embeddingModel)
+				.collectionName("TestCollection")
+				.initializeSchema(true)
+				.observationRegistry(observationRegistry)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean

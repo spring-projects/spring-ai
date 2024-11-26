@@ -19,11 +19,11 @@ package org.springframework.ai.autoconfigure.vectorstore.chroma;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 
-import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.chroma.vectorstore.ChromaApi;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -86,9 +86,14 @@ public class ChromaVectorStoreAutoConfiguration {
 			ChromaVectorStoreProperties storeProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy chromaBatchingStrategy) {
-		return new ChromaVectorStore(embeddingModel, chromaApi, storeProperties.getCollectionName(),
-				storeProperties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), chromaBatchingStrategy);
+		return ChromaVectorStore.builder(chromaApi)
+			.embeddingModel(embeddingModel)
+			.collectionName(storeProperties.getCollectionName())
+			.initializeSchema(storeProperties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(chromaBatchingStrategy)
+			.build();
 	}
 
 	static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {

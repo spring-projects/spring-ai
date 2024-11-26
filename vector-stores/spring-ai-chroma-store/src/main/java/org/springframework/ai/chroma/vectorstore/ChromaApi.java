@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chroma;
+package org.springframework.ai.chroma.vectorstore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.chroma.ChromaApi.QueryRequest.Include;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -49,10 +49,10 @@ import org.springframework.web.client.RestClient;
 public class ChromaApi {
 
 	// Regular expression pattern that looks for a message inside the ValueError(...).
-	private static Pattern VALUE_ERROR_PATTERN = Pattern.compile("ValueError\\('([^']*)'\\)");
+	private static final Pattern VALUE_ERROR_PATTERN = Pattern.compile("ValueError\\('([^']*)'\\)");
 
 	// Regular expression pattern that looks for a message.
-	private static Pattern MESSAGE_ERROR_PATTERN = Pattern.compile("\"message\":\"(.*?)\"");
+	private static final Pattern MESSAGE_ERROR_PATTERN = Pattern.compile("\"message\":\"(.*?)\"");
 
 	private final ObjectMapper objectMapper;
 

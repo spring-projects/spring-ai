@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai;
+package org.springframework.ai.chroma;
 
 import org.testcontainers.utility.DockerImageName;
 

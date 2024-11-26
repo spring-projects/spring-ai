@@ -272,7 +272,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
 			.withCollectionName(this.options.getIndexName())
 			.withDimensions(this.embeddingModel.dimensions())
