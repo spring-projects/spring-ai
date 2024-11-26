@@ -68,8 +68,7 @@ public class MariaDbStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.mariadb.distanceType=COSINE",
 				"spring.ai.vectorstore.mariadb.initialize-schema=true",
 				// JdbcTemplate configuration
-				String.format("spring.datasource.url=jdbc:mariadb://%s:%d/%s", mariadbContainer.getHost(),
-						mariadbContainer.getMappedPort(3306), mariadbContainer.getDatabaseName()),
+				"spring.datasource.url=" + mariadbContainer.getJdbcUrl(),
 				"spring.datasource.username=" + mariadbContainer.getUsername(),
 				"spring.datasource.password=" + mariadbContainer.getPassword());
 

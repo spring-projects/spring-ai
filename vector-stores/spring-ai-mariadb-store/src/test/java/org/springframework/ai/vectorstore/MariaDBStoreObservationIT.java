@@ -73,10 +73,8 @@ public class MariaDBStoreObservationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("test.spring.ai.vectorstore.mariadb.distanceType=COSINE",
-
 				// JdbcTemplate configuration
-				String.format("app.datasource.url=jdbc:mariadb://%s:%d/%s", mariadbContainer.getHost(),
-						mariadbContainer.getMappedPort(3306), schemaName),
+				"app.datasource.url=" + mariadbContainer.getJdbcUrl(),
 				"app.datasource.username=mariadb", "app.datasource.password=mariadbpwd",
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
