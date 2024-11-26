@@ -48,7 +48,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * @param customObservationConvention the custom observation convention to use
 	 */
 	public AbstractObservationVectorStore(ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			@Nullable VectorStoreObservationConvention customObservationConvention) {
 		this.observationRegistry = observationRegistry;
 		this.customObservationConvention = customObservationConvention;
 	}

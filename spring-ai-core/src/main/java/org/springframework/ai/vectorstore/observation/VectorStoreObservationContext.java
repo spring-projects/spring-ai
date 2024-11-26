@@ -194,7 +194,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 			return this;
 		}
 
-		public Builder withFieldName(String fieldName) {
+		public Builder withFieldName(@Nullable String fieldName) {
 			this.context.setFieldName(fieldName);
 			return this;
 		}
