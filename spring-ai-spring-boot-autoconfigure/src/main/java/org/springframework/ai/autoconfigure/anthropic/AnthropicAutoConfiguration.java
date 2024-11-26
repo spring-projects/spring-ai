@@ -74,7 +74,7 @@ public class AnthropicAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
-			RetryTemplate retryTemplate, DefaultFunctionCallbackResolver functionCallbackResolver,
+			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver,
 			List<FunctionCallback> toolFunctionCallbacks, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
