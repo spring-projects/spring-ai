@@ -68,6 +68,11 @@ public enum VectorStoreProvider {
 	HANA("hana"),
 
 	/**
+	 * Vector store provided by MariaDB.
+	 */
+	MARIADB("mariadb"),
+
+	/**
 	 * Vector store provided by Milvus.
 	 */
 	MILVUS("milvus"),

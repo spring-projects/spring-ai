@@ -80,6 +80,7 @@
 ** xref:api/vectordbs/chroma.adoc[]
 ** xref:api/vectordbs/elasticsearch.adoc[]
 ** xref:api/vectordbs/gemfire.adoc[GemFire]
+** xref:api/vectordbs/mariadb.adoc[]
 ** xref:api/vectordbs/milvus.adoc[]
 ** xref:api/vectordbs/mongodb.adoc[]
 ** xref:api/vectordbs/neo4j.adoc[]

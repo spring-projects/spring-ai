@@ -178,6 +178,20 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- MariaDB Vector Store-->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-mariadb-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+			<version>${mariadb.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Chroma Vector Store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -454,6 +468,12 @@
 			<groupId>org.testcontainers</groupId>
 			<artifactId>oracle-free</artifactId>
 			<version>${oracle.free.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mariadb</artifactId>
 			<scope>test</scope>
 		</dependency>
 

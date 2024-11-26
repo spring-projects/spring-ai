@@ -52,6 +52,7 @@
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>vector-stores/spring-ai-gemfire-store</module>
 		<module>vector-stores/spring-ai-hanadb-store</module>
+		<module>vector-stores/spring-ai-mariadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
@@ -73,6 +74,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mariadb-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
@@ -212,6 +214,7 @@
 		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
+		<mariadb.version>3.5.1</mariadb.version>
 		<commonmark.version>0.22.0</commonmark.version>
 
 		<!-- also managed by boot bom -->
@@ -678,13 +681,13 @@
 								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Milvus**IT.java</exclude>
-								<exclude>org.springframework.ai.vectorstore**/Mongo**IT.java</exclude>
+								<exclude>org.springframework.ai.vectorstore**/MariaDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Mongo**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Neo4j**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/OpenSearch**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Oracle**IT.java</exclude>
 								<!-- <exclude>org.springframework.ai.vectorstore**/PgVector**IT.java</exclude> -->
-								<exclude>org.springframework.ai.vectorstore**/Pinecone**IT.java</exclude>								
+								<exclude>org.springframework.ai.vectorstore**/Pinecone**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.qdrant/**/**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Qdrant**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Redis**IT.java</exclude>
@@ -692,14 +695,14 @@
 								<exclude>org.springframework.ai.vectorstore**/Weaviate**IT.java</exclude>
 
 								<!-- Auto-configurations-->
-								 
+
 								 <!-- <exclude>org.springframework.ai.autoconfigure/**/**IT.java</exclude> -->
 
 								 <exclude>org.springframework.ai.autoconfigure.anthropic/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.azure/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.bedrock/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
-								 
+
 								 <exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
@@ -713,24 +716,24 @@
 								 <!-- <exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
 								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.qianfan/**/**IT.java</exclude>
-								 
+
 								 <exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
-								 
+
 								 <exclude>org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
-								 
-								 <exclude>org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>								 
-								 
+
+								 <exclude>org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
+
 								 <exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.watsonxai/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
-								 
+
 								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
-								 
-								 <!-- Test Containers -->								 
+
+								 <!-- Test Containers -->
 								 <exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>
 
-								 <!-- Test Docker Compose -->								 
+								 <!-- Test Docker Compose -->
 								 <exclude>package org.springframework.ai.docker.compose/**/**IT.java</exclude>
 
 								 <!-- AI Evaluation -->
