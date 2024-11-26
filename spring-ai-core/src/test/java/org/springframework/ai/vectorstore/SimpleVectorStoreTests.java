@@ -62,11 +62,7 @@ class SimpleVectorStoreTests {
 
 	@Test
 	void shouldAddAndRetrieveDocument() {
-		Document doc = Document.builder()
-			.withId("1")
-			.withContent("test content")
-			.withMetadata(Map.of("key", "value"))
-			.build();
+		Document doc = Document.builder().id("1").content("test content").metadata(Map.of("key", "value")).build();
 
 		this.vectorStore.add(List.of(doc));
 
@@ -80,8 +76,8 @@ class SimpleVectorStoreTests {
 
 	@Test
 	void shouldAddMultipleDocuments() {
-		List<Document> docs = Arrays.asList(Document.builder().withId("1").withContent("first").build(),
-				Document.builder().withId("2").withContent("second").build());
+		List<Document> docs = Arrays.asList(Document.builder().id("1").content("first").build(),
+				Document.builder().id("2").content("second").build());
 
 		this.vectorStore.add(docs);
 
@@ -104,7 +100,7 @@ class SimpleVectorStoreTests {
 
 	@Test
 	void shouldDeleteDocuments() {
-		Document doc = Document.builder().withId("1").withContent("test content").build();
+		Document doc = Document.builder().id("1").content("test content").build();
 
 		this.vectorStore.add(List.of(doc));
 		assertThat(this.vectorStore.similaritySearch("test")).hasSize(1);
@@ -125,7 +121,7 @@ class SimpleVectorStoreTests {
 		// Configure mock to return different embeddings for different queries
 		when(this.mockEmbeddingModel.embed("query")).thenReturn(new float[] { 0.9f, 0.9f, 0.9f });
 
-		Document doc = Document.builder().withId("1").withContent("test content").build();
+		Document doc = Document.builder().id("1").content("test content").build();
 
 		this.vectorStore.add(List.of(doc));
 
@@ -138,9 +134,9 @@ class SimpleVectorStoreTests {
 	@Test
 	void shouldSaveAndLoadVectorStore() throws IOException {
 		Document doc = Document.builder()
-			.withId("1")
-			.withContent("test content")
-			.withMetadata(new HashMap<>(Map.of("key", "value")))
+			.id("1")
+			.content("test content")
+			.metadata(new HashMap<>(Map.of("key", "value")))
 			.build();
 
 		this.vectorStore.add(List.of(doc));
@@ -185,7 +181,7 @@ class SimpleVectorStoreTests {
 		for (int i = 0; i < numThreads; i++) {
 			final String id = String.valueOf(i);
 			threads[i] = new Thread(() -> {
-				Document doc = Document.builder().withId(id).withContent("content " + id).build();
+				Document doc = Document.builder().id(id).content("content " + id).build();
 				this.vectorStore.add(List.of(doc));
 			});
 			threads[i].start();

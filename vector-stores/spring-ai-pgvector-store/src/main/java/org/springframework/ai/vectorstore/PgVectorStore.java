@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -502,12 +503,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			Float distance = rs.getFloat(COLUMN_DISTANCE);
 
 			Map<String, Object> metadata = toMap(pgMetadata);
-			metadata.put(COLUMN_DISTANCE, distance);
+			metadata.put(DocumentMetadata.DISTANCE.value(), distance);
 
-			Document document = new Document(id, content, metadata);
-			document.setEmbedding(toFloatArray(embedding));
-
-			return document;
+			return Document.builder()
+				.id(id)
+				.content(content)
+				.metadata(metadata)
+				.score(1.0 - distance)
+				.embedding(toFloatArray(embedding))
+				.build();
 		}
 
 		private float[] toFloatArray(PGobject embedding) throws SQLException {

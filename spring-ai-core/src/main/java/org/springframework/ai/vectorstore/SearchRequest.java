@@ -22,6 +22,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -30,6 +31,7 @@ import org.springframework.util.Assert;
  * instance and then apply the 'with' methods to alter the default values.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public final class SearchRequest {
 
@@ -45,12 +47,13 @@ public final class SearchRequest {
 	 */
 	public static final int DEFAULT_TOP_K = 4;
 
-	public String query;
+	private String query;
 
 	private int topK = DEFAULT_TOP_K;
 
 	private double similarityThreshold = SIMILARITY_THRESHOLD_ACCEPT_ALL;
 
+	@Nullable
 	private Filter.Expression filterExpression;
 
 	private SearchRequest(String query) {
@@ -186,7 +189,7 @@ public final class SearchRequest {
 	 * filter criteria. The 'null' value stands for no expression filters.
 	 * @return this builder.
 	 */
-	public SearchRequest withFilterExpression(Filter.Expression expression) {
+	public SearchRequest withFilterExpression(@Nullable Filter.Expression expression) {
 		this.filterExpression = expression;
 		return this;
 	}
@@ -225,7 +228,7 @@ public final class SearchRequest {
 	 * 'null' value stands for no expression filters.
 	 * @return this.builder
 	 */
-	public SearchRequest withFilterExpression(String textExpression) {
+	public SearchRequest withFilterExpression(@Nullable String textExpression) {
 		this.filterExpression = (textExpression != null) ? new FilterExpressionTextParser().parse(textExpression)
 				: null;
 		return this;
@@ -243,6 +246,7 @@ public final class SearchRequest {
 		return this.similarityThreshold;
 	}
 
+	@Nullable
 	public Filter.Expression getFilterExpression() {
 		return this.filterExpression;
 	}

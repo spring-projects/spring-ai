@@ -70,8 +70,8 @@ class RetrievalAugmentationAdvisorTests {
 			.build());
 
 		// Document Retriever
-		var documentContext = List.of(Document.builder().withId("1").withContent("doc1").build(),
-				Document.builder().withId("2").withContent("doc2").build());
+		var documentContext = List.of(Document.builder().id("1").content("doc1").build(),
+				Document.builder().id("2").content("doc2").build());
 		var documentRetriever = mock(DocumentRetriever.class);
 		var queryCaptor = ArgumentCaptor.forClass(Query.class);
 		given(documentRetriever.retrieve(queryCaptor.capture())).willReturn(documentContext);

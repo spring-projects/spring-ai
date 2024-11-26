@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.DocumentMetadata;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -240,14 +241,21 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private Document toDocument(redis.clients.jedis.search.Document doc) {
 		var id = doc.getId().substring(this.config.prefix.length());
-		var content = doc.hasProperty(this.config.contentFieldName) ? doc.getString(this.config.contentFieldName)
-				: null;
+		var content = doc.hasProperty(this.config.contentFieldName) ? doc.getString(this.config.contentFieldName) : "";
 		Map<String, Object> metadata = this.config.metadataFields.stream()
 			.map(MetadataField::name)
 			.filter(doc::hasProperty)
 			.collect(Collectors.toMap(Function.identity(), doc::getString));
+		// TODO: this seems wrong. The key is named "vector_store", but the value is the
+		// distance. Can we remove this after standardizing the metadata?
 		metadata.put(DISTANCE_FIELD_NAME, 1 - similarityScore(doc));
-		return new Document(id, content, metadata);
+		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - similarityScore(doc));
+		return Document.builder()
+			.id(id)
+			.content(content)
+			.metadata(metadata)
+			.score((double) similarityScore(doc))
+			.build();
 	}
 
 	private float similarityScore(redis.clients.jedis.search.Document doc) {

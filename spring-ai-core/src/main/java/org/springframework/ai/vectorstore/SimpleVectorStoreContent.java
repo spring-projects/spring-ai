@@ -25,6 +25,8 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.model.Content;
@@ -133,6 +135,12 @@ public final class SimpleVectorStoreContent implements Content {
 	 */
 	public float[] getEmbedding() {
 		return Arrays.copyOf(this.embedding, this.embedding.length);
+	}
+
+	public Document toDocument(Double score) {
+		var metadata = new HashMap<>(this.metadata);
+		metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - score);
+		return Document.builder().id(this.id).content(this.content).metadata(metadata).score(score).build();
 	}
 
 	@Override

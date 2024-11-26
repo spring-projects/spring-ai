@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.integration.tests;
+package org.springframework.ai.vectorstore;
 
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.testcontainers.utility.DockerImageName;
 
 /**
- * Test application for integration tests.
- *
  * @author Thomas Vitale
  */
-@SpringBootApplication
-@Import(TestcontainersConfiguration.class)
-public class TestApplication {
+public final class CosmosDbImage {
 
-	@Bean
-	SimpleVectorStore simpleVectorStore(EmbeddingModel embeddingModel) {
-		return new SimpleVectorStore(embeddingModel);
+	// It must always be "latest" or else Azure locks the image after a while. See:
+	// https://github.com/Azure/azure-cosmos-db-emulator-docker/issues/60
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName
+		.parse("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest");
+
+	private CosmosDbImage() {
+
 	}
 
 }

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,10 +185,14 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 				metadata.put(DOCUMENT_METADATA_CONVERSATION_ID, conversationId);
 				metadata.put(DOCUMENT_METADATA_MESSAGE_TYPE, message.getMessageType().name());
 				if (message instanceof UserMessage userMessage) {
-					return new Document(userMessage.getContent(), userMessage.getMedia(), metadata);
+					return Document.builder()
+						.content(userMessage.getContent())
+						.media(new ArrayList<>(userMessage.getMedia()))
+						.metadata(metadata)
+						.build();
 				}
 				else if (message instanceof AssistantMessage assistantMessage) {
-					return new Document(assistantMessage.getContent(), metadata);
+					return Document.builder().content(assistantMessage.getContent()).metadata(metadata).build();
 				}
 				throw new RuntimeException("Unknown message type: " + message.getMessageType());
 			})

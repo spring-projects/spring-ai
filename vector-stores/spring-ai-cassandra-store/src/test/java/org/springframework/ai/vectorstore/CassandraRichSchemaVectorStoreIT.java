@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -226,8 +227,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 				assertThat(resultDoc.getMetadata()).hasSize(3);
 
-				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision",
-						CassandraVectorStore.SIMILARITY_FIELD_NAME);
+				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 
 				// Remove all documents from the createStore
 				store.delete(documents.stream().map(doc -> doc.getId()).toList());
@@ -494,8 +494,7 @@ class CassandraRichSchemaVectorStoreIT {
 				assertThat(resultDoc.getId()).isNotEqualTo(sameIdDocument.getId());
 				assertThat(resultDoc.getContent()).doesNotContain(newContent);
 
-				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision",
-						CassandraVectorStore.SIMILARITY_FIELD_NAME);
+				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 			}
 		});
 	}
@@ -509,16 +508,15 @@ class CassandraRichSchemaVectorStoreIT {
 				List<Document> fullResult = store
 					.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY).withTopK(5).withSimilarityThresholdAll());
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get(CassandraVectorStore.SIMILARITY_FIELD_NAME))
-					.toList();
+				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-				assertThat(distances).hasSize(3);
+				assertThat(scores).hasSize(3);
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-				List<Document> results = store.similaritySearch(
-						SearchRequest.query(URANUS_ORBIT_QUERY).withTopK(5).withSimilarityThreshold(threshold));
+				List<Document> results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
+					.withTopK(5)
+					.withSimilarityThreshold(similarityThreshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -526,8 +524,8 @@ class CassandraRichSchemaVectorStoreIT {
 
 				assertThat(resultDoc.getContent()).contains(URANUS_ORBIT_QUERY);
 
-				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision",
-						CassandraVectorStore.SIMILARITY_FIELD_NAME);
+				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
+				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 			}
 		});
 	}

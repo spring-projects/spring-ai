@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -97,7 +98,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public static final String EMBEDDING_FIELD_NAME = "embedding";
 
 	// Metadata, automatically assigned by Milvus.
-	public static final String DISTANCE_FIELD_NAME = "distance";
+	private static final String DISTANCE_FIELD_NAME = "distance";
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
@@ -258,13 +259,18 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				try {
 					metadata = (JSONObject) rowRecord.get(this.config.metadataFieldName);
 					// inject the distance into the metadata.
-					metadata.put(DISTANCE_FIELD_NAME, 1 - getResultSimilarity(rowRecord));
+					metadata.put(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
 				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
 					// collection
 				}
-				return new Document(docId, content, (metadata != null) ? metadata.getInnerMap() : Map.of());
+				return Document.builder()
+					.id(docId)
+					.content(content)
+					.metadata((metadata != null) ? metadata.getInnerMap() : Map.of())
+					.score((double) getResultSimilarity(rowRecord))
+					.build();
 			})
 			.toList();
 	}
