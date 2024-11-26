@@ -74,6 +74,7 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
  *
  * @author Theo van Kraay
  * @author Soby Chacko
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
@@ -338,7 +339,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.block();
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-				.map(doc -> new Document(doc.get("id").asText(), doc.get("content").asText(), new HashMap<>()))
+				.map(doc -> Document.builder().id(doc.get("id").asText()).content(doc.get("content").asText()).build())
 				.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();

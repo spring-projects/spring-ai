@@ -14,26 +14,37 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.integration.tests;
+package org.springframework.ai.document;
 
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.springframework.ai.vectorstore.VectorStore;
 
 /**
- * Test application for integration tests.
+ * Common set of metadata keys used in {@link Document}s by {@link DocumentReader}s and
+ * {@link VectorStore}s.
  *
  * @author Thomas Vitale
+ * @since 1.0.0
  */
-@SpringBootApplication
-@Import(TestcontainersConfiguration.class)
-public class TestApplication {
+public enum DocumentMetadata {
 
-	@Bean
-	SimpleVectorStore simpleVectorStore(EmbeddingModel embeddingModel) {
-		return new SimpleVectorStore(embeddingModel);
+// @formatter:off
+
+	/**
+	 * Measure of distance between the document embedding and the query vector.
+	 * The lower the distance, the more they are similar.
+	 * It's the opposite of the similarity score.
+	 */
+	DISTANCE("distance");
+
+	private final String value;
+
+	DocumentMetadata(String value) {
+		this.value = value;
 	}
+	public String value() {
+		return this.value;
+	}
+
+// @formatter:on
 
 }

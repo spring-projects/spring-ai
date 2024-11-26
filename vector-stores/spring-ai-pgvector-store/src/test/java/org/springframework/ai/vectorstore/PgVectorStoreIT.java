@@ -34,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -113,20 +114,20 @@ public class PgVectorStoreIT {
 		);
 	}
 
-	private static boolean isSortedByDistance(List<Document> docs) {
+	private static boolean isSortedBySimilarity(List<Document> docs) {
 
-		List<Float> distances = docs.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+		List<Double> scores = docs.stream().map(Document::getScore).toList();
 
-		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
+		if (CollectionUtils.isEmpty(scores) || scores.size() == 1) {
 			return true;
 		}
 
-		Iterator<Float> iter = distances.iterator();
-		Float current;
-		Float previous = iter.next();
+		Iterator<Double> iter = scores.iterator();
+		Double current;
+		Double previous = iter.next();
 		while (iter.hasNext()) {
 			current = iter.next();
-			if (previous > current) {
+			if (previous < current) {
 				return false;
 			}
 			previous = current;
@@ -150,7 +151,7 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
@@ -289,7 +290,7 @@ public class PgVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 
 				Document sameIdDocument = new Document(document.getId(),
 						"The World is Big and Salvation Lurks Around the Corner",
@@ -303,7 +304,7 @@ public class PgVectorStoreIT {
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				dropTable(context);
 			});
@@ -326,20 +327,19 @@ public class PgVectorStoreIT {
 
 				assertThat(fullResult).hasSize(3);
 
-				assertThat(isSortedByDistance(fullResult)).isTrue();
+				assertThat(isSortedBySimilarity(fullResult)).isTrue();
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.toList();
+				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
 				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(1 - threshold));
+						SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(similarityThreshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());
+				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
 				dropTable(context);
 			});

@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -68,6 +69,7 @@ import org.springframework.core.io.Resource;
  * @author Christian Tzolov
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
@@ -127,12 +129,11 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
-			.map(entry -> new Similarity(entry,
-					EmbeddingMath.cosineSimilarity(userQueryEmbedding, entry.getEmbedding())))
-			.filter(s -> s.score >= request.getSimilarityThreshold())
-			.sorted(Comparator.<Similarity>comparingDouble(s -> s.score).reversed())
+			.map(content -> content
+				.toDocument(EmbeddingMath.cosineSimilarity(userQueryEmbedding, content.getEmbedding())))
+			.filter(document -> document.getScore() >= request.getSimilarityThreshold())
+			.sorted(Comparator.comparing(Document::getScore).reversed())
 			.limit(request.getTopK())
-			.map(s -> s.getDocument())
 			.toList();
 	}
 
@@ -235,28 +236,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
-	public static class Similarity {
-
-		private SimpleVectorStoreContent content;
-
-		private double score;
-
-		public Similarity(SimpleVectorStoreContent content, double score) {
-			this.content = content;
-			this.score = score;
-		}
-
-		Document getDocument() {
-			return Document.builder()
-				.withId(this.content.getId())
-				.withContent(this.content.getContent())
-				.withMetadata(this.content.getMetadata())
-				.build();
-		}
-
-	}
-
-	public final class EmbeddingMath {
+	public static final class EmbeddingMath {
 
 		private EmbeddingMath() {
 			throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");

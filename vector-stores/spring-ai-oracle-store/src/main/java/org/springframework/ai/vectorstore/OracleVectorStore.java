@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -80,6 +81,7 @@ import org.springframework.util.StringUtils;
  * @author Loïc Lefèvre
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -649,12 +651,16 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		@Override
 		public Document mapRow(ResultSet rs, int rowNum) throws SQLException {
 			final Map<String, Object> metadata = getMap(rs.getObject(3, OracleJsonValue.class));
-			metadata.put("distance", rs.getDouble(5));
+			metadata.put(DocumentMetadata.DISTANCE.value(), rs.getDouble(5));
 
-			final Document document = new Document(rs.getString(1), rs.getString(2), metadata);
 			final float[] embedding = rs.getObject(4, float[].class);
-			document.setEmbedding(embedding);
-			return document;
+			return Document.builder()
+				.id(rs.getString(1))
+				.content(rs.getString(2))
+				.metadata(metadata)
+				.score(1 - rs.getDouble(5))
+				.embedding(embedding)
+				.build();
 		}
 
 		private Map<String, Object> getMap(OracleJsonValue value) {

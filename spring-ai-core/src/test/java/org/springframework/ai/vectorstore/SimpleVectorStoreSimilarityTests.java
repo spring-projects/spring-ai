@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  */
 public class SimpleVectorStoreSimilarityTests {
 
@@ -38,8 +39,7 @@ public class SimpleVectorStoreSimilarityTests {
 
 		SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent("1", "hello, how are you?", metadata,
 				testEmbedding);
-		SimpleVectorStore.Similarity similarity = new SimpleVectorStore.Similarity(storeContent, 0.6d);
-		Document document = similarity.getDocument();
+		Document document = storeContent.toDocument(0.6);
 		assertThat(document).isNotNull();
 		assertThat(document.getId()).isEqualTo("1");
 		assertThat(document.getContent()).isEqualTo("hello, how are you?");

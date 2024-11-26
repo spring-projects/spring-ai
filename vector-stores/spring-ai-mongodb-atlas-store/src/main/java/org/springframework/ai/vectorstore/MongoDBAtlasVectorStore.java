@@ -26,6 +26,7 @@ import com.mongodb.MongoCommandException;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -172,12 +173,17 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	private Document mapMongoDocument(org.bson.Document mongoDocument, float[] queryEmbedding) {
 		String id = mongoDocument.getString(ID_FIELD_NAME);
 		String content = mongoDocument.getString(CONTENT_FIELD_NAME);
+		double score = mongoDocument.getDouble(SCORE_FIELD_NAME);
 		Map<String, Object> metadata = mongoDocument.get(METADATA_FIELD_NAME, org.bson.Document.class);
+		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - score);
 
-		Document document = new Document(id, content, metadata);
-		document.setEmbedding(queryEmbedding);
-
-		return document;
+		return Document.builder()
+			.id(id)
+			.content(content)
+			.metadata(metadata)
+			.score(score)
+			.embedding(queryEmbedding)
+			.build();
 	}
 
 	@Override

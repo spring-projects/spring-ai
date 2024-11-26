@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -231,7 +232,10 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
-		document.getMetadata().put("distance", 1 - hit.score().floatValue());
+		if (hit.score() != null) {
+			document.setScore(hit.score());
+			document.getMetadata().put(DocumentMetadata.DISTANCE.value(), 1 - hit.score().floatValue());
+		}
 		return document;
 	}
 

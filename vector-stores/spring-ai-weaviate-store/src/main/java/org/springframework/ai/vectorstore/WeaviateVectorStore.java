@@ -45,6 +45,7 @@ import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -73,10 +74,9 @@ import org.springframework.util.StringUtils;
  * @author Eddú Meléndez
  * @author Josh Long
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
-
-	public static final String DOCUMENT_METADATA_DISTANCE_KEY_NAME = "distance";
 
 	private static final String METADATA_FIELD_PREFIX = "meta_";
 
@@ -367,7 +367,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
-		metadata.put(DOCUMENT_METADATA_DISTANCE_KEY_NAME, 1 - certainty);
+		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - certainty);
 
 		try {
 			String metadataJson = (String) item.get(METADATA_FIELD_NAME);
@@ -382,10 +382,13 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		// Content
 		String content = (String) item.get(CONTENT_FIELD_NAME);
 
-		var document = new Document(id, content, metadata);
-		document.setEmbedding(EmbeddingUtils.toPrimitive(EmbeddingUtils.doubleToFloat(embedding)));
-
-		return document;
+		return Document.builder()
+			.id(id)
+			.content(content)
+			.metadata(metadata)
+			.embedding(EmbeddingUtils.toPrimitive(EmbeddingUtils.doubleToFloat(embedding)))
+			.score(certainty)
+			.build();
 	}
 
 	@Override
