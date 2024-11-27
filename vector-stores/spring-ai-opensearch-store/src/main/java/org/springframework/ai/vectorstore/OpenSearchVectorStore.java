@@ -232,11 +232,12 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
+		Document.Builder documentBuilder = document.mutate();
 		if (hit.score() != null) {
-			document.setScore(hit.score());
-			document.getMetadata().put(DocumentMetadata.DISTANCE.value(), 1 - hit.score().floatValue());
+			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - hit.score().floatValue());
+			documentBuilder.score(hit.score());
 		}
-		return document;
+		return documentBuilder.build();
 	}
 
 	public boolean exists(String targetIndex) {

@@ -211,11 +211,12 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
+		Document.Builder documentBuilder = document.mutate();
 		if (hit.score() != null) {
-			document.getMetadata().put(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));
-			document.setScore(normalizeSimilarityScore(hit.score()));
+			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));
+			documentBuilder.score(normalizeSimilarityScore(hit.score()));
 		}
-		return document;
+		return documentBuilder.build();
 	}
 
 	// more info on score/distance calculation

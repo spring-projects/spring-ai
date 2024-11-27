@@ -71,7 +71,7 @@ public class Document implements MediaContent {
 	 * measure.
 	 */
 	@Nullable
-	private Double score;
+	private final Double score;
 
 	/**
 	 * Embedding of the document. Note: ephemeral field.
@@ -90,10 +90,6 @@ public class Document implements MediaContent {
 		this(content, new HashMap<>());
 	}
 
-	/**
-	 * @deprecated Use builder instead: {@link Document#builder()}.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public Document(String content, Map<String, Object> metadata) {
 		this(content, metadata, new RandomIdGenerator());
 	}
@@ -114,10 +110,6 @@ public class Document implements MediaContent {
 		this(idGenerator.generateId(content, metadata), content, metadata);
 	}
 
-	/**
-	 * @deprecated Use builder instead: {@link Document#builder()}.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public Document(String id, String content, Map<String, Object> metadata) {
 		this(id, content, List.of(), metadata);
 	}
@@ -194,10 +186,6 @@ public class Document implements MediaContent {
 		return this.score;
 	}
 
-	public void setScore(@Nullable Double score) {
-		this.score = score;
-	}
-
 	/**
 	 * Return the embedding that were calculated.
 	 * @deprecated We are considering getting rid of this, please comment on
@@ -233,20 +221,27 @@ public class Document implements MediaContent {
 		this.contentFormatter = contentFormatter;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(id, content, media, metadata);
+	public Builder mutate() {
+		return new Builder().id(this.id)
+			.content(this.content)
+			.media(new ArrayList<>(this.media))
+			.metadata(this.metadata)
+			.score(this.score);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
-			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
 		Document document = (Document) o;
 		return Objects.equals(id, document.id) && Objects.equals(content, document.content)
-				&& Objects.equals(media, document.media) && Objects.equals(metadata, document.metadata);
+				&& Objects.equals(media, document.media) && Objects.equals(metadata, document.metadata)
+				&& Objects.equals(score, document.score);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, content, media, metadata, score);
 	}
 
 	@Override
@@ -267,6 +262,7 @@ public class Document implements MediaContent {
 
 		private float[] embedding = new float[0];
 
+		@Nullable
 		private Double score;
 
 		private IdGenerator idGenerator = new RandomIdGenerator();
@@ -314,7 +310,7 @@ public class Document implements MediaContent {
 			return this;
 		}
 
-		public Builder score(Double score) {
+		public Builder score(@Nullable Double score) {
 			this.score = score;
 			return this;
 		}
