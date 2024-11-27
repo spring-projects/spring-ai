@@ -33,6 +33,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -441,10 +442,11 @@ public class OpenAiChatModelIT extends AbstractIT {
 				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
 		ChatResponse response = chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), ChatOptionsBuilder.builder().withModel(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("hobbits");
+		assertThat(response.getMetadata().getModel()).containsIgnoringCase(modelName);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
