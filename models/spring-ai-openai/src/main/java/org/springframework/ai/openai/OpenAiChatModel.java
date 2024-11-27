@@ -473,7 +473,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(((FunctionCallingOptions) prompt.getOptions()),
 						FunctionCallingOptions.class, OpenAiChatOptions.class);
 			}
-			else if (prompt.getOptions() instanceof OpenAiChatOptions) {
+			else {
 				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 						OpenAiChatOptions.class);
 			}
