@@ -66,7 +66,7 @@ public class MessageTypeContentTests {
 	ArgumentCaptor<MultiValueMap<String, String>> headersCaptor;
 
 	Flux<ChatCompletionChunk> fluxResponse = Flux.generate(
-			() -> new ChatCompletionChunk("id", List.of(), 0l, "model", null, "fp", "object", null), (state, sink) -> {
+			() -> new ChatCompletionChunk("id", List.of(), 0L, "model", null, "fp", "object", null), (state, sink) -> {
 				sink.next(state);
 				sink.complete();
 				return state;

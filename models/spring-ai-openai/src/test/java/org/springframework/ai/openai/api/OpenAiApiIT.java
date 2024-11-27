@@ -16,8 +16,14 @@
 
 package org.springframework.ai.openai.api;
 
+import java.io.IOException;
+import java.util.Base64;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
@@ -27,11 +33,6 @@ import org.springframework.ai.openai.api.OpenAiApi.Embedding;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
-import reactor.core.publisher.Flux;
-
-import java.io.IOException;
-import java.util.Base64;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -85,7 +86,7 @@ public class OpenAiApiIT {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(content, Role.USER);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
 				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), 0.0);
-		ResponseEntity<ChatCompletion> response = openAiApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -105,7 +106,7 @@ public class OpenAiApiIT {
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
 				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters);
-		ResponseEntity<ChatCompletion> response = openAiApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();

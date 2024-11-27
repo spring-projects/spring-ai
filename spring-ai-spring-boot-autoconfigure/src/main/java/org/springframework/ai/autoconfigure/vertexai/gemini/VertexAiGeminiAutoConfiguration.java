@@ -25,10 +25,10 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

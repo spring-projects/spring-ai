@@ -698,8 +698,10 @@ public class OpenAiApi {
 	public enum OutputModality {
 
 		// @formatter:off
-		@JsonProperty("audio") AUDIO,
-		@JsonProperty("text") TEXT;
+		@JsonProperty("audio")
+		AUDIO,
+		@JsonProperty("text")
+		TEXT
 		// @formatter:on
 
 	}
@@ -936,23 +938,34 @@ public class OpenAiApi {
 			 * Specifies the voice type.
 			 */
 			public enum Voice {
-				@JsonProperty("alloy") ALLOY,
-				@JsonProperty("echo") ECHO,
-				@JsonProperty("fable") FABLE,
-				@JsonProperty("onyx") ONYX,
-				@JsonProperty("nova") NOVA,
-				@JsonProperty("shimmer") SHIMMER;
+				@JsonProperty("alloy")
+				ALLOY,
+				@JsonProperty("echo")
+				ECHO,
+				@JsonProperty("fable")
+				FABLE,
+				@JsonProperty("onyx")
+				ONYX,
+				@JsonProperty("nova")
+				NOVA,
+				@JsonProperty("shimmer")
+				SHIMMER
 			}
 
 			/**
 			 * Specifies the output audio format.
 			 */
 			public enum AudioResponseFormat {
-				@JsonProperty("mp3") MP3,
-				@JsonProperty("flac") FLAC,
-				@JsonProperty("opus") OPUS,
-				@JsonProperty("pcm16") PCM16,
-				@JsonProperty("wav") WAV;
+				@JsonProperty("mp3")
+				MP3,
+				@JsonProperty("flac")
+				FLAC,
+				@JsonProperty("opus")
+				OPUS,
+				@JsonProperty("pcm16")
+				PCM16,
+				@JsonProperty("wav")
+				WAV
 			}
 		}
 
@@ -1069,23 +1082,7 @@ public class OpenAiApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl,
-			@JsonProperty("input_audio") InputAudio inputAudio) {// @formatter:on
-
-			/**
-			 * @param data Base64 encoded audio data.
-			 * @param format The format of the encoded audio data. Currently supports
-			 * "wav" and "mp3".
-			 */
-			@JsonInclude(Include.NON_NULL)
-			public record InputAudio(// @formatter:off
-				@JsonProperty("data") String data,
-				@JsonProperty("format") Format format) {
-
-				public enum Format {
-					@JsonProperty("mp3") MP3,
-					@JsonProperty("wav") WAV;					
-				}// @formatter:on
-			}
+			@JsonProperty("input_audio") InputAudio inputAudio) { // @formatter:on
 
 			/**
 			 * Shortcut constructor for a text content.
@@ -1109,6 +1106,24 @@ public class OpenAiApi {
 			 */
 			public MediaContent(InputAudio inputAudio) {
 				this("input_audio", null, null, inputAudio);
+			}
+
+			/**
+			 * @param data Base64 encoded audio data.
+			 * @param format The format of the encoded audio data. Currently supports
+			 * "wav" and "mp3".
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record InputAudio(// @formatter:off
+				@JsonProperty("data") String data,
+				@JsonProperty("format") Format format) {
+
+				public enum Format {
+					@JsonProperty("mp3")
+					MP3,
+					@JsonProperty("wav")
+					WAV
+				} // @formatter:on
 			}
 
 			/**
@@ -1182,7 +1197,7 @@ public class OpenAiApi {
 				@JsonProperty("data") String data,
 				@JsonProperty("expires_at") Long expiresAt,
 				@JsonProperty("transcript") String transcript
-		) {// @formatter:on
+		) { // @formatter:on
 		}
 	}
 
@@ -1214,7 +1229,7 @@ public class OpenAiApi {
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
 			@JsonProperty("usage") Usage usage
-	) {// @formatter:on
+	) { // @formatter:on
 
 		/**
 		 * Chat completion choice.
@@ -1229,7 +1244,7 @@ public class OpenAiApi {
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("message") ChatCompletionMessage message,
-				@JsonProperty("logprobs") LogProbs logprobs) {// @formatter:on
+				@JsonProperty("logprobs") LogProbs logprobs) { // @formatter:on
 		}
 
 	}
@@ -1373,7 +1388,7 @@ public class OpenAiApi {
 			@JsonProperty("service_tier") String serviceTier,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) {// @formatter:on
+			@JsonProperty("usage") Usage usage) { // @formatter:on
 
 		/**
 		 * Chat completion choice.

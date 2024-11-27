@@ -200,9 +200,9 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	/**
-	 * Extracts metadata from a Protobuf Struct.
-	 * @param metadataStruct The Protobuf Struct containing metadata.
-	 * @return The metadata as a map.
+	 * Returns {@link Document} using the {@link ScoredPoint}
+	 * @param point ScoredPoint containing the query response.
+	 * @return the {@link Document} representing the response.
 	 */
 	private Document toDocument(ScoredPoint point) {
 		try {

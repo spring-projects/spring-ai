@@ -194,7 +194,7 @@ public class FilterExpressionTextParserTests {
 
 	@Test
 	public void testUnescapedIdentifierWithUnderscores() {
-		Expression exp = parser.parse("file_name == 'medicaid-wa-faqs.pdf'");
+		Expression exp = this.parser.parse("file_name == 'medicaid-wa-faqs.pdf'");
 		assertThat(exp).isEqualTo(new Expression(EQ, new Key("file_name"), new Value("medicaid-wa-faqs.pdf")));
 	}
 

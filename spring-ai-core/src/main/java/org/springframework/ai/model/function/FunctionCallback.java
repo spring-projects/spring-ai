@@ -94,7 +94,7 @@ public interface FunctionCallback {
 	 * Describes the type of the schema used to describe the input parameters of the
 	 * function.
 	 */
-	public enum SchemaType {
+	enum SchemaType {
 
 		/**
 		 * JSON schema
