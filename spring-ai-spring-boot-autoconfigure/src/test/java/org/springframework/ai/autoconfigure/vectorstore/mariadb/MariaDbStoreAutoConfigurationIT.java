@@ -90,8 +90,13 @@ public class MariaDbStoreAutoConfigurationIT {
 	private static boolean isFullyQualifiedTableExists(ApplicationContext context, String schemaName,
 			String tableName) {
 		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
-		String sql = "SELECT EXISTS (SELECT * FROM information_schema.tables WHERE table_schema = ? AND table_name = ?) as results";
-		return jdbcTemplate.queryForObject(sql, Boolean.class, schemaName, tableName);
+		if (schemaName == null) {
+			String sqlWithoutSchema = "SELECT EXISTS (SELECT * FROM information_schema.tables WHERE table_schema = SCHEMA() AND table_name = ?) as results";
+			return jdbcTemplate.queryForObject(sqlWithoutSchema, Boolean.class, tableName);
+		} else {
+			String sqlWithSchema = "SELECT EXISTS (SELECT * FROM information_schema.tables WHERE table_schema = ? AND table_name = ?) as results";
+			return jdbcTemplate.queryForObject(sqlWithSchema, Boolean.class, schemaName , tableName);
+		}
 	}
 
 	@Test
