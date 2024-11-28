@@ -74,7 +74,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = PerplexityWithOpenAiChatModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "PERPLEXITY_API_KEY", matches = ".+")
-// @Disabled("Requires Perplexity credits")
+@Disabled("Requires Perplexity credits")
 class PerplexityWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(PerplexityWithOpenAiChatModelIT.class);
@@ -187,6 +187,7 @@ class PerplexityWithOpenAiChatModelIT {
 
 	@Disabled()
 	@Test
+	@Disabled("Perplexity gets confused with the 'Generate the filmography for a random actor.' prompt")
 	void beanOutputConverter() {
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
