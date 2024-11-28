@@ -31,7 +31,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback.FunctionInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.MethodInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
-import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
@@ -44,8 +43,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class DefaultFunctionCallbackBuilder extends DefaultCommonInvokingSpec<FunctionCallback.Builder>
-		implements FunctionCallback.Builder {
+public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);
 
@@ -89,7 +87,7 @@ public class DefaultFunctionCallbackBuilder extends DefaultCommonInvokingSpec<Fu
 		return generatedDescription;
 	}
 
-	final class DefaultFunctionInvokingSpec<I, O> extends DefaultCommonInvokingSpec<FunctionInvokingSpec<I, O>>
+	final class DefaultFunctionInvokingSpec<I, O> extends DefaultCommonCallbackInvokingSpec<FunctionInvokingSpec<I, O>>
 			implements FunctionInvokingSpec<I, O> {
 
 		private final String name;
@@ -160,7 +158,7 @@ public class DefaultFunctionCallbackBuilder extends DefaultCommonInvokingSpec<Fu
 
 	}
 
-	final class DefaultMethodInvokingSpec extends DefaultCommonInvokingSpec<MethodInvokingSpec>
+	final class DefaultMethodInvokingSpec extends DefaultCommonCallbackInvokingSpec<MethodInvokingSpec>
 			implements FunctionCallback.MethodInvokingSpec {
 
 		private String name;

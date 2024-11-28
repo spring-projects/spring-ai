@@ -8,14 +8,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.model.function.FunctionCallback.CommonInvokingSpec;
+import org.springframework.ai.model.function.FunctionCallback.CommonCallbackInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
-public class DefaultCommonInvokingSpec<B extends CommonInvokingSpec<B>> implements CommonInvokingSpec<B> {
-
-	protected DefaultCommonInvokingSpec<?> parentCommonInvokingSpec;
+public class DefaultCommonCallbackInvokingSpec<B extends CommonCallbackInvokingSpec<B>>
+		implements CommonCallbackInvokingSpec<B> {
 
 	/**
 	 * The description of the function callback. Used to hint the LLM model about the
@@ -94,28 +93,23 @@ public class DefaultCommonInvokingSpec<B extends CommonInvokingSpec<B>> implemen
 	}
 
 	public String getDescription() {
-		return (this.description != null) ? this.description
-				: (this.parentCommonInvokingSpec != null) ? this.parentCommonInvokingSpec.getDescription() : null;
+		return this.description;
 	}
 
 	public SchemaType getSchemaType() {
-		return (this.schemaType != null) ? this.schemaType
-				: (this.parentCommonInvokingSpec != null) ? this.parentCommonInvokingSpec.getSchemaType() : null;
+		return this.schemaType;
 	}
 
 	public Function<Object, String> getResponseConverter() {
-		return (this.responseConverter != null) ? this.responseConverter
-				: (this.parentCommonInvokingSpec != null) ? this.parentCommonInvokingSpec.getResponseConverter() : null;
+		return this.responseConverter;
 	}
 
 	public String getInputTypeSchema() {
-		return (this.inputTypeSchema != null) ? this.inputTypeSchema
-				: (this.parentCommonInvokingSpec != null) ? this.parentCommonInvokingSpec.getInputTypeSchema() : null;
+		return this.inputTypeSchema;
 	}
 
 	public ObjectMapper getObjectMapper() {
-		return (this.objectMapper != null) ? this.objectMapper
-				: (this.parentCommonInvokingSpec != null) ? this.parentCommonInvokingSpec.getObjectMapper() : null;
+		return this.objectMapper;
 	}
 
 }

@@ -116,7 +116,7 @@ public interface FunctionCallback {
 	 * <li>{@link MethodInvokingSpec} - The method invoking builder interface.
 	 * </ul>
 	 */
-	interface Builder extends CommonInvokingSpec<Builder> {
+	interface Builder {
 
 		/**
 		 * Builds a {@link Function} invoking {@link FunctionCallback} instance.
@@ -145,7 +145,7 @@ public interface FunctionCallback {
 
 	}
 
-	interface CommonInvokingSpec<B extends CommonInvokingSpec<B>> {
+	interface CommonCallbackInvokingSpec<B extends CommonCallbackInvokingSpec<B>> {
 
 		/**
 		 * Function description. This description is used by the model do decide if the
@@ -186,7 +186,7 @@ public interface FunctionCallback {
 	 * @param <I> Function input type.
 	 * @param <O> Function output type.
 	 */
-	interface FunctionInvokingSpec<I, O> extends CommonInvokingSpec<FunctionInvokingSpec<I, O>> {
+	interface FunctionInvokingSpec<I, O> extends CommonCallbackInvokingSpec<FunctionInvokingSpec<I, O>> {
 
 		/**
 		 * Function input type. The input type is used to validate the function input
@@ -211,7 +211,7 @@ public interface FunctionCallback {
 	/**
 	 * Method invoking builder interface.
 	 */
-	interface MethodInvokingSpec extends CommonInvokingSpec<MethodInvokingSpec> {
+	interface MethodInvokingSpec extends CommonCallbackInvokingSpec<MethodInvokingSpec> {
 
 		/**
 		 * Optional function name. If not provided the method name is used as the
