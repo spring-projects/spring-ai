@@ -31,6 +31,7 @@
 //// **** xref:api/chat/functions/moonshot-chat-functions.adoc[Function Calling]
 *** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 *** xref:api/chat/ollama-chat.adoc[Ollama]
+*** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
 *** OCI Generative AI
 **** xref:api/chat/oci-genai/cohere-chat.adoc[Cohere]
 *** xref:api/chat/openai-chat.adoc[OpenAI]
