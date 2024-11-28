@@ -16,12 +16,11 @@
 
 package org.springframework.ai.openai;
 
-import java.util.Objects;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.image.ImageOptions;
+
+import java.util.Objects;
 
 /**
  * OpenAI Image API options. OpenAiImageOptions.java
@@ -48,12 +47,18 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
+	 * This property is interconnected with the 'size' property - setting both width and height
+	 * will automatically compute and set the size in "widthxheight" format. Conversely,
+	 * setting a valid size string will parse and set the individual width and height values.
 	 */
 	@JsonProperty("size_width")
 	private Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
+	 * This property is interconnected with the 'size' property - setting both width and height
+	 * will automatically compute and set the size in "widthxheight" format. Conversely,
+	 * setting a valid size string will parse and set the individual width and height values.
 	 */
 	@JsonProperty("size_height")
 	private Integer height;
@@ -76,6 +81,10 @@ public class OpenAiImageOptions implements ImageOptions {
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
 	 * dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
+	 * This property is automatically computed when both width and height are set, following
+	 * the format "widthxheight". When setting this property directly, it must follow the
+	 * format "WxH" where W and H are valid integers. Invalid formats will result in null
+	 * width and height values.
 	 */
 	@JsonProperty("size")
 	private String size;
@@ -142,9 +151,13 @@ public class OpenAiImageOptions implements ImageOptions {
 		}
 		else if (this.size != null) {
 			try {
-				return Integer.parseInt(this.size.split("x")[0]);
+				String[] dimensions = this.size.split("x");
+				if (dimensions.length != 2) {
+					return null;
+				}
+				return Integer.parseInt(dimensions[0]);
 			}
-			catch (NumberFormatException ex) {
+			catch (Exception ex) {
 				return null;
 			}
 		}
@@ -153,7 +166,9 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public void setWidth(Integer width) {
 		this.width = width;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
@@ -163,9 +178,13 @@ public class OpenAiImageOptions implements ImageOptions {
 		}
 		else if (this.size != null) {
 			try {
-				return Integer.parseInt(this.size.split("x")[1]);
+				String[] dimensions = this.size.split("x");
+				if (dimensions.length != 2) {
+					return null;
+				}
+				return Integer.parseInt(dimensions[1]);
 			}
-			catch (NumberFormatException ex) {
+			catch (Exception ex) {
 				return null;
 			}
 		}
@@ -174,7 +193,9 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public void setHeight(Integer height) {
 		this.height = height;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
