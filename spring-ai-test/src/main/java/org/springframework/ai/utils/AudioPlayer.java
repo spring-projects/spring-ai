@@ -28,7 +28,7 @@ import javax.sound.sampled.Clip;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class WavePlayer {
+public class AudioPlayer {
 
 	public static void main(String[] args) throws Exception {
 
@@ -52,7 +52,7 @@ public class WavePlayer {
 				}
 				// wait to finish
 				while (clip.isRunning()) {
-					Thread.sleep(100);
+					Thread.sleep(3000);
 				}
 			}
 		}

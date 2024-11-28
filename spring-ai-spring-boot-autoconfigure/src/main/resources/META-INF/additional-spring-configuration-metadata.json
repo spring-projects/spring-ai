@@ -12,10 +12,9 @@
 	  "sourceType": "org.springframework.ai.mistralai.MistralAiChatOptions"
 	},
 	{
-	  "name": "spring.ai.openai.chat.audio",
+	  "name": "spring.ai.openai.chat.output-audio",
 	  "type": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters",
-	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions",
-	  "sourceMethod": "getAudioParameters()"
+	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions"
 	}
   ],
   "properties": [
@@ -30,12 +29,12 @@
 	  "sourceType": "com.azure.ai.openai.models.AzureChatEnhancementConfiguration"
 	},
 	{
-	  "name": "spring.ai.openai.chat.audio.voice",
+	  "name": "spring.ai.openai.chat.output-audio.voice",
 	  "type": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters$Voice",
 	  "sourceType": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters"
 	},
 	{
-	  "name": "spring.ai.openai.chat.audio.format",
+	  "name": "spring.ai.openai.chat.output-audio.format",
 	  "type": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters$AudioResponseFormat",
 	  "sourceType": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters"
 	}

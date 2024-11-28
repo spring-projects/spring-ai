@@ -445,8 +445,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 		ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 				OpenAiChatOptions.builder()
 					.withModel(modelName)
-					.withModalities(List.of("text", "audio"))
-					.withAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+					.withOutputModalities(List.of("text", "audio"))
+					.withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 					.build()));
 
 		logger.info(response.getResult().getOutput().getContent());
@@ -467,8 +467,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.stream(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder()
 						.withModel(modelName)
-						.withModalities(List.of("text", "audio"))
-						.withAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+						.withOutputModalities(List.of("text", "audio"))
+						.withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 						.build()))
 			.collectList()
 			.block()).isInstanceOf(IllegalArgumentException.class)

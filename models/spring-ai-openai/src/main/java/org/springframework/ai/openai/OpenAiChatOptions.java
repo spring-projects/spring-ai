@@ -100,19 +100,19 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	 * The gpt-4o-audio-preview model can also be used to generate audio.
 	 * To request that this model generate both text and audio responses,
 	 * you can use: ["text", "audio"].
-	 * Note that the audio modality is only available for the gpt-4o-audio-preview model 
+	 * Note that the audio modality is only available for the gpt-4o-audio-preview model
 	 * and is not supported for streaming completions.
 	 */
-	private @JsonProperty("modalities") List<String> modalities;
+	private @JsonProperty("modalities") List<String> outputModalities;
 
 	/**
 	 * Audio parameters for the audio generation. Required when audio output is requested with
 	 * modalities: ["audio"]
-	 * Note: that the audio modality is only available for the gpt-4o-audio-preview model 
+	 * Note: that the audio modality is only available for the gpt-4o-audio-preview model
 	 * and is not supported for streaming completions.
 
 	 */
-	private @JsonProperty("audio") AudioParameters audio;
+	private @JsonProperty("audio") AudioParameters outputAudio;
 
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
@@ -228,8 +228,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			.withMaxTokens(fromOptions.getMaxTokens())
 			.withMaxCompletionTokens(fromOptions.getMaxCompletionTokens())
 			.withN(fromOptions.getN())
-			.withModalities(fromOptions.getModalities())
-			.withAudio(fromOptions.getAudio())
+			.withOutputModalities(fromOptions.getOutputModalities())
+			.withOutputAudio(fromOptions.getOutputAudio())
 			.withPresencePenalty(fromOptions.getPresencePenalty())
 			.withResponseFormat(fromOptions.getResponseFormat())
 			.withStreamUsage(fromOptions.getStreamUsage())
@@ -324,20 +324,20 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 		this.n = n;
 	}
 
-	public List<String> getModalities() {
-		return modalities;
+	public List<String> getOutputModalities() {
+		return outputModalities;
 	}
 
-	public void setModalities(List<String> modalities) {
-		this.modalities = modalities;
+	public void setOutputModalities(List<String> modalities) {
+		this.outputModalities = modalities;
 	}
 
-	public AudioParameters getAudio() {
-		return audio;
+	public AudioParameters getOutputAudio() {
+		return outputAudio;
 	}
 
-	public void setAudio(AudioParameters audio) {
-		this.audio = audio;
+	public void setOutputAudio(AudioParameters audio) {
+		this.outputAudio = audio;
 	}
 
 	@Override
@@ -505,7 +505,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
-				this.proxyToolCalls, this.toolContext, this.modalities, this.audio);
+				this.proxyToolCalls, this.toolContext, this.outputModalities, this.outputAudio);
 	}
 
 	@Override
@@ -534,7 +534,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.httpHeaders, other.httpHeaders)
 				&& Objects.equals(this.toolContext, other.toolContext)
 				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
-				&& Objects.equals(this.modalities, other.modalities) && Objects.equals(this.audio, other.audio);
+				&& Objects.equals(this.outputModalities, other.outputModalities)
+				&& Objects.equals(this.outputAudio, other.outputAudio);
 	}
 
 	@Override
@@ -599,13 +600,13 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		public Builder withModalities(List<String> modalities) {
-			this.options.modalities = modalities;
+		public Builder withOutputModalities(List<String> modalities) {
+			this.options.outputModalities = modalities;
 			return this;
 		}
 
-		public Builder withAudio(AudioParameters audio) {
-			this.options.audio = audio;
+		public Builder withOutputAudio(AudioParameters audio) {
+			this.options.outputAudio = audio;
 			return this;
 		}
 

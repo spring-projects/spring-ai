@@ -36,14 +36,9 @@ import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.AudioResponseFormat;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
-import org.springframework.ai.utils.WavePlayer;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -75,8 +70,9 @@ public class OpenAiAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues(
 					"spring.ai.openai.chat.options.model=" + OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(),
-					"spring.ai.openai.chat.options.modalities=text,audio",
-					"spring.ai.openai.chat.options.audio.voice=ALLOY", "spring.ai.openai.chat.options.audio.format=WAV")
+					"spring.ai.openai.chat.options.output-modalities=text,audio",
+					"spring.ai.openai.chat.options.output-audio.voice=ALLOY",
+					"spring.ai.openai.chat.options.output-audio.format=WAV")
 			.run(context -> {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -84,7 +80,7 @@ public class OpenAiAutoConfigurationIT {
 					.call(new Prompt(new UserMessage("Tell me joke about Spring Framework")));
 				assertThat(response).isNotNull();
 				logger.info("Response: " + response);
-				// WavePlayer.play(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray());
+				// AudioPlayer.play(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray());
 			});
 	}
 
