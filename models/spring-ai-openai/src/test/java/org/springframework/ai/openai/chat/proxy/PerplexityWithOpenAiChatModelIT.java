@@ -63,12 +63,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Alexandros Pappas
  *
- * Unlike other proxy implementations (e.g., NVIDIA), Perplexity operates
- * differently:
+ * Unlike other proxy implementations (e.g., NVIDIA), Perplexity operates differently:
  *
- * - Perplexity includes integrated real-time web search results as part of its response rather
- * than through explicit function calls. Consequently, no `toolCalls` or function call
- * mechanisms are exposed in the API responses
+ * - Perplexity includes integrated real-time web search results as part of its response
+ * rather than through explicit function calls. Consequently, no `toolCalls` or function
+ * call mechanisms are exposed in the API responses
  *
  * For more information on Perplexity's behavior, refer to its API documentation:
  * <a href="https://docs.perplexity.ai/api-reference/chat-completions">perplexity-api</a>
