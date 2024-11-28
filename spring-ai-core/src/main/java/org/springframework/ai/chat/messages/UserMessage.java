@@ -64,9 +64,9 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 		this.media = new ArrayList<>(media);
 	}
 
-	public List<Media> getMedia(String... dummy) {
-		return this.media;
-	}
+	// public List<Media> getMedia(String... dummy) {
+	// return this.media;
+	// }
 
 	@Override
 	public String toString() {

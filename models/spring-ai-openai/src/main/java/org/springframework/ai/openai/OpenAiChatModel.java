@@ -64,6 +64,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.AudioOutput;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.MediaContent;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
@@ -72,6 +73,8 @@ import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -251,7 +254,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
 					// @formatter:on
-					return buildGeneration(choice, metadata);
+					return buildGeneration(choice, metadata, request);
 				}).toList();
 
 				// Non function calling.
@@ -281,6 +284,17 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
+
+			if (request.outputModalities() != null) {
+				if (request.outputModalities().stream().anyMatch(m -> m.equals("audio"))) {
+					logger.warn("Audio output is not supported for streaming requests. Removing audio output.");
+					throw new IllegalArgumentException("Audio output is not supported for streaming requests.");
+				}
+			}
+			if (request.audioParameters() != null) {
+				logger.warn("Audio parameters are not supported for streaming requests. Removing audio parameters.");
+				throw new IllegalArgumentException("Audio parameters are not supported for streaming requests.");
+			}
 
 			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi.chatCompletionStream(request,
 					getAdditionalHttpHeaders(prompt));
@@ -320,7 +334,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
 									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
 
-							return buildGeneration(choice, metadata);
+							return buildGeneration(choice, metadata, request);
 						}).toList();
 						// @formatter:on
 
@@ -367,7 +381,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue()))));
 	}
 
-	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+	private Generation buildGeneration(Choice choice, Map<String, Object> metadata, ChatCompletionRequest request) {
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
 				: choice.message()
 					.toolCalls()
@@ -376,10 +390,26 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
-		return new Generation(assistantMessage, generationMetadata);
+		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
+
+		List<Media> media = new ArrayList<>();
+		String textContent = choice.message().content();
+		var audioOutput = choice.message().audioOutput();
+		if (audioOutput != null) {
+			String mimeType = String.format("audio/%s", request.audioParameters().format().name().toLowerCase());
+			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
+			Resource resource = new ByteArrayResource(audioData);
+			media.add(new Media(MimeTypeUtils.parseMimeType(mimeType), resource, audioOutput.id()));
+			if (!StringUtils.hasText(textContent)) {
+				textContent = audioOutput.transcript();
+			}
+			generationMetadataBuilder.metadata("audioId", audioOutput.id());
+			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
+		}
+
+		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
+		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 
 	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit) {
@@ -443,8 +473,15 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
+				AudioOutput audioOutput = null;
+				if (!CollectionUtils.isEmpty(assistantMessage.getMedia())) {
+					Assert.isTrue(assistantMessage.getMedia().size() == 1,
+							"Only one media content is supported for assistant messages");
+					audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
+
+				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, null));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
