@@ -839,10 +839,10 @@ public class OpenAiApi {
 		 * @param model ID of the model to use.
 		 * @param audio Parameters for audio output. Required when audio output is requested with outputModalities: ["audio"].
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, AudioParameters audio) {
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, AudioParameters audio, boolean stream) {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
-					null, null, null, false, null, null, null,
+					null, null, null, stream, null, null, null,
 					null, null, null, null);
 		}
 
@@ -938,34 +938,34 @@ public class OpenAiApi {
 			 * Specifies the voice type.
 			 */
 			public enum Voice {
-				@JsonProperty("alloy")
-				ALLOY,
-				@JsonProperty("echo")
-				ECHO,
-				@JsonProperty("fable")
-				FABLE,
-				@JsonProperty("onyx")
-				ONYX,
-				@JsonProperty("nova")
-				NOVA,
-				@JsonProperty("shimmer")
-				SHIMMER
+				/** Alloy voice */
+				@JsonProperty("alloy") ALLOY,
+				/** Echo voice */
+				@JsonProperty("echo") ECHO,
+				/** Fable voice */
+				@JsonProperty("fable") FABLE,
+				/** Onyx voice */
+				@JsonProperty("onyx") ONYX,
+				/** Nova voice */
+				@JsonProperty("nova") NOVA,
+				/** Shimmer voice */
+				@JsonProperty("shimmer") SHIMMER
 			}
 
 			/**
 			 * Specifies the output audio format.
 			 */
 			public enum AudioResponseFormat {
-				@JsonProperty("mp3")
-				MP3,
-				@JsonProperty("flac")
-				FLAC,
-				@JsonProperty("opus")
-				OPUS,
-				@JsonProperty("pcm16")
-				PCM16,
-				@JsonProperty("wav")
-				WAV
+				/** MP3 format */
+				@JsonProperty("mp3") MP3,
+				/** FLAC format */
+				@JsonProperty("flac") FLAC,
+				/** OPUS format */	
+				@JsonProperty("opus") OPUS,
+				/** PCM16 format */
+				@JsonProperty("pcm16") PCM16,
+				/** WAV format */
+				@JsonProperty("wav") WAV
 			}
 		}
 
@@ -1119,10 +1119,10 @@ public class OpenAiApi {
 				@JsonProperty("format") Format format) {
 
 				public enum Format {
-					@JsonProperty("mp3")
-					MP3,
-					@JsonProperty("wav")
-					WAV
+					/** MP3 audio format */
+					@JsonProperty("mp3") MP3,
+					/** WAV audio format */
+					@JsonProperty("wav") WAV
 				} // @formatter:on
 			}
 

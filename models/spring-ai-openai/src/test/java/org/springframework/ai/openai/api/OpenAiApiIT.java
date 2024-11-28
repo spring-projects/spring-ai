@@ -35,6 +35,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
@@ -105,7 +106,7 @@ public class OpenAiApiIT {
 				ChatCompletionRequest.AudioParameters.Voice.NOVA,
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
-				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters);
+				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters, false);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(response).isNotNull();
@@ -117,6 +118,21 @@ public class OpenAiApiIT {
 		assertThat(response.getBody().choices().get(0).message().audioOutput().data()).isNotNull();
 		assertThat(response.getBody().choices().get(0).message().audioOutput().transcript())
 			.containsIgnoringCase("leviosa");
+	}
+
+	@Test
+	void streamOutputAudio() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
+				"What is the magic spell to make objects fly?", Role.USER);
+		ChatCompletionRequest.AudioParameters audioParameters = new ChatCompletionRequest.AudioParameters(
+				ChatCompletionRequest.AudioParameters.Voice.NOVA,
+				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
+				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters, true);
+
+		assertThatThrownBy(() -> this.openAiApi.chatCompletionStream(chatCompletionRequest).collectList().block())
+			.isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("400 Bad Request from POST https://api.openai.com/v1/chat/completions");
 	}
 
 }

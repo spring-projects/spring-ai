@@ -38,6 +38,7 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -55,13 +56,32 @@ public class OpenAiAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class));
 
 	@Test
-	void generate() {
+	void chatCall() {
 		this.contextRunner.run(context -> {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
+	}
+
+	@Test
+	void chatCallAudioResponse() {
+		this.contextRunner
+			.withPropertyValues(
+					"spring.ai.openai.chat.options.model=" + OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(),
+					"spring.ai.openai.chat.options.output-modalities=text,audio",
+					"spring.ai.openai.chat.options.output-audio.voice=ALLOY",
+					"spring.ai.openai.chat.options.output-audio.format=WAV")
+			.run(context -> {
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				ChatResponse response = chatModel
+					.call(new Prompt(new UserMessage("Tell me joke about Spring Framework")));
+				assertThat(response).isNotNull();
+				logger.info("Response: " + response);
+				// AudioPlayer.play(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray());
+			});
 	}
 
 	@Test

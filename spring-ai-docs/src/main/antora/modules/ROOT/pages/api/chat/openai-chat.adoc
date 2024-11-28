@@ -107,6 +107,11 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.options.maxTokens | (Deprecated in favour of `maxCompletionTokens`) The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. | -
 | spring.ai.openai.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as 1 to minimize costs. | 1
+| spring.ai.openai.chat.options.output-modalities | Output types that you would like the model to generate for this request. Most models are capable of generating text, which is the default.
+The `gpt-4o-audio-preview` model can also be used to generate audio. To request that this model generate both text and audio responses,
+you can use: `text`, `audio`. Not supported for streaming. | -
+| spring.ai.openai.chat.options.output-audio | Audio parameters for the audio generation. Required when audio output is requested with `output-modalities`: `audio`.
+Requires the `gpt-4o-audio-preview` model and is is not supported for streaming completions. | -
 | spring.ai.openai.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
 | spring.ai.openai.chat.options.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
 The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] which guarantees the model will match your supplied JSON schema. The JSON_SCHEMA type requires setting the `responseFormat.schema` property as well. | -
@@ -221,7 +226,7 @@ view of the fruit inside.
 
 === Audio
 
-OpenAI models that offer audio multimodal support include `gpt-4o-audio-preview`.
+OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
 Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
 
 The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[User Message API] can incorporate a list of base64-encoded audio files with the message.
@@ -243,6 +248,37 @@ ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 ----
 
 TIP: You can pass multiple audio files as well.
+
+=== Output Audio
+
+OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
+Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
+
+The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[Assystant Message API] can contain a list of base64-encoded audio files with the message.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
+This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
+Currently, OpenAI support only the following audio types: `audio/mp3` and `audio/wav`.
+
+Below is a code example, illustrating the response of user text along with an audio byte array, using the `gpt-4o-audio-preview` model:
+
+[source,java]
+----
+var userMessage = new UserMessage("Tell me joke about Spring Framework");
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+        OpenAiChatOptions.builder()
+            .withModel(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+            .withOutputModalities(List.of("text", "audio"))
+            .withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+            .build()));
+
+String text = response.getResult().getOutput().getContent(); // audio transcript
+
+byte[] waveAudio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray(); // audio data
+----
+
+You have to specify an `audio` modality in the `OpenAiChatOptions` to generate audio output. 
+The `AudioParameters` class provides the voice and audio format for the audio output.
 
 == Structured Outputs
 

@@ -33,7 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,6 +41,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -53,6 +53,9 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.AudioResponseFormat;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +66,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -432,6 +436,44 @@ public class OpenAiChatModelIT extends AbstractIT {
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	void multiModalityOutputAudio(String modelName) throws IOException {
+		var userMessage = new UserMessage("Tell me joke about Spring Framework");
+
+		ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+				OpenAiChatOptions.builder()
+					.withModel(modelName)
+					.withOutputModalities(List.of("text", "audio"))
+					.withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+					.build()));
+
+		logger.info(response.getResult().getOutput().getContent());
+		assertThat(response.getResult().getOutput().getContent()).isNotEmpty();
+
+		byte[] audio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray();
+		assertThat(audio).isNotEmpty();
+		// AudioPlayer.play(audio);
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	void streamingMultiModalityOutputAudio(String modelName) throws IOException {
+		// var audioResource = new ClassPathResource("speech1.mp3");
+		var userMessage = new UserMessage("Tell me joke about Spring Framework");
+
+		assertThatThrownBy(() -> chatModel
+			.stream(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder()
+						.withModel(modelName)
+						.withOutputModalities(List.of("text", "audio"))
+						.withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+						.build()))
+			.collectList()
+			.block()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Audio parameters are not supported for streaming requests.");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
