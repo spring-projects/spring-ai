@@ -128,24 +128,47 @@ public class ChatResponse implements ModelResponse<Generation> {
 
 		public Builder from(ChatResponse other) {
 			this.generations = other.generations;
-			this.chatResponseMetadataBuilder.withModel(other.chatResponseMetadata.getModel());
-			this.chatResponseMetadataBuilder.withId(other.chatResponseMetadata.getId());
-			this.chatResponseMetadataBuilder.withRateLimit(other.chatResponseMetadata.getRateLimit());
-			this.chatResponseMetadataBuilder.withUsage(other.chatResponseMetadata.getUsage());
-			this.chatResponseMetadataBuilder.withPromptMetadata(other.chatResponseMetadata.getPromptMetadata());
-			Set<Map.Entry<String, Object>> entries = other.chatResponseMetadata.entrySet();
+			return this.metadata(other.chatResponseMetadata);
+		}
+
+		/**
+		 * @deprecated Use {@link #metadata(String, Object)} instead.
+		 */
+		@Deprecated
+		public Builder withMetadata(String key, Object value) {
+			this.chatResponseMetadataBuilder.withKeyValue(key, value);
+			return this;
+		}
+
+		public Builder metadata(String key, Object value) {
+			this.chatResponseMetadataBuilder.withKeyValue(key, value);
+			return this;
+		}
+
+		public Builder metadata(ChatResponseMetadata other) {
+			this.chatResponseMetadataBuilder.withModel(other.getModel());
+			this.chatResponseMetadataBuilder.withId(other.getId());
+			this.chatResponseMetadataBuilder.withRateLimit(other.getRateLimit());
+			this.chatResponseMetadataBuilder.withUsage(other.getUsage());
+			this.chatResponseMetadataBuilder.withPromptMetadata(other.getPromptMetadata());
+			Set<Map.Entry<String, Object>> entries = other.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
 				this.chatResponseMetadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
 			}
 			return this;
 		}
 
-		public Builder withMetadata(String key, Object value) {
-			this.chatResponseMetadataBuilder.withKeyValue(key, value);
+		/**
+		 * @deprecated Use {@link #generations(List)} instead.
+		 */
+		@Deprecated
+		public Builder withGenerations(List<Generation> generations) {
+			this.generations = generations;
 			return this;
+
 		}
 
-		public Builder withGenerations(List<Generation> generations) {
+		public Builder generations(List<Generation> generations) {
 			this.generations = generations;
 			return this;
 

@@ -17,6 +17,8 @@
 package org.springframework.ai.ollama;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,16 +26,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 
 /**
  * @author Jihoon Kim
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -41,9 +46,6 @@ public class OllamaChatModelTests {
 
 	@Mock
 	OllamaApi ollamaApi;
-
-	@Mock
-	OllamaApi.ChatResponse response;
 
 	@Test
 	public void buildOllamaChatModel() {
@@ -58,23 +60,60 @@ public class OllamaChatModelTests {
 
 	@Test
 	public void buildChatResponseMetadata() {
-		Duration evalDuration = Duration.ofSeconds(1);
+
+		Long evalDuration = 1000L;
 		Integer evalCount = 101;
 
-		Duration promptEvalDuration = Duration.ofSeconds(8);
 		Integer promptEvalCount = 808;
+		Long promptEvalDuration = 8L;
 
-		given(this.response.evalDuration()).willReturn(evalDuration);
-		given(this.response.evalCount()).willReturn(evalCount);
-		given(this.response.promptEvalDuration()).willReturn(promptEvalDuration);
-		given(this.response.promptEvalCount()).willReturn(promptEvalCount);
+		Long loadDuration = 100L;
+		Long totalDuration = 2000L;
 
-		ChatResponseMetadata metadata = OllamaChatModel.from(this.response);
+		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse("model", Instant.now(), null, null, null,
+				totalDuration, loadDuration, promptEvalCount, promptEvalDuration, evalCount, evalDuration);
 
-		assertEquals(evalDuration, metadata.get("eval-duration"));
+		ChatResponseMetadata metadata = OllamaChatModel.from(response, null);
+
+		assertEquals(Duration.ofNanos(evalDuration), metadata.get("eval-duration"));
 		assertEquals(evalCount, metadata.get("eval-count"));
-		assertEquals(promptEvalDuration, metadata.get("prompt-eval-duration"));
+		assertEquals(Duration.ofNanos(promptEvalDuration), metadata.get("prompt-eval-duration"));
 		assertEquals(promptEvalCount, metadata.get("prompt-eval-count"));
+	}
+
+	@Test
+	public void buildChatResponseMetadataAggregationWithNonEmptyMetadata() {
+
+		Long evalDuration = 1000L;
+		Integer evalCount = 101;
+
+		Integer promptEvalCount = 808;
+		Long promptEvalDuration = 8L;
+
+		Long loadDuration = 100L;
+		Long totalDuration = 2000L;
+
+		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse("model", Instant.now(), null, null, null,
+				totalDuration, loadDuration, promptEvalCount, promptEvalDuration, evalCount, evalDuration);
+
+		ChatResponse previousChatResponse = ChatResponse.builder()
+			.generations(List.of())
+			.metadata(ChatResponseMetadata.builder()
+				.withUsage(new DefaultUsage(66L, 99L))
+				.withKeyValue("eval-duration", Duration.ofSeconds(2))
+				.withKeyValue("prompt-eval-duration", Duration.ofSeconds(2))
+				.build())
+			.build();
+
+		ChatResponseMetadata metadata = OllamaChatModel.from(response, previousChatResponse);
+
+		assertThat(metadata.getUsage()).isEqualTo(new DefaultUsage(808L + 66L, 101L + 99L));
+
+		assertEquals(Duration.ofNanos(evalDuration).plus(Duration.ofSeconds(2)), metadata.get("eval-duration"));
+		assertEquals((evalCount + 99), (Integer) metadata.get("eval-count"));
+		assertEquals(Duration.ofNanos(promptEvalDuration).plus(Duration.ofSeconds(2)),
+				metadata.get("prompt-eval-duration"));
+		assertEquals(promptEvalCount + 66, (Integer) metadata.get("prompt-eval-count"));
 	}
 
 }

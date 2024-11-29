@@ -84,7 +84,6 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		});
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamFunctionCallTest() {
 		this.contextRunner.run(context -> {
