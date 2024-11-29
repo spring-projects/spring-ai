@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +77,6 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage(
