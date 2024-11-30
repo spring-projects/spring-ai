@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
@@ -239,7 +241,7 @@ public abstract class AbstractToolCallSupport {
 			return false;
 		}
 
-		return generations.stream().anyMatch(g -> isToolCall(g, toolCallFinishReasons));
+		return generations.stream().anyMatch(g -> isToolCall(g, toolCallFinishReasons, chatResponse));
 	}
 
 	/**
@@ -247,15 +249,17 @@ public abstract class AbstractToolCallSupport {
 	 * determine if the generation is a tool call.
 	 * @param generation the generation to check.
 	 * @param toolCallFinishReasons the tool call finish reasons to check.
+	 * @param chatResponse the chat response to check.
 	 * @return true if the generation is a tool call, false otherwise.
 	 */
-	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
+	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons, ChatResponse chatResponse) {
 		var finishReason = (generation.getMetadata().getFinishReason() != null)
 				? generation.getMetadata().getFinishReason() : "";
-		return generation.getOutput().hasToolCalls() && toolCallFinishReasons.stream()
+		Usage usage = chatResponse.getMetadata().getUsage();
+		return generation.getOutput().hasToolCalls() && (toolCallFinishReasons.stream()
 			.map(s -> s.toLowerCase())
 			.toList()
-			.contains(finishReason.toLowerCase());
+			.contains(finishReason.toLowerCase()) || usage != null);
 	}
 
 	/**
