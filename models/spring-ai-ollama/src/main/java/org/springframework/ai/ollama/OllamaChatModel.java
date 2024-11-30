@@ -112,7 +112,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		return new Builder();
 	}
 
-	static ChatResponseMetadata from(OllamaApi.ChatResponse response, ChatResponse perviousChatResponse) {
+	static ChatResponseMetadata from(OllamaApi.ChatResponse response, ChatResponse previousChatResponse) {
 		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
 
 		OllamaChatUsage newUsage = OllamaChatUsage.from(response);
@@ -125,24 +125,24 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		Duration loadDuration = response.getLoadDuration();
 		Duration totalDuration = response.getTotalDuration();
 
-		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null) {
-			if (perviousChatResponse.getMetadata().get("eval-duration") != null) {
-				evalDuration = evalDuration.plus(perviousChatResponse.getMetadata().get("eval-duration"));
+		if (previousChatResponse != null && previousChatResponse.getMetadata() != null) {
+			if (previousChatResponse.getMetadata().get("eval-duration") != null) {
+				evalDuration = evalDuration.plus(previousChatResponse.getMetadata().get("eval-duration"));
 			}
-			if (perviousChatResponse.getMetadata().get("prompt-eval-duration") != null) {
+			if (previousChatResponse.getMetadata().get("prompt-eval-duration") != null) {
 				promptEvalDuration = promptEvalDuration
-					.plus(perviousChatResponse.getMetadata().get("prompt-eval-duration"));
+					.plus(previousChatResponse.getMetadata().get("prompt-eval-duration"));
 			}
-			if (perviousChatResponse.getMetadata().get("load-duration") != null) {
-				loadDuration = loadDuration.plus(perviousChatResponse.getMetadata().get("load-duration"));
+			if (previousChatResponse.getMetadata().get("load-duration") != null) {
+				loadDuration = loadDuration.plus(previousChatResponse.getMetadata().get("load-duration"));
 			}
-			if (perviousChatResponse.getMetadata().get("total-duration") != null) {
-				totalDuration = totalDuration.plus(perviousChatResponse.getMetadata().get("total-duration"));
+			if (previousChatResponse.getMetadata().get("total-duration") != null) {
+				totalDuration = totalDuration.plus(previousChatResponse.getMetadata().get("total-duration"));
 			}
-			if (perviousChatResponse.getMetadata().getUsage() != null) {
-				promptTokens += perviousChatResponse.getMetadata().getUsage().getPromptTokens();
-				generationTokens += perviousChatResponse.getMetadata().getUsage().getGenerationTokens();
-				totalTokens += perviousChatResponse.getMetadata().getUsage().getTotalTokens();
+			if (previousChatResponse.getMetadata().getUsage() != null) {
+				promptTokens += previousChatResponse.getMetadata().getUsage().getPromptTokens();
+				generationTokens += previousChatResponse.getMetadata().getUsage().getGenerationTokens();
+				totalTokens += previousChatResponse.getMetadata().getUsage().getTotalTokens();
 			}
 		}
 
