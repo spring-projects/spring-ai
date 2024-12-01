@@ -16,18 +16,9 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -38,9 +29,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.http.HttpHeaders;
@@ -53,6 +41,16 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Java Client for the Ollama API. <a href="https://ollama.ai/">https://ollama.ai</a>
@@ -597,8 +595,8 @@ public class OllamaApi {
 	public record EmbeddingsResponse(
 			@JsonProperty("model") String model,
 			@JsonProperty("embeddings") List<float[]> embeddings,
-			@JsonProperty("total_duration") Long totalDuration,
-			@JsonProperty("load_duration") Long loadDuration,
+			@JsonProperty("total_duration") @JsonDeserialize(using = OllamaDurationDeserializer.class ) @JsonSerialize(using = OllamaDurationSerializer.class) Duration totalDuration,
+			@JsonProperty("load_duration") @JsonDeserialize(using = OllamaDurationDeserializer.class ) @JsonSerialize(using = OllamaDurationSerializer.class) Duration loadDuration,
 			@JsonProperty("prompt_eval_count") Integer promptEvalCount) {
 
 	}
