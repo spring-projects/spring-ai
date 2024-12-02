@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.ollama;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 0.8.0
  */
 public class OllamaEmbeddingAutoConfigurationTests {
@@ -41,7 +43,8 @@ public class OllamaEmbeddingAutoConfigurationTests {
 				"spring.ai.ollama.embedding.options.topK=13"
 				// @formatter:on
 		)
-			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OllamaAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OllamaEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OllamaConnectionProperties.class);
