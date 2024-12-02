@@ -39,6 +39,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -57,6 +59,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioPa
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.AudioResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
+import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -380,6 +383,33 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
 		assertThat(content).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void streamFunctionCallUsageTest() {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = OpenAiChatOptions.builder()
+			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.withStreamUsage(true)
+			.build();
+
+		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
+
+		Usage usage = response.blockLast().getMetadata().getUsage();
+
+		logger.info("Usage: {}", usage);
+		assertThat(usage).isNotNull();
+		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
+		assertThat(usage).isInstanceOf(OpenAiUsage.class);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
