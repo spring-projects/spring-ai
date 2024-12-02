@@ -16,23 +16,6 @@
 
 package org.springframework.ai.vectorstore;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,23 +24,35 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.SimpleVectorStoreFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.core.io.Resource;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
- *
+ * <p>
  * It also provides methods to save the current state of the vectors to a file, and to
  * load vectors from a file.
- *
+ * <p>
  * For a deeper understanding of the mathematical concepts and computations involved in
  * calculating similarity scores among vectors, refer to this
  * [resource](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_understanding_vectors).
@@ -68,12 +63,17 @@ import org.springframework.core.io.Resource;
  * @author Christian Tzolov
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
+ * @author Jemin Huh
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
 
 	private final ObjectMapper objectMapper;
+
+	private final ExpressionParser expressionParser;
+
+	private final FilterExpressionConverter filterExpressionConverter;
 
 	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
 
@@ -91,6 +91,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.embeddingModel = embeddingModel;
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.expressionParser = new SpelExpressionParser();
+		this.filterExpressionConverter = new SimpleVectorStoreFilterExpressionConverter();
 	}
 
 	@Override
@@ -119,14 +121,11 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
-		if (request.getFilterExpression() != null) {
-			throw new UnsupportedOperationException(
-					"The [" + this.getClass() + "] doesn't support metadata filtering!");
-		}
-
+		Predicate<SimpleVectorStoreContent> documentFilterPredicate = doFilterPredicate(request);
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
+			.filter(documentFilterPredicate)
 			.map(entry -> new Similarity(entry,
 					EmbeddingMath.cosineSimilarity(userQueryEmbedding, entry.getEmbedding())))
 			.filter(s -> s.score >= request.getSimilarityThreshold())
@@ -134,6 +133,16 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 			.limit(request.getTopK())
 			.map(s -> s.getDocument())
 			.toList();
+	}
+
+	private Predicate<SimpleVectorStoreContent> doFilterPredicate(SearchRequest request) {
+		return request.hasFilterExpression() ? document -> {
+			StandardEvaluationContext context = new StandardEvaluationContext();
+			context.setVariable("metadata", document.getMetadata());
+			return this.expressionParser
+				.parseExpression(this.filterExpressionConverter.convertExpression(request.getFilterExpression()))
+				.getValue(context, Boolean.class);
+		} : document -> true;
 	}
 
 	/**
@@ -247,10 +256,13 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		}
 
 		Document getDocument() {
+			// Add the calculated distance (1 - score) to the metadata
+			Map<String, Object> metadata = new HashMap<>(this.content.getMetadata());
+			metadata.put("distance", 1 - score);
 			return Document.builder()
 				.withId(this.content.getId())
 				.withContent(this.content.getContent())
-				.withMetadata(this.content.getMetadata())
+				.withMetadata(metadata)
 				.build();
 		}
 
