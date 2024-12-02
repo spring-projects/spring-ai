@@ -734,7 +734,7 @@
 								 <exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>
 
 								 <!-- Test Docker Compose -->
-								 <exclude>package org.springframework.ai.docker.compose/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.docker.compose/**/**IT.java</exclude>
 
 								 <!-- AI Evaluation -->
 								 <exclude>org.springframework.ai.integration.tests/**/**IT.java</exclude>
