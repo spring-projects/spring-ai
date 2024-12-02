@@ -43,6 +43,9 @@ import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
+import org.springframework.ai.ollama.management.OllamaModelManager;
+import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -55,6 +58,12 @@ import static org.hamcrest.Matchers.hasSize;
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OLLAMA_TESTS_ENABLED", matches = "true")
 class OpenSearchVectorStoreWithOllamaIT {
+
+	private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(10);
+
+	private static final int DEFAULT_MAX_RETRIES = 2;
+
+	private static final String OLLAMA_LOCAL_URL = "http://localhost:11434";
 
 	@Container
 	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
@@ -72,6 +81,19 @@ class OpenSearchVectorStoreWithOllamaIT {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
 		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
+
+		// Ensure the model is pulled before running tests
+		ensureModelIsPresent(OllamaModel.MXBAI_EMBED_LARGE.getName());
+	}
+
+	private static void ensureModelIsPresent(final String model) {
+		final OllamaApi api = new OllamaApi(OLLAMA_LOCAL_URL);
+		final var modelManagementOptions = ModelManagementOptions.builder()
+			.withMaxRetries(DEFAULT_MAX_RETRIES)
+			.withTimeout(DEFAULT_TIMEOUT)
+			.build();
+		final var ollamaModelManager = new OllamaModelManager(api, modelManagementOptions);
+		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
 	}
 
 	private String getText(String uri) {
