@@ -60,6 +60,8 @@ import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.ollama.metadata.OllamaChatUsage;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -75,6 +77,7 @@ import org.springframework.util.StringUtils;
  * @author luocongqiu
  * @author Thomas Vitale
  * @author Jihoon Kim
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -89,20 +92,32 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 	private final OllamaModelManager modelManager;
 
+	private final RetryTemplate retryTemplate;
+
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
 			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+		this(ollamaApi, defaultOptions, functionCallbackResolver, toolFunctionCallbacks, observationRegistry,
+				modelManagementOptions, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions,
+			RetryTemplate retryTemplate) {
 		super(functionCallbackResolver, defaultOptions, toolFunctionCallbacks);
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
+		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		this.chatApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(this.chatApi, modelManagementOptions);
+		this.retryTemplate = retryTemplate;
 		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
 	}
 
@@ -142,7 +157,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 					this.observationRegistry)
 			.observe(() -> {
 
-				OllamaApi.ChatResponse ollamaResponse = this.chatApi.chat(request);
+				OllamaApi.ChatResponse ollamaResponse = this.retryTemplate.execute(ctx -> this.chatApi.chat(request));
 
 				List<AssistantMessage.ToolCall> toolCalls = ollamaResponse.message().toolCalls() == null ? List.of()
 						: ollamaResponse.message()
@@ -409,6 +424,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		private ModelManagementOptions modelManagementOptions = ModelManagementOptions.defaults();
 
+		private RetryTemplate retryTemplate;
+
 		private Builder() {
 		}
 
@@ -452,9 +469,15 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			return this;
 		}
 
+		public Builder withRetryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
 		public OllamaChatModel build() {
 			return new OllamaChatModel(this.ollamaApi, this.defaultOptions, this.functionCallbackResolver,
-					this.toolFunctionCallbacks, this.observationRegistry, this.modelManagementOptions);
+					this.toolFunctionCallbacks, this.observationRegistry, this.modelManagementOptions,
+					this.retryTemplate);
 		}
 
 	}

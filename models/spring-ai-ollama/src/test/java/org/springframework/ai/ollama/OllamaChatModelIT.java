@@ -42,6 +42,7 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -249,6 +250,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 					.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.withAdditionalModels(List.of(ADDITIONAL_MODEL))
 					.build())
+				.withRetryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 
