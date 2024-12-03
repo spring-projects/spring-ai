@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.openai;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
@@ -33,12 +34,15 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.openai.OpenAiAssistantManager;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.assistants.OpenAiAssistantApi;
+import org.springframework.ai.openai.api.assistants.ResponseFormat;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -200,6 +204,39 @@ public class OpenAiAutoConfigurationIT {
 				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
 				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
 			});
+	}
+
+	@Test
+	void testCreateAndRetrieveAssistant() {
+		this.contextRunner.run(context -> {
+			OpenAiAssistantManager assistantManager = context.getBean(OpenAiAssistantManager.class);
+
+			// Create Assistant
+			var createRequest = OpenAiAssistantApi.CreateAssistantRequest.builder()
+				.withModel("gpt-4o-mini-2024-07-18")
+				.withName("Integration Test Assistant")
+				.withDescription("Assistant created during integration testing.")
+				.withInstructions("You are an integration test assistant.")
+				.withTools(List.of())
+				.withMetadata(Map.of("test-key", "test-value"))
+				.withTemperature(0.7)
+				.withTopP(0.9)
+				.withResponseFormat(ResponseFormat.auto())
+				.build();
+
+			OpenAiAssistantApi.AssistantResponse createdResponse = assistantManager.createAssistant(createRequest);
+			assertThat(createdResponse).isNotNull();
+			assertThat(createdResponse.name()).isEqualTo("Integration Test Assistant");
+			logger.info("Created Assistant: " + createdResponse);
+
+			// Retrieve Assistant
+			OpenAiAssistantApi.AssistantResponse retrievedResponse = assistantManager
+				.retrieveAssistant(createdResponse.id());
+			assertThat(retrievedResponse).isNotNull();
+			assertThat(retrievedResponse.id()).isEqualTo(createdResponse.id());
+			assertThat(retrievedResponse.name()).isEqualTo("Integration Test Assistant");
+			logger.info("Retrieved Assistant: " + retrievedResponse);
+		});
 	}
 
 }
