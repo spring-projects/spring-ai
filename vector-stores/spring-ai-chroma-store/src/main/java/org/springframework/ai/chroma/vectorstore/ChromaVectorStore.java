@@ -39,10 +39,12 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.NewAbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
@@ -64,11 +66,9 @@ import org.springframework.util.CollectionUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  */
-public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+public class ChromaVectorStore extends NewAbstractObservationVectorStore implements InitializingBean {
 
 	public static final String DEFAULT_COLLECTION_NAME = "SpringAiCollection";
-
-	private final EmbeddingModel embeddingModel;
 
 	private final ChromaApi chromaApi;
 
@@ -88,48 +88,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	private boolean initialized = false;
 
 	/**
-	 * @deprecated in favor of the builder method
-	 */
-	@Deprecated(forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, boolean initializeSchema) {
-		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME, initializeSchema);
-	}
-
-	/**
-	 * @deprecated in favor of the builder method
-	 */
-	@Deprecated(forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
-			boolean initializeSchema) {
-		this(embeddingModel, chromaApi, collectionName, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * @deprecated in favor of the builder method
-	 */
-	@Deprecated(forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
-			boolean initializeSchema, ObservationRegistry observationRegistry,
-			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		super(observationRegistry, customObservationConvention);
-
-		this.embeddingModel = embeddingModel;
-		this.chromaApi = chromaApi;
-		this.collectionName = collectionName;
-		this.initializeSchema = initializeSchema;
-		this.filterExpressionConverter = new ChromaFilterExpressionConverter();
-		this.batchingStrategy = batchingStrategy;
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
-	}
-
-	/**
 	 * @param builder {@link Builder} for chroma vector store
 	 */
-	private ChromaVectorStore(Builder builder) {
-		super(builder.observationRegistry, builder.customObservationConvention);
-		this.embeddingModel = builder.embeddingModel;
+	private ChromaVectorStore(ChromaBuilder builder) {
+		super(builder);
 		this.chromaApi = builder.chromaApi;
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
@@ -166,8 +128,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		}
 	}
 
-	public static Builder builder(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-		return new Builder(embeddingModel, chromaApi);
+	public static ChromaBuilder builder(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+		return new ChromaBuilder(embeddingModel, chromaApi);
 	}
 
 	@Override
@@ -287,9 +249,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			.withCollectionName(this.collectionName + ":" + this.collectionId);
 	}
 
-	public static class Builder {
-
-		private final EmbeddingModel embeddingModel;
+	public static class ChromaBuilder extends AbstractVectorStoreBuilder<ChromaBuilder> {
 
 		private final ChromaApi chromaApi;
 
@@ -297,27 +257,15 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeSchema = false;
 
-		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
-
-		@Nullable
-		private VectorStoreObservationConvention customObservationConvention = null;
-
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		private FilterExpressionConverter filterExpressionConverter = new ChromaFilterExpressionConverter();
 
 		private boolean initializeImmediately = false;
 
-		/**
-		 * Constructor with required parameters.
-		 * @param embeddingModel The {@link EmbeddingModel} to use
-		 * @param chromaApi The {@link ChromaApi} instance
-		 * @throws IllegalArgumentException if any required parameter is null
-		 */
-		public Builder(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-			Assert.notNull(embeddingModel, "embeddingModel must not be null");
-			Assert.notNull(chromaApi, "chromaApi must not be null");
-			this.embeddingModel = embeddingModel;
+		public ChromaBuilder(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+			super(embeddingModel);
+			Assert.notNull(chromaApi, "ChromaApi must not be null");
 			this.chromaApi = chromaApi;
 		}
 
@@ -327,7 +275,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if collectionName is null or empty
 		 */
-		public Builder collectionName(String collectionName) {
+		public ChromaBuilder collectionName(String collectionName) {
 			Assert.hasText(collectionName, "collectionName must not be null or empty");
 			this.collectionName = collectionName;
 			return this;
@@ -338,31 +286,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public Builder initializeSchema(boolean initializeSchema) {
+		public ChromaBuilder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the {@link ObservationRegistry}
-		 * @param observationRegistry the observation registry to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if observationRegistry is null
-		 */
-		public Builder observationRegistry(ObservationRegistry observationRegistry) {
-			Assert.notNull(observationRegistry, "observationRegistry must not be null");
-			this.observationRegistry = observationRegistry;
-			return this;
-		}
-
-		/**
-		 * Sets the custom observation convention
-		 * {@link VectorStoreObservationConvention}.
-		 * @param convention the custom observation convention to use
-		 * @return the builder instance
-		 */
-		public Builder customObservationConvention(@Nullable VectorStoreObservationConvention convention) {
-			this.customObservationConvention = convention;
 			return this;
 		}
 
@@ -372,7 +297,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public ChromaBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
@@ -384,7 +309,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if converter is null
 		 */
-		public Builder filterExpressionConverter(FilterExpressionConverter converter) {
+		public ChromaBuilder filterExpressionConverter(FilterExpressionConverter converter) {
 			Assert.notNull(converter, "filterExpressionConverter must not be null");
 			this.filterExpressionConverter = converter;
 			return this;
@@ -395,7 +320,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @param initialize true to initialize immediately, false otherwise
 		 * @return the builder instance
 		 */
-		public Builder initializeImmediately(boolean initialize) {
+		public ChromaBuilder initializeImmediately(boolean initialize) {
 			this.initializeImmediately = initialize;
 			return this;
 		}

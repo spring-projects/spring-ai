@@ -172,7 +172,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.HANA.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
