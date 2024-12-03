@@ -291,6 +291,7 @@ public class Document implements MediaContent {
 		}
 
 		public Builder media(List<Media> media) {
+			Assert.notNull(media, "media cannot be null");
 			this.media.addAll(media);
 			return this;
 		}
