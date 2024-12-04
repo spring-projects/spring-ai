@@ -59,12 +59,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 		this(null, observationRegistry, customObservationConvention);
 	}
 
-	/**
-	 * Private constructor that both public constructors delegate to. This helps avoid
-	 * code duplication and centralizes object initialization.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AbstractObservationVectorStore(@Nullable EmbeddingModel embeddingModel,
+	private AbstractObservationVectorStore(@Nullable EmbeddingModel embeddingModel,
 			ObservationRegistry observationRegistry,
 			@Nullable VectorStoreObservationConvention customObservationConvention) {
 		this.embeddingModel = embeddingModel;

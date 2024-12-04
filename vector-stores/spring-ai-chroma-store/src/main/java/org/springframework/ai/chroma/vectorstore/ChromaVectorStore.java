@@ -103,7 +103,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(embeddingModel, observationRegistry, customObservationConvention);
+		super(observationRegistry, customObservationConvention);
 
 		this.chromaApi = chromaApi;
 		this.collectionName = collectionName;
