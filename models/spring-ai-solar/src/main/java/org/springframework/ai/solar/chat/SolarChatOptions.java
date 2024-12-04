@@ -70,15 +70,15 @@ public class SolarChatOptions implements ChatOptions {
 
 	public static SolarChatOptions fromOptions(SolarChatOptions fromOptions) {
 		return SolarChatOptions.builder()
-				.withModel(fromOptions.getModel())
-				.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-				.withMaxTokens(fromOptions.getMaxTokens())
-				.withPresencePenalty(fromOptions.getPresencePenalty())
-				.withResponseFormat(fromOptions.getResponseFormat())
-				.withStop(fromOptions.getStop())
-				.withTemperature(fromOptions.getTemperature())
-				.withTopP(fromOptions.getTopP())
-				.build();
+			.withModel(fromOptions.getModel())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withResponseFormat(fromOptions.getResponseFormat())
+			.withStop(fromOptions.getStop())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.build();
 	}
 
 	@Override

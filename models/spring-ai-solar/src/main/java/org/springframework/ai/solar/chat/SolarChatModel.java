@@ -84,8 +84,8 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Initializes an instance of the SolarChatModel.
-	 *
-	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar Chat API.
+	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar
+	 * Chat API.
 	 * @param options The SolarChatOptions to configure the chat client.
 	 */
 	public SolarChatModel(SolarApi SolarApi, SolarChatOptions options) {
@@ -94,8 +94,8 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Initializes a new instance of the SolarChatModel.
-	 *
-	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar Chat API.
+	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar
+	 * Chat API.
 	 * @param options The SolarChatOptions to configure the chat client.
 	 * @param retryTemplate The retry template.
 	 */
@@ -105,8 +105,8 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Initializes a new instance of the SolarChatModel.
-	 *
-	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar Chat API.
+	 * @param SolarApi The SolarApi instance to be used for interacting with the Solar
+	 * Chat API.
 	 * @param options The SolarChatOptions to configure the chat client.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
@@ -128,76 +128,77 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(SolarConstants.PROVIDER_NAME)
-				.requestOptions(buildRequestOptions(request))
-				.build();
+			.prompt(prompt)
+			.provider(SolarConstants.PROVIDER_NAME)
+			.requestOptions(buildRequestOptions(request))
+			.build();
 
 		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					ResponseEntity<SolarApi.ChatCompletion> completionEntity = this.retryTemplate
-							.execute(ctx -> this.solarApi.chatCompletionEntity(request));
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				ResponseEntity<SolarApi.ChatCompletion> completionEntity = this.retryTemplate
+					.execute(ctx -> this.solarApi.chatCompletionEntity(request));
 
-					var chatCompletion = completionEntity.getBody();
-					if (chatCompletion == null) {
-						logger.warn("No chat completion returned for prompt: {}", prompt);
-						return new ChatResponse(List.of());
-					}
+				var chatCompletion = completionEntity.getBody();
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-					// @formatter:off
+			// @formatter:off
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id(),
 							"role", SolarApi.ChatCompletionMessage.Role.ASSISTANT
 					);
 					// @formatter:on
 
-					var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(),
-							metadata);
-					List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
-					ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
-					observationContext.setResponse(chatResponse);
-					return chatResponse;
-				});
+				var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(),
+						metadata);
+				List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
+				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
+				observationContext.setResponse(chatResponse);
+				return chatResponse;
+			});
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		return Flux.deferContextual(contextView -> {
-					ChatCompletionRequest request = createRequest(prompt, true);
+			ChatCompletionRequest request = createRequest(prompt, true);
 
-					var completionChunks = this.solarApi.chatCompletionStream(request);
+			var completionChunks = this.solarApi.chatCompletionStream(request);
 
-					final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-							.prompt(prompt)
-							.provider(SolarConstants.PROVIDER_NAME)
-							.requestOptions(buildRequestOptions(request))
-							.build();
+			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+				.prompt(prompt)
+				.provider(SolarConstants.PROVIDER_NAME)
+				.requestOptions(buildRequestOptions(request))
+				.build();
 
-					Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-							this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-							this.observationRegistry);
+			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry);
 
-					observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-					Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion)
-							.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
-								// @formatter:off
+			Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion)
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				// @formatter:off
 								Map<String, Object> metadata = Map.of(
 										"id", chatCompletion.id(),
 										"role", Role.ASSISTANT
 								);
 								// @formatter:on
 
-								var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).delta().content(), metadata);
-								List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
-								return new ChatResponse(generations, from(chatCompletion, request.model()));
-							}))
-							.doOnError(observation::error)
-							.doFinally(s -> observation.stop())
-							.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-					return new MessageAggregator().aggregate(chatResponse, observationContext::setResponse);
+					var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).delta().content(),
+							metadata);
+					List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
+					return new ChatResponse(generations, from(chatCompletion, request.model()));
+				}))
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			return new MessageAggregator().aggregate(chatResponse, observationContext::setResponse);
 
 		});
 	}
@@ -209,16 +210,16 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	public ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		var chatCompletionMessages = prompt.getInstructions()
-				.stream()
-				.map(m -> new ChatCompletionMessage(m.getContent(),
-						ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-				.toList();
+			.stream()
+			.map(m -> new ChatCompletionMessage(m.getContent(),
+					ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
+			.toList();
 		var systemMessageList = chatCompletionMessages.stream()
-				.filter(msg -> msg.role() == ChatCompletionMessage.Role.SYSTEM)
-				.toList();
+			.filter(msg -> msg.role() == ChatCompletionMessage.Role.SYSTEM)
+			.toList();
 		var userMessageList = chatCompletionMessages.stream()
-				.filter(msg -> msg.role() != ChatCompletionMessage.Role.SYSTEM)
-				.toList();
+			.filter(msg -> msg.role() != ChatCompletionMessage.Role.SYSTEM)
+			.toList();
 
 		if (systemMessageList.size() > 1) {
 			throw new IllegalArgumentException("Only one system message is allowed in the prompt");
@@ -247,30 +248,30 @@ public class SolarChatModel implements ChatModel, StreamingChatModel {
 
 	private ChatOptions buildRequestOptions(ChatCompletionRequest request) {
 		return ChatOptionsBuilder.builder()
-				.withModel(request.model())
-				.withMaxTokens(request.maxTokens())
-				.withTemperature(request.temperature())
-				.withTopP(request.topP())
-				.build();
+			.withModel(request.model())
+			.withMaxTokens(request.maxTokens())
+			.withTemperature(request.temperature())
+			.withTopP(request.topP())
+			.build();
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, String model) {
 		Assert.notNull(result, "Solar ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-				.withId(result.id() != null ? result.id() : "")
-				.withUsage(result.usage() != null ? SolarUsage.from(result.usage()) : new EmptyUsage())
-				.withModel(model)
-				.withKeyValue("created", result.created() != null ? result.created() : 0L)
-				.build();
+			.withId(result.id() != null ? result.id() : "")
+			.withUsage(result.usage() != null ? SolarUsage.from(result.usage()) : new EmptyUsage())
+			.withModel(model)
+			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.build();
 	}
 
 	private ChatResponseMetadata from(ChatCompletionChunk result, String model) {
 		Assert.notNull(result, "Solar ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-				.withId(result.id() != null ? result.id() : "")
-				.withModel(model)
-				.withKeyValue("created", result.created() != null ? result.created() : 0L)
-				.build();
+			.withId(result.id() != null ? result.id() : "")
+			.withModel(model)
+			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.build();
 	}
 
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {

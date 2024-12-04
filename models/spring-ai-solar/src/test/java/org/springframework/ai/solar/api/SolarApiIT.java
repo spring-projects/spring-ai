@@ -54,8 +54,8 @@ public class SolarApiIT {
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new SolarApi.ChatCompletionMessage("Hello world", Role.USER);
-		Flux<ChatCompletionChunk> response = this.solarApi.chatCompletionStream(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), SolarApi.ChatModel.SOLAR_PRO.value, true));
+		Flux<ChatCompletionChunk> response = this.solarApi.chatCompletionStream(
+				new ChatCompletionRequest(List.of(chatCompletionMessage), SolarApi.ChatModel.SOLAR_PRO.value, true));
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
