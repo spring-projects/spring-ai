@@ -99,7 +99,12 @@ public enum AiProvider {
 	/**
 	 * AI system provided by ONNX.
 	 */
-	ONNX("onnx");
+	ONNX("onnx"),
+
+	/**
+	 * AI system provided by Upstage.
+	 */
+	UPSTAGE("upstage");
 
 	private final String value;
 
