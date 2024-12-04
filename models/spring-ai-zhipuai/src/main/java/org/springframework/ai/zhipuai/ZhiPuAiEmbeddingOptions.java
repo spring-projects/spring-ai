@@ -16,7 +16,6 @@
 
 package org.springframework.ai.zhipuai;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,6 +27,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -38,6 +38,10 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 	 * ID of the model to use.
 	 */
 	private @JsonProperty("model") String model;
+	/**
+	 * Dimension value of the model to use.
+	 */
+	private @JsonProperty("dimensions") Integer dimensions;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -54,9 +58,12 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getDimensions() {
-		return null;
+		return this.dimensions;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 	public static class Builder {
@@ -69,6 +76,11 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder withModel(String model) {
 			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.setDimensions(dimensions);
 			return this;
 		}
 
