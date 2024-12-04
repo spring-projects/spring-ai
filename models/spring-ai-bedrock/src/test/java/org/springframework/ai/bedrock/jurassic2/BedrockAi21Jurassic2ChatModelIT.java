@@ -67,7 +67,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		// System.out.println("Response content: " + content);
 
@@ -96,9 +96,9 @@ class BedrockAi21Jurassic2ChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage), options);
 
 		ChatResponse response = this.chatModel.call(prompt);
-
-		assertThat(response.getResult().getOutput().getContent())
+		assertThat(response.getResult().getOutput().getText())
 			.matches(content -> content.contains("😄") || content.contains(":)"));
+
 	}
 
 	@Test
@@ -118,7 +118,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 
 		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).doesNotContain("😄");
+		assertThat(response.getResult().getOutput().getText()).doesNotContain("😄");
 	}
 
 	@Test
@@ -135,7 +135,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -151,7 +151,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 
 		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("AI");
+		assertThat(response.getResult().getOutput().getText()).contains("AI");
 	}
 
 	@SpringBootConfiguration

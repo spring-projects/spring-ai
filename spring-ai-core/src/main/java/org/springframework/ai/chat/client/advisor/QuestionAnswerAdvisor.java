@@ -227,7 +227,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
 		String documentContext = documents.stream()
-			.map(Content::getContent)
+			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 4. Advise the user parameters.

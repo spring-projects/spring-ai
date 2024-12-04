@@ -19,7 +19,6 @@ package org.springframework.ai.document;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -36,13 +35,11 @@ public class DocumentBuilderTests {
 
 	private Document.Builder builder;
 
-	private static List<Media> getMediaList() {
+	private static Media getMedia() {
 		try {
 			URL mediaUrl1 = new URL("http://type1");
-			URL mediaUrl2 = new URL("http://type2");
-			Media media1 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl1).build();
-			Media media2 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl2).build();
-			return List.of(media1, media2);
+			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
+			return media1;
 		}
 		catch (MalformedURLException e) {
 			throw new RuntimeException(e);
@@ -62,7 +59,7 @@ public class DocumentBuilderTests {
 
 		assertThat(result).isSameAs(this.builder);
 
-		Document document = result.content("Test content").metadata("key", "value").build();
+		Document document = result.text("Test content").metadata("key", "value").build();
 
 		assertThat(document.getId()).isEqualTo("mockedId");
 	}
@@ -75,7 +72,7 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithId() {
-		Document.Builder result = this.builder.id("testId");
+		Document.Builder result = this.builder.text("text").id("testId");
 
 		assertThat(result).isSameAs(this.builder);
 		assertThat(result.build().getId()).isEqualTo("testId");
@@ -83,41 +80,20 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithIdNullOrEmpty() {
-		assertThatThrownBy(() -> this.builder.id(null).build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.text("text").id(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("id cannot be null or empty");
 
-		assertThatThrownBy(() -> this.builder.id("").build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.text("text").id("").build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("id cannot be null or empty");
 	}
 
 	@Test
 	void testWithContent() {
-		Document.Builder result = this.builder.content("Test content");
+		Document.Builder result = this.builder.text("Test content");
 
 		assertThat(result).isSameAs(this.builder);
 		assertThat(result.build().getContent()).isEqualTo("Test content");
-	}
-
-	@Test
-	void testWithContentNull() {
-		assertThatThrownBy(() -> this.builder.content(null).build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("content cannot be null");
-	}
-
-	@Test
-	void testWithMediaList() {
-		List<Media> mediaList = getMediaList();
-		Document.Builder result = this.builder.media(mediaList);
-
-		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getMedia()).isEqualTo(mediaList);
-	}
-
-	@Test
-	void testWithMediaListNull() {
-		assertThatThrownBy(() -> this.builder.media((List<Media>) null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("media cannot be null");
 	}
 
 	@Test
@@ -128,13 +104,7 @@ public class DocumentBuilderTests {
 		Document.Builder result = this.builder.media(media);
 
 		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getMedia()).contains(media);
-	}
-
-	@Test
-	void testWithMediaSingleNull() {
-		assertThatThrownBy(() -> this.builder.media((Media) null).build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("media cannot contain null elements");
+		assertThat(result.build().getMedia()).isEqualTo(media);
 	}
 
 	@Test
@@ -142,7 +112,7 @@ public class DocumentBuilderTests {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key1", "value1");
 		metadata.put("key2", 2);
-		Document.Builder result = this.builder.metadata(metadata);
+		Document.Builder result = this.builder.text("text").metadata(metadata);
 
 		assertThat(result).isSameAs(this.builder);
 		assertThat(result.build().getMetadata()).isEqualTo(metadata);
@@ -150,7 +120,8 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithMetadataMapNull() {
-		assertThatThrownBy(() -> this.builder.metadata(null).build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.text("text").metadata(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("metadata cannot be null");
 	}
 
@@ -159,26 +130,26 @@ public class DocumentBuilderTests {
 		Document.Builder result = this.builder.metadata("key", "value");
 
 		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getMetadata()).containsEntry("key", "value");
+		assertThat(result.text("text").build().getMetadata()).containsEntry("key", "value");
 	}
 
 	@Test
 	void testWithMetadataKeyNull() {
-		assertThatThrownBy(() -> this.builder.metadata(null, "value").build())
+		assertThatThrownBy(() -> this.builder.text("text").metadata(null, "value").build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("metadata cannot have null keys");
+			.hasMessageContaining("metadata key cannot be null");
 	}
 
 	@Test
 	void testWithMetadataValueNull() {
-		assertThatThrownBy(() -> this.builder.metadata("key", null).build())
+		assertThatThrownBy(() -> this.builder.text("text").metadata("key", null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("metadata cannot have null values");
+			.hasMessageContaining("metadata value cannot be null");
 	}
 
 	@Test
 	void testBuildWithoutId() {
-		Document document = this.builder.content("Test content").build();
+		Document document = this.builder.text("text").text("Test content").build();
 
 		assertThat(document.getId()).isNotNull().isNotEmpty();
 		assertThat(document.getContent()).isEqualTo("Test content");
@@ -187,19 +158,14 @@ public class DocumentBuilderTests {
 	@Test
 	void testBuildWithAllProperties() {
 
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 
-		Document document = this.builder.id("customId")
-			.content("Test content")
-			.media(mediaList)
-			.metadata(metadata)
-			.build();
+		Document document = this.builder.id("customId").text("Test content").metadata(metadata).build();
 
 		assertThat(document.getId()).isEqualTo("customId");
-		assertThat(document.getContent()).isEqualTo("Test content");
-		assertThat(document.getMedia()).isEqualTo(mediaList);
+		assertThat(document.getText()).isEqualTo("Test content");
 		assertThat(document.getMetadata()).isEqualTo(metadata);
 	}
 

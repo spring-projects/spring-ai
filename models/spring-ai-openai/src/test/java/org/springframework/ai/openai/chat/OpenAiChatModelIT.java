@@ -89,7 +89,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
 	}
 
@@ -102,13 +102,13 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
 				new UserMessage("Repeat the last assistant message.")));
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
@@ -121,7 +121,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		CountDownLatch latch = new CountDownLatch(1);
 
 		Flux<ChatResponse> chatResponseFlux = this.streamingChatModel.stream(prompt).doOnNext(chatResponse -> {
-			String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
+			String responseContent = chatResponse.getResults().get(0).getOutput().getText();
 			answer.append(responseContent);
 		}).doOnComplete(() -> {
 			logger.info(answer.toString());
@@ -146,7 +146,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.stream()
 			.chatResponse()
 			.doOnNext(chatResponse -> {
-				String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
+				String responseContent = chatResponse.getResults().get(0).getOutput().getText();
 				answer.append(responseContent);
 			})
 			.doOnComplete(() -> {
@@ -197,7 +197,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -237,7 +237,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 
 	}
@@ -256,7 +256,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -275,7 +275,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
 	}
 
 	@Test
@@ -292,7 +292,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -318,7 +318,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -347,9 +347,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
 	}
 
 	@Test
@@ -376,7 +376,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -424,9 +424,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -442,9 +442,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@Test
@@ -465,7 +465,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
@@ -484,8 +484,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 					.withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 					.build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).isNotEmpty();
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 
 		byte[] audio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray();
 		assertThat(audio).isNotEmpty();
@@ -520,8 +520,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 		ChatResponse response = chatModel
 			.call(new Prompt(List.of(userMessage), ChatOptionsBuilder.builder().withModel(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("hobbits");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("hobbits");
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(modelName);
 	}
 
@@ -541,7 +541,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).containsIgnoringCase("hobbits");

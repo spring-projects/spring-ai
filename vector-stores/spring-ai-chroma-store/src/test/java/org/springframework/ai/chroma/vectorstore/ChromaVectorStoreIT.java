@@ -102,7 +102,7 @@ public class ChromaVectorStoreIT {
 
 			var document = Document.builder()
 				.id("simpleDoc")
-				.content("The sky is blue because of Rayleigh scattering.")
+				.text("The sky is blue because of Rayleigh scattering.")
 				.build();
 
 			vectorStore.add(List.of(document));

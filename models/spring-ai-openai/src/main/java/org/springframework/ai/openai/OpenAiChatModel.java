@@ -454,11 +454,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<MediaContent> contentList = new ArrayList<>(
-								List.of(new MediaContent(message.getContent())));
+						List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(message.getText())));
 
 						contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
 
@@ -485,7 +484,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
 
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {

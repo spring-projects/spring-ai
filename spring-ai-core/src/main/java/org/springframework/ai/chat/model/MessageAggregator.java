@@ -108,8 +108,8 @@ public class MessageAggregator {
 						&& chatResponse.getResult().getMetadata() != ChatGenerationMetadata.NULL) {
 					generationMetadataRef.set(chatResponse.getResult().getMetadata());
 				}
-				if (chatResponse.getResult().getOutput().getContent() != null) {
-					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getContent());
+				if (chatResponse.getResult().getOutput().getText() != null) {
+					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getText());
 				}
 				if (chatResponse.getResult().getOutput().getMetadata() != null) {
 					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());

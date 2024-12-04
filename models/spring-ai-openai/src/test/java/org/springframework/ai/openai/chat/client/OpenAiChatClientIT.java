@@ -113,7 +113,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -232,7 +232,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		String generationTextFromStream = chatResponses
 				.stream()
 				.filter(cr -> cr.getResult() != null)
-				.map(cr -> cr.getResult().getOutput().getContent())
+				.map(cr -> cr.getResult().getOutput().getText())
 				.collect(Collectors.joining());
 		// @formatter:on
 

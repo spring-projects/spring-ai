@@ -189,7 +189,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 	void textImageAndVideoEmbedding() {
 
 		var document = Document.builder()
-			.content("Hello World")
+			.text("Hello World")
 			.media(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
 			.media(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
 			.build();

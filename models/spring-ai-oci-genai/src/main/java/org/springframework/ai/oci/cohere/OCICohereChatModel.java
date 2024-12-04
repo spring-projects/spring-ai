@@ -203,9 +203,9 @@ public class OCICohereChatModel implements ChatModel {
 		for (int i = 1; i < messages.size(); i++) {
 			Message message = messages.get(i);
 			switch (message.getMessageType()) {
-				case USER -> chatHistory.add(CohereUserMessage.builder().message(message.getContent()).build());
-				case ASSISTANT -> chatHistory.add(CohereChatBotMessage.builder().message(message.getContent()).build());
-				case SYSTEM -> chatHistory.add(CohereSystemMessage.builder().message(message.getContent()).build());
+				case USER -> chatHistory.add(CohereUserMessage.builder().message(message.getText()).build());
+				case ASSISTANT -> chatHistory.add(CohereChatBotMessage.builder().message(message.getText()).build());
+				case SYSTEM -> chatHistory.add(CohereSystemMessage.builder().message(message.getText()).build());
 				case TOOL -> {
 					if (message instanceof ToolResponseMessage tm) {
 						chatHistory.add(toToolMessage(tm));
@@ -237,7 +237,7 @@ public class OCICohereChatModel implements ChatModel {
 			.documents(options.getDocuments())
 			.tools(options.getTools())
 			.chatHistory(chatHistory)
-			.message(message.getContent())
+			.message(message.getText())
 			.build();
 		ServingMode servingMode = ServingModeHelper.get(options.getServingMode(), options.getModel());
 		ChatDetails chatDetails = ChatDetails.builder()

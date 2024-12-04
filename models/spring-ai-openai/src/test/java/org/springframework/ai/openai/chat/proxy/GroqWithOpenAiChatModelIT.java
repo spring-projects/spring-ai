@@ -90,7 +90,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -150,7 +150,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 
 	}
@@ -169,7 +169,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -188,7 +188,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.getActor()).isNotEmpty();
 	}
 
@@ -206,7 +206,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -232,7 +232,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -260,7 +260,7 @@ class GroqWithOpenAiChatModelIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -287,7 +287,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -307,9 +307,9 @@ class GroqWithOpenAiChatModelIT {
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@Disabled("Groq does not support multi modality API")
@@ -326,9 +326,9 @@ class GroqWithOpenAiChatModelIT {
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@Disabled("Groq does not support multi modality API")
@@ -349,7 +349,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");

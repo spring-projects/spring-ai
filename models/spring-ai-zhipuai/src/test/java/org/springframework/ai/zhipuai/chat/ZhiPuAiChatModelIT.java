@@ -89,7 +89,7 @@ class ZhiPuAiChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
 	}
 
@@ -109,7 +109,7 @@ class ZhiPuAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -131,7 +131,7 @@ class ZhiPuAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 
 	}
@@ -150,7 +150,7 @@ class ZhiPuAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -169,7 +169,7 @@ class ZhiPuAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
 	}
 
 	@Test
@@ -186,7 +186,7 @@ class ZhiPuAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -211,7 +211,7 @@ class ZhiPuAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -241,9 +241,9 @@ class ZhiPuAiChatModelIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
 	}
 
 	@Test
@@ -270,7 +270,7 @@ class ZhiPuAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -291,9 +291,9 @@ class ZhiPuAiChatModelIT {
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withModel(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -309,9 +309,9 @@ class ZhiPuAiChatModelIT {
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withModel(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@Test
@@ -331,7 +331,7 @@ class ZhiPuAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");

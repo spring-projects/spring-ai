@@ -73,21 +73,21 @@ class FunctionCallWithFunctionBeanIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel
 					.call(new Prompt(List.of(userMessage), VertexAiGeminiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).doesNotContain("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).doesNotContain("30", "10", "15");
 
 			});
 	}
@@ -113,14 +113,14 @@ class FunctionCallWithFunctionBeanIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			});
 	}

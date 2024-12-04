@@ -17,6 +17,8 @@
 package org.springframework.ai.document;
 
 import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.model.Media;
 import org.springframework.util.MimeTypeUtils;
 
@@ -27,56 +29,36 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DocumentTests {
 
 	@Test
 	void testScore() {
 		Double score = 0.95;
-		Document document = Document.builder().content("Test content").score(score).build();
+		Document document = Document.builder().text("Test content").score(score).build();
 
 		assertThat(document.getScore()).isEqualTo(score);
 	}
 
 	@Test
 	void testNullScore() {
-		Document document = Document.builder().content("Test content").score(null).build();
+		Document document = Document.builder().text("Test content").score(null).build();
 
 		assertThat(document.getScore()).isNull();
 	}
 
 	@Test
-	void testMediaBuilderIsAdditive() {
-		try {
-			URL mediaUrl1 = new URL("http://type1");
-			URL mediaUrl2 = new URL("http://type2");
-			URL mediaUrl3 = new URL("http://type3");
-
-			Media media1 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl1).build();
-			Media media2 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl2).build();
-			Media media3 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl3).build();
-
-			Document document = Document.builder().media(media1).media(media2).media(List.of(media3)).build();
-
-			assertThat(document.getMedia()).hasSize(3).containsExactly(media1, media2, media3);
-
-		}
-		catch (MalformedURLException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Test
 	void testMutate() {
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 		Double score = 0.95;
 
 		Document original = Document.builder()
 			.id("customId")
-			.content("Test content")
-			.media(mediaList)
+			.text("Test content")
+			.media(null)
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -88,31 +70,18 @@ public class DocumentTests {
 
 	@Test
 	void testEquals() {
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 		Double score = 0.95;
 
-		Document doc1 = Document.builder()
-			.id("customId")
-			.content("Test content")
-			.media(mediaList)
-			.metadata(metadata)
-			.score(score)
-			.build();
+		Document doc1 = Document.builder().id("customId").text("Test text").metadata(metadata).score(score).build();
 
-		Document doc2 = Document.builder()
-			.id("customId")
-			.content("Test content")
-			.media(mediaList)
-			.metadata(metadata)
-			.score(score)
-			.build();
+		Document doc2 = Document.builder().id("customId").text("Test text").metadata(metadata).score(score).build();
 
 		Document differentDoc = Document.builder()
 			.id("differentId")
-			.content("Different content")
-			.media(mediaList)
+			.text("Different content")
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -124,25 +93,20 @@ public class DocumentTests {
 
 	@Test
 	void testEmptyDocument() {
-		Document emptyDoc = Document.builder().build();
-
-		assertThat(emptyDoc.getContent()).isEqualTo(Document.EMPTY_TEXT).isEmpty();
-		assertThat(emptyDoc.getMedia()).isEmpty();
-		assertThat(emptyDoc.getMetadata()).isEmpty();
-		assertThat(emptyDoc.getScore()).isNull();
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().build());
 	}
 
 	@Test
 	void testToString() {
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 		Double score = 0.95;
 
 		Document document = Document.builder()
 			.id("customId")
-			.content("Test content")
-			.media(mediaList)
+			.text("Test content")
+			.media(null)
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -150,28 +114,122 @@ public class DocumentTests {
 		String toString = document.toString();
 
 		assertThat(toString).contains("id='customId'")
-			.contains("content='Test content'")
-			.contains("media=" + mediaList)
+			.contains("text='Test content'")
 			.contains("metadata=" + metadata)
 			.contains("score=" + score);
 	}
 
 	@Test
-	void testToStringWithEmptyDocument() {
-		Document emptyDoc = Document.builder().build();
+	void testMediaDocumentConstruction() {
+		Media media = getMedia();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", "value");
 
-		String toString = emptyDoc.toString();
+		Document document = Document.builder().media(media).metadata(metadata).build();
 
-		assertThat(toString).contains("content=''").contains("media=[]").contains("metadata={}").contains("score=null");
+		assertThat(document.getMedia()).isEqualTo(media);
+		assertThat(document.getText()).isNull();
+		assertThat(document.isText()).isFalse();
 	}
 
-	private static List<Media> getMediaList() {
+	@Test
+	void testTextDocumentConstruction() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", "value");
+
+		Document document = Document.builder().text("Test text").metadata(metadata).build();
+
+		assertThat(document.getText()).isEqualTo("Test text");
+		assertThat(document.getMedia()).isNull();
+		assertThat(document.isText()).isTrue();
+	}
+
+	@Test
+	void testBothTextAndMediaThrowsException() {
+		Media media = getMedia();
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("Test text").media(media).build());
+	}
+
+	@Test
+	void testCustomIdGenerator() {
+		IdGenerator customGenerator = contents -> "custom-" + contents[0];
+
+		Document document = Document.builder().text("test").idGenerator(customGenerator).build();
+
+		assertThat(document.getId()).isEqualTo("custom-test");
+	}
+
+	@Test
+	void testMetadataValidation() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("nullKey", null);
+
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("test").metadata(metadata).build());
+	}
+
+	@Test
+	void testFormattedContent() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", "value");
+
+		Document document = Document.builder().text("Test text").metadata(metadata).build();
+
+		String formattedContent = document.getFormattedContent(MetadataMode.ALL);
+		assertThat(formattedContent).contains("Test text");
+		assertThat(formattedContent).contains("key");
+		assertThat(formattedContent).contains("value");
+	}
+
+	@Test
+	void testCustomFormattedContent() {
+		Document document = Document.builder().text("Test text").build();
+
+		ContentFormatter customFormatter = (doc, mode) -> "Custom: " + doc.getText();
+		String formattedContent = document.getFormattedContent(customFormatter, MetadataMode.ALL);
+
+		assertThat(formattedContent).isEqualTo("Custom: Test text");
+	}
+
+	@Test
+	void testNullIdThrowsException() {
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().id(null).text("test").build());
+	}
+
+	@Test
+	void testEmptyIdThrowsException() {
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().id("").text("test").build());
+	}
+
+	@Test
+	void testMetadataKeyValueAddition() {
+		Document document = Document.builder()
+			.text("test")
+			.metadata("key1", "value1")
+			.metadata("key2", "value2")
+			.build();
+
+		assertThat(document.getMetadata()).containsEntry("key1", "value1").containsEntry("key2", "value2");
+	}
+
+	@Test
+	void testEmbeddingOperations() {
+		float[] embedding = new float[] { 0.1f, 0.2f, 0.3f };
+
+		Document document = Document.builder().text("test").embedding(embedding).build();
+
+		assertThat(document.getEmbedding()).isEqualTo(embedding);
+	}
+
+	@Test
+	void testNullEmbeddingThrowsException() {
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("test").embedding(null).build());
+	}
+
+	private static Media getMedia() {
 		try {
 			URL mediaUrl1 = new URL("http://type1");
-			URL mediaUrl2 = new URL("http://type2");
-			Media media1 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl1).build();
-			Media media2 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl2).build();
-			return List.of(media1, media2);
+			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
+			return media1;
 		}
 		catch (MalformedURLException e) {
 			throw new RuntimeException(e);

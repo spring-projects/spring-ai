@@ -69,7 +69,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 			ChatResponse response = chatModel.call(new Prompt(this.userMessage));
-			assertThat(response.getResult().getOutput().getContent()).contains("Copenhagen");
+			assertThat(response.getResult().getOutput().getText()).contains("Copenhagen");
 		});
 	}
 
@@ -88,7 +88,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Copenhagen");
@@ -107,7 +107,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 
 				OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 				ChatResponse response = chatModel.call(new Prompt(this.userMessage));
-				assertThat(response.getResult().getOutput().getContent()).contains("Copenhagen");
+				assertThat(response.getResult().getOutput().getText()).contains("Copenhagen");
 				modelManager.deleteModel(model);
 			});
 	}

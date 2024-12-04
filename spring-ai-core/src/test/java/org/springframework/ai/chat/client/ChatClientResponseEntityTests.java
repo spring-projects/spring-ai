@@ -77,7 +77,7 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about John");
+		assertThat(userMessage.getText()).contains("Tell me about John");
 	}
 
 	@Test
@@ -107,7 +107,7 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about them");
+		assertThat(userMessage.getText()).contains("Tell me about them");
 	}
 
 	@Test
@@ -132,7 +132,7 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about Max");
+		assertThat(userMessage.getText()).contains("Tell me about Max");
 	}
 
 	record MyBean(String name, int age) {

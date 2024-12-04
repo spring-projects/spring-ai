@@ -73,7 +73,7 @@ public class BedrockLlamaChatAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			BedrockLlamaChatModel llamaChatModel = context.getBean(BedrockLlamaChatModel.class);
 			ChatResponse response = llamaChatModel.call(new Prompt(List.of(this.userMessage, this.systemMessage)));
-			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+			assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 		});
 	}
 
@@ -93,7 +93,7 @@ public class BedrockLlamaChatAutoConfigurationIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");

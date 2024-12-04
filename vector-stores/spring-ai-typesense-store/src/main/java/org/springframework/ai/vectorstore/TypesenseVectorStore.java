@@ -218,7 +218,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 					metadata.put(DocumentMetadata.DISTANCE.value(), hit.getVectorDistance());
 					return Document.builder()
 						.id(docId)
-						.content(content)
+						.text(content)
 						.metadata(metadata)
 						.score(1.0 - hit.getVectorDistance())
 						.build();

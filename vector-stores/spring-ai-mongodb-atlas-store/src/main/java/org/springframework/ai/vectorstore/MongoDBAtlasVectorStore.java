@@ -182,7 +182,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		// @formatter:off
 		return Document.builder()
 			.id(id)
-			.content(content)
+			.text(content)
 			.metadata(metadata)
 			.score(score)
 			.build(); // @formatter:on

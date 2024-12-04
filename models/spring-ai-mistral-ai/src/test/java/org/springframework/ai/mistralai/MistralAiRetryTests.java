@@ -105,7 +105,7 @@ public class MistralAiRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
@@ -134,7 +134,7 @@ public class MistralAiRetryTests {
 		var result = this.chatModel.stream(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.collectList().block().get(0).getResult().getOutput().getContent()).isSameAs("Response");
+		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

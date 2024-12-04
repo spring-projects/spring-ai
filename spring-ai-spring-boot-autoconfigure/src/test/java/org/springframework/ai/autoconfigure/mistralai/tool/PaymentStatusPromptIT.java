@@ -76,8 +76,8 @@ public class PaymentStatusPromptIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("T1001");
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("paid");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
 			});
 	}
 

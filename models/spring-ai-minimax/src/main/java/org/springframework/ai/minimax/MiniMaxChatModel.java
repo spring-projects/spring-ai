@@ -439,7 +439,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				return List.of(new ChatCompletionMessage(content,
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
@@ -452,7 +452,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {

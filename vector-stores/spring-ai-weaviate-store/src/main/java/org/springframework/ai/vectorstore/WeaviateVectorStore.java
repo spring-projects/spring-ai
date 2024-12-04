@@ -387,7 +387,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		// @formatter:off
 		return Document.builder()
 			.id(id)
-			.content(content)
+			.text(content)
 			.metadata(metadata)
 			.score(certainty)
 			.build(); // @formatter:on

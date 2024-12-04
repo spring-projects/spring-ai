@@ -259,7 +259,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 					List<ContentBlock> contents = new ArrayList<>();
 					if (message instanceof UserMessage) {
 						var userMessage = (UserMessage) message;
-						contents.add(ContentBlock.fromText(userMessage.getContent()));
+						contents.add(ContentBlock.fromText(userMessage.getText()));
 
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 							List<ContentBlock> mediaContent = userMessage.getMedia()
@@ -274,8 +274,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 				else if (message.getMessageType() == MessageType.ASSISTANT) {
 					AssistantMessage assistantMessage = (AssistantMessage) message;
 					List<ContentBlock> contentBlocks = new ArrayList<>();
-					if (StringUtils.hasText(message.getContent())) {
-						contentBlocks.add(ContentBlock.fromText(message.getContent()));
+					if (StringUtils.hasText(message.getText())) {
+						contentBlocks.add(ContentBlock.fromText(message.getText()));
 					}
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
@@ -315,7 +315,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		List<SystemContentBlock> systemMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(sysMessage -> SystemContentBlock.builder().text(sysMessage.getContent()).build())
+			.map(sysMessage -> SystemContentBlock.builder().text(sysMessage.getText()).build())
 			.toList();
 
 		FunctionCallingOptions updatedRuntimeOptions = (FunctionCallingOptions) this.defaultOptions.copy();
