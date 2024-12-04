@@ -44,7 +44,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
-import org.springframework.ai.vectorstore.observation.NewAbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
@@ -66,7 +65,7 @@ import org.springframework.util.CollectionUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  */
-public class ChromaVectorStore extends NewAbstractObservationVectorStore implements InitializingBean {
+public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String DEFAULT_COLLECTION_NAME = "SpringAiCollection";
 
@@ -86,6 +85,33 @@ public class ChromaVectorStore extends NewAbstractObservationVectorStore impleme
 	private final ObjectMapper objectMapper;
 
 	private boolean initialized = false;
+
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, boolean initializeSchema) {
+		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME, initializeSchema);
+	}
+
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
+			boolean initializeSchema) {
+		this(embeddingModel, chromaApi, collectionName, initializeSchema, ObservationRegistry.NOOP, null,
+				new TokenCountBatchingStrategy());
+	}
+
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
+			boolean initializeSchema, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
+
+		super(embeddingModel, observationRegistry, customObservationConvention);
+
+		this.chromaApi = chromaApi;
+		this.collectionName = collectionName;
+		this.initializeSchema = initializeSchema;
+		this.filterExpressionConverter = new ChromaFilterExpressionConverter();
+		this.batchingStrategy = batchingStrategy;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+	}
 
 	/**
 	 * @param builder {@link Builder} for chroma vector store
