@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DocumentTests {
 
@@ -46,29 +47,8 @@ public class DocumentTests {
 	}
 
 	@Test
-	void testMediaBuilderIsAdditive() {
-		try {
-			URL mediaUrl1 = new URL("http://type1");
-			URL mediaUrl2 = new URL("http://type2");
-			URL mediaUrl3 = new URL("http://type3");
-
-			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
-			Media media2 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl2);
-			Media media3 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl3);
-
-			Document document = Document.builder().media(media1).media(media2).media(List.of(media3)).build();
-
-			assertThat(document.getMedia()).hasSize(3).containsExactly(media1, media2, media3);
-
-		}
-		catch (MalformedURLException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Test
 	void testMutate() {
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 		Double score = 0.95;
@@ -76,7 +56,7 @@ public class DocumentTests {
 		Document original = Document.builder()
 			.id("customId")
 			.content("Test content")
-			.media(mediaList)
+			.media(null)
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -88,23 +68,21 @@ public class DocumentTests {
 
 	@Test
 	void testEquals() {
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 		Double score = 0.95;
 
 		Document doc1 = Document.builder()
 			.id("customId")
-			.content("Test content")
-			.media(mediaList)
+			.text("Test text")
 			.metadata(metadata)
 			.score(score)
 			.build();
 
 		Document doc2 = Document.builder()
 			.id("customId")
-			.content("Test content")
-			.media(mediaList)
+			.text("Test text")
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -112,7 +90,6 @@ public class DocumentTests {
 		Document differentDoc = Document.builder()
 			.id("differentId")
 			.content("Different content")
-			.media(mediaList)
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -124,17 +101,12 @@ public class DocumentTests {
 
 	@Test
 	void testEmptyDocument() {
-		Document emptyDoc = Document.builder().build();
-
-		assertThat(emptyDoc.getContent()).isEqualTo(Document.EMPTY_TEXT).isEmpty();
-		assertThat(emptyDoc.getMedia()).isEmpty();
-		assertThat(emptyDoc.getMetadata()).isEmpty();
-		assertThat(emptyDoc.getScore()).isNull();
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().build());
 	}
 
 	@Test
 	void testToString() {
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 		Double score = 0.95;
@@ -142,7 +114,7 @@ public class DocumentTests {
 		Document document = Document.builder()
 			.id("customId")
 			.content("Test content")
-			.media(mediaList)
+			.media(null)
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -151,27 +123,16 @@ public class DocumentTests {
 
 		assertThat(toString).contains("id='customId'")
 			.contains("content='Test content'")
-			.contains("media=" + mediaList)
 			.contains("metadata=" + metadata)
 			.contains("score=" + score);
 	}
 
-	@Test
-	void testToStringWithEmptyDocument() {
-		Document emptyDoc = Document.builder().build();
 
-		String toString = emptyDoc.toString();
-
-		assertThat(toString).contains("content=''").contains("media=[]").contains("metadata={}").contains("score=null");
-	}
-
-	private static List<Media> getMediaList() {
+	private static Media getMedia() {
 		try {
 			URL mediaUrl1 = new URL("http://type1");
-			URL mediaUrl2 = new URL("http://type2");
 			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
-			Media media2 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl2);
-			return List.of(media1, media2);
+			return media1;
 		}
 		catch (MalformedURLException e) {
 			throw new RuntimeException(e);

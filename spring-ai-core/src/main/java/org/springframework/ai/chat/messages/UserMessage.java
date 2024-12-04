@@ -71,7 +71,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	}
 
 	@Override
-	public Collection<Media> getMedia() {
+	public List<Media> getMedia() {
 		return this.media;
 	}
 

@@ -16,10 +16,8 @@
 
 package org.springframework.ai.document;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -31,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.MediaContent;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -39,13 +36,13 @@ import org.springframework.util.StringUtils;
 /**
  * A document is a container for the content and metadata of a document. It also contains
  * the document's unique ID and an optional embedding.
+ *
+ * Either string based text or Media is the content.
  */
 @JsonIgnoreProperties({ "contentFormatter" })
-public class Document implements MediaContent {
+public class Document {
 
 	public static final ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
-
-	public static final String EMPTY_TEXT = "";
 
 	/**
 	 * Unique ID
@@ -53,11 +50,14 @@ public class Document implements MediaContent {
 	private final String id;
 
 	/**
-	 * Document content.
+	 * Document string content.
 	 */
-	private final String content;
+	private final String text;
 
-	private final Collection<Media> media;
+	/**
+	 * Document media content
+	 */
+	private final Media media;
 
 	/**
 	 * Metadata for the document. It should not be nested and values should be restricted
@@ -90,58 +90,62 @@ public class Document implements MediaContent {
 		this(content, new HashMap<>());
 	}
 
-	public Document(String content, Map<String, Object> metadata) {
-		this(content, metadata, new RandomIdGenerator());
+	public Document(String text, Map<String, Object> metadata) {
+		this(new RandomIdGenerator().generateId(), text, null, metadata, null);
 	}
 
-	/**
-	 * @deprecated Use builder instead: {@link Document#builder()}.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public Document(String content, Collection<Media> media, Map<String, Object> metadata) {
-		this(new RandomIdGenerator().generateId(content, metadata), content, media, metadata);
+	public Document(String id, String text, Map<String, Object> metadata) {
+		this(id, text, null, metadata, null);
 	}
 
-	/**
-	 * @deprecated Use builder instead: {@link Document#builder()}.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public Document(String content, Map<String, Object> metadata, IdGenerator idGenerator) {
-		this(idGenerator.generateId(content, metadata), content, metadata);
+	public Document(Media media, Map<String, Object> metadata) {
+		this(new RandomIdGenerator().generateId(), null, media, metadata, null);
 	}
 
-	public Document(String id, String content, Map<String, Object> metadata) {
-		this(id, content, List.of(), metadata);
+	public Document(String id, Media media, Map<String, Object> metadata) {
+		this(id, null, media, metadata, null);
 	}
 
-	/**
-	 * @deprecated Use builder instead: {@link Document#builder()}.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public Document(String id, String content, Collection<Media> media, Map<String, Object> metadata) {
-		this(id, content, media, metadata, null);
-	}
 
-	/**
-	 * @deprecated Use builder instead: {@link Document#builder()}.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public Document(String id, String content, @Nullable Collection<Media> media,
-			@Nullable Map<String, Object> metadata, @Nullable Double score) {
+	private Document(String id, String text, Media media, Map<String, Object> metadata, @Nullable Double score) {
 		Assert.hasText(id, "id cannot be null or empty");
-		Assert.notNull(content, "content cannot be null");
+		Assert.notNull(metadata, "metadata cannot be null");
+		Assert.noNullElements(metadata.keySet(), "metadata cannot have null keys");
+		Assert.noNullElements(metadata.values(), "metadata cannot have null values");
+		if (text == null && media == null) {
+			throw new IllegalArgumentException("need to specify either text or media");
+		}
+		if (text != null && media != null) {
+			throw new IllegalArgumentException("can not specify both text and media");
+		}
+		this.id = id;
+		this.text = text;
+		this.media = media;
+		this.metadata = new HashMap<>(metadata);
+		this.score = score;
+	}
+
+
+
+	/**
+	 * @deprecated Use builder instead: {@link Document#builder()}.
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
+	public Document(String id, Media media,
+					Map<String, Object> metadata, @Nullable Double score) {
+		Assert.hasText(id, "id cannot be null or empty");
 		Assert.notNull(media, "media cannot be null");
-		Assert.noNullElements(media, "media cannot have null elements");
 		Assert.notNull(metadata, "metadata cannot be null");
 		Assert.noNullElements(metadata.keySet(), "metadata cannot have null keys");
 		Assert.noNullElements(metadata.values(), "metadata cannot have null values");
 
 		this.id = id;
-		this.content = content;
-		this.media = media != null ? media : List.of();
-		this.metadata = metadata != null ? metadata : new HashMap<>();
+		this.text = null;
+		this.media = media;
+		this.metadata = Collections.unmodifiableMap(metadata);
 		this.score = score;
 	}
+
 
 	public static Builder builder() {
 		return new Builder();
@@ -151,13 +155,21 @@ public class Document implements MediaContent {
 		return this.id;
 	}
 
-	@Override
+	@Deprecated
 	public String getContent() {
-		return this.content;
+		return this.getText();
 	}
 
-	@Override
-	public Collection<Media> getMedia() {
+	public String getText() {
+		return this.text;
+	}
+
+	public boolean isText() {
+		return this.text != null;
+	}
+
+
+	public Media getMedia() {
 		return this.media;
 	}
 
@@ -180,7 +192,7 @@ public class Document implements MediaContent {
 		return formatter.format(this, metadataMode);
 	}
 
-	@Override
+
 	public Map<String, Object> getMetadata() {
 		return this.metadata;
 	}
@@ -228,8 +240,8 @@ public class Document implements MediaContent {
 
 	public Builder mutate() {
 		return new Builder().id(this.id)
-			.content(this.content)
-			.media(new ArrayList<>(this.media))
+			.content(this.text)
+			.media(this.media)
 			.metadata(this.metadata)
 			.score(this.score);
 	}
@@ -240,19 +252,19 @@ public class Document implements MediaContent {
 			return false;
 		}
 		Document document = (Document) o;
-		return Objects.equals(this.id, document.id) && Objects.equals(this.content, document.content)
+		return Objects.equals(this.id, document.id) && Objects.equals(this.text, document.text)
 				&& Objects.equals(this.media, document.media) && Objects.equals(this.metadata, document.metadata)
 				&& Objects.equals(this.score, document.score);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.id, this.content, this.media, this.metadata, this.score);
+		return Objects.hash(this.id, this.text, this.media, this.metadata, this.score);
 	}
 
 	@Override
 	public String toString() {
-		return "Document{" + "id='" + this.id + '\'' + ", content='" + this.content + '\'' + ", media=" + this.media
+		return "Document{" + "id='" + this.id + '\'' + ", content='" + this.text + '\''
 				+ ", metadata=" + this.metadata + ", score=" + this.score + '}';
 	}
 
@@ -260,9 +272,9 @@ public class Document implements MediaContent {
 
 		private String id;
 
-		private String content = Document.EMPTY_TEXT;
+		private String text;
 
-		private List<Media> media = new ArrayList<>();
+		private Media media;
 
 		private Map<String, Object> metadata = new HashMap<>();
 
@@ -285,22 +297,21 @@ public class Document implements MediaContent {
 			return this;
 		}
 
-		public Builder content(String content) {
-			this.content = content;
+		public Builder text(String text) {
+			this.text = text;
 			return this;
 		}
 
-		public Builder media(List<Media> media) {
-			Assert.notNull(media, "media cannot be null");
-			this.media.addAll(media);
+		public Builder content(String text) {
+			this.text = text;
 			return this;
 		}
 
-		public Builder media(Media... media) {
-			Assert.noNullElements(media, "media cannot contain null elements");
-			this.media.addAll(List.of(media));
+		public Builder media(Media media) {
+			this.media = media;
 			return this;
 		}
+
 
 		public Builder metadata(Map<String, Object> metadata) {
 			this.metadata = metadata;
@@ -337,10 +348,6 @@ public class Document implements MediaContent {
 			return content(content);
 		}
 
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder withMedia(List<Media> media) {
-			return media(media);
-		}
 
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withMedia(Media media) {
@@ -359,9 +366,9 @@ public class Document implements MediaContent {
 
 		public Document build() {
 			if (!StringUtils.hasText(this.id)) {
-				this.id = this.idGenerator.generateId(this.content, this.metadata);
+				this.id = this.idGenerator.generateId(this.text, this.metadata); // TODO Review if metadata should be included
 			}
-			var document = new Document(this.id, this.content, this.media, this.metadata, this.score);
+			var document = new Document(this.id, this.text, this.media, this.metadata, this.score);
 			document.setEmbedding(this.embedding);
 			return document;
 		}
