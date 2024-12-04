@@ -324,7 +324,7 @@ public class SolarApi {
 								 @JsonProperty("object") String object,
 								 @JsonProperty("created") Long created,
 								 @JsonProperty("model") String model,
-								 @JsonProperty("system_fingerprint") String systemFingerprint,
+								 @JsonProperty("system_fingerprint") Object systemFingerprint,
 								 @JsonProperty("choices") List<Choice> choices,
 								 @JsonProperty("usage") Usage usage) {
 		/**
