@@ -41,6 +41,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
@@ -365,6 +366,24 @@ class OpenAiChatClientIT extends AbstractIT {
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");
+	}
+
+	@Test
+	void multiModalityAudioResponse() {
+		ChatResponse response = ChatClient.create(this.chatModel)
+			.prompt("Tell me joke about Spring Framework")
+			.options(OpenAiChatOptions.builder()
+				.withModel(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+				.withOutputAudio(
+						new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
+				.withOutputModalities(List.of("text", "audio"))
+				.build())
+			.call()
+			.chatResponse();
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray()).isNotEmpty();
+		logger.info("Response: " + response);
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {
