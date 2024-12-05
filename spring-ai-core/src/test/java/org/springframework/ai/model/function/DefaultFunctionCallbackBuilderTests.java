@@ -35,51 +35,54 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class DefaultFunctionCallbackBuilderTests {
 
-	// Common
-
+	// Function
 	@Test
-	void whenDescriptionIsNullThenThrow() {
-		assertThatThrownBy(() -> FunctionCallback.builder().description(null))
+	void whenFunctionDescriptionIsNullThenThrow() {
+		assertThatThrownBy(
+				() -> FunctionCallback.builder().function("functionName", input -> "output").description(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Description must not be empty");
 	}
 
 	@Test
-	void whenDescriptionIsEmptyThenThrow() {
-		assertThatThrownBy(() -> FunctionCallback.builder().description(""))
+	void whenFunctionDescriptionIsEmptyThenThrow() {
+		assertThatThrownBy(() -> FunctionCallback.builder().function("functionName", input -> "output").description(""))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Description must not be empty");
 	}
 
 	@Test
-	void whenInputTypeSchemaIsNullThenThrow() {
-		assertThatThrownBy(() -> FunctionCallback.builder().inputTypeSchema(null))
+	void whenFunctionInputTypeSchemaIsNullThenThrow() {
+		assertThatThrownBy(
+				() -> FunctionCallback.builder().function("functionName", input -> "output").inputTypeSchema(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("InputTypeSchema must not be empty");
 	}
 
 	@Test
-	void whenInputTypeSchemaIsEmptyThenThrow() {
-		assertThatThrownBy(() -> FunctionCallback.builder().inputTypeSchema(""))
+	void whenFunctionInputTypeSchemaIsEmptyThenThrow() {
+		assertThatThrownBy(
+				() -> FunctionCallback.builder().function("functionName", input -> "output").inputTypeSchema(""))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("InputTypeSchema must not be empty");
 	}
 
 	@Test
-	void whenSchemaTypeIsNullThenThrow() {
-		assertThatThrownBy(() -> FunctionCallback.builder().schemaType(null))
+	void whenFunctionSchemaTypeIsNullThenThrow() {
+		assertThatThrownBy(
+				() -> FunctionCallback.builder().function("functionName", input -> "output").schemaType(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("SchemaType must not be null");
 	}
 
 	@Test
-	void whenResponseConverterIsNullThenThrow() {
-		assertThatThrownBy(() -> FunctionCallback.builder().responseConverter(null))
+	void whenFunctionResponseConverterIsNullThenThrow() {
+		assertThatThrownBy(
+				() -> FunctionCallback.builder().function("functionName", input -> "output").responseConverter(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("ResponseConverter must not be null");
 	}
 
-	// Function
 	@Test
 	void whenFunctionNameIsNullThenThrow2() {
 		assertThatThrownBy(() -> FunctionCallback.builder().function(null, (Function) null))
@@ -111,8 +114,8 @@ class DefaultFunctionCallbackBuilderTests {
 	@Test
 	void whenFunctionWithInputTypeThenReturn() {
 		FunctionCallback functionCallback = FunctionCallback.builder()
-			.description("description")
 			.function("functionName", input -> "output")
+			.description("description")
 			.inputType(String.class)
 			.build();
 		assertThat(functionCallback).isNotNull();
@@ -179,6 +182,49 @@ class DefaultFunctionCallbackBuilderTests {
 	}
 
 	// Method
+
+	@Test
+	void whenMethodDescriptionIsNullThenThrow() {
+		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName").description(null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Description must not be empty");
+	}
+
+	@Test
+	void whenMethodDescriptionIsEmptyThenThrow() {
+		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName").description(""))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Description must not be empty");
+	}
+
+	@Test
+	void whenMethodInputTypeSchemaIsNullThenThrow() {
+		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName").inputTypeSchema(null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("InputTypeSchema must not be empty");
+	}
+
+	@Test
+	void whenMethodInputTypeSchemaIsEmptyThenThrow() {
+		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName").inputTypeSchema(""))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("InputTypeSchema must not be empty");
+	}
+
+	@Test
+	void whenMethodSchemaTypeIsNullThenThrow() {
+		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName").schemaType(null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("SchemaType must not be null");
+	}
+
+	@Test
+	void whenMethodResponseConverterIsNullThenThrow() {
+		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName").responseConverter(null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("ResponseConverter must not be null");
+	}
+
 	@Test
 	void whenMethodNameIsNullThenThrow() {
 		assertThatThrownBy(() -> FunctionCallback.builder().method(null)).isInstanceOf(IllegalArgumentException.class)

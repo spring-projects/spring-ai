@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 

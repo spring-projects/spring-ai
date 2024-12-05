@@ -83,8 +83,10 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
 			ChatGenerationMetadata chatGenerationMetadata = null;
 			if (response.amazonBedrockInvocationMetrics() != null) {
-				chatGenerationMetadata = ChatGenerationMetadata.from(stopReason,
-						response.amazonBedrockInvocationMetrics());
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(stopReason)
+					.metadata("metrics", response.amazonBedrockInvocationMetrics())
+					.build();
 			}
 			return new ChatResponse(
 					List.of(new Generation(new AssistantMessage(response.completion()), chatGenerationMetadata)));

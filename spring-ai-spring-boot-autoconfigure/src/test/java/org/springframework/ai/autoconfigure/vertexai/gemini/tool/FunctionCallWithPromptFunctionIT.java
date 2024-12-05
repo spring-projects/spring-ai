@@ -28,7 +28,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -69,9 +69,9 @@ public class FunctionCallWithPromptFunctionIT {
 
 				var promptOptions = VertexAiGeminiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.function("CurrentWeatherService", new MockWeatherService())
 						.schemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
 						.description("Get the weather in location")
-						.function("CurrentWeatherService", new MockWeatherService())
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();

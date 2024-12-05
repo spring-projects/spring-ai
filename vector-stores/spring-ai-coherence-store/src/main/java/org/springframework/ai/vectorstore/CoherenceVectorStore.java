@@ -37,6 +37,7 @@ import com.tangosol.net.Session;
 import com.tangosol.util.Filter;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.beans.factory.InitializingBean;
@@ -62,6 +63,7 @@ import org.springframework.beans.factory.InitializingBean;
  * </ul>
  *
  * @author Aleks Seovic
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class CoherenceVectorStore implements VectorStore, InitializingBean {
@@ -211,8 +213,13 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 			if (this.distanceType != DistanceType.COSINE || (1 - r.getDistance()) >= request.getSimilarityThreshold()) {
 				DocumentChunk.Id id = r.getKey();
 				DocumentChunk chunk = r.getValue();
-				chunk.metadata().put("distance", r.getDistance());
-				documents.add(new Document(id.docId(), chunk.text(), chunk.metadata()));
+				chunk.metadata().put(DocumentMetadata.DISTANCE.value(), r.getDistance());
+				documents.add(Document.builder()
+					.id(id.docId())
+					.content(chunk.text())
+					.metadata(chunk.metadata())
+					.score(1 - r.getDistance())
+					.build());
 			}
 		}
 		return documents;

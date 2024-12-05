@@ -71,7 +71,7 @@ import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
@@ -92,6 +92,7 @@ import org.springframework.util.StringUtils;
  * @author Chris Turchin
  * @author Mark Pollack
  * @author Soby Chacko
+ * @author Jihoon Kim
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
@@ -129,27 +130,27 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
-		this(vertexAI, options, functionCallbackContext, List.of());
+			FunctionCallbackResolver functionCallbackResolver) {
+		this(vertexAI, options, functionCallbackResolver, List.of());
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
-		this(vertexAI, options, functionCallbackContext, toolFunctionCallbacks, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks) {
+		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate) {
-		this(vertexAI, options, functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
 				ObservationRegistry.NOOP);
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 
-		super(functionCallbackContext, options, toolFunctionCallbacks);
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
 
 		Assert.notNull(vertexAI, "VertexAI must not be null");
 		Assert.notNull(options, "VertexAiGeminiChatOptions must not be null");
@@ -304,7 +305,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 				List<Generation> generations = generateContentResponse.getCandidatesList()
 					.stream()
-					.map(this::responseCandiateToGeneration)
+					.map(this::responseCandidateToGeneration)
 					.flatMap(List::stream)
 					.toList();
 
@@ -352,7 +353,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 					List<Generation> generations = response.getCandidatesList()
 						.stream()
-						.map(this::responseCandiateToGeneration)
+						.map(this::responseCandidateToGeneration)
 						.flatMap(List::stream)
 						.toList();
 
@@ -380,21 +381,22 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		});
 	}
 
-	protected List<Generation> responseCandiateToGeneration(Candidate candidate) {
+	protected List<Generation> responseCandidateToGeneration(Candidate candidate) {
 
 		// TODO - The candidateIndex (e.g. choice must be asigned to the generation).
 		int candidateIndex = candidate.getIndex();
-		FinishReason candidateFinishReasonn = candidate.getFinishReason();
+		FinishReason candidateFinishReason = candidate.getFinishReason();
 
 		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
-				candidateFinishReasonn);
+				candidateFinishReason);
 
-		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.from(candidateFinishReasonn.name(),
-				null);
+		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
+			.finishReason(candidateFinishReason.name())
+			.build();
 
-		boolean isFunctinCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
+		boolean isFunctionCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
 
-		if (isFunctinCall) {
+		if (isFunctionCall) {
 			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.getContent()
 				.getPartsList()
 				.stream()

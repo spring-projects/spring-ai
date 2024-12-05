@@ -124,8 +124,8 @@ static class Config {
 	public FunctionCallback weatherFunctionInfo() {
 
 		return FunctionCallback.builder()
-			.description("Get the current weather in a given location") // (2) function description
 			.function("CurrentWeather", new MockWeatherService()) // (1) function name
+			.description("Get the current weather in a given location") // (2) function description
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build();
 	}
@@ -181,8 +181,8 @@ UserMessage userMessage = new UserMessage("What's the weather like in San Franci
 
 var promptOptions = AzureOpenAiChatOptions.builder()
 	.withFunctionCallbacks(List.of(FunctionCallback.builder()
-			.description("Get the current weather in a given location") // (2) function description
 			.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+			.description("Get the current weather in a given location") // (2) function description
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build()))
 	.build();

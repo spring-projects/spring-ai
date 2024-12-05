@@ -68,8 +68,8 @@ public class ChatCompletionRequestTests {
 				ZhiPuAiChatOptions.builder()
 					.withModel("PROMPT_MODEL")
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Get the weather in location")
 						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),
@@ -95,8 +95,8 @@ public class ChatCompletionRequestTests {
 				ZhiPuAiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Get the weather in location")
 						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());
@@ -127,8 +127,8 @@ public class ChatCompletionRequestTests {
 		request = client.createRequest(new Prompt("Test message content",
 				ZhiPuAiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Overridden function description")
 						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.description("Overridden function description")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build()),

@@ -32,6 +32,7 @@ import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.Embedding;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -58,10 +59,9 @@ import org.springframework.util.CollectionUtils;
  * @author Fu Cheng
  * @author Sebastien Deleuze
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
-
-	public static final String DISTANCE_FIELD_NAME = "distance";
 
 	public static final String DEFAULT_COLLECTION_NAME = "SpringAiCollection";
 
@@ -192,9 +192,14 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 				if (metadata == null) {
 					metadata = new HashMap<>();
 				}
-				metadata.put(DISTANCE_FIELD_NAME, distance);
-				Document document = new Document(id, content, metadata);
-				document.setEmbedding(chromaEmbedding.embedding());
+				metadata.put(DocumentMetadata.DISTANCE.value(), distance);
+				Document document = Document.builder()
+					.id(id)
+					.content(content)
+					.metadata(metadata)
+					.embedding(chromaEmbedding.embedding())
+					.score(1.0 - distance)
+					.build();
 				responseDocuments.add(document);
 			}
 		}
@@ -244,8 +249,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			@NonNull String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName(this.collectionName + ":" + this.collectionId)
-			.withFieldName(this.initializeSchema ? DISTANCE_FIELD_NAME : null);
+			.withCollectionName(this.collectionName + ":" + this.collectionId);
 	}
 
 	public static class Builder {

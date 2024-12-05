@@ -58,8 +58,8 @@ public class FunctionCallWithPromptFunctionIT {
 
 				var promptOptions = FunctionCallingOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 						.function("CurrentWeatherService", new MockWeatherService())
+						.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build();

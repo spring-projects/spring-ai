@@ -97,9 +97,9 @@ class BedrockCohereEmbeddingModelIT {
 		ArgumentCaptor<CohereEmbeddingBedrockApi.CohereEmbeddingRequest> requestCaptor = ArgumentCaptor
 			.forClass(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.class);
 
-		EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of(longText));
+		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(longText));
 
-		verify(embeddingApi).embedding(requestCaptor.capture());
+		verify(this.embeddingApi).embedding(requestCaptor.capture());
 		CohereEmbeddingBedrockApi.CohereEmbeddingRequest capturedRequest = requestCaptor.getValue();
 
 		assertThat(capturedRequest.texts()).hasSize(1);
@@ -124,7 +124,7 @@ class BedrockCohereEmbeddingModelIT {
 		EmbeddingResponse embeddingResponse = this.embeddingModelStartTruncate.embedForResponse(List.of(longText));
 
 		// Verify truncation behavior
-		verify(embeddingApi).embedding(requestCaptor.capture());
+		verify(this.embeddingApi).embedding(requestCaptor.capture());
 		String truncatedText = requestCaptor.getValue().texts().get(0);
 		assertThat(truncatedText.length()).isLessThanOrEqualTo(2048);
 		assertThat(truncatedText).doesNotContain(startMarker);

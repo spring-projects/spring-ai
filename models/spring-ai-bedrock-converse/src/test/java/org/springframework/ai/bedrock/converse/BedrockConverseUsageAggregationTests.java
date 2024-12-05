@@ -61,7 +61,7 @@ public class BedrockConverseUsageAggregationTests {
 
 	@BeforeEach
 	public void beforeEach() {
-		chatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient, this.bedrockRuntimeAsyncClient,
+		this.chatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient, this.bedrockRuntimeAsyncClient,
 				FunctionCallingOptions.builder().build(), null, List.of(), ObservationRegistry.NOOP);
 	}
 
@@ -88,9 +88,6 @@ public class BedrockConverseUsageAggregationTests {
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(16);
 		assertThat(result.getMetadata().getUsage().getGenerationTokens()).isEqualTo(14);
 		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(30);
-	}
-
-	public record Request(String location, String unit) {
 	}
 
 	@Test
@@ -142,8 +139,8 @@ public class BedrockConverseUsageAggregationTests {
 			.willReturn(converseResponseFinal);
 
 		FunctionCallback functionCallback = FunctionCallback.builder()
-			.description("Gets the weather in location")
 			.function("getCurrentWeather", (Request request) -> "15.0°C")
+			.description("Gets the weather in location")
 			.inputType(Request.class)
 			.build();
 
@@ -162,6 +159,9 @@ public class BedrockConverseUsageAggregationTests {
 	@Test
 	public void streamWithToolUse() {
 		// TODO: Implement the test
+	}
+
+	public record Request(String location, String unit) {
 	}
 
 }

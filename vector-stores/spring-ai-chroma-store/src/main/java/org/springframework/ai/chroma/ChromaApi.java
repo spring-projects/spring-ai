@@ -288,7 +288,7 @@ public class ChromaApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record CreateCollectionRequest(// @formatter:off
 		@JsonProperty("name") String name,
-		@JsonProperty("metadata") Map<String, Object> metadata) {// @formatter:on
+		@JsonProperty("metadata") Map<String, Object> metadata) { // @formatter:on
 
 		public CreateCollectionRequest(String name) {
 			this(name, new HashMap<>(Map.of("hnsw:space", "cosine")));
@@ -314,7 +314,7 @@ public class ChromaApi {
 			@JsonProperty("ids") List<String> ids,
 			@JsonProperty("embeddings") List<float[]> embeddings,
 			@JsonProperty("metadatas") List<Map<String, Object>> metadata,
-			@JsonProperty("documents") List<String> documents) {// @formatter:on
+			@JsonProperty("documents") List<String> documents) { // @formatter:on
 
 		// Convenance for adding a single embedding.
 		public AddEmbeddingsRequest(String id, float[] embedding, Map<String, Object> metadata, String document) {
@@ -332,7 +332,7 @@ public class ChromaApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record DeleteEmbeddingsRequest(// @formatter:off
 		@JsonProperty("ids") List<String> ids,
-		@JsonProperty("where") Map<String, Object> where) {// @formatter:on
+		@JsonProperty("where") Map<String, Object> where) { // @formatter:on
 
 		public DeleteEmbeddingsRequest(List<String> ids) {
 			this(ids, null);
@@ -356,7 +356,7 @@ public class ChromaApi {
 		@JsonProperty("where") Map<String, Object> where,
 		@JsonProperty("limit") Integer limit,
 		@JsonProperty("offset") Integer offset,
-		@JsonProperty("include") List<Include> include) {// @formatter:on
+		@JsonProperty("include") List<Include> include) { // @formatter:on
 
 		public GetEmbeddingsRequest(List<String> ids) {
 			this(ids, null, 10, 0, Include.all);
@@ -385,7 +385,7 @@ public class ChromaApi {
 		@JsonProperty("ids") List<String> ids,
 		@JsonProperty("embeddings") List<float[]> embeddings,
 		@JsonProperty("documents") List<String> documents,
-		@JsonProperty("metadatas") List<Map<String, String>> metadata) {// @formatter:on
+		@JsonProperty("metadatas") List<Map<String, String>> metadata) { // @formatter:on
 	}
 
 	/**
@@ -401,7 +401,7 @@ public class ChromaApi {
 	 * [metadatas, documents, distances].
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record QueryRequest( // @formatter:off
+	public record QueryRequest(// @formatter:off
 		@JsonProperty("query_embeddings") List<float[]> queryEmbeddings,
 		@JsonProperty("n_results") Integer nResults,
 		@JsonProperty("where") Map<String, Object> where,
@@ -454,7 +454,7 @@ public class ChromaApi {
 		@JsonProperty("embeddings") List<List<float[]>> embeddings,
 		@JsonProperty("documents") List<List<String>> documents,
 		@JsonProperty("metadatas") List<List<Map<String, Object>>> metadata,
-		@JsonProperty("distances") List<List<Double>> distances) {// @formatter:on
+		@JsonProperty("distances") List<List<Double>> distances) { // @formatter:on
 	}
 
 	/**
@@ -472,7 +472,7 @@ public class ChromaApi {
 		@JsonProperty("embedding") float[] embedding,
 		@JsonProperty("document") String document,
 		@JsonProperty("metadata") Map<String, Object> metadata,
-		@JsonProperty("distances") Double distances) {// @formatter:on
+		@JsonProperty("distances") Double distances) { // @formatter:on
 
 	}
 

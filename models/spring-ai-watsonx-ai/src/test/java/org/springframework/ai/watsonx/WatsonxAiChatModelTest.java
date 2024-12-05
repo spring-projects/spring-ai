@@ -174,8 +174,11 @@ public class WatsonxAiChatModelTest {
 			.willReturn(ResponseEntity.of(Optional.of(fakeResponse)));
 
 		Generation expectedGenerator = new Generation(new AssistantMessage("LLM response"),
-				ChatGenerationMetadata.from("max_tokens",
-						Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning")))));
+				ChatGenerationMetadata.builder()
+					.finishReason("max_tokens")
+					.metadata("system",
+							Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))))
+					.build());
 
 		ChatResponse expectedResponse = new ChatResponse(List.of(expectedGenerator));
 		ChatResponse response = chatModel.call(prompt);
@@ -206,8 +209,12 @@ public class WatsonxAiChatModelTest {
 		Flux<WatsonxAiChatResponse> fakeResponse = Flux.just(fakeResponseFirst, fakeResponseSecond);
 		given(mockChatApi.generateStreaming(any(WatsonxAiChatRequest.class))).willReturn(fakeResponse);
 
-		Generation firstGen = new Generation(new AssistantMessage("LLM resp"), ChatGenerationMetadata.from("max_tokens",
-				Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning")))));
+		Generation firstGen = new Generation(new AssistantMessage("LLM resp"),
+				ChatGenerationMetadata.builder()
+					.finishReason("max_tokens")
+					.metadata("system",
+							Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))))
+					.build());
 		Generation secondGen = new Generation(new AssistantMessage("onse"));
 
 		Flux<ChatResponse> response = chatModel.stream(prompt);

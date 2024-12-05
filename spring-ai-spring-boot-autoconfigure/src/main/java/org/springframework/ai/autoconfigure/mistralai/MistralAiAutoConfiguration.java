@@ -26,8 +26,9 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -90,7 +91,7 @@ public class MistralAiAutoConfiguration {
 			matchIfMissing = true)
 	public MistralAiChatModel mistralAiChatModel(MistralAiCommonProperties commonProperties,
 			MistralAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackResolver functionCallbackResolver,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
@@ -99,7 +100,7 @@ public class MistralAiAutoConfiguration {
 				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
-		var chatModel = new MistralAiChatModel(mistralAiApi, chatProperties.getOptions(), functionCallbackContext,
+		var chatModel = new MistralAiChatModel(mistralAiApi, chatProperties.getOptions(), functionCallbackResolver,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
@@ -121,8 +122,8 @@ public class MistralAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}

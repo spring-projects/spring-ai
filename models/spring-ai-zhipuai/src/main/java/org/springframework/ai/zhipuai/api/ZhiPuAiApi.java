@@ -16,21 +16,10 @@
 
 package org.springframework.ai.zhipuai.api;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
@@ -43,6 +32,16 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 // @formatter:off
 /**
@@ -329,11 +328,11 @@ public class ZhiPuAiApi {
 
 		// The type of the tool. Currently, only 'function' is supported.
 		@JsonProperty("type")
-		private Function function;
+		private Type type = Type.FUNCTION;
 
 		//	The function definition.
 		@JsonProperty("function")
-		private Type type = Type.FUNCTION;
+		private Function function;
 
 		public FunctionTool() {
 
@@ -956,15 +955,18 @@ public class ZhiPuAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest<T>(
 			@JsonProperty("input") T input,
-			@JsonProperty("model") String model) {
+
+			@JsonProperty("model") String model,
+
+			@JsonProperty("dimensions") Integer dimensions) {
 
 
 		/**
 		 * Create an embedding request with the given input. Encoding model is set to 'embedding-2'.
 		 * @param input Input text to embed.
 		 */
-		public EmbeddingRequest(T input) {
-			this(input, DEFAULT_EMBEDDING_MODEL);
+		public EmbeddingRequest(T input, Integer dimensions) {
+			this(input,DEFAULT_EMBEDDING_MODEL,dimensions);
 		}
 	}
 

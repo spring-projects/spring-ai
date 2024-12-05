@@ -252,8 +252,8 @@ class MistralWithOpenAiChatModelIT {
 		var promptOptions = OpenAiChatOptions.builder()
 			.withModel(modelName)
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -277,8 +277,8 @@ class MistralWithOpenAiChatModelIT {
 		var promptOptions = OpenAiChatOptions.builder()
 			.withModel(modelName)
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

@@ -22,7 +22,8 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.qianfan.QianFanChatModel;
 import org.springframework.ai.qianfan.QianFanEmbeddingModel;
 import org.springframework.ai.qianfan.QianFanImageModel;
@@ -155,8 +156,8 @@ public class QianFanAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}

@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai</artifactId>
-        <version>1.0.0-M4</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>spring-ai-bom</artifactId>
@@ -285,6 +285,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mariadb-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <!-- Utilities -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -454,6 +460,12 @@
                 <artifactId>spring-ai-redis-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mariadb-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>

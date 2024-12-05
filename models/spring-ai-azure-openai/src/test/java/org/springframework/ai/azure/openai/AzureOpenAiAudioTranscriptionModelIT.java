@@ -18,7 +18,6 @@ package org.springframework.ai.azure.openai;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -36,7 +35,7 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * NOTE - Use deployment name "whisper
+ * NOTE - Use deployment name "whisper"
  *
  * @author Piotr Olaszewski
  */
@@ -87,13 +86,15 @@ class AzureOpenAiAudioTranscriptionModelIT {
 
 		@Bean
 		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder()
-				.credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_TRANSCRIPTION_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_TRANSCRIPTION_ENDPOINT"))
-				// new
-				// AzureKeyCredential("2FsJHcxEoyIMWlhT882lUYx6D1ovQeTHNyQjHKsBYtX9Pf9TynrAJQQJ99AKACfhMk5XJ3w3AAAAACOGDOWA"))
-				// .endpoint("https://mpoll-m3ot7gc7-swedencentral.cognitiveservices.azure.com/")
-				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
+			String apiKey = System.getenv("AZURE_OPENAI_TRANSCRIPTION_API_KEY");
+			String endpoint = System.getenv("AZURE_OPENAI_TRANSCRIPTION_ENDPOINT");
+
+			// System.out.println("API Key: " + apiKey);
+			// System.out.println("Endpoint: " + endpoint);
+
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(apiKey))
+				.endpoint(endpoint)
+				// .serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
 				.buildClient();
 		}
 

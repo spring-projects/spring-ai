@@ -34,7 +34,8 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -220,22 +221,22 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackContext functionCallbackContext) {
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackResolver functionCallbackResolver) {
 			return new OpenAiChatModel(openAiApi,
 					OpenAiChatOptions.builder()
 						.withModel(ChatModel.GPT_4_O_MINI.getName())
 						.withTemperature(0.1)
 						.build(),
-					functionCallbackContext, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+					functionCallbackResolver, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 		}
 
 		/**
-		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance must
+		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
 		 * different from the other JSON schema types.
 		 */
 		@Bean
-		public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-			FunctionCallbackContext manager = new FunctionCallbackContext();
+		public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+			DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 			manager.setApplicationContext(context);
 			return manager;
 		}
