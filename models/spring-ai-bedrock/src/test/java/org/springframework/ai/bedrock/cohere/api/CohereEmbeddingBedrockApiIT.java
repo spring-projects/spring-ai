@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CohereEmbeddingBedrockApiIT {
 
 	CohereEmbeddingBedrockApi api = new CohereEmbeddingBedrockApi(
-			CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(), EnvironmentVariableCredentialsProvider.create(),
+			CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id(), EnvironmentVariableCredentialsProvider.create(),
 			Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
 
 	@Test

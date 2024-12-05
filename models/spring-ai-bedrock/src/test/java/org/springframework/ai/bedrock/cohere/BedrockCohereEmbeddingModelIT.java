@@ -169,7 +169,7 @@ class BedrockCohereEmbeddingModelIT {
 
 		@Bean
 		public CohereEmbeddingBedrockApi cohereEmbeddingApi() {
-			return new CohereEmbeddingBedrockApi(CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
+			return new CohereEmbeddingBedrockApi(CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
 					Duration.ofMinutes(2));
 		}
