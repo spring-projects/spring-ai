@@ -29,29 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.ai.openai.models.ChatChoice;
-import com.azure.ai.openai.models.ChatCompletions;
-import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
-import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinition;
-import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinitionFunction;
-import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsOptions;
-import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsToolCall;
-import com.azure.ai.openai.models.ChatCompletionsToolDefinition;
-import com.azure.ai.openai.models.ChatMessageContentItem;
-import com.azure.ai.openai.models.ChatMessageImageContentItem;
-import com.azure.ai.openai.models.ChatMessageImageUrl;
-import com.azure.ai.openai.models.ChatMessageTextContentItem;
-import com.azure.ai.openai.models.ChatRequestAssistantMessage;
-import com.azure.ai.openai.models.ChatRequestMessage;
-import com.azure.ai.openai.models.ChatRequestSystemMessage;
-import com.azure.ai.openai.models.ChatRequestToolMessage;
-import com.azure.ai.openai.models.ChatRequestUserMessage;
-import com.azure.ai.openai.models.CompletionsFinishReason;
-import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
-import com.azure.ai.openai.models.FunctionCall;
+import com.azure.ai.openai.implementation.accesshelpers.ChatCompletionsOptionsAccessHelper;
+import com.azure.ai.openai.models.*;
 import com.azure.core.util.BinaryData;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -206,7 +185,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 					this.observationRegistry)
 			.observe(() -> {
 				ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
-				options.setStream(false);
+				ChatCompletionsOptionsAccessHelper.setStream(options, false);
 
 				ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
 				ChatResponse chatResponse = toChatResponse(chatCompletions);
@@ -230,7 +209,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
-			options.setStream(true);
+			ChatCompletionsOptionsAccessHelper.setStream(options, true);
 
 			Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
 				.getChatCompletionsStream(options.getModel(), options);
@@ -493,7 +472,16 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		}
 
 		ChatCompletionsOptions mergedAzureOptions = new ChatCompletionsOptions(fromAzureOptions.getMessages());
-		mergedAzureOptions.setStream(fromAzureOptions.isStream());
+
+		ChatCompletionsOptionsAccessHelper.setStream(mergedAzureOptions,
+				fromAzureOptions.isStream() != null ? fromAzureOptions.isStream() : false);
+
+		ChatCompletionsOptionsAccessHelper.setStream(mergedAzureOptions,
+				fromAzureOptions.isStream() != null ? fromAzureOptions.isStream() : false);
+
+		ChatCompletionsOptionsAccessHelper.setStreamOptions(mergedAzureOptions,
+				fromAzureOptions.getStreamOptions() != null ? fromAzureOptions.getStreamOptions()
+						: toSpringAiOptions.getStreamOptions());
 
 		mergedAzureOptions.setMaxTokens((fromAzureOptions.getMaxTokens() != null) ? fromAzureOptions.getMaxTokens()
 				: toSpringAiOptions.getMaxTokens());
@@ -640,8 +628,13 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	private ChatCompletionsOptions copy(ChatCompletionsOptions fromOptions) {
 
 		ChatCompletionsOptions copyOptions = new ChatCompletionsOptions(fromOptions.getMessages());
-		copyOptions.setStream(fromOptions.isStream());
 
+		if (fromOptions.isStream() != null) {
+			ChatCompletionsOptionsAccessHelper.setStream(copyOptions, fromOptions.isStream());
+		}
+		if (fromOptions.getStreamOptions() != null) {
+			ChatCompletionsOptionsAccessHelper.setStreamOptions(copyOptions, fromOptions.getStreamOptions());
+		}
 		if (fromOptions.getMaxTokens() != null) {
 			copyOptions.setMaxTokens(fromOptions.getMaxTokens());
 		}
