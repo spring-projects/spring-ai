@@ -878,9 +878,9 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(function, "function cannot be null");
 
 			var fcw = FunctionCallback.builder()
+				.function(name, function)
 				.description(description)
 				.responseConverter(Object::toString)
-				.function(name, function)
 				.inputType(inputType)
 				.build();
 			this.functionCallbacks.add(fcw);

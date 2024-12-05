@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Description
 
-class FunctionCallbackContextKotlinIT : BaseOllamaIT() {
+class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 
 	companion object {
 
@@ -48,7 +48,7 @@ class FunctionCallbackContextKotlinIT : BaseOllamaIT() {
 		}
 	}
 
-	private val logger = LoggerFactory.getLogger(FunctionCallbackContextKotlinIT::class.java)
+	private val logger = LoggerFactory.getLogger(FunctionCallbackResolverKotlinIT::class.java)
 
 	private val contextRunner = ApplicationContextRunner()
 		.withPropertyValues(

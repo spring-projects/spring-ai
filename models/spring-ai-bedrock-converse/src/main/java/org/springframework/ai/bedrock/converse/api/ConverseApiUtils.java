@@ -141,7 +141,7 @@ public final class ConverseApiUtils {
 
 				AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 				Generation toolCallGeneration = new Generation(assistantMessage,
-						ChatGenerationMetadata.from("tool_use", null));
+						ChatGenerationMetadata.builder().finishReason("tool_use").build());
 
 				var chatResponseMetaData = ChatResponseMetadata.builder()
 					.withUsage(new DefaultUsage(promptTokens, generationTokens, totalTokens))
@@ -176,7 +176,9 @@ public final class ConverseApiUtils {
 
 					var generation = new Generation(
 							new AssistantMessage(contentBlockDeltaEvent.delta().text(), Map.of()),
-							ChatGenerationMetadata.from(lastAggregation.metadataAggregation().stopReason(), null));
+							ChatGenerationMetadata.builder()
+								.finishReason(lastAggregation.metadataAggregation().stopReason())
+								.build());
 
 					return new Aggregation(
 							MetadataAggregation.builder().copy(lastAggregation.metadataAggregation()).build(),

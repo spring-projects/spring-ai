@@ -38,6 +38,7 @@ import io.pinecone.proto.UpsertRequest;
 import io.pinecone.proto.Vector;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -60,12 +61,11 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Adam Bchouti
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	public static final String CONTENT_FIELD_NAME = "document_content";
-
-	public static final String DISTANCE_METADATA_FIELD_NAME = "distance";
 
 	public final FilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
 
@@ -236,7 +236,12 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 				var content = metadataStruct.getFieldsOrThrow(this.pineconeContentFieldName).getStringValue();
 				Map<String, Object> metadata = extractMetadata(metadataStruct);
 				metadata.put(this.pineconeDistanceMetadataFieldName, 1 - scoredVector.getScore());
-				return new Document(id, content, metadata);
+				return Document.builder()
+					.id(id)
+					.content(content)
+					.metadata(metadata)
+					.score((double) scoredVector.getScore())
+					.build();
 			})
 			.toList();
 	}
@@ -298,6 +303,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		private final String contentFieldName;
 
+		// TODO: Why is this field configurable? Can we remove this after standardizing
+		// the key?
 		private final String distanceMetadataFieldName;
 
 		private final PineconeConnectionConfig connectionConfig;
@@ -357,7 +364,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 			private String contentFieldName = CONTENT_FIELD_NAME;
 
-			private String distanceMetadataFieldName = DISTANCE_METADATA_FIELD_NAME;
+			private String distanceMetadataFieldName = DocumentMetadata.DISTANCE.value();
 
 			/**
 			 * Optional server-side timeout in seconds for all operations. Default: 20

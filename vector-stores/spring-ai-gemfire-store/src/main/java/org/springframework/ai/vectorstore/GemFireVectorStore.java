@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.DocumentMetadata;
 import reactor.util.annotation.NonNull;
 
 import org.springframework.ai.document.Document;
@@ -172,8 +173,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	// Query Defaults
 	private static final String QUERY = "/query";
 
-	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
-
 	/**
 	 * Initializes the GemFireVectorStore after properties are set. This method is called
 	 * after all bean properties have been set and allows the bean to perform any
@@ -271,9 +270,9 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 					metadata = new HashMap<>();
 					metadata.put(DOCUMENT_FIELD, "--Deleted--");
 				}
-				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - r.score);
+				metadata.put(DocumentMetadata.DISTANCE.value(), 1 - r.score);
 				String content = (String) metadata.remove(DOCUMENT_FIELD);
-				return new Document(r.key, content, metadata);
+				return Document.builder().id(r.key).content(content).metadata(metadata).score((double) r.score).build();
 			})
 			.collectList()
 			.onErrorMap(WebClientException.class, this::handleHttpClientException)

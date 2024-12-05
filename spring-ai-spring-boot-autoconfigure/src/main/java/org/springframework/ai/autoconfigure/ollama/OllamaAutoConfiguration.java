@@ -22,8 +22,9 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -80,7 +81,7 @@ public class OllamaAutoConfiguration {
 			matchIfMissing = true)
 	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
 			OllamaInitializationProperties initProperties, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackContext functionCallbackContext, ObjectProvider<ObservationRegistry> observationRegistry,
+			FunctionCallbackResolver functionCallbackResolver, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 		var chatModelPullStrategy = initProperties.getChat().isInclude() ? initProperties.getPullModelStrategy()
 				: PullModelStrategy.NEVER;
@@ -88,7 +89,7 @@ public class OllamaAutoConfiguration {
 		var chatModel = OllamaChatModel.builder()
 			.withOllamaApi(ollamaApi)
 			.withDefaultOptions(properties.getOptions())
-			.withFunctionCallbackContext(functionCallbackContext)
+			.functionCallbackResolver(functionCallbackResolver)
 			.withToolFunctionCallbacks(toolFunctionCallbacks)
 			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.withModelManagementOptions(
@@ -127,8 +128,8 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}

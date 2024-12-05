@@ -64,8 +64,8 @@ public class FunctionCallbackInPromptIT {
 
 			var promptOptions = MiniMaxChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallback.builder()
-					.description("Get the weather in location")
 					.function("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
@@ -90,8 +90,8 @@ public class FunctionCallbackInPromptIT {
 
 			var promptOptions = MiniMaxChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallback.builder()
-					.description("Get the weather in location")
 					.function("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();

@@ -111,7 +111,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		assertThat(this.multiModelEmbeddingModel).isNotNull();
 
 		var document = Document.builder()
-			.withMedia(new Media(MimeTypeUtils.TEXT_PLAIN, URI.create("http://example.com/image.png").toURL()))
+			.media(new Media(MimeTypeUtils.TEXT_PLAIN, URI.create("http://example.com/image.png").toURL()))
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
@@ -135,7 +135,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 	void imageEmbedding() {
 
 		var document = Document.builder()
-			.withMedia(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
+			.media(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
@@ -161,7 +161,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 	void videoEmbedding() {
 
 		var document = Document.builder()
-			.withMedia(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
+			.media(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
@@ -186,9 +186,9 @@ class VertexAiMultimodalEmbeddingModelIT {
 	void textImageAndVideoEmbedding() {
 
 		var document = Document.builder()
-			.withContent("Hello World")
-			.withMedia(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
-			.withMedia(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
+			.content("Hello World")
+			.media(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
+			.media(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);

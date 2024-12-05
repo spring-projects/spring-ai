@@ -70,7 +70,7 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 		return new ChatResponse(response.completions()
 			.stream()
 			.map(completion -> new Generation(new AssistantMessage(completion.data().text()),
-					ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
+					ChatGenerationMetadata.builder().finishReason(completion.finishReason().reason()).build()))
 			.toList());
 	}
 

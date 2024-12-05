@@ -80,8 +80,8 @@ public class FunctionCallWithFunctionWrapperIT {
 		public FunctionCallback weatherFunctionInfo() {
 
 			return FunctionCallback.builder()
-				.description("Get the current weather in a given location")
 				.function("WeatherInfo", new MockWeatherService())
+				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

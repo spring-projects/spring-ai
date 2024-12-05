@@ -78,8 +78,8 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 			if (g.isFinished()) {
 				String finishReason = g.finishReason().name();
 				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
-				return new ChatResponse(List
-					.of(new Generation(new AssistantMessage(""), ChatGenerationMetadata.from(finishReason, usage))));
+				return new ChatResponse(List.of(new Generation(new AssistantMessage(""),
+						ChatGenerationMetadata.builder().finishReason(finishReason).metadata("usage", usage).build())));
 			}
 			return new ChatResponse(List.of(new Generation(new AssistantMessage(g.text()))));
 		});

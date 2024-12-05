@@ -33,7 +33,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,7 +170,8 @@ public class AnthropicChatModelObservationIT {
 		public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi,
 				TestObservationRegistry observationRegistry) {
 			return new AnthropicChatModel(anthropicApi, AnthropicChatOptions.builder().build(),
-					RetryTemplate.defaultInstance(), new FunctionCallbackContext(), List.of(), observationRegistry);
+					RetryTemplate.defaultInstance(), new DefaultFunctionCallbackResolver(), List.of(),
+					observationRegistry);
 		}
 
 	}

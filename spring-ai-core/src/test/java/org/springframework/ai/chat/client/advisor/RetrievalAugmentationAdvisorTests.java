@@ -16,8 +16,11 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -28,8 +31,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -69,8 +70,8 @@ class RetrievalAugmentationAdvisorTests {
 			.build());
 
 		// Document Retriever
-		var documentContext = List.of(Document.builder().withId("1").withContent("doc1").build(),
-				Document.builder().withId("2").withContent("doc2").build());
+		var documentContext = List.of(Document.builder().id("1").content("doc1").build(),
+				Document.builder().id("2").content("doc2").build());
 		var documentRetriever = mock(DocumentRetriever.class);
 		var queryCaptor = ArgumentCaptor.forClass(Query.class);
 		given(documentRetriever.retrieve(queryCaptor.capture())).willReturn(documentContext);

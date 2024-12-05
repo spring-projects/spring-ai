@@ -33,7 +33,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,8 +170,9 @@ public class MiniMaxChatModelObservationIT {
 
 		@Bean
 		public MiniMaxChatModel minimaxChatModel(MiniMaxApi minimaxApi, TestObservationRegistry observationRegistry) {
-			return new MiniMaxChatModel(minimaxApi, MiniMaxChatOptions.builder().build(), new FunctionCallbackContext(),
-					List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+			return new MiniMaxChatModel(minimaxApi, MiniMaxChatOptions.builder().build(),
+					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
 
 	}

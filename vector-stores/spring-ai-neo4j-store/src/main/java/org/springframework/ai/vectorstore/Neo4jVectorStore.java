@@ -29,6 +29,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -224,15 +225,19 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		var node = neoRecord.get("node").asNode();
 		var score = neoRecord.get("score").asFloat();
 		var metaData = new HashMap<String, Object>();
-		metaData.put("distance", 1 - score);
+		metaData.put(DocumentMetadata.DISTANCE.value(), 1 - score);
 		node.keys().forEach(key -> {
 			if (key.startsWith("metadata.")) {
 				metaData.put(key.substring(key.indexOf(".") + 1), node.get(key).asObject());
 			}
 		});
 
-		return new Document(node.get(this.config.idProperty).asString(), node.get("text").asString(),
-				Map.copyOf(metaData));
+		return Document.builder()
+			.id(node.get(this.config.idProperty).asString())
+			.content(node.get("text").asString())
+			.metadata(Map.copyOf(metaData))
+			.score((double) score)
+			.build();
 	}
 
 	@Override

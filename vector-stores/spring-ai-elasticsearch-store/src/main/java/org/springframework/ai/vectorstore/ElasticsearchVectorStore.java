@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -210,20 +211,24 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
-		document.getMetadata().put("distance", calculateDistance(hit.score().floatValue()));
-		return document;
+		Document.Builder documentBuilder = document.mutate();
+		if (hit.score() != null) {
+			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));
+			documentBuilder.score(normalizeSimilarityScore(hit.score()));
+		}
+		return documentBuilder.build();
 	}
 
 	// more info on score/distance calculation
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html#knn-similarity-search
-	private float calculateDistance(Float score) {
+	private double normalizeSimilarityScore(double score) {
 		switch (this.options.getSimilarity()) {
 			case l2_norm:
 				// the returned value of l2_norm is the opposite of the other functions
 				// (closest to zero means more accurate), so to make it consistent
 				// with the other functions the reverse is returned applying a "1-"
 				// to the standard transformation
-				return (float) (1 - (java.lang.Math.sqrt((1 / score) - 1)));
+				return (1 - (java.lang.Math.sqrt((1 / score) - 1)));
 			// cosine and dot_product
 			default:
 				return (2 * score) - 1;

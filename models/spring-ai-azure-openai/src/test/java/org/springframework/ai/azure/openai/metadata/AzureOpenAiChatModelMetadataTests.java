@@ -128,7 +128,7 @@ class AzureOpenAiChatModelMetadataTests {
 
 		assertThat(chatGenerationMetadata).isNotNull();
 		assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
-		assertContentFilterResults(chatGenerationMetadata.getContentFilterMetadata());
+		assertContentFilterResults(chatGenerationMetadata.get("contentFilterResults"));
 	}
 
 	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,

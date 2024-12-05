@@ -30,6 +30,7 @@ import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -138,7 +139,7 @@ class CassandraVectorStoreIT {
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
 				assertThat(resultDoc.getMetadata()).hasSize(2);
-				assertThat(resultDoc.getMetadata()).containsKeys("meta1", CassandraVectorStore.SIMILARITY_FIELD_NAME);
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 
 				// Remove all documents from the store
 				store.delete(documents().stream().map(doc -> doc.getId()).toList());
@@ -174,7 +175,7 @@ class CassandraVectorStoreIT {
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
 				assertThat(resultDoc.getMetadata()).hasSize(1);
-				assertThat(resultDoc.getMetadata()).containsKey(CassandraVectorStore.SIMILARITY_FIELD_NAME);
+				assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
 				// Remove all documents from the store
 				store.delete(documents().stream().map(doc -> doc.getId()).toList());
@@ -359,7 +360,7 @@ class CassandraVectorStoreIT {
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", CassandraVectorStore.SIMILARITY_FIELD_NAME);
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				store.delete(List.of(document.getId()));
 			}
@@ -375,16 +376,14 @@ class CassandraVectorStoreIT {
 				List<Document> fullResult = store
 					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get(CassandraVectorStore.SIMILARITY_FIELD_NAME))
-					.toList();
+				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-				assertThat(distances).hasSize(3);
+				assertThat(scores).hasSize(3);
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-				List<Document> results = store
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(threshold));
+				List<Document> results = store.similaritySearch(
+						SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(similarityThreshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -393,7 +392,8 @@ class CassandraVectorStoreIT {
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-				assertThat(resultDoc.getMetadata()).containsKeys("meta1", CassandraVectorStore.SIMILARITY_FIELD_NAME);
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
+				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 			}
 		});
 	}

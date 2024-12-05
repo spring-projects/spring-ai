@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
 import org.springframework.core.ParameterizedTypeReference;
 
 /**
@@ -92,6 +91,23 @@ public interface FunctionCallback {
 	}
 
 	/**
+	 * Describes the type of the schema used to describe the input parameters of the
+	 * function.
+	 */
+	enum SchemaType {
+
+		/**
+		 * JSON schema
+		 */
+		JSON_SCHEMA,
+		/**
+		 * Open API schema
+		 */
+		OPEN_API_SCHEMA
+
+	}
+
+	/**
 	 * Builder for creating a {@link FunctionCallback} instance. This is a hierarchical
 	 * builder with the following structure:
 	 * <ul>
@@ -101,37 +117,6 @@ public interface FunctionCallback {
 	 * </ul>
 	 */
 	interface Builder {
-
-		/**
-		 * Function description. This description is used by the model do decide if the
-		 * function should be called or not.
-		 */
-		Builder description(String description);
-
-		/**
-		 * Specifies what {@link SchemaType} is used by the AI model to validate the
-		 * function input arguments. Most models use JSON Schema, except Vertex AI that
-		 * uses OpenAPI types.
-		 */
-		Builder schemaType(SchemaType schemaType);
-
-		/**
-		 * Function response converter. The default implementation converts the output
-		 * into String before sending it to the Model. Provide a custom function
-		 * responseConverter implementation to override this.
-		 */
-		Builder responseConverter(Function<Object, String> responseConverter);
-
-		/**
-		 * You can provide the Input Type Schema directly. In this case it won't be
-		 * generated from the inputType.
-		 */
-		Builder inputTypeSchema(String inputTypeSchema);
-
-		/**
-		 * Custom object mapper for JSON operations.
-		 */
-		Builder objectMapper(ObjectMapper objectMapper);
 
 		/**
 		 * Builds a {@link Function} invoking {@link FunctionCallback} instance.
@@ -160,13 +145,48 @@ public interface FunctionCallback {
 
 	}
 
+	interface CommonCallbackInvokingSpec<B extends CommonCallbackInvokingSpec<B>> {
+
+		/**
+		 * Function description. This description is used by the model to decide if the
+		 * function should be called or not.
+		 */
+		B description(String description);
+
+		/**
+		 * Specifies what {@link SchemaType} is used by the AI model to validate the
+		 * function input arguments. Most models use JSON Schema, except Vertex AI that
+		 * uses OpenAPI types.
+		 */
+		B schemaType(SchemaType schemaType);
+
+		/**
+		 * Function response converter. The default implementation converts the output
+		 * into String before sending it to the Model. Provide a custom function
+		 * responseConverter implementation to override this.
+		 */
+		B responseConverter(Function<Object, String> responseConverter);
+
+		/**
+		 * You can provide the Input Type Schema directly. In this case it won't be
+		 * generated from the inputType.
+		 */
+		B inputTypeSchema(String inputTypeSchema);
+
+		/**
+		 * Custom object mapper for JSON operations.
+		 */
+		B objectMapper(ObjectMapper objectMapper);
+
+	}
+
 	/**
 	 * {@link Function} invoking builder interface.
 	 *
 	 * @param <I> Function input type.
 	 * @param <O> Function output type.
 	 */
-	interface FunctionInvokingSpec<I, O> {
+	interface FunctionInvokingSpec<I, O> extends CommonCallbackInvokingSpec<FunctionInvokingSpec<I, O>> {
 
 		/**
 		 * Function input type. The input type is used to validate the function input
@@ -191,7 +211,7 @@ public interface FunctionCallback {
 	/**
 	 * Method invoking builder interface.
 	 */
-	interface MethodInvokingSpec {
+	interface MethodInvokingSpec extends CommonCallbackInvokingSpec<MethodInvokingSpec> {
 
 		/**
 		 * Optional function name. If not provided the method name is used as the

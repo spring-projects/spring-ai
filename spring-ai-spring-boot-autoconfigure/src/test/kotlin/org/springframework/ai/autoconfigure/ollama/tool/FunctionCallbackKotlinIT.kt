@@ -106,10 +106,10 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 		@Bean
 		open fun weatherFunctionInfo(): FunctionCallback {
 			return FunctionCallback.builder()
+				.function("WeatherInfo", MockKotlinWeatherService())
 				.description(
 					"Find the weather conditions, forecasts, and temperatures for a location, like a city or state."
 				)
-				.function("WeatherInfo", MockKotlinWeatherService())
 				.inputType(KotlinRequest::class.java)
 				.build()
 		}
