@@ -387,7 +387,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE.value(), operationName)
 			.withCollectionName(this.indexName)

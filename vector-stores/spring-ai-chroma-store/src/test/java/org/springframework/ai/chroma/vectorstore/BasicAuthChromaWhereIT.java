@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.chroma.vectorstore;
 
 import java.util.List;
 import java.util.Map;
@@ -26,12 +26,15 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-import org.springframework.ai.ChromaImage;
-import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.chroma.ChromaImage;
+import org.springframework.ai.chroma.api.ChromaApi;
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -110,7 +113,10 @@ public class BasicAuthChromaWhereIT {
 
 		@Bean
 		public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-			return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection", true);
+			return ChromaVectorStore.builder(embeddingModel, chromaApi)
+				.collectionName("TestCollection")
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean

@@ -19,8 +19,14 @@ package org.springframework.ai.vectorstore;
 import java.util.List;
 import java.util.Optional;
 
+import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.lang.Nullable;
 
 /**
  * The {@code VectorStore} interface defines the operations for managing and querying
@@ -73,6 +79,58 @@ public interface VectorStore extends DocumentWriter {
 	 */
 	default List<Document> similaritySearch(String query) {
 		return this.similaritySearch(SearchRequest.query(query));
+	}
+
+	/**
+	 * Builder interface for creating VectorStore instances. Implements a fluent builder
+	 * pattern for configuring observation-related settings.
+	 *
+	 * @param <T> the concrete builder type, enabling method chaining with the correct
+	 * return type
+	 */
+	interface Builder<T extends Builder<T>> {
+
+		/**
+		 * Sets the registry for collecting observations and metrics. Defaults to
+		 * {@link ObservationRegistry#NOOP} if not specified.
+		 * @param observationRegistry the registry to use for observations
+		 * @return the builder instance for method chaining
+		 */
+		T observationRegistry(ObservationRegistry observationRegistry);
+
+		/**
+		 * Sets a custom convention for creating observations. If not specified,
+		 * {@link DefaultVectorStoreObservationConvention} will be used.
+		 * @param convention the custom observation convention to use
+		 * @return the builder instance for method chaining
+		 */
+		T customObservationConvention(VectorStoreObservationConvention convention);
+
+		/**
+		 * Returns the configured embedding model.
+		 * @return the embedding model, never null
+		 */
+		EmbeddingModel embeddingModel();
+
+		/**
+		 * Returns the configured observation registry.
+		 * @return the observation registry, never null
+		 */
+		ObservationRegistry observationRegistry();
+
+		/**
+		 * Returns the configured custom observation convention.
+		 * @return the custom observation convention, may be null
+		 */
+		@Nullable
+		VectorStoreObservationConvention customObservationConvention();
+
+		/**
+		 * Builds and returns a new VectorStore instance with the configured settings.
+		 * @return a new VectorStore instance
+		 */
+		VectorStore build();
+
 	}
 
 }

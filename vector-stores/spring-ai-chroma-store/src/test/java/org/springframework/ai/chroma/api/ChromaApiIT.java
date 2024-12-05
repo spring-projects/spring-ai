@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chroma;
+package org.springframework.ai.chroma.api;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,15 +26,15 @@ import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.ChromaImage;
-import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
-import org.springframework.ai.chroma.ChromaApi.Collection;
-import org.springframework.ai.chroma.ChromaApi.GetEmbeddingsRequest;
-import org.springframework.ai.chroma.ChromaApi.QueryRequest;
+import org.springframework.ai.chroma.ChromaImage;
+import org.springframework.ai.chroma.api.ChromaApi.AddEmbeddingsRequest;
+import org.springframework.ai.chroma.api.ChromaApi.Collection;
+import org.springframework.ai.chroma.api.ChromaApi.GetEmbeddingsRequest;
+import org.springframework.ai.chroma.api.ChromaApi.QueryRequest;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -208,7 +208,7 @@ public class ChromaApiIT {
 		assertThat(collection).isNotNull();
 		assertThat(collection.name()).isEqualTo("test-collection");
 
-		ChromaVectorStore store = new ChromaVectorStore.Builder(this.embeddingModel, this.chromaApi)
+		ChromaVectorStore store = new ChromaVectorStore.ChromaBuilder(this.embeddingModel, this.chromaApi)
 			.collectionName("test-collection")
 			.initializeImmediately(true)
 			.build();
@@ -219,7 +219,7 @@ public class ChromaApiIT {
 
 	@Test
 	void shouldCreateNewCollectionWhenSchemaInitializationEnabled() {
-		ChromaVectorStore store = new ChromaVectorStore.Builder(this.embeddingModel, this.chromaApi)
+		ChromaVectorStore store = new ChromaVectorStore.ChromaBuilder(this.embeddingModel, this.chromaApi)
 			.collectionName("new-collection")
 			.initializeSchema(true)
 			.initializeImmediately(true)
@@ -235,12 +235,11 @@ public class ChromaApiIT {
 
 	@Test
 	void shouldFailWhenCollectionDoesNotExist() {
-		assertThatThrownBy(
-				() -> new ChromaVectorStore.Builder(this.embeddingModel, this.chromaApi).collectionName("non-existent")
-					.initializeSchema(false)
-					.initializeImmediately(true)
-					.build())
-			.isInstanceOf(IllegalStateException.class)
+		assertThatThrownBy(() -> new ChromaVectorStore.ChromaBuilder(this.embeddingModel, this.chromaApi)
+			.collectionName("non-existent")
+			.initializeSchema(false)
+			.initializeImmediately(true)
+			.build()).isInstanceOf(IllegalStateException.class)
 			.hasMessage("Failed to initialize ChromaVectorStore")
 			.hasCauseInstanceOf(RuntimeException.class)
 			.hasRootCauseMessage(

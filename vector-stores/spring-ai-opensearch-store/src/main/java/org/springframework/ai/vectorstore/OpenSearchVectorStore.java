@@ -274,7 +274,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
 			.withCollectionName(this.index)
 			.withDimensions(this.embeddingModel.dimensions())
