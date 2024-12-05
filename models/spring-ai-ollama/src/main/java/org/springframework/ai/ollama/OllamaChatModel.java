@@ -81,6 +81,22 @@ import org.springframework.util.StringUtils;
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
 
+	private static final String DONE = "done";
+
+	private static final String METADATA_PROMPT_EVAL_COUNT = "prompt-eval-count";
+
+	private static final String METADATA_EVAL_COUNT = "eval-count";
+
+	private static final String METADATA_CREATED_AT = "created-at";
+
+	private static final String METADATA_TOTAL_DURATION = "total-duration";
+
+	private static final String METADATA_LOAD_DURATION = "load-duration";
+
+	private static final String METADATA_PROMPT_EVAL_DURATION = "prompt-eval-duration";
+
+	private static final String METADATA_EVAL_DURATION = "eval-duration";
+
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private final OllamaApi chatApi;
@@ -126,18 +142,18 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		Duration totalDuration = response.getTotalDuration();
 
 		if (previousChatResponse != null && previousChatResponse.getMetadata() != null) {
-			if (previousChatResponse.getMetadata().get("eval-duration") != null) {
-				evalDuration = evalDuration.plus(previousChatResponse.getMetadata().get("eval-duration"));
+			if (previousChatResponse.getMetadata().get(METADATA_EVAL_DURATION) != null) {
+				evalDuration = evalDuration.plus(previousChatResponse.getMetadata().get(METADATA_EVAL_DURATION));
 			}
-			if (previousChatResponse.getMetadata().get("prompt-eval-duration") != null) {
+			if (previousChatResponse.getMetadata().get(METADATA_PROMPT_EVAL_DURATION) != null) {
 				promptEvalDuration = promptEvalDuration
-					.plus(previousChatResponse.getMetadata().get("prompt-eval-duration"));
+					.plus(previousChatResponse.getMetadata().get(METADATA_PROMPT_EVAL_DURATION));
 			}
-			if (previousChatResponse.getMetadata().get("load-duration") != null) {
-				loadDuration = loadDuration.plus(previousChatResponse.getMetadata().get("load-duration"));
+			if (previousChatResponse.getMetadata().get(METADATA_LOAD_DURATION) != null) {
+				loadDuration = loadDuration.plus(previousChatResponse.getMetadata().get(METADATA_LOAD_DURATION));
 			}
-			if (previousChatResponse.getMetadata().get("total-duration") != null) {
-				totalDuration = totalDuration.plus(previousChatResponse.getMetadata().get("total-duration"));
+			if (previousChatResponse.getMetadata().get(METADATA_TOTAL_DURATION) != null) {
+				totalDuration = totalDuration.plus(previousChatResponse.getMetadata().get(METADATA_TOTAL_DURATION));
 			}
 			if (previousChatResponse.getMetadata().getUsage() != null) {
 				promptTokens += previousChatResponse.getMetadata().getUsage().getPromptTokens();
@@ -151,14 +167,14 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		return ChatResponseMetadata.builder()
 			.withUsage(aggregatedUsage)
 			.withModel(response.model())
-			.withKeyValue("created-at", response.createdAt())
-			.withKeyValue("eval-duration", evalDuration)
-			.withKeyValue("eval-count", aggregatedUsage.getGenerationTokens().intValue())
-			.withKeyValue("load-duration", loadDuration)
-			.withKeyValue("prompt-eval-duration", promptEvalDuration)
-			.withKeyValue("prompt-eval-count", aggregatedUsage.getPromptTokens().intValue())
-			.withKeyValue("total-duration", totalDuration)
-			.withKeyValue("done", response.done())
+			.withKeyValue(METADATA_CREATED_AT, response.createdAt())
+			.withKeyValue(METADATA_EVAL_DURATION, evalDuration)
+			.withKeyValue(METADATA_EVAL_COUNT, aggregatedUsage.getGenerationTokens().intValue())
+			.withKeyValue(METADATA_LOAD_DURATION, loadDuration)
+			.withKeyValue(METADATA_PROMPT_EVAL_DURATION, promptEvalDuration)
+			.withKeyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens().intValue())
+			.withKeyValue(METADATA_TOTAL_DURATION, totalDuration)
+			.withKeyValue(DONE, response.done())
 			.build();
 	}
 
