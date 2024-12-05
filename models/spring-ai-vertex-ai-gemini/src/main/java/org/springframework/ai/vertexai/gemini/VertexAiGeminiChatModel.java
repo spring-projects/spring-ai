@@ -54,7 +54,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
@@ -390,7 +390,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
 				candidateFinishReason);
 
-		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
+		GenerationMetadata generationMetadata = GenerationMetadata.builder()
 			.finishReason(candidateFinishReason.name())
 			.build();
 
@@ -411,14 +411,14 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 			AssistantMessage assistantMessage = new AssistantMessage("", messageMetadata, assistantToolCalls);
 
-			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+			return List.of(new Generation(assistantMessage, generationMetadata));
 		}
 		else {
 			List<Generation> generations = candidate.getContent()
 				.getPartsList()
 				.stream()
 				.map(part -> new AssistantMessage(part.getText(), messageMetadata))
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
+				.map(assistantMessage -> new Generation(assistantMessage, generationMetadata))
 				.toList();
 
 			return generations;

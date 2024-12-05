@@ -63,7 +63,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.PromptMetadata;
@@ -458,8 +458,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		}
 	}
 
-	private ChatGenerationMetadata generateChoiceMetadata(ChatChoice choice) {
-		return ChatGenerationMetadata.builder()
+	private GenerationMetadata generateChoiceMetadata(ChatChoice choice) {
+		return GenerationMetadata.builder()
 			.finishReason(String.valueOf(choice.getFinishReason()))
 			.metadata("contentFilterResults", choice.getContentFilterResults())
 			.build();

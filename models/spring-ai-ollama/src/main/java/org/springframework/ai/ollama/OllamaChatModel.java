@@ -31,7 +31,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
@@ -154,11 +154,9 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 				var assistantMessage = new AssistantMessage(ollamaResponse.message().content(), Map.of(), toolCalls);
 
-				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
+				GenerationMetadata generationMetadata = GenerationMetadata.NULL;
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.builder()
-						.finishReason(ollamaResponse.doneReason())
-						.build();
+					generationMetadata = GenerationMetadata.builder().finishReason(ollamaResponse.doneReason()).build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);
@@ -217,9 +215,9 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
 
-				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
+				GenerationMetadata generationMetadata = GenerationMetadata.NULL;
 				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.builder().finishReason(chunk.doneReason()).build();
+					generationMetadata = GenerationMetadata.builder().finishReason(chunk.doneReason()).build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);

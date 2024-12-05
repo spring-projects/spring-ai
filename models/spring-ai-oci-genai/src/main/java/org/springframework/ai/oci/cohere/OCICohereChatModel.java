@@ -41,7 +41,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -181,7 +181,7 @@ public class OCICohereChatModel implements ChatModel {
 		BaseChatResponse cr = ociChatResponse.getChatResult().getChatResponse();
 		if (cr instanceof CohereChatResponse resp) {
 			List<Generation> generations = new ArrayList<>();
-			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
+			GenerationMetadata metadata = GenerationMetadata.builder()
 				.finishReason(resp.getFinishReason().getValue())
 				.build();
 			AssistantMessage message = new AssistantMessage(resp.getText(), Map.of());

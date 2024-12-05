@@ -26,12 +26,12 @@ import java.util.Set;
 import org.springframework.util.Assert;
 
 /**
- * Default implementation of {@link ChatGenerationMetadata}.
+ * Default implementation of {@link GenerationMetadata}.
  *
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
+public class DefaultGenerationMetadata implements GenerationMetadata {
 
 	private final Map<String, Object> metadata;
 
@@ -40,13 +40,13 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 	private final Set<String> contentFilters;
 
 	/**
-	 * Create a new {@link DefaultChatGenerationMetadata} instance.
+	 * Create a new {@link DefaultGenerationMetadata} instance.
 	 * @param metadata the metadata map, must not be null
 	 * @param finishReason the finish reason, may be null
 	 * @param contentFilters the content filters, must not be null
 	 * @throws IllegalArgumentException if metadata or contentFilters is null
 	 */
-	DefaultChatGenerationMetadata(Map<String, Object> metadata, String finishReason, Set<String> contentFilters) {
+	DefaultGenerationMetadata(Map<String, Object> metadata, String finishReason, Set<String> contentFilters) {
 		Assert.notNull(metadata, "Metadata must not be null");
 		Assert.notNull(contentFilters, "Content filters must not be null");
 		this.metadata = metadata;
@@ -107,15 +107,15 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		DefaultChatGenerationMetadata other = (DefaultChatGenerationMetadata) obj;
+		DefaultGenerationMetadata other = (DefaultGenerationMetadata) obj;
 		return Objects.equals(this.metadata, other.metadata) && Objects.equals(this.finishReason, other.finishReason)
 				&& Objects.equals(this.contentFilters, other.contentFilters);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("DefaultChatGenerationMetadata[finishReason='%s', filters=%d, metadata=%d]",
-				this.finishReason, this.contentFilters.size(), this.metadata.size());
+		return String.format("DefaultGenerationMetadata[finishReason='%s', filters=%d, metadata=%d]", this.finishReason,
+				this.contentFilters.size(), this.metadata.size());
 	}
 
 }

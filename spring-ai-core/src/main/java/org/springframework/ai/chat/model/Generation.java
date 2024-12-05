@@ -19,7 +19,7 @@ package org.springframework.ai.chat.model;
 import java.util.Objects;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.model.ModelResult;
 
 /**
@@ -29,15 +29,15 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 	private final AssistantMessage assistantMessage;
 
-	private ChatGenerationMetadata chatGenerationMetadata;
+	private GenerationMetadata generationMetadata;
 
 	public Generation(AssistantMessage assistantMessage) {
-		this(assistantMessage, ChatGenerationMetadata.NULL);
+		this(assistantMessage, GenerationMetadata.NULL);
 	}
 
-	public Generation(AssistantMessage assistantMessage, ChatGenerationMetadata chatGenerationMetadata) {
+	public Generation(AssistantMessage assistantMessage, GenerationMetadata generationMetadata) {
 		this.assistantMessage = assistantMessage;
-		this.chatGenerationMetadata = chatGenerationMetadata;
+		this.generationMetadata = generationMetadata;
 	}
 
 	@Override
@@ -46,9 +46,9 @@ public class Generation implements ModelResult<AssistantMessage> {
 	}
 
 	@Override
-	public ChatGenerationMetadata getMetadata() {
-		ChatGenerationMetadata chatGenerationMetadata = this.chatGenerationMetadata;
-		return chatGenerationMetadata != null ? chatGenerationMetadata : ChatGenerationMetadata.NULL;
+	public GenerationMetadata getMetadata() {
+		GenerationMetadata generationMetadata = this.generationMetadata;
+		return generationMetadata != null ? generationMetadata : GenerationMetadata.NULL;
 	}
 
 	@Override
@@ -60,18 +60,18 @@ public class Generation implements ModelResult<AssistantMessage> {
 			return false;
 		}
 		return Objects.equals(this.assistantMessage, that.assistantMessage)
-				&& Objects.equals(this.chatGenerationMetadata, that.chatGenerationMetadata);
+				&& Objects.equals(this.generationMetadata, that.generationMetadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.assistantMessage, this.chatGenerationMetadata);
+		return Objects.hash(this.assistantMessage, this.generationMetadata);
 	}
 
 	@Override
 	public String toString() {
-		return "Generation[" + "assistantMessage=" + this.assistantMessage + ", chatGenerationMetadata="
-				+ this.chatGenerationMetadata + ']';
+		return "Generation[" + "assistantMessage=" + this.assistantMessage + ", generationMetadata="
+				+ this.generationMetadata + ']';
 	}
 
 }

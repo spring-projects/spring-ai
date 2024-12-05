@@ -21,14 +21,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata.Builder;
+import org.springframework.ai.chat.metadata.GenerationMetadata.Builder;
 
 /**
  * @author Christian Tzolov
  * @since 1.0.0
  */
 
-public class DefaultChatGenerationMetadataBuilder implements ChatGenerationMetadata.Builder {
+public class DefaultGenerationMetadataBuilder implements GenerationMetadata.Builder {
 
 	private String finishReason;
 
@@ -36,7 +36,7 @@ public class DefaultChatGenerationMetadataBuilder implements ChatGenerationMetad
 
 	private Set<String> contentFilters = new HashSet<>();
 
-	DefaultChatGenerationMetadataBuilder() {
+	DefaultGenerationMetadataBuilder() {
 	}
 
 	@Override
@@ -70,8 +70,8 @@ public class DefaultChatGenerationMetadataBuilder implements ChatGenerationMetad
 	}
 
 	@Override
-	public ChatGenerationMetadata build() {
-		return new DefaultChatGenerationMetadata(this.metadata, this.finishReason, this.contentFilters);
+	public GenerationMetadata build() {
+		return new DefaultGenerationMetadata(this.metadata, this.finishReason, this.contentFilters);
 	}
 
 }

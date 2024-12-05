@@ -199,13 +199,13 @@ Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-co
 public class Generation implements ModelResult<AssistantMessage> {
 
 	private final AssistantMessage assistantMessage;
-	private ChatGenerationMetadata chatGenerationMetadata;
+	private GenerationMetadata generationMetadata;
 
 	@Override
 	public AssistantMessage getOutput() {...}
 
 	@Override
-	public ChatGenerationMetadata getMetadata() {...}
+	public GenerationMetadata getMetadata() {...}
 
     // other methods omitted
 }

@@ -35,7 +35,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -88,7 +88,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		List<Generation> generations = response.content()
 			.stream()
 			.map(content -> new Generation(new AssistantMessage(content.text()),
-					ChatGenerationMetadata.builder().finishReason(response.stopReason()).build()))
+					GenerationMetadata.builder().finishReason(response.stopReason()).build()))
 			.toList();
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
@@ -114,16 +114,16 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 				inputTokens.set(response.message().usage().inputTokens());
 			}
 			String content = response.type() == StreamingType.CONTENT_BLOCK_DELTA ? response.delta().text() : "";
-			ChatGenerationMetadata chatGenerationMetadata = null;
+			GenerationMetadata generationMetadata = null;
 			if (response.type() == StreamingType.MESSAGE_DELTA) {
-				chatGenerationMetadata = ChatGenerationMetadata.builder()
+				generationMetadata = GenerationMetadata.builder()
 					.finishReason(response.delta().stopReason())
 					.metadata("usage",
 							new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
 									response.usage().outputTokens()))
 					.build();
 			}
-			return new ChatResponse(List.of(new Generation(new AssistantMessage(content), chatGenerationMetadata)));
+			return new ChatResponse(List.of(new Generation(new AssistantMessage(content), generationMetadata)));
 		});
 	}
 

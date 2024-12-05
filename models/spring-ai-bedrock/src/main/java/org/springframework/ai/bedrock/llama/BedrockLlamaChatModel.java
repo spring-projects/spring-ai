@@ -25,7 +25,7 @@ import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatRequest;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -70,7 +70,7 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 		LlamaChatResponse response = this.chatApi.chatCompletion(request);
 
 		return new ChatResponse(List.of(new Generation(new AssistantMessage(response.generation()),
-				ChatGenerationMetadata.builder()
+				GenerationMetadata.builder()
 					.finishReason(response.stopReason().name())
 					.metadata("usage", extractUsage(response))
 					.build())));
@@ -86,7 +86,7 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
 			return new ChatResponse(List.of(new Generation(new AssistantMessage(response.generation()),
-					ChatGenerationMetadata.builder()
+					GenerationMetadata.builder()
 						.finishReason(stopReason)
 						.metadata("usage", extractUsage(response))
 						.build())));

@@ -25,7 +25,7 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -81,15 +81,15 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
-			ChatGenerationMetadata chatGenerationMetadata = null;
+			GenerationMetadata generationMetadata = null;
 			if (response.amazonBedrockInvocationMetrics() != null) {
-				chatGenerationMetadata = ChatGenerationMetadata.builder()
+				generationMetadata = GenerationMetadata.builder()
 					.finishReason(stopReason)
 					.metadata("metrics", response.amazonBedrockInvocationMetrics())
 					.build();
 			}
 			return new ChatResponse(
-					List.of(new Generation(new AssistantMessage(response.completion()), chatGenerationMetadata)));
+					List.of(new Generation(new AssistantMessage(response.completion()), generationMetadata)));
 		});
 	}
 

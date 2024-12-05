@@ -45,7 +45,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
@@ -293,14 +293,14 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
 			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
-					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()))
+					GenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
 			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
-					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
+					GenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			allGenerations.add(generation);
 		}
 
@@ -324,7 +324,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 			Generation toolCallGeneration = new Generation(assistantMessage,
-					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
+					GenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			allGenerations.add(toolCallGeneration);
 		}
 
