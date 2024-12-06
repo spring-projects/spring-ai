@@ -26,15 +26,15 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.document.DocumentMetadata;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.typesense.TypesenseContainer;
 import org.typesense.api.Client;
 import org.typesense.api.Configuration;
 import org.typesense.resources.Node;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
@@ -57,9 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TypesenseVectorStoreIT {
 
 	@Container
-	private static GenericContainer<?> typesenseContainer = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
-		.withExposedPorts(8108)
-		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors");
+	private static TypesenseContainer typesense = new TypesenseContainer(TypesenseImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -252,10 +250,9 @@ public class TypesenseVectorStoreIT {
 		@Bean
 		public Client typesenseClient() {
 			List<Node> nodes = new ArrayList<>();
-			nodes
-				.add(new Node("http", typesenseContainer.getHost(), typesenseContainer.getMappedPort(8108).toString()));
+			nodes.add(new Node("http", typesense.getHost(), typesense.getMappedPort(8108).toString()));
 
-			Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), "xyz");
+			Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), typesense.getApiKey());
 			return new Client(configuration);
 		}
 
