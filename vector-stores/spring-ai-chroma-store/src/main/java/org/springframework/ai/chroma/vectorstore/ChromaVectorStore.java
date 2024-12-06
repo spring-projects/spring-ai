@@ -218,7 +218,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 				metadata.put(DocumentMetadata.DISTANCE.value(), distance);
 				Document document = Document.builder()
 					.id(id)
-					.content(content)
+					.text(content)
 					.metadata(metadata)
 					.score(1.0 - distance)
 					.build();

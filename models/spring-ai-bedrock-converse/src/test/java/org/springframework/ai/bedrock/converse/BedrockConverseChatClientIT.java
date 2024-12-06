@@ -79,7 +79,7 @@ class BedrockConverseChatClientIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -196,7 +196,7 @@ class BedrockConverseChatClientIT {
 		String generationTextFromStream = chatResponses
 				.stream()
 				.filter(cr -> cr.getResult() != null)
-				.map(cr -> cr.getResult().getOutput().getContent())
+				.map(cr -> cr.getResult().getOutput().getText())
 				.collect(Collectors.joining());
 		// @formatter:on
 
@@ -259,7 +259,7 @@ class BedrockConverseChatClientIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -340,7 +340,7 @@ class BedrockConverseChatClientIT {
 
 		String content = chatResponses.stream()
 			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 

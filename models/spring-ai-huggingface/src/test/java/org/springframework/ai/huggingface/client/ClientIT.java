@@ -51,14 +51,14 @@ public class ClientIT {
 				""";
 		Prompt prompt = new Prompt(mistral7bInstruct);
 		ChatResponse chatResponse = this.huggingfaceChatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 		String expectedResponse = """
 				{
 				  "name": "John",
 				  "lastname": "Smith",
 				  "address": "#1 Samuel St."
 				}""";
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo(expectedResponse);
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo(expectedResponse);
 		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsKey("generated_tokens");
 		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsEntry("generated_tokens", 32);
 

@@ -359,11 +359,10 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<MediaContent> contentList = new ArrayList<>(
-								List.of(new MediaContent(message.getContent())));
+						List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(message.getText())));
 
 						contentList.addAll(userMessage.getMedia()
 							.stream()
@@ -387,7 +386,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {

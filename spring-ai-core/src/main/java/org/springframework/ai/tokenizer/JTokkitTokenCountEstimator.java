@@ -56,8 +56,8 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 	public int estimate(MediaContent content) {
 		int tokenCount = 0;
 
-		if (content.getContent() != null) {
-			tokenCount += this.estimate(content.getContent());
+		if (content.getText() != null) {
+			tokenCount += this.estimate(content.getText());
 		}
 
 		if (!CollectionUtils.isEmpty(content.getMedia())) {

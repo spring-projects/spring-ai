@@ -70,7 +70,7 @@ public class MiniMaxFunctionCallbackIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		});
 	}
@@ -93,7 +93,7 @@ public class MiniMaxFunctionCallbackIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 

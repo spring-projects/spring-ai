@@ -129,7 +129,7 @@ public class OpenAiAutoConfigurationIT {
 			String response = responseFlux.collectList()
 				.block()
 				.stream()
-				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
@@ -147,7 +147,7 @@ public class OpenAiAutoConfigurationIT {
 			Usage[] streamingTokenUsage = new Usage[1];
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
 				streamingTokenUsage[0] = chatResponse.getMetadata().getUsage();
-				return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getContent() : "";
+				return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getText() : "";
 			}).collect(Collectors.joining());
 
 			assertThat(streamingTokenUsage[0].getPromptTokens()).isGreaterThan(0);

@@ -115,8 +115,8 @@ public class DefaultChatClient implements ChatClient {
 			Message lastMessage = messages.get(messages.size() - 1);
 			if (lastMessage.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) lastMessage;
-				if (StringUtils.hasText(userMessage.getContent())) {
-					userText = lastMessage.getContent();
+				if (StringUtils.hasText(userMessage.getText())) {
+					userText = lastMessage.getText();
 				}
 				Collection<Media> messageMedia = userMessage.getMedia();
 				if (!CollectionUtils.isEmpty(messageMedia)) {
@@ -493,10 +493,10 @@ public class DefaultChatClient implements ChatClient {
 		@Nullable
 		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
 			if (chatResponse == null || chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null
-					|| chatResponse.getResult().getOutput().getContent() == null) {
+					|| chatResponse.getResult().getOutput().getText() == null) {
 				return null;
 			}
-			return chatResponse.getResult().getOutput().getContent();
+			return chatResponse.getResult().getOutput().getText();
 		}
 
 		@Override
@@ -562,10 +562,10 @@ public class DefaultChatClient implements ChatClient {
 		public Flux<String> content() {
 			return doGetObservableFluxChatResponse(this.request).map(r -> {
 				if (r.getResult() == null || r.getResult().getOutput() == null
-						|| r.getResult().getOutput().getContent() == null) {
+						|| r.getResult().getOutput().getText() == null) {
 					return "";
 				}
-				return r.getResult().getOutput().getContent();
+				return r.getResult().getOutput().getText();
 			}).filter(StringUtils::hasLength);
 		}
 
@@ -1005,11 +1005,11 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		public String content() {
-			return doGetChatResponse(this.prompt).getResult().getOutput().getContent();
+			return doGetChatResponse(this.prompt).getResult().getOutput().getText();
 		}
 
 		public List<String> contents() {
-			return doGetChatResponse(this.prompt).getResults().stream().map(r -> r.getOutput().getContent()).toList();
+			return doGetChatResponse(this.prompt).getResults().stream().map(r -> r.getOutput().getText()).toList();
 		}
 
 		public ChatResponse chatResponse() {
@@ -1046,10 +1046,10 @@ public class DefaultChatClient implements ChatClient {
 		public Flux<String> content() {
 			return doGetFluxChatResponse(this.prompt).map(r -> {
 				if (r.getResult() == null || r.getResult().getOutput() == null
-						|| r.getResult().getOutput().getContent() == null) {
+						|| r.getResult().getOutput().getText() == null) {
 					return "";
 				}
-				return r.getResult().getOutput().getContent();
+				return r.getResult().getOutput().getText();
 			}).filter(StringUtils::hasLength);
 		}
 

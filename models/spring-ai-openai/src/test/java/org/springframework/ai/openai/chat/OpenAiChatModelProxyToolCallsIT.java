@@ -188,7 +188,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 		logger.info("Response: {}", chatResponse);
 
-		assertThat(chatResponse.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -220,7 +220,7 @@ class OpenAiChatModelProxyToolCallsIT {
 			.collectList()
 			.block()
 			.stream()
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", response);
@@ -306,7 +306,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 		logger.info("Response: {}", chatResponse);
 
-		assertThat(chatResponse.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -341,7 +341,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		String response = responses.collectList()
 			.block()
 			.stream()
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", response);

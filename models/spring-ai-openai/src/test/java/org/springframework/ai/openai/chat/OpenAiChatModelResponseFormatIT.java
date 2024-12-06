@@ -89,7 +89,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		assertThat(response).isNotNull();
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		logger.info("Response content: {}", content);
 
@@ -132,7 +132,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		assertThat(response).isNotNull();
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		logger.info("Response content: {}", content);
 
@@ -213,7 +213,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		assertThat(response).isNotNull();
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		logger.info("Response content: {}", content);
 

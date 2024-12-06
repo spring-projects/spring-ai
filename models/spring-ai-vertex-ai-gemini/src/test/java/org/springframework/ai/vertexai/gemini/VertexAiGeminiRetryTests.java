@@ -101,7 +101,7 @@ public class VertexAiGeminiRetryTests {
 
 		// Assertions
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent()).isEqualTo("Response");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

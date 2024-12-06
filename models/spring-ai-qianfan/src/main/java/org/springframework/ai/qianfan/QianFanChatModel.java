@@ -246,7 +246,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	public ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		var chatCompletionMessages = prompt.getInstructions()
 			.stream()
-			.map(m -> new ChatCompletionMessage(m.getContent(),
+			.map(m -> new ChatCompletionMessage(m.getText(),
 					ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
 			.toList();
 		var systemMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == Role.SYSTEM).toList();

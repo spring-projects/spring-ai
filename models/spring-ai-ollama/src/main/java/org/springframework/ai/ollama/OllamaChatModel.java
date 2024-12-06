@@ -256,7 +256,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions().stream().map(message -> {
 			if (message instanceof UserMessage userMessage) {
-				var messageBuilder = OllamaApi.Message.builder(Role.USER).withContent(message.getContent());
+				var messageBuilder = OllamaApi.Message.builder(Role.USER).withContent(message.getText());
 				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 					messageBuilder.withImages(
 							userMessage.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
@@ -264,7 +264,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 				return List.of(messageBuilder.build());
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(OllamaApi.Message.builder(Role.SYSTEM).withContent(systemMessage.getContent()).build());
+				return List.of(OllamaApi.Message.builder(Role.SYSTEM).withContent(systemMessage.getText()).build());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
 				List<ToolCall> toolCalls = null;
@@ -276,7 +276,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 					}).toList();
 				}
 				return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
-					.withContent(assistantMessage.getContent())
+					.withContent(assistantMessage.getText())
 					.withToolCalls(toolCalls)
 					.build());
 			}

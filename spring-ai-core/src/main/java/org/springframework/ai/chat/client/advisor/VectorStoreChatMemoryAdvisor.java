@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,13 +34,14 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.util.StringUtils;
 
 /**
  * Memory is retrieved from a VectorStore added into the prompt's system text.
+ *
+ * This only works for text based exchanges with the models, not multi-modal exchanges.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
@@ -146,7 +146,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		List<Document> documents = this.getChatMemoryStore().similaritySearch(searchRequest);
 
 		String longTermMemory = documents.stream()
-			.map(Content::getContent)
+			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		Map<String, Object> advisedSystemParams = new HashMap<>(request.systemParams());
@@ -186,13 +186,16 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 				metadata.put(DOCUMENT_METADATA_MESSAGE_TYPE, message.getMessageType().name());
 				if (message instanceof UserMessage userMessage) {
 					return Document.builder()
-						.content(userMessage.getContent())
-						.media(new ArrayList<>(userMessage.getMedia()))
+						.text(userMessage.getText())
+						// userMessage.getMedia().get(0).getId()
+						// TODO vector store for memory would not store this into the
+						// vector store, could store an 'id' instead
+						// .media(userMessage.getMedia())
 						.metadata(metadata)
 						.build();
 				}
 				else if (message instanceof AssistantMessage assistantMessage) {
-					return Document.builder().content(assistantMessage.getContent()).metadata(metadata).build();
+					return Document.builder().text(assistantMessage.getText()).metadata(metadata).build();
 				}
 				throw new RuntimeException("Unknown message type: " + message.getMessageType());
 			})

@@ -51,7 +51,6 @@ import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBui
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.MultimodalInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.VideoBuilder;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
@@ -149,43 +148,41 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getContent()));
 		}
 
-		if (!CollectionUtils.isEmpty(document.getMedia())) {
-
-			for (Media media : document.getMedia()) {
-				if (media.getMimeType().isCompatibleWith(TEXT_MIME_TYPE)) {
-					instanceBuilder.withText(media.getData().toString());
-					documentMetadata.put(ModalityType.TEXT,
-							new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-					if (StringUtils.hasText(document.getContent())) {
-						logger.warn("Media type String overrides the Document text content!");
-					}
+		Media media = document.getMedia();
+		if (media != null) {
+			if (media.getMimeType().isCompatibleWith(TEXT_MIME_TYPE)) {
+				instanceBuilder.withText(media.getData().toString());
+				documentMetadata.put(ModalityType.TEXT,
+						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
+				if (StringUtils.hasText(document.getContent())) {
+					logger.warn("Media type String overrides the Document text content!");
 				}
-				else if (media.getMimeType().isCompatibleWith(IMAGE_MIME_TYPE)) {
-					if (SUPPORTED_IMAGE_MIME_SUB_TYPES.contains(media.getMimeType())) {
-						instanceBuilder
-							.withImage(ImageBuilder.of(media.getMimeType()).withImageData(media.getData()).build());
-						documentMetadata.put(ModalityType.IMAGE,
-								new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
-					}
-					else {
-						logger.warn("Unsupported image mime type: {}", media.getMimeType());
-						throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
-					}
-				}
-				else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
-					instanceBuilder.withVideo(VideoBuilder.of(media.getMimeType())
-						.withVideoData(media.getData())
-						.withStartOffsetSec(mergedOptions.getVideoStartOffsetSec())
-						.withEndOffsetSec(mergedOptions.getVideoEndOffsetSec())
-						.withIntervalSec(mergedOptions.getVideoIntervalSec())
-						.build());
-					documentMetadata.put(ModalityType.VIDEO,
+			}
+			else if (media.getMimeType().isCompatibleWith(IMAGE_MIME_TYPE)) {
+				if (SUPPORTED_IMAGE_MIME_SUB_TYPES.contains(media.getMimeType())) {
+					instanceBuilder
+						.withImage(ImageBuilder.of(media.getMimeType()).withImageData(media.getData()).build());
+					documentMetadata.put(ModalityType.IMAGE,
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
 				else {
-					logger.warn("Unsupported media type: {}", media.getMimeType());
-					throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
+					logger.warn("Unsupported image mime type: {}", media.getMimeType());
+					throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
 				}
+			}
+			else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
+				instanceBuilder.withVideo(VideoBuilder.of(media.getMimeType())
+					.withVideoData(media.getData())
+					.withStartOffsetSec(mergedOptions.getVideoStartOffsetSec())
+					.withEndOffsetSec(mergedOptions.getVideoEndOffsetSec())
+					.withIntervalSec(mergedOptions.getVideoIntervalSec())
+					.build());
+				documentMetadata.put(ModalityType.VIDEO,
+						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
+			}
+			else {
+				logger.warn("Unsupported media type: {}", media.getMimeType());
+				throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
 			}
 		}
 

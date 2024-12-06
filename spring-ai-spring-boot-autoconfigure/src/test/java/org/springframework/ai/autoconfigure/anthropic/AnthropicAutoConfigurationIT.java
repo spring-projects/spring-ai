@@ -66,7 +66,7 @@ public class AnthropicAutoConfigurationIT {
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 				var optoins = AnthropicChatOptions.builder().withMaxTokens(8192).build();
 				var response = chatModel.call(new Prompt("Tell me a joke", optoins));
-				assertThat(response.getResult().getOutput().getContent()).isNotEmpty();
+				assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 				logger.info("Response: " + response);
 			});
 	}
@@ -83,7 +83,7 @@ public class AnthropicAutoConfigurationIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();

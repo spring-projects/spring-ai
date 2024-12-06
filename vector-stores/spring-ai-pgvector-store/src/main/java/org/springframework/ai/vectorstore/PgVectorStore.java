@@ -508,7 +508,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			// @formatter:off
 			return Document.builder()
 				.id(id)
-				.content(content)
+				.text(content)
 				.metadata(metadata)
 				.score(1.0 - distance)
 				.build(); // @formatter:on

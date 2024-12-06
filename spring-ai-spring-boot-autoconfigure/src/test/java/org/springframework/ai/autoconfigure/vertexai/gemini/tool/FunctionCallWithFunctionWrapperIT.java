@@ -69,7 +69,7 @@ public class FunctionCallWithFunctionWrapperIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
 	}
 

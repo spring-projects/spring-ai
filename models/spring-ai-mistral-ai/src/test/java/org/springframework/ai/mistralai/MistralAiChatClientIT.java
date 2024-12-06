@@ -70,7 +70,7 @@ class MistralAiChatClientIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -85,7 +85,7 @@ class MistralAiChatClientIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 
 		// @formatter:off
 		response = ChatClient.create(this.chatModel).prompt()
@@ -96,7 +96,7 @@ class MistralAiChatClientIT {
 		// @formatter:on
 
 		logger.info("" + response);
-		assertThat(response.getResult().getOutput().getContent().toLowerCase()).containsAnyOf("blackbeard",
+		assertThat(response.getResult().getOutput().getText().toLowerCase()).containsAnyOf("blackbeard",
 				"bartholomew roberts");
 	}
 

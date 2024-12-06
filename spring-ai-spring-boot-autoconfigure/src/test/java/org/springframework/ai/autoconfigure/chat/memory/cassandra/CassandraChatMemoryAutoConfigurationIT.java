@@ -71,7 +71,7 @@ class CassandraChatMemoryAutoConfigurationIT {
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).hasSize(1);
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getMessageType())
 					.isEqualTo(MessageType.USER);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getContent()).isEqualTo("test question");
+				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getText()).isEqualTo("test question");
 
 				memory.clear(sessionId);
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).isEmpty();
@@ -81,10 +81,10 @@ class CassandraChatMemoryAutoConfigurationIT {
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).hasSize(2);
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getMessageType())
 					.isEqualTo(MessageType.USER);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getContent()).isEqualTo("test question");
+				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getText()).isEqualTo("test question");
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getMessageType())
 					.isEqualTo(MessageType.ASSISTANT);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getContent()).isEqualTo("test answer");
+				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getText()).isEqualTo("test answer");
 
 				CassandraChatMemoryProperties properties = context.getBean(CassandraChatMemoryProperties.class);
 				assertThat(properties.getTimeToLive()).isEqualTo(getTimeToLive());

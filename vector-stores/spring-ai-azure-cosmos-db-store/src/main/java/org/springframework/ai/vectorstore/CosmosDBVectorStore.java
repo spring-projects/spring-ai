@@ -340,7 +340,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.block();
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-				.map(doc -> Document.builder().id(doc.get("id").asText()).content(doc.get("content").asText()).build())
+				.map(doc -> Document.builder().id(doc.get("id").asText()).text(doc.get("content").asText()).build())
 				.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();

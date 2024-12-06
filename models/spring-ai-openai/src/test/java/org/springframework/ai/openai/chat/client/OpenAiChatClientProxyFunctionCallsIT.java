@@ -179,7 +179,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 
 		logger.info("Response: {}", chatResponse);
 
-		assertThat(chatResponse.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 }

@@ -59,7 +59,7 @@ public class MiniMaxChatOptionsTests {
 
 		// markSensitiveInfo is enabled by default
 		ChatResponse response = this.chatModel.call(new Prompt(messages));
-		String responseContent = response.getResult().getOutput().getContent();
+		String responseContent = response.getResult().getOutput().getText();
 
 		assertThat(responseContent).contains("133-**");
 		assertThat(responseContent).doesNotContain("133-12345678");
@@ -67,7 +67,7 @@ public class MiniMaxChatOptionsTests {
 		var chatOptions = MiniMaxChatOptions.builder().withMaskSensitiveInfo(false).build();
 
 		ChatResponse unmaskResponse = this.chatModel.call(new Prompt(messages, chatOptions));
-		String unmaskResponseContent = unmaskResponse.getResult().getOutput().getContent();
+		String unmaskResponseContent = unmaskResponse.getResult().getOutput().getText();
 
 		assertThat(unmaskResponseContent).contains("133-12345678");
 	}
@@ -97,7 +97,7 @@ public class MiniMaxChatOptionsTests {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, options));
-		String responseContent = response.getResult().getOutput().getContent();
+		String responseContent = response.getResult().getOutput().getText();
 
 		assertThat(responseContent).contains("40");
 	}
@@ -132,7 +132,7 @@ public class MiniMaxChatOptionsTests {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);

@@ -656,7 +656,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 			return Document.builder()
 				.id(rs.getString(1))
-				.content(rs.getString(2))
+				.text(rs.getString(2))
 				.metadata(metadata)
 				.score(1 - rs.getDouble(5))
 				.build();

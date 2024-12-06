@@ -268,7 +268,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				}
 				return Document.builder()
 					.id(docId)
-					.content(content)
+					.text(content)
 					.metadata((metadata != null) ? metadata.getInnerMap() : Map.of())
 					.score((double) getResultSimilarity(rowRecord))
 					.build();

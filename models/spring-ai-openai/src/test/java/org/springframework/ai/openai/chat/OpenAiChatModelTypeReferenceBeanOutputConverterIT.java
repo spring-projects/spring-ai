@@ -62,7 +62,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 		assertThat(actorsFilms.get(0).actor()).isEqualTo("Tom Hanks");
@@ -94,7 +94,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generationTextFromStream);

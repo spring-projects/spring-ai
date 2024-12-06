@@ -236,7 +236,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		return Document.builder()
 			.id(node.get(this.config.idProperty).asString())
-			.content(node.get("text").asString())
+			.text(node.get("text").asString())
 			.metadata(Map.copyOf(metaData))
 			.score((double) score)
 			.build();

@@ -84,7 +84,7 @@ class AzureOpenAiChatModelMetadataTests {
 
 		assertThat(generation).isNotNull()
 			.extracting(Generation::getOutput)
-			.extracting(AssistantMessage::getContent)
+			.extracting(AssistantMessage::getText)
 			.isEqualTo("No! You will actually land with a resounding thud. This is the way!");
 
 		// assertPromptMetadata(response);

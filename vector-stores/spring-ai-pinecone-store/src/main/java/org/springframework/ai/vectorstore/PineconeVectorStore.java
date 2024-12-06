@@ -239,7 +239,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 				metadata.put(this.pineconeDistanceMetadataFieldName, 1 - scoredVector.getScore());
 				return Document.builder()
 					.id(id)
-					.content(content)
+					.text(content)
 					.metadata(metadata)
 					.score((double) scoredVector.getScore())
 					.build();

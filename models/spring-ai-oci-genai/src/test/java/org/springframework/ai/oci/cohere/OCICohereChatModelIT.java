@@ -54,7 +54,7 @@ public class OCICohereChatModelIT extends BaseOCIGenAITest {
 		assertThat(response).isNotNull();
 		assertThat(response.getMetadata().getModel()).isEqualTo(CHAT_MODEL_ID);
 		assertThat(response.getResult()).isNotNull();
-		assertThat(response.getResult().getOutput().getContent()).isNotBlank();
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
 	}
 
 }

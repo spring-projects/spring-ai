@@ -147,7 +147,7 @@ public abstract class AbstractToolCallSupport {
 			toolContextMap = new HashMap<>(functionCallOptions.getToolContext());
 
 			List<Message> toolCallHistory = new ArrayList<>(prompt.copy().getInstructions());
-			toolCallHistory.add(new AssistantMessage(assistantMessage.getContent(), assistantMessage.getMetadata(),
+			toolCallHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
 					assistantMessage.getToolCalls()));
 
 			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY, toolCallHistory);

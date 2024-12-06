@@ -262,7 +262,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			}
 			Document doc = Document.builder()
 				.id(getDocumentId(row))
-				.content(row.getString(this.conf.schema.content()))
+				.text(row.getString(this.conf.schema.content()))
 				.metadata(docFields)
 				.score((double) score)
 				.build();

@@ -37,7 +37,7 @@ public final class ChatModelObservationContentProcessor {
 			return List.of();
 		}
 
-		return context.getRequest().getInstructions().stream().map(Content::getContent).toList();
+		return context.getRequest().getInstructions().stream().map(Content::getText).toList();
 	}
 
 	public static List<String> completion(ChatModelObservationContext context) {
@@ -46,7 +46,7 @@ public final class ChatModelObservationContentProcessor {
 			return List.of();
 		}
 
-		if (!StringUtils.hasText(context.getResponse().getResult().getOutput().getContent())) {
+		if (!StringUtils.hasText(context.getResponse().getResult().getOutput().getText())) {
 			return List.of();
 		}
 
@@ -54,8 +54,8 @@ public final class ChatModelObservationContentProcessor {
 			.getResults()
 			.stream()
 			.filter(generation -> generation.getOutput() != null
-					&& StringUtils.hasText(generation.getOutput().getContent()))
-			.map(generation -> generation.getOutput().getContent())
+					&& StringUtils.hasText(generation.getOutput().getText()))
+			.map(generation -> generation.getOutput().getText())
 			.toList();
 	}
 

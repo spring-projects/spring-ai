@@ -104,7 +104,7 @@ public final class ContextualQueryAugmenter implements QueryAugmenter {
 
 		// 1. Collect content from documents.
 		String documentContext = documents.stream()
-			.map(Content::getContent)
+			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 2. Define prompt parameters.

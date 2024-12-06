@@ -186,16 +186,16 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 			List<Part> parts = new ArrayList<>();
 
-			if (systemMessage.getContent() != null) {
-				parts.add(Part.newBuilder().setText(systemMessage.getContent()).build());
+			if (systemMessage.getText() != null) {
+				parts.add(Part.newBuilder().setText(systemMessage.getText()).build());
 			}
 
 			return parts;
 		}
 		else if (message instanceof UserMessage userMessage) {
 			List<Part> parts = new ArrayList<>();
-			if (userMessage.getContent() != null) {
-				parts.add(Part.newBuilder().setText(userMessage.getContent()).build());
+			if (userMessage.getText() != null) {
+				parts.add(Part.newBuilder().setText(userMessage.getText()).build());
 			}
 
 			parts.addAll(mediaToParts(userMessage.getMedia()));
@@ -204,8 +204,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		}
 		else if (message instanceof AssistantMessage assistantMessage) {
 			List<Part> parts = new ArrayList<>();
-			if (StringUtils.hasText(assistantMessage.getContent())) {
-				parts.add(Part.newBuilder().setText(assistantMessage.getContent()).build());
+			if (StringUtils.hasText(assistantMessage.getText())) {
+				parts.add(Part.newBuilder().setText(assistantMessage.getText()).build());
 			}
 			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 				parts.addAll(assistantMessage.getToolCalls()

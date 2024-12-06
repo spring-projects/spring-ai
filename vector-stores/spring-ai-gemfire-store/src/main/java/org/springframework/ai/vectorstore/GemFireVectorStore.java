@@ -273,7 +273,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 				}
 				metadata.put(DocumentMetadata.DISTANCE.value(), 1 - r.score);
 				String content = (String) metadata.remove(DOCUMENT_FIELD);
-				return Document.builder().id(r.key).content(content).metadata(metadata).score((double) r.score).build();
+				return Document.builder().id(r.key).text(content).metadata(metadata).score((double) r.score).build();
 			})
 			.collectList()
 			.onErrorMap(WebClientException.class, this::handleHttpClientException)

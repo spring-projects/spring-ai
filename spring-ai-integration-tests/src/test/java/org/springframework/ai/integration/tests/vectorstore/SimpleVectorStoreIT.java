@@ -51,17 +51,17 @@ public class SimpleVectorStoreIT {
 	List<Document> documents = List.of(
 			Document.builder()
 				.id("471a8c78-549a-4b2c-bce5-ef3ae6579be3")
-				.content(getText("classpath:/test/data/spring.ai.txt"))
+				.text(getText("classpath:/test/data/spring.ai.txt"))
 				.metadata(Map.of("meta1", "meta1"))
 				.build(),
 			Document.builder()
 				.id("bc51d7f7-627b-4ba6-adf4-f0bcd1998f8f")
-				.content(getText("classpath:/test/data/time.shelter.txt"))
+				.text(getText("classpath:/test/data/time.shelter.txt"))
 				.metadata(Map.of())
 				.build(),
 			Document.builder()
 				.id("d0237682-1150-44ff-b4d2-1be9b1731ee5")
-				.content(getText("classpath:/test/data/great.depression.txt"))
+				.text(getText("classpath:/test/data/great.depression.txt"))
 				.metadata(Map.of("meta2", "meta2"))
 				.build());
 
@@ -84,7 +84,7 @@ public class SimpleVectorStoreIT {
 	public void searchWithThreshold() {
 		Document document = Document.builder()
 			.id(UUID.randomUUID().toString())
-			.content("Spring AI rocks!!")
+			.text("Spring AI rocks!!")
 			.metadata("meta1", "meta1")
 			.build();
 
@@ -101,7 +101,7 @@ public class SimpleVectorStoreIT {
 
 		Document sameIdDocument = Document.builder()
 			.id(document.getId())
-			.content("The World is Big and Salvation Lurks Around the Corner")
+			.text("The World is Big and Salvation Lurks Around the Corner")
 			.metadata("meta2", "meta2")
 			.build();
 

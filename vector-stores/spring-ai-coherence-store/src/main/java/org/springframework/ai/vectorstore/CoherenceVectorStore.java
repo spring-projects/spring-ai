@@ -216,7 +216,7 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 				chunk.metadata().put(DocumentMetadata.DISTANCE.value(), r.getDistance());
 				documents.add(Document.builder()
 					.id(id.docId())
-					.content(chunk.text())
+					.text(chunk.text())
 					.metadata(chunk.metadata())
 					.score(1 - r.getDistance())
 					.build());

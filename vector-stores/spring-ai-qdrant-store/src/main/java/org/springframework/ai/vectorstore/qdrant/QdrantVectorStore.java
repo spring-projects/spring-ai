@@ -214,12 +214,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 			var content = (String) metadata.remove(CONTENT_FIELD_NAME);
 
-			return Document.builder()
-				.id(id)
-				.content(content)
-				.metadata(metadata)
-				.score((double) point.getScore())
-				.build();
+			return Document.builder().id(id).text(content).metadata(metadata).score((double) point.getScore()).build();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);

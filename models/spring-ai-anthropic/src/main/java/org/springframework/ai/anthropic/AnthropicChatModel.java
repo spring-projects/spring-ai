@@ -378,7 +378,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
 			.map(message -> {
 				if (message.getMessageType() == MessageType.USER) {
-					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getContent())));
+					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getText())));
 					if (message instanceof UserMessage userMessage) {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
@@ -395,8 +395,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				else if (message.getMessageType() == MessageType.ASSISTANT) {
 					AssistantMessage assistantMessage = (AssistantMessage) message;
 					List<ContentBlock> contentBlocks = new ArrayList<>();
-					if (StringUtils.hasText(message.getContent())) {
-						contentBlocks.add(new ContentBlock(message.getContent()));
+					if (StringUtils.hasText(message.getText())) {
+						contentBlocks.add(new ContentBlock(message.getText()));
 					}
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
@@ -423,7 +423,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		String systemPrompt = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(m -> m.getContent())
+			.map(m -> m.getText())
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		ChatCompletionRequest request = new ChatCompletionRequest(this.defaultOptions.getModel(), userMessages,

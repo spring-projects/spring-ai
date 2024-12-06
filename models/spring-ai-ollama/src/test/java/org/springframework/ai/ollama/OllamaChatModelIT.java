@@ -96,13 +96,13 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage), portableOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 
 		// ollama specific options
 		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
 
 		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -120,13 +120,13 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Hello"), response.getResult().getOutput(),
 				new UserMessage("Tell me just the names of those pirates.")));
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 	}
 
 	@Test
@@ -156,7 +156,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 	}
 
@@ -175,7 +175,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result).isNotNull();
 		assertThat((String) result.get("R")).containsIgnoringCase("red");
 		assertThat((String) result.get("G")).containsIgnoringCase("green");
@@ -195,7 +195,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -219,7 +219,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);

@@ -104,7 +104,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		verify(chatModel).call(promptCaptor.capture());
 		assertThat(promptCaptor.getValue().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
-		assertThat(promptCaptor.getValue().getInstructions().get(0).getContent()).isEqualTo("""
+		assertThat(promptCaptor.getValue().getInstructions().get(0).getText()).isEqualTo("""
 
 				Use the long term conversation memory from the LONG_TERM_MEMORY section to provide accurate answers.
 
