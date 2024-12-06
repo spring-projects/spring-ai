@@ -99,6 +99,17 @@ spring:
         prefix: custom-prefix
 ----
 
+For redis connection configuration, alternatively, a simple configuration can be provided via Spring Boot's _application.properties_.
+
+[source,properties]
+----
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+spring.data.redis.username=default
+spring.data.redis.password=
+
+----
+
 Properties starting with `spring.ai.vectorstore.redis.*` are used to configure the `RedisVectorStore`:
 
 [cols="2,5,1",stripes=even]
