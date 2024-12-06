@@ -64,7 +64,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @Testcontainers
-@Disabled("Failing after commit ebd29e0")
 public class MariaDBStoreObservationIT {
 
 	private static String schemaName = "testdb";

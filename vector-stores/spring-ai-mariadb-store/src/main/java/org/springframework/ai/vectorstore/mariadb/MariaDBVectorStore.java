@@ -51,6 +51,7 @@ import org.springframework.util.StringUtils;
  * vector index will be auto-created if not available.
  *
  * @author Diego Dupin
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class MariaDBVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -192,21 +193,36 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public void doAdd(List<Document> documents) {
 		// Batch the documents based on the batching strategy
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
-		List<List<Document>> batchedDocuments = batchDocuments(documents);
+		List<List<MariaDBDocument>> batchedDocuments = batchDocuments(documents, embeddings);
 		batchedDocuments.forEach(this::insertOrUpdateBatch);
 	}
 
-	private List<List<Document>> batchDocuments(List<Document> documents) {
-		List<List<Document>> batches = new ArrayList<>();
-		for (int i = 0; i < documents.size(); i += this.maxDocumentBatchSize) {
-			batches.add(documents.subList(i, Math.min(i + this.maxDocumentBatchSize, documents.size())));
+	private List<List<MariaDBDocument>> batchDocuments(List<Document> documents, List<float[]> embeddings) {
+		List<List<MariaDBDocument>> batches = new ArrayList<>();
+		List<MariaDBDocument> mariaDBDocuments = new ArrayList<>(documents.size());
+		if (embeddings.size() == documents.size()) {
+			for (Document document : documents) {
+				mariaDBDocuments.add(new MariaDBDocument(document.getId(), document.getContent(),
+						document.getMetadata(), embeddings.get(documents.indexOf(document))));
+			}
+		}
+		else {
+			for (Document document : documents) {
+				mariaDBDocuments
+					.add(new MariaDBDocument(document.getId(), document.getContent(), document.getMetadata(), null));
+			}
+		}
+
+		for (int i = 0; i < mariaDBDocuments.size(); i += this.maxDocumentBatchSize) {
+			batches.add(mariaDBDocuments.subList(i, Math.min(i + this.maxDocumentBatchSize, mariaDBDocuments.size())));
 		}
 		return batches;
 	}
 
-	private void insertOrUpdateBatch(List<Document> batch) {
+	private void insertOrUpdateBatch(List<MariaDBDocument> batch) {
 		String sql = String.format(
 				"INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?) "
 						+ "ON DUPLICATE KEY UPDATE %s = VALUES(%s) , %s = VALUES(%s) , %s = VALUES(%s)",
@@ -219,10 +235,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 				var document = batch.get(i);
-				ps.setObject(1, document.getId());
-				ps.setString(2, document.getContent());
-				ps.setString(3, toJson(document.getMetadata()));
-				ps.setObject(4, document.getEmbedding());
+				ps.setObject(1, document.id());
+				ps.setString(2, document.content());
+				ps.setString(3, toJson(document.metadata()));
+				ps.setObject(4, document.embedding());
 			}
 
 			@Override
@@ -554,6 +570,17 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 					this.contentFieldName, this.embeddingFieldName, this.idFieldName, this.metadataFieldName);
 		}
 
+	}
+
+	/**
+	 * The representation of {@link Document} along with its embedding.
+	 *
+	 * @param id The id of the document
+	 * @param content The content of the document
+	 * @param metadata The metadata of the document
+	 * @param embedding The vectors representing the content of the document
+	 */
+	public record MariaDBDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
 }
