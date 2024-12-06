@@ -72,6 +72,8 @@
 **** xref:api/audio/speech/openai-speech.adoc[OpenAI]
 ** xref:api/moderation[Moderation Models]
 *** xref:api/moderation/openai-moderation.adoc[OpenAI]
+** xref:api/assistants[Assistant Manager API]
+*** xref:api/assistants/openai-assistants.adoc[OpenAI]
 // ** xref:api/generic-model.adoc[]
 
 * xref:api/vectordbs.adoc[]
