@@ -59,7 +59,7 @@ public class DocumentBuilderTests {
 
 		assertThat(result).isSameAs(this.builder);
 
-		Document document = result.content("Test content").metadata("key", "value").build();
+		Document document = result.text("Test content").metadata("key", "value").build();
 
 		assertThat(document.getId()).isEqualTo("mockedId");
 	}
@@ -80,7 +80,8 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithIdNullOrEmpty() {
-		assertThatThrownBy(() -> this.builder.text("text").id(null).build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.text("text").id(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("id cannot be null or empty");
 
 		assertThatThrownBy(() -> this.builder.text("text").id("").build()).isInstanceOf(IllegalArgumentException.class)
@@ -89,12 +90,11 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithContent() {
-		Document.Builder result = this.builder.content("Test content");
+		Document.Builder result = this.builder.text("Test content");
 
 		assertThat(result).isSameAs(this.builder);
 		assertThat(result.build().getContent()).isEqualTo("Test content");
 	}
-
 
 	@Test
 	void testWithMediaSingle() throws MalformedURLException {
@@ -120,7 +120,8 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithMetadataMapNull() {
-		assertThatThrownBy(() -> this.builder.text("text").metadata(null).build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.text("text").metadata(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("metadata cannot be null");
 	}
 
@@ -136,19 +137,19 @@ public class DocumentBuilderTests {
 	void testWithMetadataKeyNull() {
 		assertThatThrownBy(() -> this.builder.text("text").metadata(null, "value").build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("metadata cannot have null keys");
+			.hasMessageContaining("metadata key cannot be null");
 	}
 
 	@Test
 	void testWithMetadataValueNull() {
 		assertThatThrownBy(() -> this.builder.text("text").metadata("key", null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("metadata cannot have null values");
+			.hasMessageContaining("metadata value cannot be null");
 	}
 
 	@Test
 	void testBuildWithoutId() {
-		Document document = this.builder.text("text").content("Test content").build();
+		Document document = this.builder.text("text").text("Test content").build();
 
 		assertThat(document.getId()).isNotNull().isNotEmpty();
 		assertThat(document.getContent()).isEqualTo("Test content");
@@ -161,10 +162,7 @@ public class DocumentBuilderTests {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 
-		Document document = this.builder.id("customId")
-			.text("Test content")
-			.metadata(metadata)
-			.build();
+		Document document = this.builder.id("customId").text("Test content").metadata(metadata).build();
 
 		assertThat(document.getId()).isEqualTo("customId");
 		assertThat(document.getText()).isEqualTo("Test content");

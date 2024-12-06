@@ -164,7 +164,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		return prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(Message::getContent)
+			.map(Message::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
@@ -179,7 +179,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(message -> {
-				List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(message.getContent())));
+				List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(message.getText())));
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						List<MediaContent> mediaContent = userMessage.getMedia()

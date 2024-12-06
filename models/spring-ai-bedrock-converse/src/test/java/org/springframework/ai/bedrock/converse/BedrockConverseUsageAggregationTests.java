@@ -83,7 +83,7 @@ public class BedrockConverseUsageAggregationTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent()).isSameAs("Response Content Block");
+		assertThat(result.getResult().getOutput().getText()).isSameAs("Response Content Block");
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(16);
 		assertThat(result.getMetadata().getUsage().getGenerationTokens()).isEqualTo(14);
@@ -148,7 +148,7 @@ public class BedrockConverseUsageAggregationTests {
 				PortableFunctionCallingOptions.builder().withFunctionCallbacks(functionCallback).build()));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent())
+		assertThat(result.getResult().getOutput().getText())
 			.isSameAs(converseResponseFinal.output().message().content().get(0).text());
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(445 + 540);

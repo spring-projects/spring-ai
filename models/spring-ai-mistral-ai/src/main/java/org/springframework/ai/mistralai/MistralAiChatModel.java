@@ -326,11 +326,11 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message instanceof UserMessage userMessage) {
-				return List.of(new MistralAiApi.ChatCompletionMessage(userMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(userMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.USER));
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.SYSTEM));
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
@@ -342,7 +342,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 					}).toList();
 				}
 
-				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null));
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {

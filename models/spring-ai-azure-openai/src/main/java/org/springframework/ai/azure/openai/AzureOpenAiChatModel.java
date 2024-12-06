@@ -402,7 +402,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			case USER:
 				// https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/README.md#text-completions-with-images
 				List<ChatMessageContentItem> items = new ArrayList<>();
-				items.add(new ChatMessageTextContentItem(message.getContent()));
+				items.add(new ChatMessageTextContentItem(message.getText()));
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						items.addAll(userMessage.getMedia()
@@ -413,7 +413,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 				}
 				return List.of(new ChatRequestUserMessage(items));
 			case SYSTEM:
-				return List.of(new ChatRequestSystemMessage(message.getContent()));
+				return List.of(new ChatRequestSystemMessage(message.getText()));
 			case ASSISTANT:
 				AssistantMessage assistantMessage = (AssistantMessage) message;
 				List<ChatCompletionsToolCall> toolCalls = null;
@@ -425,7 +425,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 						.map(tc -> ((ChatCompletionsToolCall) tc)) // !!!
 						.toList();
 				}
-				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getContent());
+				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getText());
 				azureAssistantMessage.setToolCalls(toolCalls);
 				return List.of(azureAssistantMessage);
 			case TOOL:

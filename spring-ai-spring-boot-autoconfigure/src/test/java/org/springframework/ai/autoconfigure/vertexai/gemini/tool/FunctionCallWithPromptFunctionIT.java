@@ -80,7 +80,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				// Verify that no function call is made.
 				response = chatModel
@@ -88,7 +88,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).doesNotContain("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).doesNotContain("30", "10", "15");
 
 			});
 	}

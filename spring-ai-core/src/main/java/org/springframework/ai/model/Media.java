@@ -111,7 +111,6 @@ public class Media {
 		}
 	}
 
-
 	/**
 	 * Get the media id
 	 * @return the media id

@@ -79,7 +79,7 @@ public class AnthropicChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -109,7 +109,7 @@ public class AnthropicChatModelObservationIT {
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
 			.filter(r -> r.getResult() != null)
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 

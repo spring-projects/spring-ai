@@ -111,7 +111,7 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 		String memory = (memoryMessages != null) ? memoryMessages.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(m -> m.getMessageType() + ":" + ((Content) m).getContent())
+			.map(m -> m.getMessageType() + ":" + ((Content) m).getText())
 			.collect(Collectors.joining(System.lineSeparator())) : "";
 
 		Map<String, Object> advisedSystemParams = new HashMap<>(request.systemParams());

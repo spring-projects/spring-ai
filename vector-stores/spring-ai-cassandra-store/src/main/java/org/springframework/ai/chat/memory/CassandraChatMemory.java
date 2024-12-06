@@ -108,7 +108,7 @@ public final class CassandraChatMemory implements ChatMemory {
 		Instant instant = (Instant) msg.getMetadata().get(CONVERSATION_TS);
 
 		builder = builder.setInstant(CassandraChatMemoryConfig.DEFAULT_EXCHANGE_ID_NAME, instant)
-			.setString("message", msg.getContent());
+			.setString("message", msg.getText());
 
 		this.conf.session.execute(builder.build());
 	}

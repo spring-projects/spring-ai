@@ -325,7 +325,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 				return Document.builder()
 					.id(entry.id())
-					.content(entry.content)
+					.text(entry.content)
 					.metadata(metadata)
 					.score(result.getScore())
 					.build();

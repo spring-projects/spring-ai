@@ -162,7 +162,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: {}", response.getResult().getOutput().getContent());
+			logger.info("Response: {}", response.getResult().getOutput().getText());
 		});
 	}
 
@@ -193,7 +193,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		});
 	}
@@ -225,7 +225,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		});
 	}
@@ -245,7 +245,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			// Test weatherFunctionTwo
 			response = chatModel.call(new Prompt(List.of(userMessage),
@@ -253,7 +253,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		});
 	}
@@ -273,9 +273,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: {}", response.getResult().getOutput().getContent());
+			logger.info("Response: {}", response.getResult().getOutput().getText());
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
@@ -298,7 +298,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 
@@ -314,7 +314,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 

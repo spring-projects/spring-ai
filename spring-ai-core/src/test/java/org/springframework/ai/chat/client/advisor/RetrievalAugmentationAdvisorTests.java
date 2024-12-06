@@ -70,8 +70,8 @@ class RetrievalAugmentationAdvisorTests {
 			.build());
 
 		// Document Retriever
-		var documentContext = List.of(Document.builder().id("1").content("doc1").build(),
-				Document.builder().id("2").content("doc2").build());
+		var documentContext = List.of(Document.builder().id("1").text("doc1").build(),
+				Document.builder().id("2").text("doc2").build());
 		var documentRetriever = mock(DocumentRetriever.class);
 		var queryCaptor = ArgumentCaptor.forClass(Query.class);
 		given(documentRetriever.retrieve(queryCaptor.capture())).willReturn(documentContext);
@@ -94,7 +94,7 @@ class RetrievalAugmentationAdvisorTests {
 			.chatResponse();
 
 		// Verify
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("Felix Felicis");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("Felix Felicis");
 		assertThat(chatResponse.getMetadata().<List<Document>>get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT))
 			.containsAll(documentContext);
 

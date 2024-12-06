@@ -61,5 +61,4 @@ public class ContentFormatterTests {
 			.isEqualTo(defaultConfigFormatter.format(this.document, MetadataMode.ALL));
 	}
 
-
 }

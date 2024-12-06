@@ -30,7 +30,7 @@ public interface Evaluator {
 	default String doGetSupportingData(EvaluationRequest evaluationRequest) {
 		List<Content> data = evaluationRequest.getDataList();
 		return data.stream()
-			.map(Content::getContent)
+			.map(Content::getText)
 			.filter(StringUtils::hasText)
 			.collect(Collectors.joining(System.lineSeparator()));
 	}

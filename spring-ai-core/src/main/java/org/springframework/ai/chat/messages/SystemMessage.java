@@ -39,7 +39,7 @@ public class SystemMessage extends AbstractMessage {
 	}
 
 	@Override
-	public String getContent() {
+	public String getText() {
 		return this.textContent;
 	}
 

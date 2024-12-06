@@ -66,7 +66,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 
 	@Override
 	public String toString() {
-		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + this.metadata + ", messageType="
+		return "UserMessage{" + "content='" + getText() + '\'' + ", properties=" + this.metadata + ", messageType="
 				+ this.messageType + '}';
 	}
 
@@ -76,7 +76,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	}
 
 	@Override
-	public String getContent() {
+	public String getText() {
 		return this.textContent;
 	}
 

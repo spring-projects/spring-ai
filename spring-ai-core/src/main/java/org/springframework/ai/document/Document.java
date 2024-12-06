@@ -16,7 +16,6 @@
 
 package org.springframework.ai.document;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -37,7 +36,48 @@ import org.springframework.util.StringUtils;
  * A document is a container for the content and metadata of a document. It also contains
  * the document's unique ID and an optional embedding.
  *
- * Either string based text or Media is the content.
+ * A Document can hold either text content or media content, but not both. This ensures
+ * clear content type handling and processing.
+ *
+ * It is intended to be used to take data from external sources as part of spring-ai's ETL
+ * pipeline and create an embedding for the text or media and store that embedding in a
+ * vector database.
+ *
+ * <p>
+ * Example of creating a text document: <pre>{@code
+ * // Using constructor
+ * Document textDoc = new Document("Sample text content", Map.of("source", "user-input"));
+ *
+ * // Using builder
+ * Document textDoc = Document.builder()
+ *     .text("Sample text content")
+ *     .metadata("source", "user-input")
+ *     .build();
+ * }</pre>
+ *
+ * <p>
+ * Example of creating a media document: <pre>{@code
+ * // Using constructor
+ * Media imageContent = new Media(MediaType.IMAGE_PNG, new byte[] {...});
+ * Document mediaDoc = new Document(imageContent, Map.of("filename", "sample.png"));
+ *
+ * // Using builder
+ * Document mediaDoc = Document.builder()
+ *     .media(new Media(MediaType.IMAGE_PNG, new byte[] {...}))
+ *     .metadata("filename", "sample.png")
+ *     .build();
+ * }</pre>
+ *
+ * <p>
+ * Example of checking content type and accessing content: <pre>{@code
+ * if (document.isText()) {
+ *     String textContent = document.getText();
+ *     // Process text content
+ * } else {
+ *     Media mediaContent = document.getMedia();
+ *     // Process media content
+ * }
+ * }</pre>
  */
 @JsonIgnoreProperties({ "contentFormatter" })
 public class Document {
@@ -66,9 +106,18 @@ public class Document {
 	private final Map<String, Object> metadata;
 
 	/**
-	 * Measure of similarity between the document embedding and the query vector. The
-	 * higher the score, the more they are similar. It's the opposite of the distance
-	 * measure.
+	 * A numeric score associated with this document that can represent various types of
+	 * relevance measures.
+	 * <p>
+	 * Common uses include:
+	 * <ul>
+	 * <li>Measure of similarity between the document embedding and a query vector, where
+	 * higher scores indicate greater similarity (opposite of distance measure)
+	 * <li>Text relevancy rankings from retrieval systems
+	 * <li>Custom relevancy metrics from RAG patterns
+	 * </ul>
+	 * <p>
+	 * Higher values typically indicate greater relevance or similarity.
 	 */
 	@Nullable
 	private final Double score;
@@ -106,18 +155,13 @@ public class Document {
 		this(id, null, media, metadata, null);
 	}
 
-
 	private Document(String id, String text, Media media, Map<String, Object> metadata, @Nullable Double score) {
 		Assert.hasText(id, "id cannot be null or empty");
 		Assert.notNull(metadata, "metadata cannot be null");
 		Assert.noNullElements(metadata.keySet(), "metadata cannot have null keys");
 		Assert.noNullElements(metadata.values(), "metadata cannot have null values");
-		if (text == null && media == null) {
-			throw new IllegalArgumentException("need to specify either text or media");
-		}
-		if (text != null && media != null) {
-			throw new IllegalArgumentException("can not specify both text and media");
-		}
+		Assert.isTrue(text != null ^ media != null, "exactly one of text or media must be specified");
+
 		this.id = id;
 		this.text = text;
 		this.media = media;
@@ -125,50 +169,58 @@ public class Document {
 		this.score = score;
 	}
 
-
-
-	/**
-	 * @deprecated Use builder instead: {@link Document#builder()}.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public Document(String id, Media media,
-					Map<String, Object> metadata, @Nullable Double score) {
-		Assert.hasText(id, "id cannot be null or empty");
-		Assert.notNull(media, "media cannot be null");
-		Assert.notNull(metadata, "metadata cannot be null");
-		Assert.noNullElements(metadata.keySet(), "metadata cannot have null keys");
-		Assert.noNullElements(metadata.values(), "metadata cannot have null values");
-
-		this.id = id;
-		this.text = null;
-		this.media = media;
-		this.metadata = Collections.unmodifiableMap(metadata);
-		this.score = score;
-	}
-
-
 	public static Builder builder() {
 		return new Builder();
 	}
 
+	/**
+	 * Returns the unique identifier for this document.
+	 * <p>
+	 * This ID is either explicitly provided during document creation or generated using
+	 * the configured {@link IdGenerator} (defaults to {@link RandomIdGenerator}).
+	 * @return the unique identifier of this document
+	 * @see RandomIdGenerator
+	 */
 	public String getId() {
 		return this.id;
 	}
 
+	/**
+	 * @deprecated Use getText() instead as it more accurately reflects the content type
+	 */
 	@Deprecated
 	public String getContent() {
 		return this.getText();
 	}
 
+	/**
+	 * Returns the document's text content, if any.
+	 * @return the text content if {@link #isText()} is true, null otherwise
+	 * @see #isText()
+	 * @see #getMedia()
+	 */
+	@Nullable
 	public String getText() {
 		return this.text;
 	}
 
+	/**
+	 * Determines whether this document contains text or media content.
+	 * @return true if this document contains text content (accessible via
+	 * {@link #getText()}), false if it contains media content (accessible via
+	 * {@link #getMedia()})
+	 */
 	public boolean isText() {
 		return this.text != null;
 	}
 
-
+	/**
+	 * Returns the document's media content, if any.
+	 * @return the media content if {@link #isText()} is false, null otherwise
+	 * @see #isText()
+	 * @see #getText()
+	 */
+	@Nullable
 	public Media getMedia() {
 		return this.media;
 	}
@@ -192,7 +244,13 @@ public class Document {
 		return formatter.format(this, metadataMode);
 	}
 
-
+	/**
+	 * Returns the metadata associated with this document.
+	 * <p>
+	 * The metadata values are restricted to simple types (string, int, float, boolean)
+	 * for compatibility with Vector Databases.
+	 * @return the metadata map
+	 */
 	public Map<String, Object> getMetadata() {
 		return this.metadata;
 	}
@@ -239,11 +297,7 @@ public class Document {
 	}
 
 	public Builder mutate() {
-		return new Builder().id(this.id)
-			.content(this.text)
-			.media(this.media)
-			.metadata(this.metadata)
-			.score(this.score);
+		return new Builder().id(this.id).text(this.text).media(this.media).metadata(this.metadata).score(this.score);
 	}
 
 	@Override
@@ -264,7 +318,7 @@ public class Document {
 
 	@Override
 	public String toString() {
-		return "Document{" + "id='" + this.id + '\'' + ", content='" + this.text + '\''
+		return "Document{" + "id='" + this.id + '\'' + ", text='" + this.text + '\'' + ", media='" + this.media + '\''
 				+ ", metadata=" + this.metadata + ", score=" + this.score + '}';
 	}
 
@@ -297,76 +351,90 @@ public class Document {
 			return this;
 		}
 
-		public Builder text(String text) {
+		/**
+		 * Sets the text content of the document.
+		 * <p>
+		 * Either text or media content must be set before building the document, but not
+		 * both.
+		 * @param text the text content
+		 * @return the builder instance
+		 * @see #media(Media)
+		 */
+		public Builder text(@Nullable String text) {
 			this.text = text;
 			return this;
 		}
 
-		public Builder content(String text) {
+		/**
+		 * Sets the text content of the document.
+		 * @param text the text content to set
+		 * @return the builder instance
+		 * @deprecated since 1.0.0-M5, use {@link #text(String)} instead as it more
+		 * accurately reflects that this Document instance will contain text rather than
+		 * generic content. This method will be removed in a future release.
+		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
+		public Builder content(@Nullable String text) {
 			this.text = text;
 			return this;
 		}
 
-		public Builder media(Media media) {
+		/**
+		 * Sets the media content of the document.
+		 * <p>
+		 * Either text or media content must be set before building the document, but not
+		 * both.
+		 * @param media the media content
+		 * @return the builder instance
+		 * @see #text(String)
+		 */
+		public Builder media(@Nullable Media media) {
 			this.media = media;
 			return this;
 		}
 
-
 		public Builder metadata(Map<String, Object> metadata) {
+			Assert.notNull(metadata, "metadata cannot be null");
 			this.metadata = metadata;
 			return this;
 		}
 
 		public Builder metadata(String key, Object value) {
+			Assert.notNull(key, "metadata key cannot be null");
+			Assert.notNull(value, "metadata value cannot be null");
 			this.metadata.put(key, value);
 			return this;
 		}
 
 		public Builder embedding(float[] embedding) {
+			Assert.notNull(embedding, "embedding cannot be null");
 			this.embedding = embedding;
 			return this;
 		}
 
+		/**
+		 * Sets a score value for this document.
+		 * <p>
+		 * Common uses include:
+		 * <ul>
+		 * <li>Measure of similarity between the document embedding and a query vector,
+		 * where higher scores indicate greater similarity (opposite of distance measure)
+		 * <li>Text relevancy rankings from retrieval systems
+		 * <li>Custom relevancy metrics from RAG patterns
+		 * </ul>
+		 * <p>
+		 * Higher values typically indicate greater relevance or similarity.
+		 * @param score the document score, may be null
+		 * @return the builder instance
+		 */
 		public Builder score(@Nullable Double score) {
 			this.score = score;
 			return this;
 		}
 
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder withIdGenerator(IdGenerator idGenerator) {
-			return idGenerator(idGenerator);
-		}
-
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder withId(String id) {
-			return id(id);
-		}
-
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder withContent(String content) {
-			return content(content);
-		}
-
-
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder withMedia(Media media) {
-			return media(media);
-		}
-
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder withMetadata(Map<String, Object> metadata) {
-			return metadata(metadata);
-		}
-
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder withMetadata(String key, Object value) {
-			return metadata(key, value);
-		}
-
 		public Document build() {
 			if (!StringUtils.hasText(this.id)) {
-				this.id = this.idGenerator.generateId(this.text, this.metadata); // TODO Review if metadata should be included
+				this.id = this.idGenerator.generateId(this.text, this.metadata);
 			}
 			var document = new Document(this.id, this.text, this.media, this.metadata, this.score);
 			document.setEmbedding(this.embedding);

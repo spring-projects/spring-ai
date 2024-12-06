@@ -250,12 +250,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		// distance. Can we remove this after standardizing the metadata?
 		metadata.put(DISTANCE_FIELD_NAME, 1 - similarityScore(doc));
 		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - similarityScore(doc));
-		return Document.builder()
-			.id(id)
-			.content(content)
-			.metadata(metadata)
-			.score((double) similarityScore(doc))
-			.build();
+		return Document.builder().id(id).text(content).metadata(metadata).score((double) similarityScore(doc)).build();
 	}
 
 	private float similarityScore(redis.clients.jedis.search.Document doc) {

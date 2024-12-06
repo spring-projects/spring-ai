@@ -77,7 +77,7 @@ public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
 			ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage, this.systemMessage)));
-			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+			assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 		});
 	}
 
@@ -96,7 +96,7 @@ public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");

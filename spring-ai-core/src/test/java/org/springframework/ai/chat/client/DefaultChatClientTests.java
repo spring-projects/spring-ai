@@ -97,7 +97,7 @@ class DefaultChatClientTests {
 		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt("my question");
 		assertThat(spec.getMessages()).hasSize(1);
-		assertThat(spec.getMessages().get(0).getContent()).isEqualTo("my question");
+		assertThat(spec.getMessages().get(0).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -107,8 +107,8 @@ class DefaultChatClientTests {
 		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt(prompt);
 		assertThat(spec.getMessages()).hasSize(2);
-		assertThat(spec.getMessages().get(0).getContent()).isEqualTo("instructions");
-		assertThat(spec.getMessages().get(1).getContent()).isEqualTo("my question");
+		assertThat(spec.getMessages().get(0).getText()).isEqualTo("instructions");
+		assertThat(spec.getMessages().get(1).getText()).isEqualTo("my question");
 		assertThat(spec.getChatOptions()).isNull();
 	}
 
@@ -627,11 +627,11 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(1);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -650,12 +650,12 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(2);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -675,13 +675,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test
@@ -702,13 +702,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test
@@ -1090,11 +1090,11 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(1);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -1113,12 +1113,12 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(2);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -1138,13 +1138,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test
@@ -1165,13 +1165,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test

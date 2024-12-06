@@ -74,7 +74,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 
 			logger.info("Response: " + response)
 
-			assertThat(response.getResult().output.content).contains("30", "10", "15")
+			assertThat(response.getResult().output.text).contains("30", "10", "15")
 		}
 	}
 
@@ -94,9 +94,9 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 
 			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
 
-			logger.info("Response: " + response.getResult().getOutput().getContent());
+			logger.info("Response: " + response.getResult().getOutput().getText());
 
-			assertThat(response.getResult().output.content).contains("30", "10", "15");
+			assertThat(response.getResult().output.text).contains("30", "10", "15");
 		}
 	}
 

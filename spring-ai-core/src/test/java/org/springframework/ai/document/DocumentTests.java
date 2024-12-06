@@ -17,6 +17,8 @@
 package org.springframework.ai.document;
 
 import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.model.Media;
 import org.springframework.util.MimeTypeUtils;
 
@@ -34,14 +36,14 @@ public class DocumentTests {
 	@Test
 	void testScore() {
 		Double score = 0.95;
-		Document document = Document.builder().content("Test content").score(score).build();
+		Document document = Document.builder().text("Test content").score(score).build();
 
 		assertThat(document.getScore()).isEqualTo(score);
 	}
 
 	@Test
 	void testNullScore() {
-		Document document = Document.builder().content("Test content").score(null).build();
+		Document document = Document.builder().text("Test content").score(null).build();
 
 		assertThat(document.getScore()).isNull();
 	}
@@ -55,7 +57,7 @@ public class DocumentTests {
 
 		Document original = Document.builder()
 			.id("customId")
-			.content("Test content")
+			.text("Test content")
 			.media(null)
 			.metadata(metadata)
 			.score(score)
@@ -73,23 +75,13 @@ public class DocumentTests {
 		metadata.put("key", "value");
 		Double score = 0.95;
 
-		Document doc1 = Document.builder()
-			.id("customId")
-			.text("Test text")
-			.metadata(metadata)
-			.score(score)
-			.build();
+		Document doc1 = Document.builder().id("customId").text("Test text").metadata(metadata).score(score).build();
 
-		Document doc2 = Document.builder()
-			.id("customId")
-			.text("Test text")
-			.metadata(metadata)
-			.score(score)
-			.build();
+		Document doc2 = Document.builder().id("customId").text("Test text").metadata(metadata).score(score).build();
 
 		Document differentDoc = Document.builder()
 			.id("differentId")
-			.content("Different content")
+			.text("Different content")
 			.metadata(metadata)
 			.score(score)
 			.build();
@@ -113,7 +105,7 @@ public class DocumentTests {
 
 		Document document = Document.builder()
 			.id("customId")
-			.content("Test content")
+			.text("Test content")
 			.media(null)
 			.metadata(metadata)
 			.score(score)
@@ -122,11 +114,116 @@ public class DocumentTests {
 		String toString = document.toString();
 
 		assertThat(toString).contains("id='customId'")
-			.contains("content='Test content'")
+			.contains("text='Test content'")
 			.contains("metadata=" + metadata)
 			.contains("score=" + score);
 	}
 
+	@Test
+	void testMediaDocumentConstruction() {
+		Media media = getMedia();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", "value");
+
+		Document document = Document.builder().media(media).metadata(metadata).build();
+
+		assertThat(document.getMedia()).isEqualTo(media);
+		assertThat(document.getText()).isNull();
+		assertThat(document.isText()).isFalse();
+	}
+
+	@Test
+	void testTextDocumentConstruction() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", "value");
+
+		Document document = Document.builder().text("Test text").metadata(metadata).build();
+
+		assertThat(document.getText()).isEqualTo("Test text");
+		assertThat(document.getMedia()).isNull();
+		assertThat(document.isText()).isTrue();
+	}
+
+	@Test
+	void testBothTextAndMediaThrowsException() {
+		Media media = getMedia();
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("Test text").media(media).build());
+	}
+
+	@Test
+	void testCustomIdGenerator() {
+		IdGenerator customGenerator = contents -> "custom-" + contents[0];
+
+		Document document = Document.builder().text("test").idGenerator(customGenerator).build();
+
+		assertThat(document.getId()).isEqualTo("custom-test");
+	}
+
+	@Test
+	void testMetadataValidation() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("nullKey", null);
+
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("test").metadata(metadata).build());
+	}
+
+	@Test
+	void testFormattedContent() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", "value");
+
+		Document document = Document.builder().text("Test text").metadata(metadata).build();
+
+		String formattedContent = document.getFormattedContent(MetadataMode.ALL);
+		assertThat(formattedContent).contains("Test text");
+		assertThat(formattedContent).contains("key");
+		assertThat(formattedContent).contains("value");
+	}
+
+	@Test
+	void testCustomFormattedContent() {
+		Document document = Document.builder().text("Test text").build();
+
+		ContentFormatter customFormatter = (doc, mode) -> "Custom: " + doc.getText();
+		String formattedContent = document.getFormattedContent(customFormatter, MetadataMode.ALL);
+
+		assertThat(formattedContent).isEqualTo("Custom: Test text");
+	}
+
+	@Test
+	void testNullIdThrowsException() {
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().id(null).text("test").build());
+	}
+
+	@Test
+	void testEmptyIdThrowsException() {
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().id("").text("test").build());
+	}
+
+	@Test
+	void testMetadataKeyValueAddition() {
+		Document document = Document.builder()
+			.text("test")
+			.metadata("key1", "value1")
+			.metadata("key2", "value2")
+			.build();
+
+		assertThat(document.getMetadata()).containsEntry("key1", "value1").containsEntry("key2", "value2");
+	}
+
+	@Test
+	void testEmbeddingOperations() {
+		float[] embedding = new float[] { 0.1f, 0.2f, 0.3f };
+
+		Document document = Document.builder().text("test").embedding(embedding).build();
+
+		assertThat(document.getEmbedding()).isEqualTo(embedding);
+	}
+
+	@Test
+	void testNullEmbeddingThrowsException() {
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("test").embedding(null).build());
+	}
 
 	private static Media getMedia() {
 		try {
