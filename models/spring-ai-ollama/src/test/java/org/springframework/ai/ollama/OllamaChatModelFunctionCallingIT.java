@@ -37,6 +37,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.tool.MockWeatherService;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -124,6 +125,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 			return OllamaChatModel.builder()
 				.withOllamaApi(ollamaApi)
 				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
+				.withRetryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 
