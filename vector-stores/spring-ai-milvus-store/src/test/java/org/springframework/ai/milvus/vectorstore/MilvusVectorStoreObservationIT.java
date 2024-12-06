@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.milvus.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +42,9 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.milvus.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -168,14 +170,17 @@ public class MilvusVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
-				.withCollectionName(TEST_COLLECTION_NAME)
-				.withDatabaseName("default")
-				.withIndexType(IndexType.IVF_FLAT)
-				.withMetricType(MetricType.COSINE)
+			return MilvusVectorStore.builder()
+				.milvusClient(milvusClient)
+				.embeddingModel(embeddingModel)
+				.observationRegistry(observationRegistry)
+				.collectionName(TEST_COLLECTION_NAME)
+				.databaseName("default")
+				.indexType(IndexType.IVF_FLAT)
+				.metricType(MetricType.COSINE)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.initializeSchema(true)
 				.build();
-			return new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy(),
-					observationRegistry, null);
 		}
 
 		@Bean

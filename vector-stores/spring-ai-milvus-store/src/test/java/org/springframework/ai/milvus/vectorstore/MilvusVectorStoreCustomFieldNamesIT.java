@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.milvus.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +37,8 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -229,18 +230,21 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 		@Bean
 		VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
-			MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
-				.withCollectionName("test_vector_store_custom_fields")
-				.withDatabaseName("default")
-				.withIndexType(IndexType.IVF_FLAT)
-				.withMetricType(this.metricType)
-				.withIDFieldName(this.idFieldName)
-				.withAutoId(this.isAutoId)
-				.withContentFieldName(this.contentFieldName)
-				.withEmbeddingFieldName(this.embeddingFieldName)
-				.withMetadataFieldName(this.metadataFieldName)
+			return MilvusVectorStore.builder()
+				.milvusClient(milvusClient)
+				.embeddingModel(embeddingModel)
+				.collectionName("test_vector_store_custom_fields")
+				.databaseName("default")
+				.indexType(IndexType.IVF_FLAT)
+				.metricType(this.metricType)
+				.iDFieldName(this.idFieldName)
+				.autoId(this.isAutoId)
+				.contentFieldName(this.contentFieldName)
+				.embeddingFieldName(this.embeddingFieldName)
+				.metadataFieldName(this.metadataFieldName)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.initializeSchema(true)
 				.build();
-			return new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy());
 		}
 
 		@Bean
