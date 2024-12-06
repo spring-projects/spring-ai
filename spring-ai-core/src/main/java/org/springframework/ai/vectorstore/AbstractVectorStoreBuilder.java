@@ -72,7 +72,6 @@ public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBu
 
 	@Override
 	public T customObservationConvention(VectorStoreObservationConvention convention) {
-		Assert.notNull(convention, "VectorStoreObservationConvention must not be null");
 		this.customObservationConvention = convention;
 		return self();
 	}

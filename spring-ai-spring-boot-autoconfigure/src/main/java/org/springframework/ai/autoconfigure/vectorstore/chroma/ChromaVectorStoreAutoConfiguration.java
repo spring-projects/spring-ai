@@ -86,17 +86,14 @@ public class ChromaVectorStoreAutoConfiguration {
 			ChromaVectorStoreProperties storeProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy chromaBatchingStrategy) {
-		ChromaVectorStore.ChromaBuilder chromaBuilder = ChromaVectorStore.builder(chromaApi)
+		return ChromaVectorStore.builder(chromaApi)
 			.embeddingModel(embeddingModel)
 			.collectionName(storeProperties.getCollectionName())
 			.initializeSchema(storeProperties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.batchingStrategy(chromaBatchingStrategy);
-		VectorStoreObservationConvention observationConvention = customObservationConvention.getIfAvailable();
-		if (observationConvention != null) {
-			chromaBuilder.customObservationConvention(observationConvention);
-		}
-		return chromaBuilder.build();
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(chromaBatchingStrategy)
+			.build();
 	}
 
 	static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {
