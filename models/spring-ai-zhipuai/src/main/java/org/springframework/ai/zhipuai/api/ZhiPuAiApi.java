@@ -294,7 +294,12 @@ public class ZhiPuAiApi {
 		/**
 		 * DIMENSION: 1024
 		 */
-		Embedding_2("Embedding-2");
+		Embedding_2("Embedding-2"),
+
+		/**
+		 * DIMENSION: 2048
+		 */
+		Embedding_3("Embedding-3");
 
 		public final String  value;
 
@@ -960,13 +965,20 @@ public class ZhiPuAiApi {
 
 			@JsonProperty("dimensions") Integer dimensions) {
 
-
 		/**
 		 * Create an embedding request with the given input. Encoding model is set to 'embedding-2'.
 		 * @param input Input text to embed.
 		 */
+		public EmbeddingRequest(T input) {
+			this(input,DEFAULT_EMBEDDING_MODEL,null);
+		}
+
+		/**
+		 * Create an embedding request with the given input. Encoding model is set to 'embedding-3'.
+		 * @param input Input text to embed.
+		 */
 		public EmbeddingRequest(T input, Integer dimensions) {
-			this(input,DEFAULT_EMBEDDING_MODEL,dimensions);
+			this(input,EmbeddingModel.Embedding_3.getValue(),dimensions);
 		}
 	}
 
