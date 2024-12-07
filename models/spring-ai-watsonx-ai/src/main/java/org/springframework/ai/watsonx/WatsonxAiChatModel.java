@@ -22,7 +22,7 @@ import java.util.Map;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -85,7 +85,7 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 
 		WatsonxAiChatResponse response = this.watsonxAiApi.generate(request).getBody();
 		var generation = new Generation(new AssistantMessage(response.results().get(0).generatedText()),
-				ChatGenerationMetadata.builder()
+				GenerationMetadata.builder()
 					.finishReason(response.results().get(0).stopReason())
 					.metadata("system", response.system())
 					.build());
@@ -104,9 +104,9 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 			String generatedText = chunk.results().get(0).generatedText();
 			AssistantMessage assistantMessage = new AssistantMessage(generatedText);
 
-			ChatGenerationMetadata metadata = ChatGenerationMetadata.NULL;
+			GenerationMetadata metadata = GenerationMetadata.NULL;
 			if (chunk.system() != null) {
-				metadata = ChatGenerationMetadata.builder()
+				metadata = GenerationMetadata.builder()
 					.finishReason(chunk.results().get(0).stopReason())
 					.metadata("system", chunk.system())
 					.build();

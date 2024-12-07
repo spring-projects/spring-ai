@@ -28,7 +28,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.PromptMetadata;
@@ -75,9 +75,8 @@ public class MessageAggregator {
 		AtomicReference<StringBuilder> messageTextContentRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
 
-		// ChatGeneration Metadata
-		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
-				ChatGenerationMetadata.NULL);
+		// Generation Metadata
+		AtomicReference<GenerationMetadata> generationMetadataRef = new AtomicReference<>(GenerationMetadata.NULL);
 
 		// Usage
 		AtomicReference<Long> metadataUsagePromptTokensRef = new AtomicReference<>(0L);
@@ -105,7 +104,7 @@ public class MessageAggregator {
 
 			if (chatResponse.getResult() != null) {
 				if (chatResponse.getResult().getMetadata() != null
-						&& chatResponse.getResult().getMetadata() != ChatGenerationMetadata.NULL) {
+						&& chatResponse.getResult().getMetadata() != GenerationMetadata.NULL) {
 					generationMetadataRef.set(chatResponse.getResult().getMetadata());
 				}
 				if (chatResponse.getResult().getOutput().getContent() != null) {

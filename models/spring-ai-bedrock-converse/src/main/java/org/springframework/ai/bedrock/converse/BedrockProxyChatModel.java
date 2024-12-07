@@ -71,7 +71,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
@@ -419,14 +419,14 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
 			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()))
+					GenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		if (response.stopReasonAsString() != null && generations.isEmpty()) {
 			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
+					GenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(generation);
 		}
 
@@ -451,7 +451,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 			Generation toolCallGeneration = new Generation(assistantMessage,
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
+					GenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(toolCallGeneration);
 		}
 

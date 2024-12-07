@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.PromptMetadata;
@@ -124,11 +124,11 @@ class AzureOpenAiChatModelMetadataTests {
 
 	private void assertChoiceMetadata(Generation generation) {
 
-		ChatGenerationMetadata chatGenerationMetadata = generation.getMetadata();
+		GenerationMetadata generationMetadata = generation.getMetadata();
 
-		assertThat(chatGenerationMetadata).isNotNull();
-		assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
-		assertContentFilterResults(chatGenerationMetadata.get("contentFilterResults"));
+		assertThat(generationMetadata).isNotNull();
+		assertThat(generationMetadata.getFinishReason()).isEqualTo("stop");
+		assertContentFilterResults(generationMetadata.get("contentFilterResults"));
 	}
 
 	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,
