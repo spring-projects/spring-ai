@@ -69,5 +69,5 @@ Spring AI provides multimodal support for the following chat models:
 * xref:api/chat/ollama-chat.adoc#_multimodal[Ollama (e.g. LlaVa, Baklava, Llama3.2 models)]
 * xref:api/chat/vertexai-gemini-chat.adoc#_multimodal[Vertex AI Gemini (e.g. gemini-1.5-pro-001, gemini-1.5-flash-001 models)]
 * xref:api/chat/anthropic-chat.adoc#_multimodal[Anthropic Claude 3]
-* xref:api/chat/bedrock/bedrock-anthropic3.adoc#_multimodal[AWS Bedrock Anthropic Claude 3]
+* xref:api/chat/bedrock-converse.adoc#_multimodal[AWS Bedrock Converse]
 * xref:api/chat/azure-openai-chat.adoc#_multimodal[Azure Open AI (e.g. GPT-4o models)]

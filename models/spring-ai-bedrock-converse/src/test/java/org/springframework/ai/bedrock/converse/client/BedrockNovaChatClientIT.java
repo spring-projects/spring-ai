@@ -17,7 +17,6 @@ package org.springframework.ai.bedrock.converse.client;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

@@ -1,5 +1,18 @@
 = Jurassic-2 Chat
 
+[NOTE]
+====
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI. 
+While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] for several key benefits:
+
+- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
+- Model Flexibility: Seamlessly switch between different conversation models without code changes
+- Extended Functionality: Support for model-specific parameters through dedicated structures
+- Tool Support: Native integration with function calling and tool usage capabilities
+- Multimodal Capabilities: Built-in support for vision and other multimodal features
+- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+====
+
 https://aws.amazon.com/bedrock/jurassic/[AI21 Labs Jurassic on Amazon Bedrock
 ] Jurassic is AI21 Labs’ family of reliable FMs for the enterprise, powering sophisticated language generation tasks – such as question answering, text generation, search, and summarization – across thousands of live applications.
 
