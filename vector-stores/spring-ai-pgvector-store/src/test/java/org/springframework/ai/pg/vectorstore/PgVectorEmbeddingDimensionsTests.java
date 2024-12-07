@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.pg.vectorstore;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +47,11 @@ public class PgVectorEmbeddingDimensionsTests {
 
 		final int explicitDimensions = 696;
 
-		var dim = new PgVectorStore(this.jdbcTemplate, this.embeddingModel, explicitDimensions).embeddingDimensions();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate)
+			.embeddingModel(this.embeddingModel)
+			.dimensions(explicitDimensions)
+			.build();
+		var dim = pgVectorStore.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(explicitDimensions);
 		verify(this.embeddingModel, never()).dimensions();
@@ -57,7 +61,10 @@ public class PgVectorEmbeddingDimensionsTests {
 	public void embeddingModelDimensions() {
 		given(this.embeddingModel.dimensions()).willReturn(969);
 
-		var dim = new PgVectorStore(this.jdbcTemplate, this.embeddingModel).embeddingDimensions();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate)
+			.embeddingModel(this.embeddingModel)
+			.build();
+		var dim = pgVectorStore.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(969);
 
@@ -69,7 +76,10 @@ public class PgVectorEmbeddingDimensionsTests {
 
 		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException());
 
-		var dim = new PgVectorStore(this.jdbcTemplate, this.embeddingModel).embeddingDimensions();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate)
+			.embeddingModel(this.embeddingModel)
+			.build();
+		var dim = pgVectorStore.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
 		verify(this.embeddingModel, only()).dimensions();

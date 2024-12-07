@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
-
-import org.testcontainers.utility.DockerImageName;
-
 /**
- * @author Thomas Vitale
+ * Provides the API for embedding observations.
  */
-public final class PgVectorImage {
+@NonNullApi
+@NonNullFields
+package org.springframework.ai.pg.vectorstore;
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("pgvector/pgvector:pg17");
-
-	private PgVectorImage() {
-
-	}
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;
