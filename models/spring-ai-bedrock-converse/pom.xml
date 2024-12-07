@@ -37,10 +37,6 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-		<aws.sdk.version>2.29.3</aws.sdk.version>
-	</properties>
-
 	<dependencies>
 
 		<!-- production dependencies -->
@@ -59,7 +55,7 @@
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>bedrockruntime</artifactId>
-			<version>${aws.sdk.version}</version>
+			<version>${awssdk.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>commons-logging</groupId>
@@ -71,13 +67,13 @@
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>sts</artifactId>
-			<version>${aws.sdk.version}</version>
+			<version>${awssdk.version}</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>netty-nio-client</artifactId>
-			<version>${aws.sdk.version}</version>
+			<version>${awssdk.version}</version>
 		</dependency>
 
 		<!-- test dependencies -->

@@ -59,7 +59,7 @@ import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = BedrockConverseTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
+@SpringBootTest(classes = BedrockConverseTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 class BedrockProxyChatModelIT {
