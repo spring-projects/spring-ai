@@ -58,9 +58,11 @@ public class OllamaEmbeddingModelTests {
 
 		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
 			.willReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME",
-					List.of(new float[] { 1f, 2f, 3f }, new float[] { 4f, 5f, 6f }), 0L, 0L, 0))
+					List.of(new float[] { 1f, 2f, 3f }, new float[] { 4f, 5f, 6f }), Duration.ofNanos(0L),
+					Duration.ofNanos(0L), 0))
 			.willReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME2",
-					List.of(new float[] { 7f, 8f, 9f }, new float[] { 10f, 11f, 12f }), 0L, 0L, 0));
+					List.of(new float[] { 7f, 8f, 9f }, new float[] { 10f, 11f, 12f }), Duration.ofNanos(0L),
+					Duration.ofNanos(0L), 0));
 
 		// Tests default options
 		var defaultOptions = OllamaOptions.builder().withModel("DEFAULT_MODEL").build();

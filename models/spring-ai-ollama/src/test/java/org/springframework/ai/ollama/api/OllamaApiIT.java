@@ -17,6 +17,7 @@
 package org.springframework.ai.ollama.api;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -71,6 +72,12 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.done()).isTrue();
 		assertThat(response.message().role()).isEqualTo(Role.ASSISTANT);
 		assertThat(response.message().content()).contains("Sofia");
+		assertThat(response.totalDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(response.loadDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(response.promptEvalDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(response.evalDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(response.promptEvalCount()).isGreaterThan(1);
+		assertThat(response.evalCount()).isGreaterThan(1);
 	}
 
 	@Test
@@ -97,6 +104,12 @@ public class OllamaApiIT extends BaseOllamaIT {
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
 		assertThat(lastResponse.done()).isTrue();
+		assertThat(lastResponse.totalDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(lastResponse.loadDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(lastResponse.promptEvalDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(lastResponse.evalDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(lastResponse.promptEvalCount()).isGreaterThan(1);
+		assertThat(lastResponse.evalCount()).isGreaterThan(1);
 	}
 
 	@Test
@@ -110,8 +123,8 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.embeddings().get(0)).hasSize(3072);
 		assertThat(response.model()).isEqualTo(MODEL);
 		assertThat(response.promptEvalCount()).isEqualTo(5);
-		assertThat(response.loadDuration()).isGreaterThan(1);
-		assertThat(response.totalDuration()).isGreaterThan(1);
+		assertThat(response.loadDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
+		assertThat(response.totalDuration()).isBetween(Duration.ofNanos(1), Duration.ofSeconds(100));
 	}
 
 }
