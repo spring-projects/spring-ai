@@ -52,9 +52,9 @@ public class DocumentTests {
 			URL mediaUrl2 = new URL("http://type2");
 			URL mediaUrl3 = new URL("http://type3");
 
-			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
-			Media media2 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl2);
-			Media media3 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl3);
+			Media media1 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl1).build();
+			Media media2 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl2).build();
+			Media media3 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl3).build();
 
 			Document document = Document.builder().media(media1).media(media2).media(List.of(media3)).build();
 
@@ -169,8 +169,8 @@ public class DocumentTests {
 		try {
 			URL mediaUrl1 = new URL("http://type1");
 			URL mediaUrl2 = new URL("http://type2");
-			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
-			Media media2 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl2);
+			Media media1 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl1).build();
+			Media media2 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl2).build();
 			return List.of(media1, media2);
 		}
 		catch (MalformedURLException e) {

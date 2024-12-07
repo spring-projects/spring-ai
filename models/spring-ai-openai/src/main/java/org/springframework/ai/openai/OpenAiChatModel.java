@@ -400,7 +400,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			String mimeType = String.format("audio/%s", request.audioParameters().format().name().toLowerCase());
 			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
 			Resource resource = new ByteArrayResource(audioData);
-			media.add(new Media(MimeTypeUtils.parseMimeType(mimeType), resource, audioOutput.id()));
+			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
+			media.add(Media.builder()
+				.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+				.data(resource)
+				.id(audioOutput.id())
+				.build());
 			if (!StringUtils.hasText(textContent)) {
 				textContent = audioOutput.transcript();
 			}

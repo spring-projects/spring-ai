@@ -15,14 +15,7 @@ TIP: The Bedrock Converse API provides a unified interface across multiple model
 [NOTE]
 ====
 Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all chat conversation implementations in Spring AI. 
-While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the Converse API for several key benefits:
-
-- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
-- Model Flexibility: Seamlessly switch between different conversation models without code changes
-- Extended Functionality: Support for model-specific parameters through dedicated structures
-- Tool Support: Native integration with function calling and tool usage capabilities
-- Multimodal Capabilities: Built-in support for vision and other multimodal features
-- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+While the existing xref:api/bedrock-chat.adoc[InvokeModel API] supports conversation applications, we strongly recommend adopting the Converse API for all Char conversation models.
 
 The Converse API does not support embedding operations, so these will remain in the current API and the embedding model functionality in the existing `InvokeModel API` will be maintained
 ====
@@ -115,7 +108,11 @@ var options = FunctionCallingOptions.builder()
             .build()))
         .build();
 
-ChatResponse response = chatModel.call(new Prompt("What is current weather in Amsterdam?", options));
+String response = ChatClient.create(this.chatModel)
+    .prompt("What is current weather in Amsterdam?")
+    .options()
+    .call(options)
+    .content();
 ----
 
 == Tool/Function Calling
@@ -133,9 +130,124 @@ public Function<Request, Response> weatherFunction() {
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")				
         .function("weatherFunction")
+        .inputType(Request.class)
         .call()
         .content();
 ----
+
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, video, pdf, doc, html, md and more data formats. 
+
+The Bedrock Converse API supports multimodal inputs, including text and image inputs, and can generate a text response based on the combined input.
+
+You need a model that supports multimodal inputs, such as the Anthropic Claude or Amazon Nova models.
+
+=== Images
+
+For link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[models] that support vision multimodality, such as Amazon Nova, Anthropic Claude, Llama 3.2, the Bedrock Converse API Amazon allows you to include multiple images in the payload. Those models can analyze the passed images and answer questions, classify an image, as well as summarize images based on provided instructions.
+
+Currently, Bedrock Converse supports the `base64` encoded images of `image/jpeg`, `image/png`, `image/gif` and `image/webp` mime types.
+
+Spring AI's `Message` interface supports multimodal AI models by introducing the `Media` type.
+It contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+Below is a simple code example, demonstrating the combination of user text with an image.
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user(u -> u.text("Explain what do you see on this picture?")
+        .media(Media.Format.IMAGE_PNG, new ClassPathResource("/test.png")))
+    .call()
+    .content();
+
+logger.info(response);
+----
+
+It takes as an input the `test.png` image:
+
+image::multimodal.test.png[Multimodal Test Image, 200, 200, align="left"]
+
+along with the text message "Explain what do you see on this picture?", and generates a response something like:
+
+----
+The image shows a close-up view of a wire fruit basket containing several pieces of fruit.
+...
+----
+
+=== Video
+
+The link:https://docs.aws.amazon.com/nova/latest/userguide/modalities-video.html[Amazon Nova models] allow you to include a single video in the payload, which can be provided either in base64 format or through an Amazon S3 URI.
+
+Currently, Bedrock Nova supports the images of `video/x-matros`, `video/quicktime`, `video/mp4`, `video/video/webm`, `video/x-flv`, `video/mpeg`, `video/x-ms-wmv` and `image/3gpp` mime types.
+
+Spring AI's `Message` interface supports multimodal AI models by introducing the `Media`` type.
+It contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+Below is a simple code example, demonstrating the combination of user text with a video.
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user(u -> u.text("Explain what do you see in this video?")
+        .media(Media.Format.VIDEO_MP4, new ClassPathResource("/test.video.mp4")))
+    .call()
+    .content();
+
+logger.info(response);
+----
+
+It takes as an input the `test.video.mp4` image:
+
+image::test.video.jpeg[Multimodal Test Video, 200, 200, align="left"]
+
+along with the text message "Explain what do you see in this video?", and generates a response something like:
+
+----
+The video shows a group of baby chickens, also known as chicks, huddled together on a surface 
+...
+----
+
+=== Documents
+
+For some models, Bedrock allows you to include documents in the payload through Converse API document support, which can be provided in bytes. 
+The document support has two different variants as explained below:
+
+- **Text document types** (txt, csv, html, md, and so on), where the emphasis is on text understanding. These use case include answering based on textual elements of the document.
+- **Media document types** (pdf, docx, xlsx), where the emphasis is on vision-based understanding to answer questions. These use cases include answering questions based on charts, graphs, and so on.
+
+Currently the Anthropic link:https://docs.anthropic.com/en/docs/build-with-claude/pdf-support[PDF support (beta)] and Amazon Bedrock Nova models support document multimodality.
+
+Below is a simple code example, demonstrating the combination of user text with a media document.
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user(u -> u.text(
+            "You are a very professional document summarization specialist. Please summarize the given document.")
+        .media(Media.Format.DOC_PDF, new ClassPathResource("/spring-ai-reference-overview.pdf")))
+    .call()
+    .content();
+
+logger.info(response);
+----
+
+It takes as an input the `spring-ai-reference-overview.pdf` document:
+
+image::test.pdf.png[Multimodal Test PNG, 200, 200, align="left"]
+
+along with the text message "You are a very professional document summarization specialist. Please summarize the given document.", and generates a response something like:
+
+----
+**Introduction:**
+- Spring AI is designed to simplify the development of applications with artificial intelligence (AI) capabilities, aiming to avoid unnecessary complexity.
+...
+----
+
 
 == Sample Controller
 

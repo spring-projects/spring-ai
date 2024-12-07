@@ -20,27 +20,85 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
 /**
  * The Media class represents the data and metadata of a media attachment in a message. It
- * consists of a MIME type and the raw data.
+ * consists of a MIME type, raw data, and optional metadata such as id and name.
  *
+ * <p>
+ * Media objects can be used in the UserMessage class to attach various types of content
+ * like images, documents, or videos. When interacting with AI models, the id and name
+ * fields help track and reference specific media objects.
+ *
+ * <p>
+ * The id field is typically assigned by AI models when they reference previously provided
+ * media.
+ *
+ * <p>
+ * The name field can be used to provide a descriptive identifier to the model, though
+ * care should be taken to avoid prompt injection vulnerabilities. For amazon AWS the name
+ * must only contain:
+ * <ul>
+ * <li>Alphanumeric characters
+ * <li>Whitespace characters (no more than one in a row)
+ * <li>Hyphens
+ * <li>Parentheses
+ * <li>Square brackets
+ * </ul>
+ * Note, this class does not directly enforce that restriction.
+ *
+ * <p>
+ * If no name is provided, one will be automatically generated using the pattern:
+ * {@code {mimeType.subtype}-{UUID}}
+ *
+ * <p>
+ * This class includes a {@link Format} inner class that provides commonly used MIME types
+ * as constants, organized by content category (documents, videos, images). These formats
+ * can be used when constructing Media objects to ensure correct MIME type specification.
+ *
+ * <p>
  * This class is used as a parameter in the constructor of the UserMessage class.
  *
  * @author Christian Tzolov
- * @since 0.8.1
+ * @author Mark Pollack
+ * @since 1.0.0
  */
 public class Media {
 
-	public static final String MEDIA_NO_ID = "nope";
+	private static final String NAME_PREFIX = "media-";
 
-	private final String id;
+	/**
+	 * An Id of the media object, usually defined when the model returns a reference to
+	 * media it has been passed.
+	 */
+	@Nullable
+	private String id;
 
 	private final MimeType mimeType;
 
 	private final Object data;
+
+	/**
+	 * The name of the media object that can be referenced by the AI model.
+	 * <p>
+	 * Important security note: This field is vulnerable to prompt injections, as the
+	 * model might inadvertently interpret it as instructions. It is recommended to
+	 * specify neutral names.
+	 *
+	 * <p>
+	 * The name must only contain:
+	 * <ul>
+	 * <li>Alphanumeric characters
+	 * <li>Whitespace characters (no more than one in a row)
+	 * <li>Hyphens
+	 * <li>Parentheses
+	 * <li>Square brackets
+	 * </ul>
+	 */
+	private String name;
 
 	/**
 	 * Create a new Media instance.
@@ -49,9 +107,11 @@ public class Media {
 	 */
 	public Media(MimeType mimeType, URL url) {
 		Assert.notNull(mimeType, "MimeType must not be null");
+		Assert.notNull(url, "URL must not be null");
 		this.mimeType = mimeType;
+		this.id = null;
 		this.data = url.toString();
-		this.id = MEDIA_NO_ID;
+		this.name = generateDefaultName(mimeType);
 	}
 
 	/**
@@ -60,7 +120,18 @@ public class Media {
 	 * @param resource the media resource
 	 */
 	public Media(MimeType mimeType, Resource resource) {
-		this(mimeType, resource, MEDIA_NO_ID);
+		Assert.notNull(mimeType, "MimeType must not be null");
+		Assert.notNull(resource, "Data must not be null");
+		try {
+			byte[] bytes = resource.getContentAsByteArray();
+			this.mimeType = mimeType;
+			this.id = null;
+			this.data = bytes;
+			this.name = generateDefaultName(mimeType);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -68,18 +139,49 @@ public class Media {
 	 * @param mimeType the media MIME type
 	 * @param resource the media resource
 	 * @param id the media id
+	 * @deprecated Use {@link Builder} instead.
 	 */
+	@Deprecated(since = "1.0.0.M5")
 	public Media(MimeType mimeType, Resource resource, String id) {
 		Assert.notNull(mimeType, "MimeType must not be null");
-		Assert.notNull(id, "Id must not be null");
-		this.mimeType = mimeType;
-		this.id = id;
+		Assert.notNull(resource, "Resource must not be null");
 		try {
-			this.data = resource.getContentAsByteArray();
+			byte[] bytes = resource.getContentAsByteArray();
+			this.mimeType = mimeType;
+			this.id = id;
+			this.data = bytes;
+			this.name = generateDefaultName(mimeType);
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * Creates a new Media builder.
+	 * @return a new Media builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Create a new Media instance.
+	 * @param mimeType the media MIME type
+	 * @param data the media data
+	 * @param id the media id
+	 */
+	private Media(MimeType mimeType, Object data, String id, String name) {
+		Assert.notNull(mimeType, "MimeType must not be null");
+		Assert.notNull(data, "Data must not be null");
+		this.mimeType = mimeType;
+		this.id = id;
+		this.name = (name != null) ? name : generateDefaultName(mimeType);
+		this.data = data;
+	}
+
+	private static String generateDefaultName(MimeType mimeType) {
+		return NAME_PREFIX + mimeType.getSubtype() + "-" + java.util.UUID.randomUUID();
 	}
 
 	/**
@@ -117,6 +219,256 @@ public class Media {
 	 */
 	public String getId() {
 		return this.id;
+	}
+
+	public String getName() {
+		return this.name;
+	}
+
+	/**
+	 * Builder class for Media.
+	 */
+	public static class Builder {
+
+		private String id;
+
+		private MimeType mimeType;
+
+		private Object data;
+
+		private String name;
+
+		private Builder() {
+		}
+
+		/**
+		 * Sets the MIME type for the media object.
+		 * @param mimeType the media MIME type, must not be null
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if mimeType is null
+		 */
+		public Builder mimeType(MimeType mimeType) {
+			Assert.notNull(mimeType, "MimeType must not be null");
+			this.mimeType = mimeType;
+			return this;
+		}
+
+		/**
+		 * Sets the media data from a Resource.
+		 * @param resource the media resource, must not be null
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if resource is null or if reading the resource
+		 * content fails
+		 */
+		public Builder data(Resource resource) {
+			Assert.notNull(resource, "Data must not be null");
+			try {
+				this.data = resource.getContentAsByteArray();
+			}
+			catch (IOException e) {
+				throw new IllegalArgumentException(e);
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the media data from any Object.
+		 * @param data the media data object, must not be null
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if data is null
+		 */
+		public Builder data(Object data) {
+			Assert.notNull(data, "Data must not be null");
+			this.data = data;
+			return this;
+		}
+
+		/**
+		 * Sets the media data from a URL.
+		 * @param url the media URL, must not be null
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if url is null
+		 */
+		public Builder data(URL url) {
+			Assert.notNull(url, "URL must not be null");
+			this.data = url.toString();
+			return this;
+		}
+
+		/**
+		 * Sets the ID for the media object. The ID is typically assigned by AI models
+		 * when they return a reference to previously provided media content.
+		 * @param id the media identifier
+		 * @return the builder instance
+		 */
+		public Builder id(String id) {
+			this.id = id;
+			return this;
+		}
+
+		/**
+		 * Sets the name for the media object.
+		 * <p>
+		 * Important security note: This field is vulnerable to prompt injections, as the
+		 * model might inadvertently interpret it as instructions. It is recommended to
+		 * specify neutral names.
+		 *
+		 * <p>
+		 * The name must only contain:
+		 * <ul>
+		 * <li>Alphanumeric characters
+		 * <li>Whitespace characters (no more than one in a row)
+		 * <li>Hyphens
+		 * <li>Parentheses
+		 * <li>Square brackets
+		 * </ul>
+		 * @param name the media name
+		 * @return the builder instance
+		 */
+		public Builder name(String name) {
+			this.name = name;
+			return this;
+		}
+
+		/**
+		 * Builds a new Media instance with the configured properties.
+		 * @return a new Media instance
+		 * @throws IllegalArgumentException if mimeType or data are null
+		 */
+		public Media build() {
+			return new Media(this.mimeType, this.data, this.id, this.name);
+		}
+
+	}
+
+	/**
+	 * Common media formats.
+	 */
+	public static class Format {
+
+		// -----------------
+		// Document formats
+		// -----------------
+		/**
+		 * Public constant mime type for {@code application/pdf}.
+		 */
+		public static final MimeType DOC_PDF = MimeType.valueOf("application/pdf");
+
+		/**
+		 * Public constant mime type for {@code text/csv}.
+		 */
+		public static final MimeType DOC_CSV = MimeType.valueOf("text/csv");
+
+		/**
+		 * Public constant mime type for {@code application/msword}.
+		 */
+		public static final MimeType DOC_DOC = MimeType.valueOf("application/msword");
+
+		/**
+		 * Public constant mime type for
+		 * {@code application/vnd.openxmlformats-officedocument.wordprocessingml.document}.
+		 */
+		public static final MimeType DOC_DOCX = MimeType
+			.valueOf("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+		/**
+		 * Public constant mime type for {@code application/vnd.ms-excel}.
+		 */
+		public static final MimeType DOC_XLS = MimeType.valueOf("application/vnd.ms-excel");
+
+		/**
+		 * Public constant mime type for
+		 * {@code application/vnd.openxmlformats-officedocument.spreadsheetml.sheet}.
+		 */
+		public static final MimeType DOC_XLSX = MimeType
+			.valueOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+		/**
+		 * Public constant mime type for {@code text/html}.
+		 */
+		public static final MimeType DOC_HTML = MimeType.valueOf("text/html");
+
+		/**
+		 * Public constant mime type for {@code text/plain}.
+		 */
+		public static final MimeType DOC_TXT = MimeType.valueOf("text/plain");
+
+		/**
+		 * Public constant mime type for {@code text/markdown}.
+		 */
+		public static final MimeType DOC_MD = MimeType.valueOf("text/markdown");
+
+		// -----------------
+		// Video Formats
+		// -----------------
+		/**
+		 * Public constant mime type for {@code video/x-matros}.
+		 */
+		public static final MimeType VIDEO_MKV = MimeType.valueOf("video/x-matros");
+
+		/**
+		 * Public constant mime type for {@code video/quicktime}.
+		 */
+		public static final MimeType VIDEO_MOV = MimeType.valueOf("video/quicktime");
+
+		/**
+		 * Public constant mime type for {@code video/mp4}.
+		 */
+		public static final MimeType VIDEO_MP4 = MimeType.valueOf("video/mp4");
+
+		/**
+		 * Public constant mime type for {@code video/webm}.
+		 */
+		public static final MimeType VIDEO_WEBM = MimeType.valueOf("video/webm");
+
+		/**
+		 * Public constant mime type for {@code video/x-flv}.
+		 */
+		public static final MimeType VIDEO_FLV = MimeType.valueOf("video/x-flv");
+
+		/**
+		 * Public constant mime type for {@code video/mpeg}.
+		 */
+		public static final MimeType VIDEO_MPEG = MimeType.valueOf("video/mpeg");
+
+		/**
+		 * Public constant mime type for {@code video/mpeg}.
+		 */
+		public static final MimeType VIDEO_MPG = MimeType.valueOf("video/mpeg");
+
+		/**
+		 * Public constant mime type for {@code video/x-ms-wmv}.
+		 */
+		public static final MimeType VIDEO_WMV = MimeType.valueOf("video/x-ms-wmv");
+
+		/**
+		 * Public constant mime type for {@code video/3gpp}.
+		 */
+		public static final MimeType VIDEO_THREE_GP = MimeType.valueOf("video/3gpp");
+
+		// -----------------
+		// Image Formats
+		// -----------------
+		/**
+		 * Public constant mime type for {@code image/png}.
+		 */
+		public static final MimeType IMAGE_PNG = MimeType.valueOf("image/png");
+
+		/**
+		 * Public constant mime type for {@code image/jpeg}.
+		 */
+		public static final MimeType IMAGE_JPEG = MimeType.valueOf("image/jpeg");
+
+		/**
+		 * Public constant mime type for {@code image/gif}.
+		 */
+		public static final MimeType IMAGE_GIF = MimeType.valueOf("image/gif");
+
+		/**
+		 * Public constant mime type for {@code image/webp}.
+		 */
+		public static final MimeType IMAGE_WEBP = MimeType.valueOf("image/webp");
+
 	}
 
 }

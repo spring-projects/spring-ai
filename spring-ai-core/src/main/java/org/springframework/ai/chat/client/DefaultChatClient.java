@@ -203,7 +203,7 @@ public class DefaultChatClient implements ChatClient {
 		public PromptUserSpec media(MimeType mimeType, URL url) {
 			Assert.notNull(mimeType, "mimeType cannot be null");
 			Assert.notNull(url, "url cannot be null");
-			this.media.add(new Media(mimeType, url));
+			this.media.add(Media.builder().mimeType(mimeType).data(url).build());
 			return this;
 		}
 
@@ -211,7 +211,7 @@ public class DefaultChatClient implements ChatClient {
 		public PromptUserSpec media(MimeType mimeType, Resource resource) {
 			Assert.notNull(mimeType, "mimeType cannot be null");
 			Assert.notNull(resource, "resource cannot be null");
-			this.media.add(new Media(mimeType, resource));
+			this.media.add(Media.builder().mimeType(mimeType).data(resource).build());
 			return this;
 		}
 

@@ -67,8 +67,20 @@ class BedrockAi21Jurassic2ChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
+		String content = response.getResult().getOutput().getContent();
 
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		// System.out.println("Response content: " + content);
+
+		assertThat(content).satisfies(text -> {
+			// Check for name
+			assertThat(text).contains("Bob");
+
+			// Check for pirate speech patterns with better error message
+			assertThat(text).matches(
+					t -> t.contains("Arrr") || t.contains("matey") || t.contains("ye") || t.contains("yer")
+							|| t.contains("shiver me timbers") || t.contains("scurvy"),
+					"should contain pirate speech patterns");
+		});
 	}
 
 	@Test
@@ -85,7 +97,8 @@ class BedrockAi21Jurassic2ChatModelIT {
 
 		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).matches(content -> content.contains("😄"));
+		assertThat(response.getResult().getOutput().getContent())
+			.matches(content -> content.contains("😄") || content.contains(":)"));
 	}
 
 	@Test

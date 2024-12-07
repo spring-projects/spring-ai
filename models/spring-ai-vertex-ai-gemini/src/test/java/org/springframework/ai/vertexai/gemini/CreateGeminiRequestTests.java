@@ -80,7 +80,7 @@ public class CreateGeminiRequestTests {
 		var systemMessage = new SystemMessage("System Message Text");
 
 		var userMessage = new UserMessage("User Message Text",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, new URL("http://example.com"))));
+				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new URL("http://example.com")).build()));
 
 		var client = new VertexAiGeminiChatModel(this.vertexAI,
 				VertexAiGeminiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6).build());

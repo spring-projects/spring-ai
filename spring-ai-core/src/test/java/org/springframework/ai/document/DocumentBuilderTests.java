@@ -40,8 +40,8 @@ public class DocumentBuilderTests {
 		try {
 			URL mediaUrl1 = new URL("http://type1");
 			URL mediaUrl2 = new URL("http://type2");
-			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
-			Media media2 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl2);
+			Media media1 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl1).build();
+			Media media2 = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl2).build();
 			return List.of(media1, media2);
 		}
 		catch (MalformedURLException e) {
@@ -123,7 +123,7 @@ public class DocumentBuilderTests {
 	@Test
 	void testWithMediaSingle() throws MalformedURLException {
 		URL mediaUrl = new URL("http://test");
-		Media media = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl);
+		Media media = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build();
 
 		Document.Builder result = this.builder.media(media);
 

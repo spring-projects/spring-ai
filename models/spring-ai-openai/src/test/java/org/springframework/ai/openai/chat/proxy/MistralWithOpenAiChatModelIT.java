@@ -322,8 +322,10 @@ class MistralWithOpenAiChatModelIT {
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
@@ -338,8 +340,10 @@ class MistralWithOpenAiChatModelIT {
 	void streamingMultiModalityImageUrl() throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(List.of(userMessage)));
 

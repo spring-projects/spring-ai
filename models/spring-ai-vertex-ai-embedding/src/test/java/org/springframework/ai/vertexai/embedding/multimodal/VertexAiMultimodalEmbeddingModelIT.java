@@ -111,7 +111,10 @@ class VertexAiMultimodalEmbeddingModelIT {
 		assertThat(this.multiModelEmbeddingModel).isNotNull();
 
 		var document = Document.builder()
-			.media(new Media(MimeTypeUtils.TEXT_PLAIN, URI.create("http://example.com/image.png").toURL()))
+			.media(Media.builder()
+				.mimeType(MimeTypeUtils.TEXT_PLAIN)
+				.data(URI.create("http://example.com/image.png").toURL())
+				.build())
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);

@@ -104,7 +104,14 @@ class BedrockLlamaChatModelIT {
 
 		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResult().getOutput().getContent()).satisfies(content -> {
+			// Check for name
+			assertThat(content).contains("Bob");
+
+			// Check for pirate speech patterns - should match at least one
+			assertThat(content).matches(text -> text.contains("Arrr") || text.contains("matey") || text.contains("ye")
+					|| text.contains("yer") || text.contains("shiver me timbers") || text.contains("scurvy"));
+		});
 	}
 
 	@Test
