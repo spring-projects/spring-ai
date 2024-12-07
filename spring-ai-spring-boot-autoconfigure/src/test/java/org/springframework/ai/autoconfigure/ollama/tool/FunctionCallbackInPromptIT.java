@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +86,6 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 		});
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamingFunctionCallTest() {
 		this.contextRunner.run(context -> {

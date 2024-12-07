@@ -22,11 +22,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonFormat.Feature;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Flux;
@@ -133,11 +136,40 @@ public class OllamaApi {
 		Assert.notNull(chatRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
 		return this.webClient.post()
 			.uri("/api/chat")
 			.body(Mono.just(chatRequest), ChatRequest.class)
 			.retrieve()
 			.bodyToFlux(ChatResponse.class)
+			.map(chunk -> {
+				if (OllamaApiHelper.isStreamingToolCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			// Group all chunks belonging to the same function call.
+			// Flux<ChatChatResponse> -> Flux<Flux<ChatChatResponse>>
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && OllamaApiHelper.isStreamingDone(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			// Merging the window chunks into a single chunk.
+			// Reduce the inner Flux<ChatChatResponse> window into a single
+			// Mono<ChatChatResponse>,
+			// Flux<Flux<ChatChatResponse>> -> Flux<Mono<ChatChatResponse>>
+			.concatMapIterable(window -> {
+				Mono<ChatResponse> monoChunk = window.reduce(
+						new ChatResponse(),
+						(previous, current) -> OllamaApiHelper.merge(previous, current));
+				return List.of(monoChunk);
+			})
+			// Flux<Mono<ChatChatResponse>> -> Flux<ChatChatResponse>
+			.flatMap(mono -> mono)
 			.handle((data, sink) -> {
 				if (logger.isTraceEnabled()) {
 					logger.trace(data);
@@ -332,17 +364,44 @@ public class OllamaApi {
 				this.role = role;
 			}
 
+			/**
+			 * @deprecated Use {@link #content(String)} instead.
+			 */
+			@Deprecated
 			public Builder withContent(String content) {
 				this.content = content;
 				return this;
 			}
 
+			public Builder content(String content) {
+				this.content = content;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #images(List)} instead.
+			 */
+			@Deprecated
 			public Builder withImages(List<String> images) {
 				this.images = images;
 				return this;
 			}
 
+			public Builder images(List<String> images) {
+				this.images = images;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #toolCalls(List)} instead.
+			 */
+			@Deprecated
 			public Builder withToolCalls(List<ToolCall> toolCalls) {
+				this.toolCalls = toolCalls;
+				return this;
+			}
+
+			public Builder toolCalls(List<ToolCall> toolCalls) {
 				this.toolCalls = toolCalls;
 				return this;
 			}
@@ -350,7 +409,6 @@ public class OllamaApi {
 			public Message build() {
 				return new Message(this.role, this.content, this.images, this.toolCalls);
 			}
-
 		}
 	}
 
@@ -538,13 +596,36 @@ public class OllamaApi {
 			@JsonProperty("message") Message message,
 			@JsonProperty("done_reason") String doneReason,
 			@JsonProperty("done") Boolean done,
-			@JsonProperty("total_duration") Duration totalDuration,
-			@JsonProperty("load_duration") Duration loadDuration,
+			@JsonProperty("total_duration") Long totalDuration,
+			@JsonProperty("load_duration") Long loadDuration,
 			@JsonProperty("prompt_eval_count") Integer promptEvalCount,
-			@JsonProperty("prompt_eval_duration") Duration promptEvalDuration,
+			@JsonProperty("prompt_eval_duration") Long promptEvalDuration,
 			@JsonProperty("eval_count") Integer evalCount,
-			@JsonProperty("eval_duration") Duration evalDuration
+			@JsonProperty("eval_duration") Long evalDuration
 	) {
+		ChatResponse() {
+			this(null, null, null, null, null, null, null, null, null, null, null);
+		}
+
+		public Duration getTotalDuration() {
+			return (this.totalDuration() != null)? Duration.ofNanos(this.totalDuration()) : null;
+		}
+
+		public Duration getLoadDuration() {
+			return (this.loadDuration() != null)? Duration.ofNanos(this.loadDuration()) : null;
+		}
+
+		public Duration getPromptEvalDuration() {
+			return (this.promptEvalDuration() != null)? Duration.ofNanos(this.promptEvalDuration()) : null;
+		}
+
+		public Duration getEvalDuration() {
+			if (this.evalDuration() == null) {
+				return null;
+			}
+			return Duration.ofNanos(this.evalDuration());
+			// return (this.evalDuration() != null)? Duration.ofNanos(this.evalDuration()) : null;
+		}
 	}
 
 	/**

@@ -228,9 +228,7 @@ You can register custom Java functions with the `OllamaChatModel` and have the O
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/ollama-chat-functions.adoc[Ollama Function Calling].
 
-TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities.
-
-NOTE: Currently, the Ollama API (0.3.8) does not support function calling in streaming mode.
+TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
 
 == Multimodal
 
