@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.pgvector.vectorstore;
 
 import java.util.Collections;
 
@@ -79,7 +79,10 @@ public class PgVectorStoreTests {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var pgVectorStore = new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withMaxDocumentBatchSize(1000)
+		var pgVectorStore = PgVectorStore.builder()
+			.jdbcTemplate(jdbcTemplate)
+			.embeddingModel(embeddingModel)
+			.maxDocumentBatchSize(1000)
 			.build();
 
 		// Testing with 9989 documents

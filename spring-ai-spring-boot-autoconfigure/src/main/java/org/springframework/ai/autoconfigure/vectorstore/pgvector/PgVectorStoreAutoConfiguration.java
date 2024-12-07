@@ -23,7 +23,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.PgVectorStore;
+import org.springframework.ai.pgvector.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -62,18 +62,21 @@ public class PgVectorStoreAutoConfiguration {
 
 		var initializeSchema = properties.isInitializeSchema();
 
-		return new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(properties.getSchemaName())
-			.withVectorTableName(properties.getTableName())
-			.withVectorTableValidationsEnabled(properties.isSchemaValidation())
-			.withDimensions(properties.getDimensions())
-			.withDistanceType(properties.getDistanceType())
-			.withRemoveExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
-			.withIndexType(properties.getIndexType())
-			.withInitializeSchema(initializeSchema)
-			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withSearchObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-			.withBatchingStrategy(batchingStrategy)
-			.withMaxDocumentBatchSize(properties.getMaxDocumentBatchSize())
+		return PgVectorStore.builder()
+			.jdbcTemplate(jdbcTemplate)
+			.embeddingModel(embeddingModel)
+			.schemaName(properties.getSchemaName())
+			.vectorTableName(properties.getTableName())
+			.vectorTableValidationsEnabled(properties.isSchemaValidation())
+			.dimensions(properties.getDimensions())
+			.distanceType(properties.getDistanceType())
+			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
+			.indexType(properties.getIndexType())
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize())
 			.build();
 	}
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.pgvector.vectorstore;
 
 import java.util.Random;
 
@@ -30,7 +30,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.pgvector.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -195,14 +196,17 @@ public class PgVectorStoreCustomNamesIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 
-			return new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(this.schemaName)
-				.withVectorTableName(this.vectorTableName)
-				.withVectorTableValidationsEnabled(this.schemaValidation)
-				.withDimensions(this.dimensions)
-				.withDistanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
-				.withRemoveExistingVectorStoreTable(true)
-				.withIndexType(PgIndexType.HNSW)
-				.withInitializeSchema(true)
+			return PgVectorStore.builder()
+				.jdbcTemplate(jdbcTemplate)
+				.embeddingModel(embeddingModel)
+				.schemaName(this.schemaName)
+				.vectorTableName(this.vectorTableName)
+				.vectorTableValidationsEnabled(this.schemaValidation)
+				.dimensions(this.dimensions)
+				.distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+				.removeExistingVectorStoreTable(true)
+				.indexType(PgIndexType.HNSW)
+				.initializeSchema(true)
 				.build();
 		}
 

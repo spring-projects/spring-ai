@@ -100,6 +100,8 @@ spring:
 		index-type: HNSW
 		distance-type: COSINE_DISTANCE
 		dimensions: 1536
+		batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
+		max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
 ----
 
 TIP: If you run PGvector as a Spring Boot dev service via link:https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.docker-compose[Docker Compose]
@@ -108,7 +110,7 @@ you don't need to configure URL, username and password since they are autoconfig
 
 TIP: Check the list of xref:#pgvector-properties[configuration parameters] to learn about the default values and configuration options.
 
-Now you can auto-wire the `PgVectorStore` in your application and use it
+Now you can auto-wire the `VectorStore` in your application and use it
 
 [source,java]
 ----
@@ -137,7 +139,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property| Description | Default value
 
-|`spring.ai.vectorstore.pgvector.index-type`|  Nearest neighbor search index type. Options are `NONE` - exact nearest neighbor search, `IVFFlat` - index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff). `HNSW` - creates a multilayer graph. It has slower build times and uses more memory than IVFFlat, but has better query performance (in terms of speed-recall tradeoff). There’s no training step like IVFFlat, so the index can be created without any data in the table.| HNSW
+|`spring.ai.vectorstore.pgvector.index-type`|  Nearest neighbor search index type. Options are `NONE` - exact nearest neighbor search, `IVFFlat` - index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff). `HNSW` - creates a multilayer graph. It has slower build times and uses more memory than IVFFlat, but has better query performance (in terms of speed-recall tradeoff). There's no training step like IVFFlat, so the index can be created without any data in the table.| HNSW
 |`spring.ai.vectorstore.pgvector.distance-type`| Search distance type. Defaults to `COSINE_DISTANCE`. But if vectors are normalized to length 1, you can use `EUCLIDEAN_DISTANCE` or `NEGATIVE_INNER_PRODUCT` for best performance.| COSINE_DISTANCE
 |`spring.ai.vectorstore.pgvector.dimensions`| Embeddings dimension. If not specified explicitly the PgVectorStore will retrieve the dimensions form the provided `EmbeddingModel`. Dimensions are set to the embedding column the on table creation. If you change the dimensions your would have to re-create the vector_store table as well. | -
 |`spring.ai.vectorstore.pgvector.remove-existing-vector-store-table` | Deletes the existing `vector_store` table on start up.  | false
@@ -145,6 +147,8 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.pgvector.schema-name` | Vector store schema name | `public`
 |`spring.ai.vectorstore.pgvector.table-name` | Vector store table name | `vector_store`
 |`spring.ai.vectorstore.pgvector.schema-validation` | Enables schema and table name validation to ensure they are valid and existing objects. | false
+|`spring.ai.vectorstore.pgvector.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE`. | TOKEN_COUNT
+|`spring.ai.vectorstore.pgvector.max-document-batch-size` | Maximum number of documents to process in a single batch. | 10000
 
 |===
 
@@ -182,7 +186,7 @@ vectorStore.similaritySearch(SearchRequest.defaults()
         b.eq("article_type", "blog")).build()));
 ----
 
-NOTE: These filter expressions are converted into the equivalent PgVector filters.
+NOTE: These filter expressions are converted into PostgreSQL JSON path expressions for efficient metadata filtering.
 
 == Manual Configuration
 
@@ -216,7 +220,17 @@ To configure PgVector in your application, you can use the following setup:
 ----
 @Bean
 public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-	return new PgVectorStore(jdbcTemplate, embeddingModel);
+    return PgVectorStore.builder()
+        .jdbcTemplate(jdbcTemplate)
+        .embeddingModel(embeddingModel)
+        .dimensions(1536)                    // Optional: defaults to model dimensions or 1536
+        .distanceType(COSINE_DISTANCE)       // Optional: defaults to COSINE_DISTANCE
+        .indexType(HNSW)                     // Optional: defaults to HNSW
+        .initializeSchema(true)              // Optional: defaults to false
+        .schemaName("public")                // Optional: defaults to "public"
+        .vectorTableName("vector_store")     // Optional: defaults to "vector_store"
+        .maxDocumentBatchSize(10000)         // Optional: defaults to 10000
+        .build();
 }
 ----
 

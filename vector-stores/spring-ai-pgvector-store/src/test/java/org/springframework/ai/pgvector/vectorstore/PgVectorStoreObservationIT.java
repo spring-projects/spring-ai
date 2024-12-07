@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.pgvector.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +41,9 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.pgvector.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -185,11 +187,13 @@ public class PgVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return new PgVectorStore.Builder(jdbcTemplate, embeddingModel)
-				.withDistanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
-				.withIndexType(PgIndexType.HNSW)
-				.withObservationRegistry(observationRegistry)
-				.withInitializeSchema(true)
+			return PgVectorStore.builder()
+				.jdbcTemplate(jdbcTemplate)
+				.embeddingModel(embeddingModel)
+				.distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+				.indexType(PgIndexType.HNSW)
+				.observationRegistry(observationRegistry)
+				.initializeSchema(true)
 				.build();
 		}
 

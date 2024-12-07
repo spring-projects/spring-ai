@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.pgvector.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +43,9 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.pgvector.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -354,8 +356,15 @@ public class PgVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return new PgVectorStore(jdbcTemplate, embeddingModel, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
-					this.distanceType, true, PgIndexType.HNSW, true);
+			return PgVectorStore.builder()
+				.jdbcTemplate(jdbcTemplate)
+				.embeddingModel(embeddingModel)
+				.dimensions(PgVectorStore.INVALID_EMBEDDING_DIMENSION)
+				.distanceType(this.distanceType)
+				.initializeSchema(true)
+				.indexType(PgIndexType.HNSW)
+				.removeExistingVectorStoreTable(true)
+				.build();
 		}
 
 		@Bean
