@@ -108,7 +108,11 @@ var options = FunctionCallingOptions.builder()
             .build()))
         .build();
 
-ChatResponse response = chatModel.call(new Prompt("What is current weather in Amsterdam?", options));
+String response = ChatClient.create(this.chatModel)
+    .prompt("What is current weather in Amsterdam?")
+    .options()
+    .call(options)
+    .content();
 ----
 
 == Tool/Function Calling
@@ -126,6 +130,7 @@ public Function<Request, Response> weatherFunction() {
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")				
         .function("weatherFunction")
+        .inputType(Request.class)
         .call()
         .content();
 ----
@@ -144,7 +149,7 @@ For link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-infer
 
 Currently, Bedrock Converse supports the `base64` encoded images of `image/jpeg`, `image/png`, `image/gif` and `image/webp` mime types.
 
-Spring AI's `Message` interface supports multimodal AI models by introducing the `Media`` type.
+Spring AI's `Message` interface supports multimodal AI models by introducing the `Media` type.
 It contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
 Below is a simple code example, demonstrating the combination of user text with an image.
@@ -230,6 +235,8 @@ String response = ChatClient.create(chatModel)
 
 logger.info(response);
 ----
+
+It takes as an input the `spring-ai-reference-overview.pdf` document:
 
 image::test.pdf.png[Multimodal Test PNG, 200, 200, align="left"]
 
