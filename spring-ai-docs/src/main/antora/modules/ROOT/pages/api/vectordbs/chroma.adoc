@@ -79,7 +79,7 @@ spring.ai.vectorstore.chroma.collection-name=<your collection name>
 # Chroma Vector Store configuration properties
 
 # OpenAI API key if the OpenAI auto-configuration is used.
-spring.ai.openai.api.key=<OpenAI Api-key>
+spring.ai.openai.api-key=<OpenAI Api-key>
 ----
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.

@@ -62,7 +62,7 @@ spring.neo4j.uri=<uri_for_your_neo4j_instance>
 spring.neo4j.authentication.username=<your_username>
 spring.neo4j.authentication.password=<your_password>
 # API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
+spring.ai.openai.api-key=<OpenAI Api-key>
 ----
 
 environment variables,

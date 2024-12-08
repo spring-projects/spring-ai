@@ -76,7 +76,7 @@ spring.ai.vectorstore.qdrant.api-key=<your api key>
 spring.ai.vectorstore.qdrant.collection-name=<The name of the collection to use in Qdrant>
 
 # API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
+spring.ai.openai.api-key=<OpenAI Api-key>
 ----
 
 TIP: Check the list of xref:#qdrant-vectorstore-properties[configuration parameters] to learn about the default values and configuration options.

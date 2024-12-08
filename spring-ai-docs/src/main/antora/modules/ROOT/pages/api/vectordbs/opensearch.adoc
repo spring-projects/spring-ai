@@ -55,17 +55,17 @@ spring:
         uris: <opensearch instance URIs>
         username: <opensearch username>
         password: <opensearch password>
-        indexName: <opensearch index name>
-        mappingJson: <JSON mapping for opensearch index>
+        index-name: <opensearch index name>
+        mapping-json: <JSON mapping for opensearch index>
         aws:
           host: <aws opensearch host>
-          serviceName: <aws service name>
-          accessKey: <aws access key>
-          secretKey: <aws secret key>
+          service-name: <aws service name>
+          access-key: <aws access key>
+          secret-key: <aws secret key>
           region: <aws region>
 # API key if needed, e.g. OpenAI
     openai:
-      apiKey: <api-key>
+      api-key: <api-key>
 ----
 TIP: Check the list of xref:#_configuration_properties[configuration parameters] to learn about the default values and configuration options.
 
@@ -102,7 +102,7 @@ Then use the `spring.ai.vectorstore.opensearch.*` properties to configure the co
 
 === Amazon OpenSearch Service
 
-To enable Amazon OpenSearch Service., add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+To enable Amazon OpenSearch Service, add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
 [tabs]
 ======
@@ -172,8 +172,8 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.opensearch.uris`| URIs of the OpenSearch cluster endpoints. | -
 |`spring.ai.vectorstore.opensearch.username`| Username for accessing the OpenSearch cluster. | -
 |`spring.ai.vectorstore.opensearch.password`| Password for the specified username. | -
-|`spring.ai.vectorstore.opensearch.indexName`| Name of the default index to be used within the OpenSearch cluster. | `spring-ai-document-index`
-|`spring.ai.vectorstore.opensearch.mappingJson`| JSON string defining the mapping for the index; specifies how documents and their
+|`spring.ai.vectorstore.opensearch.index-name`| Name of the default index to be used within the OpenSearch cluster. | `spring-ai-document-index`
+|`spring.ai.vectorstore.opensearch.mapping-json`| JSON string defining the mapping for the index; specifies how documents and their
 fields are stored and indexed. Refer link:https://opensearch.org/docs/latest/search-plugins/vector-search/[here] for some sample configurations |
 {
     "properties":{
@@ -184,9 +184,9 @@ fields are stored and indexed. Refer link:https://opensearch.org/docs/latest/sea
     }
 }
 |`spring.ai.vectorstore.opensearch.aws.host`| Hostname of the OpenSearch instance. | -
-|`spring.ai.vectorstore.opensearch.aws.serviceName`| AWS service name for the OpenSearch instance. | -
-|`spring.ai.vectorstore.opensearch.aws.accessKey`| AWS access key for the OpenSearch instance. | -
-|`spring.ai.vectorstore.opensearch.aws.secretKey`| AWS secret key for the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.service-name`| AWS service name for the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.access-key`| AWS access key for the OpenSearch instance. | -
+|`spring.ai.vectorstore.opensearch.aws.secret-key`| AWS secret key for the OpenSearch instance. | -
 |`spring.ai.vectorstore.opensearch.aws.region`| AWS region for the OpenSearch instance. | -
 |===
 

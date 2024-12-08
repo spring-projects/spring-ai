@@ -105,12 +105,12 @@ The following configuration properties are available for the Cosmos DB vector st
 |===
 | Property | Description
 
-| spring.ai.vectorstore.cosmosdb.databaseName | The name of the Cosmos DB database to use.
-| spring.ai.vectorstore.cosmosdb.containerName | The name of the Cosmos DB container to use.
-| spring.ai.vectorstore.cosmosdb.partitionKeyPath | The path for the partition key.
-| spring.ai.vectorstore.cosmosdb.metadataFields | Comma-separated list of metadata fields.
-| spring.ai.vectorstore.cosmosdb.vectorStoreThroughput | The throughput for the vector store.
-| spring.ai.vectorstore.cosmosdb.vectorDimensions | The number of dimensions for the vectors.
+| spring.ai.vectorstore.cosmosdb.database-name | The name of the Cosmos DB database to use.
+| spring.ai.vectorstore.cosmosdb.container-name | The name of the Cosmos DB container to use.
+| spring.ai.vectorstore.cosmosdb.partition-key-path | The path for the partition key.
+| spring.ai.vectorstore.cosmosdb.metadata-fields | Comma-separated list of metadata fields.
+| spring.ai.vectorstore.cosmosdb.vector-store-throughput | The throughput for the vector store.
+| spring.ai.vectorstore.cosmosdb.vector-dimensions | The number of dimensions for the vectors.
 | spring.ai.vectorstore.cosmosdb.endpoint | The endpoint for the Cosmos DB.
 | spring.ai.vectorstore.cosmosdb.key | The key for the Cosmos DB.
 |===
