@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -54,12 +55,10 @@ public class PostgresMlAutoConfigurationIT {
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
 			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.8.1").asCompatibleSubstituteFor("postgres"))
 		.withCommand("sleep", "infinity")
-		.withLabel("org.springframework.boot.service-connection", "postgres")
 		.withUsername("postgresml")
 		.withPassword("postgresml")
 		.withDatabaseName("postgresml")
-		.waitingFor(new LogMessageWaitStrategy().withRegEx(".*Starting dashboard.*\\s")
-			.withStartupTimeout(Duration.of(60, ChronoUnit.SECONDS)));
+		.waitingFor(Wait.forLogMessage(".*Starting dashboard.*\\s", 1));
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
