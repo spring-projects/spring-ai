@@ -41,6 +41,7 @@ import org.springframework.boot.autoconfigure.web.reactive.function.client.WebCl
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -82,7 +83,7 @@ public class OllamaAutoConfiguration {
 	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
 			OllamaInitializationProperties initProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackResolver functionCallbackResolver, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+			ObjectProvider<ChatModelObservationConvention> observationConvention, RetryTemplate retryTemplate) {
 		var chatModelPullStrategy = initProperties.getChat().isInclude() ? initProperties.getPullModelStrategy()
 				: PullModelStrategy.NEVER;
 
@@ -95,6 +96,7 @@ public class OllamaAutoConfiguration {
 			.withModelManagementOptions(
 					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),
 							initProperties.getTimeout(), initProperties.getMaxRetries()))
+			.withRetryTemplate(retryTemplate)
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
