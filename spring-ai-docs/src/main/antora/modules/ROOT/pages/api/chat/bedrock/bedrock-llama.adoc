@@ -1,5 +1,18 @@
 = Llama Chat
 
+[NOTE]
+====
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI. 
+While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] for several key benefits:
+
+- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
+- Model Flexibility: Seamlessly switch between different conversation models without code changes
+- Extended Functionality: Support for model-specific parameters through dedicated structures
+- Tool Support: Native integration with function calling and tool usage capabilities
+- Multimodal Capabilities: Built-in support for vision and other multimodal features
+- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+====
+
 https://ai.meta.com/llama/[Meta's Llama Chat] is part of the Llama collection of large language models.
 It excels in dialogue-based applications with a parameter scale ranging from 7 billion to 70 billion.
 Leveraging public datasets and over 1 million human annotations, Llama Chat offers context-aware dialogues.

@@ -18,10 +18,12 @@ package org.springframework.ai.bedrock.converse;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,10 +53,13 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
+import software.amazon.awssdk.services.bedrockruntime.model.DocumentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
@@ -64,7 +69,11 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolResultBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolResultContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
 
+import org.springframework.ai.bedrock.converse.api.BedrockMediaFormat;
 import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.bedrock.converse.api.URLValidator;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -86,6 +95,7 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
@@ -252,14 +262,10 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 						contents.add(ContentBlock.fromText(userMessage.getContent()));
 
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
-								ContentBlock cb = ContentBlock.fromImage(ImageBlock.builder()
-									.format(media.getMimeType().getSubtype())
-									.source(ImageSource
-										.fromBytes(SdkBytes.fromByteArray(getContentMediaData(media.getData()))))
-									.build());
-								return cb;
-							}).toList();
+							List<ContentBlock> mediaContent = userMessage.getMedia()
+								.stream()
+								.map(this::mapMediaToContentBlock)
+								.toList();
 							contents.addAll(mediaContent);
 						}
 					}
@@ -341,6 +347,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 					? updatedRuntimeOptions.getTemperature().floatValue() : null)
 			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
 			.build();
+
 		Document additionalModelRequestFields = ConverseApiUtils
 			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
 
@@ -352,6 +359,91 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
 			.build();
+	}
+
+	private ContentBlock mapMediaToContentBlock(Media media) {
+
+		var mimeType = media.getMimeType();
+
+		if (BedrockMediaFormat.isSupportedVideoFormat(mimeType)) { // Video
+			VideoFormat videoFormat = BedrockMediaFormat.getVideoFormat(mimeType);
+			VideoSource videoSource = null;
+			if (media.getData() instanceof byte[] bytes) {
+				videoSource = VideoSource.builder().bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
+			}
+			else if (media.getData() instanceof String uriText) {
+				// if (URLValidator.isValidURLBasic(uriText)) {
+				videoSource = VideoSource.builder().s3Location(S3Location.builder().uri(uriText).build()).build();
+				// }
+			}
+			else if (media.getData() instanceof URL url) {
+				try {
+					videoSource = VideoSource.builder()
+						.s3Location(S3Location.builder().uri(url.toURI().toString()).build())
+						.build();
+				}
+				catch (URISyntaxException e) {
+					throw new IllegalArgumentException(e);
+				}
+			}
+			else {
+				throw new IllegalArgumentException("Invalid video content type: " + media.getData().getClass());
+			}
+
+			return ContentBlock.fromVideo(VideoBlock.builder().source(videoSource).format(videoFormat).build());
+		}
+		else if (BedrockMediaFormat.isSupportedImageFormat(mimeType)) { // Image
+			ImageSource.Builder sourceBuilder = ImageSource.builder();
+			if (media.getData() instanceof byte[] bytes) {
+				sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
+			}
+			else if (media.getData() instanceof String text) {
+
+				if (URLValidator.isValidURLBasic(text)) {
+					try {
+						URL url = new URL(text);
+						URLConnection connection = url.openConnection();
+						try (InputStream is = connection.getInputStream()) {
+							sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(StreamUtils.copyToByteArray(is))).build();
+						}
+					}
+					catch (IOException e) {
+						throw new RuntimeException("Failed to read media data from URL: " + text, e);
+					}
+				}
+				else {
+					sourceBuilder.bytes(SdkBytes.fromByteArray(Base64.getDecoder().decode(text)));
+				}
+			}
+			else if (media.getData() instanceof URL url) {
+
+				try (InputStream is = url.openConnection().getInputStream()) {
+					byte[] imageBytes = StreamUtils.copyToByteArray(is);
+					sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(imageBytes)).build();
+				}
+				catch (IOException e) {
+					throw new IllegalArgumentException("Failed to read media data from URL: " + url, e);
+				}
+			}
+			else {
+				throw new IllegalArgumentException("Invalid Image content type: " + media.getData().getClass());
+			}
+
+			return ContentBlock.fromImage(ImageBlock.builder()
+				.source(sourceBuilder.build())
+				.format(BedrockMediaFormat.getImageFormat(mimeType))
+				.build());
+		}
+		else if (BedrockMediaFormat.isSupportedDocumentFormat(mimeType)) { // Document
+
+			return ContentBlock.fromDocument(DocumentBlock.builder()
+				.name(media.getName())
+				.format(BedrockMediaFormat.getDocumentFormat(mimeType))
+				.source(DocumentSource.builder().bytes(SdkBytes.fromByteArray(media.getDataAsByteArray())).build())
+				.build());
+		}
+
+		throw new IllegalArgumentException("Unsupported media format: " + mimeType);
 	}
 
 	private List<Tool> getFunctionTools(Set<String> functionNames) {
