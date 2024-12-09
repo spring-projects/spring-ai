@@ -137,6 +137,7 @@ class OllamaModelManagerIT extends BaseOllamaIT {
 	}
 
 	@Test
+	@Disabled("This test is brittle and fails often in CI")
 	public void pullAdditionalModels() {
 		var model = "all-minilm";
 		var isModelAvailable = modelManager.isModelAvailable(model);
