@@ -79,7 +79,6 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 	}
 
 	@Test
-	@Disabled("https://github.com/spring-projects/spring-ai/issues/1891")
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");

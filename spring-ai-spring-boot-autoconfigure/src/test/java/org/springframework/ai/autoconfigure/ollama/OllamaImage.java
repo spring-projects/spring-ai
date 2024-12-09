@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.ollama;
 
 public final class OllamaImage {
 
-	public static final String DEFAULT_IMAGE = "ollama/ollama:0.3.14";
+	public static final String DEFAULT_IMAGE = "ollama/ollama:0.5.1";
 
 	private OllamaImage() {
 
