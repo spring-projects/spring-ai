@@ -8,6 +8,13 @@ jobs:
   build:
     name: Build branch
     runs-on: ubuntu-latest
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+    env:
+      OLLAMA_WITH_REUSE: true
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
