@@ -17,13 +17,14 @@
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
 import java.util.Arrays;
+import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.MongoDBAtlasVectorStore;
+import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -34,6 +35,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
@@ -64,25 +66,35 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		var builder = MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder();
+		MongoDBAtlasVectorStore.MongoDBBuilder builder = MongoDBAtlasVectorStore.builder()
+			.mongoTemplate(mongoTemplate)
+			.embeddingModel(embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy);
 
-		if (StringUtils.hasText(properties.getCollectionName())) {
-			builder.withCollectionName(properties.getCollectionName());
+		String collectionName = properties.getCollectionName();
+		if (StringUtils.hasText(collectionName)) {
+			builder.collectionName(collectionName);
 		}
-		if (StringUtils.hasText(properties.getPathName())) {
-			builder.withPathName(properties.getPathName());
-		}
-		if (StringUtils.hasText(properties.getIndexName())) {
-			builder.withVectorIndexName(properties.getIndexName());
-		}
-		if (!properties.getMetadataFieldsToFilter().isEmpty()) {
-			builder.withMetadataFieldsToFilter(properties.getMetadataFieldsToFilter());
-		}
-		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = builder.build();
 
-		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config, properties.isInitializeSchema(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+		String pathName = properties.getPathName();
+		if (StringUtils.hasText(pathName)) {
+			builder.pathName(pathName);
+		}
+
+		String indexName = properties.getIndexName();
+		if (StringUtils.hasText(indexName)) {
+			builder.vectorIndexName(indexName);
+		}
+
+		List<String> metadataFields = properties.getMetadataFieldsToFilter();
+		if (!CollectionUtils.isEmpty(metadataFields)) {
+			builder.metadataFieldsToFilter(metadataFields);
+		}
+
+		return builder.build();
 	}
 
 	@Bean

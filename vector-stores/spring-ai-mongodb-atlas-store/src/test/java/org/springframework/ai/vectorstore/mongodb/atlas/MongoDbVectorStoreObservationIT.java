@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.mongodb.atlas;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +40,8 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -185,11 +187,15 @@ public class MongoDbVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel,
-					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
-						.withMetadataFieldsToFilter(List.of("country", "year"))
-						.build(),
-					true, observationRegistry, null, new TokenCountBatchingStrategy());
+			return MongoDBAtlasVectorStore.builder()
+				.mongoTemplate(mongoTemplate)
+				.embeddingModel(embeddingModel)
+				.metadataFieldsToFilter(List.of("country", "year"))
+				.initializeSchema(true)
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean

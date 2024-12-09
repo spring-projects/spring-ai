@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.mongodb.atlas;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +30,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -257,11 +259,12 @@ class MongoDBAtlasVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
-			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel,
-					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
-						.withMetadataFieldsToFilter(List.of("country", "year"))
-						.build(),
-					true);
+			return MongoDBAtlasVectorStore.builder()
+				.mongoTemplate(mongoTemplate)
+				.embeddingModel(embeddingModel)
+				.metadataFieldsToFilter(List.of("country", "year"))
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean
