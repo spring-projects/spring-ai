@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.elasticsearch.vectorstore;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
