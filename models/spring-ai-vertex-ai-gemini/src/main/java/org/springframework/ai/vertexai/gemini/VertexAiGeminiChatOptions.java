@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.util.Assert;
 
 /**
@@ -118,6 +119,9 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	private boolean googleSearchRetrieval = false;
 
 	@JsonIgnore
+	private List<VertexAiGeminiSafetySetting> safetySettings = new ArrayList<>();
+
+	@JsonIgnore
 	private Boolean proxyToolCalls;
 
 	@JsonIgnore
@@ -143,6 +147,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		options.setFunctions(fromOptions.getFunctions());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
+		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setProxyToolCalls(fromOptions.getProxyToolCalls());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
@@ -269,6 +274,15 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		this.googleSearchRetrieval = googleSearchRetrieval;
 	}
 
+	public List<VertexAiGeminiSafetySetting> getSafetySettings() {
+		return safetySettings;
+	}
+
+	public void setSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+		Assert.notNull(safetySettings, "safetySettings must not be null");
+		this.safetySettings = safetySettings;
+	}
+
 	@Override
 	public Boolean getProxyToolCalls() {
 		return this.proxyToolCalls;
@@ -304,6 +318,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
 				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
 				&& Objects.equals(this.functions, that.functions)
+				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
 				&& Objects.equals(this.toolContext, that.toolContext);
 	}
@@ -312,7 +327,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.maxOutputTokens, this.model, this.responseMimeType, this.functionCallbacks, this.functions,
-				this.googleSearchRetrieval, this.proxyToolCalls, this.toolContext);
+				this.googleSearchRetrieval, this.safetySettings, this.proxyToolCalls, this.toolContext);
 	}
 
 	@Override
@@ -322,7 +337,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 				+ this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='" + this.model + '\''
 				+ ", responseMimeType='" + this.responseMimeType + '\'' + ", functionCallbacks="
 				+ this.functionCallbacks + ", functions=" + this.functions + ", googleSearchRetrieval="
-				+ this.googleSearchRetrieval + '}';
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + '}';
 	}
 
 	@Override
@@ -405,6 +420,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 		public Builder withGoogleSearchRetrieval(boolean googleSearch) {
 			this.options.googleSearchRetrieval = googleSearch;
+			return this;
+		}
+
+		public Builder withSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+			Assert.notNull(safetySettings, "safetySettings must not be null");
+			this.options.safetySettings = safetySettings;
 			return this;
 		}
 
