@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.elasticsearch;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +51,8 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -67,6 +69,7 @@ import static org.hamcrest.Matchers.greaterThan;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -205,8 +208,15 @@ public class ElasticsearchVectorStoreObservationIT {
 		@Bean
 		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, RestClient restClient,
 				ObservationRegistry observationRegistry) {
-			return new ElasticsearchVectorStore(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel, true,
-					observationRegistry, null, new TokenCountBatchingStrategy());
+			return ElasticsearchVectorStore.builder()
+				.restClient(restClient)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.options(new ElasticsearchVectorStoreOptions())
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean

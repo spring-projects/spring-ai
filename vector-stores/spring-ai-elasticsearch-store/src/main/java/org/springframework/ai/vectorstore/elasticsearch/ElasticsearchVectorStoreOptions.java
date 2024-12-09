@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.elasticsearch;
 
 /**
  * Provided Elasticsearch vector option configuration.

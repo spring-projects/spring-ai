@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.elasticsearch;
 
 /**
  * https://www.elastic.co/guide/en/elasticsearch/reference/master/dense-vector.html

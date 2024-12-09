@@ -22,8 +22,8 @@ import org.elasticsearch.client.RestClient;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.ElasticsearchVectorStore;
-import org.springframework.ai.vectorstore.ElasticsearchVectorStoreOptions;
+import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStoreOptions;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -73,9 +73,15 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
 		}
 
-		return new ElasticsearchVectorStore(elasticsearchVectorStoreOptions, restClient, embeddingModel,
-				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+		return ElasticsearchVectorStore.builder()
+			.restClient(restClient)
+			.options(elasticsearchVectorStoreOptions)
+			.embeddingModel(embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.elasticsearch;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +51,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -376,7 +377,11 @@ class ElasticsearchVectorStoreIT {
 
 		@Bean("vectorStore_cosine")
 		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, RestClient restClient) {
-			return new ElasticsearchVectorStore(restClient, embeddingModel, true);
+			return ElasticsearchVectorStore.builder()
+				.restClient(restClient)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean("vectorStore_l2_norm")
@@ -384,7 +389,12 @@ class ElasticsearchVectorStoreIT {
 			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 			options.setIndexName("index_l2");
 			options.setSimilarity(SimilarityFunction.l2_norm);
-			return new ElasticsearchVectorStore(options, restClient, embeddingModel, true);
+			return ElasticsearchVectorStore.builder()
+				.restClient(restClient)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.options(options)
+				.build();
 		}
 
 		@Bean("vectorStore_dot_product")
@@ -392,7 +402,12 @@ class ElasticsearchVectorStoreIT {
 			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 			options.setIndexName("index_dot_product");
 			options.setSimilarity(SimilarityFunction.dot_product);
-			return new ElasticsearchVectorStore(options, restClient, embeddingModel, true);
+			return ElasticsearchVectorStore.builder()
+				.restClient(restClient)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.options(options)
+				.build();
 		}
 
 		@Bean

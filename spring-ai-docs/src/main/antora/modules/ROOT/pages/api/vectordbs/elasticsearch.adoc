@@ -76,13 +76,10 @@ Alternatively you can opt-out the initialization and create the index manually u
 
 NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
 
-
-
 Please have a look at the list of <<elasticsearchvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
 These properties can be also set by configuring the `ElasticsearchVectorStoreOptions` bean.
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
-
 
 Now you can auto-wire the `ElasticsearchVectorStore` as a vector store in your application.
 
@@ -97,7 +94,7 @@ List <Document> documents = List.of(
     new Document("The World is Big and Salvation Lurks Around the Corner"),
     new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
 
-// Add the documents to Qdrant
+// Add the documents to Elasticsearch
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
@@ -117,34 +114,19 @@ spring:
     uris: <elasticsearch instance URIs>
     username: <elasticsearch username>
     password: <elasticsearch password>
-# API key if needed, e.g. OpenAI
   ai:
-    openai:
-      api:
-        key: <api-key>
+    vectorstore:
+      elasticsearch:
+        initialize-schema: true
+        index-name: custom-index
+        dimensions: 1536
+        similarity: cosine
+        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
 ----
-
-environment variables,
-
-[source,bash]
-----
-export SPRING_ELASTICSEARCH_URIS=<elasticsearch instance URIs>
-export SPRING_ELASTICSEARCH_USERNAME=<elasticsearch username>
-export SPRING_ELASTICSEARCH_PASSWORD=<elasticsearch password>
-# API key if needed, e.g. OpenAI
-export SPRING_AI_OPENAI_API_KEY=<api-key>
-----
-
-or can be a mix of those.
-For example, if you want to store your password as an environment variable but keep the rest in the plain `application.yml` file.
-
-NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
-
-Spring Boot's auto-configuration feature for the Elasticsearch RestClient will create a bean instance that will be used by the `ElasticsearchVectorStore`.
 
 The Spring Boot properties starting with `spring.elasticsearch.*` are used to configure the Elasticsearch client:
 
-[stripes=even]
+[cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
 
@@ -160,23 +142,24 @@ The Spring Boot properties starting with `spring.elasticsearch.*` are used to co
 | `spring.elasticsearch.socket-timeout` | Socket timeout used when communicating with Elasticsearch. | `30s`
 |===
 
-Properties starting with the `spring.ai.vectorstore.elasticsearch.*` prefix are used to configure `ElasticsearchVectorStore`.
+Properties starting with `spring.ai.vectorstore.elasticsearch.*` are used to configure the `ElasticsearchVectorStore`:
 
-[stripes=even]
+[cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
 
-|`spring.ai.vectorstore.elasticsearch.initialize-schema`| Whether to initialize the required schema  | `false`
-|`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors. | spring-ai-document-index
-|`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector. | 1536
-|`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use. | `cosine`
+|`spring.ai.vectorstore.elasticsearch.initialize-schema`| Whether to initialize the required schema | `false`
+|`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors | `spring-ai-document-index`
+|`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector | `1536`
+|`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use | `cosine`
+|`spring.ai.vectorstore.elasticsearch.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |===
 
 The following similarity functions are available:
 
-* cosine
-* l2_norm
-* dot_product
+* `cosine` - Default, suitable for most use cases. Measures cosine similarity between vectors.
+* `l2_norm` - Euclidean distance between vectors. Lower values indicate higher similarity.
+* `dot_product` - Best performance for normalized vectors (e.g., OpenAI embeddings).
 
 More details about each in the https://www.elastic.co/guide/en/elasticsearch/reference/master/dense-vector.html#dense-vector-params[Elasticsearch Documentation] on dense vectors.
 
@@ -206,7 +189,7 @@ vectorStore.similaritySearch(SearchRequest.defaults()
         .withTopK(TOP_K)
         .withSimilarityThreshold(SIMILARITY_THRESHOLD)
         .withFilterExpression(b.and(
-                b.in("john", "jill"),
+                b.in("author", "john", "jill"),
                 b.eq("article_type", "blog")).build()));
 ----
 
@@ -247,7 +230,6 @@ dependencies {
 }
 ----
 
-
 Create an Elasticsearch `RestClient` bean.
 Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low-usage-initialization.html[Elasticsearch Documentation] for more in-depth information about the configuration of a custom RestClient.
 
@@ -255,7 +237,7 @@ Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-clie
 ----
 @Bean
 public RestClient restClient() {
-    RestClient.builder(new HttpHost("<host>", 9200, "http"))
+    return RestClient.builder(new HttpHost("<host>", 9200, "http"))
         .setDefaultHeaders(new Header[]{
             new BasicHeader("Authorization", "Basic <encoded username and password>")
         })
@@ -263,19 +245,29 @@ public RestClient restClient() {
 }
 ----
 
-and then create the `ElasticsearchVectorStore` bean:
+Then create the `ElasticsearchVectorStore` bean using the builder pattern:
 
 [source,java]
 ----
 @Bean
-public ElasticsearchVectorStore vectorStore(EmbeddingModel embeddingModel, RestClient restClient) {
-    return new ElasticsearchVectorStore( restClient, embeddingModel);
+public VectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingModel) {
+    ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+    options.setIndexName("custom-index");    // Optional: defaults to "spring-ai-document-index"
+    options.setSimilarity(COSINE);           // Optional: defaults to COSINE
+    options.setDimensions(1536);             // Optional: defaults to model dimensions or 1536
+
+    return ElasticsearchVectorStore.builder()
+        .restClient(restClient)
+        .embeddingModel(embeddingModel)
+        .options(options)                     // Optional: use custom options
+        .initializeSchema(true)               // Optional: defaults to false
+        .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+        .build();
 }
 
-// This can be any EmbeddingModel implementation.
+// This can be any EmbeddingModel implementation
 @Bean
 public EmbeddingModel embeddingModel() {
     return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 }
 ----
-
