@@ -48,8 +48,9 @@ jobs:
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
           OLLAMA_AUTOCONF_TESTS_ENABLED: "true"
+          OLLAMA_WITH_REUSE: true
         run: |
-          mvn -s settings.xml -Pintegration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 \
+          mvn -s settings.xml -Pci-fast-integration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 \
           --batch-mode --update-snapshots deploy
 
       - name: Generate Java docs
@@ -83,37 +84,3 @@ jobs:
           ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $PROJECT_VERSION"
           scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION
   
-
-#  # The docker-compose and testcontainers modules will be compiled and run in a parallel job
-#  container-tests:
-#    name: docker-compose and testcontainers modules
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout source code
-#        uses: actions/checkout@v4
-#
-#      - name: Set up JDK 17
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: '17'
-#          distribution: 'temurin'
-#          cache: 'maven'
-#
-#      - name: Configure Testcontainers
-#        run: |
-#          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
-#
-#      - name: Build Dependencies
-#        run: |
-#          mvn -s settings.xml clean install \
-#          -DskipTests \
-#          -pl spring-ai-spring-boot-docker-compose,spring-ai-spring-boot-testcontainers \
-#          -am --batch-mode
-#
-#      - name: Run docker-compost and testcontainers Integration Tests
-#        run: |
-#          mvn -s settings.xml -Pintegration-tests verify \
-#          -Dskip.docker-compose=false \
-#          -Dskip.testcontainers=false \
-#          -pl spring-ai-spring-boot-docker-compose,spring-ai-spring-boot-testcontainers \
-#          --batch-mode

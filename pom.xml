@@ -657,7 +657,7 @@
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.moonshot/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>
+								<!-- exclude>org.springframework.ai.ollama/**/*IT.java</exclude> -->
 								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.qianfan/**/*IT.java</exclude>
@@ -712,7 +712,7 @@
 								 <exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.moonshot/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.oci/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
+								 <!-- <exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude> -->
 								 <!-- <exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
 								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.qianfan/**/**IT.java</exclude>
