@@ -44,7 +44,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true",
-				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
+				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id(),
 				"spring.ai.bedrock.cohere.embedding.options.inputType=SEARCH_DOCUMENT",
 				"spring.ai.bedrock.cohere.embedding.options.truncate=NONE")
 		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class));
