@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.ai.openai.implementation.accesshelpers.ChatCompletionsOptionsAccessHelper;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
@@ -206,7 +207,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 					this.observationRegistry)
 			.observe(() -> {
 				ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
-				options.setStream(false);
+				ChatCompletionsOptionsAccessHelper.setStream(options, false);
 
 				ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
 				ChatResponse chatResponse = toChatResponse(chatCompletions);
@@ -230,7 +231,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
-			options.setStream(true);
+			ChatCompletionsOptionsAccessHelper.setStream(options, true);
 
 			Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
 				.getChatCompletionsStream(options.getModel(), options);
@@ -252,10 +253,14 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			final Flux<ChatCompletions> accessibleChatCompletionsFlux = chatCompletionsStream
 				// Note: the first chat completions can be ignored when using Azure OpenAI
 				// service which is a known service bug.
-				.filter(chatCompletions -> !CollectionUtils.isEmpty(chatCompletions.getChoices()))
+				// The last element, when using stream_options will contain the usage data
+				.filter(chatCompletions -> !CollectionUtils.isEmpty(chatCompletions.getChoices())
+						|| chatCompletions.getUsage() != null)
 				.map(chatCompletions -> {
-					final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
-					isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
+					if (!chatCompletions.getChoices().isEmpty()) {
+						final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
+						isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
+					}
 					return chatCompletions;
 				})
 				.windowUntil(chatCompletions -> {
@@ -493,7 +498,13 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		}
 
 		ChatCompletionsOptions mergedAzureOptions = new ChatCompletionsOptions(fromAzureOptions.getMessages());
-		mergedAzureOptions.setStream(fromAzureOptions.isStream());
+
+		ChatCompletionsOptionsAccessHelper.setStream(mergedAzureOptions,
+				fromAzureOptions.isStream() != null ? fromAzureOptions.isStream() : false);
+
+		ChatCompletionsOptionsAccessHelper.setStreamOptions(mergedAzureOptions,
+				fromAzureOptions.getStreamOptions() != null ? fromAzureOptions.getStreamOptions()
+						: toSpringAiOptions.getStreamOptions());
 
 		mergedAzureOptions.setMaxTokens((fromAzureOptions.getMaxTokens() != null) ? fromAzureOptions.getMaxTokens()
 				: toSpringAiOptions.getMaxTokens());
@@ -629,6 +640,15 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			mergedAzureOptions.setEnhancements(fromSpringAiOptions.getEnhancements());
 		}
 
+		if (fromSpringAiOptions.getStreamOptions() != null) {
+			ChatCompletionsOptionsAccessHelper.setStreamOptions(mergedAzureOptions,
+					fromSpringAiOptions.getStreamOptions());
+		}
+
+		if (fromSpringAiOptions.getEnhancements() != null) {
+			mergedAzureOptions.setEnhancements(fromSpringAiOptions.getEnhancements());
+		}
+
 		return mergedAzureOptions;
 	}
 
@@ -640,8 +660,13 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	private ChatCompletionsOptions copy(ChatCompletionsOptions fromOptions) {
 
 		ChatCompletionsOptions copyOptions = new ChatCompletionsOptions(fromOptions.getMessages());
-		copyOptions.setStream(fromOptions.isStream());
 
+		if (fromOptions.isStream() != null) {
+			ChatCompletionsOptionsAccessHelper.setStream(copyOptions, fromOptions.isStream());
+		}
+		if (fromOptions.getStreamOptions() != null) {
+			ChatCompletionsOptionsAccessHelper.setStreamOptions(copyOptions, fromOptions.getStreamOptions());
+		}
 		if (fromOptions.getMaxTokens() != null) {
 			copyOptions.setMaxTokens(fromOptions.getMaxTokens());
 		}
