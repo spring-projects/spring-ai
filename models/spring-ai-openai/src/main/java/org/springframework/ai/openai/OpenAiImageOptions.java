@@ -16,12 +16,11 @@
 
 package org.springframework.ai.openai;
 
-import java.util.Objects;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.image.ImageOptions;
+
+import java.util.Objects;
 
 /**
  * OpenAI Image API options. OpenAiImageOptions.java
@@ -153,7 +152,9 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public void setWidth(Integer width) {
 		this.width = width;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
@@ -174,7 +175,9 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public void setHeight(Integer height) {
 		this.height = height;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
