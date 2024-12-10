@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.elasticsearch.vectorstore;
 
 import java.io.IOException;
 import java.util.List;
@@ -48,11 +48,12 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -83,8 +84,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
 			VectorStoreSimilarityMetric.EUCLIDEAN, SimilarityFunction.dot_product, VectorStoreSimilarityMetric.DOT);
 
-	private final EmbeddingModel embeddingModel;
-
 	private final ElasticsearchClient elasticsearchClient;
 
 	private final ElasticsearchVectorStoreOptions options;
@@ -95,34 +94,43 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private final BatchingStrategy batchingStrategy;
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public ElasticsearchVectorStore(RestClient restClient, EmbeddingModel embeddingModel, boolean initializeSchema) {
 		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel, initializeSchema);
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
 			EmbeddingModel embeddingModel, boolean initializeSchema) {
 		this(options, restClient, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
 				new TokenCountBatchingStrategy());
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
 			EmbeddingModel embeddingModel, boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder(restClient).options(options)
+			.embeddingModel(embeddingModel)
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		this.initializeSchema = initializeSchema;
-		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
-		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
+	private ElasticsearchVectorStore(ElasticsearchBuilder builder) {
+		super(builder);
+		this.initializeSchema = builder.initializeSchema;
+		this.options = builder.options;
+		this.filterExpressionConverter = builder.filterExpressionConverter;
+		this.batchingStrategy = builder.batchingStrategy;
+
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
-		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient,
+		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(builder.restClient,
 				new JacksonJsonpMapper(
 						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))))
 			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
-		this.embeddingModel = embeddingModel;
-		this.options = options;
-		this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
-		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
@@ -295,6 +303,96 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 * @param embedding The vectors representing the content of the document
 	 */
 	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
+	}
+
+	/**
+	 * Creates a new builder instance for ElasticsearchVectorStore.
+	 * @param restClient the Elasticsearch REST client
+	 * @return a new ElasticsearchBuilder instance
+	 */
+	public static ElasticsearchBuilder builder(RestClient restClient) {
+		return new ElasticsearchBuilder(restClient);
+	}
+
+	public static class ElasticsearchBuilder extends AbstractVectorStoreBuilder<ElasticsearchBuilder> {
+
+		private final RestClient restClient;
+
+		private ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+
+		private boolean initializeSchema = false;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		private FilterExpressionConverter filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
+
+		/**
+		 * Creates a new builder instance with the specified REST client.
+		 * @param restClient the Elasticsearch REST client
+		 * @throws IllegalArgumentException if restClient is null
+		 */
+		public ElasticsearchBuilder(RestClient restClient) {
+			Assert.notNull(restClient, "RestClient must not be null");
+			this.restClient = restClient;
+		}
+
+		/**
+		 * Sets the Elasticsearch vector store options.
+		 * @param options the vector store options to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if options is null
+		 */
+		public ElasticsearchBuilder options(ElasticsearchVectorStoreOptions options) {
+			Assert.notNull(options, "options must not be null");
+			this.options = options;
+			return this;
+		}
+
+		/**
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return the builder instance
+		 */
+		public ElasticsearchBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the batching strategy for vector operations.
+		 * @param batchingStrategy the batching strategy to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public ElasticsearchBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		/**
+		 * Sets the filter expression converter.
+		 * @param converter the filter expression converter to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if converter is null
+		 */
+		public ElasticsearchBuilder filterExpressionConverter(FilterExpressionConverter converter) {
+			Assert.notNull(converter, "filterExpressionConverter must not be null");
+			this.filterExpressionConverter = converter;
+			return this;
+		}
+
+		/**
+		 * Builds the ElasticsearchVectorStore instance.
+		 * @return a new ElasticsearchVectorStore instance
+		 * @throws IllegalStateException if the builder is in an invalid state
+		 */
+		@Override
+		public ElasticsearchVectorStore build() {
+			validate();
+			return new ElasticsearchVectorStore(this);
+		}
+
 	}
 
 }

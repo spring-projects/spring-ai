@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
-
-import org.testcontainers.utility.DockerImageName;
+package org.springframework.ai.elasticsearch.vectorstore;
 
 /**
- * @author Thomas Vitale
+ * https://www.elastic.co/guide/en/elasticsearch/reference/master/dense-vector.html
+ * max_inner_product is currently not supported because the distance value is not
+ * normalized and would not comply with the requirement of being between 0 and 1
+ *
+ * @author Laura Trotta
+ * @since 1.0.0
  */
-public final class ElasticsearchImage {
+public enum SimilarityFunction {
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName
-		.parse("docker.elastic.co/elasticsearch/elasticsearch:8.16.1");
-
-	private ElasticsearchImage() {
-
-	}
+	l2_norm, dot_product, cosine
 
 }
