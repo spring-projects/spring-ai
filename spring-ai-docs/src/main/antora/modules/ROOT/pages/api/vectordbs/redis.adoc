@@ -45,41 +45,15 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 
 NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
 
+Please have a look at the list of <<redisvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
-Here is an example of the needed bean:
-
-[source,java]
-----
-@Bean
-public EmbeddingModel embeddingModel() {
-    // Can be any other EmbeddingModel implementation.
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
-}
-----
-
-To connect to Redis you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's _application.properties_,
-
-[source,properties]
-----
-spring.ai.vectorstore.redis.uri=<your redis instance uri>
-spring.ai.vectorstore.redis.index=<your index name>
-spring.ai.vectorstore.redis.prefix=<your prefix>
-
-# API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
-----
-
-Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
-
-Now you can Auto-wire the Redis Vector Store in your application and use it
+Now you can auto-wire the `RedisVectorStore` as a vector store in your application.
 
 [source,java]
 ----
@@ -99,146 +73,144 @@ vectorStore.add(documents);
 List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ----
 
-=== Configuration properties
+[[redisvector-properties]]
+=== Configuration Properties
 
-You can use the following properties in your Spring Boot configuration to customize the Redis vector store.
+To connect to Redis and use the `RedisVectorStore`, you need to provide access details for your instance.
+A simple configuration can be provided via Spring Boot's `application.yml`,
 
-[stripes=even]
+[source,yaml]
+----
+spring:
+  data:
+    redis:
+      uri: <redis instance uri>
+  ai:
+    vectorstore:
+      redis:
+        initialize-schema: true
+        index-name: custom-index
+        prefix: custom-prefix
+        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
+----
+
+Properties starting with `spring.ai.vectorstore.redis.*` are used to configure the `RedisVectorStore`:
+
+[cols="2,5,1",stripes=even]
 |===
-|Property| Description | Default value
+|Property | Description | Default Value
 
-|`spring.ai.vectorstore.redis.uri`| Server connection URI | `redis://localhost:6379`
-|`spring.ai.vectorstore.redis.index`| Index name  | `default-index`
-|`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema  | `false`
-|`spring.ai.vectorstore.redis.prefix`| Prefix | `default:`
-
+|`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema | `false`
+|`spring.ai.vectorstore.redis.index-name` | The name of the index to store the vectors | `spring-ai-index`
+|`spring.ai.vectorstore.redis.prefix` | The prefix for Redis keys | `embedding:`
+|`spring.ai.vectorstore.redis.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |===
 
-== Metadata filtering
+== Metadata Filtering
 
-You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with RedisVectorStore as well.
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Redis as well.
 
 For example, you can use either the text expression language:
 
 [source,java]
 ----
-vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+vectorStore.similaritySearch(SearchRequest.defaults()
+        .withQuery("The World")
+        .withTopK(TOP_K)
+        .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+        .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
 ----
 
-or programmatically using the expression DSL:
+or programmatically using the `Filter.Expression` DSL:
 
 [source,java]
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
-vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression(b.and(
-         b.in("country", "UK", "NL"),
-         b.gte("year", 2020)).build()));
+vectorStore.similaritySearch(SearchRequest.defaults()
+        .withQuery("The World")
+        .withTopK(TOP_K)
+        .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+        .withFilterExpression(b.and(
+                b.in("country", "UK", "NL"),
+                b.gte("year", 2020)).build()));
 ----
 
-The portable filter expressions get automatically converted into link:https://redis.io/docs/interact/search-and-query/query/[Redis search queries].
-For example, the following portable filter expression:
+NOTE: Those (portable) filter expressions get automatically converted into link:https://redis.io/docs/interact/search-and-query/query/[Redis search queries].
+
+For example, this portable filter expression:
 
 [source,sql]
 ----
 country in ['UK', 'NL'] && year >= 2020
 ----
 
-is converted into Redis query:
+is converted into the proprietary Redis filter format:
 
-[source]
+[source,text]
 ----
 @country:{UK | NL} @year:[2020 inf]
 ----
 
-== Manual configuration
+== Manual Configuration
 
-If you prefer not to use the auto-configuration, you can manually configure the Redis Vector Store.
-Add the Redis Vector Store and Jedis dependencies
+Instead of using the Spring Boot auto-configuration, you can manually configure the Redis vector store. For this you need to add the `spring-ai-redis-store` to your project:
 
 [source,xml]
 ----
 <dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-redis-store</artifactId>
-</dependency>
-
-<dependency>
-    <groupId>redis.clients</groupId>
-    <artifactId>jedis</artifactId>
-    <version>5.1.0</version>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-redis-store</artifactId>
 </dependency>
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+or to your Gradle `build.gradle` build file.
 
-Then, create a `RedisVectorStore` bean in your Spring configuration:
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-redis-store'
+}
+----
+
+Create a `JedisPooled` bean:
 
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(EmbeddingModel embeddingModel) {
-  RedisVectorStoreConfig config = RedisVectorStoreConfig.builder()
-     .withURI("redis://localhost:6379")
-     // Define the metadata fields to be used
-     // in the similarity search filters.
-     .withMetadataFields(
-        MetadataField.tag("country"),
-        MetadataField.numeric("year"))
-     .build();
+public JedisPooled jedisPooled() {
+    return new JedisPooled("<host>", 6379);
+}
+----
 
-  return new RedisVectorStore(config, embeddingModel);
+Then create the `RedisVectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
+    return RedisVectorStore.builder()
+        .jedis(jedisPooled)
+        .embeddingModel(embeddingModel)
+        .indexName("custom-index")                // Optional: defaults to "spring-ai-index"
+        .prefix("custom-prefix")                  // Optional: defaults to "embedding:"
+        .metadataFields(                         // Optional: define metadata fields for filtering
+            MetadataField.tag("country"),
+            MetadataField.numeric("year"))
+        .initializeSchema(true)                   // Optional: defaults to false
+        .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+        .build();
+}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 }
 ----
 
 [NOTE]
 ====
-It is more convenient and preferred to create the `RedisVectorStore` as a Bean.
-But if you decide to create it manually, then you must call the `RedisVectorStore#afterPropertiesSet()` after setting the properties and before using the client.
+You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expressions.
+The `metadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
 ====
-
-[NOTE]
-====
-You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expression.
-The `withMetadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
-====
-
-Then in your main code, create some documents:
-
-[source,java]
-----
-List<Document> documents = List.of(
-   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "year", 2020)),
-   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
-   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
-----
-
-Now add the documents to your vector store:
-
-
-[source,java]
-----
-vectorStore.add(documents);
-----
-
-And finally, retrieve documents similar to a query:
-
-[source,java]
-----
-List<Document> results = vectorStore.similaritySearch(
-   SearchRequest
-      .query("Spring")
-      .withTopK(5));
-----
-
-If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".

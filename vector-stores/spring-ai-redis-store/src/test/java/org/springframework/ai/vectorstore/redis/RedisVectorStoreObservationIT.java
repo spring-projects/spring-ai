@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.redis;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -38,8 +38,9 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.RedisVectorStore.MetadataField;
-import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
+import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -175,14 +176,16 @@ public class RedisVectorStoreObservationIT {
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel,
 				JedisConnectionFactory jedisConnectionFactory, ObservationRegistry observationRegistry) {
-			return new RedisVectorStore(
-					RedisVectorStoreConfig.builder()
-						.withMetadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"),
-								MetadataField.tag("country"), MetadataField.numeric("year"))
-						.build(),
-					embeddingModel,
-					new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()), true,
-					observationRegistry, null, new TokenCountBatchingStrategy());
+			return RedisVectorStore.builder()
+				.jedis(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()))
+				.embeddingModel(embeddingModel)
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.initializeSchema(true)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.metadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"), MetadataField.tag("country"),
+						MetadataField.numeric("year"))
+				.build();
 		}
 
 		@Bean

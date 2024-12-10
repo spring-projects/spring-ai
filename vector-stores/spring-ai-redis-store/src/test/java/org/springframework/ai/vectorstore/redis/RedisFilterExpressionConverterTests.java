@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.redis;
 
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vectorstore.RedisVectorStore.MetadataField;
+import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
@@ -49,7 +49,7 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void testEQ() {
 		// country == "BG"
-		String vectorExpr = converter(org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("country"))
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("country"))
 			.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("@country:{BG}");
 	}
@@ -57,8 +57,8 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void tesEqAndGte() {
 		// genre == "drama" AND year >= 2020
-		String vectorExpr = converter(org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("genre"),
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.numeric("year"))
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("genre"),
+				RedisVectorStore.MetadataField.numeric("year"))
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
 					new Expression(GTE, new Key("year"), new Value(2020))));
 		assertThat(vectorExpr).isEqualTo("@genre:{drama} @year:[2020 inf]");
@@ -67,18 +67,16 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void tesIn() {
 		// genre in ["comedy", "documentary", "drama"]
-		String vectorExpr = converter(org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("genre"))
-			.convertExpression(
-					new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("genre")).convertExpression(
+				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
 		assertThat(vectorExpr).isEqualTo("@genre:{comedy | documentary | drama}");
 	}
 
 	@Test
 	void testNe() {
 		// year >= 2020 OR country == "BG" AND city != "Sofia"
-		String vectorExpr = converter(org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.numeric("year"),
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("country"),
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("city"))
+		String vectorExpr = converter(RedisVectorStore.MetadataField.numeric("year"),
+				RedisVectorStore.MetadataField.tag("country"), RedisVectorStore.MetadataField.tag("city"))
 			.convertExpression(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 					new Group(new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
 							new Expression(NE, new Key("city"), new Value("Sofia"))))));
@@ -88,9 +86,8 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void testGroup() {
 		// (year >= 2020 OR country == "BG") AND city NIN ["Sofia", "Plovdiv"]
-		String vectorExpr = converter(org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.numeric("year"),
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("country"),
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("city"))
+		String vectorExpr = converter(RedisVectorStore.MetadataField.numeric("year"),
+				RedisVectorStore.MetadataField.tag("country"), RedisVectorStore.MetadataField.tag("city"))
 			.convertExpression(new Expression(AND,
 					new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 							new Expression(EQ, new Key("country"), new Value("BG")))),
@@ -101,9 +98,8 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void tesBoolean() {
 		// isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
-		String vectorExpr = converter(org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.numeric("year"),
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("country"),
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("isOpen"))
+		String vectorExpr = converter(RedisVectorStore.MetadataField.numeric("year"),
+				RedisVectorStore.MetadataField.tag("country"), RedisVectorStore.MetadataField.tag("isOpen"))
 			.convertExpression(new Expression(AND,
 					new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
 							new Expression(GTE, new Key("year"), new Value(2020))),
@@ -115,8 +111,7 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void testDecimal() {
 		// temperature >= -15.6 && temperature <= +20.13
-		String vectorExpr = converter(
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.numeric("temperature"))
+		String vectorExpr = converter(RedisVectorStore.MetadataField.numeric("temperature"))
 			.convertExpression(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
 					new Expression(LTE, new Key("temperature"), new Value(20.13))));
 
@@ -125,12 +120,11 @@ class RedisFilterExpressionConverterTests {
 
 	@Test
 	void testComplexIdentifiers() {
-		String vectorExpr = converter(
-				org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("country 1 2 3"))
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("country 1 2 3"))
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("@\"country 1 2 3\":{BG}");
 
-		vectorExpr = converter(org.springframework.ai.vectorstore.RedisVectorStore.MetadataField.tag("country 1 2 3"))
+		vectorExpr = converter(RedisVectorStore.MetadataField.tag("country 1 2 3"))
 			.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("@'country 1 2 3':{BG}");
 	}

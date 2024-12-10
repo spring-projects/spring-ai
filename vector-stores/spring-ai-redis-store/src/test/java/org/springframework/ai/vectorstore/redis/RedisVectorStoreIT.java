@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.redis;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,8 +34,9 @@ import redis.clients.jedis.JedisPooled;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.RedisVectorStore.MetadataField;
-import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
+import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -255,13 +256,13 @@ class RedisVectorStoreIT {
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel,
 				JedisConnectionFactory jedisConnectionFactory) {
-			return new RedisVectorStore(
-					RedisVectorStoreConfig.builder()
-						.withMetadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"),
-								MetadataField.tag("country"), MetadataField.numeric("year"))
-						.build(),
-					embeddingModel,
-					new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()), true);
+			return RedisVectorStore.builder()
+				.jedis(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()))
+				.embeddingModel(embeddingModel)
+				.metadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"), MetadataField.tag("country"),
+						MetadataField.numeric("year"))
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean
