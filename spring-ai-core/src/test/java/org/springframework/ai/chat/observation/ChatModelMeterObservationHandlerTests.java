@@ -30,7 +30,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiObservationMetricAttributes;
 import org.springframework.ai.observation.conventions.AiObservationMetricNames;
@@ -94,7 +94,7 @@ class ChatModelMeterObservationHandlerTests {
 		return ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 	}
 

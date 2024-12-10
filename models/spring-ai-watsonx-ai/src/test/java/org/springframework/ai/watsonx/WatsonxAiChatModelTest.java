@@ -31,7 +31,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
 import org.springframework.ai.watsonx.api.WatsonxAiChatRequest;
@@ -54,7 +54,7 @@ public class WatsonxAiChatModelTest {
 
 	@Test
 	public void testCreateRequestWithNoModelId() {
-		var options = ChatOptionsBuilder.builder().withTemperature(0.9).withTopK(100).withTopP(0.6).build();
+		var options = ChatOptions.builder().temperature(0.9).topK(100).topP(0.6).build();
 
 		Prompt prompt = new Prompt("Test message", options);
 

@@ -18,7 +18,7 @@ package org.springframework.ai.chat.observation;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +36,7 @@ class ChatModelObservationContextTests {
 		var observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("supermodel").build())
+			.requestOptions(ChatOptions.builder().model("supermodel").build())
 			.build();
 
 		assertThat(observationContext).isNotNull();
