@@ -85,9 +85,6 @@ public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBu
 
 	protected void validate() {
 		Assert.notNull(this.embeddingModel, "EmbeddingModel must be configured");
-		doValidate();
 	}
-
-	protected abstract void doValidate();
 
 }

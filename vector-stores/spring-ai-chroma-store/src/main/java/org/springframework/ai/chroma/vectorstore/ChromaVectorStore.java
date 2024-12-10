@@ -365,11 +365,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			return new ChromaVectorStore(this);
 		}
 
-		@Override
-		protected void doValidate() {
-			Assert.notNull(this.chromaApi, "ChromaApi must not be null");
-		}
-
 	}
 
 }
