@@ -282,7 +282,14 @@ public class ZhiPuAiApi {
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")
-		TOOL_CALL
+		TOOL_CALL,
+		/**
+		 * 'Sensitive' means that the content has been intercepted by the security
+		 *  audit interface (users should judge and decide whether to withdraw
+		 *  public content)
+		 */
+		@JsonProperty("sensitive")
+		SENSITIVE
 	}
 
 	/**
