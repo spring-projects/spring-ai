@@ -8,9 +8,10 @@ The Bedrock Converse API has the following high-level features:
 * Multimodal Input: Ability to process both text and image inputs in conversations
 * Streaming Support: Real-time streaming of model responses
 * System Messages: Support for system-level instructions and context setting
-// * Metrics Integration: Built-in support for observation and metrics tracking
 
 TIP: The Bedrock Converse API provides a unified interface across multiple model providers while handling AWS-specific authentication and infrastructure concerns.
+Currently, the Converse API link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported Models] inlcude: 
+`Amazon Titan`, `Amazon Nova`, `AI21 Labs`, `Anthropic Claude`, `Cohere Command`, `Meta Llama`, `Mistral AI`.
 
 [NOTE]
 ====
