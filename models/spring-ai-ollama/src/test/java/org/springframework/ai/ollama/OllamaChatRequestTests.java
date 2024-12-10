@@ -19,7 +19,6 @@ package org.springframework.ai.ollama;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
@@ -78,11 +77,7 @@ public class OllamaChatRequestTests {
 	public void createRequestWithPromptPortableChatOptions() {
 
 		// Ollama runtime options.
-		ChatOptions portablePromptOptions = ChatOptionsBuilder.builder()
-			.withTemperature(0.9)
-			.withTopK(100)
-			.withTopP(0.6)
-			.build();
+		ChatOptions portablePromptOptions = ChatOptions.builder().temperature(0.9).topK(100).topP(0.6).build();
 
 		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content", portablePromptOptions), true);
 

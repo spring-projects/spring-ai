@@ -20,7 +20,7 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
 /**
@@ -40,7 +40,7 @@ public final class BedrockConverseChatModelMain {
 
 		// String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 		String modelId = "ai21.jamba-1-5-large-v1:0";
-		var prompt = new Prompt("Tell me a joke?", ChatOptionsBuilder.builder().withModel(modelId).build());
+		var prompt = new Prompt("Tell me a joke?", ChatOptions.builder().model(modelId).build());
 
 		var chatModel = BedrockProxyChatModel.builder()
 			.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())

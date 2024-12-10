@@ -24,7 +24,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
@@ -45,11 +44,7 @@ public class ChatBuilderTests {
 		Double topP = 2.2;
 		Integer topK = 111;
 
-		ChatOptions options = ChatOptionsBuilder.builder()
-			.withTemperature(temperature)
-			.withTopK(topK)
-			.withTopP(topP)
-			.build();
+		ChatOptions options = ChatOptions.builder().temperature(temperature).topK(topK).topP(topP).build();
 
 		assertThat(options.getTemperature()).isEqualTo(temperature);
 		assertThat(options.getTopP()).isEqualTo(topP);
@@ -62,11 +57,13 @@ public class ChatBuilderTests {
 		Double initTopP = 2.2;
 		Integer initTopK = 111;
 
-		ChatOptions options = ChatOptionsBuilder.builder()
-			.withTemperature(initTemperature)
-			.withTopP(initTopP)
-			.withTopK(initTopK)
-			.build();
+		ChatOptions options1 = ChatOptions.builder().temperature(initTemperature).topP(initTopP).topK(initTopK).build();
+
+		ChatOptions options2 = options1.copy();
+
+		assertThat(options2.getTemperature()).isEqualTo(initTemperature);
+		assertThat(options2.getTopP()).isEqualTo(initTopP);
+		assertThat(options2.getTopK()).isEqualTo(initTopK);
 
 	}
 

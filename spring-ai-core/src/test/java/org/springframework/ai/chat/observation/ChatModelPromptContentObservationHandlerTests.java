@@ -24,7 +24,7 @@ import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiObservationEventNames;
@@ -44,7 +44,7 @@ class ChatModelPromptContentObservationHandlerTests {
 		var observationContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt("supercalifragilisticexpialidocious"))
 			.provider("mary-poppins")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("spoonful-of-sugar").build())
+			.requestOptions(ChatOptions.builder().model("spoonful-of-sugar").build())
 			.build();
 		var sdkTracer = SdkTracerProvider.builder().build().get("test");
 		var otelTracer = new OtelTracer(sdkTracer, new OtelCurrentTraceContext(), null);
