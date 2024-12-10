@@ -102,7 +102,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder(chromaApi).embeddingModel(embeddingModel)
+		this(builder().chromaApi(chromaApi)
+			.embeddingModel(embeddingModel)
 			.collectionName(collectionName)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
@@ -113,8 +114,14 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	/**
 	 * @param builder {@link Builder} for chroma vector store
 	 */
-	private ChromaVectorStore(ChromaBuilder builder) {
+	protected ChromaVectorStore(ChromaBuilder builder) {
 		super(builder);
+
+		Assert.notNull(builder.chromaApi, "ChromaApi must not be null");
+		Assert.notNull(builder.batchingStrategy, "BatchingStrategy must not be null");
+		Assert.notNull(builder.filterExpressionConverter, "FilterExpressionConverter must not be null");
+		Assert.hasText(builder.collectionName, "Collection name must not be empty");
+
 		this.chromaApi = builder.chromaApi;
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
@@ -151,8 +158,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		}
 	}
 
-	public static ChromaBuilder builder(ChromaApi chromaApi) {
-		return new ChromaBuilder(chromaApi);
+	public static ChromaBuilder builder() {
+		return new ChromaBuilder();
 	}
 
 	@Override
@@ -274,7 +281,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	public static class ChromaBuilder extends AbstractVectorStoreBuilder<ChromaBuilder> {
 
-		private final ChromaApi chromaApi;
+		private ChromaApi chromaApi;
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
@@ -286,9 +293,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeImmediately = false;
 
-		public ChromaBuilder(ChromaApi chromaApi) {
+		public ChromaBuilder chromaApi(ChromaApi chromaApi) {
 			Assert.notNull(chromaApi, "ChromaApi must not be null");
 			this.chromaApi = chromaApi;
+			return this;
 		}
 
 		/**
@@ -355,6 +363,11 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		public ChromaVectorStore build() {
 			validate();
 			return new ChromaVectorStore(this);
+		}
+
+		@Override
+		protected void doValidate() {
+			Assert.notNull(this.chromaApi, "ChromaApi must not be null");
 		}
 
 	}

@@ -86,7 +86,8 @@ public class ChromaVectorStoreAutoConfiguration {
 			ChromaVectorStoreProperties storeProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy chromaBatchingStrategy) {
-		return ChromaVectorStore.builder(chromaApi)
+		return ChromaVectorStore.builder()
+			.chromaApi(chromaApi)
 			.embeddingModel(embeddingModel)
 			.collectionName(storeProperties.getCollectionName())
 			.initializeSchema(storeProperties.isInitializeSchema())
