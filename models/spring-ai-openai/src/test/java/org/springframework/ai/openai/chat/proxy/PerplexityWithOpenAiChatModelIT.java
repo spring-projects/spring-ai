@@ -185,7 +185,6 @@ class PerplexityWithOpenAiChatModelIT {
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 	}
 
-	@Disabled()
 	@Test
 	@Disabled("Perplexity gets confused with the 'Generate the filmography for a random actor.' prompt")
 	void beanOutputConverter() {
