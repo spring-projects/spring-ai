@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.neo4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +37,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -289,8 +291,11 @@ class Neo4jVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
 
-			return new Neo4jVectorStore(driver, embeddingModel, Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig(),
-					true);
+			return Neo4jVectorStore.builder()
+				.driver(driver)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean

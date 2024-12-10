@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore.filter;
+package org.springframework.ai.vectorstore.neo4j.filter;
 
 import java.util.List;
 
@@ -24,6 +24,8 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
@@ -130,7 +132,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 
 	@Test
 	public void testComplexIdentifiers2() {
-		Filter.Expression expr = new FilterExpressionTextParser()
+		Expression expr = new FilterExpressionTextParser()
 			.parse("author in ['john', 'jill'] && 'article_type' == 'blog'");
 		String vectorExpr = this.converter.convertExpression(expr);
 		assertThat(vectorExpr)

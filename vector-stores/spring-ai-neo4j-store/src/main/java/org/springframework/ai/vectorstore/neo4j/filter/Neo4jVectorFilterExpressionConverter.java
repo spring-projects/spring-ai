@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore.filter;
+package org.springframework.ai.vectorstore.neo4j.filter;
 
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;

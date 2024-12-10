@@ -20,77 +20,12 @@ Those indexes are powered by Lucene using a Hierarchical Navigable Small World G
 ** link:https://neo4j.com/deployment-center/[Neo4j Server] instance
 * If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `Neo4jVectorStore`.
 
-== Dependencies
-
-Add the Neo4j Vector Store dependency to your project:
-
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-neo4j-store</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-neo4j-store'
-}
-----
-
-
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-
-The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
-
-NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
-
-
-== Configuration
-
-To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's _application.properties_,
-
-[source,properties]
-----
-spring.neo4j.uri=<uri_for_your_neo4j_instance>
-spring.neo4j.authentication.username=<your_username>
-spring.neo4j.authentication.password=<your_password>
-# API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
-----
-
-environment variables,
-
-[source,bash]
-----
-export SPRING_NEO4J_URI=<uri_for_your_neo4j_instance>
-export SPRING_NEO4J_AUTHENTICATION_USERNAME=<your_username>
-export SPRING_NEO4J_AUTHENTICATION_PASSWORD=<your_password>
-# API key if needed, e.g. OpenAI
-export SPRING_AI_OPENAI_API_KEY=<api-key>
-----
-
-or can be a mix of those.
-For example, if you want to store your API key as an environment variable but keep the rest in the plain _application.properties_ file.
-
-NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
-
-NOTE: Besides _application.properties_ and environment variables, Spring Boot offers https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config[additional configuration options].
-
-Spring Boot's auto-configuration feature for the Neo4j Driver will create a bean instance that will be used by the `Neo4jVectorStore`.
-
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Neo4j Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
-[source, xml]
+[source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
@@ -113,21 +48,114 @@ Please have a look at the list of xref:#_neo4jvectorstore_properties[configurati
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
-Here is an example of the needed bean:
+Now you can auto-wire the `Neo4jVectorStore` as a vector store in your application.
 
 [source,java]
 ----
-@Bean
-public EmbeddingModel embeddingModel() {
-    // Can be any other Embeddingmodel implementation.
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List<Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Neo4j
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+[[neo4jvector-properties]]
+=== Configuration Properties
+
+To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide access details for your instance.
+A simple configuration can be provided via Spring Boot's `application.yml`:
+
+[source,yaml]
+----
+spring:
+  neo4j:
+    uri: <neo4j instance URI>
+    authentication:
+      username: <neo4j username>
+      password: <neo4j password>
+  ai:
+    vectorstore:
+      neo4j:
+        initialize-schema: true
+        database-name: neo4j
+        index-name: custom-index
+        dimensions: 1536
+        distance-type: cosine
+        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
+----
+
+The Spring Boot properties starting with `spring.neo4j.*` are used to configure the Neo4j client:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+| `spring.neo4j.uri` | URI for connecting to the Neo4j instance | `neo4j://localhost:7687`
+| `spring.neo4j.authentication.username` | Username for authentication with Neo4j | `neo4j`
+| `spring.neo4j.authentication.password` | Password for authentication with Neo4j | -
+|===
+
+Properties starting with `spring.ai.vectorstore.neo4j.*` are used to configure the `Neo4jVectorStore`:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.neo4j.initialize-schema`| Whether to initialize the required schema | `false`
+|`spring.ai.vectorstore.neo4j.database-name` | The name of the Neo4j database to use | `neo4j`
+|`spring.ai.vectorstore.neo4j.index-name` | The name of the index to store the vectors | `spring-ai-document-index`
+|`spring.ai.vectorstore.neo4j.dimensions` | The number of dimensions in the vector | `1536`
+|`spring.ai.vectorstore.neo4j.distance-type` | The distance function to use | `cosine`
+|`spring.ai.vectorstore.neo4j.label` | The label used for document nodes | `Document`
+|`spring.ai.vectorstore.neo4j.embedding-property` | The property name used to store embeddings | `embedding`
+|`spring.ai.vectorstore.neo4j.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
+|===
+
+The following distance functions are available:
+
+* `cosine` - Default, suitable for most use cases. Measures cosine similarity between vectors.
+* `euclidean` - Euclidean distance between vectors. Lower values indicate higher similarity.
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the Neo4j vector store. For this you need to add the `spring-ai-neo4j-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-neo4j-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-neo4j-store'
 }
 ----
 
-In cases where the Spring Boot auto-configured Neo4j `Driver` bean is not what you want or need, you can still define your own bean.
-Please read the https://neo4j.com/docs/java-manual/current/client-applications/[Neo4j Java Driver reference] for more in-depth information about the configuration of a custom driver.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Create a Neo4j `Driver` bean.
+Read the link:https://neo4j.com/docs/java-manual/current/client-applications/[Neo4j Documentation] for more in-depth information about the configuration of a custom driver.
 
 [source,java]
 ----
@@ -138,9 +166,34 @@ public Driver driver() {
 }
 ----
 
-Now you can auto-wire the `Neo4jVectorStore` as a vector store in your application.
+Then create the `Neo4jVectorStore` bean using the builder pattern:
 
-== Metadata filtering
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
+    return Neo4jVectorStore.builder()
+        .driver(driver)
+        .embeddingModel(embeddingModel)
+        .databaseName("neo4j")                // Optional: defaults to "neo4j"
+        .distanceType(Neo4jDistanceType.COSINE) // Optional: defaults to COSINE
+        .dimensions(1536)                      // Optional: defaults to 1536
+        .label("Document")                     // Optional: defaults to "Document"
+        .embeddingProperty("embedding")        // Optional: defaults to "embedding"
+        .indexName("custom-index")             // Optional: defaults to "spring-ai-document-index"
+        .initializeSchema(true)                // Optional: defaults to false
+        .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+        .build();
+}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
+----
+
+== Metadata Filtering
 
 You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Neo4j store as well.
 
@@ -149,11 +202,11 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-                    SearchRequest.defaults()
-                            .withQuery("The World")
-                            .withTopK(TOP_K)
-                            .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-                            .withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
+    SearchRequest.defaults()
+        .withQuery("The World")
+        .withTopK(TOP_K)
+        .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+        .withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -163,41 +216,26 @@ or programmatically using the `Filter.Expression` DSL:
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(SearchRequest.defaults()
-                    .withQuery("The World")
-                    .withTopK(TOP_K)
-                    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-                    .withFilterExpression(b.and(
-                            b.in("author", "john", "jill"),
-                            b.eq("article_type", "blog")).build()));
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression(b.and(
+        b.in("author", "john", "jill"),
+        b.eq("article_type", "blog")).build()));
 ----
 
 NOTE: Those (portable) filter expressions get automatically converted into the proprietary Neo4j `WHERE` link:https://neo4j.com/developer/cypher/filtering-query-results/[filter expressions].
 
 For example, this portable filter expression:
 
-```sql
+[source,sql]
+----
 author in ['john', 'jill'] && 'article_type' == 'blog'
-```
+----
 
 is converted into the proprietary Neo4j filter format:
 
-```
+[source,text]
+----
 node.`metadata.author` IN ["john","jill"] AND node.`metadata.'article_type'` = "blog"
-```
-
-== Neo4jVectorStore properties
-
-You can use the following properties in your Spring Boot configuration to customize the Neo4j vector store.
-
-[stripes=even]
-|===
-|Property|Default value
-
-|`spring.ai.vectorstore.neo4j.database-name`|neo4j
-|`spring.ai.vectorstore.neo4j.initialize-schema`|false
-|`spring.ai.vectorstore.neo4j.embedding-dimension`|1536
-|`spring.ai.vectorstore.neo4j.distance-type`|cosine
-|`spring.ai.vectorstore.neo4j.label`|Document
-|`spring.ai.vectorstore.neo4j.embedding-property`|embedding
-|`spring.ai.vectorstore.neo4j.index-name`|spring-ai-document-index
-|===
+----
