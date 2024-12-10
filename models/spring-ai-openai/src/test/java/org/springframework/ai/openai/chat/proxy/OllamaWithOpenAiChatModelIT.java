@@ -259,7 +259,7 @@ class OllamaWithOpenAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llama3.2:1b" })
+	@ValueSource(strings = { "llama3.1:latest", "llama3.2:latest" })
 	void functionCallTest(String modelName) {
 
 		UserMessage userMessage = new UserMessage(
@@ -268,6 +268,10 @@ class OllamaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
+			.withModel(modelName)
+			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
+			// (which defaults to "auto") Ollama defaults to "nono"
+			.withToolChoice("auto")
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
@@ -282,8 +286,9 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
-	@Test
-	void streamFunctionCallTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "llama3.1:latest", "llama3.2:latest" })
+	void streamFunctionCallTest(String modelName) {
 
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
@@ -291,6 +296,10 @@ class OllamaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
+			.withModel(modelName)
+			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
+			// (which defaults to "auto") Ollama defaults to "nono"
+			.withToolChoice("auto")
 			.withFunctionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
