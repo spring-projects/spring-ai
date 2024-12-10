@@ -31,6 +31,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.retry.RetryUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * @author Jihoon Kim
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +55,7 @@ public class OllamaChatModelTests {
 				() -> OllamaChatModel.builder()
 					.withOllamaApi(this.ollamaApi)
 					.withDefaultOptions(OllamaOptions.create().withModel(OllamaModel.LLAMA2))
+					.withRetryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 					.withModelManagementOptions(null)
 					.build());
 		assertEquals("modelManagementOptions must not be null", exception.getMessage());

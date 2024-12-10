@@ -53,6 +53,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.0
  */
 // @formatter:off
@@ -65,8 +66,6 @@ public class OllamaApi {
 	private static final Log logger = LogFactory.getLog(OllamaApi.class);
 
 	private static final String DEFAULT_BASE_URL = "http://localhost:11434";
-
-	private final ResponseErrorHandler responseErrorHandler;
 
 	private final RestClient restClient;
 
@@ -95,14 +94,16 @@ public class OllamaApi {
 	 */
 	public OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder) {
 
-		this.responseErrorHandler = new OllamaResponseErrorHandler();
+		ResponseErrorHandler responseErrorHandler = new OllamaResponseErrorHandler();
 
 		Consumer<HttpHeaders> defaultHeaders = headers -> {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
+		this.restClient = restClientBuilder.baseUrl(baseUrl)
+				.defaultStatusHandler(responseErrorHandler)
+				.defaultHeaders(defaultHeaders).build();
 
 		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
 	}
@@ -123,7 +124,6 @@ public class OllamaApi {
 			.uri("/api/chat")
 			.body(chatRequest)
 			.retrieve()
-			.onStatus(this.responseErrorHandler)
 			.body(ChatResponse.class);
 	}
 
@@ -190,7 +190,6 @@ public class OllamaApi {
 			.uri("/api/embed")
 			.body(embeddingsRequest)
 			.retrieve()
-			.onStatus(this.responseErrorHandler)
 			.body(EmbeddingsResponse.class);
 	}
 
@@ -201,7 +200,6 @@ public class OllamaApi {
 		return this.restClient.get()
 				.uri("/api/tags")
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.body(ListModelResponse.class);
 	}
 
@@ -214,7 +212,6 @@ public class OllamaApi {
 				.uri("/api/show")
 				.body(showModelRequest)
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.body(ShowModelResponse.class);
 	}
 
@@ -227,7 +224,6 @@ public class OllamaApi {
 				.uri("/api/copy")
 				.body(copyModelRequest)
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.toBodilessEntity();
 	}
 
@@ -240,7 +236,6 @@ public class OllamaApi {
 				.uri("/api/delete")
 				.body(deleteModelRequest)
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.toBodilessEntity();
 	}
 
