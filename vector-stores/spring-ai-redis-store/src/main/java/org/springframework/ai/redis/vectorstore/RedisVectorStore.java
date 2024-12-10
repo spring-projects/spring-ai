@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.redis.vectorstore;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -54,6 +54,9 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -61,6 +64,7 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * The RedisVectorStore is for managing and querying vector data in a Redis database. It
@@ -119,40 +123,63 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final String DEFAULT_DISTANCE_METRIC = "COSINE";
 
-	private final boolean initializeSchema;
-
 	private final JedisPooled jedis;
 
-	private final EmbeddingModel embeddingModel;
+	private final boolean initializeSchema;
 
-	private final RedisVectorStoreConfig config;
+	private final String indexName;
+
+	private final String prefix;
+
+	private final String contentFieldName;
+
+	private final String embeddingFieldName;
+
+	private final Algorithm vectorAlgorithm;
+
+	private final List<MetadataField> metadataFields;
 
 	private final BatchingStrategy batchingStrategy;
 
-	private FilterExpressionConverter filterExpressionConverter;
+	private final FilterExpressionConverter filterExpressionConverter;
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
 			boolean initializeSchema) {
-
 		this(config, embeddingModel, jedis, initializeSchema, ObservationRegistry.NOOP, null,
 				new TokenCountBatchingStrategy());
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder(jedis).embeddingModel(embeddingModel)
+			.indexName(config.indexName)
+			.prefix(config.prefix)
+			.contentFieldName(config.contentFieldName)
+			.embeddingFieldName(config.embeddingFieldName)
+			.vectorAlgorithm(config.vectorAlgorithm)
+			.metadataFields(config.metadataFields)
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Assert.notNull(config, "Config must not be null");
-		Assert.notNull(embeddingModel, "Embedding model must not be null");
-		this.initializeSchema = initializeSchema;
-
-		this.jedis = jedis;
-		this.embeddingModel = embeddingModel;
-		this.config = config;
-		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.config.metadataFields);
-		this.batchingStrategy = batchingStrategy;
+	private RedisVectorStore(RedisBuilder builder) {
+		super(builder);
+		this.jedis = builder.jedis;
+		this.indexName = builder.indexName;
+		this.prefix = builder.prefix;
+		this.contentFieldName = builder.contentFieldName;
+		this.embeddingFieldName = builder.embeddingFieldName;
+		this.vectorAlgorithm = builder.vectorAlgorithm;
+		this.metadataFields = builder.metadataFields;
+		this.initializeSchema = builder.initializeSchema;
+		this.batchingStrategy = builder.batchingStrategy;
+		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.metadataFields);
 	}
 
 	public JedisPooled getJedis() {
@@ -168,8 +195,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 			for (Document document : documents) {
 				var fields = new HashMap<String, Object>();
-				fields.put(this.config.embeddingFieldName, embeddings.get(documents.indexOf(document)));
-				fields.put(this.config.contentFieldName, document.getContent());
+				fields.put(this.embeddingFieldName, embeddings.get(documents.indexOf(document)));
+				fields.put(this.contentFieldName, document.getContent());
 				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
 			}
@@ -186,7 +213,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	private String key(String id) {
-		return this.config.prefix + id;
+		return this.prefix + id;
 	}
 
 	@Override
@@ -216,13 +243,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		String filter = nativeExpressionFilter(request);
 
-		String queryString = String.format(QUERY_FORMAT, filter, request.getTopK(), this.config.embeddingFieldName,
+		String queryString = String.format(QUERY_FORMAT, filter, request.getTopK(), this.embeddingFieldName,
 				EMBEDDING_PARAM_NAME, DISTANCE_FIELD_NAME);
 
 		List<String> returnFields = new ArrayList<>();
-		this.config.metadataFields.stream().map(MetadataField::name).forEach(returnFields::add);
-		returnFields.add(this.config.embeddingFieldName);
-		returnFields.add(this.config.contentFieldName);
+		this.metadataFields.stream().map(MetadataField::name).forEach(returnFields::add);
+		returnFields.add(this.embeddingFieldName);
+		returnFields.add(this.contentFieldName);
 		returnFields.add(DISTANCE_FIELD_NAME);
 		var embedding = this.embeddingModel.embed(request.getQuery());
 		Query query = new Query(queryString).addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
@@ -231,7 +258,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.limit(0, request.getTopK())
 			.dialect(2);
 
-		SearchResult result = this.jedis.ftSearch(this.config.indexName, query);
+		SearchResult result = this.jedis.ftSearch(this.indexName, query);
 		return result.getDocuments()
 			.stream()
 			.filter(d -> similarityScore(d) >= request.getSimilarityThreshold())
@@ -240,9 +267,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	private Document toDocument(redis.clients.jedis.search.Document doc) {
-		var id = doc.getId().substring(this.config.prefix.length());
-		var content = doc.hasProperty(this.config.contentFieldName) ? doc.getString(this.config.contentFieldName) : "";
-		Map<String, Object> metadata = this.config.metadataFields.stream()
+		var id = doc.getId().substring(this.prefix.length());
+		var content = doc.hasProperty(this.contentFieldName) ? doc.getString(this.contentFieldName) : "";
+		Map<String, Object> metadata = this.metadataFields.stream()
 			.map(MetadataField::name)
 			.filter(doc::hasProperty)
 			.collect(Collectors.toMap(Function.identity(), doc::getString));
@@ -272,12 +299,12 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		}
 
 		// If index already exists don't do anything
-		if (this.jedis.ftList().contains(this.config.indexName)) {
+		if (this.jedis.ftList().contains(this.indexName)) {
 			return;
 		}
 
-		String response = this.jedis.ftCreate(this.config.indexName,
-				FTCreateParams.createParams().on(IndexDataType.JSON).addPrefix(this.config.prefix), schemaFields());
+		String response = this.jedis.ftCreate(this.indexName,
+				FTCreateParams.createParams().on(IndexDataType.JSON).addPrefix(this.prefix), schemaFields());
 		if (!RESPONSE_OK.test(response)) {
 			String message = MessageFormat.format("Could not create index: {0}", response);
 			throw new RuntimeException(message);
@@ -290,16 +317,16 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		vectorAttrs.put("DISTANCE_METRIC", DEFAULT_DISTANCE_METRIC);
 		vectorAttrs.put("TYPE", VECTOR_TYPE_FLOAT32);
 		List<SchemaField> fields = new ArrayList<>();
-		fields.add(TextField.of(jsonPath(this.config.contentFieldName)).as(this.config.contentFieldName).weight(1.0));
+		fields.add(TextField.of(jsonPath(this.contentFieldName)).as(this.contentFieldName).weight(1.0));
 		fields.add(VectorField.builder()
-			.fieldName(jsonPath(this.config.embeddingFieldName))
+			.fieldName(jsonPath(this.embeddingFieldName))
 			.algorithm(vectorAlgorithm())
 			.attributes(vectorAttrs)
-			.as(this.config.embeddingFieldName)
+			.as(this.embeddingFieldName)
 			.build());
 
-		if (!CollectionUtils.isEmpty(this.config.metadataFields)) {
-			for (MetadataField field : this.config.metadataFields) {
+		if (!CollectionUtils.isEmpty(this.metadataFields)) {
+			for (MetadataField field : this.metadataFields) {
 				fields.add(schemaField(field));
 			}
 		}
@@ -318,7 +345,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	private VectorAlgorithm vectorAlgorithm() {
-		if (this.config.vectorAlgorithm == Algorithm.HSNW) {
+		if (this.vectorAlgorithm == Algorithm.HSNW) {
 			return VectorAlgorithm.HNSW;
 		}
 		return VectorAlgorithm.FLAT;
@@ -332,9 +359,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
-			.withCollectionName(this.config.indexName)
+			.withCollectionName(this.indexName)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withFieldName(this.config.embeddingFieldName)
+			.withFieldName(this.embeddingFieldName)
 			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 
 	}
@@ -361,9 +388,150 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
+	public static RedisBuilder builder(JedisPooled jedis) {
+		return new RedisBuilder(jedis);
+	}
+
+	public static class RedisBuilder extends AbstractVectorStoreBuilder<RedisBuilder> {
+
+		private final JedisPooled jedis;
+
+		private String indexName = DEFAULT_INDEX_NAME;
+
+		private String prefix = DEFAULT_PREFIX;
+
+		private String contentFieldName = DEFAULT_CONTENT_FIELD_NAME;
+
+		private String embeddingFieldName = DEFAULT_EMBEDDING_FIELD_NAME;
+
+		private Algorithm vectorAlgorithm = DEFAULT_VECTOR_ALGORITHM;
+
+		private List<MetadataField> metadataFields = new ArrayList<>();
+
+		private boolean initializeSchema = false;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		public RedisBuilder(JedisPooled jedis) {
+			Assert.notNull(jedis, "JedisPooled must not be null");
+			this.jedis = jedis;
+		}
+
+		/**
+		 * Sets the Redis index name.
+		 * @param indexName the index name to use
+		 * @return the builder instance
+		 */
+		public RedisBuilder indexName(String indexName) {
+			if (StringUtils.hasText(indexName)) {
+				this.indexName = indexName;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the Redis key prefix (default: "embedding:").
+		 * @param prefix the prefix to use
+		 * @return the builder instance
+		 */
+		public RedisBuilder prefix(String prefix) {
+			if (StringUtils.hasText(prefix)) {
+				this.prefix = prefix;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the Redis content field name.
+		 * @param fieldName the content field name to use
+		 * @return the builder instance
+		 */
+		public RedisBuilder contentFieldName(String fieldName) {
+			if (StringUtils.hasText(fieldName)) {
+				this.contentFieldName = fieldName;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the Redis embedding field name.
+		 * @param fieldName the embedding field name to use
+		 * @return the builder instance
+		 */
+		public RedisBuilder embeddingFieldName(String fieldName) {
+			if (StringUtils.hasText(fieldName)) {
+				this.embeddingFieldName = fieldName;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the Redis vector algorithm.
+		 * @param algorithm the vector algorithm to use
+		 * @return the builder instance
+		 */
+		public RedisBuilder vectorAlgorithm(Algorithm algorithm) {
+			if (algorithm != null) {
+				this.vectorAlgorithm = algorithm;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the metadata fields.
+		 * @param fields the metadata fields to include
+		 * @return the builder instance
+		 */
+		public RedisBuilder metadataFields(MetadataField... fields) {
+			return metadataFields(Arrays.asList(fields));
+		}
+
+		/**
+		 * Sets the metadata fields.
+		 * @param fields the list of metadata fields to include
+		 * @return the builder instance
+		 */
+		public RedisBuilder metadataFields(List<MetadataField> fields) {
+			if (fields != null && !fields.isEmpty()) {
+				this.metadataFields = new ArrayList<>(fields);
+			}
+			return this;
+		}
+
+		/**
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return the builder instance
+		 */
+		public RedisBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the batching strategy.
+		 * @param batchingStrategy the strategy to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public RedisBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		@Override
+		public RedisVectorStore build() {
+			validate();
+			return new RedisVectorStore(this);
+		}
+
+	}
+
 	/**
 	 * Configuration for the Redis vector store.
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static final class RedisVectorStoreConfig {
 
 		private final String indexName;
@@ -395,19 +563,20 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration.
 		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static Builder builder() {
-
 			return new Builder();
 		}
 
 		/**
 		 * {@return the default config}
 		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static RedisVectorStoreConfig defaultConfig() {
-
 			return builder().build();
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static final class Builder {
 
 			private String indexName = DEFAULT_INDEX_NAME;
