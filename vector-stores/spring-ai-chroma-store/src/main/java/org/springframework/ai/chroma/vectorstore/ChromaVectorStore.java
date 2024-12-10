@@ -118,9 +118,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		super(builder);
 
 		Assert.notNull(builder.chromaApi, "ChromaApi must not be null");
-		Assert.notNull(builder.batchingStrategy, "BatchingStrategy must not be null");
-		Assert.notNull(builder.filterExpressionConverter, "FilterExpressionConverter must not be null");
-		Assert.hasText(builder.collectionName, "Collection name must not be empty");
 
 		this.chromaApi = builder.chromaApi;
 		this.collectionName = builder.collectionName;
