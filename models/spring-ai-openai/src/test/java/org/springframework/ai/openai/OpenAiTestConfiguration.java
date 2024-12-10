@@ -21,6 +21,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.api.OpenAiModerationApi;
+import org.springframework.ai.openai.api.assistants.OpenAiAssistantApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -48,6 +49,11 @@ public class OpenAiTestConfiguration {
 		return new OpenAiModerationApi(getApiKey());
 	}
 
+	@Bean
+	public OpenAiAssistantApi openAiAssistantApi() {
+		return new OpenAiAssistantApi(getApiKey());
+	}
+
 	private String getApiKey() {
 		String apiKey = System.getenv("OPENAI_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
@@ -59,28 +65,22 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiChatModel openAiChatModel(OpenAiApi api) {
-		OpenAiChatModel openAiChatModel = new OpenAiChatModel(api,
-				OpenAiChatOptions.builder().withModel(ChatModel.GPT_4_O_MINI).build());
-		return openAiChatModel;
+		return new OpenAiChatModel(api, OpenAiChatOptions.builder().withModel(ChatModel.GPT_4_O_MINI).build());
 	}
 
 	@Bean
 	public OpenAiAudioTranscriptionModel openAiTranscriptionModel(OpenAiAudioApi api) {
-		OpenAiAudioTranscriptionModel openAiTranscriptionModel = new OpenAiAudioTranscriptionModel(api);
-		return openAiTranscriptionModel;
+		return new OpenAiAudioTranscriptionModel(api);
 	}
 
 	@Bean
 	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiAudioApi api) {
-		OpenAiAudioSpeechModel openAiAudioSpeechModel = new OpenAiAudioSpeechModel(api);
-		return openAiAudioSpeechModel;
+		return new OpenAiAudioSpeechModel(api);
 	}
 
 	@Bean
 	public OpenAiImageModel openAiImageModel(OpenAiImageApi imageApi) {
-		OpenAiImageModel openAiImageModel = new OpenAiImageModel(imageApi);
-		// openAiImageModel.setModel("foobar");
-		return openAiImageModel;
+		return new OpenAiImageModel(imageApi);
 	}
 
 	@Bean
@@ -90,8 +90,12 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiModerationModel openAiModerationClient(OpenAiModerationApi openAiModerationApi) {
-		OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(openAiModerationApi);
-		return openAiModerationModel;
+		return new OpenAiModerationModel(openAiModerationApi);
+	}
+
+	@Bean
+	public OpenAiAssistantManager openAiAssistantModel(OpenAiAssistantApi openAiAssistantApi) {
+		return new OpenAiAssistantManager(openAiAssistantApi);
 	}
 
 }

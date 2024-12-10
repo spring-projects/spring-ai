@@ -684,4 +684,43 @@ public class OpenAiPropertiesTests {
 
 	}
 
+	@Test
+	public void assistantProperties() {
+
+		new ApplicationContextRunner().withPropertyValues(
+				// Mock properties for OpenAiAssistantProperties
+				"spring.ai.openai.base-url=TEST_BASE_URL", "spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.assistant.enabled=true",
+				"spring.ai.openai.assistant.options.model=gpt-4o-mini-2024-07-18",
+				"spring.ai.openai.assistant.options.name=TestAssistant",
+				"spring.ai.openai.assistant.options.description=This is a test assistant",
+				"spring.ai.openai.assistant.options.instructions=Follow these instructions",
+				"spring.ai.openai.assistant.options.metadata.key=value",
+				"spring.ai.openai.assistant.options.temperature=0.7", "spring.ai.openai.assistant.options.top-p=0.9")
+			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var assistantProperties = context.getBean(OpenAiAssistantProperties.class);
+				assertThat(assistantProperties).isNotNull();
+
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(assistantProperties.isEnabled()).isTrue();
+				var options = assistantProperties.getOptions();
+				assertThat(options.getModel()).isEqualTo("gpt-4o-mini-2024-07-18");
+				assertThat(options.getName()).isEqualTo("TestAssistant");
+				assertThat(options.getDescription()).isEqualTo("This is a test assistant");
+				assertThat(options.getInstructions()).isEqualTo("Follow these instructions");
+				assertThat(options.getMetadata().get("key")).isEqualTo("value");
+				assertThat(options.getTemperature()).isEqualTo(0.7);
+				assertThat(options.getTopP()).isEqualTo(0.9);
+
+				var optionsString = options.toString();
+				assertThat(optionsString).contains("gpt-4o-mini-2024-07-18");
+				assertThat(optionsString).contains("TestAssistant");
+				assertThat(optionsString).contains("Follow these instructions");
+			});
+	}
+
 }

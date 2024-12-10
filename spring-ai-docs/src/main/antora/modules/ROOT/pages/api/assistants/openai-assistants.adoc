@@ -1,0 +1,189 @@
+= Assistant API
+== Introduction
+Spring AI supports OpenAI's Assistant API, enabling developers to create, retrieve, modify, list, and delete assistants programmatically.
+
+Follow this https://platform.openai.com/docs/assistants/overview[guide] for more information on OpenAI's Assistant API.
+
+== Prerequisites
+1. Create an OpenAI account and obtain an API key. You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
+2. Add the `spring-ai-openai` dependency to your project's build file. For more information, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+== Auto-configuration
+Spring AI provides Spring Boot auto-configuration for the OpenAI Assistant API.
+
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Assistant Properties
+=== Connection Properties
+The prefix `spring.ai.openai` is used as the property prefix for connection configuration.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.openai.base-url   | The URL to connect to OpenAI. | `https://api.openai.com`
+| spring.ai.openai.api-key    | The API Key for authentication. | -
+| spring.ai.openai.organization-id | Optionally, specify which organization is used for the request. | -
+| spring.ai.openai.project-id      | Optionally, specify which project is used for the request. | -
+|====
+
+=== Configuration Properties
+The prefix `spring.ai.openai.assistant` is used to configure the Assistant API.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+| spring.ai.openai.assistant.base-url   | URL to connect to the Assistant API. | `https://api.openai.com`
+| spring.ai.openai.assistant.api-key    | API Key for authentication. | -
+| spring.ai.openai.assistant.options.model  | Model ID for the Assistant API. | `gpt-4o-mini-2024-07-18`
+| spring.ai.openai.assistant.options.name | Name of the assistant. | -
+| spring.ai.openai.assistant.options.description | Description of the assistant. | -
+| spring.ai.openai.assistant.options.instructions | Instructions for the assistant. | -
+|====
+
+TIP: Override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, and other connection properties to customize configurations for the Assistant API.
+
+== Runtime Options
+The `OpenAiAssistantOptions` class provides runtime options for creating or modifying assistants.
+
+For example:
+
+[source,java]
+----
+CreateAssistantRequest createAssistantRequest = CreateAssistantRequest.builder()
+    .withModel("gpt-4o-mini-2024-07-18")
+    .withName("Assistant Manager Test")
+    .withDescription("Created by Assistant Manager Test")
+    .withInstructions("Follow the test instructions.")
+    .withTools(List.of(new FunctionTool(new FunctionTool.Function("test_tool", "description", null, false))))
+    .withMetadata(Map.of("key", "value"))
+    .withTemperature(0.7)
+    .withTopP(0.9)
+    .withResponseFormat(ResponseFormat.auto())
+    .build();
+
+AssistantResponse response = assistantManager.createAssistant(createAssistantRequest);
+System.out.println("Assistant ID: " + response.id());
+----
+
+== Manual Configuration
+Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai'
+}
+----
+
+Next, configure the Assistant API client manually if not using auto-configuration:
+
+[source,java]
+----
+OpenAiAssistantApi openAiAssistantApi = new OpenAiAssistantApi("https://api.openai.com", System.getenv("OPENAI_API_KEY"));
+
+OpenAiAssistantManager assistantManager = new OpenAiAssistantManager(openAiAssistantApi);
+
+CreateAssistantRequest createRequest = CreateAssistantRequest.builder()
+    .withModel("gpt-4")
+    .withName("My Assistant")
+    .withDescription("An assistant to help with tasks.")
+    .build();
+
+AssistantResponse response = assistantManager.createAssistant(createRequest);
+System.out.println("Assistant ID: " + response.getId());
+----
+
+== Example Code
+Refer to the `OpenAiAssistantManagerIT` test for more examples of how to use the Assistant API. The test covers:
+* Creating an assistant.
+* Retrieving an assistant.
+* Modifying an assistant.
+* Listing assistants.
+* Deleting an assistant.
+
+=== Creating an Assistant
+[source,java]
+----
+CreateAssistantRequest createAssistantRequest = CreateAssistantRequest.builder()
+    .withModel("gpt-4o-mini-2024-07-18")
+    .withName("Assistant Manager Test")
+    .withDescription("Created by Assistant Manager Test")
+    .withInstructions("Follow the test instructions.")
+    .withTools(List.of(new FunctionTool(new FunctionTool.Function("test_tool", "description", null, false))))
+    .withMetadata(Map.of("key", "value"))
+    .withTemperature(0.7)
+    .withTopP(0.9)
+    .withResponseFormat(ResponseFormat.auto())
+    .build();
+
+AssistantResponse response = assistantManager.createAssistant(createAssistantRequest);
+System.out.println("Created Assistant ID: " + response.id());
+----
+
+=== Retrieving an Assistant
+[source,java]
+----
+String assistantId = "your-assistant-id"; // Replace with the actual ID of your assistant
+AssistantResponse retrievedAssistant = openAiAssistantManager.retrieveAssistant(assistantId);
+System.out.println("Retrieved Assistant Name: " + retrievedAssistant.name());
+----
+
+=== Modifying an Assistant
+[source,java]
+----
+ModifyAssistantRequest modifyRequest = ModifyAssistantRequest.builder()
+    .withName("Updated Assistant")
+    .withDescription("This assistant has been updated.")
+    .withInstructions("You are an updated assistant with new instructions.")
+    .build();
+
+AssistantResponse modifiedResponse = openAiAssistantManager.modifyAssistant(assistantId, modifyRequest);
+System.out.println("Modified Assistant Name: " + modifiedResponse.name());
+----
+
+=== Listing Assistants
+[source,java]
+----
+OpenAiAssistantApi.ListAssistantsResponse listResponse = openAiAssistantManager.listAssistants(10, "desc", null, null);
+
+listResponse.data().forEach(assistant -> {
+    System.out.println("Assistant ID: " + assistant.id() + ", Name: " + assistant.name());
+});
+----
+
+=== Deleting an Assistant
+[source,java]
+----
+boolean isDeleted = openAiAssistantManager.deleteAssistant(assistantId);
+System.out.println("Assistant Deleted: " + isDeleted);
+----
+

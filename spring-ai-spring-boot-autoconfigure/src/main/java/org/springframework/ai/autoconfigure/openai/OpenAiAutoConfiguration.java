@@ -30,6 +30,7 @@ import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.openai.OpenAiAssistantManager;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -40,6 +41,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.api.OpenAiModerationApi;
+import org.springframework.ai.openai.api.assistants.OpenAiAssistantApi;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -72,7 +74,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
 		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class,
-		OpenAiAudioSpeechProperties.class, OpenAiModerationProperties.class })
+		OpenAiAudioSpeechProperties.class, OpenAiModerationProperties.class, OpenAiAssistantProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 public class OpenAiAutoConfiguration {
@@ -105,6 +107,24 @@ public class OpenAiAutoConfiguration {
 						+ modelType + ".api-key property.");
 
 		return new ResolvedConnectionProperties(baseUrl, apiKey, CollectionUtils.toMultiValueMap(connectionHeaders));
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiAssistantProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiAssistantManager openAiAssistantModel(OpenAiConnectionProperties commonProperties,
+			OpenAiAssistantProperties assistantProperties, RetryTemplate retryTemplate,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, assistantProperties,
+				"assistant");
+
+		var openAiAssistantApi = new OpenAiAssistantApi(resolved.baseUrl, resolved.apiKey(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+
+		return new OpenAiAssistantManager(openAiAssistantApi, retryTemplate)
+			.withDefaultOptions(assistantProperties.getOptions());
 	}
 
 	@Bean

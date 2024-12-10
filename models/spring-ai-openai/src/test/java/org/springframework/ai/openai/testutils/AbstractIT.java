@@ -35,6 +35,7 @@ import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiModerationModel;
+import org.springframework.ai.openai.api.assistants.OpenAiAssistantApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -69,6 +70,9 @@ public abstract class AbstractIT {
 
 	@Autowired
 	protected OpenAiModerationModel openAiModerationModel;
+
+	@Autowired
+	protected OpenAiAssistantApi openAiAssistantApi;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
