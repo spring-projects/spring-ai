@@ -23,7 +23,7 @@ import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -111,7 +111,7 @@ class DefaultChatModelObservationConventionTests {
 			.build();
 		observationContext.setResponse(new ChatResponse(
 				List.of(new Generation(new AssistantMessage("response"),
-						ChatGenerationMetadata.builder().finishReason("this-is-the-end").build())),
+						GenerationMetadata.builder().finishReason("this-is-the-end").build())),
 				ChatResponseMetadata.builder()
 					.withId("say33")
 					.withModel("mistral-42")
@@ -169,7 +169,7 @@ class DefaultChatModelObservationConventionTests {
 			.build();
 		observationContext.setResponse(new ChatResponse(
 				List.of(new Generation(new AssistantMessage("response"),
-						ChatGenerationMetadata.builder().finishReason("").build())),
+						GenerationMetadata.builder().finishReason("").build())),
 				ChatResponseMetadata.builder().withId("").build()));
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
 			.stream()

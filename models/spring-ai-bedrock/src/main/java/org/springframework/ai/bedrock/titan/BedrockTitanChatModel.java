@@ -26,7 +26,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatReq
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -75,23 +75,23 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt)).map(chunk -> {
-			ChatGenerationMetadata chatGenerationMetadata = null;
+			GenerationMetadata generationMetadata = null;
 			if (chunk.amazonBedrockInvocationMetrics() != null) {
 				String completionReason = chunk.completionReason().name();
-				chatGenerationMetadata = ChatGenerationMetadata.builder()
+				generationMetadata = GenerationMetadata.builder()
 					.finishReason(completionReason)
 					.metadata("usage", chunk.amazonBedrockInvocationMetrics())
 					.build();
 			}
 			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
 				String completionReason = chunk.completionReason().name();
-				chatGenerationMetadata = ChatGenerationMetadata.builder()
+				generationMetadata = GenerationMetadata.builder()
 					.finishReason(completionReason)
 					.metadata("usage", extractUsage(chunk))
 					.build();
 			}
 			return new ChatResponse(
-					List.of(new Generation(new AssistantMessage(chunk.outputText()), chatGenerationMetadata)));
+					List.of(new Generation(new AssistantMessage(chunk.outputText()), generationMetadata)));
 		});
 	}
 

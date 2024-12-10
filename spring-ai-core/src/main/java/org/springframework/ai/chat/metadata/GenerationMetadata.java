@@ -24,15 +24,15 @@ import org.springframework.ai.model.ResultMetadata;
 
 /**
  *
- * Represents the metadata associated with the generation of a chat response.
+ * Represents the metadata associated with the generation of an AI response.
  *
  * @author John Blum
  * @author Christian Tzolov
  * @since 0.7.0
  */
-public interface ChatGenerationMetadata extends ResultMetadata {
+public interface GenerationMetadata extends ResultMetadata {
 
-	ChatGenerationMetadata NULL = builder().build();
+	GenerationMetadata NULL = builder().build();
 
 	/**
 	 * Get the {@link String reason} this choice completed for the generation.
@@ -55,7 +55,7 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 	boolean isEmpty();
 
 	static Builder builder() {
-		return new DefaultChatGenerationMetadataBuilder();
+		return new DefaultGenerationMetadataBuilder();
 	}
 
 	/**
@@ -92,7 +92,7 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 		/**
 		 * Build the Generation metadata.
 		 */
-		ChatGenerationMetadata build();
+		GenerationMetadata build();
 
 	}
 

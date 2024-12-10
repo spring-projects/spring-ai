@@ -28,7 +28,7 @@ import reactor.test.StepVerifier;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
@@ -174,7 +174,7 @@ public class WatsonxAiChatModelTest {
 			.willReturn(ResponseEntity.of(Optional.of(fakeResponse)));
 
 		Generation expectedGenerator = new Generation(new AssistantMessage("LLM response"),
-				ChatGenerationMetadata.builder()
+				GenerationMetadata.builder()
 					.finishReason("max_tokens")
 					.metadata("system",
 							Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))))
@@ -210,7 +210,7 @@ public class WatsonxAiChatModelTest {
 		given(mockChatApi.generateStreaming(any(WatsonxAiChatRequest.class))).willReturn(fakeResponse);
 
 		Generation firstGen = new Generation(new AssistantMessage("LLM resp"),
-				ChatGenerationMetadata.builder()
+				GenerationMetadata.builder()
 					.finishReason("max_tokens")
 					.metadata("system",
 							Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))))

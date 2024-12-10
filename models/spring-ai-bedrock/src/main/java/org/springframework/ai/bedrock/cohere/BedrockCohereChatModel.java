@@ -26,7 +26,7 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -79,7 +79,7 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 				String finishReason = g.finishReason().name();
 				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
 				return new ChatResponse(List.of(new Generation(new AssistantMessage(""),
-						ChatGenerationMetadata.builder().finishReason(finishReason).metadata("usage", usage).build())));
+						GenerationMetadata.builder().finishReason(finishReason).metadata("usage", usage).build())));
 			}
 			return new ChatResponse(List.of(new Generation(new AssistantMessage(g.text()))));
 		});

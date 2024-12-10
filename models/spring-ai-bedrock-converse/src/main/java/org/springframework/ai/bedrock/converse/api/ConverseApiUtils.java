@@ -46,7 +46,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -141,7 +141,7 @@ public final class ConverseApiUtils {
 
 				AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 				Generation toolCallGeneration = new Generation(assistantMessage,
-						ChatGenerationMetadata.builder().finishReason("tool_use").build());
+						GenerationMetadata.builder().finishReason("tool_use").build());
 
 				var chatResponseMetaData = ChatResponseMetadata.builder()
 					.withUsage(new DefaultUsage(promptTokens, generationTokens, totalTokens))
@@ -176,7 +176,7 @@ public final class ConverseApiUtils {
 
 					var generation = new Generation(
 							new AssistantMessage(contentBlockDeltaEvent.delta().text(), Map.of()),
-							ChatGenerationMetadata.builder()
+							GenerationMetadata.builder()
 								.finishReason(lastAggregation.metadataAggregation().stopReason())
 								.build());
 

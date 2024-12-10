@@ -21,7 +21,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.GenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
@@ -116,10 +116,10 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 		assertThat(promptMetadata).isEmpty();
 
 		response.getResults().forEach(generation -> {
-			ChatGenerationMetadata chatGenerationMetadata = generation.getMetadata();
-			assertThat(chatGenerationMetadata).isNotNull();
-			assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("STOP");
-			assertThat(chatGenerationMetadata.getContentFilters()).isEmpty();
+			GenerationMetadata generationMetadata = generation.getMetadata();
+			assertThat(generationMetadata).isNotNull();
+			assertThat(generationMetadata.getFinishReason()).isEqualTo("STOP");
+			assertThat(generationMetadata.getContentFilters()).isEmpty();
 		});
 	}
 
