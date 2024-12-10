@@ -20,6 +20,8 @@ import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStorePropert
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for CosmosDB Vector Store.
+ *
  * @author Theo van Kraay
  * @since 1.0.0
  */

@@ -70,8 +70,11 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationCont
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 
 /**
+ * Cosmos DB implementation.
+ *
  * @author Theo van Kraay
  * @author Soby Chacko
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
@@ -201,13 +204,14 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public void doAdd(List<Document> documents) {
 
 		// Batch the documents based on the batching strategy
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID
 		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
-			CosmosItemOperation operation = CosmosBulkOperations
-				.getCreateItemOperation(mapCosmosDocument(doc, doc.getEmbedding()), new PartitionKey(doc.getId()));
+			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
+					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))), new PartitionKey(doc.getId()));
 			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
 			// with the operation
 		}).toList();
@@ -336,7 +340,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.block();
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-				.map(doc -> new Document(doc.get("id").asText(), doc.get("content").asText(), new HashMap<>()))
+				.map(doc -> Document.builder().id(doc.get("id").asText()).text(doc.get("content").asText()).build())
 				.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();

@@ -32,7 +32,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +79,7 @@ public class MistralAiChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -107,7 +107,7 @@ public class MistralAiChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -181,7 +181,8 @@ public class MistralAiChatModelObservationIT {
 		public MistralAiChatModel openAiChatModel(MistralAiApi mistralAiApi,
 				TestObservationRegistry observationRegistry) {
 			return new MistralAiChatModel(mistralAiApi, MistralAiChatOptions.builder().build(),
-					new FunctionCallbackContext(), List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
 
 	}

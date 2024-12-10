@@ -43,6 +43,12 @@
 	<dependencies>
 
 		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-jsonSchema</artifactId>
+			<version>${jackson-module-jsonSchema.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>io.swagger.core.v3</groupId>
 			<artifactId>swagger-annotations</artifactId>
 			<version>${swagger-annotations.version}</version>
@@ -52,18 +58,6 @@
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-module-swagger-2</artifactId>
 			<version>${jsonschema.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-function-context</artifactId>
-			<version>${spring-cloud-function-context.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-autoconfigure</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<!-- production dependencies -->
@@ -104,6 +98,11 @@
 
 		<dependency>
 			<groupId>io.micrometer</groupId>
+			<artifactId>context-propagation</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-tracing-bridge-otel</artifactId>
 			<optional>true</optional>
 		</dependency>
@@ -138,6 +137,13 @@
 			<version>${jackson.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.jetbrains.kotlin</groupId>
+			<artifactId>kotlin-stdlib</artifactId>
+			<version>${kotlin.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -146,16 +152,16 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.jetbrains.kotlin</groupId>
-			<artifactId>kotlin-stdlib</artifactId>
-			<version>${kotlin.version}</version>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-kotlin</artifactId>
+			<version>${jackson.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-kotlin</artifactId>
-			<version>${jackson.version}</version>
+			<groupId>io.mockk</groupId>
+			<artifactId>mockk-jvm</artifactId>
+			<version>1.13.13</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -176,7 +182,8 @@
 						<configuration>
 							<sourceDirectory>${basedir}/src/main/resources/antlr4</sourceDirectory>
 							<outputDirectory>${basedir}/src/main/java</outputDirectory>
-							<!-- <outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory> -->
+							<!--
+							<outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory> -->
 							<visitor>true</visitor>
 						</configuration>
 						<executions>

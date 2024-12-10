@@ -146,10 +146,12 @@ Read more about xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic 
 
 == Multimodal
 
-Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, pdf, images, data formats. 
 
+=== Images
 Currently, Anthropic Claude 3 supports the `base64` source type for `images`, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.
 Check the link:https://docs.anthropic.com/claude/docs/vision[Vision guide] for more information.
+Anthropic Claude 3.5 Sonnet also supports the `pdf` source type for `application/pdf` files.
 
 Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
 This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
@@ -176,14 +178,23 @@ along with the text message "Explain what do you see on this picture?", and gene
 
 ----
 The image shows a close-up view of a wire fruit basket containing several pieces of fruit.
-The basket appears to be made of thin metal wires formed into a round shape with an elevated handle.
+...
+----
 
-Inside the basket, there are a few yellow bananas and a couple of red apples or possibly tomatoes.
-The vibrant colors of the fruit contrast nicely against the metallic tones of the wire basket.
+=== PDF
 
-The shallow depth of field in the photograph puts the focus squarely on the fruit in the foreground, while the basket handle extending upwards is slightly blurred, creating a pleasing bokeh effect in the background.
+Starting with Sonnet 3.5 https://docs.anthropic.com/en/docs/build-with-claude/pdf-support[PDF support (beta)] is provided.
+Use the `application/pdf` media type to attach a PDF file to the message:
 
-The composition and lighting give the image a clean, minimalist aesthetic that highlights the natural beauty and freshness of the fruit displayed in this elegant wire basket.
+[source,java]
+----
+var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
+
+var userMessage = new UserMessage(
+        "You are a very professional document summarization specialist. Please summarize the given document.",
+        List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+
+var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 ----
 
 == Sample Controller
@@ -195,7 +206,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.anthropic.api-key=YOUR_API_KEY
-spring.ai.anthropic.chat.options.model=claude-3-5-sonnet-20241022
+spring.ai.anthropic.chat.options.model=claude-3-5-sonnet-latest
 spring.ai.anthropic.chat.options.temperature=0.7
 spring.ai.anthropic.chat.options.max-tokens=450
 ----

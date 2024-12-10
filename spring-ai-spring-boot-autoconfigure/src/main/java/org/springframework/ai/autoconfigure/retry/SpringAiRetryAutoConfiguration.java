@@ -41,6 +41,8 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for AI Retry.
+ *
  * @author Christian Tzolov
  */
 @AutoConfiguration

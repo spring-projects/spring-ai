@@ -24,6 +24,8 @@ import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStor
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Weaviate Vector Store.
+ *
  * @author Christian Tzolov
  */
 @ConfigurationProperties(WeaviateVectorStoreProperties.CONFIG_PREFIX)

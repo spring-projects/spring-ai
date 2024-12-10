@@ -30,7 +30,14 @@ public enum AiObservationEventNames {
 
 // @formatter:off
 
+	/**
+	 * Prompt for content generation.
+	 */
 	CONTENT_PROMPT("gen_ai.content.prompt"),
+
+	/**
+	 * Completion of content generation.
+	 */
 	CONTENT_COMPLETION("gen_ai.content.completion");
 
 	private final String value;
@@ -39,6 +46,10 @@ public enum AiObservationEventNames {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the event name.
+	 * @return the value of the event name
+	 */
 	public String value() {
 		return this.value;
 	}

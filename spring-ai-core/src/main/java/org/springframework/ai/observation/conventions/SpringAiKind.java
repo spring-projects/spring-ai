@@ -27,8 +27,19 @@ public enum SpringAiKind {
 	// @formatter:off
 
 	// Please, keep the alphabetical sorting.
+	/**
+	 * Spring AI kind for advisor.
+	 */
 	ADVISOR("advisor"),
+
+	/**
+	 * Spring AI kind for chat client.
+	 */
 	CHAT_CLIENT("chat_client"),
+
+	/**
+	 * Spring AI kind for vector store.
+	 */
 	VECTOR_STORE("vector_store");
 
 	private final String value;
@@ -37,6 +48,10 @@ public enum SpringAiKind {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the Spring AI kind.
+	 * @return the value of the Spring AI kind
+	 */
 	public String value() {
 		return this.value;
 	}

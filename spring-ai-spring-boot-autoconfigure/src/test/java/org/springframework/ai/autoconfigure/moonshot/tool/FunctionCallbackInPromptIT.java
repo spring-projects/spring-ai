@@ -32,7 +32,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.moonshot.MoonshotChatModel;
 import org.springframework.ai.moonshot.MoonshotChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -64,10 +64,10 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = MoonshotChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.function("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
@@ -75,7 +75,7 @@ public class FunctionCallbackInPromptIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
@@ -90,10 +90,10 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = MoonshotChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription("Get the weather in location")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.function("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
@@ -105,7 +105,7 @@ public class FunctionCallbackInPromptIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 

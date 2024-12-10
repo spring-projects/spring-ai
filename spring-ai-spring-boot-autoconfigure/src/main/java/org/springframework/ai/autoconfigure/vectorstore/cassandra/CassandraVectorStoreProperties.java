@@ -25,6 +25,8 @@ import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Cassandra Vector Store.
+ *
  * @author Mick Semb Wever
  * @since 1.0.0
  */
@@ -87,18 +89,6 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 
 	public void setEmbeddingColumnName(String embeddingColumnName) {
 		this.embeddingColumnName = embeddingColumnName;
-	}
-
-	@Deprecated
-	public boolean getDisallowSchemaCreation() {
-		logger.warn("getDisallowSchemaCreation() is deprecated, use isInitializeSchema()");
-		return !super.isInitializeSchema();
-	}
-
-	@Deprecated
-	public void setDisallowSchemaCreation(boolean disallowSchemaCreation) {
-		logger.warn("setDisallowSchemaCreation(boolean) is deprecated, use setInitializeSchema(boolean)");
-		super.setInitializeSchema(!disallowSchemaCreation);
 	}
 
 	public boolean getReturnEmbeddings() {

@@ -23,6 +23,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for QianFan embedding model.
+ *
  * @author Geng Rong
  */
 @ConfigurationProperties(QianFanEmbeddingProperties.CONFIG_PREFIX)

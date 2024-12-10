@@ -101,7 +101,7 @@ public class SimpleLoggerAdvisorTests {
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
 		UserMessage userMessage = (UserMessage) this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("Please answer my question XYZ");
+		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("Please answer my question XYZ");
 
 		assertThat(output.getOut()).contains("request: AdvisedRequest", "userText=Please answer my question XYZ");
 		assertThat(output.getOut()).contains("response:", "finishReason");

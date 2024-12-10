@@ -174,7 +174,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.opensearch.password`| Password for the specified username. | -
 |`spring.ai.vectorstore.opensearch.indexName`| Name of the default index to be used within the OpenSearch cluster. | `spring-ai-document-index`
 |`spring.ai.vectorstore.opensearch.mappingJson`| JSON string defining the mapping for the index; specifies how documents and their
-fields are stored and indexed. |
+fields are stored and indexed. Refer link:https://opensearch.org/docs/latest/search-plugins/vector-search/[here] for some sample configurations |
 {
     "properties":{
         "embedding":{

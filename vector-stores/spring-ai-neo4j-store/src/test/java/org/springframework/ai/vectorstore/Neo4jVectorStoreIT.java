@@ -28,6 +28,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -91,7 +92,7 @@ class Neo4jVectorStoreIT {
 			assertThat(resultDoc.getContent()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
@@ -203,7 +204,7 @@ class Neo4jVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
 			Document sameIdDocument = new Document(document.getId(),
 					"The World is Big and Salvation Lurks Around the Corner",
@@ -218,7 +219,7 @@ class Neo4jVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
 		});
 	}
@@ -235,14 +236,14 @@ class Neo4jVectorStoreIT {
 			List<Document> fullResult = vectorStore
 				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThresholdAll());
 
-			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-			assertThat(distances).hasSize(3);
+			assertThat(scores).hasSize(3);
 
-			float threshold = (distances.get(0) + distances.get(1)) / 2;
+			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThreshold(1 - threshold));
+			List<Document> results = vectorStore.similaritySearch(
+					SearchRequest.query("Great").withTopK(5).withSimilarityThreshold(similarityThreshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -250,8 +251,8 @@ class Neo4jVectorStoreIT {
 			assertThat(resultDoc.getContent()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
-
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
+			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 		});
 	}
 

@@ -26,7 +26,7 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Embedding Model.
+Spring AI provides Spring Boot auto-configuration for the OpenAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]

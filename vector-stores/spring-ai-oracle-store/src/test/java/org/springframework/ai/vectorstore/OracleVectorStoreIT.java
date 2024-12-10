@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.oracle.OracleContainer;
@@ -94,21 +95,19 @@ public class OracleVectorStoreIT {
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + tableName + " PURGE");
 	}
 
-	private static boolean isSortedByDistance(final List<Document> documents) {
-		final List<Double> distances = documents.stream()
-			.map(doc -> (Double) doc.getMetadata().get("distance"))
-			.toList();
+	private static boolean isSortedBySimilarity(final List<Document> documents) {
+		final List<Double> scores = documents.stream().map(Document::getScore).toList();
 
-		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
+		if (CollectionUtils.isEmpty(scores) || scores.size() == 1) {
 			return true;
 		}
 
-		Iterator<Double> iter = distances.iterator();
+		Iterator<Double> iter = scores.iterator();
 		Double current;
 		Double previous = iter.next();
 		while (iter.hasNext()) {
 			current = iter.next();
-			if (previous > current) {
+			if (previous < current) {
 				return false;
 			}
 			previous = current;
@@ -134,7 +133,7 @@ public class OracleVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
@@ -243,7 +242,7 @@ public class OracleVectorStoreIT {
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 
 				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 
 				Document sameIdDocument = new Document(document.getId(),
 						"The World is Big and Salvation Lurks Around the Corner",
@@ -256,7 +255,7 @@ public class OracleVectorStoreIT {
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
 			});
@@ -279,20 +278,19 @@ public class OracleVectorStoreIT {
 
 				assertThat(fullResult).hasSize(3);
 
-				assertThat(isSortedByDistance(fullResult)).isTrue();
+				assertThat(isSortedBySimilarity(fullResult)).isTrue();
 
-				List<Double> distances = fullResult.stream()
-					.map(doc -> (Double) doc.getMetadata().get("distance"))
-					.toList();
+				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-				double threshold = (distances.get(0) + distances.get(1)) / 2d;
+				double similarityThreshold = (scores.get(0) + scores.get(1)) / 2d;
 
 				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(1d - threshold));
+						SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(similarityThreshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());
+				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
 			});

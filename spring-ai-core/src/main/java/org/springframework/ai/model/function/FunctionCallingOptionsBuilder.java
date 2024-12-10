@@ -51,9 +51,9 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFunctionCallback(FunctionCallback functionCallback) {
-		Assert.notNull(functionCallback, "FunctionCallback must not be null");
-		this.options.getFunctionCallbacks().add(functionCallback);
+	public FunctionCallingOptionsBuilder withFunctionCallbacks(FunctionCallback... functionCallbacks) {
+		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
+		this.options.setFunctionCallbacks(List.of(functionCallbacks));
 		return this;
 	}
 

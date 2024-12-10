@@ -31,11 +31,21 @@ public interface Content {
 
 	/**
 	 * Get the content of the message.
+	 * @return the content of the message
 	 */
-	String getContent(); // TODO consider getText
+	String getText();
 
 	/**
-	 * return Get the metadata associated with the content.
+	 * Get the content of the message.
+	 * @return the content of the message
+	 * @deprecated Use getText
+	 */
+	@Deprecated(since = "1.0.0.M5")
+	String getContent();
+
+	/**
+	 * Get the metadata associated with the content.
+	 * @return the metadata associated with the content
 	 */
 	Map<String, Object> getMetadata();
 

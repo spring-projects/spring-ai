@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.ollama;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
+ * Connection details for an Ollama service.
+ *
  * @author Eddú Meléndez
  */
 public interface OllamaConnectionDetails extends ConnectionDetails {

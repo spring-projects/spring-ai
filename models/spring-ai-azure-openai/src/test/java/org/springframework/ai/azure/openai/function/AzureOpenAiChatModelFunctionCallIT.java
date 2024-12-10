@@ -26,20 +26,20 @@ import java.util.stream.Collectors;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
+import org.springframework.ai.azure.openai.RequiresAzureCredentials;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,8 +49,7 @@ import org.springframework.util.StringUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AzureOpenAiChatModelFunctionCallIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@RequiresAzureCredentials
 class AzureOpenAiChatModelFunctionCallIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelFunctionCallIT.class);
@@ -70,10 +69,10 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -81,7 +80,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -94,10 +93,10 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -105,7 +104,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -116,10 +115,10 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -133,7 +132,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -153,10 +152,10 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -170,7 +169,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 

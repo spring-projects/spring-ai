@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Provides classes for observing chat data.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.chat.client.observation;

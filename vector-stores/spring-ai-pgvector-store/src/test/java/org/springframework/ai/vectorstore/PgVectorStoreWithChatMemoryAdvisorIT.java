@@ -104,7 +104,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		verify(chatModel).call(promptCaptor.capture());
 		assertThat(promptCaptor.getValue().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
-		assertThat(promptCaptor.getValue().getInstructions().get(0).getContent()).isEqualTo("""
+		assertThat(promptCaptor.getValue().getInstructions().get(0).getText()).isEqualTo("""
 
 				Use the long term conversation memory from the LONG_TERM_MEMORY section to provide accurate answers.
 
@@ -146,9 +146,6 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
 
 		Mockito.doAnswer(invocationOnMock -> {
-			Object[] arguments = invocationOnMock.getArguments();
-			List<Document> documents = (List<Document>) arguments[0];
-			documents.forEach(d -> d.setEmbedding(this.embed));
 			return List.of(this.embed, this.embed);
 		}).when(embeddingModel).embed(ArgumentMatchers.any(), any(), any());
 		given(embeddingModel.embed(any(String.class))).willReturn(this.embed);

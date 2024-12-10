@@ -73,7 +73,7 @@ public class HuggingfaceChatAutoConfigurationIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();

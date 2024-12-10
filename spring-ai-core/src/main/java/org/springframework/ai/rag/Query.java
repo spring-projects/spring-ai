@@ -21,6 +21,7 @@ import org.springframework.util.Assert;
 /**
  * Represents a query in the context of a Retrieval Augmented Generation (RAG) flow.
  *
+ * @param text the text of the query
  * @author Thomas Vitale
  * @since 1.0.0
  */

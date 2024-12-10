@@ -27,6 +27,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
+ * Validates the schema of a PostgreSQL table used as a PGVectorStore.
+ *
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  * @since 1.0.0

@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.huggingface;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Hugging Face chat model.
+ *
  * @author Christian Tzolov
  * @author Josh Long
  * @author Mark Pollack

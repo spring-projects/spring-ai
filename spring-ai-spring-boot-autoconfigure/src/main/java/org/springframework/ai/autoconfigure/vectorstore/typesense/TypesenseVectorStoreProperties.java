@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.TypesenseVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Typesense Vector Store.
+ *
  * @author Pablo Sanchidrian Herrera
  * @author Soby Chacko
  */

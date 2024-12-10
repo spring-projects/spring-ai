@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for QianFan chat model.
+ *
  * @author Geng Rong
  */
 @ConfigurationProperties(QianFanChatProperties.CONFIG_PREFIX)

@@ -44,10 +44,6 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
  */
 public class AzureAiSearchFilterExpressionConverterTests {
 
-	private static String format(String text) {
-		return text.trim().replace(" " + System.lineSeparator(), System.lineSeparator()) + System.lineSeparator();
-	}
-
 	@Test
 	public void testMissingFilterName() {
 
@@ -79,10 +75,9 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.text("country")));
 
 		// country == "BG"
+		String expected = "meta_country eq 'BG'";
 		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				meta_country eq 'BG'
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
@@ -91,12 +86,11 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.text("genre"), MetadataField.int32("year")));
 
 		// genre == "drama" AND year >= 2020
+		String expected = "meta_genre eq 'drama' and meta_year ge 2020";
 		String vectorExpr = converter
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
 					new Expression(GTE, new Key("year"), new Value(2020))));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				meta_genre eq 'drama' and meta_year ge 2020
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
@@ -105,11 +99,10 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.text("genre")));
 
 		// genre in ["comedy", "documentary", "drama"]
+		String expected = " search.in(meta_genre, 'comedy,documentary,drama', ',')";
 		String vectorExpr = converter.convertExpression(
 				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				search.in(meta_genre, 'comedy,documentary,drama', ',')
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
@@ -118,11 +111,10 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.text("genre")));
 
 		// genre in ["comedy", "documentary", "drama"]
+		String expected = " not search.in(meta_genre, 'comedy,documentary,drama', ',')";
 		String vectorExpr = converter.convertExpression(
 				new Expression(NIN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				not search.in(meta_genre, 'comedy,documentary,drama', ',')
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
@@ -131,13 +123,12 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.text("city"), MetadataField.int64("year"), MetadataField.text("country")));
 
 		// year >= 2020 OR country == "BG" AND city != "Sofia"
+		String expected = "meta_year ge 2020 or meta_country eq 'BG' and meta_city ne 'Sofia'";
 		String vectorExpr = converter
 			.convertExpression(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 					new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
 							new Expression(NE, new Key("city"), new Value("Sofia")))));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				meta_year ge 2020 or meta_country eq 'BG' and meta_city ne 'Sofia'
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
@@ -146,14 +137,12 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.text("city"), MetadataField.int64("year"), MetadataField.text("country")));
 
 		// (year >= 2020 OR country == "BG") AND city != "Sofia"
+		String expected = "(meta_year ge 2020 or meta_country eq 'BG') and meta_city ne 'Sofia'";
 		String vectorExpr = converter.convertExpression(new Expression(AND,
 				new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NE, new Key("city"), new Value("Sofia"))));
-
-		assertThat(format(vectorExpr)).isEqualTo("""
-				(meta_year ge 2020 or meta_country eq 'BG') and meta_city ne 'Sofia'
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
@@ -162,14 +151,12 @@ public class AzureAiSearchFilterExpressionConverterTests {
 				List.of(MetadataField.bool("isOpen"), MetadataField.int64("year"), MetadataField.text("country")));
 
 		// isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
+		String expected = "meta_isOpen eq true and meta_year ge 2020 and  search.in(meta_country, 'BG,NL,US', ',')";
 		String vectorExpr = converter.convertExpression(new Expression(AND,
 				new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
 						new Expression(GTE, new Key("year"), new Value(2020))),
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
-
-		assertThat(format(vectorExpr)).isEqualTo("""
-				meta_isOpen eq true and meta_year ge 2020 and  search.in(meta_country, 'BG,NL,US', ',')
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 	@Test
@@ -181,10 +168,7 @@ public class AzureAiSearchFilterExpressionConverterTests {
 		String vectorExpr = converter
 			.convertExpression(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
 					new Expression(LTE, new Key("temperature"), new Value(20.13))));
-
-		assertThat(format(vectorExpr)).isEqualTo("""
-				meta_temperature ge -15.6 and meta_temperature le 20.13
-				""");
+		String expected = "meta_temperature ge -15.6 and meta_temperature le 20.13";
 	}
 
 	@Test
@@ -192,16 +176,13 @@ public class AzureAiSearchFilterExpressionConverterTests {
 		FilterExpressionConverter converter = new AzureAiSearchFilterExpressionConverter(
 				List.of(MetadataField.text("country 1 2 3")));
 
+		String expected = "'meta_country 1 2 3' eq 'BG'";
 		String vectorExpr = converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				'meta_country 1 2 3' eq 'BG'
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 
 		vectorExpr = converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				'meta_country 1 2 3' eq 'BG'
-				""");
+		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
 }

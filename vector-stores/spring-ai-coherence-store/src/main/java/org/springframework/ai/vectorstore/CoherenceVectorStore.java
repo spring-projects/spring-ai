@@ -37,6 +37,7 @@ import com.tangosol.net.Session;
 import com.tangosol.util.Filter;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.beans.factory.InitializingBean;
@@ -62,6 +63,7 @@ import org.springframework.beans.factory.InitializingBean;
  * </ul>
  *
  * @author Aleks Seovic
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class CoherenceVectorStore implements VectorStore, InitializingBean {
@@ -165,9 +167,9 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 	public void add(final List<Document> documents) {
 		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(documents.size() / 0.75f));
 		for (Document doc : documents) {
-			doc.setEmbedding(this.embeddingModel.embed(doc));
 			var id = toChunkId(doc.getId());
-			var chunk = new DocumentChunk(doc.getContent(), doc.getMetadata(), toFloat32Vector(doc.getEmbedding()));
+			var chunk = new DocumentChunk(doc.getContent(), doc.getMetadata(),
+					toFloat32Vector(this.embeddingModel.embed(doc)));
 			chunks.put(id, chunk);
 		}
 		this.documentChunks.putAll(chunks);
@@ -211,8 +213,13 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 			if (this.distanceType != DistanceType.COSINE || (1 - r.getDistance()) >= request.getSimilarityThreshold()) {
 				DocumentChunk.Id id = r.getKey();
 				DocumentChunk chunk = r.getValue();
-				chunk.metadata().put("distance", r.getDistance());
-				documents.add(new Document(id.docId(), chunk.text(), chunk.metadata()));
+				chunk.metadata().put(DocumentMetadata.DISTANCE.value(), r.getDistance());
+				documents.add(Document.builder()
+					.id(id.docId())
+					.text(chunk.text())
+					.metadata(chunk.metadata())
+					.score(1 - r.getDistance())
+					.build());
 			}
 		}
 		return documents;
@@ -231,7 +238,7 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 		this.documentChunks = this.session.getMap(this.mapName);
 		switch (this.indexType) {
 			case HNSW -> this.documentChunks
-				.addIndex(new HnswIndex<>(DocumentChunk::vector, this.distanceType.name(), dimensions));
+				.addIndex(new HnswIndex<>(DocumentChunk::vector, this.distanceType.name(), this.dimensions));
 			case BINARY -> this.documentChunks.addIndex(new BinaryQuantIndex<>(DocumentChunk::vector));
 		}
 	}
@@ -255,7 +262,7 @@ public class CoherenceVectorStore implements VectorStore, InitializingBean {
 	}
 
 	String getMapName() {
-		return mapName;
+		return this.mapName;
 	}
 
 }

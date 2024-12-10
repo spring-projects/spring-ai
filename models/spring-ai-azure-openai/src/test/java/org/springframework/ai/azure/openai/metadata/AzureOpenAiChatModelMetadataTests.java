@@ -84,7 +84,7 @@ class AzureOpenAiChatModelMetadataTests {
 
 		assertThat(generation).isNotNull()
 			.extracting(Generation::getOutput)
-			.extracting(AssistantMessage::getContent)
+			.extracting(AssistantMessage::getText)
 			.isEqualTo("No! You will actually land with a resounding thud. This is the way!");
 
 		// assertPromptMetadata(response);
@@ -128,7 +128,7 @@ class AzureOpenAiChatModelMetadataTests {
 
 		assertThat(chatGenerationMetadata).isNotNull();
 		assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
-		assertContentFilterResults(chatGenerationMetadata.getContentFilterMetadata());
+		assertContentFilterResults(chatGenerationMetadata.get("contentFilterResults"));
 	}
 
 	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,

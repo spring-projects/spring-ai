@@ -115,6 +115,9 @@ public interface ChatClient {
 
 	}
 
+	/**
+	 * Specification for a prompt system.
+	 */
 	interface PromptSystemSpec {
 
 		PromptSystemSpec text(String text);
@@ -212,14 +215,26 @@ public interface ChatClient {
 
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
+		/**
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
 
+		/**
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.BiFunction<I, ToolContext, O> function);
 
 		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
 
+		/**
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
@@ -278,8 +293,16 @@ public interface ChatClient {
 
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
+		/**
+		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
 
+		/**
+		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> Builder defaultFunction(String name, String description,
 				java.util.function.BiFunction<I, ToolContext, O> function);
 
@@ -288,6 +311,8 @@ public interface ChatClient {
 		Builder defaultFunctions(FunctionCallback... functionCallbacks);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
+
+		Builder clone();
 
 		ChatClient build();
 

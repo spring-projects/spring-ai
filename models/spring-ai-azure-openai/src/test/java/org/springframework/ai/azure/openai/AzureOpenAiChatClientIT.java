@@ -25,7 +25,6 @@ import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -45,8 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  */
 @SpringBootTest(classes = AzureOpenAiChatClientIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@RequiresAzureCredentials
 public class AzureOpenAiChatClientIT {
 
 	@Autowired
@@ -70,7 +68,7 @@ public class AzureOpenAiChatClientIT {
 		// @formatter:on
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -96,7 +94,7 @@ public class AzureOpenAiChatClientIT {
 
 		String generationTextFromStream = chatResponses
 				.stream()
-				.map(cr -> cr.getResult().getOutput().getContent())
+				.map(cr -> cr.getResult().getOutput().getText())
 				.collect(Collectors.joining());
 		// @formatter:on
 

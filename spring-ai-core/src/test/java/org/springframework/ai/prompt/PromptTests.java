@@ -23,6 +23,8 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -128,6 +130,23 @@ class PromptTests {
 		Assertions.assertThatThrownBy(() -> new PromptTemplate(template))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("The template string is not valid.");
+	}
+
+	@Test
+	public void testPromptCopy() {
+		String template = "Hello, {name}! Your age is {age}.";
+		Map<String, Object> model = new HashMap<>();
+		model.put("name", "Alice");
+		model.put("age", 30);
+		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.5).withMaxTokens(100).build();
+
+		Prompt prompt = promptTemplate.create(model, chatOptions);
+
+		Prompt copiedPrompt = prompt.copy();
+		assertThat(prompt).isNotSameAs(copiedPrompt);
+		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
 	}
 
 }

@@ -29,7 +29,14 @@ package org.springframework.ai.observation.conventions;
  */
 public enum AiObservationMetricNames {
 
-	OPERATION_DURATION("gen_ai.client.operation.duration"), TOKEN_USAGE("gen_ai.client.token.usage");
+	/**
+	 * The duration of the AI operation.
+	 */
+	OPERATION_DURATION("gen_ai.client.operation.duration"),
+	/**
+	 * The number of AI operations.
+	 */
+	TOKEN_USAGE("gen_ai.client.token.usage");
 
 	private final String value;
 
@@ -37,6 +44,10 @@ public enum AiObservationMetricNames {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the metric name.
+	 * @return the value of the metric name
+	 */
 	public String value() {
 		return this.value;
 	}

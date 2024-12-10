@@ -38,6 +38,8 @@ import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for MongoDB Atlas Vector Store.
+ *
  * @author Eddú Meléndez
  * @author Christian Tzolov
  * @author Soby Chacko

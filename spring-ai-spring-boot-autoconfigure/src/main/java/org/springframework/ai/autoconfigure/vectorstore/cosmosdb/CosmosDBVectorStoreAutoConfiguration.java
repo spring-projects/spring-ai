@@ -34,6 +34,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for CosmosDB Vector Store.
+ *
  * @author Theo van Kraay
  * @author Soby Chacko
  * @since 1.0.0

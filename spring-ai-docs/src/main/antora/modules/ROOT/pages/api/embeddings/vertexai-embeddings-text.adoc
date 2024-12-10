@@ -144,8 +144,8 @@ Next, create a `VertexAiTextEmbeddingModel` and use it for text generations:
 
 [source,java]
 ----
-VertexAiEmbeddigConnectionDetails connectionDetails = 
-    VertexAiEmbeddigConnectionDetails.builder()
+VertexAiEmbeddingConnectionDetails connectionDetails =
+    VertexAiEmbeddingConnectionDetails.builder()
         .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
         .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
         .build();
@@ -160,3 +160,24 @@ EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
+=== Load credentials from a Google Service Account
+
+To programmatically load the GoogleCredentials from a Service Account json file, you can use the following:
+
+[source,java]
+----
+GoogleCredentials credentials = GoogleCredentials.fromStream(<INPUT_STREAM_TO_CREDENTIALS_JSON>)
+        .createScoped("https://www.googleapis.com/auth/cloud-platform");
+credentials.refreshIfExpired();
+
+VertexAiEmbeddingConnectionDetails connectionDetails =
+    VertexAiEmbeddingConnectionDetails.builder()
+        .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+        .withApiEndpoint(endpoint)
+        .withPredictionServiceSettings(
+            PredictionServiceSettings.newBuilder()
+                .setEndpoint(endpoint)
+                .setCredentialsProvider(FixedCredentialsProvider.create(credentials))
+                .build());
+----

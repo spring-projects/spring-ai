@@ -26,6 +26,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Java class for Watsonx.ai Chat Response object.
  *
+ * @param modelId the model id
+ * @param createdAt the creation date
+ * @param results the results
+ * @param system the system
  * @author Pablo Sanchidrian Herrera
  * @since 1.0.0
  */

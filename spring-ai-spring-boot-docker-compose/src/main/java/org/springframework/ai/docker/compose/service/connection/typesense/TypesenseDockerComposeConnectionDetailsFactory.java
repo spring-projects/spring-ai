@@ -22,6 +22,8 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionSource;
 
 /**
+ * {@link DockerComposeConnectionDetailsFactory} for {@link TypesenseConnectionDetails}.
+ *
  * @author Eddú Meléndez
  */
 public class TypesenseDockerComposeConnectionDetailsFactory

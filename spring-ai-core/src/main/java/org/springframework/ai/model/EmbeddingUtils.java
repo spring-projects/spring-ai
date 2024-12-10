@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Utility methods for embedding related operations.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */

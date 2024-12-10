@@ -55,7 +55,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
-			"docker.elastic.co/elasticsearch/elasticsearch:8.12.2")
+			"docker.elastic.co/elasticsearch/elasticsearch:8.16.1")
 		.withEnv("xpack.security.enabled", "false");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

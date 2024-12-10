@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Qdrant Vector Store.
+ *
  * @author Anush Shetty
  * @author Josh Long
  * @since 0.8.1

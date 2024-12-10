@@ -30,7 +30,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -82,7 +82,7 @@ public class OpenAiChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -113,7 +113,7 @@ public class OpenAiChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -174,8 +174,9 @@ public class OpenAiChatModelObservationIT {
 
 		@Bean
 		public OpenAiChatModel openAiChatModel(OpenAiApi openAiApi, TestObservationRegistry observationRegistry) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().build(), new FunctionCallbackContext(),
-					List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().build(),
+					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
 
 	}

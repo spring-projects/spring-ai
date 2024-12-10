@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Mick Semb Wever
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 class CassandraChatMemoryPropertiesTest {
@@ -37,7 +38,7 @@ class CassandraChatMemoryPropertiesTest {
 		assertThat(props.getTable()).isEqualTo(CassandraChatMemoryConfig.DEFAULT_TABLE_NAME);
 		assertThat(props.getAssistantColumn()).isEqualTo(CassandraChatMemoryConfig.DEFAULT_ASSISTANT_COLUMN_NAME);
 		assertThat(props.getUserColumn()).isEqualTo(CassandraChatMemoryConfig.DEFAULT_USER_COLUMN_NAME);
-		assertThat(props.getTimeToLiveSeconds()).isNull();
+		assertThat(props.getTimeToLive()).isNull();
 		assertThat(props.isInitializeSchema()).isTrue();
 	}
 
@@ -48,14 +49,14 @@ class CassandraChatMemoryPropertiesTest {
 		props.setTable("my_table");
 		props.setAssistantColumn("my_assistant_column");
 		props.setUserColumn("my_user_column");
-		props.setTimeToLiveSeconds(Duration.ofDays(1));
+		props.setTimeToLive(Duration.ofDays(1));
 		props.setInitializeSchema(false);
 
 		assertThat(props.getKeyspace()).isEqualTo("my_keyspace");
 		assertThat(props.getTable()).isEqualTo("my_table");
 		assertThat(props.getAssistantColumn()).isEqualTo("my_assistant_column");
 		assertThat(props.getUserColumn()).isEqualTo("my_user_column");
-		assertThat(props.getTimeToLiveSeconds()).isEqualTo(Duration.ofDays(1));
+		assertThat(props.getTimeToLive()).isEqualTo(Duration.ofDays(1));
 		assertThat(props.isInitializeSchema()).isFalse();
 	}
 

@@ -184,6 +184,7 @@ public class ParagraphManager {
 	 * @param level The TOC deepness level for this paragraph. The root is at level 0.
 	 * @param startPageNumber The page number in the PDF where this paragraph begins.
 	 * @param endPageNumber The page number in the PDF where this paragraph ends.
+	 * @param position The vertical position of the paragraph on the page.
 	 * @param children Sub-paragraphs for this paragraph.
 	 */
 	public record Paragraph(Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,

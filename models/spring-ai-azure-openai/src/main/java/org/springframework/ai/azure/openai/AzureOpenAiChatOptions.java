@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.util.Assert;
@@ -43,7 +42,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  */
 @JsonInclude(Include.NON_NULL)
-public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
+public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 
 	/**
 	 * The maximum number of tokens to generate.

@@ -30,6 +30,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for the Transformer Embedding model.
+ *
  * @author Christian Tzolov
  */
 @ConfigurationProperties(org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingModelProperties.CONFIG_PREFIX)

@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
+ * Options for the Mistral AI Embedding API.
+ *
  * @author Ricken Bazolo
  * @author Thomas Vitale
  * @since 0.8.1

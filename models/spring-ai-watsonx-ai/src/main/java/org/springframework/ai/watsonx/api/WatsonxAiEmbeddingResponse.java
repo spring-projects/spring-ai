@@ -25,6 +25,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Java class for Watsonx.ai Embedding Response object.
  *
+ * @param model the model id
+ * @param createdAt the creation date
+ * @param results the results
+ * @param inputTokenCount the input token count
  * @author Pablo Sanchidrian Herrera
  * @since 1.0.0
  */

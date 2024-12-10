@@ -17,10 +17,12 @@
 package org.springframework.ai.autoconfigure.vectorstore.chroma;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Chroma Vector Store.
+ *
  * @author Christian Tzolov
  * @author Soby Chacko
  */

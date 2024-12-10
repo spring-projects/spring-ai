@@ -1,0 +1,1 @@
+[MariaDB Vector Store Documentation](https://docs.spring.io/spring-ai/reference/api/vectordbs/mariadb.html)

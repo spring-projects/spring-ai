@@ -16,37 +16,37 @@
 
 package org.springframework.ai.model.function;
 
-import java.lang.reflect.Type;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.function.context.config.FunctionContextUtils;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.ResolvableType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-class TypeResolverHelperIT {
+public class TypeResolverHelperIT {
 
 	@Autowired
 	GenericApplicationContext applicationContext;
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "weatherClassDefinition", "weatherFunctionDefinition", "standaloneWeatherFunction" })
-	void beanInputTypeResolutionTest(String beanName) {
+	@ValueSource(strings = { "weatherClassDefinition", "weatherFunctionDefinition", "standaloneWeatherFunction",
+			"scannedStandaloneWeatherFunction", "componentWeatherFunction", "weatherConsumer" })
+	void beanInputTypeResolutionWithResolvableType(String beanName) {
 		assertThat(this.applicationContext).isNotNull();
-		Type beanType = FunctionContextUtils.findType(this.applicationContext.getBeanFactory(), beanName);
-		assertThat(beanType).isNotNull();
-		Type functionInputType = TypeResolverHelper.getFunctionArgumentType(beanType, 0);
-		assertThat(functionInputType).isNotNull();
-		assertThat(functionInputType.getTypeName()).isEqualTo(WeatherRequest.class.getName());
-
+		ResolvableType functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
+		Class<?> functionInputClass = TypeResolverHelper.getFunctionArgumentType(functionType, 0).getRawClass();
+		assertThat(functionInputClass).isNotNull();
+		assertThat(functionInputClass.getTypeName()).isEqualTo(WeatherRequest.class.getName());
 	}
 
 	public record WeatherRequest(String city) {
@@ -70,7 +70,9 @@ class TypeResolverHelperIT {
 
 	}
 
-	@SpringBootConfiguration
+	@Configuration
+	@ComponentScan({ "org.springframework.ai.model.function.config",
+			"org.springframework.ai.model.function.component" })
 	public static class TypeResolverHelperConfiguration {
 
 		@Bean
@@ -86,6 +88,11 @@ class TypeResolverHelperIT {
 		@Bean
 		StandaloneWeatherFunction standaloneWeatherFunction() {
 			return new StandaloneWeatherFunction();
+		}
+
+		@Bean
+		Consumer<WeatherRequest> weatherConsumer() {
+			return System.out::println;
 		}
 
 	}

@@ -26,18 +26,19 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.util.Assert;
 
 /**
+ * Options for Moonshot chat completions.
+ *
  * @author Geng Rong
  * @author Thomas Vitale
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MoonshotChatOptions implements FunctionCallingOptions, ChatOptions {
+public class MoonshotChatOptions implements FunctionCallingOptions {
 
 	/**
 	 * ID of the model to use

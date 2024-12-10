@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -71,6 +72,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -132,11 +134,14 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		for (Document document : documents) {
-			bulkRequestBuilder.operations(op -> op
-				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
+			ElasticSearchDocument doc = new ElasticSearchDocument(document.getId(), document.getContent(),
+					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+			bulkRequestBuilder.operations(
+					op -> op.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(doc)));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
@@ -210,20 +215,24 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
-		document.getMetadata().put("distance", calculateDistance(hit.score().floatValue()));
-		return document;
+		Document.Builder documentBuilder = document.mutate();
+		if (hit.score() != null) {
+			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));
+			documentBuilder.score(normalizeSimilarityScore(hit.score()));
+		}
+		return documentBuilder.build();
 	}
 
 	// more info on score/distance calculation
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html#knn-similarity-search
-	private float calculateDistance(Float score) {
+	private double normalizeSimilarityScore(double score) {
 		switch (this.options.getSimilarity()) {
 			case l2_norm:
 				// the returned value of l2_norm is the opposite of the other functions
 				// (closest to zero means more accurate), so to make it consistent
 				// with the other functions the reverse is returned applying a "1-"
 				// to the standard transformation
-				return (float) (1 - (java.lang.Math.sqrt((1 / score) - 1)));
+				return (1 - (java.lang.Math.sqrt((1 / score) - 1)));
 			// cosine and dot_product
 			default:
 				return (2 * score) - 1;
@@ -263,7 +272,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
 			.withCollectionName(this.options.getIndexName())
 			.withDimensions(this.embeddingModel.dimensions())
@@ -275,6 +284,17 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			return this.options.getSimilarity().name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.options.getSimilarity()).value();
+	}
+
+	/**
+	 * The representation of {@link Document} along with its embedding.
+	 *
+	 * @param id The id of the document
+	 * @param content The content of the document
+	 * @param metadata The metadata of the document
+	 * @param embedding The vectors representing the content of the document
+	 */
+	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
 }

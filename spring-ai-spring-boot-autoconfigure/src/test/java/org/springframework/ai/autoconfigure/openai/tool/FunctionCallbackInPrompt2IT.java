@@ -16,7 +16,8 @@
 
 package org.springframework.ai.autoconfigure.openai.tool;
 
-import java.util.function.Function;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -58,7 +60,11 @@ public class FunctionCallbackInPrompt2IT {
 
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.function("CurrentWeatherService", "Get the weather in location", new MockWeatherService())
+					.functions(FunctionCallback.builder()
+							.function("CurrentWeatherService", new MockWeatherService())
+							.description("Get the weather in location")
+							.inputType(MockWeatherService.Request.class)
+							.build())
 					.call().content();
 			// @formatter:on
 
@@ -66,6 +72,36 @@ public class FunctionCallbackInPrompt2IT {
 
 				assertThat(content).contains("30", "10", "15");
 			});
+	}
+
+	@Test
+	void lambdaFunctionCallTest() {
+		Map<String, Object> state = new ConcurrentHashMap<>();
+
+		record LightInfo(String roomName, boolean isOn) {
+		}
+
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+			// @formatter:off
+			String content = ChatClient.builder(chatModel).build().prompt()
+					.user("Turn the light on in the kitchen and in the living room!")
+					.functions(FunctionCallback.builder()
+						.function("turnLight", (LightInfo lightInfo) -> {
+							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
+							state.put(lightInfo.roomName(), lightInfo.isOn());
+						})
+						.description("Turn light on or off in a room")
+						.inputType(LightInfo.class)
+						.build())
+					.call().content();
+			// @formatter:on
+			logger.info("Response: {}", content);
+			assertThat(state).containsEntry("kitchen", Boolean.TRUE);
+			assertThat(state).containsEntry("living room", Boolean.TRUE);
+		});
 	}
 
 	@Test
@@ -78,13 +114,11 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
-					.function("CurrentWeatherService", "Get the weather in location",
-							new Function<MockWeatherService.Request, String>() {
-								@Override
-								public String apply(MockWeatherService.Request request) {
-									return "18 degrees Celsius";
-								}
-							})
+					.functions(FunctionCallback.builder()
+						.function("CurrentWeatherService", input -> "18 degrees Celsius")
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+					.build())
 					.call().content();
 			// @formatter:on
 				logger.info("Response: {}", content);

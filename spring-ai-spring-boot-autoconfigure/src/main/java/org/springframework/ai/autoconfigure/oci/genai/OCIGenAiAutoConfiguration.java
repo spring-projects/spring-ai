@@ -43,12 +43,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Oracle Cloud Infrastructure Generative
+ * AI.
+ *
  * @author Anders Swanson
  */
 @AutoConfiguration
 @ConditionalOnClass({ GenerativeAiInferenceClient.class, OCIEmbeddingModel.class })
 @EnableConfigurationProperties({ OCIConnectionProperties.class, OCIEmbeddingModelProperties.class,
-		OCICohereChatModelProperties.class, })
+		OCICohereChatModelProperties.class })
 public class OCIGenAiAutoConfiguration {
 
 	private static BasicAuthenticationDetailsProvider authenticationProvider(OCIConnectionProperties properties)

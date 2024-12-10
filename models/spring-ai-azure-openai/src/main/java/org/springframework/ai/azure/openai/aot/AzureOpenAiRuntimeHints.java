@@ -29,6 +29,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 /**
+ * {@link RuntimeHintsRegistrar} for Azure OpenAI.
+ *
  * @author Christian Tzolov
  */
 public class AzureOpenAiRuntimeHints implements RuntimeHintsRegistrar {

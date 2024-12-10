@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Auto-configuration for observation vector store.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.autoconfigure.vectorstore.observation;

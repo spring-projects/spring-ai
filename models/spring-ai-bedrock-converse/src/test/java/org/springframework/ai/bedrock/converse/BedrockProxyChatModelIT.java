@@ -47,7 +47,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,7 +59,7 @@ import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = BedrockConverseTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
+@SpringBootTest(classes = BedrockConverseTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 class BedrockProxyChatModelIT {
@@ -101,7 +101,7 @@ class BedrockProxyChatModelIT {
 			.isEqualTo(response.getMetadata().getUsage().getPromptTokens()
 					+ response.getMetadata().getUsage().getGenerationTokens());
 		Generation generation = response.getResults().get(0);
-		assertThat(generation.getOutput().getContent()).contains("Blackbeard");
+		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
 		logger.info(response.toString());
 	}
@@ -116,14 +116,14 @@ class BedrockProxyChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
 				new UserMessage("Repeat the last assistant message.")));
 
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
@@ -159,7 +159,7 @@ class BedrockProxyChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = listOutputConverter.convert(generation.getOutput().getContent());
+		List<String> list = listOutputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 	}
 
@@ -177,7 +177,7 @@ class BedrockProxyChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -196,7 +196,7 @@ class BedrockProxyChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -222,7 +222,7 @@ class BedrockProxyChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
@@ -241,8 +241,8 @@ class BedrockProxyChatModelIT {
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("banan", "apple", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("banan", "apple", "basket");
 	}
 
 	@Test
@@ -254,10 +254,11 @@ class BedrockProxyChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = FunctionCallingOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -266,7 +267,7 @@ class BedrockProxyChatModelIT {
 		logger.info("Response: {}", response);
 
 		Generation generation = response.getResult();
-		assertThat(generation.getOutput().getContent()).contains("30", "10", "15");
+		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -281,10 +282,11 @@ class BedrockProxyChatModelIT {
 
 		var promptOptions = FunctionCallingOptions.builder()
 			.withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -294,7 +296,7 @@ class BedrockProxyChatModelIT {
 			.block()
 			.stream()
 			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", content);

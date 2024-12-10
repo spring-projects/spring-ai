@@ -31,13 +31,13 @@ public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatMod
 	default String call(String message) {
 		Prompt prompt = new Prompt(new UserMessage(message));
 		Generation generation = call(prompt).getResult();
-		return (generation != null) ? generation.getOutput().getContent() : "";
+		return (generation != null) ? generation.getOutput().getText() : "";
 	}
 
 	default String call(Message... messages) {
 		Prompt prompt = new Prompt(Arrays.asList(messages));
 		Generation generation = call(prompt).getResult();
-		return (generation != null) ? generation.getOutput().getContent() : "";
+		return (generation != null) ? generation.getOutput().getText() : "";
 	}
 
 	@Override

@@ -26,6 +26,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -56,9 +57,9 @@ public class ChatClientResponseEntityTests {
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().withKeyValue("key1", "value1").build();
 
-		var chatResponse = new ChatResponse(List.of(new Generation("""
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				{"name":"John", "age":30}
-				""")), metadata);
+				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -76,18 +77,18 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about John");
+		assertThat(userMessage.getText()).contains("Tell me about John");
 	}
 
 	@Test
 	public void parametrizedResponseEntityTest() {
 
-		var chatResponse = new ChatResponse(List.of(new Generation("""
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				[
 					{"name":"Max", "age":10},
 					{"name":"Adi", "age":13}
 				]
-				""")));
+				"""))));
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -106,15 +107,15 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about them");
+		assertThat(userMessage.getText()).contains("Tell me about them");
 	}
 
 	@Test
 	public void customSoCResponseEntityTest() {
 
-		var chatResponse = new ChatResponse(List.of(new Generation("""
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 					{"name":"Max", "age":10},
-				""")));
+				"""))));
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -131,7 +132,7 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about Max");
+		assertThat(userMessage.getText()).contains("Tell me about Max");
 	}
 
 	record MyBean(String name, int age) {

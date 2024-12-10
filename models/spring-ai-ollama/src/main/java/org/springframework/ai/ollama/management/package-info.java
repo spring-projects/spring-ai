@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Management support for Ollama.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.ollama.management;

@@ -23,7 +23,6 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -50,7 +49,6 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = OllamaChatModelObservationIT.Config.class)
-@DisabledIf("isDisabled")
 public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
@@ -82,7 +80,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -113,7 +111,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -166,7 +164,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi openAiApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

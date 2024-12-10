@@ -141,6 +141,10 @@ public enum AiObservationAttributes {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the attribute key.
+	 * @return the value of the attribute key
+	 */
 	public String value() {
 		return this.value;
 	}

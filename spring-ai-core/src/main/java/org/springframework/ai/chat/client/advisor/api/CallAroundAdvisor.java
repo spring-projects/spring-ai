@@ -17,6 +17,8 @@
 package org.springframework.ai.chat.client.advisor.api;
 
 /**
+ * Around advisor that wraps the ChatModel#call(Prompt) method.
+ *
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @since 1.0.0

@@ -36,6 +36,7 @@
     </scm>
 
 	<properties>
+		<spring-ai-docker-compose.skipITs>false</spring-ai-docker-compose.skipITs>
 	</properties>
 
     <dependencies>
@@ -175,5 +176,4 @@
         </dependency>
 
     </dependencies>
-
 </project>

@@ -19,6 +19,8 @@ package org.springframework.ai.vectorstore;
 import java.util.List;
 
 /**
+ * Configuration properties for a CosmosDB vector store.
+ *
  * @author Theo van Kraay
  * @since 1.0.0
  */

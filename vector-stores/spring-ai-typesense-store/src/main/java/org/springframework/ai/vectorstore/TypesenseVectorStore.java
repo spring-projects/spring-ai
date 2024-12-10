@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.DocumentMetadata;
 import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
 import org.typesense.model.CollectionResponse;
@@ -52,9 +53,12 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
+ * A ObservationVectorStore implementation that uses Typesense as the underlying storage.
+ *
  * @author Pablo Sanchidrian Herrera
  * @author Soby Chacko
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public class TypesenseVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -121,14 +125,15 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			typesenseDoc.put(EMBEDDING_FIELD_NAME, document.getEmbedding());
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
 
 			return typesenseDoc;
 		}).toList();
@@ -210,8 +215,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 					String content = rawDocument.get(CONTENT_FIELD_NAME).toString();
 					Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map
 							? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
-					metadata.put("distance", hit.getVectorDistance());
-					return new Document(docId, content, metadata);
+					metadata.put(DocumentMetadata.DISTANCE.value(), hit.getVectorDistance());
+					return Document.builder()
+						.id(docId)
+						.text(content)
+						.metadata(metadata)
+						.score(1.0 - hit.getVectorDistance())
+						.build();
 				}))
 				.toList();
 

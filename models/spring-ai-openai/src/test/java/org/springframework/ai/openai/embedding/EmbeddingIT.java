@@ -66,12 +66,12 @@ class EmbeddingIT extends AbstractIT {
 	@Test
 	void embeddingBatchDocuments() throws Exception {
 		assertThat(this.embeddingModel).isNotNull();
-		List<float[]> embedded = this.embeddingModel.embed(
+		List<float[]> embeddings = this.embeddingModel.embed(
 				List.of(new Document("Hello world"), new Document("Hello Spring"), new Document("Hello Spring AI!")),
 				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 				new TokenCountBatchingStrategy());
-		assertThat(embedded.size()).isEqualTo(3);
-		embedded.forEach(embedding -> assertThat(embedding.length).isEqualTo(this.embeddingModel.dimensions()));
+		assertThat(embeddings.size()).isEqualTo(3);
+		embeddings.forEach(embedding -> assertThat(embedding.length).isEqualTo(this.embeddingModel.dimensions()));
 	}
 
 	@Test

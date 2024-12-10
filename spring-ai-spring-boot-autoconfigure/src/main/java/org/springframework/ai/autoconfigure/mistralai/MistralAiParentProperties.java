@@ -17,6 +17,8 @@
 package org.springframework.ai.autoconfigure.mistralai;
 
 /**
+ * Parent properties for Mistral AI.
+ *
  * @author Ricken Bazolo
  * @since 0.8.1
  */

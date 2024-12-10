@@ -115,7 +115,7 @@ public class PromptTemplateTest {
 		// don't normalize EOLs.
 		// It should be fine on Unix systems. In addition, Git will replace CRLF by LF by
 		// default.
-		assertEqualsWithNormalizedEOLs(expected, message.getContent());
+		assertEqualsWithNormalizedEOLs(expected, message.getText());
 
 		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)

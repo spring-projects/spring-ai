@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Utility class for working with Cassandra schema.
+ *
  * @author Mick Semb Wever
  * @since 1.0.0
  */

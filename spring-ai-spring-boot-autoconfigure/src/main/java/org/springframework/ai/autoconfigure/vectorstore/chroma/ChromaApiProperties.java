@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.chroma;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Chroma API client.
+ *
  * @author Christian Tzolov
  */
 @ConfigurationProperties(ChromaApiProperties.CONFIG_PREFIX)

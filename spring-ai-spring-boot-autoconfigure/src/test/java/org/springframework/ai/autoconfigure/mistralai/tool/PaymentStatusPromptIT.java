@@ -18,7 +18,6 @@ package org.springframework.ai.autoconfigure.mistralai.tool;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -65,14 +64,11 @@ public class PaymentStatusPromptIT {
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
 				var promptOptions = MistralAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new Function<Transaction, Status>() {
-
-						public Status apply(Transaction transaction) {
-							return new Status(DATA.get(transaction).status());
-						}
-					})
-						.withName("retrievePaymentStatus")
-						.withDescription("Get payment status of a transaction")
+					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+						.function("retrievePaymentStatus",
+								(Transaction transaction) -> new Status(DATA.get(transaction).status()))
+						.description("Get payment status of a transaction")
+						.inputType(Transaction.class)
 						.build()))
 					.build();
 
@@ -80,8 +76,8 @@ public class PaymentStatusPromptIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("T1001");
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("paid");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
 			});
 	}
 

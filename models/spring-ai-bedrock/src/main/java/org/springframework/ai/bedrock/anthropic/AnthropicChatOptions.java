@@ -26,6 +26,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
+ * Options for the Anthropic Chat API.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  */

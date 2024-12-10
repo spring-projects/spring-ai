@@ -34,6 +34,15 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 
 	private static Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = loadKnownModelDimensions();
 
+	/**
+	 * Default constructor.
+	 */
+	public AbstractEmbeddingModel() {
+	}
+
+	/**
+	 * Cached embedding dimensions.
+	 */
 	protected final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	/**

@@ -75,7 +75,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	public String getContents() {
 		StringBuilder sb = new StringBuilder();
 		for (Message message : getInstructions()) {
-			sb.append(message.getContent());
+			sb.append(message.getText());
 		}
 		return sb.toString();
 	}
@@ -112,21 +112,20 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), this.chatOptions);
+		return new Prompt(instructionsCopy(), null == this.chatOptions ? null : this.chatOptions.copy());
 	}
 
 	private List<Message> instructionsCopy() {
 		List<Message> messagesCopy = new ArrayList<>();
 		this.messages.forEach(message -> {
 			if (message instanceof UserMessage userMessage) {
-				messagesCopy
-					.add(new UserMessage(userMessage.getContent(), userMessage.getMedia(), message.getMetadata()));
+				messagesCopy.add(new UserMessage(userMessage.getText(), userMessage.getMedia(), message.getMetadata()));
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				messagesCopy.add(new SystemMessage(systemMessage.getContent()));
+				messagesCopy.add(new SystemMessage(systemMessage.getText()));
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
-				messagesCopy.add(new AssistantMessage(assistantMessage.getContent(), assistantMessage.getMetadata(),
+				messagesCopy.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
 						assistantMessage.getToolCalls()));
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {

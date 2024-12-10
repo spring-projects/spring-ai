@@ -28,6 +28,8 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.util.Assert;
 
 /**
+ * Options for audio transcription using Azure Open AI.
+ *
  * @author Piotr Olaszewski
  */
 @JsonInclude(Include.NON_NULL)
@@ -309,6 +311,8 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	}
 
 	/**
+	 * Structured response of the transcribed audio.
+	 *
 	 * @param language The language of the transcribed text.
 	 * @param duration The duration of the audio in seconds.
 	 * @param text The transcribed text.

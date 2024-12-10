@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.ClientOptions;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.search.documents.indexes.SearchIndexClient;
 import com.azure.search.documents.indexes.SearchIndexClientBuilder;
 import io.micrometer.observation.ObservationRegistry;
@@ -38,6 +39,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Azure Vector Store.
+ *
  * @author Christian Tzolov
  * @author Soby Chacko
  */
@@ -54,10 +57,18 @@ public class AzureVectorStoreAutoConfiguration {
 	public SearchIndexClient searchIndexClient(AzureVectorStoreProperties properties) {
 		ClientOptions clientOptions = new ClientOptions();
 		clientOptions.setApplicationId(APPLICATION_ID);
-		return new SearchIndexClientBuilder().endpoint(properties.getUrl())
-			.credential(new AzureKeyCredential(properties.getApiKey()))
-			.clientOptions(clientOptions)
-			.buildClient();
+		if (properties.isUseKeylessAuth()) {
+			return new SearchIndexClientBuilder().endpoint(properties.getUrl())
+				.credential(new DefaultAzureCredentialBuilder().build())
+				.clientOptions(clientOptions)
+				.buildClient();
+		}
+		else {
+			return new SearchIndexClientBuilder().endpoint(properties.getUrl())
+				.credential(new AzureKeyCredential(properties.getApiKey()))
+				.clientOptions(clientOptions)
+				.buildClient();
+		}
 	}
 
 	@Bean

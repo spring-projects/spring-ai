@@ -22,6 +22,8 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 /**
+ * Metadata associated with the embedding result.
+ *
  * @author Christian Tzolov
  * @author Jihoon Kim
  */

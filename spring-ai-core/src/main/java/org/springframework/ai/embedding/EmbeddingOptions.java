@@ -20,6 +20,8 @@ import org.springframework.ai.model.ModelOptions;
 import org.springframework.lang.Nullable;
 
 /**
+ * Options for embedding models.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  */

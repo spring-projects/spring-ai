@@ -20,6 +20,8 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 
 /**
+ * A {@link ObservationConvention} for {@link VectorStoreObservationContext}.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */

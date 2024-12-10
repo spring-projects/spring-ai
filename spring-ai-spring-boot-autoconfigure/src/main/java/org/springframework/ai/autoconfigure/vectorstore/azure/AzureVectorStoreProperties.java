@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Azure Vector Store.
+ *
  * @author Christian Tzolov
  */
 @ConfigurationProperties(AzureVectorStoreProperties.CONFIG_PREFIX)
@@ -37,6 +39,8 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 	private int defaultTopK = -1;
 
 	private double defaultSimilarityThreshold = -1;
+
+	private boolean useKeylessAuth;
 
 	public String getUrl() {
 		return this.url;
@@ -76,6 +80,14 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setDefaultSimilarityThreshold(double defaultSimilarityThreshold) {
 		this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+	}
+
+	public boolean isUseKeylessAuth() {
+		return this.useKeylessAuth;
+	}
+
+	public void setUseKeylessAuth(boolean useKeylessAuth) {
+		this.useKeylessAuth = useKeylessAuth;
 	}
 
 }

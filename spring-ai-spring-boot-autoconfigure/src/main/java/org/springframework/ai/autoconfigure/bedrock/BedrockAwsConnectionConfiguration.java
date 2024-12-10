@@ -32,6 +32,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 /**
+ * {@link Configuration} for AWS connection.
+ *
  * @author Christian Tzolov
  * @author Wei Jiang
  */

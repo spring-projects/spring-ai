@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Provides classes for observing events in the system.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.observation;

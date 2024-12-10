@@ -18,6 +18,7 @@ org.springframework.ai.testcontainers.service.connection.chroma.ChromaContainerC
 org.springframework.ai.testcontainers.service.connection.milvus.MilvusContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.mongo.MongoDbAtlasLocalContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.ollama.OllamaContainerConnectionDetailsFactory,\
+org.springframework.ai.testcontainers.service.connection.opensearch.AwsOpenSearchContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.opensearch.OpenSearchContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.qdrant.QdrantContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.typesense.TypesenseContainerConnectionDetailsFactory,\

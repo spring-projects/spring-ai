@@ -16,13 +16,11 @@
 
 package org.springframework.ai.chat.model;
 
-import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.model.ModelResult;
-import org.springframework.lang.Nullable;
 
 /**
  * Represents a response returned by the AI.
@@ -32,22 +30,6 @@ public class Generation implements ModelResult<AssistantMessage> {
 	private final AssistantMessage assistantMessage;
 
 	private ChatGenerationMetadata chatGenerationMetadata;
-
-	/**
-	 * @deprecated Use {@link #Generation(AssistantMessage)} constructor instead.
-	 */
-	@Deprecated
-	public Generation(String text) {
-		this(text, Map.of());
-	}
-
-	/**
-	 * @deprecated Use {@link #Generation(AssistantMessage)} constructor instead.
-	 */
-	@Deprecated
-	public Generation(String text, Map<String, Object> properties) {
-		this(new AssistantMessage(text, properties));
-	}
 
 	public Generation(AssistantMessage assistantMessage) {
 		this(assistantMessage, ChatGenerationMetadata.NULL);
@@ -67,18 +49,6 @@ public class Generation implements ModelResult<AssistantMessage> {
 	public ChatGenerationMetadata getMetadata() {
 		ChatGenerationMetadata chatGenerationMetadata = this.chatGenerationMetadata;
 		return chatGenerationMetadata != null ? chatGenerationMetadata : ChatGenerationMetadata.NULL;
-	}
-
-	/**
-	 * @deprecated Use {@link #Generation(AssistantMessage, ChatGenerationMetadata)}
-	 * constructor instead.
-	 * @param chatGenerationMetadata
-	 * @return
-	 */
-	@Deprecated
-	public Generation withGenerationMetadata(@Nullable ChatGenerationMetadata chatGenerationMetadata) {
-		this.chatGenerationMetadata = chatGenerationMetadata;
-		return this;
 	}
 
 	@Override

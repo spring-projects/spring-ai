@@ -22,10 +22,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -35,7 +33,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.tool.MockWeatherService;
@@ -46,9 +44,7 @@ import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(classes = OllamaChatModelFunctionCallingIT.Config.class)
-@DisabledIf("isDisabled")
 class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
@@ -67,11 +63,11 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.withModel(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -79,10 +75,9 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage(
@@ -92,11 +87,11 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.withModel(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription(
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -108,7 +103,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -120,7 +115,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaApi ollamaApi() {
-			return buildOllamaApiWithModel(MODEL);
+			return initializeOllama(MODEL);
 		}
 
 		@Bean

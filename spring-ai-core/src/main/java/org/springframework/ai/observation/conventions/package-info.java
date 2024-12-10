@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Conventions for observation-based AI.
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.observation.conventions;

@@ -57,10 +57,10 @@ public class OCIGenAiAutoConfigurationIT {
 	private final ApplicationContextRunner cohereChatContextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
 			"spring.ai.oci.genai.authenticationType=file",
-			"spring.ai.oci.genai.file=" + CONFIG_FILE,
-			"spring.ai.oci.genai.cohere.chat.options.compartment=" + COMPARTMENT_ID,
+			"spring.ai.oci.genai.file=" + this.CONFIG_FILE,
+			"spring.ai.oci.genai.cohere.chat.options.compartment=" + this.COMPARTMENT_ID,
 			"spring.ai.oci.genai.cohere.chat.options.servingMode=on-demand",
-			"spring.ai.oci.genai.cohere.chat.options.model=" + CHAT_MODEL_ID
+			"spring.ai.oci.genai.cohere.chat.options.model=" + this.CHAT_MODEL_ID
 			// @formatter:on
 	).withConfiguration(AutoConfigurations.of(OCIGenAiAutoConfiguration.class));
 

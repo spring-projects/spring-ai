@@ -26,6 +26,8 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.Coher
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
+ * Options for the Bedrock Cohere embedding API.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  */

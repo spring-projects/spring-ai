@@ -187,6 +187,9 @@ public record AdvisedRequest(
 		return new Prompt(messages, this.chatOptions());
 	}
 
+	/**
+	 * Builder for {@link AdvisedRequest}.
+	 */
 	public static final class Builder {
 
 		private ChatModel chatModel;
@@ -220,76 +223,150 @@ public record AdvisedRequest(
 		private Builder() {
 		}
 
+		/**
+		 * Set the chat model.
+		 * @param chatModel the chat model
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withChatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;
 			return this;
 		}
 
+		/**
+		 * Set the user text.
+		 * @param userText the user text
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withUserText(String userText) {
 			this.userText = userText;
 			return this;
 		}
 
+		/**
+		 * Set the system text.
+		 * @param systemText the system text
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withSystemText(String systemText) {
 			this.systemText = systemText;
 			return this;
 		}
 
+		/**
+		 * Set the chat options.
+		 * @param chatOptions the chat options
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withChatOptions(ChatOptions chatOptions) {
 			this.chatOptions = chatOptions;
 			return this;
 		}
 
+		/**
+		 * Set the media.
+		 * @param media the media
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withMedia(List<Media> media) {
 			this.media = media;
 			return this;
 		}
 
+		/**
+		 * Set the function names.
+		 * @param functionNames the function names
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withFunctionNames(List<String> functionNames) {
 			this.functionNames = functionNames;
 			return this;
 		}
 
+		/**
+		 * Set the function callbacks.
+		 * @param functionCallbacks the function callbacks
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
+		/**
+		 * Set the messages.
+		 * @param messages the messages
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withMessages(List<Message> messages) {
 			this.messages = messages;
 			return this;
 		}
 
+		/**
+		 * Set the user params.
+		 * @param userParams the user params
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withUserParams(Map<String, Object> userParams) {
 			this.userParams = userParams;
 			return this;
 		}
 
+		/**
+		 * Set the system params.
+		 * @param systemParams the system params
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withSystemParams(Map<String, Object> systemParams) {
 			this.systemParams = systemParams;
 			return this;
 		}
 
+		/**
+		 * Set the advisors.
+		 * @param advisors the advisors
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withAdvisors(List<Advisor> advisors) {
 			this.advisors = advisors;
 			return this;
 		}
 
+		/**
+		 * Set the advisor params.
+		 * @param advisorParams the advisor params
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withAdvisorParams(Map<String, Object> advisorParams) {
 			this.advisorParams = advisorParams;
 			return this;
 		}
 
+		/**
+		 * Set the advise context.
+		 * @param adviseContext the advise context
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withAdviseContext(Map<String, Object> adviseContext) {
 			this.adviseContext = adviseContext;
 			return this;
 		}
 
+		/**
+		 * Set the tool context.
+		 * @param toolContext the tool context
+		 * @return this {@link Builder} instance
+		 */
 		public Builder withToolContext(Map<String, Object> toolContext) {
 			this.toolContext = toolContext;
 			return this;
 		}
 
+		/**
+		 * Build the {@link AdvisedRequest} instance.
+		 * @return a new {@link AdvisedRequest} instance
+		 */
 		public AdvisedRequest build() {
 			return new AdvisedRequest(this.chatModel, this.userText, this.systemText, this.chatOptions, this.media,
 					this.functionNames, this.functionCallbacks, this.messages, this.userParams, this.systemParams,

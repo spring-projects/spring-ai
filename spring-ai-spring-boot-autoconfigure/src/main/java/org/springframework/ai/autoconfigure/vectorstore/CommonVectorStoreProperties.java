@@ -17,6 +17,8 @@
 package org.springframework.ai.autoconfigure.vectorstore;
 
 /**
+ * Common properties for vector stores.
+ *
  * @author Josh Long
  * @author Soby Chacko
  */

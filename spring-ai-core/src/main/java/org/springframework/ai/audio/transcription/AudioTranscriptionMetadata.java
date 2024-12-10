@@ -19,6 +19,8 @@ package org.springframework.ai.audio.transcription;
 import org.springframework.ai.model.ResultMetadata;
 
 /**
+ * Metadata associated with an audio transcription result.
+ *
  * @author Michael Lavelle
  * @author Piotr Olaszewski
  * @since 0.8.1

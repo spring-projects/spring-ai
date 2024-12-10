@@ -59,7 +59,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.mistralai.metadata.MistralAiUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -120,21 +120,21 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		this(mistralAiApi, options, functionCallbackContext, List.of(), retryTemplate);
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+		this(mistralAiApi, options, functionCallbackResolver, List.of(), retryTemplate);
 	}
 
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate) {
-		this(mistralAiApi, options, functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+		this(mistralAiApi, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
 				ObservationRegistry.NOOP);
 	}
 
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-		super(functionCallbackContext, options, toolFunctionCallbacks);
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
 		Assert.notNull(mistralAiApi, "mistralAiApi must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
@@ -304,7 +304,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
 	}
 
@@ -326,11 +326,11 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message instanceof UserMessage userMessage) {
-				return List.of(new MistralAiApi.ChatCompletionMessage(userMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(userMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.USER));
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.SYSTEM));
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
@@ -342,7 +342,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 					}).toList();
 				}
 
-				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null));
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {

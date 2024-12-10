@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -105,8 +106,6 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
  * @since 1.0.0
  */
 public class CassandraVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
-
-	public static final String SIMILARITY_FIELD_NAME = "similarity_score";
 
 	public static final String DRIVER_PROFILE_UPDATES = "spring-ai-updates";
 
@@ -182,7 +181,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	public void doAdd(List<Document> documents) {
 		var futures = new CompletableFuture[documents.size()];
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		int i = 0;
 		for (Document d : documents) {
@@ -197,7 +197,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 				builder = builder.setString(this.conf.schema.content(), d.getContent())
 					.setVector(this.conf.schema.embedding(),
-							CqlVector.newInstance(EmbeddingUtils.toList(d.getEmbedding())), Float.class);
+							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(documents.indexOf(d)))),
+							Float.class);
 
 				for (var metadataColumn : this.conf.schema.metadataColumns()
 					.stream()
@@ -252,19 +253,20 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				break;
 			}
 			Map<String, Object> docFields = new HashMap<>();
-			docFields.put(SIMILARITY_FIELD_NAME, score);
+			docFields.put(DocumentMetadata.DISTANCE.value(), 1 - score);
 			for (var metadata : this.conf.schema.metadataColumns()) {
 				var value = row.get(metadata.name(), metadata.javaType());
 				if (null != value) {
 					docFields.put(metadata.name(), value);
 				}
 			}
-			Document doc = new Document(getDocumentId(row), row.getString(this.conf.schema.content()), docFields);
+			Document doc = Document.builder()
+				.id(getDocumentId(row))
+				.text(row.getString(this.conf.schema.content()))
+				.metadata(docFields)
+				.score((double) score)
+				.build();
 
-			if (this.conf.returnEmbeddings) {
-				doc.setEmbedding(EmbeddingUtils
-					.toPrimitive(row.getVector(this.conf.schema.embedding(), Float.class).stream().toList()));
-			}
 			documents.add(doc);
 		}
 		return documents;
@@ -379,7 +381,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CASSANDRA.value(), operationName)
 			.withCollectionName(this.conf.schema.table())
 			.withDimensions(this.embeddingModel.dimensions())

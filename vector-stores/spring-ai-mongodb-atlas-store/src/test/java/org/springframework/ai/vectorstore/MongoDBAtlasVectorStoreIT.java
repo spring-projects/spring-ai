@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +29,8 @@ import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
@@ -196,6 +200,55 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results.get(1).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
 
 		});
+	}
+
+	@Test
+	public void searchWithThreshold() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var documents = List.of(
+					new Document("471a8c78-549a-4b2c-bce5-ef3ae6579be3", getText("classpath:/test/data/spring.ai.txt"),
+							Map.of("meta1", "meta1")),
+					new Document("bc51d7f7-627b-4ba6-adf4-f0bcd1998f8f",
+							getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+					new Document("d0237682-1150-44ff-b4d2-1be9b1731ee5",
+							getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+			vectorStore.add(documents);
+			Thread.sleep(5000); // Await a second for the document to be indexed
+
+			List<Document> fullResult = vectorStore
+				.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
+			assertThat(fullResult).hasSize(3);
+
+			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
+
+			assertThat(scores).hasSize(3);
+
+			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
+
+			List<Document> results = vectorStore.similaritySearch(
+					SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(similarityThreshold));
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+			assertThat(resultDoc.getContent()).contains(
+					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
+			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
+
+		});
+	}
+
+	public static String getText(String uri) {
+		var resource = new DefaultResourceLoader().getResource(uri);
+		try {
+			return resource.getContentAsString(StandardCharsets.UTF_8);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@SpringBootConfiguration

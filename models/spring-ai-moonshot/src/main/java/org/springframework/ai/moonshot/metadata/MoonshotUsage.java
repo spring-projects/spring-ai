@@ -21,6 +21,8 @@ import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.util.Assert;
 
 /**
+ * Represents the usage of a Moonshot model.
+ *
  * @author Geng Rong
  */
 public class MoonshotUsage implements Usage {

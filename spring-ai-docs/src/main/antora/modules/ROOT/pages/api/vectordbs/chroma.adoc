@@ -112,7 +112,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property| Description | Default value
 
-|`spring.ai.vectorstore.chroma.client.host`| Server connection host | `http://localhost`
+|`spring.ai.vectorstore.chroma.client.host`| Server connection host | http://localhost[http://localhost]
 |`spring.ai.vectorstore.chroma.client.port`| Server connection port | `8000`
 |`spring.ai.vectorstore.chroma.client.key-token`| Access token (if configured) | -
 |`spring.ai.vectorstore.chroma.client.username`| Access username (if configured) | -
@@ -265,7 +265,7 @@ If all goes well, you should retrieve the document containing the text "Spring A
 === Run Chroma Locally
 
 ```shell
-docker run -it --rm --name chroma -p 8000:8000 ghcr.io/chroma-core/chroma:0.4.15
+docker run -it --rm --name chroma -p 8000:8000 ghcr.io/chroma-core/chroma:0.5.20
 ```
 
 Starts a chroma store at <http://localhost:8000/api/v1>

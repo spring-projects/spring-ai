@@ -19,6 +19,8 @@ package org.springframework.ai.audio.transcription;
 import org.springframework.ai.model.ModelOptions;
 
 /**
+ * Options for audio transcription.
+ *
  * @author Piotr Olaszewski
  */
 public interface AudioTranscriptionOptions extends ModelOptions {

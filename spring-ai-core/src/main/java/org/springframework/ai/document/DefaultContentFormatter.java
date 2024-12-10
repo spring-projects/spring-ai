@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 import org.springframework.util.Assert;
 
 /**
+ * Default implementation of {@link ContentFormatter}.
+ *
  * @author Christian Tzolov
  */
 public final class DefaultContentFormatter implements ContentFormatter {

@@ -32,6 +32,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for GemFire Vector Store.
+ *
  * @author Geet Rawat
  * @author Christian Tzolov
  * @author Soby Chacko

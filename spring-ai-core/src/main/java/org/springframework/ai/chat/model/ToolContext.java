@@ -17,7 +17,10 @@
 package org.springframework.ai.chat.model;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+
+import org.springframework.ai.chat.messages.Message;
 
 /**
  * Represents the context for tool execution in a function calling scenario.
@@ -33,10 +36,19 @@ import java.util.Map;
  * {@code FunctionCallingOptions} and is used in the function execution process.
  * </p>
  *
+ * <p>
+ * The context map can contain any information that is relevant to the tool execution.
+ * </p>
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
 public class ToolContext {
+
+	/**
+	 * The key for the running, tool call history stored in the context map.
+	 */
+	public static final String TOOL_CALL_HISTORY = "TOOL_CALL_HISTORY";
 
 	private final Map<String, Object> context;
 
@@ -55,6 +67,15 @@ public class ToolContext {
 	 */
 	public Map<String, Object> getContext() {
 		return this.context;
+	}
+
+	/**
+	 * Returns the tool call history from the context map.
+	 * @return The tool call history.
+	 */
+	@SuppressWarnings("unchecked")
+	public List<Message> getToolCallHistory() {
+		return (List<Message>) this.context.get(TOOL_CALL_HISTORY);
 	}
 
 }

@@ -53,7 +53,7 @@ class ChatModelTests {
 		ChatModel mockClient = Mockito.mock(ChatModel.class);
 
 		AssistantMessage mockAssistantMessage = Mockito.mock(AssistantMessage.class);
-		given(mockAssistantMessage.getContent()).willReturn(responseMessage);
+		given(mockAssistantMessage.getText()).willReturn(responseMessage);
 
 		// Create a mock Generation
 		Generation generation = Mockito.mock(Generation.class);
@@ -84,7 +84,7 @@ class ChatModelTests {
 		verify(mockClient, times(1)).call(isA(Prompt.class));
 		verify(response, times(1)).getResult();
 		verify(generation, times(1)).getOutput();
-		verify(mockAssistantMessage, times(1)).getContent();
+		verify(mockAssistantMessage, times(1)).getText();
 		verifyNoMoreInteractions(mockClient, generation, response);
 	}
 

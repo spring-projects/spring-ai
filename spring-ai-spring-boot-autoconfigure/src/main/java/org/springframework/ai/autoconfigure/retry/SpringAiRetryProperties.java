@@ -24,6 +24,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Properties for AI Retry.
+ *
  * @author Christian Tzolov
  */
 @ConfigurationProperties(SpringAiRetryProperties.CONFIG_PREFIX)

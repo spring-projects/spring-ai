@@ -16,29 +16,38 @@
 
 package org.springframework.ai.reader.pdf.layout;
 
+import java.util.Arrays;
+
+/*
+ * @author Soby Chacko
+ * @author Tibor Tarnai
+ */
+
 class TextLine {
 
 	private static final char SPACE_CHARACTER = ' ';
 
-	private int lineLength;
+	private final int lineLength;
 
-	private String line;
+	private final char[] line;
 
 	private int lastIndex;
 
 	TextLine(int lineLength) {
-		this.line = "";
+		if (lineLength < 0) {
+			throw new IllegalArgumentException("Line length cannot be negative");
+		}
 		this.lineLength = lineLength / ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT;
-		this.completeLineWithSpaces();
+		this.line = new char[this.lineLength];
+		Arrays.fill(this.line, SPACE_CHARACTER);
 	}
 
 	public void writeCharacterAtIndex(final Character character) {
 		character.setIndex(this.computeIndexForCharacter(character));
 		int index = character.getIndex();
 		char characterValue = character.getCharacterValue();
-		if (this.indexIsInBounds(index) && this.line.charAt(index) == SPACE_CHARACTER) {
-			this.line = this.line.substring(0, index) + characterValue
-					+ this.line.substring(index + 1, this.getLineLength());
+		if (this.indexIsInBounds(index) && this.line[index] == SPACE_CHARACTER) {
+			this.line[index] = characterValue;
 		}
 	}
 
@@ -47,7 +56,7 @@ class TextLine {
 	}
 
 	public String getLine() {
-		return this.line;
+		return new String(this.line);
 	}
 
 	private int computeIndexForCharacter(final Character character) {
@@ -64,7 +73,7 @@ class TextLine {
 				index = this.findMinimumIndexWithSpaceCharacterFromIndex(index);
 			}
 			else if (isCharacterCloseToPreviousWord) {
-				if (this.line.charAt(index) != SPACE_CHARACTER) {
+				if (this.line[index] != SPACE_CHARACTER) {
 					index = index + 1;
 				}
 				else {
@@ -76,52 +85,36 @@ class TextLine {
 		}
 	}
 
-	private boolean isSpaceCharacterAtIndex(int index) {
-		return this.line.charAt(index) != SPACE_CHARACTER;
+	private boolean isNotSpaceCharacterAtIndex(int index) {
+		return this.line[index] != SPACE_CHARACTER;
 	}
 
 	private boolean isNewIndexGreaterThanLastIndex(int index) {
-		int lastIndex = this.getLastIndex();
-		return (index > lastIndex);
+		return index > this.lastIndex;
 	}
 
 	private int getNextValidIndex(int index, boolean isCharacterPartOfPreviousWord) {
 		int nextValidIndex = index;
-		int lastIndex = this.getLastIndex();
 		if (!this.isNewIndexGreaterThanLastIndex(index)) {
-			nextValidIndex = lastIndex + 1;
+			nextValidIndex = this.lastIndex + 1;
 		}
-		if (!isCharacterPartOfPreviousWord && this.isSpaceCharacterAtIndex(index - 1)) {
+		if (!isCharacterPartOfPreviousWord && index > 0 && this.isNotSpaceCharacterAtIndex(index - 1)) {
 			nextValidIndex = nextValidIndex + 1;
 		}
-		this.setLastIndex(nextValidIndex);
+		this.lastIndex = nextValidIndex;
 		return nextValidIndex;
 	}
 
 	private int findMinimumIndexWithSpaceCharacterFromIndex(int index) {
 		int newIndex = index;
-		while (newIndex >= 0 && this.line.charAt(newIndex) == SPACE_CHARACTER) {
+		while (newIndex >= 0 && this.line[newIndex] == SPACE_CHARACTER) {
 			newIndex = newIndex - 1;
 		}
 		return newIndex + 1;
 	}
 
 	private boolean indexIsInBounds(int index) {
-		return (index >= 0 && index < this.lineLength);
-	}
-
-	private void completeLineWithSpaces() {
-		for (int i = 0; i < this.getLineLength(); ++i) {
-			this.line += SPACE_CHARACTER;
-		}
-	}
-
-	private int getLastIndex() {
-		return this.lastIndex;
-	}
-
-	private void setLastIndex(int lastIndex) {
-		this.lastIndex = lastIndex;
+		return index >= 0 && index < this.lineLength;
 	}
 
 }

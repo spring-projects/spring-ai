@@ -119,7 +119,7 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 			ChatGenerationMetadata chatGenerationMetadata = generation.getMetadata();
 			assertThat(chatGenerationMetadata).isNotNull();
 			assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("STOP");
-			assertThat(chatGenerationMetadata.<Object>getContentFilterMetadata()).isNull();
+			assertThat(chatGenerationMetadata.getContentFilters()).isEmpty();
 		});
 	}
 

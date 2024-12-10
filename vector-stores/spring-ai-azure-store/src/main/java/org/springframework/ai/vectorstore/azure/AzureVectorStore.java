@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -95,8 +96,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	private static final String EMBEDDING_FIELD_NAME = "embedding";
 
 	private static final String METADATA_FIELD_NAME = "metadata";
-
-	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
 
 	private static final int DEFAULT_TOP_K = 4;
 
@@ -224,12 +223,13 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return; // nothing to do;
 		}
 
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
 		final var searchDocuments = documents.stream().map(document -> {
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
-			searchDocument.put(EMBEDDING_FIELD_NAME, document.getEmbedding());
+			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
 			searchDocument.put(CONTENT_FIELD_NAME, document.getContent());
 			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
 
@@ -321,13 +321,14 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 						}) : Map.of();
 
-				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - (float) result.getScore());
+				metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - result.getScore());
 
-				final Document doc = new Document(entry.id(), entry.content(), metadata);
-				doc.setEmbedding(EmbeddingUtils.toPrimitive(entry.embedding()));
-
-				return doc;
-
+				return Document.builder()
+					.id(entry.id())
+					.text(entry.content)
+					.metadata(metadata)
+					.score(result.getScore())
+					.build();
 			})
 			.collect(Collectors.toList());
 	}
@@ -349,6 +350,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.setSortable(true));
 		fields.add(new SearchField(EMBEDDING_FIELD_NAME, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
 			.setSearchable(true)
+			.setHidden(false)
 			.setVectorSearchDimensions(dimensions)
 			// This must match a vector search configuration name.
 			.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));
@@ -385,7 +387,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE.value(), operationName)
 			.withCollectionName(this.indexName)

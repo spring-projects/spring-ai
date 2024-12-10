@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
+ * Write a list of {@link Document} instances.
+ *
  * @author Christian Tzolov
  */
 public interface DocumentWriter extends Consumer<List<Document>> {

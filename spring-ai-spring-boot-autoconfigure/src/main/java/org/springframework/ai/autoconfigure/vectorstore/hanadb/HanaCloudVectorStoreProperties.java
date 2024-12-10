@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.vectorstore.hanadb;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Hana Cloud Vector Store.
+ *
  * @author Rahul Mittal
  * @since 1.0.0
  */

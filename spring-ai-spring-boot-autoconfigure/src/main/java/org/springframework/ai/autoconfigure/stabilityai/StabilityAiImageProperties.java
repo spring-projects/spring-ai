@@ -21,6 +21,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for Stability AI image model.
+ *
  * @author Mark Pollack
  * @author Christian Tzolov
  * @since 0.8.0

@@ -31,6 +31,10 @@ The following service connection factories are provided in the `spring-ai-spring
 [cols="|,|"]
 |====
 | Connection Details	 | Matched on
+
+| `AwsOpenSearchConnectionDetails`
+| Containers of type `LocalStackContainer`
+
 | `ChromaConnectionDetails`
 | Containers of type `ChromaDBContainer`
 

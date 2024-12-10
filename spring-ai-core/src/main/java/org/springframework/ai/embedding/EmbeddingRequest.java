@@ -21,6 +21,8 @@ import java.util.List;
 import org.springframework.ai.model.ModelRequest;
 
 /**
+ * Request to embed a list of input instructions.
+ *
  * @author Christian Tzolov
  */
 public class EmbeddingRequest implements ModelRequest<List<String>> {

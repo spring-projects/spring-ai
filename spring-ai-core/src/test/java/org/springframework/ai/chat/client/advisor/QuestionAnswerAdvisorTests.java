@@ -148,22 +148,22 @@ public class QuestionAnswerAdvisorTests {
 		assertThat(response.getMetadata().get("key6").toString()).isEqualTo("value6");
 		assertThat(response.getMetadata().get("key1").toString()).isEqualTo("value1");
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 
-		System.out.println(systemMessage.getContent());
+		System.out.println(systemMessage.getText());
 
-		assertThat(systemMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 				""");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 
-		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("""
 			Please answer my question XYZ
 			Context information is below, surrounded by ---------------------
 
@@ -204,7 +204,7 @@ public class QuestionAnswerAdvisorTests {
 		//formatter:on
 
 		var expectedQuery = "Please answer my question XYZ";
-		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getContent();
+		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getText();
 		assertThat(userPrompt).doesNotContain(userTextTemplate);
 		assertThat(userPrompt).contains(expectedQuery);
 		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
@@ -233,7 +233,7 @@ public class QuestionAnswerAdvisorTests {
 		//formatter:on
 
 		var expectedQuery = "Please answer my question XYZ";
-		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getContent();
+		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getText();
 		assertThat(userPrompt).doesNotContain(userTextTemplate);
 		assertThat(userPrompt).contains(expectedQuery);
 		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);

@@ -31,10 +31,29 @@ public enum AiOperationType {
 	// @formatter:off
 
 	// Please, keep the alphabetical sorting.
+	/**
+	 * AI operation type for chat.
+	 */
 	CHAT("chat"),
+
+	/**
+	 * AI operation type for embedding.
+	 */
 	EMBEDDING("embedding"),
+
+	/**
+	 * AI operation type for framework.
+	 */
 	FRAMEWORK("framework"),
+
+	/**
+	 * AI operation type for image.
+	 */
 	IMAGE("image"),
+
+	/**
+	 * AI operation type for text completion.
+	 */
 	TEXT_COMPLETION("text_completion");
 
 	private final String value;
@@ -43,6 +62,10 @@ public enum AiOperationType {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the operation type.
+	 * @return the value of the operation type
+	 */
 	public String value() {
 		return this.value;
 	}

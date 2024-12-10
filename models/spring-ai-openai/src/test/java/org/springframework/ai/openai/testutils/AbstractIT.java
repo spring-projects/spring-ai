@@ -84,7 +84,7 @@ public abstract class AbstractIT {
 
 	protected void evaluateQuestionAndAnswer(String question, ChatResponse response, boolean factBased) {
 		assertThat(response).isNotNull();
-		String answer = response.getResult().getOutput().getContent();
+		String answer = response.getResult().getOutput().getText();
 		logger.info("Question: " + question);
 		logger.info("Answer:" + answer);
 		PromptTemplate userPromptTemplate = new PromptTemplate(this.userEvaluatorResource,
@@ -98,12 +98,12 @@ public abstract class AbstractIT {
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = this.chatModel.call(prompt).getResult().getOutput().getContent();
+		String yesOrNo = this.chatModel.call(prompt).getResult().getOutput().getText();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(this.qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = this.chatModel.call(prompt).getResult().getOutput().getContent();
+			String reasonForFailure = this.chatModel.call(prompt).getResult().getOutput().getText();
 			fail(reasonForFailure);
 		}
 		else {

@@ -39,6 +39,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Milvus Vector Store.
+ *
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko

@@ -32,6 +32,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Pinecone Vector Store.
+ *
  * @author Christian Tzolov
  * @author Soby Chacko
  */

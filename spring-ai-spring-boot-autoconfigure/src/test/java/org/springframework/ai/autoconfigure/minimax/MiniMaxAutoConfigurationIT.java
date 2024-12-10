@@ -69,7 +69,7 @@ public class MiniMaxAutoConfigurationIT {
 			String response = responseFlux.collectList()
 				.block()
 				.stream()
-				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();

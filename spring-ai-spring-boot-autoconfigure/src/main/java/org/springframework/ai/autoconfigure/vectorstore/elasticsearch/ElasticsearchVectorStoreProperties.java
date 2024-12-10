@@ -21,6 +21,8 @@ import org.springframework.ai.vectorstore.SimilarityFunction;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for Elasticsearch Vector Store.
+ *
  * @author Eddú Meléndez
  * @author Wei Jiang
  * @author Josh Long

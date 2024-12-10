@@ -29,6 +29,10 @@ import org.springframework.ai.model.Media;
  */
 public interface Message extends Content {
 
+	/**
+	 * Get the message type.
+	 * @return the message type
+	 */
 	MessageType getMessageType();
 
 }

@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for Mistral AI chat.
+ *
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale

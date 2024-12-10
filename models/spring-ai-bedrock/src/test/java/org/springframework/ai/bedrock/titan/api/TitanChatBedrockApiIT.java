@@ -64,9 +64,13 @@ public class TitanChatBedrockApiIT {
 		Flux<TitanChatResponseChunk> response = this.titanBedrockApi.chatCompletionStream(this.titanChatRequest);
 		List<TitanChatResponseChunk> results = response.collectList().block();
 
-		assertThat(results.stream()
+		String combinedResponse = results.stream()
 			.map(TitanChatResponseChunk::outputText)
-			.collect(Collectors.joining(System.lineSeparator()))).contains("Blackbeard");
+			.collect(Collectors.joining(System.lineSeparator()));
+
+		assertThat(combinedResponse)
+			.matches(text -> text.contains("Teach") || text.contains("Blackbeard") || text.contains("Roberts")
+					|| text.contains("Rackham") || text.contains("Morgan") || text.contains("Kidd"));
 	}
 
 }

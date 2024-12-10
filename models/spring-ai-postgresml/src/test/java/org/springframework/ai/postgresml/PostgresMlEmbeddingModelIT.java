@@ -16,8 +16,6 @@
 
 package org.springframework.ai.postgresml;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -51,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Toshiaki Maki
+ * @author Eddú Meléndez
  */
 @JdbcTest(properties = "logging.level.sql=TRACE")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -63,12 +62,10 @@ class PostgresMlEmbeddingModelIT {
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
 			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.8.1").asCompatibleSubstituteFor("postgres"))
 		.withCommand("sleep", "infinity")
-		.withLabel("org.springframework.boot.service-connection", "postgres")
 		.withUsername("postgresml")
 		.withPassword("postgresml")
 		.withDatabaseName("postgresml")
-		.waitingFor(new LogMessageWaitStrategy().withRegEx(".*Starting dashboard.*\\s")
-			.withStartupTimeout(Duration.of(60, ChronoUnit.SECONDS)));
+		.waitingFor(Wait.forLogMessage(".*Starting dashboard.*\\s", 1));
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;

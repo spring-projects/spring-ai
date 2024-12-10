@@ -1,0 +1,17 @@
+spring:
+  main:
+    web-application-type: none
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+      embedding:
+        options:
+          model: text-embedding-ada-002
+    retry:
+      max-attempts: 3
+    vectorstore:
+      pgvector:
+        initialize-schema: true

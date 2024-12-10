@@ -25,12 +25,24 @@ package org.springframework.ai.model;
  */
 public interface ModelDescription {
 
+	/**
+	 * Returns the name of the model.
+	 * @return the name of the model
+	 */
 	String getName();
 
+	/**
+	 * Returns the description of the model.
+	 * @return the description of the model
+	 */
 	default String getDescription() {
 		return "";
 	}
 
+	/**
+	 * Returns the version of the model.
+	 * @return the version of the model
+	 */
 	default String getVersion() {
 		return "";
 	}

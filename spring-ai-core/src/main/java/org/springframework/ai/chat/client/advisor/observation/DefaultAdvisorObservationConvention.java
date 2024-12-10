@@ -21,11 +21,15 @@ import io.micrometer.common.KeyValues;
 
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.lang.Nullable;
 
 /**
+ * Default implementation of the {@link AdvisorObservationConvention}.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -62,7 +66,16 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(AdvisorObservationContext context) {
-		return KeyValues.of(springAiKind(), advisorType(context));
+		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(), advisorType(context),
+				advisorName(context));
+	}
+
+	protected KeyValue aiOperationType(AdvisorObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE, AiOperationType.FRAMEWORK.value());
+	}
+
+	protected KeyValue aiProvider(AdvisorObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER, AiProvider.SPRING_AI.value());
 	}
 
 	protected KeyValue advisorType(AdvisorObservationContext context) {
@@ -70,8 +83,11 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	}
 
 	protected KeyValue springAiKind() {
-		return KeyValue.of(AdvisorObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
-				SpringAiKind.ADVISOR.value());
+		return KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND, SpringAiKind.ADVISOR.value());
+	}
+
+	protected KeyValue advisorName(AdvisorObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
 	}
 
 	// ------------------------
@@ -80,11 +96,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(AdvisorObservationContext context) {
-		return KeyValues.of(advisorName(context), advisorOrder(context));
-	}
-
-	protected KeyValue advisorName(AdvisorObservationContext context) {
-		return KeyValue.of(HighCardinalityKeyNames.ADVISOR_NAME, context.getAdvisorName());
+		return KeyValues.of(advisorOrder(context));
 	}
 
 	protected KeyValue advisorOrder(AdvisorObservationContext context) {

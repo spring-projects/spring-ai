@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 /**
+ * An {@link ObservationHandler} that logs errors using a {@link Tracer}.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */

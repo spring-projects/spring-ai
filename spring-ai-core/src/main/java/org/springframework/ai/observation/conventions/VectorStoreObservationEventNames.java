@@ -26,6 +26,9 @@ public enum VectorStoreObservationEventNames {
 
 // @formatter:off
 
+	/**
+	 * Query for content in the vector store.
+	 */
 	CONTENT_QUERY_RESPONSE("db.vector.content.query.response");
 
 	private final String value;
@@ -34,6 +37,10 @@ public enum VectorStoreObservationEventNames {
 		this.value = value;
 	}
 
+	/**
+	 * Return the value of the event name.
+	 * @return the value of the event name
+	 */
 	public String value() {
 		return this.value;
 	}

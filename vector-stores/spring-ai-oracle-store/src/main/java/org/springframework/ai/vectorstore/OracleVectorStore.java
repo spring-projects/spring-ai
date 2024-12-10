@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -80,6 +81,7 @@ import org.springframework.util.StringUtils;
  * @author Loïc Lefèvre
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -204,7 +206,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public void doAdd(final List<Document> documents) {
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
 
 			@Override
@@ -212,7 +215,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 				final Document document = documents.get(i);
 				final String content = document.getContent();
 				final byte[] json = toJson(document.getMetadata());
-				final VECTOR embeddingVector = toVECTOR(document.getEmbedding());
+				final VECTOR embeddingVector = toVECTOR(embeddings.get(documents.indexOf(document)));
 
 				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 1, Types.VARCHAR,
 						document.getId());
@@ -546,7 +549,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public Builder createObservationContextBuilder(String operationName) {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.ORACLE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.getTableName())
@@ -649,12 +652,14 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		@Override
 		public Document mapRow(ResultSet rs, int rowNum) throws SQLException {
 			final Map<String, Object> metadata = getMap(rs.getObject(3, OracleJsonValue.class));
-			metadata.put("distance", rs.getDouble(5));
+			metadata.put(DocumentMetadata.DISTANCE.value(), rs.getDouble(5));
 
-			final Document document = new Document(rs.getString(1), rs.getString(2), metadata);
-			final float[] embedding = rs.getObject(4, float[].class);
-			document.setEmbedding(embedding);
-			return document;
+			return Document.builder()
+				.id(rs.getString(1))
+				.text(rs.getString(2))
+				.metadata(metadata)
+				.score(1 - rs.getDouble(5))
+				.build();
 		}
 
 		private Map<String, Object> getMap(OracleJsonValue value) {

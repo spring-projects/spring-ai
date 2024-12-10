@@ -62,12 +62,11 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true")
-		.withPropertyValues(
+		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.host="
 						+ String.format("testcontainers-domain.%s.opensearch.localhost.localstack.cloud:%s",
 								localstack.getRegion(), localstack.getMappedPort(4566)),
-				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.service-name=opensearch",
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.service-name=es",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.region=" + localstack.getRegion(),
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.access-key=" + localstack.getAccessKey(),
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.secret-key=" + localstack.getSecretKey(),

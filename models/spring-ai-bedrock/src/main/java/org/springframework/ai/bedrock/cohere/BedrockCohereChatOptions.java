@@ -29,6 +29,8 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChat
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
+ * Options for the Bedrock Cohere chat API.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 0.8.0

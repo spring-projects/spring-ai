@@ -19,6 +19,7 @@ package org.springframework.ai.openai.chat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -36,7 +38,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -60,13 +62,32 @@ class OpenAiChatModelFunctionCallingIT {
 	ChatModel chatModel;
 
 	@Test
+	void functionCallSupplier() {
+
+		Map<String, Object> state = new ConcurrentHashMap<>();
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn the light on in the living room")
+				.functions(FunctionCallback.builder()
+						.function("turnsLightOnInTheLivingRoom", () -> state.put("Light", "ON"))
+						.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+		assertThat(state).containsEntry("Light", "ON");
+	}
+
+	@Test
 	void functionCallTest() {
 		functionCallTest(OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build());
 	}
@@ -99,10 +120,10 @@ class OpenAiChatModelFunctionCallingIT {
 
 		functionCallTest(OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(biFunction)
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", biFunction)
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.withToolContext(Map.of("sessionId", "123"))
 			.build());
@@ -118,17 +139,18 @@ class OpenAiChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
 
 		streamFunctionCallTest(OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of((FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of((FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				// .responseConverter(response -> "" + response.temp() + response.unit())
 				.build())))
 			.build());
 	}
@@ -160,10 +182,10 @@ class OpenAiChatModelFunctionCallingIT {
 		};
 
 		OpenAiChatOptions promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of((FunctionCallbackWrapper.builder(biFunction)
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter(response -> "" + response.temp() + response.unit())
+			.withFunctionCallbacks(List.of((FunctionCallback.builder()
+				.function("getCurrentWeather", biFunction)
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build())))
 			.withToolContext(Map.of("sessionId", "123"))
 			.build();
@@ -185,7 +207,7 @@ class OpenAiChatModelFunctionCallingIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 

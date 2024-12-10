@@ -33,7 +33,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +82,7 @@ public class MiniMaxChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -111,7 +111,7 @@ public class MiniMaxChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -170,8 +170,9 @@ public class MiniMaxChatModelObservationIT {
 
 		@Bean
 		public MiniMaxChatModel minimaxChatModel(MiniMaxApi minimaxApi, TestObservationRegistry observationRegistry) {
-			return new MiniMaxChatModel(minimaxApi, MiniMaxChatOptions.builder().build(), new FunctionCallbackContext(),
-					List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+			return new MiniMaxChatModel(minimaxApi, MiniMaxChatOptions.builder().build(),
+					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
 
 	}

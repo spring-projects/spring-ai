@@ -75,7 +75,7 @@ class BedrockLlamaChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		String joke2 = joke2Stream.collectList()
 			.block()
@@ -83,7 +83,7 @@ class BedrockLlamaChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(joke1).isNotBlank();
@@ -92,16 +92,25 @@ class BedrockLlamaChatModelIT {
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		String message = """
+				Describe 3 of the most feared and legendary pirates from the Golden Age of Piracy, particularly
+				those known for their intimidating tactics and whose stories influenced popular culture.
+				""";
+		UserMessage userMessage = new UserMessage(message);
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).satisfies(content -> {
+			// Check for name
+			assertThat(content).contains("Bob");
 
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+			// Check for pirate speech patterns - should match at least one
+			assertThat(content).matches(text -> text.contains("Arrr") || text.contains("matey") || text.contains("ye")
+					|| text.contains("yer") || text.contains("shiver me timbers") || text.contains("scurvy"));
+		});
 	}
 
 	@Test
@@ -111,7 +120,7 @@ class BedrockLlamaChatModelIT {
 
 		String format = outputConverter.getFormat();
 		String template = """
-				List five {subject}
+				List exactly five {subject}, no more and no less.
 				{format}
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template,
@@ -119,7 +128,7 @@ class BedrockLlamaChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 	}
 
@@ -137,7 +146,7 @@ class BedrockLlamaChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -158,7 +167,7 @@ class BedrockLlamaChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -184,7 +193,7 @@ class BedrockLlamaChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);

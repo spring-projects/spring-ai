@@ -45,7 +45,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-core</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.azure</groupId>
@@ -59,6 +59,24 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.azure/azure-identity -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>${azure-identity.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.azure/azure-core -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-core</artifactId>
+			<version>${azure-core.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.azure/azure-json -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-json</artifactId>
+			<version>${azure-json.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>com.alibaba.fastjson2</groupId>
 			<artifactId>fastjson2</artifactId>
@@ -69,7 +87,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-transformers</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -77,7 +95,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -103,5 +121,4 @@
 		</dependency>
 
 	</dependencies>
-
 </project>

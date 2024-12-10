@@ -29,6 +29,8 @@ import io.qdrant.client.grpc.Collections.VectorParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
+import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
@@ -53,8 +55,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 0.8.1
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+") })
 public class QdrantVectorStoreIT {
 
 	private static final String COLLECTION_NAME = "test_collection";
@@ -106,7 +108,7 @@ public class QdrantVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-			assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+			assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
@@ -184,7 +186,7 @@ public class QdrantVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
 			Document sameIdDocument = new Document(document.getId(),
 					"The World is Big and Salvation Lurks Around the Corner",
@@ -199,7 +201,7 @@ public class QdrantVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
 			vectorStore.delete(List.of(document.getId()));
 		});
@@ -217,13 +219,13 @@ public class QdrantVectorStoreIT {
 			var request = SearchRequest.query("Great").withTopK(5);
 			List<Document> fullResult = vectorStore.similaritySearch(request.withSimilarityThresholdAll());
 
-			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-			assertThat(distances).hasSize(3);
+			assertThat(scores).hasSize(3);
 
-			float threshold = (distances.get(0) + distances.get(1)) / 2;
+			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch(request.withSimilarityThreshold(1 - threshold));
+			List<Document> results = vectorStore.similaritySearch(request.withSimilarityThreshold(similarityThreshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -231,7 +233,8 @@ public class QdrantVectorStoreIT {
 			assertThat(resultDoc.getContent()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
+			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());

@@ -29,6 +29,8 @@ import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
+ * A FilterExpressionConverter implementation for OpenSearch AI search filter expressions.
+ *
  * @author Jemin Huh
  * @since 1.0.0
  */

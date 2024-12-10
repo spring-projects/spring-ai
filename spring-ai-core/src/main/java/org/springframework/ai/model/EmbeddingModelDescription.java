@@ -17,6 +17,8 @@
 package org.springframework.ai.model;
 
 /**
+ * Description of an embedding model.
+ *
  * @author Christian Tzolov
  */
 public interface EmbeddingModelDescription extends ModelDescription {

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.azure.ai.openai.OpenAIAsyncClient;
@@ -34,6 +33,7 @@ import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinition;
+import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinitionFunction;
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsOptions;
 import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
@@ -52,7 +52,6 @@ import com.azure.ai.openai.models.ChatRequestUserMessage;
 import com.azure.ai.openai.models.CompletionsFinishReason;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.FunctionCall;
-import com.azure.ai.openai.models.FunctionDefinition;
 import com.azure.core.util.BinaryData;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -84,7 +83,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.util.Assert;
@@ -104,6 +103,7 @@ import org.springframework.util.CollectionUtils;
  * @author luocongqiu
  * @author timostark
  * @author Soby Chacko
+ * @author Jihoon Kim
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -154,19 +154,19 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	}
 
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
-		this(openAIClientBuilder, options, functionCallbackContext, List.of());
+			FunctionCallbackResolver functionCallbackResolver) {
+		this(openAIClientBuilder, options, functionCallbackResolver, List.of());
 	}
 
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
-		this(openAIClientBuilder, options, functionCallbackContext, List.of(), ObservationRegistry.NOOP);
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks) {
+		this(openAIClientBuilder, options, functionCallbackResolver, toolFunctionCallbacks, ObservationRegistry.NOOP);
 	}
 
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			ObservationRegistry observationRegistry) {
-		super(functionCallbackContext, options, toolFunctionCallbacks);
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
 		Assert.notNull(openAIClientBuilder, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = openAIClientBuilder.buildClient();
@@ -234,10 +234,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 			Flux<ChatCompletions> chatCompletionsStream = this.openAIAsyncClient
 				.getChatCompletionsStream(options.getModel(), options);
-
-			// For chunked responses, only the first chunk contains the choice role.
-			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
@@ -390,7 +386,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	private List<ChatCompletionsFunctionToolDefinition> getFunctionTools(Set<String> functionNames) {
 		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
 
-			FunctionDefinition functionDefinition = new FunctionDefinition(functionCallback.getName());
+			ChatCompletionsFunctionToolDefinitionFunction functionDefinition = new ChatCompletionsFunctionToolDefinitionFunction(
+					functionCallback.getName());
 			functionDefinition.setDescription(functionCallback.getDescription());
 			BinaryData parameters = BinaryData
 				.fromObject(ModelOptionsUtils.jsonToMap(functionCallback.getInputTypeSchema()));
@@ -405,7 +402,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			case USER:
 				// https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/README.md#text-completions-with-images
 				List<ChatMessageContentItem> items = new ArrayList<>();
-				items.add(new ChatMessageTextContentItem(message.getContent()));
+				items.add(new ChatMessageTextContentItem(message.getText()));
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						items.addAll(userMessage.getMedia()
@@ -416,7 +413,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 				}
 				return List.of(new ChatRequestUserMessage(items));
 			case SYSTEM:
-				return List.of(new ChatRequestSystemMessage(message.getContent()));
+				return List.of(new ChatRequestSystemMessage(message.getText()));
 			case ASSISTANT:
 				AssistantMessage assistantMessage = (AssistantMessage) message;
 				List<ChatCompletionsToolCall> toolCalls = null;
@@ -428,7 +425,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 						.map(tc -> ((ChatCompletionsToolCall) tc)) // !!!
 						.toList();
 				}
-				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getContent());
+				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getText());
 				azureAssistantMessage.setToolCalls(toolCalls);
 				return List.of(azureAssistantMessage);
 			case TOOL:
@@ -462,7 +459,10 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	}
 
 	private ChatGenerationMetadata generateChoiceMetadata(ChatChoice choice) {
-		return ChatGenerationMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
+		return ChatGenerationMetadata.builder()
+			.finishReason(String.valueOf(choice.getFinishReason()))
+			.metadata("contentFilterResults", choice.getContentFilterResults())
+			.build();
 	}
 
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {

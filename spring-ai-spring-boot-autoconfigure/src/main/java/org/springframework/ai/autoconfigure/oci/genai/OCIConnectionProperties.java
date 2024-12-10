@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 
 /**
+ * Configuration properties for OCI connection.
+ *
  * @author Anders Swanson
  */
 @ConfigurationProperties(OCIConnectionProperties.CONFIG_PREFIX)

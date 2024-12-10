@@ -24,7 +24,6 @@ import com.azure.core.credential.AzureKeyCredential;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingRequest;
@@ -48,8 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @SpringBootTest(classes = AzureOpenAiEmbeddingModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@RequiresAzureCredentials
 public class AzureOpenAiEmbeddingModelObservationIT {
 
 	@Autowired

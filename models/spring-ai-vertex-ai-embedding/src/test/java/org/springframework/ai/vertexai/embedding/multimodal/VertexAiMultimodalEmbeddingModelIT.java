@@ -16,6 +16,9 @@
 
 package org.springframework.ai.vertexai.embedding.multimodal;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -104,10 +107,15 @@ class VertexAiMultimodalEmbeddingModelIT {
 	}
 
 	@Test
-	void textMediaEmbedding() {
+	void textMediaEmbedding() throws MalformedURLException {
 		assertThat(this.multiModelEmbeddingModel).isNotNull();
 
-		var document = Document.builder().withMedia(new Media(MimeTypeUtils.TEXT_PLAIN, "Hello World")).build();
+		var document = Document.builder()
+			.media(Media.builder()
+				.mimeType(MimeTypeUtils.TEXT_PLAIN)
+				.data(URI.create("http://example.com/image.png").toURL())
+				.build())
+			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
 
@@ -130,7 +138,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 	void imageEmbedding() {
 
 		var document = Document.builder()
-			.withMedia(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
+			.media(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
@@ -156,7 +164,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 	void videoEmbedding() {
 
 		var document = Document.builder()
-			.withMedia(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
+			.media(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
@@ -181,9 +189,9 @@ class VertexAiMultimodalEmbeddingModelIT {
 	void textImageAndVideoEmbedding() {
 
 		var document = Document.builder()
-			.withContent("Hello World")
-			.withMedia(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
-			.withMedia(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
+			.text("Hello World")
+			.media(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
+			.media(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
 			.build();
 
 		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);

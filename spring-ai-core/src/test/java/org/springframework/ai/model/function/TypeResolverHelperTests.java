@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.function;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
@@ -34,6 +35,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 public class TypeResolverHelperTests {
+
+	@Test
+	public void testGetConsumerInputType() {
+		Class<?> inputType = TypeResolverHelper.getConsumerInputClass(MyConsumer.class);
+		assertThat(inputType).isEqualTo(Request.class);
+	}
 
 	@Test
 	public void testGetFunctionInputType() {
@@ -59,6 +66,14 @@ public class TypeResolverHelperTests {
 		@Override
 		public String apply(Response response) {
 			return response.temp + " " + response.unit;
+		}
+
+	}
+
+	public static class MyConsumer implements Consumer<Request> {
+
+		@Override
+		public void accept(Request request) {
 		}
 
 	}

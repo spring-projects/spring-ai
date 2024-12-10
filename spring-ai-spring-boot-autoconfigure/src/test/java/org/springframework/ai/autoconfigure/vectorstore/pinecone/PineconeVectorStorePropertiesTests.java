@@ -20,12 +20,14 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.vectorstore.PineconeVectorStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public class PineconeVectorStorePropertiesTests {
 
@@ -39,7 +41,7 @@ public class PineconeVectorStorePropertiesTests {
 		assertThat(props.getIndexName()).isNull();
 		assertThat(props.getServerSideTimeout()).isEqualTo(Duration.ofSeconds(20));
 		assertThat(props.getContentFieldName()).isEqualTo(PineconeVectorStore.CONTENT_FIELD_NAME);
-		assertThat(props.getDistanceMetadataFieldName()).isEqualTo(PineconeVectorStore.DISTANCE_METADATA_FIELD_NAME);
+		assertThat(props.getDistanceMetadataFieldName()).isEqualTo(DocumentMetadata.DISTANCE.value());
 	}
 
 	@Test

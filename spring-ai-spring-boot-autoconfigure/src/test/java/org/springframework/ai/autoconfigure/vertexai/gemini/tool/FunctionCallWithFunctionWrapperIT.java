@@ -28,8 +28,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext.SchemaType;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -70,7 +69,7 @@ public class FunctionCallWithFunctionWrapperIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
 	}
 
@@ -80,10 +79,11 @@ public class FunctionCallWithFunctionWrapperIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("WeatherInfo")
-				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-				.withDescription("Get the current weather in a given location")
+			return FunctionCallback.builder()
+				.function("WeatherInfo", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.schemaType(SchemaType.OPEN_API_SCHEMA)
+				.inputType(MockWeatherService.Request.class)
 				.build();
 		}
 

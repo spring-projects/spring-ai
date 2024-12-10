@@ -17,7 +17,6 @@
 package org.springframework.ai.converter;
 
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.lang.NonNull;
 
 /**
  * Converts the (raw) LLM output into a structured responses of type. The
@@ -29,12 +28,5 @@ import org.springframework.lang.NonNull;
  * @author Christian Tzolov
  */
 public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
-
-	/**
-	 * @deprecated Use the {@link #convert(Object)} instead.
-	 */
-	default T parse(@NonNull String source) {
-		return this.convert(source);
-	}
 
 }

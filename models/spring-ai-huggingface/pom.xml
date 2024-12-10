@@ -90,7 +90,7 @@
 			<plugin>
 				<groupId>io.swagger.codegen.v3</groupId>
 				<artifactId>swagger-codegen-maven-plugin</artifactId>
-				<version>3.0.46</version>
+				<version>3.0.64</version>
 				<executions>
 					<execution>
 						<goals>
@@ -100,6 +100,7 @@
 							<inputSpec>${project.basedir}/src/main/resources/openapi.json</inputSpec>
 							<language>java</language>
 							<library>resttemplate</library>
+							<templateDirectory>src/main/resources/handlebars/Java</templateDirectory>
 							<apiPackage>org.springframework.ai.huggingface.api</apiPackage>
 							<modelPackage>org.springframework.ai.huggingface.model</modelPackage>
 							<invokerPackage>org.springframework.ai.huggingface.invoker</invokerPackage>

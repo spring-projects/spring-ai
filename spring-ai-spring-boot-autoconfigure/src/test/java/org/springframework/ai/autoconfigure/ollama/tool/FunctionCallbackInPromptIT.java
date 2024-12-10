@@ -20,12 +20,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT;
@@ -35,7 +32,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -43,19 +40,15 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
-@DisabledIf("isDisabled")
 public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
 	private static final String MODEL_NAME = "qwen2.5:3b";
 
-	static String baseUrl;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + baseUrl,
+				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
 				"spring.ai.ollama.chat.options.model=" + MODEL_NAME,
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
@@ -64,7 +57,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	@BeforeAll
 	public static void beforeAll() {
-		baseUrl = buildConnectionWithModel(MODEL_NAME);
+		initializeOllama(MODEL_NAME);
 	}
 
 	@Test
@@ -77,11 +70,11 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription(
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.function("CurrentWeatherService", new MockWeatherService())
+					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
@@ -89,11 +82,10 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamingFunctionCallTest() {
 		this.contextRunner.run(context -> {
@@ -104,11 +96,11 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withDescription(
+				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.function("CurrentWeatherService", new MockWeatherService())
+					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-					.withResponseConverter(response -> "" + response.temp() + response.unit())
+					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
@@ -120,7 +112,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 

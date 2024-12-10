@@ -85,7 +85,10 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 
 		WatsonxAiChatResponse response = this.watsonxAiApi.generate(request).getBody();
 		var generation = new Generation(new AssistantMessage(response.results().get(0).generatedText()),
-				ChatGenerationMetadata.from(response.results().get(0).stopReason(), response.system()));
+				ChatGenerationMetadata.builder()
+					.finishReason(response.results().get(0).stopReason())
+					.metadata("system", response.system())
+					.build());
 
 		return new ChatResponse(List.of(generation));
 	}
@@ -103,7 +106,10 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.NULL;
 			if (chunk.system() != null) {
-				metadata = ChatGenerationMetadata.from(chunk.results().get(0).stopReason(), chunk.system());
+				metadata = ChatGenerationMetadata.builder()
+					.finishReason(chunk.results().get(0).stopReason())
+					.metadata("system", chunk.system())
+					.build();
 			}
 
 			Generation generation = new Generation(assistantMessage, metadata);

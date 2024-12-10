@@ -18,6 +18,7 @@ package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -117,6 +118,20 @@ public abstract class ModelOptionsUtils {
 	public static String toJsonString(Object object) {
 		try {
 			return OBJECT_MAPPER.writeValueAsString(object);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Converts the given object to a JSON string.
+	 * @param object the object to convert to a JSON string.
+	 * @return the JSON string.
+	 */
+	public static String toJsonStringPrettyPrinter(Object object) {
+		try {
+			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -334,10 +349,12 @@ public abstract class ModelOptionsUtils {
 
 	/**
 	 * Generates JSON Schema (version 2020_12) for the given class.
-	 * @param clazz the class to generate JSON Schema for.
+	 * @param clazz the class to generate JSON Schema from.
 	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
 	 * @return the generated JSON Schema as a String.
+	 * @deprecated use {@link #getJsonSchema(Type, boolean)} instead.
 	 */
+	@Deprecated(since = "1.0 M4")
 	public static String getJsonSchema(Class<?> clazz, boolean toUpperCaseTypeValues) {
 
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
@@ -358,6 +375,45 @@ public abstract class ModelOptionsUtils {
 		}
 
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
+		// Required for OpenAPI 3.0 (at least Vertex AI version of it).
+		if (toUpperCaseTypeValues) {
+			toUpperCaseTypeValues(node);
+		}
+
+		return node.toPrettyString();
+	}
+
+	/**
+	 * Generates JSON Schema (version 2020_12) for the given class.
+	 * @param inputType the input {@link Type} to generate JSON Schema from.
+	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
+	 * @return the generated JSON Schema as a String.
+	 */
+	public static String getJsonSchema(Type inputType, boolean toUpperCaseTypeValues) {
+
+		if (SCHEMA_GENERATOR_CACHE.get() == null) {
+
+			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+			Swagger2Module swaggerModule = new Swagger2Module();
+
+			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+					OptionPreset.PLAIN_JSON)
+				.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
+				.with(Option.PLAIN_DEFINITION_KEYS)
+				.with(swaggerModule)
+				.with(jacksonModule);
+
+			SchemaGeneratorConfig config = configBuilder.build();
+			SchemaGenerator generator = new SchemaGenerator(config);
+			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
+		}
+
+		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
+
+		if ((inputType == Void.class) && !node.has("properties")) {
+			node.putObject("properties");
+		}
+
 		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
 			// version of it).
 			toUpperCaseTypeValues(node);

@@ -115,8 +115,8 @@ public class DefaultChatClient implements ChatClient {
 			Message lastMessage = messages.get(messages.size() - 1);
 			if (lastMessage.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) lastMessage;
-				if (StringUtils.hasText(userMessage.getContent())) {
-					userText = lastMessage.getContent();
+				if (StringUtils.hasText(userMessage.getText())) {
+					userText = lastMessage.getText();
 				}
 				Collection<Media> messageMedia = userMessage.getMedia();
 				if (!CollectionUtils.isEmpty(messageMedia)) {
@@ -203,7 +203,7 @@ public class DefaultChatClient implements ChatClient {
 		public PromptUserSpec media(MimeType mimeType, URL url) {
 			Assert.notNull(mimeType, "mimeType cannot be null");
 			Assert.notNull(url, "url cannot be null");
-			this.media.add(new Media(mimeType, url));
+			this.media.add(Media.builder().mimeType(mimeType).data(url).build());
 			return this;
 		}
 
@@ -211,7 +211,7 @@ public class DefaultChatClient implements ChatClient {
 		public PromptUserSpec media(MimeType mimeType, Resource resource) {
 			Assert.notNull(mimeType, "mimeType cannot be null");
 			Assert.notNull(resource, "resource cannot be null");
-			this.media.add(new Media(mimeType, resource));
+			this.media.add(Media.builder().mimeType(mimeType).data(resource).build());
 			return this;
 		}
 
@@ -493,10 +493,10 @@ public class DefaultChatClient implements ChatClient {
 		@Nullable
 		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
 			if (chatResponse == null || chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null
-					|| chatResponse.getResult().getOutput().getContent() == null) {
+					|| chatResponse.getResult().getOutput().getText() == null) {
 				return null;
 			}
-			return chatResponse.getResult().getOutput().getContent();
+			return chatResponse.getResult().getOutput().getText();
 		}
 
 		@Override
@@ -562,10 +562,10 @@ public class DefaultChatClient implements ChatClient {
 		public Flux<String> content() {
 			return doGetObservableFluxChatResponse(this.request).map(r -> {
 				if (r.getResult() == null || r.getResult().getOutput() == null
-						|| r.getResult().getOutput().getContent() == null) {
+						|| r.getResult().getOutput().getText() == null) {
 					return "";
 				}
-				return r.getResult().getOutput().getContent();
+				return r.getResult().getOutput().getText();
 			}).filter(StringUtils::hasLength);
 		}
 
@@ -836,19 +836,14 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function) {
-			return this.function(name, description, null, function);
-		}
-
-		public <I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
-
 			Assert.hasText(name, "name cannot be null or empty");
 			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(biFunction, "biFunction cannot be null");
+			Assert.notNull(function, "function cannot be null");
 
-			FunctionCallbackWrapper<I, O> fcw = FunctionCallbackWrapper.builder(biFunction)
+			var fcw = FunctionCallbackWrapper.builder(function)
 				.withDescription(description)
 				.withName(name)
 				.withResponseConverter(Object::toString)
@@ -857,6 +852,24 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
+		public <I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
+
+			Assert.hasText(name, "name cannot be null or empty");
+			Assert.hasText(description, "description cannot be null or empty");
+			Assert.notNull(biFunction, "biFunction cannot be null");
+
+			var fcw = FunctionCallbackWrapper.builder(biFunction)
+				.withDescription(description)
+				.withName(name)
+				.withResponseConverter(Object::toString)
+				.build();
+			this.functionCallbacks.add(fcw);
+			return this;
+		}
+
+		@Override
 		public <I, O> ChatClientRequestSpec function(String name, String description, @Nullable Class<I> inputType,
 				java.util.function.Function<I, O> function) {
 
@@ -864,11 +877,11 @@ public class DefaultChatClient implements ChatClient {
 			Assert.hasText(description, "description cannot be null or empty");
 			Assert.notNull(function, "function cannot be null");
 
-			var fcw = FunctionCallbackWrapper.builder(function)
-				.withDescription(description)
-				.withName(name)
-				.withInputType(inputType)
-				.withResponseConverter(Object::toString)
+			var fcw = FunctionCallback.builder()
+				.function(name, function)
+				.description(description)
+				.responseConverter(Object::toString)
+				.inputType(inputType)
 				.build();
 			this.functionCallbacks.add(fcw);
 			return this;
@@ -992,11 +1005,11 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		public String content() {
-			return doGetChatResponse(this.prompt).getResult().getOutput().getContent();
+			return doGetChatResponse(this.prompt).getResult().getOutput().getText();
 		}
 
 		public List<String> contents() {
-			return doGetChatResponse(this.prompt).getResults().stream().map(r -> r.getOutput().getContent()).toList();
+			return doGetChatResponse(this.prompt).getResults().stream().map(r -> r.getOutput().getText()).toList();
 		}
 
 		public ChatResponse chatResponse() {
@@ -1033,10 +1046,10 @@ public class DefaultChatClient implements ChatClient {
 		public Flux<String> content() {
 			return doGetFluxChatResponse(this.prompt).map(r -> {
 				if (r.getResult() == null || r.getResult().getOutput() == null
-						|| r.getResult().getOutput().getContent() == null) {
+						|| r.getResult().getOutput().getText() == null) {
 					return "";
 				}
-				return r.getResult().getOutput().getContent();
+				return r.getResult().getOutput().getText();
 			}).filter(StringUtils::hasLength);
 		}
 

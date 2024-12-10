@@ -52,8 +52,6 @@ import static org.springframework.ai.autoconfigure.vectorstore.observation.Obser
 @Testcontainers
 public class Neo4jVectorStoreAutoConfigurationIT {
 
-	// Needs to be Neo4j 5.15+, because Neo4j 5.15 deprecated the used embedding storing
-	// function.
 	@Container
 	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.18"))
 		.withRandomPassword();

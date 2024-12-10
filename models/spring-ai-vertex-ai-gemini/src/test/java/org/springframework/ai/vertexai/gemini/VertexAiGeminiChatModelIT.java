@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,27 +69,27 @@ class VertexAiGeminiChatModelIT {
 	void roleTest() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
 	void testMessageHistory() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), prompt.getInstructions().get(1),
 				response.getResult().getOutput(), new UserMessage("Repeat the last assistant message.")));
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
 	void googleSearchTool() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().withGoogleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@NotNull
@@ -118,7 +119,7 @@ class VertexAiGeminiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = converter.convert(generation.getOutput().getContent());
+		List<String> list = converter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 	}
 
@@ -136,7 +137,7 @@ class VertexAiGeminiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -156,7 +157,7 @@ class VertexAiGeminiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -172,7 +173,7 @@ class VertexAiGeminiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		// logger.info("" + actorsFilms);
@@ -200,7 +201,7 @@ class VertexAiGeminiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -223,7 +224,7 @@ class VertexAiGeminiChatModelIT {
 		// I see a bunch of bananas in a golden basket. The bananas are ripe and yellow.
 		// There are also some red apples in the basket. The basket is sitting on a table.
 		// The background is a blurred light blue color.'
-		assertThat(response.getResult().getOutput().getContent()).satisfies(content -> {
+		assertThat(response.getResult().getOutput().getText()).satisfies(content -> {
 			long count = Stream.of("bananas", "apple", "basket").filter(content::contains).count();
 			assertThat(count).isGreaterThanOrEqualTo(2);
 		});
@@ -244,6 +245,20 @@ class VertexAiGeminiChatModelIT {
 		// "apple", "basket");
 
 		// https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/use-cases/intro_multimodal_use_cases.ipynb
+	}
+
+	@Test
+	void multiModalityPdfTest() throws IOException {
+
+		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
+
+		var userMessage = new UserMessage(
+				"You are a very professional document summarization specialist. Please summarize the given document.",
+				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+
+		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

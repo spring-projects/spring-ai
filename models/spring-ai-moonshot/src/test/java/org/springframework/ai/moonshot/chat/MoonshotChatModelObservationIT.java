@@ -30,7 +30,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.moonshot.MoonshotChatModel;
 import org.springframework.ai.moonshot.MoonshotChatOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
@@ -82,7 +82,7 @@ public class MoonshotChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -112,7 +112,7 @@ public class MoonshotChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -173,7 +173,8 @@ public class MoonshotChatModelObservationIT {
 		public MoonshotChatModel moonshotChatModel(MoonshotApi moonshotApi,
 				TestObservationRegistry observationRegistry) {
 			return new MoonshotChatModel(moonshotApi, MoonshotChatOptions.builder().build(),
-					new FunctionCallbackContext(), List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
 
 	}

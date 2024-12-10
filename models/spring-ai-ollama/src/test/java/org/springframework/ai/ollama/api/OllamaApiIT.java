@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.ollama.BaseOllamaIT;
@@ -31,8 +29,6 @@ import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
-import org.springframework.ai.ollama.api.OllamaApi.GenerateRequest;
-import org.springframework.ai.ollama.api.OllamaApi.GenerateResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 
@@ -42,34 +38,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  */
-@Testcontainers
-@DisabledIf("isDisabled")
 public class OllamaApiIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
 
-	static OllamaApi ollamaApi;
-
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		ollamaApi = buildOllamaApiWithModel(MODEL);
-	}
-
-	@Test
-	public void generation() {
-		var request = GenerateRequest
-			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withModel(MODEL)
-			.withStream(false)
-			.build();
-
-		GenerateResponse response = ollamaApi.generate(request);
-
-		System.out.println(response);
-
-		assertThat(response).isNotNull();
-		assertThat(response.model()).contains(MODEL);
-		assertThat(response.response()).contains("Sofia");
+		initializeOllama(MODEL);
 	}
 
 	@Test
@@ -87,7 +62,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.withOptions(OllamaOptions.create().withTemperature(0.9))
 			.build();
 
-		ChatResponse response = ollamaApi.chat(request);
+		ChatResponse response = getOllamaApi().chat(request);
 
 		System.out.println(response);
 
@@ -108,7 +83,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
 			.build();
 
-		Flux<ChatResponse> response = ollamaApi.streamingChat(request);
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
 		System.out.println(responses);
@@ -128,7 +103,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	public void embedText() {
 		EmbeddingsRequest request = new EmbeddingsRequest(MODEL, "I like to eat apples");
 
-		EmbeddingsResponse response = ollamaApi.embed(request);
+		EmbeddingsResponse response = getOllamaApi().embed(request);
 
 		assertThat(response).isNotNull();
 		assertThat(response.embeddings()).hasSize(1);

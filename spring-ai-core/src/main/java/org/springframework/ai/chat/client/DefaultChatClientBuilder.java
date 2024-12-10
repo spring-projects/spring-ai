@@ -71,6 +71,10 @@ public class DefaultChatClientBuilder implements Builder {
 		return new DefaultChatClient(this.defaultRequest);
 	}
 
+	public Builder clone() {
+		return this.defaultRequest.mutate();
+	}
+
 	public Builder defaultAdvisors(Advisor... advisors) {
 		this.defaultRequest.advisors(advisors);
 		return this;

@@ -90,7 +90,7 @@ public class CricketWorldCupHanaController {
 
 		var userMessage = new UserMessage(message);
 		Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
-		String generation = this.chatModel.call(prompt).getResult().getOutput().getContent();
+		String generation = this.chatModel.call(prompt).getResult().getOutput().getText();
 		logger.info("Generation: {}", generation);
 		return Map.of("generation", generation);
 	}

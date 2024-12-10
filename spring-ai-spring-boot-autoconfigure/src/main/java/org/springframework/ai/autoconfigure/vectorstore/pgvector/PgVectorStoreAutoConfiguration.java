@@ -35,6 +35,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for PostgreSQL Vector Store.
+ *
  * @author Christian Tzolov
  * @author Josh Long
  * @author Soby Chacko

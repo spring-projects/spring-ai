@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.springframework.ai.model.Media;
+import org.springframework.ai.model.MediaContent;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -33,9 +35,11 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class AssistantMessage extends AbstractMessage {
+public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	private final List<ToolCall> toolCalls;
+
+	protected final List<Media> media;
 
 	public AssistantMessage(String content) {
 		this(content, Map.of());
@@ -46,9 +50,16 @@ public class AssistantMessage extends AbstractMessage {
 	}
 
 	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
+		this(content, properties, toolCalls, List.of());
+	}
+
+	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
+			List<Media> media) {
 		super(MessageType.ASSISTANT, content, properties);
 		Assert.notNull(toolCalls, "Tool calls must not be null");
+		Assert.notNull(media, "Media must not be null");
 		this.toolCalls = toolCalls;
+		this.media = media;
 	}
 
 	public List<ToolCall> getToolCalls() {
@@ -57,6 +68,11 @@ public class AssistantMessage extends AbstractMessage {
 
 	public boolean hasToolCalls() {
 		return !CollectionUtils.isEmpty(this.toolCalls);
+	}
+
+	@Override
+	public List<Media> getMedia() {
+		return this.media;
 	}
 
 	@Override
@@ -70,12 +86,12 @@ public class AssistantMessage extends AbstractMessage {
 		if (!super.equals(o)) {
 			return false;
 		}
-		return Objects.equals(this.toolCalls, that.toolCalls);
+		return Objects.equals(this.toolCalls, that.toolCalls) && Objects.equals(this.media, that.media);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.toolCalls);
+		return Objects.hash(super.hashCode(), this.toolCalls, this.media);
 	}
 
 	@Override

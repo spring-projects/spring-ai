@@ -46,6 +46,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.cassandra.SchemaUtil;
 
 /**
+ * Configuration for the Cassandra Chat Memory store.
+ *
  * @author Mick Semb Wever
  * @since 1.0.0
  */

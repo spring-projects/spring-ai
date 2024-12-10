@@ -65,14 +65,27 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 */
 	private final Parser parser;
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 */
 	public MarkdownDocumentReader(String markdownResource) {
 		this(new DefaultResourceLoader().getResource(markdownResource), MarkdownDocumentReaderConfig.defaultConfig());
 	}
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 * @param config the configuration to use
+	 */
 	public MarkdownDocumentReader(String markdownResource, MarkdownDocumentReaderConfig config) {
 		this(new DefaultResourceLoader().getResource(markdownResource), config);
 	}
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 */
 	public MarkdownDocumentReader(Resource markdownResource, MarkdownDocumentReaderConfig config) {
 		this.markdownResource = markdownResource;
 		this.config = config;
@@ -115,6 +128,9 @@ public class MarkdownDocumentReader implements DocumentReader {
 			this.config = config;
 		}
 
+		/**
+		 * Visits the document node and initializes the current document builder.
+		 */
 		@Override
 		public void visit(org.commonmark.node.Document document) {
 			this.currentDocumentBuilder = Document.builder();
@@ -160,14 +176,14 @@ public class MarkdownDocumentReader implements DocumentReader {
 			}
 
 			translateLineBreakToSpace();
-			this.currentDocumentBuilder.withMetadata("category", "blockquote");
+			this.currentDocumentBuilder.metadata("category", "blockquote");
 			super.visit(blockQuote);
 		}
 
 		@Override
 		public void visit(Code code) {
 			this.currentParagraphs.add(code.getLiteral());
-			this.currentDocumentBuilder.withMetadata("category", "code_inline");
+			this.currentDocumentBuilder.metadata("category", "code_inline");
 			super.visit(code);
 		}
 
@@ -179,8 +195,8 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 			translateLineBreakToSpace();
 			this.currentParagraphs.add(fencedCodeBlock.getLiteral());
-			this.currentDocumentBuilder.withMetadata("category", "code_block");
-			this.currentDocumentBuilder.withMetadata("lang", fencedCodeBlock.getInfo());
+			this.currentDocumentBuilder.metadata("category", "code_block");
+			this.currentDocumentBuilder.metadata("lang", fencedCodeBlock.getInfo());
 
 			buildAndFlush();
 
@@ -190,8 +206,8 @@ public class MarkdownDocumentReader implements DocumentReader {
 		@Override
 		public void visit(Text text) {
 			if (text.getParent() instanceof Heading heading) {
-				this.currentDocumentBuilder.withMetadata("category", "header_%d".formatted(heading.getLevel()))
-					.withMetadata("title", text.getLiteral());
+				this.currentDocumentBuilder.metadata("category", "header_%d".formatted(heading.getLevel()))
+					.metadata("title", text.getLiteral());
 			}
 			else {
 				this.currentParagraphs.add(text.getLiteral());
@@ -210,9 +226,9 @@ public class MarkdownDocumentReader implements DocumentReader {
 			if (!this.currentParagraphs.isEmpty()) {
 				String content = String.join("", this.currentParagraphs);
 
-				Document.Builder builder = this.currentDocumentBuilder.withContent(content);
+				Document.Builder builder = this.currentDocumentBuilder.text(content);
 
-				this.config.additionalMetadata.forEach(builder::withMetadata);
+				this.config.additionalMetadata.forEach(builder::metadata);
 
 				Document document = builder.build();
 

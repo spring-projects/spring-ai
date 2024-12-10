@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.mistralai;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Common properties for Mistral AI.
+ *
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @since 0.8.1

@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link OpenAiUsage}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class OpenAiUsageTests {
 
@@ -76,7 +77,17 @@ class OpenAiUsageTests {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null);
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
 		assertThat(usage.getTotalTokens()).isEqualTo(300);
-		assertThat(usage.getCachedTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().reasoningTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().acceptedPredictionTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().audioTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().rejectedPredictionTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void whenCompletionTokenDetailsIsNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null);
+		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
+		assertThat(usage.getTotalTokens()).isEqualTo(300);
 		assertThat(usage.getReasoningTokens()).isEqualTo(0);
 	}
 
@@ -93,15 +104,10 @@ class OpenAiUsageTests {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
 				new OpenAiApi.Usage.CompletionTokenDetails(50, null, null, null));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getReasoningTokens()).isEqualTo(50);
-	}
-
-	@Test
-	void whenAcceptedPredictionTokensIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
-		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getAcceptedPredictionTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().reasoningTokens()).isEqualTo(50);
+		assertThat(usage.getCompletionTokenDetails().acceptedPredictionTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().audioTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().rejectedPredictionTokens()).isEqualTo(0);
 	}
 
 	@Test
@@ -109,15 +115,10 @@ class OpenAiUsageTests {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
 				new OpenAiApi.Usage.CompletionTokenDetails(null, 75, null, null));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getAcceptedPredictionTokens()).isEqualTo(75);
-	}
-
-	@Test
-	void whenAudioTokensIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
-		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getAudioTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().reasoningTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().acceptedPredictionTokens()).isEqualTo(75);
+		assertThat(usage.getCompletionTokenDetails().audioTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().rejectedPredictionTokens()).isEqualTo(0);
 	}
 
 	@Test
@@ -125,7 +126,10 @@ class OpenAiUsageTests {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
 				new OpenAiApi.Usage.CompletionTokenDetails(null, null, 125, null));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getAudioTokens()).isEqualTo(125);
+		assertThat(usage.getCompletionTokenDetails().reasoningTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().acceptedPredictionTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().audioTokens()).isEqualTo(125);
+		assertThat(usage.getCompletionTokenDetails().rejectedPredictionTokens()).isEqualTo(0);
 	}
 
 	@Test
@@ -133,7 +137,11 @@ class OpenAiUsageTests {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
 				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getRejectedPredictionTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().reasoningTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().acceptedPredictionTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().audioTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().rejectedPredictionTokens()).isEqualTo(0);
+
 	}
 
 	@Test
@@ -141,23 +149,28 @@ class OpenAiUsageTests {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
 				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, 25));
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getRejectedPredictionTokens()).isEqualTo(25);
+		assertThat(usage.getCompletionTokenDetails().reasoningTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().acceptedPredictionTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().audioTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokenDetails().rejectedPredictionTokens()).isEqualTo(25);
 	}
 
 	@Test
 	void whenCacheTokensIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, new OpenAiApi.Usage.PromptTokensDetails(null),
-				null);
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
+				new OpenAiApi.Usage.PromptTokensDetails(null, null), null);
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getCachedTokens()).isEqualTo(0);
+		assertThat(usage.getPromptTokensDetails().audioTokens()).isEqualTo(0);
+		assertThat(usage.getPromptTokensDetails().cachedTokens()).isEqualTo(0);
 	}
 
 	@Test
 	void whenCacheTokensIsPresent() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, new OpenAiApi.Usage.PromptTokensDetails(15),
-				null);
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
+				new OpenAiApi.Usage.PromptTokensDetails(99, 15), null);
 		OpenAiUsage usage = OpenAiUsage.from(openAiUsage);
-		assertThat(usage.getCachedTokens()).isEqualTo(15);
+		assertThat(usage.getPromptTokensDetails().audioTokens()).isEqualTo(99);
+		assertThat(usage.getPromptTokensDetails().cachedTokens()).isEqualTo(15);
 	}
 
 }

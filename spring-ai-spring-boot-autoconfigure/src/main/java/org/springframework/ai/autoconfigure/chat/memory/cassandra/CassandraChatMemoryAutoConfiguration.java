@@ -28,7 +28,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for {@link CassandraChatMemory}.
+ *
  * @author Mick Semb Wever
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 @AutoConfiguration(after = CassandraAutoConfiguration.class)
@@ -50,8 +53,8 @@ public class CassandraChatMemoryAutoConfiguration {
 		if (!properties.isInitializeSchema()) {
 			builder = builder.disallowSchemaChanges();
 		}
-		if (null != properties.getTimeToLiveSeconds()) {
-			builder = builder.withTimeToLive(properties.getTimeToLiveSeconds());
+		if (null != properties.getTimeToLive()) {
+			builder = builder.withTimeToLive(properties.getTimeToLive());
 		}
 
 		return CassandraChatMemory.create(builder.build());

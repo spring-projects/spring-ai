@@ -25,6 +25,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -37,6 +38,9 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
+ * Implementation of the {@link ChatModel} and {@link StreamingChatModel} interfaces that
+ * uses the Titan Chat API.
+ *
  * @author Christian Tzolov
  * @since 0.8.0
  */
@@ -62,7 +66,7 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
 		List<Generation> generations = response.results()
 			.stream()
-			.map(result -> new Generation(result.outputText()))
+			.map(result -> new Generation(new AssistantMessage(result.outputText())))
 			.toList();
 
 		return new ChatResponse(generations);
@@ -71,21 +75,23 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt)).map(chunk -> {
-
-			Generation generation = new Generation(chunk.outputText());
-
+			ChatGenerationMetadata chatGenerationMetadata = null;
 			if (chunk.amazonBedrockInvocationMetrics() != null) {
 				String completionReason = chunk.completionReason().name();
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(completionReason)
+					.metadata("usage", chunk.amazonBedrockInvocationMetrics())
+					.build();
 			}
 			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
 				String completionReason = chunk.completionReason().name();
-				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from(completionReason, extractUsage(chunk)));
-
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(completionReason)
+					.metadata("usage", extractUsage(chunk))
+					.build();
 			}
-			return new ChatResponse(List.of(generation));
+			return new ChatResponse(
+					List.of(new Generation(new AssistantMessage(chunk.outputText()), chatGenerationMetadata)));
 		});
 	}
 

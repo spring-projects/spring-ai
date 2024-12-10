@@ -216,6 +216,7 @@ public class CohereEmbeddingBedrockApi extends
 	 * @param embeddings An array of embeddings, where each embedding is an array of floats with 1024 elements. The
 	 * length of the embeddings array will be the same as the length of the original texts array.
 	 * @param texts An array containing the text entries for which embeddings were returned.
+	 * @param responseType The type of the response. The value is always embeddings.
 	 * @param amazonBedrockInvocationMetrics Bedrock invocation metrics. Currently bedrock doesn't return
 	 * invocationMetrics for the cohere embedding model.
 	 */

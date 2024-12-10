@@ -26,6 +26,7 @@ import com.mongodb.MongoCommandException;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -44,10 +45,13 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 
 /**
+ * A {@link VectorStore} implementation that uses MongoDB Atlas for storing and
+ *
  * @author Chris Smith
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -170,19 +174,28 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	private Document mapMongoDocument(org.bson.Document mongoDocument, float[] queryEmbedding) {
 		String id = mongoDocument.getString(ID_FIELD_NAME);
 		String content = mongoDocument.getString(CONTENT_FIELD_NAME);
+		double score = mongoDocument.getDouble(SCORE_FIELD_NAME);
 		Map<String, Object> metadata = mongoDocument.get(METADATA_FIELD_NAME, org.bson.Document.class);
 
-		Document document = new Document(id, content, metadata);
-		document.setEmbedding(queryEmbedding);
+		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - score);
 
-		return document;
+		// @formatter:off
+		return Document.builder()
+			.id(id)
+			.text(content)
+			.metadata(metadata)
+			.score(score)
+			.build(); // @formatter:on
 	}
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 		for (Document document : documents) {
-			this.mongoTemplate.save(document, this.config.collectionName);
+			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getContent(),
+					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+			this.mongoTemplate.save(mdbDocument, this.config.collectionName);
 		}
 	}
 
@@ -328,6 +341,17 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 		}
 
+	}
+
+	/**
+	 * The representation of {@link Document} along with its embedding.
+	 *
+	 * @param id The id of the document
+	 * @param content The content of the document
+	 * @param metadata The metadata of the document
+	 * @param embedding The vectors representing the content of the document
+	 */
+	public record MongoDBDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
 }

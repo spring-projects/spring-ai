@@ -28,20 +28,21 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.util.Assert;
 
 /**
+ * Options for the Vertex AI Gemini Chat API.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Grogdunn
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOptions {
+public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 	// https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerationConfig
 

@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -41,6 +42,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @author Grogdunn
  * @author Thomas Vitale
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public abstract class AbstractToolCallSupport {
@@ -53,20 +55,20 @@ public abstract class AbstractToolCallSupport {
 	protected final Map<String, FunctionCallback> functionCallbackRegister = new ConcurrentHashMap<>();
 
 	/**
-	 * The function callback context is used to resolve the function callbacks by name
+	 * The function callback resolver is used to resolve the function callbacks by name
 	 * from the Spring context. It is optional and usually used with Spring
 	 * auto-configuration.
 	 */
-	protected final FunctionCallbackContext functionCallbackContext;
+	protected final FunctionCallbackResolver functionCallbackResolver;
 
-	protected AbstractToolCallSupport(FunctionCallbackContext functionCallbackContext) {
-		this(functionCallbackContext, FunctionCallingOptions.builder().build(), List.of());
+	protected AbstractToolCallSupport(FunctionCallbackResolver functionCallbackResolver) {
+		this(functionCallbackResolver, FunctionCallingOptions.builder().build(), List.of());
 	}
 
-	protected AbstractToolCallSupport(FunctionCallbackContext functionCallbackContext,
+	protected AbstractToolCallSupport(FunctionCallbackResolver functionCallbackResolver,
 			FunctionCallingOptions functionCallingOptions, List<FunctionCallback> toolFunctionCallbacks) {
 
-		this.functionCallbackContext = functionCallbackContext;
+		this.functionCallbackResolver = functionCallbackResolver;
 
 		List<FunctionCallback> defaultFunctionCallbacks = merge(functionCallingOptions, toolFunctionCallbacks);
 
@@ -85,7 +87,7 @@ public abstract class AbstractToolCallSupport {
 
 		if (!CollectionUtils.isEmpty(functionOptions.getFunctionCallbacks())) {
 			toolFunctionCallbacksCopy.addAll(functionOptions.getFunctionCallbacks());
-			// Make sure that that function callbacks are are registered directly to the
+			// Make sure that that function callbacks are registered directly to the
 			// functionCallbackRegister and not passed in the default options.
 			functionOptions.setFunctionCallbacks(List.of());
 		}
@@ -141,12 +143,23 @@ public abstract class AbstractToolCallSupport {
 		Map<String, Object> toolContextMap = Map.of();
 		if (prompt.getOptions() instanceof FunctionCallingOptions functionCallOptions
 				&& !CollectionUtils.isEmpty(functionCallOptions.getToolContext())) {
-			toolContextMap = functionCallOptions.getToolContext();
+
+			toolContextMap = new HashMap<>(functionCallOptions.getToolContext());
+
+			List<Message> toolCallHistory = new ArrayList<>(prompt.copy().getInstructions());
+			toolCallHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
+					assistantMessage.getToolCalls()));
+
+			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY, toolCallHistory);
 		}
+
 		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage,
 				new ToolContext(toolContextMap));
 
-		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
+		List<Message> toolConversationHistory = this.buildToolCallConversation(prompt.getInstructions(),
+				assistantMessage, toolMessageResponse);
+
+		return toolConversationHistory;
 	}
 
 	protected List<Message> buildToolCallConversation(List<Message> previousMessages, AssistantMessage assistantMessage,
@@ -170,15 +183,14 @@ public abstract class AbstractToolCallSupport {
 		for (String functionName : functionNames) {
 			if (!this.functionCallbackRegister.containsKey(functionName)) {
 
-				if (this.functionCallbackContext != null) {
-					FunctionCallback functionCallback = this.functionCallbackContext.getFunctionCallback(functionName,
-							null);
+				if (this.functionCallbackResolver != null) {
+					FunctionCallback functionCallback = this.functionCallbackResolver.resolve(functionName);
 					if (functionCallback != null) {
 						this.functionCallbackRegister.put(functionName, functionCallback);
 					}
 					else {
 						throw new IllegalStateException(
-								"No function callback [" + functionName + "] fund in tht FunctionCallbackContext");
+								"No function callback [" + functionName + "] found in tht FunctionCallbackRegister");
 					}
 				}
 				else {

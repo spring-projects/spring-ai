@@ -33,15 +33,27 @@ import org.springframework.util.Assert;
  */
 public record AiOperationMetadata(String operationType, String provider) {
 
+	/**
+	 * Create a new {@link AiOperationMetadata} instance.
+	 * @param operationType the type of operation
+	 * @param provider the provider
+	 */
 	public AiOperationMetadata {
 		Assert.hasText(operationType, "operationType cannot be null or empty");
 		Assert.hasText(provider, "provider cannot be null or empty");
 	}
 
+	/**
+	 * Create a new {@link Builder} instance.
+	 * @return a new {@link Builder} instance
+	 */
 	public static Builder builder() {
 		return new Builder();
 	}
 
+	/**
+	 * Builder for {@link AiOperationMetadata}.
+	 */
 	public static final class Builder {
 
 		private String operationType;
@@ -51,16 +63,30 @@ public record AiOperationMetadata(String operationType, String provider) {
 		private Builder() {
 		}
 
+		/**
+		 * Set the operation type.
+		 * @param operationType the operation type
+		 * @return this {@link Builder} instance
+		 */
 		public Builder operationType(String operationType) {
 			this.operationType = operationType;
 			return this;
 		}
 
+		/**
+		 * Set the provider.
+		 * @param provider the provider
+		 * @return this {@link Builder} instance
+		 */
 		public Builder provider(String provider) {
 			this.provider = provider;
 			return this;
 		}
 
+		/**
+		 * Build the {@link AiOperationMetadata} instance.
+		 * @return a new {@link AiOperationMetadata} instance
+		 */
 		public AiOperationMetadata build() {
 			return new AiOperationMetadata(this.operationType, this.provider);
 		}
