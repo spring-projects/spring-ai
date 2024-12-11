@@ -187,7 +187,8 @@ public class PgVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return PgVectorStore.builder(jdbcTemplate)
+			return PgVectorStore.builder()
+				.jdbcTemplate(jdbcTemplate)
 				.embeddingModel(embeddingModel)
 				.distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
 				.indexType(PgIndexType.HNSW)

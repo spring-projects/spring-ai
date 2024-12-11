@@ -125,60 +125,54 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final int maxDocumentBatchSize;
 
-	// @Deprecated(forRemoval = true, since = "1.0.0-M5")
-	// public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-	// this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION,
-	// PgDistanceType.COSINE_DISTANCE, false,
-	// PgIndexType.NONE, false);
-	// }
-	//
-	// @Deprecated(forRemoval = true, since = "1.0.0-M5")
-	// public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int
-	// dimensions) {
-	// this(jdbcTemplate, embeddingModel, dimensions, PgDistanceType.COSINE_DISTANCE,
-	// false, PgIndexType.NONE, false);
-	// }
-	//
-	// @Deprecated(forRemoval = true, since = "1.0.0-M5")
-	// public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int
-	// dimensions,
-	// PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType
-	// createIndexMethod,
-	// boolean initializeSchema) {
-	//
-	// this(DEFAULT_TABLE_NAME, jdbcTemplate, embeddingModel, dimensions, distanceType,
-	// removeExistingVectorStoreTable,
-	// createIndexMethod, initializeSchema);
-	// }
-	//
-	// @Deprecated(forRemoval = true, since = "1.0.0-M5")
-	// public PgVectorStore(String vectorTableName, JdbcTemplate jdbcTemplate,
-	// EmbeddingModel embeddingModel,
-	// int dimensions, PgDistanceType distanceType, boolean
-	// removeExistingVectorStoreTable,
-	// PgIndexType createIndexMethod, boolean initializeSchema) {
-	//
-	//
-	// this(builder(jdbcTemplate).schemaName(DEFAULT_SCHEMA_NAME)
-	// .vectorTableName(vectorTableName)
-	// .vectorTableValidationsEnabled(DEFAULT_SCHEMA_VALIDATION)
-	// .dimensions(dimensions)
-	// .distanceType(distanceType)
-	// .removeExistingVectorStoreTable(removeExistingVectorStoreTable)
-	// .indexType(createIndexMethod)
-	// .initializeSchema(initializeSchema));
-	// }
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgDistanceType.COSINE_DISTANCE, false,
+				PgIndexType.NONE, false);
+	}
+
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions) {
+		this(jdbcTemplate, embeddingModel, dimensions, PgDistanceType.COSINE_DISTANCE, false, PgIndexType.NONE, false);
+	}
+
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions,
+			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod,
+			boolean initializeSchema) {
+
+		this(DEFAULT_TABLE_NAME, jdbcTemplate, embeddingModel, dimensions, distanceType, removeExistingVectorStoreTable,
+				createIndexMethod, initializeSchema);
+	}
+
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public PgVectorStore(String vectorTableName, JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+			int dimensions, PgDistanceType distanceType, boolean removeExistingVectorStoreTable,
+			PgIndexType createIndexMethod, boolean initializeSchema) {
+
+		this(builder().jdbcTemplate(jdbcTemplate)
+			.schemaName(DEFAULT_SCHEMA_NAME)
+			.vectorTableName(vectorTableName)
+			.vectorTableValidationsEnabled(DEFAULT_SCHEMA_VALIDATION)
+			.dimensions(dimensions)
+			.distanceType(distanceType)
+			.removeExistingVectorStoreTable(removeExistingVectorStoreTable)
+			.indexType(createIndexMethod)
+			.initializeSchema(initializeSchema));
+	}
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for pg vector store
 	 */
-	private PgVectorStore(PgVectorStoreBuilder builder) {
+	protected PgVectorStore(PgVectorStoreBuilder builder) {
 		super(builder);
+
+		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
+
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
-		String vectorTableName1 = builder.vectorTableName;
-		this.vectorTableName = (null == vectorTableName1 || vectorTableName1.isEmpty()) ? DEFAULT_TABLE_NAME
-				: vectorTableName1.trim();
+		String vectorTable = builder.vectorTableName;
+		this.vectorTableName = (null == vectorTable || vectorTable.isEmpty()) ? DEFAULT_TABLE_NAME : vectorTable.trim();
 		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
 				(this.vectorTableName == null || this.vectorTableName.isEmpty()));
 
@@ -203,8 +197,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.distanceType;
 	}
 
-	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate) {
-		return new PgVectorStoreBuilder(jdbcTemplate);
+	public static PgVectorStoreBuilder builder() {
+		return new PgVectorStoreBuilder();
 	}
 
 	@Override
@@ -542,7 +536,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static class PgVectorStoreBuilder extends AbstractVectorStoreBuilder<PgVectorStoreBuilder> {
 
-		private final JdbcTemplate jdbcTemplate;
+		private JdbcTemplate jdbcTemplate;
 
 		private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
 
@@ -564,9 +558,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
-		public PgVectorStoreBuilder(JdbcTemplate jdbcTemplate) {
+		public PgVectorStoreBuilder jdbcTemplate(JdbcTemplate jdbcTemplate) {
 			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
 			this.jdbcTemplate = jdbcTemplate;
+			return this;
 		}
 
 		public PgVectorStoreBuilder schemaName(String schemaName) {
@@ -727,7 +722,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		public PgVectorStore build() {
-			return PgVectorStore.builder(this.jdbcTemplate)
+			return PgVectorStore.builder()
+				.jdbcTemplate(this.jdbcTemplate)
 				.embeddingModel(this.embeddingModel)
 				.schemaName(this.schemaName)
 				.vectorTableName(this.vectorTableName)
