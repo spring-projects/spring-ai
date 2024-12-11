@@ -177,8 +177,8 @@ public class RedisVectorStoreObservationIT {
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel,
 				JedisConnectionFactory jedisConnectionFactory, ObservationRegistry observationRegistry) {
-			return RedisVectorStore
-				.builder(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()))
+			return RedisVectorStore.builder()
+				.jedis(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()))
 				.embeddingModel(embeddingModel)
 				.observationRegistry(observationRegistry)
 				.customObservationConvention(null)

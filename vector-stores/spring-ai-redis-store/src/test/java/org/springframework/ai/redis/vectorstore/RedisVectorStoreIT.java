@@ -257,8 +257,8 @@ class RedisVectorStoreIT {
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel,
 				JedisConnectionFactory jedisConnectionFactory) {
-			return RedisVectorStore
-				.builder(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()))
+			return RedisVectorStore.builder()
+				.jedis(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()))
 				.embeddingModel(embeddingModel)
 				.metadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"), MetadataField.tag("country"),
 						MetadataField.numeric("year"))
