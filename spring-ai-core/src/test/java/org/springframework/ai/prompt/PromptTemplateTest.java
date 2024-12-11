@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.InputStreamResource;
@@ -58,7 +57,7 @@ public class PromptTemplateTest {
 	public void testCreateWithEmptyModelAndChatOptions() {
 		String template = "This is a test prompt with no variables";
 		PromptTemplate promptTemplate = new PromptTemplate(template);
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.7).withTopK(3).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.7).topK(3).build();
 
 		Prompt prompt = promptTemplate.create(chatOptions);
 
@@ -74,7 +73,7 @@ public class PromptTemplateTest {
 		model.put("name", "Alice");
 		model.put("age", 30);
 		PromptTemplate promptTemplate = new PromptTemplate(template, model);
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.5).withMaxTokens(100).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
 
 		Prompt prompt = promptTemplate.create(model, chatOptions);
 
@@ -93,7 +92,7 @@ public class PromptTemplateTest {
 
 		Map<String, Object> overriddenModel = new HashMap<>();
 		overriddenModel.put("color", "red");
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.8).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.8).build();
 
 		Prompt prompt = promptTemplate.create(overriddenModel, chatOptions);
 

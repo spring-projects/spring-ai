@@ -45,7 +45,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -421,15 +420,15 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 	private ChatOptions buildRequestOptions(OllamaApi.ChatRequest request) {
 		var options = ModelOptionsUtils.mapToClass(request.options(), OllamaOptions.class);
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withFrequencyPenalty(options.getFrequencyPenalty())
-			.withMaxTokens(options.getMaxTokens())
-			.withPresencePenalty(options.getPresencePenalty())
-			.withStopSequences(options.getStopSequences())
-			.withTemperature(options.getTemperature())
-			.withTopK(options.getTopK())
-			.withTopP(options.getTopP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.frequencyPenalty(options.getFrequencyPenalty())
+			.maxTokens(options.getMaxTokens())
+			.presencePenalty(options.getPresencePenalty())
+			.stopSequences(options.getStopSequences())
+			.temperature(options.getTemperature())
+			.topK(options.getTopK())
+			.topP(options.getTopP())
 			.build();
 	}
 

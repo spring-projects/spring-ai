@@ -18,6 +18,7 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.List;
 
+@Deprecated(forRemoval = true, since = "1.0.0-M5")
 public final class ChatOptionsBuilder {
 
 	private final DefaultChatOptions options = new DefaultChatOptions();
