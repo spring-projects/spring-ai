@@ -178,7 +178,8 @@ public class Neo4jVectorStoreObservationIT {
 		public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 
-			return Neo4jVectorStore.builder(driver)
+			return Neo4jVectorStore.builder()
+				.driver(driver)
 				.embeddingModel(embeddingModel)
 				.initializeSchema(true)
 				.observationRegistry(observationRegistry)

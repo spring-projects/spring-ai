@@ -114,7 +114,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder(driver).embeddingModel(embeddingModel)
+		this(builder().driver(driver)
+			.embeddingModel(embeddingModel)
 			.sessionConfig(config.sessionConfig)
 			.embeddingDimension(config.embeddingDimension)
 			.distanceType(config.distanceType)
@@ -129,8 +130,11 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			.batchingStrategy(batchingStrategy));
 	}
 
-	private Neo4jVectorStore(Neo4jBuilder builder) {
+	protected Neo4jVectorStore(Neo4jBuilder builder) {
 		super(builder);
+
+		Assert.notNull(builder.driver, "Neo4j driver must not be null");
+
 		this.driver = builder.driver;
 		this.sessionConfig = builder.sessionConfig;
 		this.embeddingDimension = builder.embeddingDimension;
@@ -276,11 +280,11 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		});
 
 		return Document.builder()
-				.id(node.get(this.idProperty).asString())
-				.text(node.get("text").asString())
-				.metadata(Map.copyOf(metaData))
-				.score((double) score)
-				.build();
+			.id(node.get(this.idProperty).asString())
+			.text(node.get("text").asString())
+			.metadata(Map.copyOf(metaData))
+			.score((double) score)
+			.build();
 	}
 
 	@Override
@@ -314,13 +318,13 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
-	public static Neo4jBuilder builder(Driver driver) {
-		return new Neo4jBuilder(driver);
+	public static Neo4jBuilder builder() {
+		return new Neo4jBuilder();
 	}
 
 	public static class Neo4jBuilder extends AbstractVectorStoreBuilder<Neo4jBuilder> {
 
-		private final Driver driver;
+		private Driver driver;
 
 		private SessionConfig sessionConfig = SessionConfig.defaultConfig();
 
@@ -342,9 +346,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		public Neo4jBuilder(Driver driver) {
+		public Neo4jBuilder driver(Driver driver) {
 			Assert.notNull(driver, "Neo4j driver must not be null");
 			this.driver = driver;
+			return this;
 		}
 
 		/**

@@ -291,7 +291,11 @@ class Neo4jVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
 
-			return Neo4jVectorStore.builder(driver).embeddingModel(embeddingModel).initializeSchema(true).build();
+			return Neo4jVectorStore.builder()
+				.driver(driver)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean
