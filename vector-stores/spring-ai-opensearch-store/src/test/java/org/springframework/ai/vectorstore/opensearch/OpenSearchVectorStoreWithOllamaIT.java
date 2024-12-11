@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.opensearch;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -46,6 +46,8 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -167,9 +169,13 @@ class OpenSearchVectorStoreWithOllamaIT {
 		@Qualifier("vectorStore")
 		public OpenSearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			try {
-				return new OpenSearchVectorStore(new OpenSearchClient(ApacheHttpClient5TransportBuilder
-					.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-					.build()), embeddingModel, true);
+				return OpenSearchVectorStore.builder()
+					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
+						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+						.build()))
+					.embeddingModel(embeddingModel)
+					.initializeSchema(true)
+					.build();
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);
@@ -180,12 +186,15 @@ class OpenSearchVectorStoreWithOllamaIT {
 		@Qualifier("anotherVectorStore")
 		public OpenSearchVectorStore anotherVectorStore(EmbeddingModel embeddingModel) {
 			try {
-				return new OpenSearchVectorStore("another_index",
-						new OpenSearchClient(ApacheHttpClient5TransportBuilder
-							.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-							.build()),
-						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION,
-						true);
+				return OpenSearchVectorStore.builder()
+					.index("another_index")
+					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
+						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+						.build()))
+					.embeddingModel(embeddingModel)
+					.mappingJson(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION)
+					.initializeSchema(true)
+					.build();
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);

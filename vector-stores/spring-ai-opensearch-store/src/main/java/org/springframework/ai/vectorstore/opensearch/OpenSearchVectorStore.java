@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.opensearch;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -48,6 +48,8 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -83,10 +85,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			}
 			""";
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
-
-	private final EmbeddingModel embeddingModel;
-
 	private final OpenSearchClient openSearchClient;
 
 	private final String index;
@@ -101,40 +99,106 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private String similarityFunction;
 
+	/**
+	 * Creates a new OpenSearchVectorStore with default mapping and collection name.
+	 * @deprecated Use {@link #builder()} instead
+	 * @param openSearchClient The OpenSearch client
+	 * @param embeddingModel The embedding model to use
+	 * @param initializeSchema Whether to initialize the schema
+	 * @since 1.0.0
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
 		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION, initializeSchema);
 	}
 
+	/**
+	 * Creates a new OpenSearchVectorStore with custom mapping.
+	 * @deprecated Use {@link #builder()} instead
+	 * @param openSearchClient The OpenSearch client
+	 * @param embeddingModel The embedding model to use
+	 * @param mappingJson The JSON mapping for the index
+	 * @param initializeSchema Whether to initialize the schema
+	 * @since 1.0.0
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson,
 			boolean initializeSchema) {
 		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson, initializeSchema);
 	}
 
+	/**
+	 * Creates a new OpenSearchVectorStore with custom index name and mapping.
+	 * @deprecated Use {@link #builder()} instead
+	 * @param index The name of the index
+	 * @param openSearchClient The OpenSearch client
+	 * @param embeddingModel The embedding model to use
+	 * @param mappingJson The JSON mapping for the index
+	 * @param initializeSchema Whether to initialize the schema
+	 * @since 1.0.0
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			String mappingJson, boolean initializeSchema) {
 		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null,
 				new TokenCountBatchingStrategy());
 	}
 
+	/**
+	 * Creates a new OpenSearchVectorStore with all configuration options.
+	 * @deprecated Use {@link #builder()} instead
+	 * @param index The name of the index
+	 * @param openSearchClient The OpenSearch client
+	 * @param embeddingModel The embedding model to use
+	 * @param mappingJson The JSON mapping for the index
+	 * @param initializeSchema Whether to initialize the schema
+	 * @param observationRegistry The observation registry for metrics
+	 * @param customObservationConvention Custom observation convention
+	 * @param batchingStrategy The strategy for batching operations
+	 * @since 1.0.0
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
 			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder().openSearchClient(openSearchClient)
+			.embeddingModel(embeddingModel)
+			.index(index)
+			.mappingJson(mappingJson)
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
-		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
-		this.openSearchClient = openSearchClient;
-		this.embeddingModel = embeddingModel;
-		this.index = index;
-		this.mappingJson = mappingJson;
-		this.filterExpressionConverter = new OpenSearchAiSearchFilterExpressionConverter();
+	/**
+	 * Creates a new OpenSearchVectorStore using the builder pattern.
+	 * @param builder The configured builder instance
+	 */
+	protected OpenSearchVectorStore(OpenSearchBuilder builder) {
+		super(builder);
+
+		Assert.notNull(builder.openSearchClient, "OpenSearchClient must not be null");
+
+		this.openSearchClient = builder.openSearchClient;
+		this.index = builder.index;
+		this.mappingJson = builder.mappingJson;
+		this.filterExpressionConverter = builder.filterExpressionConverter;
 		// the potential functions for vector fields at
 		// https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
-		this.similarityFunction = COSINE_SIMILARITY_FUNCTION;
-		this.initializeSchema = initializeSchema;
-		this.batchingStrategy = batchingStrategy;
+		this.similarityFunction = builder.similarityFunction;
+		this.initializeSchema = builder.initializeSchema;
+		this.batchingStrategy = builder.batchingStrategy;
+	}
+
+	/**
+	 * Creates a new builder instance for configuring an OpenSearchVectorStore.
+	 * @return A new OpenSearchBuilder instance
+	 */
+	public static OpenSearchBuilder builder() {
+		return new OpenSearchBuilder();
 	}
 
 	public OpenSearchVectorStore withSimilarityFunction(String similarityFunction) {
@@ -304,6 +368,134 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	 * @param embedding The vectors representing the content of the document
 	 */
 	public record OpenSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
+	}
+
+	/**
+	 * Builder class for creating OpenSearchVectorStore instances.
+	 */
+	public static class OpenSearchBuilder extends AbstractVectorStoreBuilder<OpenSearchBuilder> {
+
+		private OpenSearchClient openSearchClient;
+
+		private String index = DEFAULT_INDEX_NAME;
+
+		private String mappingJson = DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION;
+
+		private boolean initializeSchema = false;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		private FilterExpressionConverter filterExpressionConverter = new OpenSearchAiSearchFilterExpressionConverter();
+
+		private String similarityFunction = COSINE_SIMILARITY_FUNCTION;
+
+		/**
+		 * Sets the OpenSearch client.
+		 * @param openSearchClient The OpenSearch client to use
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if openSearchClient is null
+		 */
+		public OpenSearchBuilder openSearchClient(OpenSearchClient openSearchClient) {
+			Assert.notNull(openSearchClient, "OpenSearchClient must not be null");
+			this.openSearchClient = openSearchClient;
+			return this;
+		}
+
+		/**
+		 * Sets the embedding model.
+		 * @param embeddingModel The embedding model to use
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if embeddingModel is null
+		 */
+		public OpenSearchBuilder embeddingModel(EmbeddingModel embeddingModel) {
+			Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+			this.embeddingModel = embeddingModel;
+			return this;
+		}
+
+		/**
+		 * Sets the index name.
+		 * @param index The name of the index to use
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if index is null or empty
+		 */
+		public OpenSearchBuilder index(String index) {
+			Assert.hasText(index, "index must not be null or empty");
+			this.index = index;
+			return this;
+		}
+
+		/**
+		 * Sets the JSON mapping for the index.
+		 * @param mappingJson The JSON mapping to use
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if mappingJson is null or empty
+		 */
+		public OpenSearchBuilder mappingJson(String mappingJson) {
+			Assert.hasText(mappingJson, "mappingJson must not be null or empty");
+			this.mappingJson = mappingJson;
+			return this;
+		}
+
+		/**
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return The builder instance
+		 */
+		public OpenSearchBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the batching strategy.
+		 * @param batchingStrategy The batching strategy to use
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public OpenSearchBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		/**
+		 * Sets the filter expression converter.
+		 * @param converter The filter expression converter to use
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if converter is null
+		 */
+		public OpenSearchBuilder filterExpressionConverter(FilterExpressionConverter converter) {
+			Assert.notNull(converter, "filterExpressionConverter must not be null");
+			this.filterExpressionConverter = converter;
+			return this;
+		}
+
+		/**
+		 * Sets the similarity function for vector comparison. See
+		 * https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
+		 * for available functions.
+		 * @param similarityFunction The similarity function to use
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if similarityFunction is null or empty
+		 */
+		public OpenSearchBuilder similarityFunction(String similarityFunction) {
+			Assert.hasText(similarityFunction, "similarityFunction must not be null or empty");
+			this.similarityFunction = similarityFunction;
+			return this;
+		}
+
+		/**
+		 * Builds a new OpenSearchVectorStore instance with the configured properties.
+		 * @return A new OpenSearchVectorStore instance
+		 * @throws IllegalStateException if the builder is in an invalid state
+		 */
+		@Override
+		public OpenSearchVectorStore build() {
+			validate();
+			return new OpenSearchVectorStore(this);
+		}
+
 	}
 
 }
