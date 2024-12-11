@@ -1,4 +1,4 @@
-name: Source Code Format
+name: PR Check
 
 on:
   pull_request:
@@ -20,6 +20,6 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Source code formatting check
+      - name: Run tests
         run: |
-          ./mvnw spring-javaformat:validate
+          ./mvnw test
