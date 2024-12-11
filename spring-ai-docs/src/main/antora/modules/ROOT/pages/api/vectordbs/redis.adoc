@@ -65,16 +65,16 @@ public EmbeddingModel embeddingModel() {
 ----
 
 To connect to Redis you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's _application.properties_,
+A simple configuration can be provided via Spring Boot's _application.properties_.
 
 [source,properties]
 ----
-spring.ai.vectorstore.redis.uri=<your redis instance uri>
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+spring.data.redis.username=default
+spring.data.redis.password=
 spring.ai.vectorstore.redis.index=<your index name>
 spring.ai.vectorstore.redis.prefix=<your prefix>
-
-# API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
 ----
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
@@ -107,7 +107,6 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property| Description | Default value
 
-|`spring.ai.vectorstore.redis.uri`| Server connection URI | `redis://localhost:6379`
 |`spring.ai.vectorstore.redis.index`| Index name  | `default-index`
 |`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema  | `false`
 |`spring.ai.vectorstore.redis.prefix`| Prefix | `default:`
