@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.opensearch;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -47,6 +47,8 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -205,12 +207,18 @@ public class OpenSearchVectorStoreObservationIT {
 		public OpenSearchVectorStore vectorStore(EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 			try {
-				return new OpenSearchVectorStore(OpenSearchVectorStore.DEFAULT_INDEX_NAME,
-						new OpenSearchClient(ApacheHttpClient5TransportBuilder
-							.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-							.build()),
-						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION, true,
-						observationRegistry, null, new TokenCountBatchingStrategy());
+				return OpenSearchVectorStore.builder()
+					.index(OpenSearchVectorStore.DEFAULT_INDEX_NAME)
+					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
+						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+						.build()))
+					.embeddingModel(embeddingModel)
+					.mappingJson(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION)
+					.initializeSchema(true)
+					.observationRegistry(observationRegistry)
+					.customObservationConvention(null)
+					.batchingStrategy(new TokenCountBatchingStrategy())
+					.build();
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);

@@ -36,7 +36,7 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.OpenSearchVectorStore;
+import org.springframework.ai.vectorstore.opensearch.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

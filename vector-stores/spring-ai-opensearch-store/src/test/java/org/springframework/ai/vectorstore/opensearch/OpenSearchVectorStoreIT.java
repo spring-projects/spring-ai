@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.opensearch;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -47,6 +47,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -396,9 +398,13 @@ class OpenSearchVectorStoreIT {
 		@Qualifier("vectorStore")
 		public OpenSearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			try {
-				return new OpenSearchVectorStore(new OpenSearchClient(ApacheHttpClient5TransportBuilder
-					.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-					.build()), embeddingModel, true);
+				return OpenSearchVectorStore.builder()
+					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
+						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+						.build()))
+					.embeddingModel(embeddingModel)
+					.initializeSchema(true)
+					.build();
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);
@@ -409,12 +415,15 @@ class OpenSearchVectorStoreIT {
 		@Qualifier("anotherVectorStore")
 		public OpenSearchVectorStore anotherVectorStore(EmbeddingModel embeddingModel) {
 			try {
-				return new OpenSearchVectorStore("another_index",
-						new OpenSearchClient(ApacheHttpClient5TransportBuilder
-							.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-							.build()),
-						embeddingModel, OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION,
-						true);
+				return OpenSearchVectorStore.builder()
+					.index("another_index")
+					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
+						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+						.build()))
+					.embeddingModel(embeddingModel)
+					.mappingJson(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION)
+					.initializeSchema(true)
+					.build();
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);
