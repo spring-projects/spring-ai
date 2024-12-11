@@ -111,7 +111,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			EmbeddingModel embeddingModel, boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder(restClient).options(options)
+		this(builder().restClient(restClient)
+			.options(options)
 			.embeddingModel(embeddingModel)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
@@ -119,8 +120,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			.batchingStrategy(batchingStrategy));
 	}
 
-	private ElasticsearchVectorStore(ElasticsearchBuilder builder) {
+	protected ElasticsearchVectorStore(ElasticsearchBuilder builder) {
 		super(builder);
+
+		Assert.notNull(builder.restClient, "RestClient must not be null");
+
 		this.initializeSchema = builder.initializeSchema;
 		this.options = builder.options;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
@@ -307,16 +311,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	/**
 	 * Creates a new builder instance for ElasticsearchVectorStore.
-	 * @param restClient the Elasticsearch REST client
 	 * @return a new ElasticsearchBuilder instance
 	 */
-	public static ElasticsearchBuilder builder(RestClient restClient) {
-		return new ElasticsearchBuilder(restClient);
+	public static ElasticsearchBuilder builder() {
+		return new ElasticsearchBuilder();
 	}
 
 	public static class ElasticsearchBuilder extends AbstractVectorStoreBuilder<ElasticsearchBuilder> {
 
-		private final RestClient restClient;
+		private RestClient restClient;
 
 		private ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 
@@ -327,13 +330,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		private FilterExpressionConverter filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
 
 		/**
-		 * Creates a new builder instance with the specified REST client.
 		 * @param restClient the Elasticsearch REST client
 		 * @throws IllegalArgumentException if restClient is null
 		 */
-		public ElasticsearchBuilder(RestClient restClient) {
+		public ElasticsearchBuilder restClient(RestClient restClient) {
 			Assert.notNull(restClient, "RestClient must not be null");
 			this.restClient = restClient;
+			return this;
 		}
 
 		/**

@@ -208,7 +208,8 @@ public class ElasticsearchVectorStoreObservationIT {
 		@Bean
 		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, RestClient restClient,
 				ObservationRegistry observationRegistry) {
-			return ElasticsearchVectorStore.builder(restClient)
+			return ElasticsearchVectorStore.builder()
+				.restClient(restClient)
 				.embeddingModel(embeddingModel)
 				.initializeSchema(true)
 				.options(new ElasticsearchVectorStoreOptions())
