@@ -163,7 +163,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present. Use the {@link ToolChoiceBuilder} to create a tool choice object.
 	 */
-	private @JsonProperty("tool_choice") String toolChoice;
+	private @JsonProperty("tool_choice") Object toolChoice;
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
@@ -418,11 +418,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 		this.tools = tools;
 	}
 
-	public String getToolChoice() {
+	public Object getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(String toolChoice) {
+	public void setToolChoice(Object toolChoice) {
 		this.toolChoice = toolChoice;
 	}
 
@@ -650,7 +650,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		public Builder withToolChoice(String toolChoice) {
+		public Builder withToolChoice(Object toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
