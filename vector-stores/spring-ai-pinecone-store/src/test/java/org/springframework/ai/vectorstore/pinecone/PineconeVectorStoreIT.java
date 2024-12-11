@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.pinecone;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +34,9 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.PineconeVectorStore.PineconeVectorStoreConfig;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore.PineconeVectorStoreConfig;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -271,21 +273,16 @@ public class PineconeVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public PineconeVectorStoreConfig pineconeVectorStoreConfig() {
-
-			return PineconeVectorStoreConfig.builder()
-				.withApiKey(System.getenv("PINECONE_API_KEY"))
-				.withEnvironment(PINECONE_ENVIRONMENT)
-				.withProjectId(PINECONE_PROJECT_ID)
-				.withIndexName(PINECONE_INDEX_NAME)
-				.withNamespace(PINECONE_NAMESPACE)
-				.withContentFieldName(CUSTOM_CONTENT_FIELD_NAME)
-				.build();
-		}
-
-		@Bean
-		public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel) {
-			return new PineconeVectorStore(config, embeddingModel);
+		public VectorStore vectorStore(EmbeddingModel embeddingModel) {
+			return PineconeVectorStore.builder()
+					.embeddingModel(embeddingModel)
+					.apiKey(System.getenv("PINECONE_API_KEY"))
+					.environment(PINECONE_ENVIRONMENT)
+					.projectId(PINECONE_PROJECT_ID)
+					.indexName(PINECONE_INDEX_NAME)
+					.namespace(PINECONE_NAMESPACE)
+					.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)
+					.build();
 		}
 
 		@Bean
