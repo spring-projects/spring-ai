@@ -230,7 +230,8 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 		@Bean
 		VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
-			return MilvusVectorStore.builder(milvusClient)
+			return MilvusVectorStore.builder()
+				.milvusClient(milvusClient)
 				.embeddingModel(embeddingModel)
 				.collectionName("test_vector_store_custom_fields")
 				.databaseName("default")

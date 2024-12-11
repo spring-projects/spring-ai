@@ -269,7 +269,8 @@ public class MilvusVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
-			return MilvusVectorStore.builder(milvusClient)
+			return MilvusVectorStore.builder()
+				.milvusClient(milvusClient)
 				.embeddingModel(embeddingModel)
 				.collectionName("test_vector_store")
 				.databaseName("default")

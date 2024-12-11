@@ -165,7 +165,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			MilvusVectorStoreConfig config, boolean initializeSchema, BatchingStrategy batchingStrategy,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
 
-		this(builder(milvusClient).embeddingModel(embeddingModel)
+		this(builder().milvusClient(milvusClient)
+			.embeddingModel(embeddingModel)
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
 			.initializeSchema(initializeSchema)
@@ -175,8 +176,11 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	/**
 	 * @param builder {@link Builder} for chroma vector store
 	 */
-	private MilvusVectorStore(MilvusBuilder builder) {
+	protected MilvusVectorStore(MilvusBuilder builder) {
 		super(builder);
+
+		Assert.notNull(builder.milvusClient, "milvusClient must not be null");
+
 		this.milvusClient = builder.milvusClient;
 		this.batchingStrategy = builder.batchingStrategy;
 		this.initializeSchema = builder.initializeSchema;
@@ -197,11 +201,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	/**
 	 * Creates a new MilvusBuilder instance with the specified Milvus client. This is the
 	 * recommended way to instantiate a MilvusBuilder.
-	 * @param milvusClient the Milvus service client to use for database operations
 	 * @return a new MilvusBuilder instance
 	 */
-	public static MilvusBuilder builder(MilvusServiceClient milvusClient) {
-		return new MilvusBuilder(milvusClient);
+	public static MilvusBuilder builder() {
+		return new MilvusBuilder();
 	}
 
 	@Override
@@ -535,18 +538,18 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeSchema = false;
 
-		private final MilvusServiceClient milvusClient;
+		private MilvusServiceClient milvusClient;
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		/**
-		 * Creates a new MilvusBuilder instance with the specified Milvus client.
 		 * @param milvusClient the Milvus service client to use for database operations
 		 * @throws IllegalArgumentException if milvusClient is null
 		 */
-		public MilvusBuilder(MilvusServiceClient milvusClient) {
+		public MilvusBuilder milvusClient(MilvusServiceClient milvusClient) {
 			Assert.notNull(milvusClient, "milvusClient must not be null");
 			this.milvusClient = milvusClient;
+			return this;
 		}
 
 		/**

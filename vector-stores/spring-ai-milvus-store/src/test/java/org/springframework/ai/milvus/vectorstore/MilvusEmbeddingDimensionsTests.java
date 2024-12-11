@@ -53,7 +53,8 @@ public class MilvusEmbeddingDimensionsTests {
 
 		final int explicitDimensions = 696;
 
-		MilvusVectorStore build = MilvusVectorStore.builder(this.milvusClient)
+		MilvusVectorStore build = MilvusVectorStore.builder()
+			.milvusClient(this.milvusClient)
 			.embeddingModel(this.embeddingModel)
 			.initializeSchema(true)
 			.batchingStrategy(new TokenCountBatchingStrategy())
@@ -69,7 +70,8 @@ public class MilvusEmbeddingDimensionsTests {
 	public void embeddingModelDimensions() {
 		given(this.embeddingModel.dimensions()).willReturn(969);
 
-		MilvusVectorStore build = MilvusVectorStore.builder(this.milvusClient)
+		MilvusVectorStore build = MilvusVectorStore.builder()
+			.milvusClient(this.milvusClient)
 			.embeddingModel(this.embeddingModel)
 			.initializeSchema(true)
 			.batchingStrategy(new TokenCountBatchingStrategy())
@@ -86,7 +88,8 @@ public class MilvusEmbeddingDimensionsTests {
 
 		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException());
 
-		MilvusVectorStore build = MilvusVectorStore.builder(this.milvusClient)
+		MilvusVectorStore build = MilvusVectorStore.builder()
+			.milvusClient(this.milvusClient)
 			.embeddingModel(this.embeddingModel)
 			.initializeSchema(true)
 			.batchingStrategy(new TokenCountBatchingStrategy())
@@ -101,7 +104,8 @@ public class MilvusEmbeddingDimensionsTests {
 	@ValueSource(ints = { 0, 32769 })
 	public void invalidDimensionsThrowException(final int explicitDimensions) {
 		// when
-		ThrowableAssert.ThrowingCallable actual = () -> MilvusVectorStore.builder(this.milvusClient)
+		ThrowableAssert.ThrowingCallable actual = () -> MilvusVectorStore.builder()
+			.milvusClient(this.milvusClient)
 			.embeddingDimension(explicitDimensions)
 			.build();
 
