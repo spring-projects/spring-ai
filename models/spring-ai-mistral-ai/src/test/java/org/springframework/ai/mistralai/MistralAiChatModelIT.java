@@ -205,6 +205,9 @@ class MistralAiChatModelIT {
 		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(800);
 	}
 
 	@Test
@@ -236,6 +239,32 @@ class MistralAiChatModelIT {
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("10.0", "10");
+	}
+
+	@Test
+	void streamFunctionCallUsageTest() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = MistralAiChatOptions.builder()
+			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
+		ChatResponse chatResponse = response.last().block();
+
+		logger.info("Response: {}", chatResponse);
+		assertThat(chatResponse.getMetadata()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(800);
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

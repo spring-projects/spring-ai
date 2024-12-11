@@ -209,7 +209,8 @@ public class MistralAiApi {
 				return !isInsideTool.get();
 			})
 			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> mono1 = window.reduce(new ChatCompletionChunk(null, null, null, null, null),
+				Mono<ChatCompletionChunk> mono1 = window.reduce(
+						new ChatCompletionChunk(null, null, null, null, null, null),
 						(previous, current) -> this.chunkMerger.merge(previous, current));
 				return List.of(mono1);
 			})
@@ -934,6 +935,7 @@ public class MistralAiApi {
 	 * @param model The model used for the chat completion.
 	 * @param choices A list of chat completion choices. Can be more than one if n is
 	 * greater than 1.
+	 * @param usage usage metrics for the chat completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
@@ -942,7 +944,8 @@ public class MistralAiApi {
 		@JsonProperty("object") String object,
 		@JsonProperty("created") Long created,
 		@JsonProperty("model") String model,
-		@JsonProperty("choices") List<ChunkChoice> choices) {
+		@JsonProperty("choices") List<ChunkChoice> choices,
+		@JsonProperty("usage") Usage usage) {
 		 // @formatter:on
 
 		/**
