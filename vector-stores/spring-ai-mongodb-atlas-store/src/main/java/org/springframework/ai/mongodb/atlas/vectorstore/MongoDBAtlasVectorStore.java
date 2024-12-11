@@ -115,7 +115,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			MongoDBVectorStoreConfig config, boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder(mongoTemplate).embeddingModel(embeddingModel)
+		this(builder().mongoTemplate(mongoTemplate)
+			.embeddingModel(embeddingModel)
 			.collectionName(config.collectionName)
 			.vectorIndexName(config.vectorIndexName)
 			.pathName(config.pathName)
@@ -127,8 +128,11 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			.batchingStrategy(batchingStrategy));
 	}
 
-	private MongoDBAtlasVectorStore(MongoDBBuilder builder) {
+	protected MongoDBAtlasVectorStore(MongoDBBuilder builder) {
 		super(builder);
+
+		Assert.notNull(builder.mongoTemplate, "MongoTemplate must not be null");
+
 		this.mongoTemplate = builder.mongoTemplate;
 		this.collectionName = builder.collectionName;
 		this.vectorIndexName = builder.vectorIndexName;
@@ -276,16 +280,15 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	/**
 	 * Creates a new builder instance for MongoDBAtlasVectorStore.
-	 * @param mongoTemplate the MongoDB template
 	 * @return a new MongoDBBuilder instance
 	 */
-	public static MongoDBBuilder builder(MongoTemplate mongoTemplate) {
-		return new MongoDBBuilder(mongoTemplate);
+	public static MongoDBBuilder builder() {
+		return new MongoDBBuilder();
 	}
 
 	public static class MongoDBBuilder extends AbstractVectorStoreBuilder<MongoDBBuilder> {
 
-		private final MongoTemplate mongoTemplate;
+		private MongoTemplate mongoTemplate;
 
 		private String collectionName = DEFAULT_VECTOR_COLLECTION_NAME;
 
@@ -304,13 +307,12 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		private MongoDBAtlasFilterExpressionConverter filterExpressionConverter = new MongoDBAtlasFilterExpressionConverter();
 
 		/**
-		 * Creates a new builder instance with the specified MongoDB template.
-		 * @param mongoTemplate the MongoDB template
 		 * @throws IllegalArgumentException if mongoTemplate is null
 		 */
-		public MongoDBBuilder(MongoTemplate mongoTemplate) {
+		public MongoDBBuilder mongoTemplate(MongoTemplate mongoTemplate) {
 			Assert.notNull(mongoTemplate, "MongoTemplate must not be null");
 			this.mongoTemplate = mongoTemplate;
+			return this;
 		}
 
 		/**

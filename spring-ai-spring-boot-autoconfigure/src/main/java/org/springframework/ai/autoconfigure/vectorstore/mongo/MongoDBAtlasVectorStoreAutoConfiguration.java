@@ -66,7 +66,8 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		MongoDBAtlasVectorStore.MongoDBBuilder builder = MongoDBAtlasVectorStore.builder(mongoTemplate)
+		MongoDBAtlasVectorStore.MongoDBBuilder builder = MongoDBAtlasVectorStore.builder()
+			.mongoTemplate(mongoTemplate)
 			.embeddingModel(embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
