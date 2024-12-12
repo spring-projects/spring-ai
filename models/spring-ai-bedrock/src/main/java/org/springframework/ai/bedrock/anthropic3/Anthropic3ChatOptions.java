@@ -74,7 +74,7 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	private @JsonProperty("anthropic_version") String anthropicVersion;
 	// @formatter:on
 
-	Anthropic3ChatOptions() {
+	public Anthropic3ChatOptions() {
 	}
 
 	/**
