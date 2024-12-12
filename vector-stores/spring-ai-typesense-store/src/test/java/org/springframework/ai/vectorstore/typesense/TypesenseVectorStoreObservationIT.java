@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.typesense;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +41,8 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -169,13 +170,16 @@ public class TypesenseVectorStoreObservationIT {
 		public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 
-			TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
-				.withCollectionName(TEST_COLLECTION_NAME)
-				.withEmbeddingDimension(embeddingModel.dimensions())
+			return TypesenseVectorStore.builder()
+				.client(client)
+				.embeddingModel(embeddingModel)
+				.collectionName(TEST_COLLECTION_NAME)
+				.embeddingDimension(embeddingModel.dimensions())
+				.initializeSchema(true)
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
 				.build();
-
-			return new TypesenseVectorStore(client, embeddingModel, config, true, observationRegistry, null,
-					new TokenCountBatchingStrategy());
 		}
 
 		@Bean

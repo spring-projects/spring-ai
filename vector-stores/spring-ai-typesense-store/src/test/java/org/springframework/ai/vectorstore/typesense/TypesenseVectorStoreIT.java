@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.typesense;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +37,8 @@ import org.typesense.resources.Node;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -241,12 +242,13 @@ public class TypesenseVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel) {
 
-			TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
-				.withCollectionName("test_vector_store")
-				.withEmbeddingDimension(embeddingModel.dimensions())
+			return TypesenseVectorStore.builder()
+				.client(client)
+				.embeddingModel(embeddingModel)
+				.collectionName("test_vector_store")
+				.embeddingDimension(embeddingModel.dimensions())
+				.initializeSchema(true)
 				.build();
-
-			return new TypesenseVectorStore(client, embeddingModel, config, true);
 		}
 
 		@Bean
