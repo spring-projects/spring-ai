@@ -41,7 +41,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.isA;
@@ -145,7 +144,7 @@ public class BedrockConverseUsageAggregationTests {
 			.build();
 
 		var result = this.chatModel.call(new Prompt("What is the weather in Paris?",
-				PortableFunctionCallingOptions.builder().withFunctionCallbacks(functionCallback).build()));
+				FunctionCallingOptions.builder().functionCallbacks(functionCallback).build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText())

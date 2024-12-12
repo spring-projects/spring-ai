@@ -28,7 +28,7 @@ import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoCo
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -109,7 +109,7 @@ class FunctionCallWithFunctionBeanIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						PortableFunctionCallingOptions.builder().withFunction("weatherFunction").build()));
+						FunctionCallingOptions.builder().function("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 

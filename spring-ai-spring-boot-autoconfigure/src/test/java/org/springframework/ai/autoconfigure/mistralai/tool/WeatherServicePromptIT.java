@@ -39,7 +39,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -98,8 +97,8 @@ public class WeatherServicePromptIT {
 
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 
-				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+					.functionCallbacks(List.of(FunctionCallback.builder()
 						.function("CurrentWeatherService", new MyWeatherService())
 						.description("Get the current weather in requested location")
 						.inputType(MyWeatherService.Request.class)
