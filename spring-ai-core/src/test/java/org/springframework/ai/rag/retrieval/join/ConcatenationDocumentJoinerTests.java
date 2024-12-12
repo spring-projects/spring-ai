@@ -89,8 +89,8 @@ class ConcatenationDocumentJoinerTests {
 
 		assertThat(result).hasSize(4);
 		assertThat(result).extracting(Document::getId).containsExactlyInAnyOrder("1", "2", "3", "4");
-		assertThat(result).extracting(Document::getContent).contains("Content 2");
-		assertThat(result).extracting(Document::getContent).doesNotContain("Content 2 Duplicate");
+		assertThat(result).extracting(Document::getText).contains("Content 2");
+		assertThat(result).extracting(Document::getText).doesNotContain("Content 2 Duplicate");
 	}
 
 }
