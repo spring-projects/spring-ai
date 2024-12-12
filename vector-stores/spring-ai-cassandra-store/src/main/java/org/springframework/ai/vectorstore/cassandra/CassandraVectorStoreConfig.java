@@ -413,6 +413,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		private Builder() {
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withCqlSession(CqlSession session) {
 			Preconditions.checkState(null == this.sessionBuilder,
 					"Cannot call withContactPoint(..) or withLocalDatacenter(..) and this method");
@@ -421,6 +422,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder addContactPoint(InetSocketAddress contactPoint) {
 			Preconditions.checkState(null == this.session, "Cannot call withCqlSession(..) and this method");
 			if (null == this.sessionBuilder) {
@@ -430,6 +432,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withLocalDatacenter(String localDC) {
 			Preconditions.checkState(null == this.session, "Cannot call withCqlSession(..) and this method");
 			if (null == this.sessionBuilder) {
@@ -439,22 +442,26 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withKeyspaceName(String keyspace) {
 			this.keyspace = keyspace;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withTableName(String table) {
 			this.table = table;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withPartitionKeys(List<SchemaColumn> partitionKeys) {
 			Preconditions.checkArgument(!partitionKeys.isEmpty());
 			this.partitionKeys = partitionKeys;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withClusteringKeys(List<SchemaColumn> clusteringKeys) {
 			this.clusteringKeys = clusteringKeys;
 			return this;
@@ -464,21 +471,25 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		 * defaults (if null) to '&lt;table_name&gt;_&lt;embedding_column_name&gt;_idx'
 		 **/
 		@Nullable
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withIndexName(String name) {
 			this.indexName = name;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withContentColumnName(String name) {
 			this.contentColumnName = name;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withEmbeddingColumnName(String name) {
 			this.embeddingColumnName = name;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder addMetadataColumns(SchemaColumn... columns) {
 			Builder builder = this;
 			for (SchemaColumn f : columns) {
@@ -487,12 +498,14 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return builder;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder addMetadataColumns(List<SchemaColumn> columns) {
 			Builder builder = this;
 			this.metadataColumns.addAll(columns);
 			return builder;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder addMetadataColumn(SchemaColumn column) {
 
 			Preconditions.checkArgument(this.metadataColumns.stream().noneMatch(sc -> sc.name().equals(column.name())),
@@ -502,11 +515,13 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder disallowSchemaChanges() {
 			this.disallowSchemaChanges = true;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder returnEmbeddings() {
 			this.returnEmbeddings = true;
 			return this;
@@ -518,22 +533,26 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		 * utilize network. For local transformers you probably want a lower value to
 		 * avoid saturation.
 		 **/
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withFixedThreadPoolExecutorSize(int threads) {
 			Preconditions.checkArgument(0 < threads);
 			this.fixedThreadPoolExecutorSize = threads;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withDocumentIdTranslator(DocumentIdTranslator documentIdTranslator) {
 			this.documentIdTranslator = documentIdTranslator;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public Builder withPrimaryKeyTranslator(PrimaryKeyTranslator primaryKeyTranslator) {
 			this.primaryKeyTranslator = primaryKeyTranslator;
 			return this;
 		}
 
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public CassandraVectorStoreConfig build() {
 			if (null == this.indexName) {
 				this.indexName = String.format("%s_%s_%s", this.table, this.embeddingColumnName, DEFAULT_INDEX_SUFFIX);
