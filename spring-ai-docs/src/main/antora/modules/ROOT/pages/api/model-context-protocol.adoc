@@ -58,7 +58,7 @@ TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section t
 
 The latter builds on top of mcp-core to provide some useful Spring AI abstractions, such as `McpFunctionCallback`. 
 
-Now create an `McpClient` to regester the MCP server tools with your ChatClient and let the LLM call them:
+Now create an `McpClient` to regester the MCP Brave server tools with your ChatClient and let the LLM call them:
 
 [source,java]
 ----
@@ -88,6 +88,7 @@ String response = chatClient
 
 == Example Demos
 
+There is a growing link:https://github.com/modelcontextprotocol/servers[list of MCP Servers] that you can use with Spring AI MCP.
 Explore these MCP examples in the link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol[spring-ai-examples/model-context-protocol] repository:
 
 - link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/sqlite/simple[SQLite Simple] - Demonstrates LLM integration with a database
