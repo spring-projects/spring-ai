@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -80,7 +81,12 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		logger.info("Response: {}", response);
 
+		assertThat(response.getResult()).isNotNull();
+		assertThat(response.getResult().getOutput()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(600).isLessThan(800);
 	}
 
 	@Test
@@ -139,6 +145,34 @@ class AzureOpenAiChatModelFunctionCallIT {
 		assertThat(counter.get()).isGreaterThan(30).as("The response should be chunked in more than 30 messages");
 
 		assertThat(content).contains("30", "10", "15");
+
+	}
+
+	@Test
+	void streamFunctionCallUsageTest() {
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		ChatCompletionStreamOptions streamOptions = new ChatCompletionStreamOptions();
+		streamOptions.setIncludeUsage(true);
+
+		var promptOptions = AzureOpenAiChatOptions.builder()
+			.withDeploymentName(this.selectedModel)
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.withStreamOptions(streamOptions)
+			.build();
+
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+
+		ChatResponse chatResponse = response.last().block();
+		logger.info("Response: {}", chatResponse);
+
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(600).isLessThan(800);
 
 	}
 
