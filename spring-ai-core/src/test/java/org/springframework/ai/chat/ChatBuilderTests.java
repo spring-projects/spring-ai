@@ -86,11 +86,11 @@ public class ChatBuilderTests {
 		functionCallbacks.add(cb);
 
 		FunctionCallingOptions options = FunctionCallingOptions.builder()
-			.withFunctionCallbacks(functionCallbacks)
-			.withFunctions(functions)
-			.withTopK(topK)
-			.withTopP(topP)
-			.withTemperature(temperature)
+			.functionCallbacks(functionCallbacks)
+			.functions(functions)
+			.topK(topK)
+			.topP(topP)
+			.temperature(temperature)
 			.build();
 
 		// Callback Functions

@@ -34,10 +34,12 @@ import org.springframework.util.StringUtils;
  * permits options portability between different AI providers that support
  * function-calling.
  *
+ * @deprecated Use {@link FunctionCallingOptions.Builder} instead.
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 0.8.1
  */
+@Deprecated(forRemoval = true, since = "1.0.0-M5")
 public class FunctionCallingOptionsBuilder {
 
 	private final PortableFunctionCallingOptions options;
@@ -136,6 +138,10 @@ public class FunctionCallingOptionsBuilder {
 		return this.options;
 	}
 
+	/**
+	 * @deprecated use {@link DefaultFunctionCallingOptions} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static class PortableFunctionCallingOptions implements FunctionCallingOptions {
 
 		private List<FunctionCallback> functionCallbacks = new ArrayList<>();

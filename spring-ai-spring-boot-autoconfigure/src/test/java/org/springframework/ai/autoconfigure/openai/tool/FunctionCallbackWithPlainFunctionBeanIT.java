@@ -41,7 +41,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
@@ -156,8 +155,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"Please schedule a train from San Francisco to Los Angeles on 2023-12-25");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.withFunction("trainReservation")
+			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.function("trainReservation")
 				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
@@ -267,8 +266,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.withFunction("weatherFunction")
+			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.function("weatherFunction")
 				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));

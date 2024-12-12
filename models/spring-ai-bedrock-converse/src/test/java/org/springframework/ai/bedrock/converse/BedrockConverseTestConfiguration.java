@@ -42,7 +42,7 @@ public class BedrockConverseTestConfiguration {
 			.withRegion(Region.US_EAST_1)
 			.withTimeout(Duration.ofSeconds(120))
 			// .withRegion(Region.US_EAST_1)
-			.withDefaultOptions(FunctionCallingOptions.builder().withModel(modelId).build())
+			.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
 			.build();
 	}
 

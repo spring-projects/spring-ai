@@ -50,7 +50,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -259,9 +259,7 @@ class AnthropicChatModelIT {
 				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage),
-				PortableFunctionCallingOptions.builder()
-					.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
-					.build()));
+				FunctionCallingOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName()).build()));
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}

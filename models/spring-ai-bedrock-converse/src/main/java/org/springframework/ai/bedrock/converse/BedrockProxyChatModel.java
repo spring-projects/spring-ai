@@ -96,11 +96,10 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.DefaultFunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -322,12 +321,12 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof FunctionCallingOptions) {
 				var functionCallingOptions = (FunctionCallingOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions)
+				updatedRuntimeOptions = ((DefaultFunctionCallingOptions) updatedRuntimeOptions)
 					.merge(functionCallingOptions);
 			}
 			else if (prompt.getOptions() instanceof ChatOptions) {
 				var chatOptions = (ChatOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions).merge(chatOptions);
+				updatedRuntimeOptions = ((DefaultFunctionCallingOptions) updatedRuntimeOptions).merge(chatOptions);
 			}
 		}
 
@@ -697,7 +696,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 		private Duration timeout = Duration.ofMinutes(10);
 
-		private FunctionCallingOptions defaultOptions = new FunctionCallingOptionsBuilder().build();
+		private FunctionCallingOptions defaultOptions = new DefaultFunctionCallingOptions();
 
 		private FunctionCallbackResolver functionCallbackResolver;
 

@@ -27,15 +27,16 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * calling behavior of the ChatModel.
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 public interface FunctionCallingOptions extends ChatOptions {
 
 	/**
-	 * @return Returns FunctionCallingOptionsBuilder to create a new instance of
-	 * FunctionCallingOptions.
+	 * @return Returns {@link DefaultFunctionCallingOptionsBuilder} to create a new
+	 * instance of {@link FunctionCallingOptions}.
 	 */
-	static FunctionCallingOptionsBuilder builder() {
-		return new FunctionCallingOptionsBuilder();
+	static FunctionCallingOptions.Builder<? extends FunctionCallingOptions.Builder> builder() {
+		return new DefaultFunctionCallingOptionsBuilder();
 	}
 
 	/**
@@ -82,5 +83,68 @@ public interface FunctionCallingOptions extends ChatOptions {
 	Map<String, Object> getToolContext();
 
 	void setToolContext(Map<String, Object> tooContext);
+
+	/**
+	 * Builder for creating {@link FunctionCallingOptions} instance.
+	 */
+	interface Builder<T extends Builder<T>> extends ChatOptions.Builder<T> {
+
+		/**
+		 * The list of Function Callbacks to be registered with the Chat model.
+		 * @param functionCallbacks the list of Function Callbacks.
+		 * @return the FunctionCallOptions Builder.
+		 */
+		T functionCallbacks(List<FunctionCallback> functionCallbacks);
+
+		/**
+		 * The Function Callbacks to be registered with the Chat model.
+		 * @param functionCallbacks the function callbacks.
+		 * @return the FunctionCallOptions Builder.
+		 */
+		T functionCallbacks(FunctionCallback... functionCallbacks);
+
+		/**
+		 * {@link Set} of function names to be registered with the Chat model.
+		 * @param functions the {@link Set} of function names
+		 * @return the FunctionCallOptions Builder.
+		 */
+		T functions(Set<String> functions);
+
+		/**
+		 * The function name to be registered with the chat model.
+		 * @param function the name of the function.
+		 * @return the FunctionCallOptions Builder.
+		 */
+		T function(String function);
+
+		/**
+		 * Boolean flag to indicate if the proxy ToolCalls is enabled.
+		 * @param proxyToolCalls boolean value to enable proxy ToolCalls.
+		 * @return the FunctionCallOptions Builder.
+		 */
+		T proxyToolCalls(Boolean proxyToolCalls);
+
+		/**
+		 * Add a {@link Map} of context values into tool context.
+		 * @param context the map representing the tool context.
+		 * @return the FunctionCallOptions Builder.
+		 */
+		T toolContext(Map<String, Object> context);
+
+		/**
+		 * Add a specific key/value pair to the tool context.
+		 * @param key the key to use.
+		 * @param value the corresponding value.
+		 * @return the FunctionCallOptions Builder.
+		 */
+		T toolContext(String key, Object value);
+
+		/**
+		 * Builds the {@link FunctionCallingOptions}.
+		 * @return the FunctionCalling options.
+		 */
+		FunctionCallingOptions build();
+
+	}
 
 }

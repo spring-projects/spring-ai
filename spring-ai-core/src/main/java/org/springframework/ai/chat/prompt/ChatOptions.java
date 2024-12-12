@@ -94,70 +94,70 @@ public interface ChatOptions extends ModelOptions {
 	 * {@link ChatOptions}.
 	 * @return Returns a new {@link ChatOptions.Builder}.
 	 */
-	static ChatOptions.Builder builder() {
+	static ChatOptions.Builder<? extends DefaultChatOptionsBuilder> builder() {
 		return new DefaultChatOptionsBuilder();
 	}
 
 	/**
 	 * Builder for creating {@link ChatOptions} instance.
 	 */
-	interface Builder {
+	interface Builder<B extends Builder<B>> {
 
 		/**
 		 * Builds with the model to use for the chat.
 		 * @param model
 		 * @return the builder
 		 */
-		Builder model(String model);
+		B model(String model);
 
 		/**
 		 * Builds with the frequency penalty to use for the chat.
 		 * @param frequencyPenalty
 		 * @return the builder.
 		 */
-		Builder frequencyPenalty(Double frequencyPenalty);
+		B frequencyPenalty(Double frequencyPenalty);
 
 		/**
 		 * Builds with the maximum number of tokens to use for the chat.
 		 * @param maxTokens
 		 * @return the builder.
 		 */
-		Builder maxTokens(Integer maxTokens);
+		B maxTokens(Integer maxTokens);
 
 		/**
 		 * Builds with the presence penalty to use for the chat.
 		 * @param presencePenalty
 		 * @return the builder.
 		 */
-		Builder presencePenalty(Double presencePenalty);
+		B presencePenalty(Double presencePenalty);
 
 		/**
 		 * Builds with the stop sequences to use for the chat.
 		 * @param stopSequences
 		 * @return the builder.
 		 */
-		Builder stopSequences(List<String> stopSequences);
+		B stopSequences(List<String> stopSequences);
 
 		/**
 		 * Builds with the temperature to use for the chat.
 		 * @param temperature
 		 * @return the builder.
 		 */
-		Builder temperature(Double temperature);
+		B temperature(Double temperature);
 
 		/**
 		 * Builds with the top K to use for the chat.
 		 * @param topK
 		 * @return the builder.
 		 */
-		Builder topK(Integer topK);
+		B topK(Integer topK);
 
 		/**
 		 * Builds with the top P to use for the chat.
 		 * @param topP
 		 * @return the builder.
 		 */
-		Builder topP(Double topP);
+		B topP(Double topP);
 
 		/**
 		 * Build the {@link ChatOptions}.
