@@ -104,6 +104,7 @@
 * xref:api/multimodality.adoc[Multimodality]
 * xref:api/etl-pipeline.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
+* xref:api/model-context-protocol.adoc[Model Context Protocol]
 
 * Service Connections
 ** xref:api/docker-compose.adoc[Docker Compose]

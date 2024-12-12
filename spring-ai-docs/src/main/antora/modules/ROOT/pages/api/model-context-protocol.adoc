@@ -1,0 +1,98 @@
+[[MCP]]
+= Model Context Protocol (MCP)
+
+The link:https://modelcontextprotocol.io/introduction[Model Context Protocol (MCP)] is an open protocol that standardizes how applications provide context to Large Language Models (LLMs). 
+MCP provides an unified way to connect AI models to different data sources and tools, making integration seamless and consistent. 
+It helps you build agents and complex workflows on top of LLMs. LLMs frequently need to integrate with data and tools, and MCP provides:
+- A growing list of pre-built integrations that your LLM can directly plug into
+- The flexibility to switch between LLM providers and vendors
+
+== Spring AI MCP
+
+NOTE: Spring AI MCP is an experimental project and subject to change.
+
+link:https://github.com/spring-projects-experimental/spring-ai-mcp[Spring AI MCP] is an experimental project that provides Java and Spring Framework integration for the Model Context Protocol. 
+It enables Spring AI applications to interact with different data sources and tools,  through a standardized interface, supporting both synchronous and asynchronous communication patterns.
+
+image::https://github.com/spring-projects-experimental/spring-ai-mcp/blob/main/spring-ai-mcp-architecture.jpg?raw=true[SpringAIMCP, 800]
+
+The Spring AI MCP implements a modular architecture with the following components:
+
+- Spring AI Application: Uses Spring AI framework to build Generative AI applications that want to access data through MCP
+- Spring MCP Clients: Spring AI implementation of the MCP protocol that maintain 1:1 connections with servers
+- MCP Servers: Lightweight programs that each expose specific capabilities through the standardized Model Context Protocol
+- Local Data Sources: Your computer's files, databases, and services that MCP servers can securely access
+- Remote Services: External systems available over the internet (e.g., through APIs) that MCP servers can connect to
+
+The architecture supports a wide range of use cases, from simple file system access to complex multi-model AI interactions with database and internet connectivity.
+
+== Getting Started
+
+Add the SDK to your Maven project:
+
+
+[tabs]
+======
+Maven::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<dependency>
+    <groupId>org.springframework.experimental</groupId>
+    <artifactId>spring-ai-mcp-spring</artifactId>
+    <version>0.1.0</version>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy,indent=0,subs="verbatim,quotes"]
+----
+dependencies {
+    implementation 'org.springframework.experimental:spring-ai-mcp-spring:0.1.0'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add the Spring Milestone Repository to your build file.
+
+The latter builds on top of mcp-core to provide some useful Spring AI abstractions, such as `McpFunctionCallback`. 
+
+Now create an `McpClient` to regester the MCP server tools with your ChatClient and let the LLM call them:
+
+[source,java]
+----
+// https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search
+var stdioParams = ServerParameters.builder("npx")
+        .args("-y", "@modelcontextprotocol/server-brave-search")
+        .addEnvVar("BRAVE_API_KEY", System.getenv("BRAVE_API_KEY"))
+        .build();
+
+var mcpClient = McpClient.sync(new StdioServerTransport(stdioParams));
+
+var init = mcpClient.initialize();
+
+var chatClient = chatClientBuilder
+        .defaultFunctions(mcpClient.listTools(null)
+                .tools()
+                .stream()
+                .map(tool -> new McpFunctionCallback(mcpClient, tool))
+                .toArray(McpFunctionCallback[]::new))
+        .build();
+
+String response = chatClient
+        .prompt("Does Spring AI supports the Model Context Protocol? Please provide some references.")
+        .call().content();
+----
+
+
+== Example Demos
+
+Explore these MCP examples in the link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol[spring-ai-examples/model-context-protocol] repository:
+
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/sqlite/simple[SQLite Simple] - Demonstrates LLM integration with a database
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/sqlite/chatbot[SQLite Chatbot] - Interactive chatbot with SQLite database interaction
+- https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/filesystem[Filesystem] - Enables LLM interaction with local filesystem folders and files
+- https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/brave[Brave] - Enables natural language interactions with Brave Search, allowing you to perform internet searches.
+
+
