@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.weaviate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,8 +52,8 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -63,18 +63,36 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * A VectorStore implementation backed by Weaviate vector database.
+ * A vector store implementation that stores and retrieves vectors in a Weaviate database.
  *
  * Note: You can assign arbitrary metadata fields with your Documents. Later will be
  * persisted and managed as Document fields. But only the metadata keys listed in
  * {@link WeaviateVectorStore#filterMetadataFields} can be used for similarity search
  * expression filters.
  *
+ * <p>
+ * Example usage with builder:
+ * </p>
+ * <pre>{@code
+ * // Create the vector store with builder
+ * WeaviateVectorStore vectorStore = WeaviateVectorStore.builder()
+ *     .weaviateClient(weaviateClient)            // Required: Configure Weaviate client
+ *     .embeddingModel(embeddingModel)            // Required: Configure embedding model
+ *     .objectClass("CustomClass")                // Optional: Custom class name (default: SpringAiWeaviate)
+ *     .consistencyLevel(ConsistentLevel.QUORUM)  // Optional: Set consistency level (default: ONE)
+ *     .filterMetadataFields(List.of(             // Optional: Configure filterable metadata fields
+ *         MetadataField.text("country"),
+ *         MetadataField.number("year")
+ *     ))
+ *     .build();
+ * }</pre>
+ *
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Josh Long
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @since 1.0.0
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
@@ -91,8 +109,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private static final String ADDITIONAL_CERTAINTY_FIELD_NAME = "certainty";
 
 	private static final String ADDITIONAL_VECTOR_FIELD_NAME = "vector";
-
-	private final EmbeddingModel embeddingModel;
 
 	private final WeaviateClient weaviateClient;
 
@@ -131,11 +147,16 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-	 * Constructs a new WeaviateVectorStore.
-	 * @param vectorStoreConfig The configuration for the store.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param weaviateClient The client for Weaviate operations.
+	 * Constructs a new WeaviateVectorStore with default settings.
+	 * @param vectorStoreConfig The configuration for the store
+	 * @param embeddingModel The client for embedding operations
+	 * @param weaviateClient The client for Weaviate operations
+	 * @deprecated Use {@link #builder()} instead to create instances of
+	 * WeaviateVectorStore. This constructor will be removed in a future release.
+	 * @see #builder()
+	 * @since 1.0.0
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
 			WeaviateClient weaviateClient) {
 		this(vectorStoreConfig, embeddingModel, weaviateClient, ObservationRegistry.NOOP, null,
@@ -143,31 +164,61 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	}
 
 	/**
-	 * Constructs a new WeaviateVectorStore.
-	 * @param vectorStoreConfig The configuration for the store.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param weaviateClient The client for Weaviate operations.
-	 * @param observationRegistry The registry for observations.
-	 * @param customObservationConvention The custom observation convention.
+	 * Constructs a new WeaviateVectorStore with custom settings.
+	 * @param vectorStoreConfig The configuration for the store
+	 * @param embeddingModel The client for embedding operations
+	 * @param weaviateClient The client for Weaviate operations
+	 * @param observationRegistry The registry for observations
+	 * @param customObservationConvention The custom observation convention
+	 * @param batchingStrategy The strategy for batching operations
+	 * @deprecated Use {@link #builder()} instead to create instances of
+	 * WeaviateVectorStore. This constructor will be removed in a future release.
+	 * @see #builder()
+	 * @since 1.0.0
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
 			WeaviateClient weaviateClient, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder().embeddingModel(embeddingModel)
+			.weaviateClient(weaviateClient)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Assert.notNull(vectorStoreConfig, "WeaviateVectorStoreConfig must not be null");
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+	/**
+	 * Protected constructor for creating a WeaviateVectorStore instance using the builder
+	 * pattern. This constructor initializes the vector store with the configured settings
+	 * from the builder and performs necessary validations.
+	 * @param builder the {@link WeaviateBuilder} containing all configuration settings
+	 * @throws IllegalArgumentException if the weaviateClient is null
+	 * @see WeaviateBuilder
+	 * @since 1.0.0
+	 */
+	protected WeaviateVectorStore(WeaviateBuilder builder) {
+		super(builder);
 
-		this.embeddingModel = embeddingModel;
-		this.consistencyLevel = vectorStoreConfig.consistencyLevel;
-		this.weaviateObjectClass = vectorStoreConfig.weaviateObjectClass;
-		this.filterMetadataFields = vectorStoreConfig.filterMetadataFields;
+		Assert.notNull(builder.weaviateClient, "WeaviateClient must not be null");
+
+		this.weaviateClient = builder.weaviateClient;
+		this.consistencyLevel = builder.consistencyLevel;
+		this.weaviateObjectClass = builder.weaviateObjectClass;
+		this.filterMetadataFields = builder.filterMetadataFields;
+		this.batchingStrategy = builder.batchingStrategy;
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
 				this.filterMetadataFields.stream().map(MetadataField::name).toList());
-		this.weaviateClient = weaviateClient;
 		this.weaviateSimilaritySearchFields = buildWeaviateSimilaritySearchFields();
-		this.batchingStrategy = batchingStrategy;
+	}
+
+	/**
+	 * Creates a new WeaviateBuilder instance. This is the recommended way to instantiate
+	 * a WeaviateVectorStore.
+	 * @return a new WeaviateBuilder instance
+	 */
+	public static WeaviateBuilder builder() {
+		return new WeaviateBuilder();
 	}
 
 	private Field[] buildWeaviateSimilaritySearchFields() {
@@ -402,8 +453,193 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	}
 
 	/**
-	 * Configuration class for the WeaviateVectorStore.
+	 * Defines the consistency levels for Weaviate operations.
+	 *
+	 * @see <a href=
+	 * "https://weaviate.io/developers/weaviate/concepts/replication-architecture/consistency#tunable-consistency-strategies">Weaviate
+	 * Consistency Strategies</a>
 	 */
+	public enum ConsistentLevel {
+
+		/**
+		 * Write must receive an acknowledgement from at least one replica node. This is
+		 * the fastest (most available), but least consistent option.
+		 */
+		ONE,
+
+		/**
+		 * Write must receive an acknowledgement from at least QUORUM replica nodes.
+		 * QUORUM is calculated as n / 2 + 1, where n is the number of replicas.
+		 */
+		QUORUM,
+
+		/**
+		 * Write must receive an acknowledgement from all replica nodes. This is the most
+		 * consistent, but 'slowest'.
+		 */
+		ALL
+
+	}
+
+	/**
+	 * Represents a metadata field configuration for Weaviate vector store.
+	 *
+	 * @param name the name of the metadata field
+	 * @param type the type of the metadata field
+	 */
+	public record MetadataField(String name, Type type) {
+
+		/**
+		 * Creates a metadata field of type TEXT.
+		 * @param name the name of the field
+		 * @return a new MetadataField instance of type TEXT
+		 * @throws IllegalArgumentException if name is null or empty
+		 */
+		public static MetadataField text(String name) {
+			Assert.hasText(name, "Text field must not be empty");
+			return new MetadataField(name, Type.TEXT);
+		}
+
+		/**
+		 * Creates a metadata field of type NUMBER.
+		 * @param name the name of the field
+		 * @return a new MetadataField instance of type NUMBER
+		 * @throws IllegalArgumentException if name is null or empty
+		 */
+		public static MetadataField number(String name) {
+			Assert.hasText(name, "Number field must not be empty");
+			return new MetadataField(name, Type.NUMBER);
+		}
+
+		/**
+		 * Creates a metadata field of type BOOLEAN.
+		 * @param name the name of the field
+		 * @return a new MetadataField instance of type BOOLEAN
+		 * @throws IllegalArgumentException if name is null or empty
+		 */
+		public static MetadataField bool(String name) {
+			Assert.hasText(name, "Boolean field name must not be empty");
+			return new MetadataField(name, Type.BOOLEAN);
+		}
+
+		/**
+		 * Defines the supported types for metadata fields.
+		 */
+		public enum Type {
+
+			TEXT, NUMBER, BOOLEAN
+
+		}
+	}
+
+	public static final class WeaviateBuilder extends AbstractVectorStoreBuilder<WeaviateBuilder> {
+
+		private String weaviateObjectClass = "SpringAiWeaviate";
+
+		private ConsistentLevel consistencyLevel = ConsistentLevel.ONE;
+
+		private List<MetadataField> filterMetadataFields = List.of();
+
+		private WeaviateClient weaviateClient;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		/**
+		 * Configures the Weaviate client.
+		 * @param weaviateClient the client for Weaviate operations
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if weaviateClient is null
+		 */
+		public WeaviateBuilder weaviateClient(WeaviateClient weaviateClient) {
+			Assert.notNull(weaviateClient, "weaviateClient must not be null");
+			this.weaviateClient = weaviateClient;
+			return this;
+		}
+
+		/**
+		 * Configures the Weaviate object class.
+		 * @param objectClass the object class to use
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if objectClass is null or empty
+		 */
+		public WeaviateBuilder objectClass(String objectClass) {
+			Assert.hasText(objectClass, "objectClass must not be empty");
+			this.weaviateObjectClass = objectClass;
+			return this;
+		}
+
+		/**
+		 * Configures the consistency level for Weaviate operations.
+		 * @param consistencyLevel the consistency level to use
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if consistencyLevel is null
+		 */
+		public WeaviateBuilder consistencyLevel(ConsistentLevel consistencyLevel) {
+			Assert.notNull(consistencyLevel, "consistencyLevel must not be null");
+			this.consistencyLevel = consistencyLevel;
+			return this;
+		}
+
+		/**
+		 * Configures the filterable metadata fields.
+		 * @param filterMetadataFields list of metadata fields that can be used in filters
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if filterMetadataFields is null
+		 */
+		public WeaviateBuilder filterMetadataFields(List<MetadataField> filterMetadataFields) {
+			Assert.notNull(filterMetadataFields, "filterMetadataFields must not be null");
+			this.filterMetadataFields = filterMetadataFields;
+			return this;
+		}
+
+		/**
+		 * Configures the batching strategy.
+		 * @param batchingStrategy the strategy for batching operations
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public WeaviateBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		/**
+		 * Builds and returns a new WeaviateVectorStore instance with the configured
+		 * settings.
+		 * @return a new WeaviateVectorStore instance
+		 * @throws IllegalStateException if the builder configuration is invalid
+		 */
+		@Override
+		public WeaviateVectorStore build() {
+			validate();
+			return new WeaviateVectorStore(this);
+		}
+
+	}
+
+	/**
+	 * Configuration class for WeaviateVectorStore.
+	 *
+	 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
+	 * create instances of WeaviateVectorStore. This class will be removed in a future
+	 * release. Example migration: <pre>{@code
+	 * // Old approach:
+	 * WeaviateVectorStoreConfig config = WeaviateVectorStoreConfig.builder()
+	 *     .withObjectClass("CustomClass")
+	 *     .withConsistencyLevel(ConsistentLevel.QUORUM)
+	 *     .build();
+	 *
+	 * // New approach:
+	 * WeaviateVectorStore store = WeaviateVectorStore.builder()
+	 *     .objectClass("CustomClass")
+	 *     .consistencyLevel(ConsistentLevel.QUORUM)
+	 *     .build();
+	 * }</pre>
+	 * @see WeaviateVectorStore#builder()
+	 * @since 1.0.0
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static final class WeaviateVectorStoreConfig {
 
 		private final String weaviateObjectClass;
@@ -421,8 +657,10 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		/**
 		 * Constructor using the builder.
-		 * @param builder The configuration builder.
+		 * @param builder The configuration builder
+		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead
 		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public WeaviateVectorStoreConfig(Builder builder) {
 			this.weaviateObjectClass = builder.objectClass;
 			this.consistencyLevel = builder.consistencyLevel;
@@ -432,22 +670,43 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		/**
 		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
+		 * @return The entry point for creating a new configuration
+		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
+		 * create instances of WeaviateVectorStore
 		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static Builder builder() {
 			return new Builder();
 		}
 
 		/**
-		 * {@return the default config}
+		 * Returns the default configuration.
+		 * @return the default configuration
+		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
+		 * create instances of WeaviateVectorStore with default settings
 		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static WeaviateVectorStoreConfig defaultConfig() {
 			return builder().build();
 		}
 
 		/**
-		 * https://weaviate.io/developers/weaviate/concepts/replication-architecture/consistency#tunable-consistency-strategies
+		 * Defines the consistency levels for Weaviate operations.
+		 *
+		 * @see <a href=
+		 * "https://weaviate.io/developers/weaviate/concepts/replication-architecture/consistency#tunable-consistency-strategies">Weaviate
+		 * Consistency Strategies</a>
+		 * @deprecated Use {@link WeaviateVectorStore.ConsistentLevel} instead. This enum
+		 * will be removed in a future release. Example migration: <pre>{@code
+		 * // Old approach:
+		 * WeaviateVectorStoreConfig.ConsistentLevel level = WeaviateVectorStoreConfig.ConsistentLevel.QUORUM;
+		 *
+		 * // New approach:
+		 * WeaviateVectorStore.ConsistentLevel level = WeaviateVectorStore.ConsistentLevel.QUORUM;
+		 * }</pre>
+		 * @since 1.0.0
 		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public enum ConsistentLevel {
 
 			/**
@@ -470,33 +729,91 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		}
 
+		/**
+		 * Represents a metadata field configuration for Weaviate vector store.
+		 *
+		 * @param name the name of the metadata field
+		 * @param type the type of the metadata field
+		 * @deprecated Use {@link WeaviateVectorStore.MetadataField} instead. This record
+		 * will be removed in a future release. Example migration: <pre>{@code
+		 * // Old approach:
+		 * WeaviateVectorStoreConfig.MetadataField field = WeaviateVectorStoreConfig.MetadataField.text("field");
+		 *
+		 * // New approach:
+		 * WeaviateVectorStore.MetadataField field = WeaviateVectorStore.MetadataField.text("field");
+		 * }</pre>
+		 * @since 1.0.0
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public record MetadataField(String name, Type type) {
 
+			/**
+			 * Creates a metadata field of type TEXT.
+			 * @param name the name of the field
+			 * @return a new MetadataField instance of type TEXT
+			 * @throws IllegalArgumentException if name is null or empty
+			 * @deprecated Use {@link WeaviateVectorStore.MetadataField#text(String)}
+			 * instead
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public static MetadataField text(String name) {
 				return new MetadataField(name, Type.TEXT);
 			}
 
+			/**
+			 * Creates a metadata field of type NUMBER.
+			 * @param name the name of the field
+			 * @return a new MetadataField instance of type NUMBER
+			 * @throws IllegalArgumentException if name is null or empty
+			 * @deprecated Use {@link WeaviateVectorStore.MetadataField#number(String)}
+			 * instead
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public static MetadataField number(String name) {
 				return new MetadataField(name, Type.NUMBER);
 			}
 
+			/**
+			 * Creates a metadata field of type BOOLEAN.
+			 * @param name the name of the field
+			 * @return a new MetadataField instance of type BOOLEAN
+			 * @throws IllegalArgumentException if name is null or empty
+			 * @deprecated Use {@link WeaviateVectorStore.MetadataField#bool(String)}
+			 * instead
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public static MetadataField bool(String name) {
 				return new MetadataField(name, Type.BOOLEAN);
 			}
 
+			/**
+			 * Defines the supported types for metadata fields.
+			 *
+			 * @deprecated Use {@link WeaviateVectorStore.MetadataField.Type} instead.
+			 * This enum will be removed in a future release.
+			 * @since 1.0.0
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public enum Type {
 
 				TEXT, NUMBER, BOOLEAN
 
 			}
-
 		}
 
+		/**
+		 * Builder for WeaviateVectorStoreConfig.
+		 *
+		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
+		 * create instances of WeaviateVectorStore
+		 * @since 1.0.0
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static final class Builder {
 
 			private String objectClass = "SpringAiWeaviate";
 
-			private ConsistentLevel consistencyLevel = WeaviateVectorStoreConfig.ConsistentLevel.ONE;
+			private ConsistentLevel consistencyLevel = ConsistentLevel.ONE;
 
 			private List<MetadataField> filterMetadataFields = List.of();
 
@@ -506,10 +823,15 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			}
 
 			/**
-			 * Weaviate known, filterable metadata fields.
-			 * @param filterMetadataFields known metadata fields to use.
-			 * @return this builder.
+			 * Configures the filterable metadata fields.
+			 * @param filterMetadataFields known metadata fields to use
+			 * @return this builder
+			 * @throws IllegalArgumentException if filterMetadataFields is null
+			 * @deprecated Use
+			 * {@link WeaviateVectorStore.WeaviateBuilder#filterMetadataFields(List)}
+			 * instead
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withFilterableMetadataFields(List<MetadataField> filterMetadataFields) {
 				Assert.notNull(filterMetadataFields, "The filterMetadataFields can not be null.");
 				this.filterMetadataFields = filterMetadataFields;
@@ -517,10 +839,14 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			}
 
 			/**
-			 * Weaviate config headers.
-			 * @param headers config headers to use.
-			 * @return this builder.
+			 * Configures the Weaviate config headers.
+			 * @param headers config headers to use
+			 * @return this builder
+			 * @throws IllegalArgumentException if headers is null
+			 * @deprecated Use the new builder API in
+			 * {@link WeaviateVectorStore#builder()}
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withHeaders(Map<String, String> headers) {
 				Assert.notNull(headers, "The headers can not be null.");
 				this.headers = headers;
@@ -528,10 +854,14 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			}
 
 			/**
-			 * Weaviate objectClass.
-			 * @param objectClass objectClass to use.
-			 * @return this builder.
+			 * Configures the Weaviate objectClass.
+			 * @param objectClass objectClass to use
+			 * @return this builder
+			 * @throws IllegalArgumentException if objectClass is empty or null
+			 * @deprecated Use
+			 * {@link WeaviateVectorStore.WeaviateBuilder#objectClass(String)} instead
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withObjectClass(String objectClass) {
 				Assert.hasText(objectClass, "The objectClass can not be empty.");
 				this.objectClass = objectClass;
@@ -539,10 +869,15 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			}
 
 			/**
-			 * Weaviate consistencyLevel.
-			 * @param consistencyLevel consistencyLevel to use.
-			 * @return this builder.
+			 * Configures the Weaviate consistencyLevel.
+			 * @param consistencyLevel consistencyLevel to use
+			 * @return this builder
+			 * @throws IllegalArgumentException if consistencyLevel is null
+			 * @deprecated Use
+			 * {@link WeaviateVectorStore.WeaviateBuilder#consistencyLevel(WeaviateVectorStore.ConsistentLevel)}
+			 * instead
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withConsistencyLevel(ConsistentLevel consistencyLevel) {
 				Assert.notNull(consistencyLevel, "The consistencyLevel can not be null.");
 				this.consistencyLevel = consistencyLevel;
@@ -550,8 +885,12 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			}
 
 			/**
-			 * {@return the immutable configuration}
+			 * Builds and returns the immutable configuration.
+			 * @return the immutable configuration
+			 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure
+			 * and create instances of WeaviateVectorStore
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public WeaviateVectorStoreConfig build() {
 				return new WeaviateVectorStoreConfig(this);
 			}

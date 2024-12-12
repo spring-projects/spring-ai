@@ -1,200 +1,20 @@
 = Weaviate
 
-This section will walk you through setting up the Weaviate VectorStore to store document embeddings and perform similarity searches.
+This section walks you through setting up the Weaviate VectorStore to store document embeddings and perform similarity searches.
 
-== What is Weaviate?
-
-link:https://weaviate.io/[Weaviate] is an open-source vector database.
-It allows you to store data objects and vector embeddings from your favorite ML-models and scale seamlessly into billions of data objects.
+link:https://weaviate.io/[Weaviate] is an open-source vector database that allows you to store data objects and vector embeddings from your favorite ML-models and scale seamlessly into billions of data objects.
 It provides tools to store document embeddings, content, and metadata and to search through those embeddings, including metadata filtering.
 
 == Prerequisites
 
-1. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
+* A running Weaviate instance. The following options are available:
+** link:https://console.weaviate.cloud/[Weaviate Cloud Service] (requires account creation and API key)
+** link:https://weaviate.io/developers/weaviate/installation/docker[Docker container]
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `WeaviateVectorStore`.
 
-- `Transformers Embedding` - computes the embedding in your local environment. Follow the ONNX Transformers Embedding instructions.
-- `OpenAI Embedding` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
-- You can also use the `Azure OpenAI Embedding` or the `PostgresML Embedding Model`.
-2. `Weaviate cluster`. You can set up a cluster locally in a Docker container or create a link:https://console.weaviate.cloud/[Weaviate Cloud Service]. For the latter, you need to create a Weaviate account, set up a cluster, and get your access API key from the link:https://console.weaviate.cloud/dashboard[dashboard details].
+== Dependencies
 
-On startup, the `WeaviateVectorStore` creates the required `SpringAiWeaviate` object schema if it's not already provisioned.
-
-== Auto-configuration
-
-Then add the WeaviateVectorStore boot starter dependency to your project:
-
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-weaviate-store-spring-boot-starter</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-weaviate-store-spring-boot-starter'
-}
-----
-
-The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
-
-NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
-
-
-The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
-
-For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel] add the following dependency to your project:
-
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
-}
-----
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
-
-To connect to Weaviate and use the `WeaviateVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's _application.properties_,
-
-[source,properties]
-----
-spring.ai.vectorstore.weaviate.host=<host of your Weaviate instance>
-spring.ai.vectorstore.weaviate.api-key=<your api key>
-spring.ai.vectorstore.weaviate.scheme=http
-
-# API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
-----
-
-TIP: Check the list of xref:#weaviate-vectorstore-properties[configuration parameters] to learn about the default values and configuration options.
-
-Now you can Auto-wire the Weaviate Vector Store in your application and use it
-
-[source,java]
-----
-@Autowired VectorStore vectorStore;
-
-// ...
-
-List <Document> documents = List.of(
-    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
-    new Document("The World is Big and Salvation Lurks Around the Corner"),
-    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
-
-// Add the documents
-vectorStore.add(documents);
-
-// Retrieve documents similar to a query
-List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
-----
-
-[[weaviate-vectorstore-properties]]
-=== Configuration properties
-
-You can use the following properties in your Spring Boot configuration to customize the weaviate vector store.
-
-[cols="3,5,1",stripes=even]
-|===
-|Property| Description | Default value
-
-|`spring.ai.vectorstore.weaviate.host`| The host of the Weaviate server. | localhost:8080
-|`spring.ai.vectorstore.weaviate.scheme`| Connection schema. | http
-|`spring.ai.vectorstore.weaviate.api-key`| The API key to use for authentication with the Weaviate server. | -
-|`spring.ai.vectorstore.weaviate.object-class`|  | "SpringAiWeaviate"
-|`spring.ai.vectorstore.weaviate.consistency-level`|  Desired tradeoff between consistency and speed | ConsistentLevel.ONE
-|`spring.ai.vectorstore.weaviate.filter-field`| spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type> | -
-|`spring.ai.vectorstore.weaviate.headers`|  | -
-|`spring.ai.vectorstore.weaviate.initialize-schema`| Whether to initialize the required schema  |  `false`
-|===
-
-== Metadata filtering
-
-You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with WeaviateVectorStore as well.
-
-For example, you can use either the text expression language:
-
-[source,java]
-----
-vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
-----
-
-or programmatically using the expression DSL:
-
-[source,java]
-----
-FilterExpressionBuilder b = new FilterExpressionBuilder();
-
-vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression(b.and(
-         b.in("country", "UK", "NL"),
-         b.gte("year", 2020)).build()));
-----
-
-The portable filter expressions get automatically converted into the proprietary Weaviate link:https://weaviate.io/developers/weaviate/api/graphql/filters[where filters].
-For example, the following portable filter expression:
-
-[source,sql]
-----
-country in ['UK', 'NL'] && year >= 2020
-----
-
-is converted into Weaviate GraphQL link:https://weaviate.io/developers/weaviate/api/graphql/filters[where filter expression]:
-
-[source,graphql]
-----
-operator:And
-   operands:
-      [{
-         operator:Or
-         operands:
-            [{
-               path:["meta_country"]
-               operator:Equal
-               valueText:"UK"
-            },
-            {
-               path:["meta_country"]
-               operator:Equal
-               valueText:"NL"
-            }]
-      },
-      {
-         path:["meta_year"]
-         operator:GreaterThanEqual
-         valueNumber:2020
-      }]
-----
-
-== Manual Configuration
-
-Instead of using the Spring Boot auto-configuration, you can manually configure the `WeaviateVectorStore`.
-For this you need to add the `spring-ai-weaviate-store` dependency to your project:
+Add the Weaviate Vector Store dependency to your project:
 
 [source,xml]
 ----
@@ -213,46 +33,202 @@ dependencies {
 }
 ----
 
-To configure Weaviate in your application, you can create a WeaviateClient:
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Configuration
+
+To connect to Weaviate and use the `WeaviateVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's _application.properties_,
+
+[source,properties]
+----
+spring.ai.vectorstore.weaviate.host=<host_of_your_weaviate_instance>
+spring.ai.vectorstore.weaviate.scheme=<http_or_https>
+spring.ai.vectorstore.weaviate.api-key=<your_api_key>
+# API key if needed, e.g. OpenAI
+spring.ai.openai.api-key=<api-key>
+----
+
+environment variables,
+
+[source,bash]
+----
+export SPRING_AI_VECTORSTORE_WEAVIATE_HOST=<host_of_your_weaviate_instance>
+export SPRING_AI_VECTORSTORE_WEAVIATE_SCHEME=<http_or_https>
+export SPRING_AI_VECTORSTORE_WEAVIATE_API_KEY=<your_api_key>
+# API key if needed, e.g. OpenAI
+export SPRING_AI_OPENAI_API_KEY=<api-key>
+----
+
+or can be a mix of those.
+
+NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Weaviate Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-weaviate-store-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-weaviate-store-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Please have a look at the list of xref:#_weaviatevectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+Here is an example of the needed bean:
+
+[source,java]
+----
+@Bean
+public EmbeddingModel embeddingModel() {
+    // Can be any other Embeddingmodel implementation.
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+}
+----
+
+Now you can auto-wire the `WeaviateVectorStore` as a vector store in your application.
+
+== Manual Configuration
+
+Instead of using Spring Boot auto-configuration, you can manually configure the `WeaviateVectorStore` using the builder pattern:
 
 [source,java]
 ----
 @Bean
 public WeaviateClient weaviateClient() {
-   try {
-      return WeaviateAuthClient.apiKey(
-            new Config(<YOUR SCHEME>, <YOUR HOST>, <YOUR HEADERS>),
-            <YOUR API KEY>);
-   }
-   catch (AuthException e) {
-      throw new IllegalArgumentException("WeaviateClient could not be created.", e);
-   }
+    return new WeaviateClient(new Config("http", "localhost:8080"));
+}
+
+@Bean
+public VectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient) {
+    return WeaviateVectorStore.builder()
+        .weaviateClient(weaviateClient)
+        .embeddingModel(embeddingModel)
+        .objectClass("CustomClass")                    // Optional: defaults to "SpringAiWeaviate"
+        .consistencyLevel(ConsistentLevel.QUORUM)      // Optional: defaults to ConsistentLevel.ONE
+        .filterMetadataFields(List.of(                 // Optional: fields that can be used in filters
+            MetadataField.text("country"),
+            MetadataField.number("year")))
+        .build();
 }
 ----
 
-Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to your project.
-This provides you with an implementation of the Embeddings client:
+== Metadata filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Weaviate store as well.
+
+For example, you can use either the text expression language:
 
 [source,java]
 ----
-@Bean
-public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient) {
-
-   WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
-      .withObjectClass(<YOUR OBJECT CLASS>)
-      .withConsistencyLevel(<YOUR CONSISTENCY LEVEL>);
-
-   return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient);
-}
+vectorStore.similaritySearch(
+    SearchRequest.defaults()
+        .withQuery("The World")
+        .withTopK(TOP_K)
+        .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+        .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
 ----
 
-== Run Weaviate cluster in docker container
+or programmatically using the `Filter.Expression` DSL:
 
-Start Weaviate in a docker container:
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression(b.and(
+        b.in("country", "UK", "NL"),
+        b.gte("year", 2020)).build()));
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary Weaviate link:https://weaviate.io/developers/weaviate/api/graphql/filters[where filters].
+
+For example, this portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into the proprietary Weaviate GraphQL filter format:
+
+[source,graphql]
+----
+operator: And
+operands:
+    [{
+        operator: Or
+        operands:
+            [{
+                path: ["meta_country"]
+                operator: Equal
+                valueText: "UK"
+            },
+            {
+                path: ["meta_country"]
+                operator: Equal
+                valueText: "NL"
+            }]
+    },
+    {
+        path: ["meta_year"]
+        operator: GreaterThanEqual
+        valueNumber: 2020
+    }]
+----
+
+== Run Weaviate in Docker
+
+To quickly get started with a local Weaviate instance, you can run it in Docker:
 
 [source,bash]
 ----
-docker run -it --rm --name weaviate -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/var/lib/weaviate -e QUERY_DEFAULTS_LIMIT=25 -e DEFAULT_VECTORIZER_MODULE=none -e CLUSTER_HOSTNAME=node1 -p 8080:8080 semitechnologies/weaviate:1.22.4
+docker run -it --rm --name weaviate \
+    -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true \
+    -e PERSISTENCE_DATA_PATH=/var/lib/weaviate \
+    -e QUERY_DEFAULTS_LIMIT=25 \
+    -e DEFAULT_VECTORIZER_MODULE=none \
+    -e CLUSTER_HOSTNAME=node1 \
+    -p 8080:8080 \
+    semitechnologies/weaviate:1.22.4
 ----
 
-Starts a Weaviate cluster at http://localhost:8080/v1 with scheme=http, host=localhost:8080, and apiKey="". Then follow the usage instructions.
+This starts a Weaviate instance accessible at http://localhost:8080.
+
+== WeaviateVectorStore properties
+
+You can use the following properties in your Spring Boot configuration to customize the Weaviate vector store.
+
+[stripes=even]
+|===
+|Property|Description|Default value
+
+|`spring.ai.vectorstore.weaviate.host`|The host of the Weaviate server|localhost:8080
+|`spring.ai.vectorstore.weaviate.scheme`|Connection schema|http
+|`spring.ai.vectorstore.weaviate.api-key`|The API key for authentication|
+|`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents|SpringAiWeaviate
+|`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
+|`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
+|===
