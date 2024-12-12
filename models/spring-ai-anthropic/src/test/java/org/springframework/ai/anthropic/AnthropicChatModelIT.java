@@ -37,6 +37,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -288,7 +289,12 @@ class AnthropicChatModelIT {
 		logger.info("Response: {}", response);
 
 		Generation generation = response.getResult();
+		assertThat(generation).isNotNull();
+		assertThat(generation.getOutput()).isNotNull();
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(1800);
 	}
 
 	@Test
@@ -322,6 +328,35 @@ class AnthropicChatModelIT {
 
 		logger.info("Response: {}", content);
 		assertThat(content).contains("30", "10", "15");
+	}
+
+	@Test
+	void streamFunctionCallUsageTest() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
+
+		ChatResponse chatResponse = responseFlux.last().block();
+
+		logger.info("Response: {}", chatResponse);
+		Usage usage = chatResponse.getMetadata().getUsage();
+
+		assertThat(usage).isNotNull();
+		assertThat(usage.getTotalTokens()).isLessThan(4000).isGreaterThan(1800);
 	}
 
 	@Test

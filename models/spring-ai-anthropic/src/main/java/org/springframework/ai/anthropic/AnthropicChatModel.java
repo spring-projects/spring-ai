@@ -47,6 +47,9 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -210,6 +213,10 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return this.internalCall(prompt, null);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -226,8 +233,14 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate
 					.execute(ctx -> this.anthropicApi.chatCompletionEntity(request));
 
-				ChatResponse chatResponse = toChatResponse(completionEntity.getBody());
+				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
+				AnthropicApi.Usage usage = completionResponse.usage();
 
+				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(completionResponse.usage())
+						: new EmptyUsage();
+				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+
+				ChatResponse chatResponse = toChatResponse(completionEntity.getBody(), accumulatedUsage);
 				observationContext.setResponse(chatResponse);
 
 				return chatResponse;
@@ -236,7 +249,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
 				&& this.isToolCall(response, Set.of("tool_use"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
 		}
 
 		return response;
@@ -244,6 +257,10 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return this.internalStream(prompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -263,11 +280,14 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
-				ChatResponse chatResponse = toChatResponse(chatCompletionResponse);
+				AnthropicApi.Usage usage = chatCompletionResponse.usage();
+				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(chatCompletionResponse.usage()) : new EmptyUsage();
+				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
 				if (!isProxyToolCalls(prompt, this.defaultOptions) && this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = handleToolCalls(prompt, chatResponse);
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 				}
 
 				return Mono.just(chatResponse);
@@ -281,7 +301,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		});
 	}
 
-	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion) {
+	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion, Usage usage) {
 
 		if (chatCompletion == null) {
 			logger.warn("Null chat completion returned");
@@ -327,12 +347,15 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			allGenerations.add(toolCallGeneration);
 		}
 
-		return new ChatResponse(allGenerations, this.from(chatCompletion));
+		return new ChatResponse(allGenerations, this.from(chatCompletion, usage));
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
+		return from(result, AnthropicUsage.from(result.usage()));
+	}
+
+	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result, Usage usage) {
 		Assert.notNull(result, "Anthropic ChatCompletionResult must not be null");
-		AnthropicUsage usage = AnthropicUsage.from(result.usage());
 		return ChatResponseMetadata.builder()
 			.withId(result.id())
 			.withModel(result.model())
