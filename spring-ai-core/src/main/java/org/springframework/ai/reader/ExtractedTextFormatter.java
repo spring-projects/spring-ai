@@ -47,6 +47,9 @@ public final class ExtractedTextFormatter {
 	/** Number of bottom text lines to delete from a page */
 	private final int numberOfBottomTextLinesToDelete;
 
+	/** Line separator */
+	private final String lineSeparator;
+
 	/**
 	 * Private constructor to initialize the formatter from the builder.
 	 * @param builder Builder used to initialize the formatter.
@@ -56,6 +59,7 @@ public final class ExtractedTextFormatter {
 		this.numberOfBottomTextLinesToDelete = builder.numberOfBottomTextLinesToDelete;
 		this.numberOfTopPagesToSkipBeforeDelete = builder.numberOfTopPagesToSkipBeforeDelete;
 		this.numberOfTopTextLinesToDelete = builder.numberOfTopTextLinesToDelete;
+		this.lineSeparator = builder.lineSeparator;
 	}
 
 	/**
@@ -96,8 +100,21 @@ public final class ExtractedTextFormatter {
 	 * @param pageText Text to remove lines from.
 	 * @param numberOfLines Number of lines to remove.
 	 * @return Returns the text striped from last lines.
+	 * @deprecated use {@link #deleteTopTextLines(String, int, String)} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static String deleteBottomTextLines(String pageText, int numberOfLines) {
+		return deleteBottomTextLines(pageText, numberOfLines, System.lineSeparator());
+	}
+
+	/**
+	 * Removes the specified number of lines from the bottom part of the text.
+	 * @param pageText Text to remove lines from.
+	 * @param numberOfLines Number of lines to remove.
+	 * @param lineSeparator The line separator to use when identifying lines in the text.
+	 * @return Returns the text striped from last lines.
+	 */
+	public static String deleteBottomTextLines(String pageText, int numberOfLines, String lineSeparator) {
 		if (!StringUtils.hasText(pageText)) {
 			return pageText;
 		}
@@ -106,7 +123,7 @@ public final class ExtractedTextFormatter {
 		int truncateIndex = pageText.length();
 		int nextTruncateIndex = truncateIndex;
 		while (lineCount < numberOfLines && nextTruncateIndex >= 0) {
-			nextTruncateIndex = pageText.lastIndexOf(System.lineSeparator(), truncateIndex - 1);
+			nextTruncateIndex = pageText.lastIndexOf(lineSeparator, truncateIndex - 1);
 			truncateIndex = nextTruncateIndex < 0 ? truncateIndex : nextTruncateIndex;
 			lineCount++;
 		}
@@ -133,8 +150,36 @@ public final class ExtractedTextFormatter {
 	 * this exceeds the actual number of lines in the text, an empty string will be
 	 * returned.
 	 * @return The text with the specified number of lines removed from the top.
+	 * @deprecated use {@link #deleteTopTextLines(String, int, String)} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static String deleteTopTextLines(String pageText, int numberOfLines) {
+		return deleteTopTextLines(pageText, numberOfLines, System.lineSeparator());
+	}
+
+	/**
+	 * Removes a specified number of lines from the top part of the given text.
+	 *
+	 * <p>
+	 * This method takes a text and trims it by removing a certain number of lines from
+	 * the top. If the provided text is null or contains only whitespace, it will be
+	 * returned as is. If the number of lines to remove exceeds the actual number of lines
+	 * in the text, the result will be an empty string.
+	 * </p>
+	 *
+	 * <p>
+	 * The method identifies lines based on the system's line separator, making it
+	 * compatible with different platforms.
+	 * </p>
+	 * @param pageText The text from which the top lines need to be removed. If this is
+	 * null, empty, or consists only of whitespace, it will be returned unchanged.
+	 * @param numberOfLines The number of lines to remove from the top of the text. If
+	 * this exceeds the actual number of lines in the text, an empty string will be
+	 * returned.
+	 * @param lineSeparator The line separator to use when identifying lines in the text.
+	 * @return The text with the specified number of lines removed from the top.
+	 */
+	public static String deleteTopTextLines(String pageText, int numberOfLines, String lineSeparator) {
 		if (!StringUtils.hasText(pageText)) {
 			return pageText;
 		}
@@ -143,7 +188,7 @@ public final class ExtractedTextFormatter {
 		int truncateIndex = 0;
 		int nextTruncateIndex = truncateIndex;
 		while (lineCount < numberOfLines && nextTruncateIndex >= 0) {
-			nextTruncateIndex = pageText.indexOf(System.lineSeparator(), truncateIndex + 1);
+			nextTruncateIndex = pageText.indexOf(lineSeparator, truncateIndex + 1);
 			truncateIndex = nextTruncateIndex < 0 ? truncateIndex : nextTruncateIndex;
 			lineCount++;
 		}
@@ -171,8 +216,8 @@ public final class ExtractedTextFormatter {
 		var text = trimAdjacentBlankLines(pageText);
 
 		if (pageNumber >= this.numberOfTopPagesToSkipBeforeDelete) {
-			text = deleteTopTextLines(text, this.numberOfTopTextLinesToDelete);
-			text = deleteBottomTextLines(text, this.numberOfBottomTextLinesToDelete);
+			text = deleteTopTextLines(text, this.numberOfTopTextLinesToDelete, this.lineSeparator);
+			text = deleteBottomTextLines(text, this.numberOfBottomTextLinesToDelete, this.lineSeparator);
 		}
 
 		if (this.leftAlignment) {
@@ -222,6 +267,8 @@ public final class ExtractedTextFormatter {
 
 		private int numberOfBottomTextLinesToDelete = 0;
 
+		private String lineSeparator = System.lineSeparator();
+
 		/**
 		 * Align the document text to the left. Defaults to false.
 		 * @param leftAlignment Flag to align the text to the left.
@@ -260,6 +307,17 @@ public final class ExtractedTextFormatter {
 		 */
 		public Builder withNumberOfBottomTextLinesToDelete(int numberOfBottomTextLinesToDelete) {
 			this.numberOfBottomTextLinesToDelete = numberOfBottomTextLinesToDelete;
+			return this;
+		}
+
+		/**
+		 * Set the line separator to use when formatting the text. Defaults to the system
+		 * line separator.
+		 * @param lineSeparator The line separator to use.
+		 * @return this builder
+		 */
+		public Builder overrideLineSeparator(String lineSeparator) {
+			this.lineSeparator = lineSeparator;
 			return this;
 		}
 
