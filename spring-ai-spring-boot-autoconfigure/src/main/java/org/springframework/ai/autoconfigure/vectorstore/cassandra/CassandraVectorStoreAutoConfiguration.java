@@ -25,8 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.CassandraVectorStore;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -63,25 +62,21 @@ public class CassandraVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		var builder = CassandraVectorStoreConfig.builder().withCqlSession(cqlSession);
-
-		builder = builder.withKeyspaceName(properties.getKeyspace())
-			.withTableName(properties.getTable())
-			.withContentColumnName(properties.getContentColumnName())
-			.withEmbeddingColumnName(properties.getEmbeddingColumnName())
-			.withIndexName(properties.getIndexName())
-			.withFixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize());
-
-		if (!properties.isInitializeSchema()) {
-			builder = builder.disallowSchemaChanges();
-		}
-		if (properties.getReturnEmbeddings()) {
-			builder = builder.returnEmbeddings();
-		}
-
-		return new CassandraVectorStore(builder.build(), embeddingModel,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+		return CassandraVectorStore.builder()
+			.session(cqlSession)
+			.keyspace(properties.getKeyspace())
+			.table(properties.getTable())
+			.contentColumnName(properties.getContentColumnName())
+			.embeddingColumnName(properties.getEmbeddingColumnName())
+			.indexName(properties.getIndexName())
+			.fixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize())
+			.disallowSchemaChanges(!properties.isInitializeSchema())
+			.returnEmbeddings(properties.getReturnEmbeddings())
+			.embeddingModel(embeddingModel)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 	@Bean

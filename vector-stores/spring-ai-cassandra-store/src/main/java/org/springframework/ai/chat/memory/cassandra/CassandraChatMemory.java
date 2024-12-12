@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.memory;
+package org.springframework.ai.chat.memory.cassandra;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -32,7 +32,8 @@ import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 
-import org.springframework.ai.chat.memory.CassandraChatMemoryConfig.SchemaColumn;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig.SchemaColumn;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -42,7 +43,7 @@ import org.springframework.ai.chat.messages.UserMessage;
  CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
  </code>
  *
- * For example @see org.springframework.ai.chat.memory.CassandraChatMemory
+ * For example @see org.springframework.ai.chat.memory.cassandra.CassandraChatMemory
  *
  * @author Mick Semb Wever
  * @since 1.0.0

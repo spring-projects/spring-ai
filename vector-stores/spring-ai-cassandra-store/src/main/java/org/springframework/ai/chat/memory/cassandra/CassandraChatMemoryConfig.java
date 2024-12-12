@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.memory;
+package org.springframework.ai.chat.memory.cassandra;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;

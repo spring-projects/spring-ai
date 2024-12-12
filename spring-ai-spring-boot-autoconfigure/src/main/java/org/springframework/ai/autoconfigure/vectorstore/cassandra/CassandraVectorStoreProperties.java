@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStoreConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

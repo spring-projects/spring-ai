@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.cassandra;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +32,7 @@ import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.CassandraImage;
+import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -40,7 +40,8 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -80,12 +81,6 @@ public class CassandraVectorStoreObservationIT {
 		}
 	}
 
-	private static CassandraVectorStoreConfig.Builder storeBuilder(CqlSession cqlSession) {
-		return CassandraVectorStoreConfig.builder()
-			.withCqlSession(cqlSession)
-			.withKeyspaceName("test_" + CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
-	}
-
 	@Test
 	void observationVectorStoreAddAndQueryOperations() {
 
@@ -110,7 +105,7 @@ public class CassandraVectorStoreObservationIT {
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "384")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
-						CassandraVectorStoreConfig.DEFAULT_TABLE_NAME)
+						CassandraVectorStore.DEFAULT_TABLE_NAME)
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "test_springframework")
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString(),
@@ -144,7 +139,7 @@ public class CassandraVectorStoreObservationIT {
 						"What is Great Depression")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "384")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
-						CassandraVectorStoreConfig.DEFAULT_TABLE_NAME)
+						CassandraVectorStore.DEFAULT_TABLE_NAME)
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), "test_springframework")
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString(),
@@ -177,15 +172,20 @@ public class CassandraVectorStoreObservationIT {
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 
-			CassandraVectorStoreConfig conf = storeBuilder(cqlSession)
-				.addMetadataColumns(new SchemaColumn("meta1", DataTypes.TEXT),
-						new SchemaColumn("meta2", DataTypes.TEXT), new SchemaColumn("country", DataTypes.TEXT),
-						new SchemaColumn("year", DataTypes.SMALLINT))
-				.build();
+			CassandraVectorStore.CassandraBuilder builder = CassandraVectorStore.builder()
+				.session(cqlSession)
+				.session(cqlSession)
+				.keyspace("test_" + CassandraVectorStore.DEFAULT_KEYSPACE_NAME)
+				.addMetadataColumns(new CassandraVectorStore.SchemaColumn("meta1", DataTypes.TEXT),
+						new CassandraVectorStore.SchemaColumn("meta2", DataTypes.TEXT),
+						new CassandraVectorStore.SchemaColumn("country", DataTypes.TEXT),
+						new CassandraVectorStore.SchemaColumn("year", DataTypes.SMALLINT))
+				.embeddingModel(embeddingModel)
+				.observationRegistry(observationRegistry)
+				.batchingStrategy(new TokenCountBatchingStrategy());
 
-			conf.dropKeyspace();
-			return new CassandraVectorStore(conf, embeddingModel, observationRegistry, null,
-					new TokenCountBatchingStrategy());
+			CassandraVectorStore.dropKeyspace(builder);
+			return builder.build();
 		}
 
 		@Bean

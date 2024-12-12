@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai;
+package org.springframework.ai.cassandra;
 
 import org.testcontainers.utility.DockerImageName;
 

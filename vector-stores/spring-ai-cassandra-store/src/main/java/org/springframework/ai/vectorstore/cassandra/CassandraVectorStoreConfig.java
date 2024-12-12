@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.cassandra;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -65,7 +65,9 @@ import org.springframework.lang.Nullable;
  *
  * @author Mick Semb Wever
  * @since 1.0.0
+ * @deprecated since 1.0.0-M5, use {@link CassandraVectorStore#builder()} instead
  */
+@Deprecated(since = "1.0.0-M5", forRemoval = true)
 public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	public static final String DEFAULT_KEYSPACE_NAME = "springframework";
@@ -317,6 +319,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		}
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public enum SchemaColumnTags {
 
 		INDEXED
@@ -329,20 +332,24 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	 * It is a requirement that an empty {@code List<Object>} returns an example formatted
 	 * id
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public interface DocumentIdTranslator extends Function<String, List<Object>> {
 
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	/** Given a list of primary key column values, return the document id. */
 	public interface PrimaryKeyTranslator extends Function<List<Object>, String> {
 
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys,
 			String content, String embedding, String index, Set<SchemaColumn> metadataColumns) {
 
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public record SchemaColumn(String name, DataType type, SchemaColumnTags... tags) {
 
 		public SchemaColumn(String name, DataType type) {
@@ -364,6 +371,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	}
 
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static final class Builder {
 
 		private CqlSession session = null;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.cassandra;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,12 +35,13 @@ import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.CassandraImage;
+import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumnTags;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore.SchemaColumn;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore.SchemaColumnTags;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -84,24 +85,25 @@ class CassandraVectorStoreIT {
 		}
 	}
 
-	private static CassandraVectorStoreConfig.Builder storeBuilder(CqlSession cqlSession) {
-		return CassandraVectorStoreConfig.builder()
-			.withCqlSession(cqlSession)
-			.withKeyspaceName("test_" + CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
+	private static CassandraVectorStore.CassandraBuilder storeBuilder(CqlSession cqlSession) {
+		return CassandraVectorStore.builder()
+			.session(cqlSession)
+			.keyspace("test_" + CassandraVectorStore.DEFAULT_KEYSPACE_NAME);
 	}
 
 	private static CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
-		CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
+		CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class))
 			.addMetadataColumns(metadataFields);
 
 		return createTestStore(context, builder);
 	}
 
 	private static CassandraVectorStore createTestStore(ApplicationContext context,
-			CassandraVectorStoreConfig.Builder builder) {
-		CassandraVectorStoreConfig conf = builder.build();
-		conf.dropKeyspace();
-		return new CassandraVectorStore(conf, context.getBean(EmbeddingModel.class));
+			CassandraVectorStore.CassandraBuilder builder) {
+		CassandraVectorStore.dropKeyspace(builder);
+		builder.embeddingModel(context.getBean(EmbeddingModel.class));
+		CassandraVectorStore store = builder.build();
+		return store;
 	}
 
 	@Test
@@ -147,8 +149,8 @@ class CassandraVectorStoreIT {
 	@Test
 	void addAndSearchReturnEmbeddings() {
 		this.contextRunner.run(context -> {
-			CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
-				.returnEmbeddings();
+			CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class))
+				.returnEmbeddings(true);
 
 			try (CassandraVectorStore store = createTestStore(context, builder)) {
 				List<Document> documents = documents();
@@ -197,8 +199,7 @@ class CassandraVectorStoreIT {
 				results = store.similaritySearch(SearchRequest.query("The World")
 					.withTopK(5)
 					.withSimilarityThresholdAll()
-					.withFilterExpression(
-							java.lang.String.format("%s == 'NL'", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
+					.withFilterExpression(java.lang.String.format("%s == 'NL'", CassandraVectorStore.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
@@ -207,7 +208,7 @@ class CassandraVectorStoreIT {
 					.withTopK(5)
 					.withSimilarityThresholdAll()
 					.withFilterExpression(
-							java.lang.String.format("%s == 'BG2'", CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
+							java.lang.String.format("%s == 'BG2'", CassandraVectorStore.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
@@ -216,7 +217,7 @@ class CassandraVectorStoreIT {
 					.withTopK(5)
 					.withSimilarityThresholdAll()
 					.withFilterExpression(java.lang.String.format("%s == 'BG' && year == 2020",
-							CassandraVectorStoreConfig.DEFAULT_ID_NAME)));
+							CassandraVectorStore.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
@@ -227,7 +228,7 @@ class CassandraVectorStoreIT {
 							.withTopK(5)
 							.withSimilarityThresholdAll()
 							.withFilterExpression(java.lang.String.format("NOT(%s == 'BG' && year == 2020)",
-									CassandraVectorStoreConfig.DEFAULT_ID_NAME))));
+									CassandraVectorStore.DEFAULT_ID_NAME))));
 			}
 		});
 	}
@@ -394,14 +395,15 @@ class CassandraVectorStoreIT {
 		@Bean
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel) {
 
-			CassandraVectorStoreConfig conf = storeBuilder(cqlSession)
-				.addMetadataColumns(new SchemaColumn("meta1", DataTypes.TEXT),
-						new SchemaColumn("meta2", DataTypes.TEXT), new SchemaColumn("country", DataTypes.TEXT),
-						new SchemaColumn("year", DataTypes.SMALLINT))
-				.build();
+			CassandraVectorStore.CassandraBuilder builder = storeBuilder(cqlSession)
+				.addMetadataColumns(new CassandraVectorStore.SchemaColumn("meta1", DataTypes.TEXT),
+						new CassandraVectorStore.SchemaColumn("meta2", DataTypes.TEXT),
+						new CassandraVectorStore.SchemaColumn("country", DataTypes.TEXT),
+						new CassandraVectorStore.SchemaColumn("year", DataTypes.SMALLINT))
+				.embeddingModel(embeddingModel);
 
-			conf.dropKeyspace();
-			return new CassandraVectorStore(conf, embeddingModel);
+			CassandraVectorStore.dropKeyspace(builder);
+			return builder.build();
 		}
 
 		@Bean
