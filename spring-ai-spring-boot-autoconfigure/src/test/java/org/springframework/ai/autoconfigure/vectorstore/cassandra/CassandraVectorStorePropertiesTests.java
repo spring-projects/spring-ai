@@ -18,7 +18,8 @@ package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStoreConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,13 +32,12 @@ class CassandraVectorStorePropertiesTests {
 	@Test
 	void defaultValues() {
 		var props = new CassandraVectorStoreProperties();
-		assertThat(props.getKeyspace()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
-		assertThat(props.getTable()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_TABLE_NAME);
-		assertThat(props.getContentColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME);
-		assertThat(props.getEmbeddingColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_EMBEDDING_COLUMN_NAME);
+		assertThat(props.getKeyspace()).isEqualTo(CassandraVectorStore.DEFAULT_KEYSPACE_NAME);
+		assertThat(props.getTable()).isEqualTo(CassandraVectorStore.DEFAULT_TABLE_NAME);
+		assertThat(props.getContentColumnName()).isEqualTo(CassandraVectorStore.DEFAULT_CONTENT_COLUMN_NAME);
+		assertThat(props.getEmbeddingColumnName()).isEqualTo(CassandraVectorStore.DEFAULT_EMBEDDING_COLUMN_NAME);
 		assertThat(props.getIndexName()).isNull();
-		assertThat(props.getFixedThreadPoolExecutorSize())
-			.isEqualTo(CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY);
+		assertThat(props.getFixedThreadPoolExecutorSize()).isEqualTo(CassandraVectorStore.DEFAULT_ADD_CONCURRENCY);
 	}
 
 	@Test

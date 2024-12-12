@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.cassandra;
 
 import java.util.List;
 
@@ -22,12 +22,14 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore.SchemaColumn;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -46,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0
  */
 @Testcontainers
+@Disabled("This is an example, not a really a test as it requires external setup")
 class WikiVectorStoreExample {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -90,36 +93,33 @@ class WikiVectorStoreExample {
 			List<SchemaColumn> extraColumns = List.of(new SchemaColumn("revision", DataTypes.INT),
 					new SchemaColumn("id", DataTypes.INT));
 
-			CassandraVectorStoreConfig conf = CassandraVectorStoreConfig.builder()
-				.withCqlSession(cqlSession)
-				.withKeyspaceName("wikidata")
-				.withTableName("articles")
-				.withPartitionKeys(partitionColumns)
-				.withClusteringKeys(clusteringColumns)
-				.withContentColumnName("body")
-				.withEmbeddingColumnName("all_minilm_l6_v2_embedding")
-				.withIndexName("all_minilm_l6_v2_ann")
-				.disallowSchemaChanges()
+			return CassandraVectorStore.builder()
+				.session(cqlSession)
+				.keyspace("wikidata")
+				.table("articles")
+				.partitionKeys(partitionColumns)
+				.clusteringKeys(clusteringColumns)
+				.contentColumnName("body")
+				.embeddingColumnName("all_minilm_l6_v2_embedding")
+				.indexName("all_minilm_l6_v2_ann")
+				.disallowSchemaChanges(true)
 				.addMetadataColumns(extraColumns)
-
-				.withPrimaryKeyTranslator((List<Object> primaryKeys) -> {
+				.primaryKeyTranslator((List<Object> primaryKeys) -> {
 					// the deliminator used to join fields together into the document's id
 					// is arbitary, here "§¶" is used
 					if (primaryKeys.isEmpty()) {
 						return "test§¶0";
 					}
-					return java.lang.String.format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
+					return String.format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
 				})
-
-				.withDocumentIdTranslator(id -> {
+				.documentIdTranslator(id -> {
 					String[] parts = id.split("§¶");
 					String title = parts[0];
 					int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;
 					return List.of("simplewiki", "en", title, chunk_no, 0);
 				})
+				.embeddingModel(embeddingModel())
 				.build();
-
-			return new CassandraVectorStore(conf, embeddingModel());
 		}
 
 		@Bean

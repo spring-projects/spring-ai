@@ -1,17 +1,18 @@
-= Apache Cassandra
+= Apache Cassandra Vector Store
 
 This section walks you through setting up `CassandraVectorStore` to store document embeddings and perform similarity searches.
 
-== What is Apache Cassandra ?
+== What is Apache Cassandra?
 
-link:https://cassandra.apache.org[Apache Cassandra®] is a true open source distributed database reknown for linear scalability, proven fault-tolerance and low latency, making it the perfect platform for mission-critical transactional data.
+link:https://cassandra.apache.org[Apache Cassandra®] is a true open source distributed database renowned for linear scalability, proven fault-tolerance and low latency, making it the perfect platform for mission-critical transactional data.
 
 Its Vector Similarity Search (VSS) is based on the JVector library that ensures best-in-class performance and relevancy.
 
 A vector search in Apache Cassandra is done as simply as:
-```
-SELECT content FROM table ORDER BY content_vector ANN OF query_embedding ;
-```
+[source,sql]
+----
+SELECT content FROM table ORDER BY content_vector ANN OF query_embedding;
+----
 
 More docs on this can be read https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html[here].
 
@@ -19,32 +20,30 @@ This Spring AI Vector Store is designed to work for both brand-new RAG applicati
 
 The store can also be used for non-RAG use-cases in an existing database, e.g. semantic searches, geo-proximity searches, etc.
 
+The store will automatically create, or enhance, the schema as needed according to its configuration. If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
 
-The store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
+When using spring-boot-autoconfigure `disallowSchemaChanges` defaults to true, per Spring Boot standards, and you must opt-in to schema creation/modifications by setting `...initialize-schema=true` in the `application.properties` file.
 
-When using spring-boot-autoconfigure `disallowSchemaChanges` defaults to true, per Spring Boot standards, and you must opt-in to schema creation/modifications by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
-
-
-== What is JVector ?
+== What is JVector?
 
 link:https://github.com/jbellis/jvector[JVector] is a pure Java embedded vector search engine.
 
-It stands out from other HNSW Vector Similarity Search implementations by being
+It stands out from other HNSW Vector Similarity Search implementations by being:
 
 * Algorithmic-fast. JVector uses state of the art graph algorithms inspired by DiskANN and related research that offer high recall and low latency.
 * Implementation-fast. JVector uses the Panama SIMD API to accelerate index build and queries.
-* Memory efficient. JVector compresses vectors using product quantization so they can stay in memory during searches. (As part of our PQ implementation, our SIMD-accelerated kmeans class is 5x faster than the one in Apache Commons Math.)
-* Disk-aware. JVector’s disk layout is designed to do the minimum necessary iops at query time.
+* Memory efficient. JVector compresses vectors using product quantization so they can stay in memory during searches.
+* Disk-aware. JVector's disk layout is designed to do the minimum necessary iops at query time.
 * Concurrent. Index builds scale linearly to at least 32 threads. Double the threads, half the build time.
 * Incremental. Query your index as you build it. No delay between adding a vector and being able to find it in search results.
 * Easy to embed. API designed for easy embedding, by people using it in production.
 
 == Prerequisites
 
-1. A `Embedding` instance to compute the document embeddings. This is usually configured as a Spring Bean.  Several options are available:
+1. A `EmbeddingModel` instance to compute the document embeddings. This is usually configured as a Spring Bean. Several options are available:
 
 - `Transformers Embedding` - computes the embedding in your local environment. The default is via ONNX and the all-MiniLM-L6-v2 Sentence Transformers. This just works.
-- If you want to use OpenAI's Embeddings` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
+- If you want to use OpenAI's Embeddings - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
 - There are many more choices, see `Embeddings API` docs.
 
 2. An Apache Cassandra instance, from version 5.0-beta1
@@ -53,38 +52,37 @@ b. For a managed offering https://astra.datastax.com/[Astra DB] offers a healthy
 
 == Dependencies
 
+TIP: For dependency management, we recommend using the Spring AI BOM as explained in the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
 Add these dependencies to your project:
 
-* For just the Cassandra Vector Store
+* For just the Cassandra Vector Store:
 
 [source,xml]
 ----
 <dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-cassandra-store</artifactId>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-cassandra-store</artifactId>
 </dependency>
 ----
 
-* Or, for everything you need in a RAG application (using the default ONNX Embedding Model)
+* Or, for everything you need in a RAG application (using the default ONNX Embedding Model):
 
 [source,xml]
 ----
 <dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
 </dependency>
 ----
-
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 == Configuration Properties
 
 You can use the following properties in your Spring Boot configuration to customize the Apache Cassandra vector store.
 
-[stripes=even]
+[cols="2,1",stripes=even]
 |===
-|Property|Default value
+|Property|Default Value
 
 |`spring.ai.vectorstore.cassandra.keyspace`|springframework
 |`spring.ai.vectorstore.cassandra.table`|ai_vector_store
@@ -92,24 +90,25 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.cassandra.index-name`|
 |`spring.ai.vectorstore.cassandra.content-column-name`|content
 |`spring.ai.vectorstore.cassandra.embedding-column-name`|embedding
-|`spring.ai.vectorstore.cassandra.return-embeddings`|false
 |`spring.ai.vectorstore.cassandra.fixed-thread-pool-executor-size`|16
 |===
 
-
-
 == Usage
 
-Create a CassandraVectorStore instance connected to your Apache Cassandra database:
+=== Basic Usage
+
+Create a CassandraVectorStore instance using the builder pattern:
 
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(EmbeddingModel embeddingModel) {
-
-  CassandraVectorStoreConfig config = CassandraVectorStoreConfig.builder().build();
-
-  return new CassandraVectorStore(config, embeddingModel);
+public VectorStore vectorStore(CqlSession session, EmbeddingModel embeddingModel) {
+    return CassandraVectorStore.builder()
+        .session(session)
+        .embeddingModel(embeddingModel)
+        .keyspace("my_keyspace")
+        .table("my_vectors")
+        .build();
 }
 ----
 
@@ -120,56 +119,82 @@ The default configuration connects to Cassandra at `localhost:9042` and will aut
 
 [NOTE]
 ====
-The Cassandra Java Driver is easiest configured via an `application.conf` file on the classpath.  More info https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration[here].
+The Cassandra Java Driver is easiest configured via an `application.conf` file on the classpath. More info https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration[here].
 ====
 
-Then in your main code, create some documents:
+Then in your main code, create and add some documents:
 
 [source,java]
 ----
 List<Document> documents = List.of(
-   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "year", 2020)),
-   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
-   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
-----
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", 
+        Map.of("country", "UK", "year", 2020)),
+    new Document("The World is Big and Salvation Lurks Around the Corner", 
+        Map.of()),
+    new Document("You walk forward facing the past and you turn back toward the future.", 
+        Map.of("country", "NL", "year", 2023)));
 
-Now add the documents to your vector store:
-
-
-[source,java]
-----
 vectorStore.add(documents);
 ----
 
-And finally, retrieve documents similar to a query:
+And retrieve documents similar to a query:
 
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-   SearchRequest.query("Spring").withTopK(5));
+    SearchRequest.query("Spring").withTopK(5));
 ----
-
-If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
 
 You can also limit results based on a similarity threshold:
+
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-   SearchRequest.query("Spring").withTopK(5)
-      .withSimilarityThreshold(0.5d));
+    SearchRequest.query("Spring")
+        .withTopK(5)
+        .withSimilarityThreshold(0.5d));
 ----
 
-=== Metadata filtering
+=== Advanced Configuration
 
-You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the CassandraVectorStore as well.  Metadata columns must be configured in `CassandraVectorStoreConfig`.
+For more complex scenarios, the builder pattern offers extensive configuration options:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(CqlSession session, EmbeddingModel embeddingModel) {
+    return CassandraVectorStore.builder()
+        .session(session)
+        .embeddingModel(embeddingModel)
+        .keyspace("my_keyspace")
+        .table("my_vectors")
+        .partitionKeys(List.of(new SchemaColumn("id", DataTypes.TEXT)))
+        .clusteringKeys(List.of(new SchemaColumn("timestamp", DataTypes.TIMESTAMP)))
+        .addMetadataColumns(
+            new SchemaColumn("category", DataTypes.TEXT, SchemaColumnTags.INDEXED),
+            new SchemaColumn("score", DataTypes.DOUBLE)
+        )
+        .contentColumnName("text")
+        .embeddingColumnName("vector")
+        .fixedThreadPoolExecutorSize(32)
+        .disallowSchemaChanges(false)
+        .batchingStrategy(new TokenCountBatchingStrategy())
+        .build();
+}
+----
+
+=== Metadata Filtering
+
+You can leverage the generic, portable metadata filters with the CassandraVectorStore. For metadata columns to be searchable they must be either primary keys or SAI indexed. To make non-primary-key columns indexed, configure the metadata column with the `SchemaColumnTags.INDEXED`.
 
 For example, you can use either the text expression language:
 
 [source,java]
 ----
 vectorStore.similaritySearch(
-   SearchRequest.query("The World").withTopK(TOP_K)
-      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+    SearchRequest.query("The World")
+        .withTopK(5)
+        .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
 ----
 
 or programmatically using the expression DSL:
@@ -177,79 +202,78 @@ or programmatically using the expression DSL:
 [source,java]
 ----
 Filter.Expression f = new FilterExpressionBuilder()
-    .and(f.in("country", "UK", "NL"), this.f.gte("year", 2020)).build();
+    .and(
+        f.in("country", "UK", "NL"), 
+        f.gte("year", 2020)
+    ).build();
 
 vectorStore.similaritySearch(
-   SearchRequest.query("The World").withTopK(TOP_K)
-      .withFilterExpression(f));
+    SearchRequest.query("The World")
+        .withTopK(5)
+        .withFilterExpression(f));
 ----
 
 The portable filter expressions get automatically converted into link:https://cassandra.apache.org/doc/latest/cassandra/developing/cql/index.html[CQL queries].
 
-For metadata columns to be searchable they must be either primary keys or SAI indexed.  To make non-primary-key columns indexed configure the metadata column with the `SchemaColumnTags.INDEXED`.
+== Advanced Example: Vector Store on top of Wikipedia Dataset
 
+The following example demonstrates how to use the store on an existing schema. Here we use the schema from the https://github.com/datastax-labs/colbert-wikipedia-data project which comes with the full wikipedia dataset ready vectorized for you.
 
-
-
-== Advanced Example: Vector Store ontop full Wikipedia dataset
-
-The following example demonstrates how to use the store on an existing schema.  Here we use the schema from the https://github.com/datastax-labs/colbert-wikipedia-data project which comes with the full wikipedia dataset ready vectorised for you.
-
-
-== Usage
-
-Create the schema in the Cassandra database first:
+First, create the schema in the Cassandra database:
 
 [source,bash]
 ----
 wget https://s.apache.org/colbert-wikipedia-schema-cql -O colbert-wikipedia-schema.cql
-
 cqlsh -f colbert-wikipedia-schema.cql
 ----
 
-Then configure the store like:
+Then configure the store using the builder pattern:
 
 [source,java]
 ----
 @Bean
-public CassandraVectorStore store(EmbeddingModel embeddingModel) {
+public VectorStore vectorStore(CqlSession session, EmbeddingModel embeddingModel) {
+    List<SchemaColumn> partitionColumns = List.of(
+        new SchemaColumn("wiki", DataTypes.TEXT),
+        new SchemaColumn("language", DataTypes.TEXT),
+        new SchemaColumn("title", DataTypes.TEXT)
+    );
 
-    List<SchemaColumn> partitionColumns = List.of(new SchemaColumn("wiki", DataTypes.TEXT),
-            new SchemaColumn("language", DataTypes.TEXT), new SchemaColumn("title", DataTypes.TEXT));
+    List<SchemaColumn> clusteringColumns = List.of(
+        new SchemaColumn("chunk_no", DataTypes.INT),
+        new SchemaColumn("bert_embedding_no", DataTypes.INT)
+    );
 
-    List<SchemaColumn> clusteringColumns = List.of(new SchemaColumn("chunk_no", DataTypes.INT),
-            new SchemaColumn("bert_embedding_no", DataTypes.INT));
+    List<SchemaColumn> extraColumns = List.of(
+        new SchemaColumn("revision", DataTypes.INT),
+        new SchemaColumn("id", DataTypes.INT)
+    );
 
-    List<SchemaColumn> extraColumns = List.of(new SchemaColumn("revision", DataTypes.INT),
-            new SchemaColumn("id", DataTypes.INT));
-
-    CassandraVectorStoreConfig conf = CassandraVectorStoreConfig.builder()
-        .withKeyspaceName("wikidata")
-        .withTableName("articles")
-        .withPartitionKeys(partitionColumns)
-        .withClusteringKeys(clusteringColumns)
-        .withContentColumnName("body")
-        .withEmbeddingColumndName("all_minilm_l6_v2_embedding")
-        .withIndexName("all_minilm_l6_v2_ann")
-        .disallowSchemaChanges()
+    return CassandraVectorStore.builder()
+        .session(session)
+        .embeddingModel(embeddingModel)
+        .keyspace("wikidata")
+        .table("articles")
+        .partitionKeys(partitionColumns)
+        .clusteringKeys(clusteringColumns)
+        .contentColumnName("body")
+        .embeddingColumnName("all_minilm_l6_v2_embedding")
+        .indexName("all_minilm_l6_v2_ann")
+        .disallowSchemaChanges(true)
         .addMetadataColumns(extraColumns)
-        .withPrimaryKeyTranslator((List<Object> primaryKeys) -> {
-            // the deliminator used to join fields together into the document's id is arbitary
-            // here "§¶" is used
+        .primaryKeyTranslator((List<Object> primaryKeys) -> {
             if (primaryKeys.isEmpty()) {
                 return "test§¶0";
             }
-            return format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
+            return String.format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
         })
-        .withDocumentIdTranslator((id) -> {
+        .documentIdTranslator((id) -> {
             String[] parts = id.split("§¶");
             String title = parts[0];
-            int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;
+            int chunk_no = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
             return List.of("simplewiki", "en", title, chunk_no, 0);
         })
         .build();
-
-    return new CassandraVectorStore(conf, embeddingModel());
 }
 
 @Bean
@@ -259,21 +283,22 @@ public EmbeddingModel embeddingModel() {
 }
 ----
 
+=== Loading the Complete Wikipedia Dataset
 
-== Complete wikipedia dataset
+To load the full wikipedia dataset:
 
-And, if you would like to load the full wikipedia dataset.
-First download the `simplewiki-sstable.tar` from this link https://s.apache.org/simplewiki-sstable-tar .  This will take a while, the file is tens of GBs.
+1. Download `simplewiki-sstable.tar` from https://s.apache.org/simplewiki-sstable-tar (this will take a while, the file is tens of GBs)
 
+2. Load the data:
 [source,bash]
 ----
 tar -xf simplewiki-sstable.tar -C ${CASSANDRA_DATA}/data/wikidata/articles-*/
-
 nodetool import wikidata articles ${CASSANDRA_DATA}/data/wikidata/articles-*/
 ----
 
-NOTE: If you have existing data in this table you'll want to check the tarball's files don't clobber existing sstables when doing the `tar`.
-
-NOTE: An alternative to the `nodetool import` is to just restart Cassandra.
-
-NOTE: If there are any failures in the indexes they will be rebuilt automatically.
+[NOTE]
+====
+* If you have existing data in this table, check the tarball's files don't clobber existing sstables when doing the `tar`.
+* An alternative to `nodetool import` is to just restart Cassandra.
+* If there are any failures in the indexes they will be rebuilt automatically.
+====
