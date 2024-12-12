@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.typesense;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +45,8 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -86,39 +88,83 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Client client;
 
-	private final EmbeddingModel embeddingModel;
-
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	private final TypesenseVectorStoreConfig config;
 
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
 
+	private final String collectionName;
+
+	private final int embeddingDimension;
+
+	/**
+	 * @deprecated Use {@link #builder()} instead
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel) {
 		this(client, embeddingModel, TypesenseVectorStoreConfig.defaultConfig(), false);
 	}
 
+	/**
+	 * @deprecated Use {@link #builder()} instead
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
 			boolean initializeSchema) {
-
 		this(client, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null,
 				new TokenCountBatchingStrategy());
 	}
 
+	/**
+	 * @deprecated Use {@link #builder()} instead
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder().client(client)
+			.embeddingModel(embeddingModel)
+			.collectionName(config.collectionName)
+			.embeddingDimension(config.embeddingDimension)
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Assert.notNull(client, "Typesense must not be null");
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+	/**
+	 * Protected constructor for creating a TypesenseVectorStore instance using the
+	 * builder pattern. This constructor initializes the vector store with the configured
+	 * settings from the builder and performs necessary validations.
+	 * @param builder the {@link TypesenseBuilder} containing all configuration settings
+	 * @throws IllegalArgumentException if the client is null
+	 * @throws IllegalArgumentException if the embeddingModel is null
+	 * @see TypesenseBuilder
+	 * @since 1.0.0
+	 */
+	protected TypesenseVectorStore(TypesenseBuilder builder) {
+		super(builder);
 
-		this.client = client;
-		this.embeddingModel = embeddingModel;
-		this.config = config;
-		this.initializeSchema = initializeSchema;
-		this.batchingStrategy = batchingStrategy;
+		Assert.notNull(builder.client, "Typesense must not be null");
+
+		this.client = builder.client;
+		this.initializeSchema = builder.initializeSchema;
+		this.batchingStrategy = builder.batchingStrategy;
+		this.collectionName = builder.collectionName;
+		this.embeddingDimension = builder.embeddingDimension;
+		this.config = null;
+	}
+
+	/**
+	 * Creates a new TypesenseBuilder instance. This is the recommended way to instantiate
+	 * a TypesenseVectorStore.
+	 * @return a new TypesenseBuilder instance
+	 */
+	public static TypesenseBuilder builder() {
+		return new TypesenseBuilder();
 	}
 
 	@Override
@@ -142,9 +188,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		importDocumentsParameters.action("upsert");
 
 		try {
-			this.client.collections(this.config.collectionName)
-				.documents()
-				.import_(documentList, importDocumentsParameters);
+			this.client.collections(this.collectionName).documents().import_(documentList, importDocumentsParameters);
 
 			logger.info("Added {} documents", documentList.size());
 		}
@@ -159,7 +203,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
 
 		try {
-			int deletedDocs = (Integer) this.client.collections(this.config.collectionName)
+			int deletedDocs = (Integer) this.client.collections(this.collectionName)
 				.documents()
 				.delete(deleteDocumentsParameters)
 				.getOrDefault("num_deleted", 0);
@@ -188,7 +232,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
-		multiSearchCollectionParameters.collection(this.config.collectionName);
+		multiSearchCollectionParameters.collection(this.collectionName);
 		multiSearchCollectionParameters.q("*");
 
 		Stream<Float> floatStream = IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]);
@@ -235,8 +279,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	int embeddingDimensions() {
-		if (this.config.embeddingDimension != INVALID_EMBEDDING_DIMENSION) {
-			return this.config.embeddingDimension;
+		if (this.embeddingDimension != INVALID_EMBEDDING_DIMENSION) {
+			return this.embeddingDimension;
 		}
 		try {
 			int embeddingDimensions = this.embeddingModel.dimensions();
@@ -246,7 +290,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		}
 		catch (Exception e) {
 			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ this.config.embeddingDimension, e);
+					+ this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
@@ -263,7 +307,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	private boolean hasCollection() {
 		try {
-			this.client.collections(this.config.collectionName).retrieve();
+			this.client.collections(this.collectionName).retrieve();
 			return true;
 		}
 		catch (Exception e) {
@@ -273,13 +317,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	void createCollection() {
 		if (this.hasCollection()) {
-			logger.info("Collection {} already exists", this.config.collectionName);
+			logger.info("Collection {} already exists", this.collectionName);
 			return;
 		}
 
 		CollectionSchema collectionSchema = new CollectionSchema();
 
-		collectionSchema.name(this.config.collectionName)
+		collectionSchema.name(this.collectionName)
 			.addFieldsItem(new Field().name(DOC_ID_FIELD_NAME).type(FieldTypes.STRING).optional(false))
 			.addFieldsItem(new Field().name(CONTENT_FIELD_NAME).type(FieldTypes.STRING).optional(false))
 			.addFieldsItem(new Field().name(METADATA_FIELD_NAME).type(FieldTypes.OBJECT).optional(true))
@@ -291,31 +335,31 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		try {
 			this.client.collections().create(collectionSchema);
-			logger.info("Collection {} created", this.config.collectionName);
+			logger.info("Collection {} created", this.collectionName);
 		}
 		catch (Exception e) {
-			logger.error("Failed to create collection {}", this.config.collectionName, e);
+			logger.error("Failed to create collection {}", this.collectionName, e);
 		}
 	}
 
 	void dropCollection() {
 		if (!this.hasCollection()) {
-			logger.info("Collection {} does not exist", this.config.collectionName);
+			logger.info("Collection {} does not exist", this.collectionName);
 			return;
 		}
 
 		try {
-			this.client.collections(this.config.collectionName).delete();
-			logger.info("Collection {} dropped", this.config.collectionName);
+			this.client.collections(this.collectionName).delete();
+			logger.info("Collection {} dropped", this.collectionName);
 		}
 		catch (Exception e) {
-			logger.error("Failed to drop collection {}", this.config.collectionName, e);
+			logger.error("Failed to drop collection {}", this.collectionName, e);
 		}
 	}
 
 	Map<String, Object> getCollectionInfo() {
 		try {
-			CollectionResponse retrievedCollection = this.client.collections(this.config.collectionName).retrieve();
+			CollectionResponse retrievedCollection = this.client.collections(this.collectionName).retrieve();
 			return Map.of("name", retrievedCollection.getName(), "num_documents",
 					retrievedCollection.getNumDocuments());
 		}
@@ -331,17 +375,100 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.TYPESENSE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName(this.config.collectionName)
+			.withCollectionName(this.collectionName)
 			.withFieldName(EMBEDDING_FIELD_NAME)
 			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
+	public static final class TypesenseBuilder extends AbstractVectorStoreBuilder<TypesenseBuilder> {
+
+		private String collectionName = DEFAULT_COLLECTION_NAME;
+
+		private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
+
+		private Client client;
+
+		private boolean initializeSchema = false;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		/**
+		 * Configures the Typesense client.
+		 * @param client the client for Typesense operations
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if client is null
+		 */
+		public TypesenseBuilder client(Client client) {
+			Assert.notNull(client, "client must not be null");
+			this.client = client;
+			return this;
+		}
+
+		/**
+		 * Configures the collection name.
+		 * @param collectionName the collection name to use
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if collectionName is null or empty
+		 */
+		public TypesenseBuilder collectionName(String collectionName) {
+			Assert.hasText(collectionName, "collectionName must not be empty");
+			this.collectionName = collectionName;
+			return this;
+		}
+
+		/**
+		 * Configures the dimension size of the embedding vectors.
+		 * @param embeddingDimension The dimension of the embedding
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if dimension is invalid
+		 */
+		public TypesenseBuilder embeddingDimension(int embeddingDimension) {
+			Assert.isTrue(embeddingDimension > 0, "Embedding dimension must be greater than 0");
+			this.embeddingDimension = embeddingDimension;
+			return this;
+		}
+
+		/**
+		 * Configures whether to initialize the collection schema automatically.
+		 * @param initializeSchema true to initialize schema automatically
+		 * @return this builder instance
+		 */
+		public TypesenseBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Configures the strategy for batching operations.
+		 * @param batchingStrategy the batching strategy to use
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public TypesenseBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		@Override
+		public TypesenseVectorStore build() {
+			validate();
+			return new TypesenseVectorStore(this);
+		}
+
+	}
+
+	/**
+	 * @deprecated Use {@link TypesenseVectorStore#builder()} instead
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static class TypesenseVectorStoreConfig {
 
 		private final String collectionName;
 
 		private final int embeddingDimension;
 
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public TypesenseVectorStoreConfig(String collectionName, int embeddingDimension) {
 			this.collectionName = collectionName;
 			this.embeddingDimension = embeddingDimension;
@@ -355,6 +482,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		/**
 		 * {@return the default config}
 		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static TypesenseVectorStoreConfig defaultConfig() {
 			return builder().build();
 		}
@@ -363,11 +491,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration.
 		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static Builder builder() {
 
 			return new Builder();
 		}
 
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static class Builder {
 
 			private String collectionName;
@@ -379,6 +509,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			 * @param collectionName The collection name.
 			 * @return The builder.
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withCollectionName(String collectionName) {
 				this.collectionName = collectionName;
 				return this;
@@ -389,6 +520,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			 * @param embeddingDimension The embedding dimension.
 			 * @return The builder.
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withEmbeddingDimension(int embeddingDimension) {
 				this.embeddingDimension = embeddingDimension;
 				return this;
@@ -398,6 +530,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			 * Build the configuration.
 			 * @return The configuration.
 			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public TypesenseVectorStoreConfig build() {
 				return new TypesenseVectorStoreConfig(this);
 			}
