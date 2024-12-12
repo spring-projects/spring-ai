@@ -21,11 +21,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatModel;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
@@ -39,8 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class CohereChatBedrockApiIT {
 
 	private CohereChatBedrockApi cohereChatApi = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),

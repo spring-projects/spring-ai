@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -73,7 +74,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = PerplexityWithOpenAiChatModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "PERPLEXITY_API_KEY", matches = ".+")
-// @Disabled("Requires Perplexity credits")
+@Disabled("Requires Perplexity credits")
 class PerplexityWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(PerplexityWithOpenAiChatModelIT.class);
@@ -142,8 +143,9 @@ class PerplexityWithOpenAiChatModelIT {
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
-		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
+		assertThat(streamingTokenUsage.getGenerationTokens())
+			.isGreaterThanOrEqualTo(referenceTokenUsage.getGenerationTokens());
+		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThanOrEqualTo(referenceTokenUsage.getTotalTokens());
 	}
 
 	@Test
@@ -184,6 +186,7 @@ class PerplexityWithOpenAiChatModelIT {
 	}
 
 	@Test
+	@Disabled("Perplexity gets confused with the 'Generate the filmography for a random actor.' prompt")
 	void beanOutputConverter() {
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 

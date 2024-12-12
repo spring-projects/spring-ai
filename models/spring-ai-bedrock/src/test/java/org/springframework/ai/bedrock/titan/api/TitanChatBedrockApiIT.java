@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
@@ -37,8 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class TitanChatBedrockApiIT {
 
 	TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
