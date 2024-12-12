@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.weaviate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +37,8 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -165,13 +166,13 @@ public class WeaviateVectorStoreObservationIT {
 			WeaviateClient weaviateClient = new WeaviateClient(
 					new io.weaviate.client.Config("http", weaviateContainer.getHttpHostAddress()));
 
-			WeaviateVectorStoreConfig config = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
-				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
+			return WeaviateVectorStore.builder()
+				.weaviateClient(weaviateClient)
+				.embeddingModel(embeddingModel)
+				.consistencyLevel(WeaviateVectorStore.ConsistentLevel.ONE)
+				.observationRegistry(observationRegistry)
+				.batchingStrategy(new TokenCountBatchingStrategy())
 				.build();
-
-			return new WeaviateVectorStore(config, embeddingModel, weaviateClient, observationRegistry, null,
-					new TokenCountBatchingStrategy());
-
 		}
 
 		@Bean

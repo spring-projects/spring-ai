@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.weaviate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,8 +35,8 @@ import org.testcontainers.weaviate.WeaviateContainer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -252,13 +252,13 @@ public class WeaviateVectorStoreIT {
 			WeaviateClient weaviateClient = new WeaviateClient(
 					new Config("http", weaviateContainer.getHttpHostAddress()));
 
-			WeaviateVectorStoreConfig config = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
-				.withFilterableMetadataFields(List.of(MetadataField.text("country"), MetadataField.number("year")))
-				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
+			return WeaviateVectorStore.builder()
+				.weaviateClient(weaviateClient)
+				.embeddingModel(embeddingModel)
+				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country"),
+						WeaviateVectorStore.MetadataField.number("year")))
+				.consistencyLevel(WeaviateVectorStore.ConsistentLevel.ONE)
 				.build();
-
-			return new WeaviateVectorStore(config, embeddingModel, weaviateClient);
-
 		}
 
 		@Bean
