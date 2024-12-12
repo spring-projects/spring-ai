@@ -24,7 +24,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -139,7 +138,7 @@ class PromptTests {
 		model.put("name", "Alice");
 		model.put("age", 30);
 		PromptTemplate promptTemplate = new PromptTemplate(template, model);
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.5).withMaxTokens(100).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
 
 		Prompt prompt = promptTemplate.create(model, chatOptions);
 

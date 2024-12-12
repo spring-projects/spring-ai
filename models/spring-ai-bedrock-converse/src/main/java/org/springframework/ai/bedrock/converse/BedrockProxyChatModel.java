@@ -93,7 +93,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -219,13 +218,13 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	}
 
 	private ChatOptions buildRequestOptions(ConverseRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.modelId())
-			.withMaxTokens(request.inferenceConfig().maxTokens())
-			.withStopSequences(request.inferenceConfig().stopSequences())
-			.withTemperature(request.inferenceConfig().temperature() != null
+		return ChatOptions.builder()
+			.model(request.modelId())
+			.maxTokens(request.inferenceConfig().maxTokens())
+			.stopSequences(request.inferenceConfig().stopSequences())
+			.temperature(request.inferenceConfig().temperature() != null
 					? request.inferenceConfig().temperature().doubleValue() : null)
-			.withTopP(request.inferenceConfig().topP() != null ? request.inferenceConfig().topP().doubleValue() : null)
+			.topP(request.inferenceConfig().topP() != null ? request.inferenceConfig().topP().doubleValue() : null)
 			.build();
 	}
 

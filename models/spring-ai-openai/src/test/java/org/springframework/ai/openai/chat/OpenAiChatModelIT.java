@@ -44,7 +44,7 @@ import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -549,7 +549,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
 		ChatResponse response = chatModel
-			.call(new Prompt(List.of(userMessage), ChatOptionsBuilder.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("hobbits");

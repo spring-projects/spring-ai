@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ class ChatModelPromptContentObservationFilterTests {
 		var expectedContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt(List.of()))
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var actualContext = this.observationFilter.map(expectedContext);
 
@@ -64,7 +64,7 @@ class ChatModelPromptContentObservationFilterTests {
 		var originalContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt("supercalifragilisticexpialidocious"))
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 
@@ -78,7 +78,7 @@ class ChatModelPromptContentObservationFilterTests {
 			.prompt(new Prompt(List.of(new SystemMessage("you're a chimney sweep"),
 					new UserMessage("supercalifragilisticexpialidocious"))))
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 

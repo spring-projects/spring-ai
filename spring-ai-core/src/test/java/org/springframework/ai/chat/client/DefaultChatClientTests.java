@@ -43,7 +43,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
@@ -115,7 +114,7 @@ class DefaultChatClientTests {
 	@Test
 	void whenPromptWithOptionsThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().build();
+		ChatOptions chatOptions = ChatOptions.builder().build();
 		Prompt prompt = new Prompt(List.of(), chatOptions);
 		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt(prompt);
@@ -1345,7 +1344,7 @@ class DefaultChatClientTests {
 	void whenOptionsThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		ChatOptions options = ChatOptionsBuilder.builder().build();
+		ChatOptions options = ChatOptions.builder().build();
 		spec = spec.options(options);
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getChatOptions()).isEqualTo(options);

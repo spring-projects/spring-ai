@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.milvus.vectorstore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +62,8 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -71,13 +73,78 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Milvus based implementation of the
- * {@link org.springframework.ai.vectorstore.VectorStore}.
+ * Milvus implementation of the {@link org.springframework.ai.vectorstore.VectorStore}
+ * interface. This implementation supports storing and searching document embeddings using
+ * Milvus, an open-source vector database optimized for similarity search and AI
+ * applications.
+ *
+ * <p>
+ * Key features include:
+ * <ul>
+ * <li>Support for different similarity metrics (Cosine, L2, Inner Product)</li>
+ * <li>Configurable index types for performance optimization</li>
+ * <li>Metadata filtering capabilities</li>
+ * <li>Automatic schema initialization</li>
+ * <li>Batching strategy support for efficient operations</li>
+ * </ul>
+ *
+ * <p>
+ * Example usage: <pre>{@code
+ * // Create a basic Milvus vector store
+ * MilvusVectorStore vectorStore = MilvusVectorStore.builder()
+ *     .milvusClient(milvusClient)
+ *     .embeddingModel(embeddingModel)
+ *     .initializeSchema(true)
+ *     .build();
+ *
+ * // Create a customized Milvus vector store
+ * MilvusVectorStore customVectorStore = MilvusVectorStore.builder()
+ *     .milvusClient(milvusClient)
+ *     .embeddingModel(embeddingModel)
+ *     .databaseName("my_database")
+ *     .collectionName("my_collection")
+ *     .metricType(MetricType.COSINE)
+ *     .indexType(IndexType.IVF_FLAT)
+ *     .indexParameters("{\"nlist\":1024}")
+ *     .embeddingDimension(1536)
+ *     .batchingStrategy(new TokenCountBatchingStrategy())
+ *     .initializeSchema(true)
+ *     .build();
+ *
+ * // Add documents to the store
+ * List<Document> documents = List.of(
+ *     new Document("content1", Map.of("meta1", "value1")),
+ *     new Document("content2", Map.of("meta2", "value2"))
+ * );
+ * vectorStore.add(documents);
+ *
+ * // Perform similarity search
+ * List<Document> results = vectorStore.similaritySearch(
+ *     SearchRequest.query("search text")
+ *         .withTopK(5)
+ *         .withSimilarityThreshold(0.7)
+ *         .withFilterExpression("meta1 == 'value1'")
+ * );
+ * }</pre>
+ *
+ * <p>
+ * The vector store supports various configuration options through its builder:
+ * <ul>
+ * <li>{@code milvusClient}: Required Milvus service client for database operations</li>
+ * <li>{@code embeddingModel}: Required model for generating embeddings</li>
+ * <li>{@code metricType}: Similarity metric (COSINE, L2, IP)</li>
+ * <li>{@code indexType}: Type of index for search optimization</li>
+ * <li>{@code databaseName}: Name of the Milvus database (default: "default")</li>
+ * <li>{@code collectionName}: Name of the collection (default: "vector_store")</li>
+ * <li>{@code initializeSchema}: Whether to automatically create the schema</li>
+ * </ul>
  *
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @see org.springframework.ai.vectorstore.VectorStore
+ * @see io.milvus.client.MilvusServiceClient
  */
 public class MilvusVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -110,44 +177,99 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private final MilvusServiceClient milvusClient;
 
-	private final EmbeddingModel embeddingModel;
-
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	private final MilvusVectorStoreConfig config;
 
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
 
+	private final String databaseName;
+
+	private final String collectionName;
+
+	private final int embeddingDimension;
+
+	private final IndexType indexType;
+
+	private final MetricType metricType;
+
+	private final String indexParameters;
+
+	private final String idFieldName;
+
+	private final boolean isAutoId;
+
+	private final String contentFieldName;
+
+	private final String metadataFieldName;
+
+	private final String embeddingFieldName;
+
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
 		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema,
 				new TokenCountBatchingStrategy());
 	}
 
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel, boolean initializeSchema,
 			BatchingStrategy batchingStrategy) {
 		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema, batchingStrategy);
 	}
 
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			MilvusVectorStoreConfig config, boolean initializeSchema, BatchingStrategy batchingStrategy) {
 		this(milvusClient, embeddingModel, config, initializeSchema, batchingStrategy, ObservationRegistry.NOOP, null);
 	}
 
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			MilvusVectorStoreConfig config, boolean initializeSchema, BatchingStrategy batchingStrategy,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
 
-		super(observationRegistry, customObservationConvention);
-		this.initializeSchema = initializeSchema;
+		this(builder().milvusClient(milvusClient)
+			.embeddingModel(embeddingModel)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.initializeSchema(initializeSchema)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Assert.notNull(milvusClient, "MilvusServiceClient must not be null");
-		Assert.notNull(milvusClient, "EmbeddingModel must not be null");
+	/**
+	 * @param builder {@link Builder} for chroma vector store
+	 */
+	protected MilvusVectorStore(MilvusBuilder builder) {
+		super(builder);
 
-		this.milvusClient = milvusClient;
-		this.embeddingModel = embeddingModel;
-		this.config = config;
-		this.batchingStrategy = batchingStrategy;
+		Assert.notNull(builder.milvusClient, "milvusClient must not be null");
+
+		this.milvusClient = builder.milvusClient;
+		this.batchingStrategy = builder.batchingStrategy;
+		this.initializeSchema = builder.initializeSchema;
+		this.config = null;
+		this.databaseName = builder.databaseName;
+		this.collectionName = builder.collectionName;
+		this.embeddingDimension = builder.embeddingDimension;
+		this.indexType = builder.indexType;
+		this.metricType = builder.metricType;
+		this.indexParameters = builder.indexParameters;
+		this.idFieldName = builder.idFieldName;
+		this.isAutoId = builder.isAutoId;
+		this.contentFieldName = builder.contentFieldName;
+		this.metadataFieldName = builder.metadataFieldName;
+		this.embeddingFieldName = builder.embeddingFieldName;
+	}
+
+	/**
+	 * Creates a new MilvusBuilder instance with the specified Milvus client. This is the
+	 * recommended way to instantiate a MilvusBuilder.
+	 * @return a new MilvusBuilder instance
+	 */
+	public static MilvusBuilder builder() {
+		return new MilvusBuilder();
 	}
 
 	@Override
@@ -175,16 +297,16 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		List<InsertParam.Field> fields = new ArrayList<>();
 		// Insert ID field only if it is not auto ID
-		if (!this.config.isAutoId) {
-			fields.add(new InsertParam.Field(this.config.idFieldName, docIdArray));
+		if (!this.isAutoId) {
+			fields.add(new InsertParam.Field(this.idFieldName, docIdArray));
 		}
-		fields.add(new InsertParam.Field(this.config.contentFieldName, contentArray));
-		fields.add(new InsertParam.Field(this.config.metadataFieldName, metadataArray));
-		fields.add(new InsertParam.Field(this.config.embeddingFieldName, embeddingArray));
+		fields.add(new InsertParam.Field(this.contentFieldName, contentArray));
+		fields.add(new InsertParam.Field(this.metadataFieldName, metadataArray));
+		fields.add(new InsertParam.Field(this.embeddingFieldName, embeddingArray));
 
 		InsertParam insertParam = InsertParam.newBuilder()
-			.withDatabaseName(this.config.databaseName)
-			.withCollectionName(this.config.collectionName)
+			.withDatabaseName(this.databaseName)
+			.withCollectionName(this.collectionName)
 			.withFields(fields)
 			.build();
 
@@ -198,12 +320,12 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public Optional<Boolean> doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 
-		String deleteExpression = String.format("%s in [%s]", this.config.idFieldName,
+		String deleteExpression = String.format("%s in [%s]", this.idFieldName,
 				idList.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")));
 
 		R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
-			.withDatabaseName(this.config.databaseName)
-			.withCollectionName(this.config.collectionName)
+			.withDatabaseName(this.databaseName)
+			.withCollectionName(this.collectionName)
 			.withExpr(deleteExpression)
 			.build());
 
@@ -223,20 +345,20 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 		List<String> outFieldNames = new ArrayList<>();
-		outFieldNames.add(this.config.idFieldName);
-		outFieldNames.add(this.config.contentFieldName);
-		outFieldNames.add(this.config.metadataFieldName);
+		outFieldNames.add(this.idFieldName);
+		outFieldNames.add(this.contentFieldName);
+		outFieldNames.add(this.metadataFieldName);
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		var searchParamBuilder = SearchParam.newBuilder()
-			.withDatabaseName(this.config.databaseName)
-			.withCollectionName(this.config.collectionName)
+			.withDatabaseName(this.databaseName)
+			.withCollectionName(this.collectionName)
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
-			.withMetricType(this.config.metricType)
+			.withMetricType(this.metricType)
 			.withOutFields(outFieldNames)
 			.withTopK(request.getTopK())
 			.withVectors(List.of(EmbeddingUtils.toList(embedding)))
-			.withVectorFieldName(this.config.embeddingFieldName);
+			.withVectorFieldName(this.embeddingFieldName);
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
 			searchParamBuilder.withExpr(nativeFilterExpressions);
@@ -254,11 +376,11 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.stream()
 			.filter(rowRecord -> getResultSimilarity(rowRecord) >= request.getSimilarityThreshold())
 			.map(rowRecord -> {
-				String docId = String.valueOf(rowRecord.get(this.config.idFieldName));
-				String content = (String) rowRecord.get(this.config.contentFieldName);
+				String docId = String.valueOf(rowRecord.get(this.idFieldName));
+				String content = (String) rowRecord.get(this.contentFieldName);
 				JSONObject metadata = null;
 				try {
-					metadata = (JSONObject) rowRecord.get(this.config.metadataFieldName);
+					metadata = (JSONObject) rowRecord.get(this.metadataFieldName);
 					// inject the distance into the metadata.
 					metadata.put(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
 				}
@@ -278,8 +400,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private float getResultSimilarity(RowRecord rowRecord) {
 		Float distance = (Float) rowRecord.get(DISTANCE_FIELD_NAME);
-		return (this.config.metricType == MetricType.IP || this.config.metricType == MetricType.COSINE) ? distance
-				: (1 - distance);
+		return (this.metricType == MetricType.IP || this.metricType == MetricType.COSINE) ? distance : (1 - distance);
 	}
 
 	// ---------------------------------------------------------------------------------
@@ -297,16 +418,16 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	void releaseCollection() {
 		if (isDatabaseCollectionExists()) {
-			this.milvusClient.releaseCollection(
-					ReleaseCollectionParam.newBuilder().withCollectionName(this.config.collectionName).build());
+			this.milvusClient
+				.releaseCollection(ReleaseCollectionParam.newBuilder().withCollectionName(this.collectionName).build());
 		}
 	}
 
 	private boolean isDatabaseCollectionExists() {
 		return this.milvusClient
 			.hasCollection(HasCollectionParam.newBuilder()
-				.withDatabaseName(this.config.databaseName)
-				.withCollectionName(this.config.collectionName)
+				.withDatabaseName(this.databaseName)
+				.withCollectionName(this.collectionName)
 				.build())
 			.getData();
 	}
@@ -315,25 +436,24 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	void createCollection() {
 
 		if (!isDatabaseCollectionExists()) {
-			createCollection(this.config.databaseName, this.config.collectionName, this.config.idFieldName,
-					this.config.isAutoId, this.config.contentFieldName, this.config.metadataFieldName,
-					this.config.embeddingFieldName);
+			createCollection(this.databaseName, this.collectionName, this.idFieldName, this.isAutoId,
+					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName);
 		}
 
 		R<DescribeIndexResponse> indexDescriptionResponse = this.milvusClient
 			.describeIndex(DescribeIndexParam.newBuilder()
-				.withDatabaseName(this.config.databaseName)
-				.withCollectionName(this.config.collectionName)
+				.withDatabaseName(this.databaseName)
+				.withCollectionName(this.collectionName)
 				.build());
 
 		if (indexDescriptionResponse.getData() == null) {
 			R<RpcStatus> indexStatus = this.milvusClient.createIndex(CreateIndexParam.newBuilder()
-				.withDatabaseName(this.config.databaseName)
-				.withCollectionName(this.config.collectionName)
-				.withFieldName(this.config.embeddingFieldName)
-				.withIndexType(this.config.indexType)
-				.withMetricType(this.config.metricType)
-				.withExtraParam(this.config.indexParameters)
+				.withDatabaseName(this.databaseName)
+				.withCollectionName(this.collectionName)
+				.withFieldName(this.embeddingFieldName)
+				.withIndexType(this.indexType)
+				.withMetricType(this.metricType)
+				.withExtraParam(this.indexParameters)
 				.withSyncMode(Boolean.FALSE)
 				.build());
 
@@ -343,8 +463,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		}
 
 		R<RpcStatus> loadCollectionStatus = this.milvusClient.loadCollection(LoadCollectionParam.newBuilder()
-			.withDatabaseName(this.config.databaseName)
-			.withCollectionName(this.config.collectionName)
+			.withDatabaseName(this.databaseName)
+			.withCollectionName(this.collectionName)
 			.build());
 
 		if (loadCollectionStatus.getException() != null) {
@@ -396,8 +516,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	int embeddingDimensions() {
-		if (this.config.embeddingDimension != INVALID_EMBEDDING_DIMENSION) {
-			return this.config.embeddingDimension;
+		if (this.embeddingDimension != INVALID_EMBEDDING_DIMENSION) {
+			return this.embeddingDimension;
 		}
 		try {
 			int embeddingDimensions = this.embeddingModel.dimensions();
@@ -407,7 +527,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		}
 		catch (Exception e) {
 			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ this.config.embeddingDimension, e);
+					+ this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
@@ -415,23 +535,23 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	// used by the test as well
 	void dropCollection() {
 
-		R<RpcStatus> status = this.milvusClient.releaseCollection(
-				ReleaseCollectionParam.newBuilder().withCollectionName(this.config.collectionName).build());
+		R<RpcStatus> status = this.milvusClient
+			.releaseCollection(ReleaseCollectionParam.newBuilder().withCollectionName(this.collectionName).build());
 
 		if (status.getException() != null) {
 			throw new RuntimeException("Release collection failed!", status.getException());
 		}
 
 		status = this.milvusClient
-			.dropIndex(DropIndexParam.newBuilder().withCollectionName(this.config.collectionName).build());
+			.dropIndex(DropIndexParam.newBuilder().withCollectionName(this.collectionName).build());
 
 		if (status.getException() != null) {
 			throw new RuntimeException("Drop Index failed!", status.getException());
 		}
 
 		status = this.milvusClient.dropCollection(DropCollectionParam.newBuilder()
-			.withDatabaseName(this.config.databaseName)
-			.withCollectionName(this.config.collectionName)
+			.withDatabaseName(this.databaseName)
+			.withCollectionName(this.collectionName)
 			.build());
 
 		if (status.getException() != null) {
@@ -444,22 +564,222 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.MILVUS.value(), operationName)
-			.withCollectionName(this.config.collectionName)
+			.withCollectionName(this.collectionName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withSimilarityMetric(getSimilarityMetric())
-			.withNamespace(this.config.databaseName);
+			.withNamespace(this.databaseName);
 	}
 
 	private String getSimilarityMetric() {
-		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.config.metricType)) {
-			return this.config.metricType.name();
+		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.metricType)) {
+			return this.metricType.name();
 		}
-		return SIMILARITY_TYPE_MAPPING.get(this.config.metricType).value();
+		return SIMILARITY_TYPE_MAPPING.get(this.metricType).value();
 	}
 
-	/**
-	 * Configuration for the Milvus vector store.
-	 */
+	public static final class MilvusBuilder extends AbstractVectorStoreBuilder<MilvusBuilder> {
+
+		private String databaseName = DEFAULT_DATABASE_NAME;
+
+		private String collectionName = DEFAULT_COLLECTION_NAME;
+
+		private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
+
+		private IndexType indexType = IndexType.IVF_FLAT;
+
+		private MetricType metricType = MetricType.COSINE;
+
+		private String indexParameters = "{\"nlist\":1024}";
+
+		private String idFieldName = DOC_ID_FIELD_NAME;
+
+		private boolean isAutoId = false;
+
+		private String contentFieldName = CONTENT_FIELD_NAME;
+
+		private String metadataFieldName = METADATA_FIELD_NAME;
+
+		private String embeddingFieldName = EMBEDDING_FIELD_NAME;
+
+		private boolean initializeSchema = false;
+
+		private MilvusServiceClient milvusClient;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		/**
+		 * @param milvusClient the Milvus service client to use for database operations
+		 * @throws IllegalArgumentException if milvusClient is null
+		 */
+		public MilvusBuilder milvusClient(MilvusServiceClient milvusClient) {
+			Assert.notNull(milvusClient, "milvusClient must not be null");
+			this.milvusClient = milvusClient;
+			return this;
+		}
+
+		/**
+		 * Configures the Milvus metric type to use for similarity calculations. See:
+		 * https://milvus.io/docs/metric.md#floating for details on metric types.
+		 * @param metricType the metric type to use (IP, L2, or COSINE)
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if metricType is null or not one of IP, L2, or
+		 * COSINE
+		 */
+		public MilvusBuilder metricType(MetricType metricType) {
+			Assert.notNull(metricType, "Collection Name must not be empty");
+			Assert.isTrue(metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
+					"Only the text metric types IP and L2 are supported");
+			this.metricType = metricType;
+			return this;
+		}
+
+		/**
+		 * Configures the Milvus index type to use for vector search optimization.
+		 * @param indexType the index type to use (defaults to IVF_FLAT if not specified)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder indexType(IndexType indexType) {
+			this.indexType = indexType;
+			return this;
+		}
+
+		/**
+		 * Configures the Milvus index parameters as a JSON string.
+		 * @param indexParameters the index parameters to use (defaults to {"nlist":1024}
+		 * if not specified)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder indexParameters(String indexParameters) {
+			this.indexParameters = indexParameters;
+			return this;
+		}
+
+		/**
+		 * Configures the Milvus database name.
+		 * @param databaseName the database name to use (defaults to DEFAULT_DATABASE_NAME
+		 * if not specified)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder databaseName(String databaseName) {
+			this.databaseName = databaseName;
+			return this;
+		}
+
+		/**
+		 * Configures the Milvus collection name.
+		 * @param collectionName the collection name to use (defaults to
+		 * DEFAULT_COLLECTION_NAME if not specified)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder collectionName(String collectionName) {
+			this.collectionName = collectionName;
+			return this;
+		}
+
+		/**
+		 * Configures the dimension size of the embedding vectors.
+		 * @param newEmbeddingDimension The dimension of the embedding (must be between 1
+		 * and 32768)
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if dimension is not between 1 and 32768
+		 */
+		public MilvusBuilder embeddingDimension(int newEmbeddingDimension) {
+			Assert.isTrue(newEmbeddingDimension >= 1 && newEmbeddingDimension <= 32768,
+					"Dimension has to be withing the boundaries 1 and 32768 (inclusively)");
+			this.embeddingDimension = newEmbeddingDimension;
+			return this;
+		}
+
+		/**
+		 * Configures the name of the field used for document IDs.
+		 * @param idFieldName The name for the ID field (defaults to DOC_ID_FIELD_NAME)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder iDFieldName(String idFieldName) {
+			this.idFieldName = idFieldName;
+			return this;
+		}
+
+		/**
+		 * Configures whether to use auto-generated IDs for documents.
+		 * @param isAutoId true to enable auto-generated IDs, false to use provided IDs
+		 * @return this builder instance
+		 */
+		public MilvusBuilder autoId(boolean isAutoId) {
+			this.isAutoId = isAutoId;
+			return this;
+		}
+
+		/**
+		 * Configures the name of the field used for document content.
+		 * @param contentFieldName The name for the content field (defaults to
+		 * CONTENT_FIELD_NAME)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder contentFieldName(String contentFieldName) {
+			this.contentFieldName = contentFieldName;
+			return this;
+		}
+
+		/**
+		 * Configures the name of the field used for document metadata.
+		 * @param metadataFieldName The name for the metadata field (defaults to
+		 * METADATA_FIELD_NAME)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder metadataFieldName(String metadataFieldName) {
+			this.metadataFieldName = metadataFieldName;
+			return this;
+		}
+
+		/**
+		 * Configures the name of the field used for embedding vectors.
+		 * @param embeddingFieldName The name for the embedding field (defaults to
+		 * EMBEDDING_FIELD_NAME)
+		 * @return this builder instance
+		 */
+		public MilvusBuilder embeddingFieldName(String embeddingFieldName) {
+			this.embeddingFieldName = embeddingFieldName;
+			return this;
+		}
+
+		/**
+		 * Configures whether to initialize the collection schema automatically.
+		 * @param initializeSchema true to initialize schema automatically, false to use
+		 * existing schema
+		 * @return this builder instance
+		 */
+		public MilvusBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Configures the strategy for batching operations.
+		 * @param batchingStrategy the batching strategy to use for grouping operations
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public MilvusBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		/**
+		 * Builds and returns a new MilvusVectorStore instance with the configured
+		 * settings.
+		 * @return a new MilvusVectorStore instance
+		 * @throws IllegalStateException if the builder configuration is invalid
+		 */
+		public MilvusVectorStore build() {
+			validate();
+			return new MilvusVectorStore(this);
+		}
+
+	}
+
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static final class MilvusVectorStoreConfig {
 
 		private final String databaseName;
@@ -503,7 +823,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 * @return The entry point for creating a new configuration.
 		 */
 		public static Builder builder() {
-
 			return new Builder();
 		}
 
@@ -514,6 +833,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			return builder().build();
 		}
 
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static final class Builder {
 
 			private String databaseName = DEFAULT_DATABASE_NAME;

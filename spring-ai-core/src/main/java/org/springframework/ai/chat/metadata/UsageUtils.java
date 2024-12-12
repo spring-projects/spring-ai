@@ -25,21 +25,46 @@ import org.springframework.ai.chat.model.ChatResponse;
  */
 public class UsageUtils {
 
+	/**
+	 * Accumulate usage tokens from the previous chat response to the current usage
+	 * tokens.
+	 * @param currentUsage the current usage.
+	 * @param previousChatResponse the previous chat response.
+	 * @return accumulated usage.
+	 */
 	public static Usage getCumulativeUsage(final Usage currentUsage, final ChatResponse previousChatResponse) {
-		Long promptTokens = currentUsage.getPromptTokens().longValue();
-		Long generationTokens = currentUsage.getGenerationTokens().longValue();
-		Long totalTokens = currentUsage.getTotalTokens().longValue();
-		// Make sure to accumulate the usage from the previous chat response.
+		Usage usageFromPreviousChatResponse = null;
 		if (previousChatResponse != null && previousChatResponse.getMetadata() != null
 				&& previousChatResponse.getMetadata().getUsage() != null) {
-			Usage usageFromPreviousChatResponse = previousChatResponse.getMetadata().getUsage();
+			usageFromPreviousChatResponse = previousChatResponse.getMetadata().getUsage();
+		}
+		else {
+			// Return the curent usage when the previous chat response usage is empty or
+			// null.
+			return currentUsage;
+		}
+		// For a valid usage from previous chat response, accumulate it to the current
+		// usage.
+		if (!isEmpty(currentUsage)) {
+			Long promptTokens = currentUsage.getPromptTokens().longValue();
+			Long generationTokens = currentUsage.getGenerationTokens().longValue();
+			Long totalTokens = currentUsage.getTotalTokens().longValue();
+			// Make sure to accumulate the usage from the previous chat response.
 			promptTokens += usageFromPreviousChatResponse.getPromptTokens();
 			generationTokens += usageFromPreviousChatResponse.getGenerationTokens();
 			totalTokens += usageFromPreviousChatResponse.getTotalTokens();
+			return new DefaultUsage(promptTokens, generationTokens, totalTokens);
 		}
-		return new DefaultUsage(promptTokens, generationTokens, totalTokens);
+		// When current usage is empty, return the usage from the previous chat response.
+		return usageFromPreviousChatResponse;
 	}
 
+	/**
+	 * Check if the {@link Usage} is empty. Returns true when the {@link Usage} is null.
+	 * Returns true when the {@link Usage} has zero tokens.
+	 * @param usage the usage to check against.
+	 * @return the boolean value to represent if it is empty.
+	 */
 	public static boolean isEmpty(Usage usage) {
 		if (usage == null) {
 			return true;

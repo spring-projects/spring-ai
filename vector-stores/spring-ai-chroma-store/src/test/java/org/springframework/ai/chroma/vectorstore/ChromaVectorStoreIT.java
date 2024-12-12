@@ -252,7 +252,8 @@ public class ChromaVectorStoreIT {
 
 		@Bean
 		public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-			return ChromaVectorStore.builder(chromaApi)
+			return ChromaVectorStore.builder()
+				.chromaApi(chromaApi)
 				.embeddingModel(embeddingModel)
 				.collectionName("TestCollection")
 				.initializeSchema(true)

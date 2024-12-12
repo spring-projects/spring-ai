@@ -57,7 +57,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -471,13 +470,13 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	private ChatOptions buildRequestOptions(AnthropicApi.ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withMaxTokens(request.maxTokens())
-			.withStopSequences(request.stopSequences())
-			.withTemperature(request.temperature())
-			.withTopK(request.topK())
-			.withTopP(request.topP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.maxTokens(request.maxTokens())
+			.stopSequences(request.stopSequences())
+			.temperature(request.temperature())
+			.topK(request.topK())
+			.topP(request.topP())
 			.build();
 	}
 

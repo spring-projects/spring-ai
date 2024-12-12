@@ -27,8 +27,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.huggingface.api.TextGenerationInferenceApi;
 import org.springframework.ai.huggingface.invoker.ApiClient;
@@ -126,11 +124,6 @@ public class HuggingfaceChatModel implements ChatModel {
 	 */
 	public void setMaxNewTokens(int maxNewTokens) {
 		this.maxNewTokens = maxNewTokens;
-	}
-
-	@Override
-	public ChatOptions getDefaultOptions() {
-		return ChatOptionsBuilder.builder().build();
 	}
 
 }
