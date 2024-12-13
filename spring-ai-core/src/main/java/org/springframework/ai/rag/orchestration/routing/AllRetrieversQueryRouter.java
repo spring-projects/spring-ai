@@ -55,7 +55,7 @@ public class AllRetrieversQueryRouter implements QueryRouter {
 		return new Builder();
 	}
 
-	public final static class Builder {
+	public static final class Builder {
 
 		private List<DocumentRetriever> documentRetrievers;
 

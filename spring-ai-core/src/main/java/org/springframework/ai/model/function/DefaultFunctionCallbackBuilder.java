@@ -45,7 +45,7 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder {
 
-	private final static Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);
+	private static final Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);
 
 	@Override
 	public <I, O> FunctionInvokingSpec<I, O> function(String name, Function<I, O> function) {
