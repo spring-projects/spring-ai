@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.chat.memory.pgvector;
+package org.springframework.ai.autoconfigure.chat.memory.jdbc;
 
 import javax.sql.DataSource;
 
-import org.springframework.ai.chat.memory.PgVectorChatMemory;
-import org.springframework.ai.chat.memory.PgVectorChatMemoryConfig;
+import org.springframework.ai.chat.memory.JdbcChatMemory;
+import org.springframework.ai.chat.memory.JdbcChatMemoryConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -33,25 +33,19 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @since 1.0.0
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
-@ConditionalOnClass({ PgVectorChatMemory.class, DataSource.class, JdbcTemplate.class })
-@EnableConfigurationProperties(PgVectorChatMemoryProperties.class)
-public class PgVectorChatMemoryAutoConfiguration {
+@ConditionalOnClass({ JdbcChatMemory.class, DataSource.class, JdbcTemplate.class })
+@EnableConfigurationProperties(JdbcChatMemoryProperties.class)
+public class JdbcChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PgVectorChatMemory chatMemory(PgVectorChatMemoryProperties properties, JdbcTemplate jdbcTemplate) {
-		var config = PgVectorChatMemoryConfig.builder()
-			.withInitializeSchema(properties.isInitializeSchema())
-			.withSchemaName(properties.getSchemaName())
-			.withTableName(properties.getTableName())
-			.withSessionIdColumnName(properties.getSessionIdColumnName())
-			.withExchangeIdColumnName(properties.getExchangeIdColumnName())
-			.withAssistantColumnName(properties.getAssistantColumnName())
-			.withUserColumnName(properties.getUserColumnName())
-			.withJdbcTemplate(jdbcTemplate)
+	public JdbcChatMemory chatMemory(JdbcChatMemoryProperties properties, JdbcTemplate jdbcTemplate) {
+		var config = JdbcChatMemoryConfig.builder()
+			.setInitializeSchema(properties.isInitializeSchema())
+			.jdbcTemplate(jdbcTemplate)
 			.build();
 
-		return PgVectorChatMemory.create(config);
+		return JdbcChatMemory.create(config);
 	}
 
 }

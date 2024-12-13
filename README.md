@@ -100,9 +100,9 @@ One way to run integration tests on part of the code is to first do a quick comp
 ```shell
 ./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
 ```
-Then run the integration test for a specifi module using the `-pl` option
+Then run the integration test for a specific module using the `-pl` option
 ```shell
-./mvnw verify -Pintegration-tests     -pl spring-ai-spring-boot-autoconfigure  
+./mvnw verify -Pintegration-tests -pl spring-ai-spring-boot-autoconfigure  
 ```
 
 ### Documentation
@@ -134,6 +134,3 @@ Checkstyles are currently disabled, but you can enable them by doing the followi
 ```shell
 ./mvnw clean package -DskipTests -Ddisable.checks=false
 ```
-
-
-

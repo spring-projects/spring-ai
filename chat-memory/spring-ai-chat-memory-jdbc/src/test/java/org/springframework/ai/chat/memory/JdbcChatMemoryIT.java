@@ -34,7 +34,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.vectorstore.PgVectorImage;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -51,11 +50,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jonathan Leijendekker
  */
 @Testcontainers
-class PgVectorChatMemoryIT {
+class JdbcChatMemoryIT {
 
 	@Container
 	@SuppressWarnings("resource")
-	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(PgVectorImage.DEFAULT_IMAGE)
+	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:17")
+		.withDatabaseName("chat_memory_test")
 		.withUsername("postgres")
 		.withPassword("postgres");
 
@@ -68,19 +68,12 @@ class PgVectorChatMemoryIT {
 				String.format("app.datasource.password=%s", postgresContainer.getPassword()),
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
-	static String schemaName = "public_test";
-	static String tableName = "ai_chat_memory_test";
-	static String sessionIdColumnName = "session_id_test";
-	static String exchangeIdColumnName = "message_timestamp_test";
-	static String assistantColumnName = "assistant_test";
-	static String userColumnName = "\"user_test\"";
-
 	@Test
 	void correctChatMemoryInstance() {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 
-			assertThat(chatMemory).isInstanceOf(PgVectorChatMemory.class);
+			assertThat(chatMemory).isInstanceOf(JdbcChatMemory.class);
 		});
 	}
 
@@ -90,34 +83,23 @@ class PgVectorChatMemoryIT {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
-			String assistantContent = null;
-			String userContent = null;
 			var message = switch (messageType) {
-				case ASSISTANT -> {
-					assistantContent = content + " - " + conversationId;
-					yield new AssistantMessage(assistantContent);
-				}
-				case USER -> {
-					userContent = content + " - " + conversationId;
-					yield new UserMessage(userContent);
-				}
+				case ASSISTANT -> new AssistantMessage(content + " - " + conversationId);
+				case USER -> new UserMessage(content + " - " + conversationId);
 				default -> throw new IllegalArgumentException("Type not supported: " + messageType);
 			};
 
 			chatMemory.add(conversationId, message);
 
 			var jdbcTemplate = context.getBean(JdbcTemplate.class);
-			var query = String.format("SELECT %s, %s, %s, %s FROM %s.%s WHERE %s = ?", sessionIdColumnName,
-					exchangeIdColumnName, assistantColumnName, userColumnName, schemaName, tableName,
-					sessionIdColumnName);
+			var query = "SELECT conversation_id, content, type, \"timestamp\" FROM ai_chat_memory WHERE conversation_id = ?";
 			var result = jdbcTemplate.queryForMap(query, conversationId);
 
 			assertThat(result.size()).isEqualTo(4);
-			assertThat(result.get(sessionIdColumnName)).isEqualTo(conversationId);
-			assertThat(result.get(exchangeIdColumnName)).isInstanceOf(Timestamp.class);
-			assertThat(result.get(exchangeIdColumnName)).isNotNull();
-			assertThat(result.get(assistantColumnName)).isEqualTo(assistantContent);
-			assertThat(result.get(userColumnName.replace("\"", ""))).isEqualTo(userContent);
+			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
+			assertThat(result.get("content")).isEqualTo(message.getText());
+			assertThat(result.get("type")).isEqualTo(messageType.getValue());
+			assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
 		});
 	}
 
@@ -132,9 +114,7 @@ class PgVectorChatMemoryIT {
 			chatMemory.add(conversationId, messages);
 
 			var jdbcTemplate = context.getBean(JdbcTemplate.class);
-			var query = String.format("SELECT %s, %s, %s, %s FROM %s.%s WHERE %s = ?", sessionIdColumnName,
-					exchangeIdColumnName, assistantColumnName, userColumnName, schemaName, tableName,
-					sessionIdColumnName);
+			var query = "SELECT conversation_id, content, type, \"timestamp\" FROM ai_chat_memory WHERE conversation_id = ?";
 			var results = jdbcTemplate.queryForList(query, conversationId);
 
 			assertThat(results.size()).isEqualTo(messages.size());
@@ -143,16 +123,11 @@ class PgVectorChatMemoryIT {
 				var message = messages.get(i);
 				var result = results.get(i);
 
-				assertThat(result.get(exchangeIdColumnName)).isNotNull();
-				assertThat(result.get(sessionIdColumnName)).isEqualTo(conversationId);
-				assertThat(result.get(exchangeIdColumnName)).isInstanceOf(Timestamp.class);
-
-				if (message.getMessageType() == MessageType.ASSISTANT) {
-					assertThat(result.get(assistantColumnName)).isEqualTo(message.getContent());
-				}
-				else {
-					assertThat(result.get(userColumnName.replace("\"", ""))).isEqualTo(message.getContent());
-				}
+				assertThat(result.get("conversation_id")).isNotNull();
+				assertThat(result.get("conversation_id")).isEqualTo(conversationId);
+				assertThat(result.get("content")).isEqualTo(message.getText());
+				assertThat(result.get("type")).isEqualTo(message.getMessageType().getValue());
+				assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
 			}
 		});
 	}
@@ -188,8 +163,8 @@ class PgVectorChatMemoryIT {
 			chatMemory.clear(conversationId);
 
 			var jdbcTemplate = context.getBean(JdbcTemplate.class);
-			var count = jdbcTemplate.queryForObject(String.format("SELECT COUNT(*) FROM %s.%s WHERE %s = ?", schemaName,
-					tableName, sessionIdColumnName), Integer.class, conversationId);
+			var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ai_chat_memory WHERE conversation_id = ?",
+					Integer.class, conversationId);
 
 			assertThat(count).isZero();
 		});
@@ -201,18 +176,9 @@ class PgVectorChatMemoryIT {
 
 		@Bean
 		public ChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
-			var config = PgVectorChatMemoryConfig.builder()
-				.withInitializeSchema(true)
-				.withSchemaName(schemaName)
-				.withTableName(tableName)
-				.withSessionIdColumnName(sessionIdColumnName)
-				.withExchangeIdColumnName(exchangeIdColumnName)
-				.withAssistantColumnName(assistantColumnName)
-				.withUserColumnName(userColumnName)
-				.withJdbcTemplate(jdbcTemplate)
-				.build();
+			var config = JdbcChatMemoryConfig.builder().setInitializeSchema(true).jdbcTemplate(jdbcTemplate).build();
 
-			return PgVectorChatMemory.create(config);
+			return JdbcChatMemory.create(config);
 		}
 
 		@Bean

@@ -410,7 +410,7 @@ The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search re
 
 The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 
-There are currently three implementations, `InMemoryChatMemory`, `CassandraChatMemory`, and `PgVectorChatMemory` that provide storage for chat conversation history, in-memory and persisted with `time-to-live`, correspondingly.
+There are currently three implementations, `InMemoryChatMemory`, `CassandraChatMemory`, and `JdbcChatMemory` that provide storage for chat conversation history, in-memory and persisted with `time-to-live`, correspondingly.
 
 To create a `CassandraChatMemory` with `time-to-live`:
 
@@ -419,11 +419,11 @@ To create a `CassandraChatMemory` with `time-to-live`:
 CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
 ----
 
-To create a `PgVectorChatMemory`:
+To create a `JdbcChatMemory`:
 
 [source,java]
 ----
-PgVectorChatMemory.create(PgVectorChatMemoryConfig.builder().withJdbcTemplate(jdbcTemplate).build());
+JdbcChatMemory.create(JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build());
 ----
 
 The following advisor implementations use the `ChatMemory` interface to advice the prompt with conversation history which differ in the details of how the memory is added to the prompt
