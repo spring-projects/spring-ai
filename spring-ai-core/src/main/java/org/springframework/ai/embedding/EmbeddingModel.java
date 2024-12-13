@@ -86,7 +86,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 		List<float[]> embeddings = new ArrayList<>(documents.size());
 		List<List<Document>> batch = batchingStrategy.batch(documents);
 		for (List<Document> subBatch : batch) {
-			List<String> texts = subBatch.stream().map(Document::getContent).toList();
+			List<String> texts = subBatch.stream().map(Document::getText).toList();
 			EmbeddingRequest request = new EmbeddingRequest(texts, options);
 			EmbeddingResponse response = this.call(request);
 			for (int i = 0; i < subBatch.size(); i++) {

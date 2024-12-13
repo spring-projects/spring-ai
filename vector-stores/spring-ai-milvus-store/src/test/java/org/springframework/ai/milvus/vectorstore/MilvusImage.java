@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.evaluation;
+package org.springframework.ai.milvus.vectorstore;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Content;
-import org.springframework.util.StringUtils;
+/**
+ * @author Thomas Vitale
+ */
+public final class MilvusImage {
 
-@FunctionalInterface
-public interface Evaluator {
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("milvusdb/milvus:v2.4.9");
 
-	EvaluationResponse evaluate(EvaluationRequest evaluationRequest);
+	private MilvusImage() {
 
-	default String doGetSupportingData(EvaluationRequest evaluationRequest) {
-		List<Document> data = evaluationRequest.getDataList();
-		return data.stream()
-			.map(Document::getText)
-			.filter(StringUtils::hasText)
-			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
 }

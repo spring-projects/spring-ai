@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
+import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -193,6 +194,9 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	@JsonIgnore
 	private AzureChatEnhancementConfiguration enhancements;
 
+	@JsonProperty("stream_options")
+	private ChatCompletionStreamOptions streamOptions;
+
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
@@ -219,6 +223,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			.withTopLogprobs(fromOptions.getTopLogProbs())
 			.withEnhancements(fromOptions.getEnhancements())
 			.withToolContext(fromOptions.getToolContext())
+			.withStreamOptions(fromOptions.getStreamOptions())
 			.build();
 	}
 
@@ -412,6 +417,14 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 		this.toolContext = toolContext;
 	}
 
+	public ChatCompletionStreamOptions getStreamOptions() {
+		return this.streamOptions;
+	}
+
+	public void setStreamOptions(ChatCompletionStreamOptions streamOptions) {
+		this.streamOptions = streamOptions;
+	}
+
 	@Override
 	public AzureOpenAiChatOptions copy() {
 		return fromOptions(this);
@@ -533,6 +546,11 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder withStreamOptions(ChatCompletionStreamOptions streamOptions) {
+			this.options.streamOptions = streamOptions;
 			return this;
 		}
 
