@@ -1,18 +1,28 @@
-= MariaDB Vector
+= MariaDB Vector Store
 
-This section walks you through setting up the MariaDB `VectorStore` to store document embeddings and perform similarity searches.
+This section walks you through setting up `MariaDBVectorStore` to store document embeddings and perform similarity searches.
 
-link:https://mariadb.org/projects/mariadb-vector/[MariaDB vector] is part of MariaDB 11.7 and enables storing and searching over machine learning-generated embeddings.
+link:https://mariadb.org/projects/mariadb-vector/[MariaDB Vector] is part of MariaDB 11.7 and enables storing and searching over machine learning-generated embeddings.
+It provides efficient vector similarity search capabilities using vector indexes, supporting both cosine similarity and Euclidean distance metrics.
+
+== Prerequisites
+
+* A running MariaDB (11.7+) instance. The following options are available:
+** link:https://hub.docker.com/_/mariadb[Docker] image
+** link:https://mariadb.org/download/[MariaDB Server]
+** link:https://mariadb.com/products/skysql/[MariaDB SkySQL]
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `MariaDBVectorStore`.
 
 == Auto-Configuration
 
-Add the MariaDBVectorStore boot starter dependency to your project:
+Spring AI provides Spring Boot auto-configuration for the MariaDB Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source,xml]
 ----
 <dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-mariadb-store-spring-boot-starter</artifactId>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mariadb-store-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -25,57 +35,27 @@ dependencies {
 }
 ----
 
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
 The vector store implementation can initialize the required schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 
-The Vector Store also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
+NOTE: This is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
 
-For example, to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel], add the following dependency to your project:
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+For example, to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel], add the following dependency:
 
 [source,xml]
 ----
 <dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
-}
-----
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
-
-To connect to and configure the `MariaDBVectorStore`, you need to provide access details for your instance.
-A simple configuration can be provided via Spring Boot's `application.yml`.
-
-[yml]
-----
-spring:
-  datasource:
-    url: jdbc:mariadb://localhost/db
-    username: myUser
-    password: myPassword
-  ai:
-	vectorstore:
-	  mariadbvector:
-		distance-type: COSINE
-		dimensions: 1536
-----
-
-TIP: If you run MariaDBvector as a Spring Boot dev service via link:https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.docker-compose[Docker Compose]
-or link:https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.testcontainers[Testcontainers],
-you don't need to configure URL, username and password since they are autoconfigured by Spring Boot.
-
-TIP: Check the list of xref:#mariadbvector-properties[configuration parameters] to learn about the default values and configuration options.
-
-Now you can auto-wire the `MariaDBVectorStore` in your application and use it
+Now you can auto-wire the `MariaDBVectorStore` in your application:
 
 [source,java]
 ----
@@ -88,38 +68,114 @@ List<Document> documents = List.of(
     new Document("The World is Big and Salvation Lurks Around the Corner"),
     new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
 
-// Add the documents to PGVector
+// Add the documents to MariaDB
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ----
 
 [[mariadbvector-properties]]
-=== Configuration properties
+=== Configuration Properties
 
-You can use the following properties in your Spring Boot configuration to customize the MariaDB vector store.
+To connect to MariaDB and use the `MariaDBVectorStore`, you need to provide access details for your instance.
+A simple configuration can be provided via Spring Boot's `application.yml`:
+
+[source,yaml]
+----
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost/db
+    username: myUser
+    password: myPassword
+  ai:
+    vectorstore:
+      mariadb:
+        initialize-schema: true
+        distance-type: COSINE
+        dimensions: 1536
+----
+
+TIP: If you run MariaDB Vector as a Spring Boot dev service via link:https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.docker-compose[Docker Compose]
+or link:https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.testcontainers[Testcontainers],
+you don't need to configure URL, username and password since they are autoconfigured by Spring Boot.
+
+Properties starting with `spring.ai.vectorstore.mariadb.*` are used to configure the `MariaDBVectorStore`:
 
 [cols="2,5,1",stripes=even]
 |===
-|Property| Description | Default value
+|Property | Description | Default Value
 
-|`spring.ai.vectorstore.mariadb.distance-type`| Search distance type. Defaults to `COSINE`. But if vectors are normalized to length 1, you can use `EUCLIDEAN` for best performance.| COSINE
-|`spring.ai.vectorstore.mariadb.dimensions`| Embeddings dimension. If not specified explicitly the PgVectorStore will retrieve the dimensions form the provided `EmbeddingModel`. Dimensions are set to the embedding column the on table creation. If you change the dimensions your would have to re-create the vector_store table as well. | -
-|`spring.ai.vectorstore.mariadb.remove-existing-vector-store-table` | Deletes the existing `vector_store` table on start up.  | false
-|`spring.ai.vectorstore.mariadb.initialize-schema` | Whether to initialize the required schema | false
-|`spring.ai.vectorstore.mariadb.schema-name` | Vector store schema name | null
+|`spring.ai.vectorstore.mariadb.initialize-schema`| Whether to initialize the required schema | `false`
+|`spring.ai.vectorstore.mariadb.distance-type`| Search distance type. Use `COSINE` (default) or `EUCLIDEAN`. If vectors are normalized to length 1, you can use `EUCLIDEAN` for best performance.| `COSINE`
+|`spring.ai.vectorstore.mariadb.dimensions`| Embeddings dimension. If not specified explicitly, will retrieve dimensions from the provided `EmbeddingModel`. | `1536`
+|`spring.ai.vectorstore.mariadb.remove-existing-vector-store-table` | Deletes the existing vector store table on startup. | `false`
+|`spring.ai.vectorstore.mariadb.schema-name` | Vector store schema name | `null`
 |`spring.ai.vectorstore.mariadb.table-name` | Vector store table name | `vector_store`
-|`spring.ai.vectorstore.mariadb.schema-validation` | Enables schema and table name validation to ensure they are valid and existing objects. | false
-
+|`spring.ai.vectorstore.mariadb.schema-validation` | Enables schema and table name validation to ensure they are valid and existing objects. | `false`
 |===
 
 TIP: If you configure a custom schema and/or table name, consider enabling schema validation by setting `spring.ai.vectorstore.mariadb.schema-validation=true`.
 This ensures the correctness of the names and reduces the risk of SQL injection attacks.
 
-== Metadata filtering
+== Manual Configuration
 
-You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the MariaDB Vector store.
+Instead of using the Spring Boot auto-configuration, you can manually configure the MariaDB vector store. For this you need to add the following dependencies to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.mariadb.jdbc</groupId>
+    <artifactId>mariadb-java-client</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mariadb-store</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Then create the `MariaDBVectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+    return MariaDBVectorStore.builder(jdbcTemplate)
+        .embeddingModel(embeddingModel)
+        .dimensions(1536)                      // Optional: defaults to 1536
+        .distanceType(MariaDBDistanceType.COSINE) // Optional: defaults to COSINE
+        .schemaName("mydb")                    // Optional: defaults to null
+        .vectorTableName("custom_vectors")     // Optional: defaults to "vector_store"
+        .contentFieldName("text")             // Optional: defaults to "content"
+        .embeddingFieldName("embedding")      // Optional: defaults to "embedding"
+        .idFieldName("doc_id")                // Optional: defaults to "id"
+        .metadataFieldName("meta")           // Optional: defaults to "metadata"
+        .initializeSchema(true)               // Optional: defaults to false
+        .schemaValidation(true)              // Optional: defaults to false
+        .removeExistingVectorStoreTable(false) // Optional: defaults to false
+        .maxDocumentBatchSize(10000)         // Optional: defaults to 10000
+        .build();
+}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
+----
+
+== Metadata Filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with MariaDB Vector store.
 
 For example, you can use either the text expression language:
 
@@ -127,10 +183,10 @@ For example, you can use either the text expression language:
 ----
 vectorStore.similaritySearch(
     SearchRequest.defaults()
-    .withQuery("The World")
-    .withTopK(TOP_K)
-    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+        .withQuery("The World")
+        .withTopK(TOP_K)
+        .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+        .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -144,44 +200,8 @@ vectorStore.similaritySearch(SearchRequest.defaults()
     .withTopK(TOP_K)
     .withSimilarityThreshold(SIMILARITY_THRESHOLD)
     .withFilterExpression(b.and(
-        b.in("author","john", "jill"),
+        b.in("author", "john", "jill"),
         b.eq("article_type", "blog")).build()));
 ----
 
-NOTE: These filter expressions are converted into the equivalent PgVector filters.
-
-== Manual Configuration
-
-Instead of using the Spring Boot auto-configuration, you can manually configure the `MariaDBVectorStore`.
-For this you need to add the MariaDB connector and `JdbcTemplate` auto-configuration dependencies to your project:
-
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.boot</groupId>
-	<artifactId>spring-boot-starter-jdbc</artifactId>
-</dependency>
-
-<dependency>
-	<groupId>org.mariadb.jdbc</groupId>
-	<artifactId>mariadb-java-client</artifactId>
-	<scope>runtime</scope>
-</dependency>
-
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-mariadb-store</artifactId>
-</dependency>
-----
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-To configure MariaDB Vector in your application, you can use the following setup:
-
-[source,java]
-----
-@Bean
-public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-	return new MariaDBVectorStore(jdbcTemplate, embeddingModel);
-}
-----
+NOTE: These filter expressions are automatically converted into the equivalent MariaDB JSON path expressions.
