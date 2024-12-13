@@ -57,21 +57,23 @@ public class MariaDbStoreAutoConfiguration {
 
 		var initializeSchema = properties.isInitializeSchema();
 
-		return new MariaDBVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(properties.getSchemaName())
-			.withVectorTableName(properties.getTableName())
-			.withVectorTableValidationsEnabled(properties.isSchemaValidation())
-			.withDimensions(properties.getDimensions())
-			.withDistanceType(properties.getDistanceType())
-			.withContentFieldName(properties.getContentFieldName())
-			.withEmbeddingFieldName(properties.getEmbeddingFieldName())
-			.withIdFieldName(properties.getIdFieldName())
-			.withMetadataFieldName(properties.getMetadataFieldName())
-			.withRemoveExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
-			.withInitializeSchema(initializeSchema)
-			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withSearchObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-			.withBatchingStrategy(batchingStrategy)
-			.withMaxDocumentBatchSize(properties.getMaxDocumentBatchSize())
+		return MariaDBVectorStore.builder(jdbcTemplate)
+			.embeddingModel(embeddingModel)
+			.schemaName(properties.getSchemaName())
+			.vectorTableName(properties.getTableName())
+			.schemaValidation(properties.isSchemaValidation())
+			.dimensions(properties.getDimensions())
+			.distanceType(properties.getDistanceType())
+			.contentFieldName(properties.getContentFieldName())
+			.embeddingFieldName(properties.getEmbeddingFieldName())
+			.idFieldName(properties.getIdFieldName())
+			.metadataFieldName(properties.getMetadataFieldName())
+			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize())
 			.build();
 	}
 

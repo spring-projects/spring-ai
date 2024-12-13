@@ -217,13 +217,15 @@ public class MariaDBStoreCustomNamesIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 
-			return new MariaDBVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(this.schemaName)
-				.withVectorTableName(this.vectorTableName)
-				.withVectorTableValidationsEnabled(this.schemaValidation)
-				.withDimensions(this.dimensions)
-				.withDistanceType(MariaDBVectorStore.MariaDBDistanceType.COSINE)
-				.withRemoveExistingVectorStoreTable(true)
-				.withInitializeSchema(true)
+			return MariaDBVectorStore.builder(jdbcTemplate)
+				.embeddingModel(embeddingModel)
+				.schemaName(this.schemaName)
+				.vectorTableName(this.vectorTableName)
+				.schemaValidation(this.schemaValidation)
+				.dimensions(this.dimensions)
+				.distanceType(MariaDBVectorStore.MariaDBDistanceType.COSINE)
+				.removeExistingVectorStoreTable(true)
+				.initializeSchema(true)
 				.build();
 		}
 
