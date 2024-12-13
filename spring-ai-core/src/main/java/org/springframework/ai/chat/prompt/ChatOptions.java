@@ -94,7 +94,7 @@ public interface ChatOptions extends ModelOptions {
 	 * {@link ChatOptions}.
 	 * @return Returns a new {@link ChatOptions.Builder}.
 	 */
-	static ChatOptions.Builder builder() {
+	static ChatOptions.Builder<? extends DefaultChatOptionsBuilder> builder() {
 		return new DefaultChatOptionsBuilder();
 	}
 

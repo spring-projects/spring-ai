@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder;
 import org.springframework.util.Assert;
 
 /**
@@ -31,67 +32,29 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  */
-public class DefaultFunctionCallingOptionsBuilder implements FunctionCallingOptions.Builder {
+public class DefaultFunctionCallingOptionsBuilder
+		extends DefaultChatOptionsBuilder<DefaultFunctionCallingOptionsBuilder>
+		implements FunctionCallingOptions.Builder<DefaultFunctionCallingOptionsBuilder> {
 
 	private final DefaultFunctionCallingOptions functionCallingOptions = new DefaultFunctionCallingOptions();
 
-	public FunctionCallingOptions.Builder model(String model) {
-		this.functionCallingOptions.setModel(model);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder frequencyPenalty(Double frequencyPenalty) {
-		this.functionCallingOptions.setFrequencyPenalty(frequencyPenalty);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder maxTokens(Integer maxTokens) {
-		this.functionCallingOptions.setMaxTokens(maxTokens);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder presencePenalty(Double presencePenalty) {
-		this.functionCallingOptions.setPresencePenalty(presencePenalty);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder stopSequences(List<String> stopSequences) {
-		this.functionCallingOptions.setStopSequences(stopSequences);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder temperature(Double temperature) {
-		this.functionCallingOptions.setTemperature(temperature);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder topK(Integer topK) {
-		this.functionCallingOptions.setTopK(topK);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder topP(Double topP) {
-		this.functionCallingOptions.setTopP(topP);
-		return this;
-	}
-
-	public FunctionCallingOptions.Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+	public DefaultFunctionCallingOptionsBuilder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 		this.functionCallingOptions.setFunctionCallbacks(functionCallbacks);
 		return this;
 	}
 
-	public FunctionCallingOptions.Builder functionCallbacks(FunctionCallback... functionCallbacks) {
+	public DefaultFunctionCallingOptionsBuilder functionCallbacks(FunctionCallback... functionCallbacks) {
 		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
 		this.functionCallingOptions.setFunctionCallbacks(List.of(functionCallbacks));
 		return this;
 	}
 
-	public FunctionCallingOptions.Builder functions(Set<String> functions) {
+	public DefaultFunctionCallingOptionsBuilder functions(Set<String> functions) {
 		this.functionCallingOptions.setFunctions(functions);
 		return this;
 	}
 
-	public FunctionCallingOptions.Builder function(String function) {
+	public DefaultFunctionCallingOptionsBuilder function(String function) {
 		Assert.notNull(function, "Function must not be null");
 		var set = new HashSet<>(this.functionCallingOptions.getFunctions());
 		set.add(function);
@@ -99,12 +62,12 @@ public class DefaultFunctionCallingOptionsBuilder implements FunctionCallingOpti
 		return this;
 	}
 
-	public FunctionCallingOptions.Builder proxyToolCalls(Boolean proxyToolCalls) {
+	public DefaultFunctionCallingOptionsBuilder proxyToolCalls(Boolean proxyToolCalls) {
 		this.functionCallingOptions.setProxyToolCalls(proxyToolCalls);
 		return this;
 	}
 
-	public FunctionCallingOptions.Builder toolContext(Map<String, Object> context) {
+	public DefaultFunctionCallingOptionsBuilder toolContext(Map<String, Object> context) {
 		Assert.notNull(context, "Tool context must not be null");
 		Map<String, Object> newContext = new HashMap<>(this.functionCallingOptions.getToolContext());
 		newContext.putAll(context);
@@ -112,7 +75,7 @@ public class DefaultFunctionCallingOptionsBuilder implements FunctionCallingOpti
 		return this;
 	}
 
-	public FunctionCallingOptions.Builder toolContext(String key, Object value) {
+	public DefaultFunctionCallingOptionsBuilder toolContext(String key, Object value) {
 		Assert.notNull(key, "Key must not be null");
 		Assert.notNull(value, "Value must not be null");
 		Map<String, Object> newContext = new HashMap<>(this.functionCallingOptions.getToolContext());

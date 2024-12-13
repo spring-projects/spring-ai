@@ -21,48 +21,52 @@ import java.util.List;
 /**
  * Implementation of {@link ChatOptions.Builder} to create {@link DefaultChatOptions}.
  */
-public class DefaultChatOptionsBuilder implements ChatOptions.Builder<DefaultChatOptionsBuilder> {
+public class DefaultChatOptionsBuilder<T extends DefaultChatOptionsBuilder<T>> implements ChatOptions.Builder<T> {
 
 	private final DefaultChatOptions options = new DefaultChatOptions();
 
-	public DefaultChatOptionsBuilder model(String model) {
+	protected T self() {
+		return (T) this;
+	}
+
+	public T model(String model) {
 		this.options.setModel(model);
-		return this;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder frequencyPenalty(Double frequencyPenalty) {
+	public T frequencyPenalty(Double frequencyPenalty) {
 		this.options.setFrequencyPenalty(frequencyPenalty);
-		return this;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder maxTokens(Integer maxTokens) {
+	public T maxTokens(Integer maxTokens) {
 		this.options.setMaxTokens(maxTokens);
-		return this;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder presencePenalty(Double presencePenalty) {
+	public T presencePenalty(Double presencePenalty) {
 		this.options.setPresencePenalty(presencePenalty);
-		return this;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder stopSequences(List<String> stop) {
+	public T stopSequences(List<String> stop) {
 		this.options.setStopSequences(stop);
-		return this;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder temperature(Double temperature) {
+	public T temperature(Double temperature) {
 		this.options.setTemperature(temperature);
-		return this;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder topK(Integer topK) {
+	public T topK(Integer topK) {
 		this.options.setTopK(topK);
-		return this;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder topP(Double topP) {
+	public T topP(Double topP) {
 		this.options.setTopP(topP);
-		return this;
+		return self();
 	}
 
 	public ChatOptions build() {

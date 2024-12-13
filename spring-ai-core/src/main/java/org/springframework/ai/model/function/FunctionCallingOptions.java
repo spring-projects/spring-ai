@@ -35,7 +35,7 @@ public interface FunctionCallingOptions extends ChatOptions {
 	 * @return Returns {@link DefaultFunctionCallingOptionsBuilder} to create a new
 	 * instance of {@link FunctionCallingOptions}.
 	 */
-	static FunctionCallingOptions.Builder builder() {
+	static FunctionCallingOptions.Builder<? extends FunctionCallingOptions.Builder> builder() {
 		return new DefaultFunctionCallingOptionsBuilder();
 	}
 
@@ -87,49 +87,49 @@ public interface FunctionCallingOptions extends ChatOptions {
 	/**
 	 * Builder for creating {@link FunctionCallingOptions} instance.
 	 */
-	interface Builder extends ChatOptions.Builder<Builder> {
+	interface Builder<T extends Builder<T>> extends ChatOptions.Builder<T> {
 
 		/**
 		 * The list of Function Callbacks to be registered with the Chat model.
 		 * @param functionCallbacks the list of Function Callbacks.
 		 * @return the FunctionCallOptions Builder.
 		 */
-		Builder functionCallbacks(List<FunctionCallback> functionCallbacks);
+		T functionCallbacks(List<FunctionCallback> functionCallbacks);
 
 		/**
 		 * The Function Callbacks to be registered with the Chat model.
 		 * @param functionCallbacks the function callbacks.
 		 * @return the FunctionCallOptions Builder.
 		 */
-		Builder functionCallbacks(FunctionCallback... functionCallbacks);
+		T functionCallbacks(FunctionCallback... functionCallbacks);
 
 		/**
 		 * {@link Set} of function names to be registered with the Chat model.
 		 * @param functions the {@link Set} of function names
 		 * @return the FunctionCallOptions Builder.
 		 */
-		Builder functions(Set<String> functions);
+		T functions(Set<String> functions);
 
 		/**
 		 * The function name to be registered with the chat model.
 		 * @param function the name of the function.
 		 * @return the FunctionCallOptions Builder.
 		 */
-		Builder function(String function);
+		T function(String function);
 
 		/**
 		 * Boolean flag to indicate if the proxy ToolCalls is enabled.
 		 * @param proxyToolCalls boolean value to enable proxy ToolCalls.
 		 * @return the FunctionCallOptions Builder.
 		 */
-		Builder proxyToolCalls(Boolean proxyToolCalls);
+		T proxyToolCalls(Boolean proxyToolCalls);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.
 		 * @param context the map representing the tool context.
 		 * @return the FunctionCallOptions Builder.
 		 */
-		Builder toolContext(Map<String, Object> context);
+		T toolContext(Map<String, Object> context);
 
 		/**
 		 * Add a specific key/value pair to the tool context.
@@ -137,7 +137,7 @@ public interface FunctionCallingOptions extends ChatOptions {
 		 * @param value the corresponding value.
 		 * @return the FunctionCallOptions Builder.
 		 */
-		Builder toolContext(String key, Object value);
+		T toolContext(String key, Object value);
 
 		/**
 		 * Builds the {@link FunctionCallingOptions}.

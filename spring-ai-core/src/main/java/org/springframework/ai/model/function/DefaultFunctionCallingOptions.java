@@ -47,10 +47,6 @@ public class DefaultFunctionCallingOptions extends DefaultChatOptions implements
 
 	private Map<String, Object> context = new HashMap<>();
 
-	public static FunctionCallingOptions.Builder builder() {
-		return new DefaultFunctionCallingOptionsBuilder();
-	}
-
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return Collections.unmodifiableList(this.functionCallbacks);
