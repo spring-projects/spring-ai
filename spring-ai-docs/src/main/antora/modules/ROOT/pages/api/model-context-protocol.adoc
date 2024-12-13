@@ -14,7 +14,7 @@ NOTE: Spring AI MCP is an experimental project and subject to change.
 link:https://github.com/spring-projects-experimental/spring-ai-mcp[Spring AI MCP] is an experimental project that provides Java and Spring Framework integration for the Model Context Protocol. 
 It enables Spring AI applications to interact with different data sources and tools,  through a standardized interface, supporting both synchronous and asynchronous communication patterns.
 
-image::https://github.com/spring-projects-experimental/spring-ai-mcp/blob/main/spring-ai-mcp-architecture.jpg?raw=true[SpringAIMCP, 800]
+image::spring-ai-mcp-architecture.jpg[SpringAIMCP, 800]
 
 The Spring AI MCP implements a modular architecture with the following components:
 
