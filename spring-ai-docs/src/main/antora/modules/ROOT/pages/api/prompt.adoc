@@ -202,7 +202,7 @@ A simple example taken from the https://github.com/Azure-Samples/spring-ai-azure
 
 PromptTemplate promptTemplate = new PromptTemplate("Tell me a {adjective} joke about {topic}");
 
-Prompt prompt = this.promptTemplate.create(Map.of("adjective", adjective, "topic", topic));
+Prompt prompt = promptTemplate.create(Map.of("adjective", adjective, "topic", topic));
 
 return chatModel.call(prompt).getResult();
 ```
@@ -215,7 +215,7 @@ String userText = """
     Write at least a sentence for each pirate.
     """;
 
-Message userMessage = new UserMessage(this.userText);
+Message userMessage = new UserMessage(userText);
 
 String systemText = """
   You are a helpful AI assistant that helps people find information.
@@ -223,12 +223,12 @@ String systemText = """
   You should reply to the user's request with your name and also in the style of a {voice}.
   """;
 
-SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemText);
-Message systemMessage = this.systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
+SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemText);
+Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 
-Prompt prompt = new Prompt(List.of(this.userMessage, this.systemMessage));
+Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-List<Generation> response = chatModel.call(this.prompt).getResults();
+List<Generation> response = chatModel.call(prompt).getResults();
 
 ```
 
