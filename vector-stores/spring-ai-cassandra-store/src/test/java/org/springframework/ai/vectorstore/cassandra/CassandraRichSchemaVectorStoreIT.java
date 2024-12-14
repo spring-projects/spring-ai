@@ -143,7 +143,7 @@ class CassandraRichSchemaVectorStoreIT {
 			.documentIdTranslator(id -> {
 				String[] parts = id.split("§¶");
 				String title = parts[0];
-				int chunk_no = parts.length > 0 ? Integer.parseInt(parts[1]) : 0;
+				int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;
 				return List.of("simplewiki", "en", title, chunk_no);
 			});
 	}
