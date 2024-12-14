@@ -42,6 +42,7 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -52,6 +53,71 @@ import org.springframework.util.Assert;
 /**
  * Qdrant vectorStore implementation. This store supports creating, updating, deleting,
  * and similarity searching of documents in a Qdrant collection.
+ *
+ * <p>
+ * The store uses Qdrant's vector search functionality to persist and query vector
+ * embeddings along with their associated document content and metadata. The
+ * implementation leverages Qdrant's HNSW (Hierarchical Navigable Small World) algorithm
+ * for efficient k-NN search operations.
+ * </p>
+ *
+ * <p>
+ * Features:
+ * </p>
+ * <ul>
+ * <li>Automatic schema initialization with configurable collection creation</li>
+ * <li>Support for cosine similarity distance metric</li>
+ * <li>Metadata filtering using Qdrant's filter expressions</li>
+ * <li>Configurable similarity thresholds for search results</li>
+ * <li>Batch processing support with configurable strategies</li>
+ * <li>Observation and metrics support through Micrometer</li>
+ * </ul>
+ *
+ * <p>
+ * Basic usage example:
+ * </p>
+ * <pre>{@code
+ * QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient)
+ *     .embeddingModel(embeddingModel)
+ *     .initializeSchema(true)
+ *     .build();
+ *
+ * // Add documents
+ * vectorStore.add(List.of(
+ *     new Document("content1", Map.of("key1", "value1")),
+ *     new Document("content2", Map.of("key2", "value2"))
+ * ));
+ *
+ * // Search with filters
+ * List<Document> results = vectorStore.similaritySearch(
+ *     SearchRequest.query("search text")
+ *         .withTopK(5)
+ *         .withSimilarityThreshold(0.7)
+ *         .withFilterExpression("key1 == 'value1'")
+ * );
+ * }</pre>
+ *
+ * <p>
+ * Advanced configuration example:
+ * </p>
+ * <pre>{@code
+ * QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient)
+ *     .embeddingModel(embeddingModel)
+ *     .collectionName("custom-collection")
+ *     .initializeSchema(true)
+ *     .batchingStrategy(new TokenCountBatchingStrategy())
+ *     .observationRegistry(observationRegistry)
+ *     .customObservationConvention(customConvention)
+ *     .build();
+ * }</pre>
+ *
+ * <p>
+ * Requirements:
+ * </p>
+ * <ul>
+ * <li>Running Qdrant instance accessible via gRPC</li>
+ * <li>Collection with vector size matching the embedding model dimensions</li>
+ * </ul>
  *
  * @author Anush Shetty
  * @author Christian Tzolov
@@ -66,8 +132,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
 	private static final String CONTENT_FIELD_NAME = "doc_content";
-
-	private final EmbeddingModel embeddingModel;
 
 	private final QdrantClient qdrantClient;
 
@@ -85,7 +149,9 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 * @param collectionName The name of the collection to use in Qdrant.
 	 * @param embeddingModel The client for embedding operations.
 	 * @param initializeSchema A boolean indicating whether to initialize the schema.
+	 * @deprecated Use {@link #builder(QdrantClient)}
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
 		this(qdrantClient, collectionName, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
@@ -100,22 +166,48 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 * @param initializeSchema A boolean indicating whether to initialize the schema.
 	 * @param observationRegistry The observation registry to use.
 	 * @param customObservationConvention The custom search observation convention to use.
+	 * @deprecated Use {@link #builder(QdrantClient)}
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder(qdrantClient).embeddingModel(embeddingModel)
+			.collectionName(collectionName)
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Assert.notNull(qdrantClient, "QdrantClient must not be null");
-		Assert.notNull(collectionName, "collectionName must not be null");
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+	/**
+	 * Protected constructor for creating a QdrantVectorStore instance using the builder
+	 * pattern.
+	 * @param builder the {@link QdrantBuilder} containing all configuration settings
+	 * @throws IllegalArgumentException if qdrant client is missing
+	 * @see QdrantBuilder
+	 * @since 1.0.0
+	 */
+	protected QdrantVectorStore(QdrantBuilder builder) {
+		super(builder);
 
-		this.initializeSchema = initializeSchema;
-		this.embeddingModel = embeddingModel;
-		this.collectionName = collectionName;
-		this.qdrantClient = qdrantClient;
-		this.batchingStrategy = batchingStrategy;
+		Assert.notNull(builder.qdrantClient, "QdrantClient must not be null");
+
+		this.qdrantClient = builder.qdrantClient;
+		this.collectionName = builder.collectionName;
+		this.initializeSchema = builder.initializeSchema;
+		this.batchingStrategy = builder.batchingStrategy;
+	}
+
+	/**
+	 * Creates a new QdrantBuilder instance. This is the recommended way to instantiate a
+	 * QdrantVectorStore.
+	 * @param qdrantClient the client for interfacing with Qdrant
+	 * @return a new QdrantBuilder instance
+	 */
+	public static QdrantBuilder builder(QdrantClient qdrantClient) {
+		return new QdrantBuilder(qdrantClient);
 	}
 
 	/**
@@ -269,6 +361,82 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		return VectorStoreObservationContext.builder(VectorStoreProvider.QDRANT.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName(this.collectionName);
+
+	}
+
+	/**
+	 * Builder for creating instances of {@link QdrantVectorStore}. This builder provides
+	 * a fluent API for configuring all aspects of the vector store.
+	 *
+	 * @since 1.0.0
+	 */
+	public static final class QdrantBuilder extends AbstractVectorStoreBuilder<QdrantBuilder> {
+
+		private final QdrantClient qdrantClient;
+
+		private String collectionName = DEFAULT_COLLECTION_NAME;
+
+		private boolean initializeSchema = false;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		/**
+		 * Creates a new builder instance with the required QdrantClient and
+		 * EmbeddingModel.
+		 * @param qdrantClient the client for Qdrant operations
+		 * @throws IllegalArgumentException if qdrantClient is null
+		 */
+		QdrantBuilder(QdrantClient qdrantClient) {
+			Assert.notNull(qdrantClient, "QdrantClient must not be null");
+			this.qdrantClient = qdrantClient;
+		}
+
+		/**
+		 * Configures the Qdrant collection name.
+		 * @param collectionName the name of the collection to use (defaults to
+		 * {@value DEFAULT_COLLECTION_NAME})
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if collectionName is null or empty
+		 */
+		public QdrantBuilder collectionName(String collectionName) {
+			Assert.hasText(collectionName, "collectionName must not be empty");
+			this.collectionName = collectionName;
+			return this;
+		}
+
+		/**
+		 * Configures whether to initialize the collection schema.
+		 * @param initializeSchema true to initialize schema automatically
+		 * @return this builder instance
+		 */
+		public QdrantBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Configures the strategy for batching operations.
+		 * @param batchingStrategy the batching strategy to use
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public QdrantBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		/**
+		 * Builds and returns a new QdrantVectorStore instance with the configured
+		 * settings.
+		 * @return a new QdrantVectorStore instance
+		 * @throws IllegalStateException if the builder configuration is invalid
+		 */
+		@Override
+		public QdrantVectorStore build() {
+			validate();
+			return new QdrantVectorStore(this);
+		}
 
 	}
 
