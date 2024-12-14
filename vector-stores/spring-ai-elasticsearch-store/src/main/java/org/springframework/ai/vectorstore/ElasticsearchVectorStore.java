@@ -112,7 +112,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		super(observationRegistry, customObservationConvention);
 
 		this.initializeSchema = initializeSchema;
-		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
+		Objects.requireNonNull(restClient, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient,
