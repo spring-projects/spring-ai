@@ -193,7 +193,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 					sr -> sr.index(this.options.getIndexName())
 						.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 							.similarity(finalThreshold)
-							.k((long) searchRequest.getTopK())
+							.k(searchRequest.getTopK())
 							.field("embedding")
 							.numCandidates((long) (1.5 * searchRequest.getTopK()))
 							.filter(fl -> fl.queryString(
