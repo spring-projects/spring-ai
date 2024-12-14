@@ -195,8 +195,14 @@ public class QdrantVectorStoreObservationIT {
 		@Bean
 		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel, QdrantClient qdrantClient,
 				ObservationRegistry observationRegistry) {
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel, true, observationRegistry, null,
-					new TokenCountBatchingStrategy());
+			return QdrantVectorStore.builder(qdrantClient)
+				.collectionName(COLLECTION_NAME)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean
