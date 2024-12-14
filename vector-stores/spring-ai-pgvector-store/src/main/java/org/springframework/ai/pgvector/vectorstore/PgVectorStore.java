@@ -61,8 +61,97 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Uses the "vector_store" table to store the Spring AI vector data. The table and the
- * vector index will be auto-created if not available.
+ * PostgreSQL-based vector store implementation using the pgvector extension.
+ *
+ * <p>
+ * The store uses a database table to persist the vector embeddings along with their
+ * associated document content and metadata. By default, it uses the "vector_store" table
+ * in the "public" schema, but this can be configured.
+ * </p>
+ *
+ * <p>
+ * Features:
+ * </p>
+ * <ul>
+ * <li>Automatic schema initialization with configurable table and index creation</li>
+ * <li>Support for different distance metrics: Cosine, Euclidean, and Inner Product</li>
+ * <li>Flexible indexing options: HNSW (default), IVFFlat, or exact search (no index)</li>
+ * <li>Metadata filtering using JSON path expressions</li>
+ * <li>Configurable similarity thresholds for search results</li>
+ * <li>Batch processing support with configurable batch sizes</li>
+ * </ul>
+ *
+ * <p>
+ * Basic usage example:
+ * </p>
+ * <pre>{@code
+ * PgVectorStore vectorStore = PgVectorStore.builder()
+ *     .jdbcTemplate(jdbcTemplate)
+ *     .embeddingModel(embeddingModel)
+ *     .dimensions(1536) // Optional: defaults to model dimensions or 1536
+ *     .distanceType(PgDistanceType.COSINE_DISTANCE)
+ *     .indexType(PgIndexType.HNSW)
+ *     .build();
+ *
+ * // Add documents
+ * vectorStore.add(List.of(
+ *     new Document("content1", Map.of("key1", "value1")),
+ *     new Document("content2", Map.of("key2", "value2"))
+ * ));
+ *
+ * // Search with filters
+ * List<Document> results = vectorStore.similaritySearch(
+ *     SearchRequest.query("search text")
+ *         .withTopK(5)
+ *         .withSimilarityThreshold(0.7)
+ *         .withFilterExpression("key1 == 'value1'")
+ * );
+ * }</pre>
+ *
+ * <p>
+ * Advanced configuration example:
+ * </p>
+ * <pre>{@code
+ * PgVectorStore vectorStore = PgVectorStore.builder()
+ *     .jdbcTemplate(jdbcTemplate)
+ *     .embeddingModel(embeddingModel)
+ *     .schemaName("custom_schema")
+ *     .vectorTableName("custom_vectors")
+ *     .distanceType(PgDistanceType.NEGATIVE_INNER_PRODUCT)
+ *     .removeExistingVectorStoreTable(true)
+ *     .initializeSchema(true)
+ *     .maxDocumentBatchSize(1000)
+ *     .build();
+ * }</pre>
+ *
+ * <p>
+ * Database Requirements:
+ * </p>
+ * <ul>
+ * <li>PostgreSQL with pgvector extension installed</li>
+ * <li>Required extensions: vector, hstore, uuid-ossp</li>
+ * <li>Table schema with id (uuid), content (text), metadata (json), and embedding
+ * (vector) columns</li>
+ * </ul>
+ *
+ * <p>
+ * Distance Types:
+ * </p>
+ * <ul>
+ * <li>COSINE_DISTANCE: Default, suitable for most use cases</li>
+ * <li>EUCLIDEAN_DISTANCE: L2 distance between vectors</li>
+ * <li>NEGATIVE_INNER_PRODUCT: Best performance for normalized vectors (e.g., OpenAI
+ * embeddings)</li>
+ * </ul>
+ *
+ * <p>
+ * Index Types:
+ * </p>
+ * <ul>
+ * <li>HNSW: Default, better query performance but slower builds and more memory</li>
+ * <li>IVFFLAT: Faster builds, less memory, but lower query performance</li>
+ * <li>NONE: Exact search without indexing</li>
+ * </ul>
  *
  * @author Christian Tzolov
  * @author Josh Long
