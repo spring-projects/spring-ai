@@ -18,9 +18,9 @@ package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.pgvector.vectorstore.PgVectorStore;
-import org.springframework.ai.pgvector.vectorstore.PgVectorStore.PgDistanceType;
-import org.springframework.ai.pgvector.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgDistanceType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

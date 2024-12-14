@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.pgvector.vectorstore;
+package org.springframework.ai.vectorstore.pgvector;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +41,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.pgvector.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;

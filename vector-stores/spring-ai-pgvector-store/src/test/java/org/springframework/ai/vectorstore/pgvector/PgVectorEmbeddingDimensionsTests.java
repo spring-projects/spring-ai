@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.pgvector.vectorstore;
+package org.springframework.ai.vectorstore.pgvector;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

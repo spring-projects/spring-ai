@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.pgvector.vectorstore;
+package org.springframework.ai.vectorstore.pgvector;
 
 import java.util.List;
 import java.util.Map;
