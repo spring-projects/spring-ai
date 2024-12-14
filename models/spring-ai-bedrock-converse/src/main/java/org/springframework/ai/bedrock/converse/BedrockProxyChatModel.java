@@ -129,6 +129,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Wei Jiang
  * @author Alexandros Pappas
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class BedrockProxyChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -606,6 +607,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 			ConverseStreamRequest converseStreamRequest = ConverseStreamRequest.builder()
 				.modelId(converseRequest.modelId())
+				.inferenceConfig(converseRequest.inferenceConfig())
 				.messages(converseRequest.messages())
 				.system(converseRequest.system())
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
