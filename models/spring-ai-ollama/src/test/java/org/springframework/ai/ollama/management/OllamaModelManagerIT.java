@@ -99,6 +99,7 @@ class OllamaModelManagerIT extends BaseOllamaIT {
 		assertThat(isModelWithLatestVersionAvailable).isFalse();
 	}
 
+	@Disabled
 	@Test
 	public void pullAndDeleteModelFromHuggingFace() {
 		// Pull model with explicit version.

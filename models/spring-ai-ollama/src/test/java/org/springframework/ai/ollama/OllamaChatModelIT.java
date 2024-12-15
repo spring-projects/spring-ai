@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -226,6 +227,31 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	// Example inspired by https://ollama.com/blog/structured-outputs
+	@Test
+	void jsonSchemaFormatStructuredOutput() {
+		var outputConverter = new BeanOutputConverter<>(CountryInfo.class);
+		var userPromptTemplate = new PromptTemplate("""
+				Tell me about {country}.
+				""");
+		Map<String, Object> model = Map.of("country", "denmark");
+		var prompt = userPromptTemplate.create(model,
+				OllamaOptions.builder()
+					.withModel(OllamaModel.LLAMA3_2.getName())
+					.withFormat(outputConverter.getJsonSchemaMap())
+					.build());
+
+		var chatResponse = this.chatModel.call(prompt);
+
+		var countryInfo = outputConverter.convert(chatResponse.getResult().getOutput().getText());
+		assertThat(countryInfo).isNotNull();
+		assertThat(countryInfo.capital()).isEqualToIgnoringCase("Copenhagen");
+	}
+
+	record CountryInfo(@JsonProperty(required = true) String name, @JsonProperty(required = true) String capital,
+			@JsonProperty(required = true) List<String> languages) {
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
