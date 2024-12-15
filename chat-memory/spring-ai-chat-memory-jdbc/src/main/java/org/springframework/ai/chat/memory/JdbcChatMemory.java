@@ -80,7 +80,7 @@ public class JdbcChatMemory implements ChatMemory {
 
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
-			ps.setString(3, message.getMessageType().getValue());
+			ps.setString(3, message.getMessageType().name());
 		}
 
 		@Override
@@ -94,7 +94,7 @@ public class JdbcChatMemory implements ChatMemory {
 		@Override
 		public Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
-			var type = MessageType.fromValue(rs.getString(2));
+			var type = MessageType.valueOf(rs.getString(2));
 
 			return switch (type) {
 				case USER -> new UserMessage(content);

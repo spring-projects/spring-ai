@@ -98,7 +98,7 @@ class JdbcChatMemoryIT {
 			assertThat(result.size()).isEqualTo(4);
 			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 			assertThat(result.get("content")).isEqualTo(message.getText());
-			assertThat(result.get("type")).isEqualTo(messageType.getValue());
+			assertThat(result.get("type")).isEqualTo(messageType.name());
 			assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
 		});
 	}
@@ -126,7 +126,7 @@ class JdbcChatMemoryIT {
 				assertThat(result.get("conversation_id")).isNotNull();
 				assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 				assertThat(result.get("content")).isEqualTo(message.getText());
-				assertThat(result.get("type")).isEqualTo(message.getMessageType().getValue());
+				assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
 				assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
 			}
 		});

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS ai_chat_memory (
     content TEXT NOT NULL,
     type VARCHAR(10) NOT NULL,
     `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT type_check CHECK (type IN ('user', 'assistant'))
+    CONSTRAINT type_check CHECK (type IN ('USER', 'ASSISTANT'))
 );
 
 CREATE INDEX ai_chat_memory_conversation_id_timestamp_idx
