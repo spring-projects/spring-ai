@@ -269,6 +269,90 @@ photo was taken in an area with metallic decorations or fixtures. The overall se
 where fruits are being displayed, possibly for convenience or aesthetic purposes.
 ----
 
+== Structured Outputs
+
+Ollama provides custom https://ollama.com/blog/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`.
+In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
+
+=== Configuration
+
+Spring AI allows you to configure your response format programmatically using the `OllamaOptions` builder.
+
+==== Using the Chat Options Builder
+
+You can set the response format programmatically with the `OllamaOptions` builder as shown below:
+
+[source,java]
+----
+String jsonSchema = """
+        {
+            "type": "object",
+            "properties": {
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "explanation": { "type": "string" },
+                            "output": { "type": "string" }
+                        },
+                        "required": ["explanation", "output"],
+                        "additionalProperties": false
+                    }
+                },
+                "final_answer": { "type": "string" }
+            },
+            "required": ["steps", "final_answer"],
+            "additionalProperties": false
+        }
+        """;
+
+Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
+        OllamaOptions.builder()
+            .withModel(OllamaModel.LLAMA3_2.getName())
+            .withFormat(new ObjectMapper().readValue(jsonSchema, Map.class))
+            .build());
+
+ChatResponse response = this.ollamaChatModel.call(this.prompt);
+----
+
+==== Integrating with BeanOutputConverter Utilities
+
+You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
+
+[source,java]
+----
+record MathReasoning(
+    @JsonProperty(required = true, value = "steps") Steps steps,
+    @JsonProperty(required = true, value = "final_answer") String finalAnswer) {
+
+    record Steps(
+        @JsonProperty(required = true, value = "items") Items[] items) {
+
+        record Items(
+            @JsonProperty(required = true, value = "explanation") String explanation,
+            @JsonProperty(required = true, value = "output") String output) {
+        }
+    }
+}
+
+var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
+
+Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
+        OllamaOptions.builder()
+            .withModel(OllamaModel.LLAMA3_2.getName())
+            .withFormat(outputConverter.getJsonSchemaMap())
+            .build());
+
+ChatResponse response = this.ollamaChatModel.call(this.prompt);
+String content = this.response.getResult().getOutput().getText();
+
+MathReasoning mathReasoning = this.outputConverter.convert(this.content);
+----
+
+NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation for generating a schema that accurately marks fields as `required`.
+Although this is optional for JSON Schema, it's recommended for the structured response to function correctly.
+
 == OpenAI API Compatibility
 
 Ollama is OpenAI API-compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools.

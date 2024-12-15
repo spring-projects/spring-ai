@@ -287,7 +287,7 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
 	@JsonProperty("format")
-	private String format;
+	private Object format;
 
 	/**
 	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
@@ -411,7 +411,7 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 		return this;
 	}
 
-	public OllamaOptions withFormat(String format) {
+	public OllamaOptions withFormat(Object format) {
 		this.format = format;
 		return this;
 	}
@@ -614,11 +614,11 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 		this.model = model;
 	}
 
-	public String getFormat() {
+	public Object getFormat() {
 		return this.format;
 	}
 
-	public void setFormat(String format) {
+	public void setFormat(Object format) {
 		this.format = format;
 	}
 
