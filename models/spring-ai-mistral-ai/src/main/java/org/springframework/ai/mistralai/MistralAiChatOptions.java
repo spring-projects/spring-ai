@@ -41,6 +41,7 @@ import org.springframework.util.Assert;
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -145,20 +146,20 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public static MistralAiChatOptions fromOptions(MistralAiChatOptions fromOptions) {
-		return builder().withModel(fromOptions.getModel())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withSafePrompt(fromOptions.getSafePrompt())
-			.withRandomSeed(fromOptions.getRandomSeed())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withStop(fromOptions.getStop())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
+		return builder().model(fromOptions.getModel())
+			.maxTokens(fromOptions.getMaxTokens())
+			.safePrompt(fromOptions.getSafePrompt())
+			.randomSeed(fromOptions.getRandomSeed())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.responseFormat(fromOptions.getResponseFormat())
+			.stop(fromOptions.getStop())
+			.tools(fromOptions.getTools())
+			.toolChoice(fromOptions.getToolChoice())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -357,84 +358,84 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 
 		private final MistralAiChatOptions options = new MistralAiChatOptions();
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withModel(MistralAiApi.ChatModel chatModel) {
+		public Builder model(MistralAiApi.ChatModel chatModel) {
 			this.options.setModel(chatModel.getName());
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.setMaxTokens(maxTokens);
 			return this;
 		}
 
-		public Builder withSafePrompt(Boolean safePrompt) {
+		public Builder safePrompt(Boolean safePrompt) {
 			this.options.setSafePrompt(safePrompt);
 			return this;
 		}
 
-		public Builder withRandomSeed(Integer randomSeed) {
+		public Builder randomSeed(Integer randomSeed) {
 			this.options.setRandomSeed(randomSeed);
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.options.setStop(stop);
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
-		public Builder withResponseFormat(ResponseFormat responseFormat) {
+		public Builder responseFormat(ResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withTools(List<FunctionTool> tools) {
+		public Builder tools(List<FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
 
-		public Builder withToolChoice(ToolChoice toolChoice) {
+		public Builder toolChoice(ToolChoice toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
+		public Builder functions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
+		public Builder function(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}
@@ -442,6 +443,134 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 				this.options.toolContext.putAll(toolContext);
 			}
 			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			return model(model);
+		}
+
+		/**
+		 * @deprecated use {@link #model(MistralAiApi.ChatModel)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(MistralAiApi.ChatModel chatModel) {
+			return model(chatModel);
+		}
+
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMaxTokens(Integer maxTokens) {
+			return maxTokens(maxTokens);
+		}
+
+		/**
+		 * @deprecated use {@link #safePrompt(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withSafePrompt(Boolean safePrompt) {
+			return safePrompt(safePrompt);
+		}
+
+		/**
+		 * @deprecated use {@link #randomSeed(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withRandomSeed(Integer randomSeed) {
+			return randomSeed(randomSeed);
+		}
+
+		/**
+		 * @deprecated use {@link #stop(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withStop(List<String> stop) {
+			return stop(stop);
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTemperature(Double temperature) {
+			return temperature(temperature);
+		}
+
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopP(Double topP) {
+			return topP(topP);
+		}
+
+		/**
+		 * @deprecated use {@link #responseFormat(ResponseFormat)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withResponseFormat(ResponseFormat responseFormat) {
+			return responseFormat(responseFormat);
+		}
+
+		/**
+		 * @deprecated use {@link #tools(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTools(List<FunctionTool> tools) {
+			return tools(tools);
+		}
+
+		/**
+		 * @deprecated use {@link #toolChoice(ToolChoice)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withToolChoice(ToolChoice toolChoice) {
+			return toolChoice(toolChoice);
+		}
+
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			return functionCallbacks(functionCallbacks);
+		}
+
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctions(Set<String> functionNames) {
+			return functions(functionNames);
+		}
+
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunction(String functionName) {
+			return function(functionName);
+		}
+
+		/**
+		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			return proxyToolCalls(proxyToolCalls);
+		}
+
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			return toolContext(toolContext);
 		}
 
 		public MistralAiChatOptions build() {
