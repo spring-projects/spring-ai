@@ -24,6 +24,7 @@ import java.util.Objects;
  * content in each respective category.
  *
  * @author Ahmed Yousri
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public final class CategoryScores {
@@ -173,56 +174,155 @@ public final class CategoryScores {
 
 		private double violence;
 
+		public Builder sexual(double sexual) {
+			this.sexual = sexual;
+			return this;
+		}
+
+		public Builder hate(double hate) {
+			this.hate = hate;
+			return this;
+		}
+
+		public Builder harassment(double harassment) {
+			this.harassment = harassment;
+			return this;
+		}
+
+		public Builder selfHarm(double selfHarm) {
+			this.selfHarm = selfHarm;
+			return this;
+		}
+
+		public Builder sexualMinors(double sexualMinors) {
+			this.sexualMinors = sexualMinors;
+			return this;
+		}
+
+		public Builder hateThreatening(double hateThreatening) {
+			this.hateThreatening = hateThreatening;
+			return this;
+		}
+
+		public Builder violenceGraphic(double violenceGraphic) {
+			this.violenceGraphic = violenceGraphic;
+			return this;
+		}
+
+		public Builder selfHarmIntent(double selfHarmIntent) {
+			this.selfHarmIntent = selfHarmIntent;
+			return this;
+		}
+
+		public Builder selfHarmInstructions(double selfHarmInstructions) {
+			this.selfHarmInstructions = selfHarmInstructions;
+			return this;
+		}
+
+		public Builder harassmentThreatening(double harassmentThreatening) {
+			this.harassmentThreatening = harassmentThreatening;
+			return this;
+		}
+
+		public Builder violence(double violence) {
+			this.violence = violence;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #sexual(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSexual(double sexual) {
 			this.sexual = sexual;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #hate(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHate(double hate) {
 			this.hate = hate;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #harassment(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHarassment(double harassment) {
 			this.harassment = harassment;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #selfHarm(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSelfHarm(double selfHarm) {
 			this.selfHarm = selfHarm;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #sexualMinors(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSexualMinors(double sexualMinors) {
 			this.sexualMinors = sexualMinors;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #hateThreatening(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHateThreatening(double hateThreatening) {
 			this.hateThreatening = hateThreatening;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #violenceGraphic(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withViolenceGraphic(double violenceGraphic) {
 			this.violenceGraphic = violenceGraphic;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #selfHarmIntent(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSelfHarmIntent(double selfHarmIntent) {
 			this.selfHarmIntent = selfHarmIntent;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #selfHarmInstructions(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSelfHarmInstructions(double selfHarmInstructions) {
 			this.selfHarmInstructions = selfHarmInstructions;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #harassmentThreatening(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHarassmentThreatening(double harassmentThreatening) {
 			this.harassmentThreatening = harassmentThreatening;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #violence(double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withViolence(double violence) {
 			this.violence = violence;
 			return this;

@@ -24,6 +24,7 @@ import java.util.Objects;
  * false (indicating that the content does not belong to the category).
  *
  * @author Ahmed Yousri
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public final class Categories {
@@ -168,56 +169,155 @@ public final class Categories {
 
 		private boolean violence;
 
+		public Builder sexual(boolean sexual) {
+			this.sexual = sexual;
+			return this;
+		}
+
+		public Builder hate(boolean hate) {
+			this.hate = hate;
+			return this;
+		}
+
+		public Builder harassment(boolean harassment) {
+			this.harassment = harassment;
+			return this;
+		}
+
+		public Builder selfHarm(boolean selfHarm) {
+			this.selfHarm = selfHarm;
+			return this;
+		}
+
+		public Builder sexualMinors(boolean sexualMinors) {
+			this.sexualMinors = sexualMinors;
+			return this;
+		}
+
+		public Builder hateThreatening(boolean hateThreatening) {
+			this.hateThreatening = hateThreatening;
+			return this;
+		}
+
+		public Builder violenceGraphic(boolean violenceGraphic) {
+			this.violenceGraphic = violenceGraphic;
+			return this;
+		}
+
+		public Builder selfHarmIntent(boolean selfHarmIntent) {
+			this.selfHarmIntent = selfHarmIntent;
+			return this;
+		}
+
+		public Builder selfHarmInstructions(boolean selfHarmInstructions) {
+			this.selfHarmInstructions = selfHarmInstructions;
+			return this;
+		}
+
+		public Builder harassmentThreatening(boolean harassmentThreatening) {
+			this.harassmentThreatening = harassmentThreatening;
+			return this;
+		}
+
+		public Builder violence(boolean violence) {
+			this.violence = violence;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #sexual(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSexual(boolean sexual) {
 			this.sexual = sexual;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #hate(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHate(boolean hate) {
 			this.hate = hate;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #harassment(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHarassment(boolean harassment) {
 			this.harassment = harassment;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #selfHarm(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSelfHarm(boolean selfHarm) {
 			this.selfHarm = selfHarm;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #sexualMinors(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSexualMinors(boolean sexualMinors) {
 			this.sexualMinors = sexualMinors;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #hateThreatening(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHateThreatening(boolean hateThreatening) {
 			this.hateThreatening = hateThreatening;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #violenceGraphic(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withViolenceGraphic(boolean violenceGraphic) {
 			this.violenceGraphic = violenceGraphic;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #selfHarmIntent(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSelfHarmIntent(boolean selfHarmIntent) {
 			this.selfHarmIntent = selfHarmIntent;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #selfHarmInstructions(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSelfHarmInstructions(boolean selfHarmInstructions) {
 			this.selfHarmInstructions = selfHarmInstructions;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #harassmentThreatening(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHarassmentThreatening(boolean harassmentThreatening) {
 			this.harassmentThreatening = harassmentThreatening;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #violence(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withViolence(boolean violence) {
 			this.violence = violence;
 			return this;
