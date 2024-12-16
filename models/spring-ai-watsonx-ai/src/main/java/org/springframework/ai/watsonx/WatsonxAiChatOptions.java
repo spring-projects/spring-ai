@@ -37,6 +37,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * @author Pablo Sanchidrian Herrera
  * @author John Jairo Moreno Rojas
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 1.0.0
  * @see <a href=
  * "https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-model-parameters.html?context=wx&audience=wdp">watsonx.ai
@@ -155,17 +156,17 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 	public static WatsonxAiChatOptions fromOptions(WatsonxAiChatOptions fromOptions) {
 		return WatsonxAiChatOptions.builder()
-				.withTemperature(fromOptions.getTemperature())
-				.withTopP(fromOptions.getTopP())
-				.withTopK(fromOptions.getTopK())
-				.withDecodingMethod(fromOptions.getDecodingMethod())
-				.withMaxNewTokens(fromOptions.getMaxNewTokens())
-				.withMinNewTokens(fromOptions.getMinNewTokens())
-				.withStopSequences(fromOptions.getStopSequences())
-				.withRepetitionPenalty(fromOptions.getRepetitionPenalty())
-				.withRandomSeed(fromOptions.getRandomSeed())
-				.withModel(fromOptions.getModel())
-				.withAdditionalProperties(fromOptions.getAdditionalProperties())
+				.temperature(fromOptions.getTemperature())
+				.topP(fromOptions.getTopP())
+				.topK(fromOptions.getTopK())
+				.decodingMethod(fromOptions.getDecodingMethod())
+				.maxNewTokens(fromOptions.getMaxNewTokens())
+				.minNewTokens(fromOptions.getMinNewTokens())
+				.stopSequences(fromOptions.getStopSequences())
+				.repetitionPenalty(fromOptions.getRepetitionPenalty())
+				.randomSeed(fromOptions.getRandomSeed())
+				.model(fromOptions.getModel())
+				.additionalProperties(fromOptions.getAdditionalProperties())
 				.build();
 	}
 
@@ -326,64 +327,160 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
 		WatsonxAiChatOptions options = new WatsonxAiChatOptions();
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder withTopK(Integer topK) {
+		public Builder topK(Integer topK) {
 			this.options.topK = topK;
 			return this;
 		}
 
-		public Builder withDecodingMethod(String decodingMethod) {
+		public Builder decodingMethod(String decodingMethod) {
 			this.options.decodingMethod = decodingMethod;
 			return this;
 		}
 
-		public Builder withMaxNewTokens(Integer maxNewTokens) {
+		public Builder maxNewTokens(Integer maxNewTokens) {
 			this.options.maxNewTokens = maxNewTokens;
 			return this;
 		}
 
-		public Builder withMinNewTokens(Integer minNewTokens) {
+		public Builder minNewTokens(Integer minNewTokens) {
 			this.options.minNewTokens = minNewTokens;
 			return this;
 		}
 
-		public Builder withStopSequences(List<String> stopSequences) {
+		public Builder stopSequences(List<String> stopSequences) {
 			this.options.stopSequences = stopSequences;
 			return this;
 		}
 
-		public Builder withRepetitionPenalty(Double repetitionPenalty) {
+		public Builder repetitionPenalty(Double repetitionPenalty) {
 			this.options.repetitionPenalty = repetitionPenalty;
 			return this;
 		}
 
-		public Builder withRandomSeed(Integer randomSeed) {
+		public Builder randomSeed(Integer randomSeed) {
 			this.options.randomSeed = randomSeed;
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withAdditionalProperty(String key, Object value) {
+		public Builder additionalProperty(String key, Object value) {
 			this.options.additional.put(key, value);
 			return this;
 		}
 
-		public Builder withAdditionalProperties(Map<String, Object> properties) {
+		public Builder additionalProperties(Map<String, Object> properties) {
 			this.options.additional.putAll(properties);
 			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTemperature(Double temperature) {
+			return temperature(temperature);
+		}
+
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopP(Double topP) {
+			return topP(topP);
+		}
+
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopK(Integer topK) {
+			return topK(topK);
+		}
+
+		/**
+		 * @deprecated use {@link #decodingMethod(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withDecodingMethod(String decodingMethod) {
+			return decodingMethod(decodingMethod);
+		}
+
+		/**
+		 * @deprecated use {@link #maxNewTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMaxNewTokens(Integer maxNewTokens) {
+			return maxNewTokens(maxNewTokens);
+		}
+
+		/**
+		 * @deprecated use {@link #minNewTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMinNewTokens(Integer minNewTokens) {
+			return minNewTokens(minNewTokens);
+		}
+
+		/**
+		 * @deprecated use {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withStopSequences(List<String> stopSequences) {
+			return stopSequences(stopSequences);
+		}
+
+		/**
+		 * @deprecated use {@link #repetitionPenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withRepetitionPenalty(Double repetitionPenalty) {
+			return repetitionPenalty(repetitionPenalty);
+		}
+
+		/**
+		 * @deprecated use {@link #randomSeed(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withRandomSeed(Integer randomSeed) {
+			return randomSeed(randomSeed);
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			return model(model);
+		}
+
+		/**
+		 * @deprecated use {@link #additionalProperty(String, Object)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withAdditionalProperty(String key, Object value) {
+			return additionalProperty(key, value);
+		}
+
+		/**
+		 * @deprecated use {@link #additionalProperties(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withAdditionalProperties(Map<String, Object> properties) {
+			return additionalProperties(properties);
 		}
 
 		public WatsonxAiChatOptions build() {
