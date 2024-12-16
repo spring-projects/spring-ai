@@ -50,6 +50,7 @@ import static org.mockito.BDDMockito.given;
 /**
  * @author Christian Tzolov
  * @author Timo Salm
+ * @author Alexandros Pappas
  */
 @ExtendWith(MockitoExtension.class)
 public class QuestionAnswerAdvisorTests {
@@ -72,13 +73,7 @@ public class QuestionAnswerAdvisorTests {
 		// @formatter:off
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
-				ChatResponseMetadata.builder()
-					.withId("678")
-					.withModel("model1")
-					.withKeyValue("key6", "value6")
-					.withMetadata(Map.of("key1", "value1"))
-					.withPromptMetadata(null)
-					.withRateLimit(new RateLimit() {
+				ChatResponseMetadata.builder().id("678").model("model1").keyValue("key6", "value6").metadata(Map.of("key1", "value1")).promptMetadata(null).rateLimit(new RateLimit() {
 
 						@Override
 						public Long getRequestsLimit() {
@@ -109,8 +104,7 @@ public class QuestionAnswerAdvisorTests {
 						public Duration getTokensReset() {
 							return Duration.ofSeconds(9);
 						}
-					})
-					.withUsage(new DefaultUsage(6L, 7L))
+					}).usage(new DefaultUsage(6L, 7L))
 					.build()));
 		// @formatter:on
 

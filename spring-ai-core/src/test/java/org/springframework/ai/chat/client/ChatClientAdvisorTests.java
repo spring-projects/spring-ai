@@ -45,6 +45,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientAdvisorTests {
@@ -63,11 +64,11 @@ public class ChatClientAdvisorTests {
 	public void promptChatMemory() {
 
 		var builder = ChatResponseMetadata.builder()
-			.withId("124")
-			.withUsage(new MessageAggregator.DefaultUsage(1, 2, 3))
-			.withModel("gpt4o")
-			.withKeyValue("created", 0L)
-			.withKeyValue("system-fingerprint", "john doe");
+			.id("124")
+			.usage(new MessageAggregator.DefaultUsage(1, 2, 3))
+			.model("gpt4o")
+			.keyValue("created", 0L)
+			.keyValue("system-fingerprint", "john doe");
 		ChatResponseMetadata chatResponseMetadata = builder.build();
 
 		given(this.chatModel.call(this.promptCaptor.capture()))

@@ -31,6 +31,7 @@ import org.springframework.ai.model.ResponseMetadata;
  * @author John Blum
  * @author Thomas Vitale
  * @author Mark Pollack
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
@@ -126,12 +127,12 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			this.chatResponseMetadata = new ChatResponseMetadata();
 		}
 
-		public Builder withMetadata(Map<String, Object> mapToCopy) {
+		public Builder metadata(Map<String, Object> mapToCopy) {
 			this.chatResponseMetadata.map.putAll(mapToCopy);
 			return this;
 		}
 
-		public Builder withKeyValue(String key, Object value) {
+		public Builder keyValue(String key, Object value) {
 			if (key == null) {
 				throw new IllegalArgumentException("Key must not be null");
 			}
@@ -144,29 +145,85 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			return this;
 		}
 
-		public Builder withId(String id) {
+		public Builder id(String id) {
 			this.chatResponseMetadata.id = id;
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.chatResponseMetadata.model = model;
 			return this;
 		}
 
-		public Builder withRateLimit(RateLimit rateLimit) {
+		public Builder rateLimit(RateLimit rateLimit) {
 			this.chatResponseMetadata.rateLimit = rateLimit;
 			return this;
 		}
 
-		public Builder withUsage(Usage usage) {
+		public Builder usage(Usage usage) {
 			this.chatResponseMetadata.usage = usage;
 			return this;
 		}
 
-		public Builder withPromptMetadata(PromptMetadata promptMetadata) {
+		public Builder promptMetadata(PromptMetadata promptMetadata) {
 			this.chatResponseMetadata.promptMetadata = promptMetadata;
 			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #metadata(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder wihtMetadata(Map<String, Object> mapToCopy) {
+			return metadata(mapToCopy);
+		}
+
+		/**
+		 * @deprecated use {@link #keyValue(String, Object)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withKeyValue(String key, Object value) {
+			return keyValue(key, value);
+		}
+
+		/**
+		 * @deprecated use {@link #id(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withId(String id) {
+			return id(id);
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			return model(model);
+		}
+
+		/**
+		 * @deprecated use {@link #rateLimit(RateLimit)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withRateLimit(RateLimit rateLimit) {
+			return rateLimit(rateLimit);
+		}
+
+		/**
+		 * @deprecated use {@link #usage(Usage)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUsage(Usage usage) {
+			return usage(usage);
+		}
+
+		/**
+		 * @deprecated use {@link #promptMetadata(PromptMetadata)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withPromptMetadata(PromptMetadata promptMetadata) {
+			return promptMetadata(promptMetadata);
 		}
 
 		public ChatResponseMetadata build() {

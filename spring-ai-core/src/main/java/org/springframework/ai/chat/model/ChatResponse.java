@@ -27,6 +27,12 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.
+ *
+ * @author Christian Tzolov
+ * @author Mark Pollack
+ * @author Soby Chacko
+ * @author John Blum
+ * @author Alexandros Pappas
  */
 public class ChatResponse implements ModelResponse<Generation> {
 
@@ -136,24 +142,24 @@ public class ChatResponse implements ModelResponse<Generation> {
 		 */
 		@Deprecated
 		public Builder withMetadata(String key, Object value) {
-			this.chatResponseMetadataBuilder.withKeyValue(key, value);
+			this.chatResponseMetadataBuilder.keyValue(key, value);
 			return this;
 		}
 
 		public Builder metadata(String key, Object value) {
-			this.chatResponseMetadataBuilder.withKeyValue(key, value);
+			this.chatResponseMetadataBuilder.keyValue(key, value);
 			return this;
 		}
 
 		public Builder metadata(ChatResponseMetadata other) {
-			this.chatResponseMetadataBuilder.withModel(other.getModel());
-			this.chatResponseMetadataBuilder.withId(other.getId());
-			this.chatResponseMetadataBuilder.withRateLimit(other.getRateLimit());
-			this.chatResponseMetadataBuilder.withUsage(other.getUsage());
-			this.chatResponseMetadataBuilder.withPromptMetadata(other.getPromptMetadata());
+			this.chatResponseMetadataBuilder.model(other.getModel());
+			this.chatResponseMetadataBuilder.id(other.getId());
+			this.chatResponseMetadataBuilder.rateLimit(other.getRateLimit());
+			this.chatResponseMetadataBuilder.usage(other.getUsage());
+			this.chatResponseMetadataBuilder.promptMetadata(other.getPromptMetadata());
 			Set<Map.Entry<String, Object>> entries = other.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
-				this.chatResponseMetadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+				this.chatResponseMetadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 			return this;
 		}

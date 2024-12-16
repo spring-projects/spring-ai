@@ -55,6 +55,7 @@ import org.springframework.util.CollectionUtils;
  * @author Ben Middleton
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel {
@@ -92,9 +93,9 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 			.toList();
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.withId(response.id())
-			.withModel(response.model())
-			.withUsage(extractUsage(response))
+			.id(response.id())
+			.model(response.model())
+			.usage(extractUsage(response))
 			.build();
 
 		return new ChatResponse(generations, metadata);

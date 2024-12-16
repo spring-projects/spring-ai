@@ -62,6 +62,7 @@ import org.springframework.util.StringUtils;
  * {@link ChatModel} implementation that uses the OCI GenAI Chat API.
  *
  * @author Anders Swanson
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class OCICohereChatModel implements ChatModel {
@@ -138,8 +139,8 @@ public class OCICohereChatModel implements ChatModel {
 		validateChatOptions(options);
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.withModel(options.getModel())
-			.withKeyValue("compartment", options.getCompartment())
+			.model(options.getModel())
+			.keyValue("compartment", options.getCompartment())
 			.build();
 		return new ChatResponse(getGenerations(prompt, options), metadata);
 

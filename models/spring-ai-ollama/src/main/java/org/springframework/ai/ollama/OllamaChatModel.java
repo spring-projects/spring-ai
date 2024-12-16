@@ -76,6 +76,7 @@ import org.springframework.util.StringUtils;
  * @author luocongqiu
  * @author Thomas Vitale
  * @author Jihoon Kim
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -164,16 +165,16 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		DefaultUsage aggregatedUsage = new DefaultUsage(promptTokens, generationTokens, totalTokens);
 
 		return ChatResponseMetadata.builder()
-			.withUsage(aggregatedUsage)
-			.withModel(response.model())
-			.withKeyValue(METADATA_CREATED_AT, response.createdAt())
-			.withKeyValue(METADATA_EVAL_DURATION, evalDuration)
-			.withKeyValue(METADATA_EVAL_COUNT, aggregatedUsage.getGenerationTokens().intValue())
-			.withKeyValue(METADATA_LOAD_DURATION, loadDuration)
-			.withKeyValue(METADATA_PROMPT_EVAL_DURATION, promptEvalDuration)
-			.withKeyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens().intValue())
-			.withKeyValue(METADATA_TOTAL_DURATION, totalDuration)
-			.withKeyValue(DONE, response.done())
+			.usage(aggregatedUsage)
+			.model(response.model())
+			.keyValue(METADATA_CREATED_AT, response.createdAt())
+			.keyValue(METADATA_EVAL_DURATION, evalDuration)
+			.keyValue(METADATA_EVAL_COUNT, aggregatedUsage.getGenerationTokens().intValue())
+			.keyValue(METADATA_LOAD_DURATION, loadDuration)
+			.keyValue(METADATA_PROMPT_EVAL_DURATION, promptEvalDuration)
+			.keyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens().intValue())
+			.keyValue(METADATA_TOTAL_DURATION, totalDuration)
+			.keyValue(DONE, response.done())
 			.build();
 	}
 
