@@ -55,7 +55,7 @@ import org.springframework.util.Assert;
  */
 public class OpenAiImageModel implements ImageModel {
 
-	private final static Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
 
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 

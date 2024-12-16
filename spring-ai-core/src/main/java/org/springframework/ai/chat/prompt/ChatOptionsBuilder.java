@@ -77,7 +77,7 @@ public final class ChatOptionsBuilder {
 		return this.options;
 	}
 
-	private final static class DefaultChatOptions implements ChatOptions {
+	private static final class DefaultChatOptions implements ChatOptions {
 
 		private String model;
 

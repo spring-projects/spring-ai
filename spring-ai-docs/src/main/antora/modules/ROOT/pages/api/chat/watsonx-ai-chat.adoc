@@ -102,7 +102,7 @@ NOTE: For more information go to https://dataplatform.cloud.ibm.com/docs/content
 ----
 public class MyClass {
 
-    private final static String MODEL = "google/flan-ul2";
+    private static final String MODEL = "google/flan-ul2";
     private final WatsonxAiChatModel chatModel;
 
     @Autowired
