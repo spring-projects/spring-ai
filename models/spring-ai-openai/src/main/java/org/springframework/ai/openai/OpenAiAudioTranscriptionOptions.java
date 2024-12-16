@@ -30,6 +30,7 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.Gra
  * @author Michael Lavelle
  * @author Christian Tzolov
  * @author Piotr Olaszewski
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.1
  */
 @JsonInclude(Include.NON_NULL)
@@ -181,31 +182,85 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 			this.options = options;
 		}
 
+		public Builder model(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder language(String language) {
+			this.options.language = language;
+			return this;
+		}
+
+		public Builder prompt(String prompt) {
+			this.options.prompt = prompt;
+			return this;
+		}
+
+		public Builder responseFormat(TranscriptResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder temperature(Float temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder granularityType(GranularityType granularityType) {
+			this.options.granularityType = granularityType;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model( String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.model = model;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #language( String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLanguage(String language) {
 			this.options.language = language;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #prompt( String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPrompt(String prompt) {
 			this.options.prompt = prompt;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseFormat( TranscriptResponseFormat)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #temperature( Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Float temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #granularityType( GranularityType)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withGranularityType(GranularityType granularityType) {
 			this.options.granularityType = granularityType;
 			return this;

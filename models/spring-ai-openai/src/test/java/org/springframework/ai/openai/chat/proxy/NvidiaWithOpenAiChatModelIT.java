@@ -114,7 +114,7 @@ class NvidiaWithOpenAiChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
+		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 
@@ -246,7 +246,7 @@ class NvidiaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -269,7 +269,7 @@ class NvidiaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -295,7 +295,7 @@ class NvidiaWithOpenAiChatModelIT {
 	void validateCallResponseMetadata() {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(DEFAULT_NVIDIA_MODEL).build())
+				.options(OpenAiChatOptions.builder().model(DEFAULT_NVIDIA_MODEL).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -324,7 +324,7 @@ class NvidiaWithOpenAiChatModelIT {
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
 			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder().withMaxTokens(2048).withModel(DEFAULT_NVIDIA_MODEL).build());
+					OpenAiChatOptions.builder().maxTokens(2048).model(DEFAULT_NVIDIA_MODEL).build());
 		}
 
 	}

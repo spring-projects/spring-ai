@@ -82,7 +82,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("List 8 planets. Use JSON response",
 				OpenAiChatOptions.builder()
-					.withResponseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
+					.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
 					.build());
 
 		ChatResponse response = this.openAiChatModel.call(prompt);
@@ -124,8 +124,8 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiChatOptions.builder()
-					.withModel(ChatModel.GPT_4_O_MINI)
-					.withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+					.model(ChatModel.GPT_4_O_MINI)
+					.responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
 					.build());
 
 		ChatResponse response = this.openAiChatModel.call(prompt);
@@ -205,8 +205,8 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiChatOptions.builder()
-					.withModel(ChatModel.GPT_4_O_MINI)
-					.withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema1))
+					.model(ChatModel.GPT_4_O_MINI)
+					.responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema1))
 					.build());
 
 		ChatResponse response = this.openAiChatModel.call(prompt);

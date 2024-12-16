@@ -143,8 +143,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @throws IllegalArgumentException if openAiApi is null
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi) {
-		this(openAiApi,
-				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(openAiApi, OpenAiChatOptions.builder().model(OpenAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -588,13 +587,13 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					OpenAiChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 		// Remove `streamOptions` from the request if it is not a streaming request
 		if (request.streamOptions() != null && !stream) {
 			logger.warn("Removing streamOptions from the request as it is not a streaming request!");
-			request = request.withStreamOptions(null);
+			request = request.streamOptions(null);
 		}
 
 		return request;

@@ -173,7 +173,7 @@ public class OpenAiModerationModel implements ModerationModel {
 		OpenAiModerationOptions.Builder openAiModerationOptionsBuilder = OpenAiModerationOptions.builder();
 		// Handle portable moderation options
 		if (runtimeModerationOptions != null && runtimeModerationOptions.getModel() != null) {
-			openAiModerationOptionsBuilder.withModel(runtimeModerationOptions.getModel());
+			openAiModerationOptionsBuilder.model(runtimeModerationOptions.getModel());
 		}
 		return openAiModerationOptionsBuilder.build();
 	}
