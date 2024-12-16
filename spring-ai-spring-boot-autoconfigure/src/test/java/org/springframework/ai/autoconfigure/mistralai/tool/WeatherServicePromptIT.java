@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
@@ -71,8 +72,8 @@ public class WeatherServicePromptIT {
 				// Paris?");
 
 				var promptOptions = MistralAiChatOptions.builder()
-					.withToolChoice(ToolChoice.AUTO)
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.toolChoice(ToolChoice.AUTO)
+					.functionCallbacks(List.of(FunctionCallback.builder()
 						.function("CurrentWeatherService", new MyWeatherService())
 						.description("Get the current weather in requested location")
 						.inputType(MyWeatherService.Request.class)

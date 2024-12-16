@@ -126,8 +126,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MistralAiChatOptions.builder()
-            .withModel(MistralAiApi.ChatModel.LARGE.getValue())
-            .withTemperature(0.5)
+            .model(MistralAiApi.ChatModel.LARGE.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -222,9 +222,9 @@ Next, create a `MistralAiChatModel` and use it for text generations:
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
 var chatModel = new MistralAiChatModel(this.mistralAiApi, MistralAiChatOptions.builder()
-                .withModel(MistralAiApi.ChatModel.LARGE.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+                .model(MistralAiApi.ChatModel.LARGE.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
 ChatResponse response = this.chatModel.call(

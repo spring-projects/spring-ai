@@ -55,6 +55,7 @@ import static org.mockito.BDDMockito.given;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -78,10 +79,10 @@ public class MistralAiRetryTests {
 
 		this.chatModel = new MistralAiChatModel(this.mistralAiApi,
 				MistralAiChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withSafePrompt(false)
-					.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+					.temperature(0.7)
+					.topP(1.0)
+					.safePrompt(false)
+					.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 					.build(),
 				null, this.retryTemplate);
 		this.embeddingModel = new MistralAiEmbeddingModel(this.mistralAiApi, MetadataMode.EMBED,

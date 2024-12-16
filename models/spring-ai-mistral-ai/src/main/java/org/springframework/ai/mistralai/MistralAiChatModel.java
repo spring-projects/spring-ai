@@ -111,10 +111,10 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 	public MistralAiChatModel(MistralAiApi mistralAiApi) {
 		this(mistralAiApi,
 				MistralAiChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withSafePrompt(false)
-					.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+					.temperature(0.7)
+					.topP(1.0)
+					.safePrompt(false)
+					.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 					.build());
 	}
 
@@ -417,7 +417,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 
 			request = ModelOptionsUtils.merge(
-					MistralAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
+					MistralAiChatOptions.builder().tools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
 		}
 

@@ -53,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
@@ -192,8 +193,8 @@ class MistralAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -218,8 +219,8 @@ class MistralAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
