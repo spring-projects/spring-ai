@@ -64,7 +64,7 @@ public class MiniMaxChatOptionsTests {
 		assertThat(responseContent).contains("133-**");
 		assertThat(responseContent).doesNotContain("133-12345678");
 
-		var chatOptions = MiniMaxChatOptions.builder().withMaskSensitiveInfo(false).build();
+		var chatOptions = MiniMaxChatOptions.builder().maskSensitiveInfo(false).build();
 
 		ChatResponse unmaskResponse = this.chatModel.call(new Prompt(messages, chatOptions));
 		String unmaskResponseContent = unmaskResponse.getResult().getOutput().getText();
@@ -92,8 +92,8 @@ public class MiniMaxChatOptionsTests {
 		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-			.withModel(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
-			.withTools(functionTool)
+			.model(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
+			.tools(functionTool)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, options));
@@ -122,8 +122,8 @@ public class MiniMaxChatOptionsTests {
 		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-			.withModel(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
-			.withTools(functionTool)
+			.model(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
+			.tools(functionTool)
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, options));

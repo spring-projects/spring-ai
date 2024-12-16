@@ -70,13 +70,13 @@ public class MiniMaxChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = MiniMaxChatOptions.builder()
-			.withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
-			.withFrequencyPenalty(0.0)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
+			.frequencyPenalty(0.0)
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -93,13 +93,13 @@ public class MiniMaxChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = MiniMaxChatOptions.builder()
-			.withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
-			.withFrequencyPenalty(0.0)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
+			.frequencyPenalty(0.0)
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
