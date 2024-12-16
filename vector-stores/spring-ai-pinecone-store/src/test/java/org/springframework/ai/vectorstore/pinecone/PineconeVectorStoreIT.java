@@ -275,14 +275,14 @@ public class PineconeVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(EmbeddingModel embeddingModel) {
 			return PineconeVectorStore.builder()
-					.embeddingModel(embeddingModel)
-					.apiKey(System.getenv("PINECONE_API_KEY"))
-					.environment(PINECONE_ENVIRONMENT)
-					.projectId(PINECONE_PROJECT_ID)
-					.indexName(PINECONE_INDEX_NAME)
-					.namespace(PINECONE_NAMESPACE)
-					.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)
-					.build();
+				.embeddingModel(embeddingModel)
+				.apiKey(System.getenv("PINECONE_API_KEY"))
+				.environment(PINECONE_ENVIRONMENT)
+				.projectId(PINECONE_PROJECT_ID)
+				.indexName(PINECONE_INDEX_NAME)
+				.namespace(PINECONE_NAMESPACE)
+				.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)
+				.build();
 		}
 
 		@Bean
