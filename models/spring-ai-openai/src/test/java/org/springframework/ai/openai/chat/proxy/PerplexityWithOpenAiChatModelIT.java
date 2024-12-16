@@ -131,7 +131,7 @@ class PerplexityWithOpenAiChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
+		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 
@@ -258,7 +258,7 @@ class PerplexityWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -280,7 +280,7 @@ class PerplexityWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -306,7 +306,7 @@ class PerplexityWithOpenAiChatModelIT {
 	void validateCallResponseMetadata() {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt()
-			.options(OpenAiChatOptions.builder().withModel(DEFAULT_PERPLEXITY_MODEL).build())
+			.options(OpenAiChatOptions.builder().model(DEFAULT_PERPLEXITY_MODEL).build())
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();
@@ -334,8 +334,7 @@ class PerplexityWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder().withModel(DEFAULT_PERPLEXITY_MODEL).build());
+			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().model(DEFAULT_PERPLEXITY_MODEL).build());
 		}
 
 	}

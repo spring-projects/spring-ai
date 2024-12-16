@@ -220,32 +220,32 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 
 	public static OpenAiChatOptions fromOptions(OpenAiChatOptions fromOptions) {
 		return OpenAiChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withLogitBias(fromOptions.getLogitBias())
-			.withLogprobs(fromOptions.getLogprobs())
-			.withTopLogprobs(fromOptions.getTopLogprobs())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withMaxCompletionTokens(fromOptions.getMaxCompletionTokens())
-			.withN(fromOptions.getN())
-			.withOutputModalities(fromOptions.getOutputModalities())
-			.withOutputAudio(fromOptions.getOutputAudio())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withStreamUsage(fromOptions.getStreamUsage())
-			.withSeed(fromOptions.getSeed())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withUser(fromOptions.getUser())
-			.withParallelToolCalls(fromOptions.getParallelToolCalls())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withHttpHeaders(fromOptions.getHttpHeaders())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
+			.model(fromOptions.getModel())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.logitBias(fromOptions.getLogitBias())
+			.logprobs(fromOptions.getLogprobs())
+			.topLogprobs(fromOptions.getTopLogprobs())
+			.maxTokens(fromOptions.getMaxTokens())
+			.maxCompletionTokens(fromOptions.getMaxCompletionTokens())
+			.N(fromOptions.getN())
+			.outputModalities(fromOptions.getOutputModalities())
+			.outputAudio(fromOptions.getOutputAudio())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.responseFormat(fromOptions.getResponseFormat())
+			.streamUsage(fromOptions.getStreamUsage())
+			.seed(fromOptions.getSeed())
+			.stop(fromOptions.getStop())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.tools(fromOptions.getTools())
+			.toolChoice(fromOptions.getToolChoice())
+			.user(fromOptions.getUser())
+			.parallelToolCalls(fromOptions.getParallelToolCalls())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.httpHeaders(fromOptions.getHttpHeaders())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -555,143 +555,402 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			this.options = options;
 		}
 
+		public Builder model(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder model(OpenAiApi.ChatModel openAiChatModel) {
+			this.options.model = openAiChatModel.getName();
+			return this;
+		}
+
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder logitBias(Map<String, Integer> logitBias) {
+			this.options.logitBias = logitBias;
+			return this;
+		}
+
+		public Builder logprobs(Boolean logprobs) {
+			this.options.logprobs = logprobs;
+			return this;
+		}
+
+		public Builder topLogprobs(Integer topLogprobs) {
+			this.options.topLogprobs = topLogprobs;
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
+			this.options.maxCompletionTokens = maxCompletionTokens;
+			return this;
+		}
+
+		public Builder N(Integer n) {
+			this.options.n = n;
+			return this;
+		}
+
+		public Builder outputModalities(List<String> modalities) {
+			this.options.outputModalities = modalities;
+			return this;
+		}
+
+		public Builder outputAudio(AudioParameters audio) {
+			this.options.outputAudio = audio;
+			return this;
+		}
+
+		public Builder presencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder responseFormat(ResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder streamUsage(boolean enableStreamUsage) {
+			this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
+			return this;
+		}
+
+		public Builder seed(Integer seed) {
+			this.options.seed = seed;
+			return this;
+		}
+
+		public Builder stop(List<String> stop) {
+			this.options.stop = stop;
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder tools(List<OpenAiApi.FunctionTool> tools) {
+			this.options.tools = tools;
+			return this;
+		}
+
+		public Builder toolChoice(Object toolChoice) {
+			this.options.toolChoice = toolChoice;
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.user = user;
+			return this;
+		}
+
+		public Builder parallelToolCalls(Boolean parallelToolCalls) {
+			this.options.parallelToolCalls = parallelToolCalls;
+			return this;
+		}
+
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder functions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder function(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder httpHeaders(Map<String, String> httpHeaders) {
+			this.options.httpHeaders = httpHeaders;
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.model = model;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(OpenAiApi.ChatModel)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(OpenAiApi.ChatModel openAiChatModel) {
 			this.options.model = openAiChatModel.getName();
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFrequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #logitBias(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLogitBias(Map<String, Integer> logitBias) {
 			this.options.logitBias = logitBias;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #logprobs(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLogprobs(Boolean logprobs) {
 			this.options.logprobs = logprobs;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topLogprobs(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopLogprobs(Integer topLogprobs) {
 			this.options.topLogprobs = topLogprobs;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxCompletionTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxCompletionTokens(Integer maxCompletionTokens) {
 			this.options.maxCompletionTokens = maxCompletionTokens;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #N(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withN(Integer n) {
 			this.options.n = n;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #outputModalities(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withOutputModalities(List<String> modalities) {
 			this.options.outputModalities = modalities;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #outputAudio(AudioParameters)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withOutputAudio(AudioParameters audio) {
 			this.options.outputAudio = audio;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #presencePenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPresencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseFormat(ResponseFormat)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResponseFormat(ResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #streamUsage(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStreamUsage(boolean enableStreamUsage) {
 			this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #seed(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSeed(Integer seed) {
 			this.options.seed = seed;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stop(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #tools(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTools(List<OpenAiApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #toolChoice(Object)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolChoice(Object toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withUser(String user) {
 			this.options.user = user;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #parallelToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withParallelToolCalls(Boolean parallelToolCalls) {
 			this.options.parallelToolCalls = parallelToolCalls;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #httpHeaders(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHttpHeaders(Map<String, String> httpHeaders) {
 			this.options.httpHeaders = httpHeaders;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;

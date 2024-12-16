@@ -206,7 +206,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
+		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
@@ -335,8 +335,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -361,7 +361,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -394,7 +394,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -423,12 +423,12 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.withStreamUsage(true)
+			.streamUsage(true)
 			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
@@ -453,7 +453,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
@@ -471,7 +471,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 					.build()));
 
 		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
@@ -488,7 +488,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 					.build()));
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+				OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 
 		String content = response.collectList()
 			.block()
@@ -509,9 +509,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 				OpenAiChatOptions.builder()
-					.withModel(modelName)
-					.withOutputModalities(List.of("text", "audio"))
-					.withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+					.model(modelName)
+					.outputModalities(List.of("text", "audio"))
+					.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 					.build()));
 
 		logger.info(response.getResult().getOutput().getText());
@@ -531,9 +531,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThatThrownBy(() -> chatModel
 			.stream(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder()
-						.withModel(modelName)
-						.withOutputModalities(List.of("text", "audio"))
-						.withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+						.model(modelName)
+						.outputModalities(List.of("text", "audio"))
+						.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 						.build()))
 			.collectList()
 			.block()).isInstanceOf(IllegalArgumentException.class)
@@ -563,7 +563,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
 		Flux<ChatResponse> response = chatModel
-			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		String content = response.collectList()
 			.block()
@@ -582,7 +582,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(model).build())
+				.options(OpenAiChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();

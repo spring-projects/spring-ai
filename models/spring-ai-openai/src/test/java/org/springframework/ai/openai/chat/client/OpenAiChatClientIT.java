@@ -81,7 +81,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultOptions(OpenAiChatOptions.builder()
-				.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build())
+				.model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build())
 			.defaultUser(REASON_QUESTION)
 			.build();
 
@@ -215,7 +215,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
-				.options(OpenAiChatOptions.builder().withStreamUsage(true).build())
+				.options(OpenAiChatOptions.builder().streamUsage(true).build())
 				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
@@ -312,7 +312,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.options(OpenAiChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -334,7 +334,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.options(OpenAiChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -353,7 +353,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
+				.options(OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue())
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, url))
@@ -373,10 +373,9 @@ class OpenAiChatClientIT extends AbstractIT {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt("Tell me joke about Spring Framework")
 			.options(OpenAiChatOptions.builder()
-				.withModel(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
-				.withOutputAudio(
-						new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
-				.withOutputModalities(List.of("text", "audio"))
+				.model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+				.outputAudio(new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
+				.outputModalities(List.of("text", "audio"))
 				.build())
 			.call()
 			.chatResponse();

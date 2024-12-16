@@ -152,8 +152,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OpenAiChatOptions.builder()
-            .withModel("gpt-4-o")
-            .withTemperature(0.4)
+            .model("gpt-4-o")
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -190,7 +190,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
 TIP: GPT_4_VISION_PREVIEW will continue to be available only to existing users of this model starting June 17, 2024. If you are not an existing user, please use the GPT_4_O or GPT_4_TURBO models. More details https://platform.openai.com/docs/deprecations/2024-06-06-gpt-4-32k-and-vision-preview-models[here]
@@ -204,7 +204,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
                 "https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
 TIP: You can pass multiple images as well.
@@ -244,7 +244,7 @@ var userMessage = new UserMessage("What is this recording about?",
         List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-        OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW).build()));
+        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW).build()));
 ----
 
 TIP: You can pass multiple audio files as well.
@@ -267,9 +267,9 @@ var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
         OpenAiChatOptions.builder()
-            .withModel(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
-            .withOutputModalities(List.of("text", "audio"))
-            .withOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+            .model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+            .outputModalities(List.of("text", "audio"))
+            .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
             .build()));
 
 String text = response.getResult().getOutput().getContent(); // audio transcript
@@ -322,8 +322,8 @@ String jsonSchema = """
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OpenAiChatOptions.builder()
-            .withModel(ChatModel.GPT_4_O_MINI)
-            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
+            .model(ChatModel.GPT_4_O_MINI)
+            .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
             .build());
 
 ChatResponse response = this.openAiChatModel.call(this.prompt);
@@ -362,8 +362,8 @@ var jsonSchema = this.outputConverter.getJsonSchema();
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OpenAiChatOptions.builder()
-            .withModel(ChatModel.GPT_4_O_MINI)
-            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
+            .model(ChatModel.GPT_4_O_MINI)
+            .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
             .build());
 
 ChatResponse response = this.openAiChatModel.call(this.prompt);
@@ -393,8 +393,8 @@ val jsonSchema = outputConverter.jsonSchema;
 
 val prompt = Prompt("how can I solve 8x + 7 = -23",
 	OpenAiChatOptions.builder()
-		.withModel(ChatModel.GPT_4_O_MINI)
-		.withResponseFormat(ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+		.model(ChatModel.GPT_4_O_MINI)
+		.responseFormat(ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
 		.build())
 
 val response = openAiChatModel.call(prompt)
@@ -498,9 +498,9 @@ Next, create an `OpenAiChatModel` and use it for text generations:
 ----
 var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 var openAiChatOptions = OpenAiChatOptions.builder()
-            .withModel("gpt-3.5-turbo")
-            .withTemperature(0.4)
-            .withMaxTokens(200)
+            .model("gpt-3.5-turbo")
+            .temperature(0.4)
+            .maxTokens(200)
             .build();
 var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
 

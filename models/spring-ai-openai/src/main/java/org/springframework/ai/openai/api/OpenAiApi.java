@@ -896,7 +896,7 @@ public class OpenAiApi {
 		 * @param streamOptions The new stream options to use.
 		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
 		 */
-		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
+		public ChatCompletionRequest streamOptions(StreamOptions streamOptions) {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,

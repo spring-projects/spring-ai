@@ -242,6 +242,46 @@ public class OpenAiImageOptions implements ImageOptions {
 			this.options = new OpenAiImageOptions();
 		}
 
+		public Builder N(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder quality(String quality) {
+			this.options.setQuality(quality);
+			return this;
+		}
+
+		public Builder responseFormat(String responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder width(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder height(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder style(String style) {
+			this.options.setStyle(style);
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
 		public Builder withN(Integer n) {
 			this.options.setN(n);
 			return this;

@@ -28,6 +28,7 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
  *
  * @author Ahmed Yousri
  * @author Hyunjoon Choi
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0-M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -186,26 +187,71 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 
 		private final OpenAiAudioSpeechOptions options = new OpenAiAudioSpeechOptions();
 
+		public Builder model(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder input(String input) {
+			this.options.input = input;
+			return this;
+		}
+
+		public Builder voice(Voice voice) {
+			this.options.voice = voice;
+			return this;
+		}
+
+		public Builder responseFormat(AudioResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder speed(Float speed) {
+			this.options.speed = speed;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.model = model;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #input(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withInput(String input) {
 			this.options.input = input;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #voice(Voice)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withVoice(Voice voice) {
 			this.options.voice = voice;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseFormat(AudioResponseFormat)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResponseFormat(AudioResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #speed(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSpeed(Float speed) {
 			this.options.speed = speed;
 			return this;
