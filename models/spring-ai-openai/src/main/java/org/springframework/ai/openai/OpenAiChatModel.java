@@ -101,6 +101,7 @@ import org.springframework.util.StringUtils;
  * @author luocongqiu
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -461,13 +462,13 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit, Usage usage) {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
 		var builder = ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(usage)
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
-			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
+			.id(result.id() != null ? result.id() : "")
+			.usage(usage)
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
 		if (rateLimit != null) {
-			builder.withRateLimit(rateLimit);
+			builder.rateLimit(rateLimit);
 		}
 		return builder.build();
 	}
@@ -475,11 +476,11 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	private ChatResponseMetadata from(ChatResponseMetadata chatResponseMetadata, Usage usage) {
 		Assert.notNull(chatResponseMetadata, "OpenAI ChatResponseMetadata must not be null");
 		var builder = ChatResponseMetadata.builder()
-			.withId(chatResponseMetadata.getId() != null ? chatResponseMetadata.getId() : "")
-			.withUsage(usage)
-			.withModel(chatResponseMetadata.getModel() != null ? chatResponseMetadata.getModel() : "");
+			.id(chatResponseMetadata.getId() != null ? chatResponseMetadata.getId() : "")
+			.usage(usage)
+			.model(chatResponseMetadata.getModel() != null ? chatResponseMetadata.getModel() : "");
 		if (chatResponseMetadata.getRateLimit() != null) {
-			builder.withRateLimit(chatResponseMetadata.getRateLimit());
+			builder.rateLimit(chatResponseMetadata.getRateLimit());
 		}
 		return builder.build();
 	}

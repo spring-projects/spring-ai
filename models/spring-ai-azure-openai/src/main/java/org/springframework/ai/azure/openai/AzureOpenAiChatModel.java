@@ -108,6 +108,7 @@ import org.springframework.util.CollectionUtils;
  * @author Soby Chacko
  * @author Jihoon Kim
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -184,11 +185,11 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		Assert.notNull(chatCompletions, "Azure OpenAI ChatCompletions must not be null");
 		String id = chatCompletions.getId();
 		return ChatResponseMetadata.builder()
-			.withId(id)
-			.withUsage(usage)
-			.withModel(chatCompletions.getModel())
-			.withPromptMetadata(promptFilterMetadata)
-			.withKeyValue("system-fingerprint", chatCompletions.getSystemFingerprint())
+			.id(id)
+			.usage(usage)
+			.model(chatCompletions.getModel())
+			.promptMetadata(promptFilterMetadata)
+			.keyValue("system-fingerprint", chatCompletions.getSystemFingerprint())
 			.build();
 	}
 
@@ -206,12 +207,12 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		Assert.notNull(chatResponse, "ChatResponse must not be null");
 		ChatResponseMetadata chatResponseMetadata = chatResponse.getMetadata();
 		ChatResponseMetadata.Builder builder = ChatResponseMetadata.builder();
-		builder.withId(chatResponseMetadata.getId())
-			.withUsage(usage)
-			.withModel(chatResponseMetadata.getModel())
-			.withPromptMetadata(chatResponseMetadata.getPromptMetadata());
+		builder.id(chatResponseMetadata.getId())
+			.usage(usage)
+			.model(chatResponseMetadata.getModel())
+			.promptMetadata(chatResponseMetadata.getPromptMetadata());
 		if (chatResponseMetadata.containsKey("system-fingerprint")) {
-			builder.withKeyValue("system-fingerprint", chatResponseMetadata.get("system-fingerprint"));
+			builder.keyValue("system-fingerprint", chatResponseMetadata.get("system-fingerprint"));
 		}
 		return builder.build();
 	}

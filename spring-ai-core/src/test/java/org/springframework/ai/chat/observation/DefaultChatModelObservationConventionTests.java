@@ -39,6 +39,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * Unit tests for {@link DefaultChatModelObservationConvention}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 class DefaultChatModelObservationConventionTests {
 
@@ -112,11 +113,7 @@ class DefaultChatModelObservationConventionTests {
 		observationContext.setResponse(new ChatResponse(
 				List.of(new Generation(new AssistantMessage("response"),
 						ChatGenerationMetadata.builder().finishReason("this-is-the-end").build())),
-				ChatResponseMetadata.builder()
-					.withId("say33")
-					.withModel("mistral-42")
-					.withUsage(new TestUsage())
-					.build()));
+				ChatResponseMetadata.builder().id("say33").model("mistral-42").usage(new TestUsage()).build()));
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
 			.contains(KeyValue.of(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), "mistral-42"));
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
@@ -170,7 +167,7 @@ class DefaultChatModelObservationConventionTests {
 		observationContext.setResponse(new ChatResponse(
 				List.of(new Generation(new AssistantMessage("response"),
 						ChatGenerationMetadata.builder().finishReason("").build())),
-				ChatResponseMetadata.builder().withId("").build()));
+				ChatResponseMetadata.builder().id("").build()));
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
 			.stream()
 			.map(KeyValue::getKey)

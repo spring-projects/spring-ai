@@ -95,6 +95,7 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
@@ -427,7 +428,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
-		return ChatResponseMetadata.builder().withUsage(new VertexAiUsage(response.getUsageMetadata())).build();
+		return ChatResponseMetadata.builder().usage(new VertexAiUsage(response.getUsageMetadata())).build();
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {

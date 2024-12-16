@@ -81,6 +81,7 @@ import org.springframework.util.StringUtils;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Claudio Silva Junior
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -357,12 +358,12 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result, Usage usage) {
 		Assert.notNull(result, "Anthropic ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withModel(result.model())
-			.withUsage(usage)
-			.withKeyValue("stop-reason", result.stopReason())
-			.withKeyValue("stop-sequence", result.stopSequence())
-			.withKeyValue("type", result.type())
+			.id(result.id())
+			.model(result.model())
+			.usage(usage)
+			.keyValue("stop-reason", result.stopReason())
+			.keyValue("stop-sequence", result.stopSequence())
+			.keyValue("type", result.type())
 			.build();
 	}
 

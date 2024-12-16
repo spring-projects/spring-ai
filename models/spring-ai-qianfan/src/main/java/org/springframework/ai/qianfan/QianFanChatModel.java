@@ -64,6 +64,7 @@ import org.springframework.util.Assert;
  * @see ChatModel
  * @see StreamingChatModel
  * @see QianFanApi
+ * @author Alexandros Pappas
  * @since 1.0
  */
 public class QianFanChatModel implements ChatModel, StreamingChatModel {
@@ -290,10 +291,10 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	private ChatResponseMetadata from(QianFanApi.ChatCompletion result, String model) {
 		Assert.notNull(result, "QianFan ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? QianFanUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(model)
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? QianFanUsage.from(result.usage()) : new EmptyUsage())
+			.model(model)
+			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
 	}
 

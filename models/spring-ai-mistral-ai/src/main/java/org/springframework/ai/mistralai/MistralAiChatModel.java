@@ -77,6 +77,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @author luocongqiu
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class MistralAiChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -151,20 +152,20 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
 		MistralAiUsage usage = MistralAiUsage.from(result.usage());
 		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withModel(result.model())
-			.withUsage(usage)
-			.withKeyValue("created", result.created())
+			.id(result.id())
+			.model(result.model())
+			.usage(usage)
+			.keyValue("created", result.created())
 			.build();
 	}
 
 	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result, Usage usage) {
 		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withModel(result.model())
-			.withUsage(usage)
-			.withKeyValue("created", result.created())
+			.id(result.id())
+			.model(result.model())
+			.usage(usage)
+			.keyValue("created", result.created())
 			.build();
 	}
 

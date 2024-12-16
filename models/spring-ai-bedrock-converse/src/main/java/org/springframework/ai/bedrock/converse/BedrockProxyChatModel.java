@@ -128,6 +128,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class BedrockProxyChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -564,8 +565,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		ConverseMetrics metrics = response.metrics();
 
 		var chatResponseMetaData = ChatResponseMetadata.builder()
-			.withId(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
-			.withUsage(usage)
+			.id(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
+			.usage(usage)
 			.build();
 
 		return new ChatResponse(allGenerations, chatResponseMetaData);
