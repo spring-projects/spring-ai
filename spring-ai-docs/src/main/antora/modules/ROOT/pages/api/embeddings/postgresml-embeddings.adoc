@@ -77,9 +77,9 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
             PostgresMlEmbeddingOptions.builder()
-                .withTransformer("intfloat/e5-small")
-                .withVectorType(VectorType.PG_ARRAY)
-                .withKwargs(Map.of("device", "gpu"))
+                .transformer("intfloat/e5-small")
+                .vectorType(VectorType.PG_ARRAY)
+                .kwargs(Map.of("device", "gpu"))
                 .build()));
 ----
 
@@ -148,10 +148,10 @@ var jdbcTemplate = new JdbcTemplate(dataSource); // your posgresml data source
 
 PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
         PostgresMlEmbeddingOptions.builder()
-            .withTransformer("distilbert-base-uncased") // huggingface transformer model name.
-            .withVectorType(VectorType.PG_VECTOR) //vector type in PostgreSQL.
-            .withKwargs(Map.of("device", "cpu")) // optional arguments.
-            .withMetadataMode(MetadataMode.EMBED) // Document metadata mode.
+            .transformer("distilbert-base-uncased") // huggingface transformer model name.
+            .vectorType(VectorType.PG_VECTOR) //vector type in PostgreSQL.
+            .kwargs(Map.of("device", "cpu")) // optional arguments.
+            .metadataMode(MetadataMode.EMBED) // Document metadata mode.
             .build());
 
 embeddingModel.afterPropertiesSet(); // initialize the jdbc template and database.

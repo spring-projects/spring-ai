@@ -33,6 +33,7 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
@@ -116,26 +117,71 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 			this.options = new PostgresMlEmbeddingOptions();
 		}
 
+		public Builder transformer(String transformer) {
+			this.options.setTransformer(transformer);
+			return this;
+		}
+
+		public Builder vectorType(VectorType vectorType) {
+			this.options.setVectorType(vectorType);
+			return this;
+		}
+
+		public Builder kwargs(String kwargs) {
+			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
+			return this;
+		}
+
+		public Builder kwargs(Map<String, Object> kwargs) {
+			this.options.setKwargs(kwargs);
+			return this;
+		}
+
+		public Builder metadataMode(MetadataMode metadataMode) {
+			this.options.setMetadataMode(metadataMode);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #transformer(String)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTransformer(String transformer) {
 			this.options.setTransformer(transformer);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #vectorType(VectorType)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withVectorType(VectorType vectorType) {
 			this.options.setVectorType(vectorType);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #kwargs(String)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withKwargs(String kwargs) {
 			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #kwargs(Map)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withKwargs(Map<String, Object> kwargs) {
 			this.options.setKwargs(kwargs);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #metadataMode(MetadataMode)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMetadataMode(MetadataMode metadataMode) {
 			this.options.setMetadataMode(metadataMode);
 			return this;
