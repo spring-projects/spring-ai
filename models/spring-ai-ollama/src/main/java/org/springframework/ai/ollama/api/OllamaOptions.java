@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -355,43 +356,43 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 
 	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
 		return new OllamaOptions()
-			.withModel(fromOptions.getModel())
-			.withFormat(fromOptions.getFormat())
-			.withKeepAlive(fromOptions.getKeepAlive())
-			.withTruncate(fromOptions.getTruncate())
-			.withUseNUMA(fromOptions.getUseNUMA())
-			.withNumCtx(fromOptions.getNumCtx())
-			.withNumBatch(fromOptions.getNumBatch())
-			.withNumGPU(fromOptions.getNumGPU())
-			.withMainGPU(fromOptions.getMainGPU())
-			.withLowVRAM(fromOptions.getLowVRAM())
-			.withF16KV(fromOptions.getF16KV())
-			.withLogitsAll(fromOptions.getLogitsAll())
-			.withVocabOnly(fromOptions.getVocabOnly())
-			.withUseMMap(fromOptions.getUseMMap())
-			.withUseMLock(fromOptions.getUseMLock())
-			.withNumThread(fromOptions.getNumThread())
-			.withNumKeep(fromOptions.getNumKeep())
-			.withSeed(fromOptions.getSeed())
-			.withNumPredict(fromOptions.getNumPredict())
-			.withTopK(fromOptions.getTopK())
-			.withTopP(fromOptions.getTopP())
-			.withTfsZ(fromOptions.getTfsZ())
-			.withTypicalP(fromOptions.getTypicalP())
-			.withRepeatLastN(fromOptions.getRepeatLastN())
-			.withTemperature(fromOptions.getTemperature())
-			.withRepeatPenalty(fromOptions.getRepeatPenalty())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withMirostat(fromOptions.getMirostat())
-			.withMirostatTau(fromOptions.getMirostatTau())
-			.withMirostatEta(fromOptions.getMirostatEta())
-			.withPenalizeNewline(fromOptions.getPenalizeNewline())
-			.withStop(fromOptions.getStop())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withToolContext(fromOptions.getToolContext());
+			.model(fromOptions.getModel())
+			.format(fromOptions.getFormat())
+			.keepAlive(fromOptions.getKeepAlive())
+			.truncate(fromOptions.getTruncate())
+			.useNUMA(fromOptions.getUseNUMA())
+			.numCtx(fromOptions.getNumCtx())
+			.numBatch(fromOptions.getNumBatch())
+			.numGPU(fromOptions.getNumGPU())
+			.mainGPU(fromOptions.getMainGPU())
+			.lowVRAM(fromOptions.getLowVRAM())
+			.f16KV(fromOptions.getF16KV())
+			.logitsAll(fromOptions.getLogitsAll())
+			.vocabOnly(fromOptions.getVocabOnly())
+			.useMMap(fromOptions.getUseMMap())
+			.useMLock(fromOptions.getUseMLock())
+			.numThread(fromOptions.getNumThread())
+			.numKeep(fromOptions.getNumKeep())
+			.seed(fromOptions.getSeed())
+			.numPredict(fromOptions.getNumPredict())
+			.topK(fromOptions.getTopK())
+			.topP(fromOptions.getTopP())
+			.tfsZ(fromOptions.getTfsZ())
+			.typicalP(fromOptions.getTypicalP())
+			.repeatLastN(fromOptions.getRepeatLastN())
+			.temperature(fromOptions.getTemperature())
+			.repeatPenalty(fromOptions.getRepeatPenalty())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.mirostat(fromOptions.getMirostat())
+			.mirostatTau(fromOptions.getMirostatTau())
+			.mirostatEta(fromOptions.getMirostatEta())
+			.penalizeNewline(fromOptions.getPenalizeNewline())
+			.stop(fromOptions.getStop())
+			.functions(fromOptions.getFunctions())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.toolContext(fromOptions.getToolContext());
 	}
 
 	public OllamaOptions build() {
@@ -401,197 +402,554 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	/**
 	 * @param model The ollama model names to use. See the {@link OllamaModel} for the common models.
 	 */
+	public OllamaOptions model(String model) {
+		this.model = model;
+		return this;
+	}
+
+	public OllamaOptions model(OllamaModel model) {
+		this.model = model.getName();
+		return this;
+	}
+
+	public OllamaOptions format(String format) {
+		this.format = format;
+		return this;
+	}
+
+	public OllamaOptions keepAlive(String keepAlive) {
+		this.keepAlive = keepAlive;
+		return this;
+	}
+
+	public OllamaOptions truncate(Boolean truncate) {
+		this.truncate = truncate;
+		return this;
+	}
+
+	public OllamaOptions useNUMA(Boolean useNUMA) {
+		this.useNUMA = useNUMA;
+		return this;
+	}
+
+	public OllamaOptions numCtx(Integer numCtx) {
+		this.numCtx = numCtx;
+		return this;
+	}
+
+	public OllamaOptions numBatch(Integer numBatch) {
+		this.numBatch = numBatch;
+		return this;
+	}
+
+	public OllamaOptions numGPU(Integer numGPU) {
+		this.numGPU = numGPU;
+		return this;
+	}
+
+	public OllamaOptions mainGPU(Integer mainGPU) {
+		this.mainGPU = mainGPU;
+		return this;
+	}
+
+	public OllamaOptions lowVRAM(Boolean lowVRAM) {
+		this.lowVRAM = lowVRAM;
+		return this;
+	}
+
+	public OllamaOptions f16KV(Boolean f16KV) {
+		this.f16KV = f16KV;
+		return this;
+	}
+
+	public OllamaOptions logitsAll(Boolean logitsAll) {
+		this.logitsAll = logitsAll;
+		return this;
+	}
+
+	public OllamaOptions vocabOnly(Boolean vocabOnly) {
+		this.vocabOnly = vocabOnly;
+		return this;
+	}
+
+	public OllamaOptions useMMap(Boolean useMMap) {
+		this.useMMap = useMMap;
+		return this;
+	}
+
+	public OllamaOptions useMLock(Boolean useMLock) {
+		this.useMLock = useMLock;
+		return this;
+	}
+
+	public OllamaOptions numThread(Integer numThread) {
+		this.numThread = numThread;
+		return this;
+	}
+
+	public OllamaOptions numKeep(Integer numKeep) {
+		this.numKeep = numKeep;
+		return this;
+	}
+
+	public OllamaOptions seed(Integer seed) {
+		this.seed = seed;
+		return this;
+	}
+
+	public OllamaOptions numPredict(Integer numPredict) {
+		this.numPredict = numPredict;
+		return this;
+	}
+
+	public OllamaOptions topK(Integer topK) {
+		this.topK = topK;
+		return this;
+	}
+
+	public OllamaOptions topP(Double topP) {
+		this.topP = topP;
+		return this;
+	}
+
+	public OllamaOptions tfsZ(Float tfsZ) {
+		this.tfsZ = tfsZ;
+		return this;
+	}
+
+	public OllamaOptions typicalP(Float typicalP) {
+		this.typicalP = typicalP;
+		return this;
+	}
+
+	public OllamaOptions repeatLastN(Integer repeatLastN) {
+		this.repeatLastN = repeatLastN;
+		return this;
+	}
+
+	public OllamaOptions temperature(Double temperature) {
+		this.temperature = temperature;
+		return this;
+	}
+
+	public OllamaOptions repeatPenalty(Double repeatPenalty) {
+		this.repeatPenalty = repeatPenalty;
+		return this;
+	}
+
+	public OllamaOptions presencePenalty(Double presencePenalty) {
+		this.presencePenalty = presencePenalty;
+		return this;
+	}
+
+	public OllamaOptions frequencyPenalty(Double frequencyPenalty) {
+		this.frequencyPenalty = frequencyPenalty;
+		return this;
+	}
+
+	public OllamaOptions mirostat(Integer mirostat) {
+		this.mirostat = mirostat;
+		return this;
+	}
+
+	public OllamaOptions mirostatTau(Float mirostatTau) {
+		this.mirostatTau = mirostatTau;
+		return this;
+	}
+
+	public OllamaOptions mirostatEta(Float mirostatEta) {
+		this.mirostatEta = mirostatEta;
+		return this;
+	}
+
+	public OllamaOptions penalizeNewline(Boolean penalizeNewline) {
+		this.penalizeNewline = penalizeNewline;
+		return this;
+	}
+
+	public OllamaOptions stop(List<String> stop) {
+		this.stop = stop;
+		return this;
+	}
+
+	public OllamaOptions functionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+		return this;
+	}
+
+	public OllamaOptions functions(Set<String> functions) {
+		this.functions = functions;
+		return this;
+	}
+
+	public OllamaOptions function(String functionName) {
+		Assert.hasText(functionName, "Function name must not be empty");
+		this.functions.add(functionName);
+		return this;
+	}
+
+	public OllamaOptions proxyToolCalls(Boolean proxyToolCalls) {
+		this.proxyToolCalls = proxyToolCalls;
+		return this;
+	}
+
+	public OllamaOptions toolContext(Map<String, Object> toolContext) {
+		if (this.toolContext == null) {
+			this.toolContext = toolContext;
+		}
+		else {
+			this.toolContext.putAll(toolContext);
+		}
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #model( String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withModel(String model) {
 		this.model = model;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #model( OllamaModel)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withModel(OllamaModel model) {
 		this.model = model.getName();
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #format( String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withFormat(String format) {
 		this.format = format;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #keepAlive( String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withKeepAlive(String keepAlive) {
 		this.keepAlive = keepAlive;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #truncate( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withTruncate(Boolean truncate) {
 		this.truncate = truncate;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #useNUMA( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withUseNUMA(Boolean useNUMA) {
 		this.useNUMA = useNUMA;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #numCtx( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withNumCtx(Integer numCtx) {
 		this.numCtx = numCtx;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #numBatch( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withNumBatch(Integer numBatch) {
 		this.numBatch = numBatch;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #numGPU( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withNumGPU(Integer numGPU) {
 		this.numGPU = numGPU;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #mainGPU( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withMainGPU(Integer mainGPU) {
 		this.mainGPU = mainGPU;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #lowVRAM( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withLowVRAM(Boolean lowVRAM) {
 		this.lowVRAM = lowVRAM;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #f16KV( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withF16KV(Boolean f16KV) {
 		this.f16KV = f16KV;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #logitsAll( Boolean)}  instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withLogitsAll(Boolean logitsAll) {
 		this.logitsAll = logitsAll;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #vocabOnly( Boolean)}  instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withVocabOnly(Boolean vocabOnly) {
 		this.vocabOnly = vocabOnly;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #useMMap( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withUseMMap(Boolean useMMap) {
 		this.useMMap = useMMap;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #useMLock( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withUseMLock(Boolean useMLock) {
 		this.useMLock = useMLock;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #numThread( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withNumThread(Integer numThread) {
 		this.numThread = numThread;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #numKeep( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withNumKeep(Integer numKeep) {
 		this.numKeep = numKeep;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #seed( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withSeed(Integer seed) {
 		this.seed = seed;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #numPredict( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withNumPredict(Integer numPredict) {
 		this.numPredict = numPredict;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #topK( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withTopK(Integer topK) {
 		this.topK = topK;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #topP( Double)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withTopP(Double topP) {
 		this.topP = topP;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #tfsZ( Float)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withTfsZ(Float tfsZ) {
 		this.tfsZ = tfsZ;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #typicalP( Float)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withTypicalP(Float typicalP) {
 		this.typicalP = typicalP;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #repeatLastN( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withRepeatLastN(Integer repeatLastN) {
 		this.repeatLastN = repeatLastN;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #temperature( Double)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withTemperature(Double temperature) {
 		this.temperature = temperature;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #repeatPenalty( Double)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withRepeatPenalty(Double repeatPenalty) {
 		this.repeatPenalty = repeatPenalty;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #presencePenalty( Double)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #frequencyPenalty( Double)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #mirostat( Integer)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withMirostat(Integer mirostat) {
 		this.mirostat = mirostat;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #mirostatTau( Float)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withMirostatTau(Float mirostatTau) {
 		this.mirostatTau = mirostatTau;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #mirostatEta( Float)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withMirostatEta(Float mirostatEta) {
 		this.mirostatEta = mirostatEta;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #penalizeNewline( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withPenalizeNewline(Boolean penalizeNewline) {
 		this.penalizeNewline = penalizeNewline;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #stop( List)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withStop(List<String> stop) {
 		this.stop = stop;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #functionCallbacks( List)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 		this.functionCallbacks = functionCallbacks;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #functions( Set)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withFunctions(Set<String> functions) {
 		this.functions = functions;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #function( String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withFunction(String functionName) {
 		Assert.hasText(functionName, "Function name must not be empty");
 		this.functions.add(functionName);
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #proxyToolCalls( Boolean)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withProxyToolCalls(Boolean proxyToolCalls) {
 		this.proxyToolCalls = proxyToolCalls;
 		return this;
 	}
 
+	/**
+	 * @deprecated use {@link #toolContext( Map)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withToolContext(Map<String, Object> toolContext) {
 		if (this.toolContext == null) {
 			this.toolContext = toolContext;

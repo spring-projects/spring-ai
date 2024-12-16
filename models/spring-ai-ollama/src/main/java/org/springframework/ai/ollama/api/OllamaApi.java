@@ -25,11 +25,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonFormat.Feature;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Flux;
@@ -517,31 +515,93 @@ public class OllamaApi {
 				this.model = model;
 			}
 
+			public Builder messages(List<Message> messages) {
+				this.messages = messages;
+				return this;
+			}
+
+			public Builder stream(boolean stream) {
+				this.stream = stream;
+				return this;
+			}
+
+			public Builder format(String format) {
+				this.format = format;
+				return this;
+			}
+
+			public Builder keepAlive(String keepAlive) {
+				this.keepAlive = keepAlive;
+				return this;
+			}
+
+			public Builder tools(List<Tool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
+			public Builder options(Map<String, Object> options) {
+				Objects.requireNonNull(options, "The options can not be null.");
+
+				this.options = OllamaOptions.filterNonSupportedFields(options);
+				return this;
+			}
+
+			public Builder options(OllamaOptions options) {
+				Objects.requireNonNull(options, "The options can not be null.");
+				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #messages( List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withMessages(List<Message> messages) {
 				this.messages = messages;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #stream(boolean)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withStream(boolean stream) {
 				this.stream = stream;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #format( String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withFormat(String format) {
 				this.format = format;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #keepAlive( String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withKeepAlive(String keepAlive) {
 				this.keepAlive = keepAlive;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #tools( List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTools(List<Tool> tools) {
 				this.tools = tools;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #options( Map)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withOptions(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 
@@ -549,6 +609,10 @@ public class OllamaApi {
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #options( OllamaOptions)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withOptions(OllamaOptions options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());

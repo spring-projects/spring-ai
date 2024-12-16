@@ -129,7 +129,7 @@ void testFactChecking() {
   OllamaApi ollamaApi = new OllamaApi("http://localhost:11434");
 
   ChatModel chatModel = new OllamaChatModel(ollamaApi,
-				OllamaOptions.builder().withModel(BESPOKE_MINICHECK).withNumPredict(2).withTemperature(0.0d).build())
+				OllamaOptions.builder().model(BESPOKE_MINICHECK).numPredict(2).temperature(0.0d).build())
 
 
   // Create the FactCheckingEvaluator

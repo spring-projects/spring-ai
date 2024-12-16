@@ -58,7 +58,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 
 	@Test
 	void observationForEmbeddingOperation() {
-		var options = OllamaOptions.builder().withModel(OllamaModel.NOMIC_EMBED_TEXT.getName()).build();
+		var options = OllamaOptions.builder().model(OllamaModel.NOMIC_EMBED_TEXT.getName()).build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
 
@@ -104,10 +104,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 		@Bean
 		public OllamaEmbeddingModel openAiEmbeddingModel(OllamaApi ollamaApi,
 				TestObservationRegistry observationRegistry) {
-			return OllamaEmbeddingModel.builder()
-				.withOllamaApi(ollamaApi)
-				.withObservationRegistry(observationRegistry)
-				.build();
+			return OllamaEmbeddingModel.builder().ollamaApi(ollamaApi).observationRegistry(observationRegistry).build();
 		}
 
 	}

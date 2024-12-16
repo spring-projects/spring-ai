@@ -70,7 +70,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		String joke = ChatClient.create(this.chatModel)
 			.prompt("Tell me a joke")
-			.options(OllamaOptions.builder().withModel(ADDITIONAL_MODEL).build())
+			.options(OllamaOptions.builder().model(ADDITIONAL_MODEL).build())
 			.call()
 			.content();
 
@@ -99,7 +99,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 
 		// ollama specific options
-		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
+		var ollamaOptions = new OllamaOptions().lowVRAM(true);
 
 		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
@@ -243,11 +243,11 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
-				.withOllamaApi(ollamaApi)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
-				.withModelManagementOptions(ModelManagementOptions.builder()
-					.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
-					.withAdditionalModels(List.of(ADDITIONAL_MODEL))
+				.ollamaApi(ollamaApi)
+				.defaultOptions(OllamaOptions.create().model(MODEL).temperature(0.9))
+				.modelManagementOptions(ModelManagementOptions.builder()
+					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
+					.additionalModels(List.of(ADDITIONAL_MODEL))
 					.build())
 				.build();
 		}
