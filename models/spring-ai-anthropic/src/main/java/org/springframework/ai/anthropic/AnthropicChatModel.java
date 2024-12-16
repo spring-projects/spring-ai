@@ -81,6 +81,7 @@ import org.springframework.util.StringUtils;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Claudio Silva Junior
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -127,9 +128,9 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	public AnthropicChatModel(AnthropicApi anthropicApi) {
 		this(anthropicApi,
 				AnthropicChatOptions.builder()
-					.withModel(DEFAULT_MODEL_NAME)
-					.withMaxTokens(DEFAULT_MAX_TOKENS)
-					.withTemperature(DEFAULT_TEMPERATURE)
+					.model(DEFAULT_MODEL_NAME)
+					.maxTokens(DEFAULT_MAX_TOKENS)
+					.temperature(DEFAULT_TEMPERATURE)
 					.build());
 	}
 
