@@ -148,8 +148,8 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
 		this(openAIClientBuilder,
 				AzureOpenAiChatOptions.builder()
-					.withDeploymentName(DEFAULT_DEPLOYMENT_NAME)
-					.withTemperature(DEFAULT_TEMPERATURE)
+					.deploymentName(DEFAULT_DEPLOYMENT_NAME)
+					.temperature(DEFAULT_TEMPERATURE)
 					.build());
 	}
 

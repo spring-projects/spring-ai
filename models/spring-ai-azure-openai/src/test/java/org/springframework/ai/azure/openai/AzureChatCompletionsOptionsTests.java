@@ -54,21 +54,21 @@ public class AzureChatCompletionsOptionsTests {
 			.mock(AzureChatEnhancementConfiguration.class);
 
 		var defaultOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName("DEFAULT_MODEL")
-			.withTemperature(66.6)
-			.withFrequencyPenalty(696.9)
-			.withPresencePenalty(969.6)
-			.withLogitBias(Map.of("foo", 1))
-			.withMaxTokens(969)
-			.withN(69)
-			.withStop(List.of("foo", "bar"))
-			.withTopP(0.69)
-			.withUser("user")
-			.withSeed(123L)
-			.withLogprobs(true)
-			.withTopLogprobs(5)
-			.withEnhancements(mockAzureChatEnhancementConfiguration)
-			.withResponseFormat(AzureOpenAiResponseFormat.TEXT)
+			.deploymentName("DEFAULT_MODEL")
+			.temperature(66.6)
+			.frequencyPenalty(696.9)
+			.presencePenalty(969.6)
+			.logitBias(Map.of("foo", 1))
+			.maxTokens(969)
+			.N(69)
+			.stop(List.of("foo", "bar"))
+			.topP(0.69)
+			.user("user")
+			.seed(123L)
+			.logprobs(true)
+			.topLogprobs(5)
+			.enhancements(mockAzureChatEnhancementConfiguration)
+			.responseFormat(AzureOpenAiResponseFormat.TEXT)
 			.build();
 
 		var client = new AzureOpenAiChatModel(mockClient, defaultOptions);
@@ -97,21 +97,21 @@ public class AzureChatCompletionsOptionsTests {
 			.mock(AzureChatEnhancementConfiguration.class);
 
 		var runtimeOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName("PROMPT_MODEL")
-			.withTemperature(99.9)
-			.withFrequencyPenalty(100.0)
-			.withPresencePenalty(100.0)
-			.withLogitBias(Map.of("foo", 2))
-			.withMaxTokens(100)
-			.withN(100)
-			.withStop(List.of("foo", "bar"))
-			.withTopP(0.111)
-			.withUser("user2")
-			.withSeed(1234L)
-			.withLogprobs(true)
-			.withTopLogprobs(4)
-			.withEnhancements(anotherMockAzureChatEnhancementConfiguration)
-			.withResponseFormat(AzureOpenAiResponseFormat.JSON)
+			.deploymentName("PROMPT_MODEL")
+			.temperature(99.9)
+			.frequencyPenalty(100.0)
+			.presencePenalty(100.0)
+			.logitBias(Map.of("foo", 2))
+			.maxTokens(100)
+			.N(100)
+			.stop(List.of("foo", "bar"))
+			.topP(0.111)
+			.user("user2")
+			.seed(1234L)
+			.logprobs(true)
+			.topLogprobs(4)
+			.enhancements(anotherMockAzureChatEnhancementConfiguration)
+			.responseFormat(AzureOpenAiResponseFormat.JSON)
 			.build();
 
 		requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content", runtimeOptions));
@@ -140,11 +140,11 @@ public class AzureChatCompletionsOptionsTests {
 	public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Double presencePenalty,
 			Double frequencyPenalty) {
 		var options = AzureOpenAiChatOptions.builder()
-			.withMaxTokens(800)
-			.withTemperature(0.7)
-			.withTopP(0.95)
-			.withPresencePenalty(presencePenalty)
-			.withFrequencyPenalty(frequencyPenalty)
+			.maxTokens(800)
+			.temperature(0.7)
+			.topP(0.95)
+			.presencePenalty(presencePenalty)
+			.frequencyPenalty(frequencyPenalty)
 			.build();
 
 		if (presencePenalty == null) {

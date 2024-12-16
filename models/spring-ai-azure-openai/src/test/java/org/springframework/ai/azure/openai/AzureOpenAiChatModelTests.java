@@ -45,7 +45,7 @@ public class AzureOpenAiChatModelTests {
 		String callbackFromConstructorParam = "callbackFromConstructorParam";
 
 		AzureOpenAiChatOptions chatOptions = AzureOpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(new TestFunctionCallback(callbackFromChatOptions)))
+			.functionCallbacks(List.of(new TestFunctionCallback(callbackFromChatOptions)))
 			.build();
 
 		List<FunctionCallback> functionCallbacks = List.of(new TestFunctionCallback(callbackFromConstructorParam));
