@@ -19,7 +19,7 @@ package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 import java.time.Duration;
 
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.vectorstore.PineconeVectorStore;
+import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.pinecone;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +37,9 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.PineconeVectorStore.PineconeVectorStoreConfig;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore.PineconeVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -184,23 +186,19 @@ public class PineconeVectorStoreObservationIT {
 		}
 
 		@Bean
-		public PineconeVectorStoreConfig pineconeVectorStoreConfig() {
-
-			return PineconeVectorStoreConfig.builder()
-				.withApiKey(System.getenv("PINECONE_API_KEY"))
-				.withEnvironment(PINECONE_ENVIRONMENT)
-				.withProjectId(PINECONE_PROJECT_ID)
-				.withIndexName(PINECONE_INDEX_NAME)
-				.withNamespace(PINECONE_NAMESPACE)
-				.withContentFieldName(CUSTOM_CONTENT_FIELD_NAME)
+		public VectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
+			return PineconeVectorStore.builder()
+				.embeddingModel(embeddingModel)
+				.apiKey(System.getenv("PINECONE_API_KEY"))
+				.environment(PINECONE_ENVIRONMENT)
+				.projectId(PINECONE_PROJECT_ID)
+				.indexName(PINECONE_INDEX_NAME)
+				.namespace(PINECONE_NAMESPACE)
+				.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
 				.build();
-		}
-
-		@Bean
-		public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel,
-				ObservationRegistry observationRegistry) {
-			return new PineconeVectorStore(config, embeddingModel, observationRegistry, null,
-					new TokenCountBatchingStrategy());
 		}
 
 		@Bean
