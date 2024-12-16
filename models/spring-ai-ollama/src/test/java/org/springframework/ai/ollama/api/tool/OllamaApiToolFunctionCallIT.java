@@ -60,7 +60,7 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 	public void toolFunctionCall() {
 		// Step 1: send the conversation and available functions to the model
 		var message = Message.builder(Role.USER)
-			.withContent(
+			.content(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return a list with the temperature in Celsius for each of the three locations.")
 			.build();
 
@@ -86,8 +86,8 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 		List<Message> messages = new ArrayList<>(List.of(message));
 
 		OllamaApi.ChatRequest chatCompletionRequest = OllamaApi.ChatRequest.builder(MODEL)
-			.withMessages(messages)
-			.withTools(List.of(functionTool))
+			.messages(messages)
+			.tools(List.of(functionTool))
 			.build();
 
 		ChatResponse chatCompletion = ollamaApi.chat(chatCompletionRequest);
@@ -117,12 +117,12 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
 				// extend conversation with function response.
 				messages.add(Message.builder(Role.TOOL)
-					.withContent("" + weatherResponse.temp() + weatherRequest.unit())
+					.content("" + weatherResponse.temp() + weatherRequest.unit())
 					.build());
 			}
 		}
 
-		var functionResponseRequest = OllamaApi.ChatRequest.builder(MODEL).withMessages(messages).build();
+		var functionResponseRequest = OllamaApi.ChatRequest.builder(MODEL).messages(messages).build();
 
 		ChatResponse chatCompletion2 = ollamaApi.chat(functionResponseRequest);
 

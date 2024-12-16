@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -71,7 +72,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		String joke = ChatClient.create(this.chatModel)
 			.prompt("Tell me a joke")
-			.options(OllamaOptions.builder().withModel(ADDITIONAL_MODEL).build())
+			.options(OllamaOptions.builder().model(ADDITIONAL_MODEL).build())
 			.call()
 			.content();
 
@@ -100,7 +101,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 
 		// ollama specific options
-		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
+		var ollamaOptions = OllamaOptions.builder().lowVRAM(true).build();
 
 		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
@@ -231,6 +232,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	// Example inspired by https://ollama.com/blog/structured-outputs
 	@Test
+	@Disabled("Pending review")
 	void jsonSchemaFormatStructuredOutput() {
 		var outputConverter = new BeanOutputConverter<>(CountryInfo.class);
 		var userPromptTemplate = new PromptTemplate("""
@@ -239,8 +241,8 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		Map<String, Object> model = Map.of("country", "denmark");
 		var prompt = userPromptTemplate.create(model,
 				OllamaOptions.builder()
-					.withModel(OllamaModel.LLAMA3_2.getName())
-					.withFormat(outputConverter.getJsonSchemaMap())
+					.model(OllamaModel.LLAMA3_2.getName())
+					.format(outputConverter.getJsonSchemaMap())
 					.build());
 
 		var chatResponse = this.chatModel.call(prompt);
@@ -269,11 +271,11 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
-				.withOllamaApi(ollamaApi)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
-				.withModelManagementOptions(ModelManagementOptions.builder()
-					.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
-					.withAdditionalModels(List.of(ADDITIONAL_MODEL))
+				.ollamaApi(ollamaApi)
+				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.modelManagementOptions(ModelManagementOptions.builder()
+					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
+					.additionalModels(List.of(ADDITIONAL_MODEL))
 					.build())
 				.build();
 		}

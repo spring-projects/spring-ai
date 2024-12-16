@@ -77,6 +77,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Jihoon Kim
  * @author Alexandros Pappas
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -317,7 +318,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions().stream().map(message -> {
 			if (message instanceof UserMessage userMessage) {
-				var messageBuilder = OllamaApi.Message.builder(Role.USER).withContent(message.getText());
+				var messageBuilder = OllamaApi.Message.builder(Role.USER).content(message.getText());
 				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 					messageBuilder.images(
 							userMessage.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
@@ -325,7 +326,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 				return List.of(messageBuilder.build());
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(OllamaApi.Message.builder(Role.SYSTEM).withContent(systemMessage.getText()).build());
+				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(systemMessage.getText()).build());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
 				List<ToolCall> toolCalls = null;
@@ -337,8 +338,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 					}).toList();
 				}
 				return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
-					.withContent(assistantMessage.getText())
-					.withToolCalls(toolCalls)
+					.content(assistantMessage.getText())
+					.toolCalls(toolCalls)
 					.build());
 			}
 			else if (message instanceof ToolResponseMessage toolMessage) {
@@ -378,21 +379,21 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		String model = mergedOptions.getModel();
 		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(model)
-			.withStream(stream)
-			.withMessages(ollamaMessages)
-			.withOptions(mergedOptions);
+			.stream(stream)
+			.messages(ollamaMessages)
+			.options(mergedOptions);
 
 		if (mergedOptions.getFormat() != null) {
-			requestBuilder.withFormat(mergedOptions.getFormat());
+			requestBuilder.format(mergedOptions.getFormat());
 		}
 
 		if (mergedOptions.getKeepAlive() != null) {
-			requestBuilder.withKeepAlive(mergedOptions.getKeepAlive());
+			requestBuilder.keepAlive(mergedOptions.getKeepAlive());
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
-			requestBuilder.withTools(this.getFunctionTools(functionsForThisRequest));
+			requestBuilder.tools(this.getFunctionTools(functionsForThisRequest));
 		}
 
 		return requestBuilder.build();
@@ -460,7 +461,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaModel.MISTRAL.id());
+		private OllamaOptions defaultOptions = OllamaOptions.builder().model(OllamaModel.MISTRAL.id()).build();
 
 		private FunctionCallbackResolver functionCallbackResolver;
 
@@ -473,18 +474,18 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		private Builder() {
 		}
 
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
+		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
 			return this;
 		}
 
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+		public Builder defaultOptions(OllamaOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
 			return this;
 		}
 
 		/**
-		 * @deprecated use the {@link functionCallbackResolver(FunctionCallbackResolver)}
+		 * @deprecated use the {@link #functionCallbackResolver(FunctionCallbackResolver)}
 		 * instead
 		 */
 		@Deprecated
@@ -498,16 +499,62 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			return this;
 		}
 
+		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
+			this.toolFunctionCallbacks = toolFunctionCallbacks;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
+			this.modelManagementOptions = modelManagementOptions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #ollamaApi(OllamaApi)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withOllamaApi(OllamaApi ollamaApi) {
+			this.ollamaApi = ollamaApi;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #defaultOptions(OllamaOptions)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #toolFunctionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
 			this.toolFunctionCallbacks = toolFunctionCallbacks;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #observationRegistry(ObservationRegistry)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #modelManagementOptions(ModelManagementOptions)}
+		 * instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
 			this.modelManagementOptions = modelManagementOptions;
 			return this;

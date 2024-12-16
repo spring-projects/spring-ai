@@ -70,7 +70,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
 			val response = chatModel
-					.call(Prompt(listOf(userMessage), OllamaOptions.builder().withFunction("weatherInfo").build()))
+					.call(Prompt(listOf(userMessage), OllamaOptions.builder().function("weatherInfo").build()))
 
 			logger.info("Response: " + response)
 

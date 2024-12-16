@@ -17,9 +17,9 @@
 package org.springframework.ai.vectorstore.qdrant;
 
 import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 

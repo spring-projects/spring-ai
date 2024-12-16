@@ -82,8 +82,8 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
-				.withOllamaApi(ollamaApi)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
+				.ollamaApi(ollamaApi)
+				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
 				.build();
 		}
 

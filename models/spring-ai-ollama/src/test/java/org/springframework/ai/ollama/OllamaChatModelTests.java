@@ -52,9 +52,9 @@ public class OllamaChatModelTests {
 	public void buildOllamaChatModel() {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
-					.withOllamaApi(this.ollamaApi)
-					.withDefaultOptions(OllamaOptions.create().withModel(OllamaModel.LLAMA2))
-					.withModelManagementOptions(null)
+					.ollamaApi(this.ollamaApi)
+					.defaultOptions(OllamaOptions.builder().model(OllamaModel.LLAMA2).build())
+					.modelManagementOptions(null)
 					.build());
 		assertEquals("modelManagementOptions must not be null", exception.getMessage());
 	}

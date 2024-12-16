@@ -152,8 +152,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OllamaOptions.builder()
-            .withModel(OllamaModel.LLAMA3_1)
-            .withTemperature(0.4)
+            .model(OllamaModel.LLAMA3_1)
+            .temperature(0.4)
             .build()
     ));
 ----
@@ -252,7 +252,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OllamaOptions.builder().withModel(OllamaModel.LLAVA)).build());
+        OllamaOptions.builder().model(OllamaModel.LLAVA)).build());
 ----
 
 The example shows a model taking as an input the `multimodal.test.png` image:
@@ -468,8 +468,8 @@ var ollamaApi = new OllamaApi();
 
 var chatModel = new OllamaChatModel(this.ollamaApi,
             OllamaOptions.create()
-                .withModel(OllamaOptions.DEFAULT_MODEL)
-                .withTemperature(0.9));
+                .model(OllamaOptions.DEFAULT_MODEL)
+                .temperature(0.9));
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -499,27 +499,27 @@ OllamaApi ollamaApi = new OllamaApi("YOUR_HOST:YOUR_PORT");
 
 // Sync request
 var request = ChatRequest.builder("orca-mini")
-    .withStream(false) // not streaming
-    .withMessages(List.of(
+    .stream(false) // not streaming
+    .messages(List.of(
             Message.builder(Role.SYSTEM)
-                .withContent("You are a geography teacher. You are talking to a student.")
+                .content("You are a geography teacher. You are talking to a student.")
                 .build(),
             Message.builder(Role.USER)
-                .withContent("What is the capital of Bulgaria and what is the size? "
+                .content("What is the capital of Bulgaria and what is the size? "
                         + "What is the national anthem?")
                 .build()))
-    .withOptions(OllamaOptions.create().withTemperature(0.9))
+    .options(OllamaOptions.create().temperature(0.9))
     .build();
 
 ChatResponse response = this.ollamaApi.chat(this.request);
 
 // Streaming request
 var request2 = ChatRequest.builder("orca-mini")
-    .withStream(true) // streaming
-    .withMessages(List.of(Message.builder(Role.USER)
-        .withContent("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
+    .ttream(true) // streaming
+    .messages(List.of(Message.builder(Role.USER)
+        .content("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
-    .withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
+    .options(OllamaOptions.create().temperature(0.9).toMap())
     .build();
 
 Flux<ChatResponse> streamingResponse = this.ollamaApi.streamingChat(this.request2);
