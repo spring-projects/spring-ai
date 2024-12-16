@@ -46,8 +46,8 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void contextualName() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
-			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
+			.advisorName("MyName")
+			.advisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("my_name");
 	}
@@ -55,8 +55,8 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void supportsAdvisorObservationContext() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
-			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
+			.advisorName("MyName")
+			.advisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
@@ -65,8 +65,8 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
-			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
+			.advisorName("MyName")
+			.advisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(),
@@ -80,9 +80,9 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void shouldHaveKeyValuesWhenDefinedAndResponse() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
-			.withAdvisorName("MyName")
-			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
-			.withOrder(678)
+			.advisorName("MyName")
+			.advisorType(AdvisorObservationContext.Type.AROUND)
+			.order(678)
 			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))

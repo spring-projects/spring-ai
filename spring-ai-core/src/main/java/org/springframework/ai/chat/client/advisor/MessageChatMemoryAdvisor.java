@@ -91,7 +91,7 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		advisedMessages.addAll(memoryMessages);
 
 		// 3. Create a new request with the advised messages.
-		AdvisedRequest advisedRequest = AdvisedRequest.from(request).withMessages(advisedMessages).build();
+		AdvisedRequest advisedRequest = AdvisedRequest.from(request).messages(advisedMessages).build();
 
 		// 4. Add the new user input to the conversation memory.
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());

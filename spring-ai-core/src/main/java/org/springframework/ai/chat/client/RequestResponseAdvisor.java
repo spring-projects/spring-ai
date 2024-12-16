@@ -67,9 +67,7 @@ public interface RequestResponseAdvisor extends CallAroundAdvisor, StreamAroundA
 	default AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 		var context = new HashMap<>(advisedRequest.adviseContext());
 		var requestPrim = adviseRequest(advisedRequest, context);
-		advisedRequest = AdvisedRequest.from(requestPrim)
-			.withAdviseContext(Collections.unmodifiableMap(context))
-			.build();
+		advisedRequest = AdvisedRequest.from(requestPrim).adviseContext(Collections.unmodifiableMap(context)).build();
 
 		var advisedResponse = chain.nextAroundCall(advisedRequest);
 
