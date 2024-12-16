@@ -47,8 +47,8 @@ public class BedrockCohereEmbeddingProperties {
 
 	@NestedConfigurationProperty
 	private BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
-		.withInputType(InputType.SEARCH_DOCUMENT)
-		.withTruncate(CohereEmbeddingRequest.Truncate.NONE)
+		.inputType(InputType.SEARCH_DOCUMENT)
+		.truncate(CohereEmbeddingRequest.Truncate.NONE)
 		.build();
 
 	public boolean isEnabled() {

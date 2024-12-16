@@ -57,10 +57,10 @@ public class Anthropic3ChatBedrockApiIT {
 		MediaContent anthropicMessage = new MediaContent("Name 3 famous pirates");
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(List.of(anthropicMessage), Role.USER);
 		AnthropicChatRequest request = AnthropicChatRequest.builder(List.of(chatCompletionMessage))
-			.withTemperature(0.8)
-			.withMaxTokens(300)
-			.withTopK(10)
-			.withAnthropicVersion(
+			.temperature(0.8)
+			.maxTokens(300)
+			.topK(10)
+			.anthropicVersion(
 					org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
@@ -98,10 +98,10 @@ public class Anthropic3ChatBedrockApiIT {
 		AnthropicChatRequest request = AnthropicChatRequest
 			.builder(List.of(chatCompletionInitialMessage, chatCompletionAssistantMessage,
 					chatCompletionFollowupMessage))
-			.withTemperature(0.8)
-			.withMaxTokens(400)
-			.withTopK(10)
-			.withAnthropicVersion(
+			.temperature(0.8)
+			.maxTokens(400)
+			.topK(10)
+			.anthropicVersion(
 					org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
@@ -125,10 +125,10 @@ public class Anthropic3ChatBedrockApiIT {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(List.of(anthropicMessage), Role.USER);
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(List.of(chatCompletionMessage))
-			.withTemperature(0.8)
-			.withMaxTokens(300)
-			.withTopK(10)
-			.withAnthropicVersion(
+			.temperature(0.8)
+			.maxTokens(300)
+			.topK(10)
+			.anthropicVersion(
 					org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 			.build();
 

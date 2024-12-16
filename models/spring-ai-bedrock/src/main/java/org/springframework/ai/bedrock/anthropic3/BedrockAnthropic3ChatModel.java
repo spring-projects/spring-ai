@@ -66,10 +66,10 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi) {
 		this(chatApi,
 				Anthropic3ChatOptions.builder()
-					.withTemperature(0.8)
-					.withMaxTokens(500)
-					.withTopK(10)
-					.withAnthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+					.temperature(0.8)
+					.maxTokens(500)
+					.topK(10)
+					.anthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 					.build());
 	}
 
@@ -138,7 +138,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 	AnthropicChatRequest createRequest(Prompt prompt) {
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(toAnthropicMessages(prompt))
-			.withSystem(toAnthropicSystemContext(prompt))
+			.system(toAnthropicSystemContext(prompt))
 			.build();
 
 		if (this.defaultOptions != null) {

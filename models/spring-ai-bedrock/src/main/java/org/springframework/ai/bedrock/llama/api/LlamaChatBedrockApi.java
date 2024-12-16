@@ -41,6 +41,7 @@ import org.springframework.ai.model.ChatModelDescription;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class LlamaChatBedrockApi extends
@@ -235,16 +236,43 @@ public class LlamaChatBedrockApi extends
 					this.prompt = prompt;
 				}
 
+				public Builder temperature(Double temperature) {
+					this.temperature = temperature;
+					return this;
+				}
+
+				public Builder topP(Double topP) {
+					this.topP = topP;
+					return this;
+				}
+
+				public Builder maxGenLen(Integer maxGenLen) {
+					this.maxGenLen = maxGenLen;
+					return this;
+				}
+
+				/**
+				 * @deprecated use {@link #temperature( Double)} instead.
+				 */
+				@Deprecated(forRemoval = true, since = "1.0.0-M5")
 				public Builder withTemperature(Double temperature) {
 					this.temperature = temperature;
 					return this;
 				}
 
+				/**
+				 * @deprecated use {@link #topP( Double)} instead.
+				 */
+				@Deprecated(forRemoval = true, since = "1.0.0-M5")
 				public Builder withTopP(Double topP) {
 					this.topP = topP;
 					return this;
 				}
 
+				/**
+				 * @deprecated use {@link #maxGenLen( Integer)} instead.
+				 */
+				@Deprecated(forRemoval = true, since = "1.0.0-M5")
 				public Builder withMaxGenLen(Integer maxGenLen) {
 					this.maxGenLen = maxGenLen;
 					return this;

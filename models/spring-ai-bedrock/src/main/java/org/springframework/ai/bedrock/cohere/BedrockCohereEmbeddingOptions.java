@@ -30,6 +30,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
@@ -87,11 +88,29 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 
 		private BedrockCohereEmbeddingOptions options = new BedrockCohereEmbeddingOptions();
 
+		public Builder inputType(InputType inputType) {
+			this.options.setInputType(inputType);
+			return this;
+		}
+
+		public Builder truncate(Truncate truncate) {
+			this.options.setTruncate(truncate);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #inputType(InputType)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withInputType(InputType inputType) {
 			this.options.setInputType(inputType);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #truncate(Truncate)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTruncate(Truncate truncate) {
 			this.options.setTruncate(truncate);
 			return this;

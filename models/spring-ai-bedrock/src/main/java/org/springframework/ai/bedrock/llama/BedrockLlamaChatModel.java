@@ -51,7 +51,7 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 	private final BedrockLlamaChatOptions defaultOptions;
 
 	public BedrockLlamaChatModel(LlamaChatBedrockApi chatApi) {
-		this(chatApi, BedrockLlamaChatOptions.builder().withTemperature(0.8).withTopP(0.9).withMaxGenLen(100).build());
+		this(chatApi, BedrockLlamaChatOptions.builder().temperature(0.8).topP(0.9).maxGenLen(100).build());
 	}
 
 	public BedrockLlamaChatModel(LlamaChatBedrockApi chatApi, BedrockLlamaChatOptions options) {

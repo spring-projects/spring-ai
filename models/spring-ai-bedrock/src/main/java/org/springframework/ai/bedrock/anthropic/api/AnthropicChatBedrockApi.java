@@ -39,6 +39,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 // @formatter:off
@@ -215,31 +216,85 @@ public class AnthropicChatBedrockApi extends
 				this.prompt = prompt;
 			}
 
+			public Builder temperature(Double temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			public Builder maxTokensToSample(Integer maxTokensToSample) {
+				this.maxTokensToSample = maxTokensToSample;
+				return this;
+			}
+
+			public Builder topK(Integer topK) {
+				this.topK = topK;
+				return this;
+			}
+
+			public Builder topP(Double tpoP) {
+				this.topP = tpoP;
+				return this;
+			}
+
+			public Builder stopSequences(List<String> stopSequences) {
+				this.stopSequences = stopSequences;
+				return this;
+			}
+
+			public Builder anthropicVersion(String anthropicVersion) {
+				this.anthropicVersion = anthropicVersion;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #temperature( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #maxTokensToSample( Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withMaxTokensToSample(Integer maxTokensToSample) {
 				this.maxTokensToSample = maxTokensToSample;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #topK( Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTopK(Integer topK) {
 				this.topK = topK;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #topP( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTopP(Double tpoP) {
 				this.topP = tpoP;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #stopSequences( List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withStopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #anthropicVersion( String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withAnthropicVersion(String anthropicVersion) {
 				this.anthropicVersion = anthropicVersion;
 				return this;

@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 public class CohereChatBedrockApi extends
@@ -268,51 +269,141 @@ public class CohereChatBedrockApi extends
 				this.prompt = prompt;
 			}
 
+			public Builder temperature(Double temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			public Builder topP(Double topP) {
+				this.topP = topP;
+				return this;
+			}
+
+			public Builder topK(Integer topK) {
+				this.topK = topK;
+				return this;
+			}
+
+			public Builder maxTokens(Integer maxTokens) {
+				this.maxTokens = maxTokens;
+				return this;
+			}
+
+			public Builder stopSequences(List<String> stopSequences) {
+				this.stopSequences = stopSequences;
+				return this;
+			}
+
+			public Builder returnLikelihoods(ReturnLikelihoods returnLikelihoods) {
+				this.returnLikelihoods = returnLikelihoods;
+				return this;
+			}
+
+			public Builder stream(boolean stream) {
+				this.stream = stream;
+				return this;
+			}
+
+			public Builder numGenerations(Integer numGenerations) {
+				this.numGenerations = numGenerations;
+				return this;
+			}
+
+			public Builder logitBias(LogitBias logitBias) {
+				this.logitBias = logitBias;
+				return this;
+			}
+
+			public Builder truncate(Truncate truncate) {
+				this.truncate = truncate;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #temperature( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #topP( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTopP(Double topP) {
 				this.topP = topP;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #topK( Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTopK(Integer topK) {
 				this.topK = topK;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #maxTokens( Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withMaxTokens(Integer maxTokens) {
 				this.maxTokens = maxTokens;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #stopSequences( List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withStopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #returnLikelihoods( ReturnLikelihoods)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
 				this.returnLikelihoods = returnLikelihoods;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #stream(boolean)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withStream(boolean stream) {
 				this.stream = stream;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #numGenerations( Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withNumGenerations(Integer numGenerations) {
 				this.numGenerations = numGenerations;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #logitBias( LogitBias)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withLogitBias(LogitBias logitBias) {
 				this.logitBias = logitBias;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #truncate( Truncate)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTruncate(Truncate truncate) {
 				this.truncate = truncate;
 				return this;
