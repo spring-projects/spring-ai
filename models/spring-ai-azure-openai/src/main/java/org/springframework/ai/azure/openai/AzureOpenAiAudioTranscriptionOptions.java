@@ -31,6 +31,7 @@ import org.springframework.util.Assert;
  * Options for audio transcription using Azure Open AI.
  *
  * @author Piotr Olaszewski
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionOptions {
@@ -266,36 +267,99 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			this.options = options;
 		}
 
+		public Builder model(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder deploymentName(String deploymentName) {
+			this.options.setDeploymentName(deploymentName);
+			return this;
+		}
+
+		public Builder language(String language) {
+			this.options.language = language;
+			return this;
+		}
+
+		public Builder prompt(String prompt) {
+			this.options.prompt = prompt;
+			return this;
+		}
+
+		public Builder responseFormat(TranscriptResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder temperature(Float temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder granularityType(List<GranularityType> granularityType) {
+			this.options.granularityType = granularityType;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.model = model;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #deploymentName(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDeploymentName(String deploymentName) {
 			this.options.setDeploymentName(deploymentName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #language(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLanguage(String language) {
 			this.options.language = language;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #prompt(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPrompt(String prompt) {
 			this.options.prompt = prompt;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseFormat(TranscriptResponseFormat)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #temperature(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Float temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #granularityType(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withGranularityType(List<GranularityType> granularityType) {
 			this.options.granularityType = granularityType;
 			return this;

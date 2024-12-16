@@ -68,8 +68,8 @@ class AzureOpenAiChatModelFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.deploymentName(this.selectedModel)
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -92,8 +92,8 @@ class AzureOpenAiChatModelFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.deploymentName(this.selectedModel)
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -114,8 +114,8 @@ class AzureOpenAiChatModelFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.deploymentName(this.selectedModel)
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -151,8 +151,8 @@ class AzureOpenAiChatModelFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.deploymentName(this.selectedModel)
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -200,7 +200,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClient, String selectedModel) {
 			return new AzureOpenAiChatModel(openAIClient,
-					AzureOpenAiChatOptions.builder().withDeploymentName(selectedModel).withMaxTokens(500).build());
+					AzureOpenAiChatOptions.builder().deploymentName(selectedModel).maxTokens(500).build());
 		}
 
 		@Bean

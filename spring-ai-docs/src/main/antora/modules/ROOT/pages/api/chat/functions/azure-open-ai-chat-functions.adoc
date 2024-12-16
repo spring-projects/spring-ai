@@ -150,7 +150,7 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage),
-		AzureOpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
+		AzureOpenAiChatOptions.builder().function("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -180,7 +180,7 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?  Use Multi-turn function calling.");
 
 var promptOptions = AzureOpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+	.functionCallbacks(List.of(FunctionCallback.builder()
 			.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
 			.description("Get the current weather in a given location") // (2) function description
 			.inputType(MockWeatherService.Request.class) // (3) function input type

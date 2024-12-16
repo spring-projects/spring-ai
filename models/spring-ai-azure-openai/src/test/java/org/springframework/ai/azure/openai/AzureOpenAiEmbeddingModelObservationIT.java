@@ -59,7 +59,7 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 	@Test
 	void observationForEmbeddingOperation() {
 		var options = AzureOpenAiEmbeddingOptions.builder()
-			.withDeploymentName("text-embedding-ada-002")
+			.deploymentName("text-embedding-ada-002")
 			// should not send dimension value?
 			// https://github.com/SciPhi-AI/R2R/issues/354
 			// .withDimensions(1536)
@@ -111,7 +111,7 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient,
 				TestObservationRegistry observationRegistry) {
 			return new AzureOpenAiEmbeddingModel(openAIClient, MetadataMode.EMBED,
-					AzureOpenAiEmbeddingOptions.builder().withDeploymentName("text-embedding-ada-002").build(),
+					AzureOpenAiEmbeddingOptions.builder().deploymentName("text-embedding-ada-002").build(),
 					observationRegistry);
 		}
 

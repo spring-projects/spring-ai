@@ -80,7 +80,7 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	public AzureOpenAiEmbeddingModel(OpenAIClient azureOpenAiClient, MetadataMode metadataMode) {
 		this(azureOpenAiClient, metadataMode,
-				AzureOpenAiEmbeddingOptions.builder().withDeploymentName("text-embedding-ada-002").build());
+				AzureOpenAiEmbeddingOptions.builder().deploymentName("text-embedding-ada-002").build());
 	}
 
 	public AzureOpenAiEmbeddingModel(OpenAIClient azureOpenAiClient, MetadataMode metadataMode,
