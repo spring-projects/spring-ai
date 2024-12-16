@@ -64,7 +64,7 @@ public class AnthropicAutoConfigurationIT {
 					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
 			.run(context -> {
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
-				var optoins = AnthropicChatOptions.builder().withMaxTokens(8192).build();
+				var optoins = AnthropicChatOptions.builder().maxTokens(8192).build();
 				var response = chatModel.call(new Prompt("Tell me a joke", optoins));
 				assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 				logger.info("Response: " + response);

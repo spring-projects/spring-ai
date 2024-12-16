@@ -128,9 +128,9 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	public AnthropicChatModel(AnthropicApi anthropicApi) {
 		this(anthropicApi,
 				AnthropicChatOptions.builder()
-					.withModel(DEFAULT_MODEL_NAME)
-					.withMaxTokens(DEFAULT_MAX_TOKENS)
-					.withTemperature(DEFAULT_TEMPERATURE)
+					.model(DEFAULT_MODEL_NAME)
+					.maxTokens(DEFAULT_MAX_TOKENS)
+					.temperature(DEFAULT_TEMPERATURE)
 					.build());
 	}
 
