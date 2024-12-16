@@ -74,6 +74,7 @@ import org.springframework.util.CollectionUtils;
  * MoonshotChatModel is a {@link ChatModel} implementation that uses the Moonshot
  *
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 public class MoonshotChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
@@ -109,7 +110,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	 * Moonshot Chat API.
 	 */
 	public MoonshotChatModel(MoonshotApi moonshotApi) {
-		this(moonshotApi, MoonshotChatOptions.builder().withModel(MoonshotApi.DEFAULT_CHAT_MODEL).build());
+		this(moonshotApi, MoonshotChatOptions.builder().model(MoonshotApi.DEFAULT_CHAT_MODEL).build());
 	}
 
 	/**
@@ -411,7 +412,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					MoonshotChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					MoonshotChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 

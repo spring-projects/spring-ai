@@ -36,6 +36,7 @@ import org.springframework.util.Assert;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MoonshotChatOptions implements FunctionCallingOptions {
@@ -281,21 +282,21 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public MoonshotChatOptions copy() {
-		return builder().withModel(this.model)
-			.withMaxTokens(this.maxTokens)
-			.withTemperature(this.temperature)
-			.withTopP(this.topP)
-			.withN(this.n)
-			.withPresencePenalty(this.presencePenalty)
-			.withFrequencyPenalty(this.frequencyPenalty)
-			.withStop(this.stop)
-			.withUser(this.user)
-			.withTools(this.tools)
-			.withToolChoice(this.toolChoice)
-			.withFunctionCallbacks(this.functionCallbacks)
-			.withFunctions(this.functions)
-			.withProxyToolCalls(this.proxyToolCalls)
-			.withToolContext(this.toolContext)
+		return builder().model(this.model)
+			.maxTokens(this.maxTokens)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.N(this.n)
+			.presencePenalty(this.presencePenalty)
+			.frequencyPenalty(this.frequencyPenalty)
+			.stop(this.stop)
+			.user(this.user)
+			.tools(this.tools)
+			.toolChoice(this.toolChoice)
+			.functionCallbacks(this.functionCallbacks)
+			.functions(this.functions)
+			.proxyToolCalls(this.proxyToolCalls)
+			.toolContext(this.toolContext)
 			.build();
 	}
 
@@ -416,94 +417,89 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 
 	public static class Builder {
 
-		protected MoonshotChatOptions options;
+		private final MoonshotChatOptions options = new MoonshotChatOptions();
 
-		public Builder() {
-			this.options = new MoonshotChatOptions();
-		}
-
-		public Builder(MoonshotChatOptions options) {
-			this.options = options;
-		}
-
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder withN(Integer n) {
+		public Builder N(Integer n) {
 			this.options.n = n;
 			return this;
 		}
 
-		public Builder withPresencePenalty(Double presencePenalty) {
+		public Builder presencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.user = user;
 			return this;
 		}
 
-		public Builder withTools(List<MoonshotApi.FunctionTool> tools) {
+		public Builder tools(List<MoonshotApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
 
-		public Builder withToolChoice(String toolChoice) {
+		public Builder toolChoice(String toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
+		public Builder functions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
+		public Builder function(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
+			if (this.options.functions == null) {
+				this.options.functions = new HashSet<>();
+			}
 			this.options.functions.add(functionName);
 			return this;
 		}
 
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}
@@ -511,6 +507,134 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 				this.options.toolContext.putAll(toolContext);
 			}
 			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctions(Set<String> functionNames) {
+			return functions(functionNames);
+		}
+
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunction(String functionName) {
+			return function(functionName);
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			return model(model);
+		}
+
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMaxTokens(Integer maxTokens) {
+			return maxTokens(maxTokens);
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTemperature(Double temperature) {
+			return temperature(temperature);
+		}
+
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopP(Double topP) {
+			return topP(topP);
+		}
+
+		/**
+		 * @deprecated use {@link #N(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withN(Integer n) {
+			return N(n);
+		}
+
+		/**
+		 * @deprecated use {@link #presencePenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withPresencePenalty(Double presencePenalty) {
+			return presencePenalty(presencePenalty);
+		}
+
+		/**
+		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+			return frequencyPenalty(frequencyPenalty);
+		}
+
+		/**
+		 * @deprecated use {@link #stop(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withStop(List<String> stop) {
+			return stop(stop);
+		}
+
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUser(String user) {
+			return user(user);
+		}
+
+		/**
+		 * @deprecated use {@link #tools(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTools(List<MoonshotApi.FunctionTool> tools) {
+			return tools(tools);
+		}
+
+		/**
+		 * @deprecated use {@link #toolChoice(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withToolChoice(String toolChoice) {
+			return toolChoice(toolChoice);
+		}
+
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			return functionCallbacks(functionCallbacks);
+		}
+
+		/**
+		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			return proxyToolCalls(proxyToolCalls);
+		}
+
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			return toolContext(toolContext);
 		}
 
 		public MoonshotChatOptions build() {
