@@ -154,7 +154,7 @@ class BedrockCohereEmbeddingModelIT {
 		assertThat(this.embeddingModel).isNotNull();
 		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.call(new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-					BedrockCohereEmbeddingOptions.builder().withInputType(InputType.SEARCH_DOCUMENT).build()));
+					BedrockCohereEmbeddingOptions.builder().inputType(InputType.SEARCH_DOCUMENT).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
@@ -180,8 +180,8 @@ class BedrockCohereEmbeddingModelIT {
 			// NONE.
 			return new BedrockCohereEmbeddingModel(cohereEmbeddingApi,
 					BedrockCohereEmbeddingOptions.builder()
-						.withInputType(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
-						.withTruncate(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate.END)
+						.inputType(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
+						.truncate(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate.END)
 						.build());
 		}
 
@@ -192,8 +192,8 @@ class BedrockCohereEmbeddingModelIT {
 			// default NONE.
 			return new BedrockCohereEmbeddingModel(cohereEmbeddingApi,
 					BedrockCohereEmbeddingOptions.builder()
-						.withInputType(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
-						.withTruncate(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate.START)
+						.inputType(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
+						.truncate(CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate.START)
 						.build());
 		}
 

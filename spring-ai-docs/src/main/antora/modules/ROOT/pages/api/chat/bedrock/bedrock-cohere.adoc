@@ -117,7 +117,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         BedrockCohereChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -208,10 +208,10 @@ CohereChatBedrockApi api = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMA
 
 BedrockCohereChatModel chatModel = new BedrockCohereChatModel(this.api,
 	    BedrockCohereChatOptions.builder()
-					.withTemperature(0.6)
-					.withTopK(10)
-					.withTopP(0.5)
-					.withMaxTokens(678)
+					.temperature(0.6)
+					.topK(10)
+					.topP(0.5)
+					.maxTokens(678)
 					.build());
 
 ChatResponse response = this.chatModel.call(
@@ -243,32 +243,32 @@ CohereChatBedrockApi cohereChatApi = new CohereChatBedrockApi(
 
 var request = CohereChatRequest
 	.builder("What is the capital of Bulgaria and what is the size? What is the national anthem?")
-	.withStream(false)
-	.withTemperature(0.5)
-	.withTopP(0.8)
-	.withTopK(15)
-	.withMaxTokens(100)
-	.withStopSequences(List.of("END"))
-	.withReturnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
-	.withNumGenerations(3)
-	.withLogitBias(null)
-	.withTruncate(Truncate.NONE)
+	.stream(false)
+	.temperature(0.5)
+	.topP(0.8)
+	.topK(15)
+	.maxTokens(100)
+	.stopSequences(List.of("END"))
+	.returnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
+	.numGenerations(3)
+	.logitBias(null)
+	.truncate(Truncate.NONE)
 	.build();
 
 CohereChatResponse response = this.cohereChatApi.chatCompletion(this.request);
 
 var request = CohereChatRequest
 	.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-	.withStream(true)
-	.withTemperature(0.5)
-	.withTopP(0.8)
-	.withTopK(15)
-	.withMaxTokens(100)
-	.withStopSequences(List.of("END"))
-	.withReturnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
-	.withNumGenerations(3)
-	.withLogitBias(null)
-	.withTruncate(Truncate.NONE)
+	.stream(true)
+	.temperature(0.5)
+	.topP(0.8)
+	.topK(15)
+	.maxTokens(100)
+	.stopSequences(List.of("END"))
+	.returnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
+	.numGenerations(3)
+	.logitBias(null)
+	.truncate(Truncate.NONE)
 	.build();
 
 Flux<CohereChatResponse.Generation> responseStream = this.cohereChatApi.chatCompletionStream(this.request);

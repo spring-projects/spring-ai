@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class AnthropicChatOptions implements ChatOptions {
@@ -78,12 +79,12 @@ public class AnthropicChatOptions implements ChatOptions {
 	}
 
 	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withMaxTokensToSample(fromOptions.getMaxTokensToSample())
-			.withTopK(fromOptions.getTopK())
-			.withTopP(fromOptions.getTopP())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withAnthropicVersion(fromOptions.getAnthropicVersion())
+		return builder().temperature(fromOptions.getTemperature())
+			.maxTokensToSample(fromOptions.getMaxTokensToSample())
+			.topK(fromOptions.getTopK())
+			.topP(fromOptions.getTopP())
+			.stopSequences(fromOptions.getStopSequences())
+			.anthropicVersion(fromOptions.getAnthropicVersion())
 			.build();
 	}
 
@@ -177,31 +178,85 @@ public class AnthropicChatOptions implements ChatOptions {
 
 		private final AnthropicChatOptions options = new AnthropicChatOptions();
 
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder maxTokensToSample(Integer maxTokensToSample) {
+			this.options.setMaxTokensToSample(maxTokensToSample);
+			return this;
+		}
+
+		public Builder topK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder anthropicVersion(String anthropicVersion) {
+			this.options.setAnthropicVersion(anthropicVersion);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxTokensToSample(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxTokensToSample(Integer maxTokensToSample) {
 			this.options.setMaxTokensToSample(maxTokensToSample);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopK(Integer topK) {
 			this.options.setTopK(topK);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #anthropicVersion(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withAnthropicVersion(String anthropicVersion) {
 			this.options.setAnthropicVersion(anthropicVersion);
 			return this;

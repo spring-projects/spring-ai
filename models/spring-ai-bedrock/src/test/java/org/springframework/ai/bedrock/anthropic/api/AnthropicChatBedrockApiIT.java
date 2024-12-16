@@ -52,9 +52,9 @@ public class AnthropicChatBedrockApiIT {
 
 		AnthropicChatRequest request = AnthropicChatRequest
 			.builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-			.withTemperature(0.8)
-			.withMaxTokensToSample(300)
-			.withTopK(10)
+			.temperature(0.8)
+			.maxTokensToSample(300)
+			.topK(10)
 			.build();
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
@@ -75,10 +75,10 @@ public class AnthropicChatBedrockApiIT {
 
 		AnthropicChatRequest request = AnthropicChatRequest
 			.builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-			.withTemperature(0.8)
-			.withMaxTokensToSample(300)
-			.withTopK(10)
-			.withStopSequences(List.of("\n\nHuman:"))
+			.temperature(0.8)
+			.maxTokensToSample(300)
+			.topK(10)
+			.stopSequences(List.of("\n\nHuman:"))
 			.build();
 
 		Flux<AnthropicChatResponse> responseStream = this.anthropicChatApi.chatCompletionStream(request);
