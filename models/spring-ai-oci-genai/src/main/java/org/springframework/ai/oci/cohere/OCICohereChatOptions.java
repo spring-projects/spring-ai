@@ -25,9 +25,10 @@ import com.oracle.bmc.generativeaiinference.model.CohereTool;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
- * The configuration information for OCI chat requests
+ * The configuration information for OCI chat requests.
  *
  * @author Anders Swanson
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OCICohereChatOptions implements ChatOptions {
@@ -115,19 +116,19 @@ public class OCICohereChatOptions implements ChatOptions {
 	private List<CohereTool> tools;
 
 	public static OCICohereChatOptions fromOptions(OCICohereChatOptions fromOptions) {
-		return builder().withModel(fromOptions.model)
-			.withMaxTokens(fromOptions.maxTokens)
-			.withCompartment(fromOptions.compartment)
-			.withServingMode(fromOptions.servingMode)
-			.withPreambleOverride(fromOptions.preambleOverride)
-			.withTemperature(fromOptions.temperature)
-			.withTopP(fromOptions.topP)
-			.withTopK(fromOptions.topK)
-			.withStop(fromOptions.stop)
-			.withFrequencyPenalty(fromOptions.frequencyPenalty)
-			.withPresencePenalty(fromOptions.presencePenalty)
-			.withDocuments(fromOptions.documents)
-			.withTools(fromOptions.tools)
+		return builder().model(fromOptions.model)
+			.maxTokens(fromOptions.maxTokens)
+			.compartment(fromOptions.compartment)
+			.servingMode(fromOptions.servingMode)
+			.preambleOverride(fromOptions.preambleOverride)
+			.temperature(fromOptions.temperature)
+			.topP(fromOptions.topP)
+			.topK(fromOptions.topK)
+			.stop(fromOptions.stop)
+			.frequencyPenalty(fromOptions.frequencyPenalty)
+			.presencePenalty(fromOptions.presencePenalty)
+			.documents(fromOptions.documents)
+			.tools(fromOptions.tools)
 			.build();
 	}
 
@@ -272,66 +273,183 @@ public class OCICohereChatOptions implements ChatOptions {
 			this.chatOptions = chatOptions;
 		}
 
+		public Builder model(String model) {
+			this.chatOptions.model = model;
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.chatOptions.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder compartment(String compartment) {
+			this.chatOptions.compartment = compartment;
+			return this;
+		}
+
+		public Builder servingMode(String servingMode) {
+			this.chatOptions.servingMode = servingMode;
+			return this;
+		}
+
+		public Builder preambleOverride(String preambleOverride) {
+			this.chatOptions.preambleOverride = preambleOverride;
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.chatOptions.temperature = temperature;
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.chatOptions.topP = topP;
+			return this;
+		}
+
+		public Builder topK(Integer topK) {
+			this.chatOptions.topK = topK;
+			return this;
+		}
+
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.chatOptions.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder presencePenalty(Double presencePenalty) {
+			this.chatOptions.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder stop(List<String> stop) {
+			this.chatOptions.stop = stop;
+			return this;
+		}
+
+		public Builder documents(List<Object> documents) {
+			this.chatOptions.documents = documents;
+			return this;
+		}
+
+		public Builder tools(List<CohereTool> tools) {
+			this.chatOptions.tools = tools;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.chatOptions.model = model;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxTokens(Integer maxTokens) {
 			this.chatOptions.maxTokens = maxTokens;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #compartment(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withCompartment(String compartment) {
 			this.chatOptions.compartment = compartment;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #servingMode(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withServingMode(String servingMode) {
 			this.chatOptions.servingMode = servingMode;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #preambleOverride(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPreambleOverride(String preambleOverride) {
 			this.chatOptions.preambleOverride = preambleOverride;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.chatOptions.temperature = temperature;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.chatOptions.topP = topP;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopK(Integer topK) {
 			this.chatOptions.topK = topK;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFrequencyPenalty(Double frequencyPenalty) {
 			this.chatOptions.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #presencePenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPresencePenalty(Double presencePenalty) {
 			this.chatOptions.presencePenalty = presencePenalty;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stop(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStop(List<String> stop) {
 			this.chatOptions.stop = stop;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #documents(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDocuments(List<Object> documents) {
 			this.chatOptions.documents = documents;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #tools(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTools(List<CohereTool> tools) {
 			this.chatOptions.tools = tools;
 			return this;
