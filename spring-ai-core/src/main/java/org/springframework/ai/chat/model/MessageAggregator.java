@@ -59,8 +59,8 @@ public class MessageAggregator {
 		}), aggregatedChatResponse -> {
 
 			AdvisedResponse aggregatedAdvisedResponse = AdvisedResponse.builder()
-				.withResponse(aggregatedChatResponse)
-				.withAdviseContext(adviseContext.get())
+				.response(aggregatedChatResponse)
+				.adviseContext(adviseContext.get())
 				.build();
 
 			aggregationHandler.accept(aggregatedAdvisedResponse);

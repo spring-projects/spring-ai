@@ -36,6 +36,7 @@ import org.springframework.util.Assert;
  *
  * @param <T> the type of the chat memory.
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor, StreamAroundAdvisor {
@@ -238,7 +239,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param conversationId the conversation id
 		 * @return the builder
 		 */
-		public AbstractBuilder withConversationId(String conversationId) {
+		public AbstractBuilder conversationId(String conversationId) {
 			this.conversationId = conversationId;
 			return this;
 		}
@@ -248,7 +249,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param chatMemoryRetrieveSize the chat memory retrieve size
 		 * @return the builder
 		 */
-		public AbstractBuilder withChatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
+		public AbstractBuilder chatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
 			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
 			return this;
 		}
@@ -258,7 +259,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param protectFromBlocking whether to protect from blocking
 		 * @return the builder
 		 */
-		public AbstractBuilder withProtectFromBlocking(boolean protectFromBlocking) {
+		public AbstractBuilder protectFromBlocking(boolean protectFromBlocking) {
 			this.protectFromBlocking = protectFromBlocking;
 			return this;
 		}
@@ -268,6 +269,42 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param order the order
 		 * @return the builder
 		 */
+		public AbstractBuilder order(int order) {
+			this.order = order;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #conversationId( String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public AbstractBuilder withConversationId(String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #chatMemoryRetrieveSize(int)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public AbstractBuilder withChatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
+			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #protectFromBlocking(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public AbstractBuilder withProtectFromBlocking(boolean protectFromBlocking) {
+			this.protectFromBlocking = protectFromBlocking;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #order(int)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public AbstractBuilder withOrder(int order) {
 			this.order = order;
 			return this;

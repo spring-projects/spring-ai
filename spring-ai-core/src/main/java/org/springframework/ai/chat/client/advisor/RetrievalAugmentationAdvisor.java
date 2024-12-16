@@ -133,7 +133,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
 
 		// 6. Update advised request with augmented prompt.
-		return AdvisedRequest.from(request).withUserText(augmentedQuery.text()).withAdviseContext(context).build();
+		return AdvisedRequest.from(request).userText(augmentedQuery.text()).adviseContext(context).build();
 	}
 
 	/**

@@ -153,8 +153,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		advisedSystemParams.put("long_term_memory", longTermMemory);
 
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
-			.withSystemText(advisedSystemText)
-			.withSystemParams(advisedSystemParams)
+			.systemText(advisedSystemText)
+			.systemParams(advisedSystemParams)
 			.build();
 
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());
@@ -212,6 +212,15 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			super(chatMemory);
 		}
 
+		public Builder systemTextAdvise(String systemTextAdvise) {
+			this.systemTextAdvise = systemTextAdvise;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #systemTextAdvise(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSystemTextAdvise(String systemTextAdvise) {
 			this.systemTextAdvise = systemTextAdvise;
 			return this;

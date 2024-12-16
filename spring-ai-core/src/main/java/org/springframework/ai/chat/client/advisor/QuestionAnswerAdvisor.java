@@ -48,6 +48,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Timo Salm
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
@@ -234,9 +235,9 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		advisedUserParams.put("question_answer_context", documentContext);
 
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
-			.withUserText(advisedUserText)
-			.withUserParams(advisedUserParams)
-			.withAdviseContext(context)
+			.userText(advisedUserText)
+			.userParams(advisedUserParams)
+			.adviseContext(context)
 			.build();
 
 		return advisedRequest;
@@ -285,23 +286,61 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 			this.vectorStore = vectorStore;
 		}
 
+		public Builder searchRequest(SearchRequest searchRequest) {
+			Assert.notNull(searchRequest, "The searchRequest must not be null!");
+			this.searchRequest = searchRequest;
+			return this;
+		}
+
+		public Builder userTextAdvise(String userTextAdvise) {
+			Assert.hasText(userTextAdvise, "The userTextAdvise must not be empty!");
+			this.userTextAdvise = userTextAdvise;
+			return this;
+		}
+
+		public Builder protectFromBlocking(boolean protectFromBlocking) {
+			this.protectFromBlocking = protectFromBlocking;
+			return this;
+		}
+
+		public Builder order(int order) {
+			this.order = order;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #searchRequest(SearchRequest)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSearchRequest(SearchRequest searchRequest) {
 			Assert.notNull(searchRequest, "The searchRequest must not be null!");
 			this.searchRequest = searchRequest;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #userTextAdvise(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withUserTextAdvise(String userTextAdvise) {
 			Assert.hasText(userTextAdvise, "The userTextAdvise must not be empty!");
 			this.userTextAdvise = userTextAdvise;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #protectFromBlocking(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withProtectFromBlocking(boolean protectFromBlocking) {
 			this.protectFromBlocking = protectFromBlocking;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #order(int)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withOrder(int order) {
 			this.order = order;
 			return this;
