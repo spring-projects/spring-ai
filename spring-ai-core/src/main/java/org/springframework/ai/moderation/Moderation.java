@@ -26,6 +26,7 @@ import java.util.Objects;
  * Moderation, use the Builder class.
  *
  * @author Ahmed Yousri
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public final class Moderation {
@@ -90,16 +91,43 @@ public final class Moderation {
 
 		private List<ModerationResult> moderationResultList;
 
+		public Builder id(String id) {
+			this.id = id;
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.model = model;
+			return this;
+		}
+
+		public Builder results(List<ModerationResult> results) {
+			this.moderationResultList = results;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #id(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withId(String id) {
 			this.id = id;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.model = model;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #results(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResults(List<ModerationResult> results) {
 			this.moderationResultList = results;
 			return this;
