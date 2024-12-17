@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.oracle;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +41,8 @@ import org.testcontainers.utility.MountableFile;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -119,8 +121,8 @@ public class OracleVectorStoreIT {
 	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
 	public void addAndSearch(String distanceType) {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy="
-					+ org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.withPropertyValues(
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -225,8 +227,8 @@ public class OracleVectorStoreIT {
 	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
 	public void documentUpdate(String distanceType) {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy="
-					+ org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.withPropertyValues(
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -265,8 +267,8 @@ public class OracleVectorStoreIT {
 	@ValueSource(strings = { "COSINE", "DOT" })
 	public void searchWithThreshold(String distanceType) {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy="
-					+ org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.withPropertyValues(
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -308,9 +310,18 @@ public class OracleVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return new OracleVectorStore(jdbcTemplate, embeddingModel, OracleVectorStore.DEFAULT_TABLE_NAME,
-					OracleVectorStore.OracleVectorStoreIndexType.IVF, this.distanceType, 384, this.searchAccuracy, true,
-					true, true);
+			return OracleVectorStore.builder()
+				.jdbcTemplate(jdbcTemplate)
+				.embeddingModel(embeddingModel)
+				.tableName(OracleVectorStore.DEFAULT_TABLE_NAME)
+				.indexType(OracleVectorStore.OracleVectorStoreIndexType.IVF)
+				.distanceType(distanceType)
+				.dimensions(384)
+				.searchAccuracy(searchAccuracy)
+				.initializeSchema(true)
+				.removeExistingVectorStoreTable(true)
+				.forcedNormalization(true)
+				.build();
 		}
 
 		@Bean
