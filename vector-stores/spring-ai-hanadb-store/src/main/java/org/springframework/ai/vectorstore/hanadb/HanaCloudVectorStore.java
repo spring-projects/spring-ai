@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.hanadb;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,9 +34,12 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.util.Assert;
 
 /**
  * The <b>SAP HANA Cloud vector engine</b> offers multiple use cases in AI scenarios.
@@ -67,6 +70,7 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
  * @author Rahul Mittal
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @author Soby Chacko
  * @see <a href=
  * "https://help.sap.com/docs/hana-cloud-database/sap-hana-cloud-sap-hana-database-vector-engine-guide/introduction">SAP
  * HANA Database Vector Engine Guide</a>
@@ -78,28 +82,69 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 	private final HanaVectorRepository<? extends HanaVectorEntity> repository;
 
-	private final EmbeddingModel embeddingModel;
+	private final String tableName;
 
-	private final HanaCloudVectorStoreConfig config;
+	private final int topK;
 
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Creates a new HanaCloudVectorStore with basic configuration.
+	 * @param repository the HANA vector repository
+	 * @param embeddingModel the embedding model to use
+	 * @param config the vector store configuration
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public HanaCloudVectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
 			EmbeddingModel embeddingModel, HanaCloudVectorStoreConfig config) {
-
 		this(repository, embeddingModel, config, ObservationRegistry.NOOP, null);
 	}
 
+	/**
+	 * Creates a new HanaCloudVectorStore with observation configuration.
+	 * @param repository the HANA vector repository
+	 * @param embeddingModel the embedding model to use
+	 * @param config the vector store configuration
+	 * @param observationRegistry the observation registry
+	 * @param customObservationConvention the custom observation convention
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public HanaCloudVectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
 			EmbeddingModel embeddingModel, HanaCloudVectorStoreConfig config, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder().repository(repository)
+			.embeddingModel(embeddingModel)
+			.tableName(config.getTableName())
+			.topK(config.getTopK())
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention));
+	}
 
-		this.repository = repository;
-		this.embeddingModel = embeddingModel;
-		this.config = config;
+	/**
+	 * Protected constructor that accepts a builder instance. This is the preferred way to
+	 * create new HanaCloudVectorStore instances.
+	 * @param builder the configured builder instance
+	 */
+	protected HanaCloudVectorStore(HanaCloudBuilder builder) {
+		super(builder);
+
+		Assert.notNull(builder.repository, "Repository must not be null");
+
+		this.repository = builder.repository;
+		this.tableName = builder.tableName;
+		this.topK = builder.topK;
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+	}
+
+	/**
+	 * Creates a new builder for configuring and creating HanaCloudVectorStore instances.
+	 * @return a new builder instance
+	 */
+	public static HanaCloudBuilder builder() {
+		return new HanaCloudBuilder();
 	}
 
 	@Override
@@ -110,27 +155,27 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 					document.getId());
 			String content = document.getContent().replaceAll("\\s+", " ");
 			String embedding = getEmbedding(document);
-			this.repository.save(this.config.getTableName(), document.getId(), embedding, content);
+			this.repository.save(this.tableName, document.getId(), embedding, content);
 		}
 		logger.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
 	}
 
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
-		int deleteCount = this.repository.deleteEmbeddingsById(this.config.getTableName(), idList);
+		int deleteCount = this.repository.deleteEmbeddingsById(this.tableName, idList);
 		logger.info("{} embeddings deleted", deleteCount);
 		return Optional.of(deleteCount == idList.size());
 	}
 
 	public int purgeEmbeddings() {
-		int deleteCount = this.repository.deleteAllEmbeddings(this.config.getTableName());
+		int deleteCount = this.repository.deleteAllEmbeddings(this.tableName);
 		logger.info("{} embeddings deleted", deleteCount);
 		return deleteCount;
 	}
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return similaritySearch(SearchRequest.query(query).withTopK(this.config.getTopK()));
+		return similaritySearch(SearchRequest.query(query).withTopK(this.topK));
 	}
 
 	@Override
@@ -141,8 +186,8 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		}
 
 		String queryEmbedding = getEmbedding(request);
-		List<? extends HanaVectorEntity> searchResult = this.repository
-			.cosineSimilaritySearch(this.config.getTableName(), request.getTopK(), queryEmbedding);
+		List<? extends HanaVectorEntity> searchResult = this.repository.cosineSimilaritySearch(this.tableName,
+				request.getTopK(), queryEmbedding);
 		logger.info("Hana cosine-similarity for query={}, with topK={} returned {} results", request.getQuery(),
 				request.getTopK(), searchResult.size());
 
@@ -175,8 +220,63 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.HANA.value(), operationName)
 			.dimensions(this.embeddingModel.dimensions())
-			.collectionName(this.config.getTableName())
+			.collectionName(this.tableName)
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+	}
+
+	/**
+	 * Builder class for creating {@link HanaCloudVectorStore} instances.
+	 * <p>
+	 * Provides a fluent API for configuring all aspects of the HANA Cloud vector store.
+	 *
+	 * @since 1.0.0
+	 */
+	public static class HanaCloudBuilder extends AbstractVectorStoreBuilder<HanaCloudBuilder> {
+
+		private HanaVectorRepository<? extends HanaVectorEntity> repository;
+
+		private String tableName;
+
+		private int topK;
+
+		/**
+		 * Sets the HANA vector repository.
+		 * @param repository the repository to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if repository is null
+		 */
+		public HanaCloudBuilder repository(HanaVectorRepository<? extends HanaVectorEntity> repository) {
+			Assert.notNull(repository, "Repository must not be null");
+			this.repository = repository;
+			return this;
+		}
+
+		/**
+		 * Sets the table name for vector storage.
+		 * @param tableName the name of the table to use
+		 * @return the builder instance
+		 */
+		public HanaCloudBuilder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
+		/**
+		 * Sets the number of top results to return.
+		 * @param topK the number of results
+		 * @return the builder instance
+		 */
+		public HanaCloudBuilder topK(int topK) {
+			this.topK = topK;
+			return this;
+		}
+
+		@Override
+		public HanaCloudVectorStore build() {
+			validate();
+			return new HanaCloudVectorStore(this);
+		}
+
 	}
 
 }
