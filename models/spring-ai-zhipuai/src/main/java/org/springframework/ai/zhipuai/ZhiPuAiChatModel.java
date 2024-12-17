@@ -123,8 +123,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @throws IllegalArgumentException if zhiPuAiApi is null
 	 */
 	public ZhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi) {
-		this(zhiPuAiApi,
-				ZhiPuAiChatOptions.builder().withModel(ZhiPuAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(zhiPuAiApi, ZhiPuAiChatOptions.builder().model(ZhiPuAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -434,7 +433,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					ZhiPuAiChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					ZhiPuAiChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 

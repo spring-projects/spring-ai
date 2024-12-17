@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -136,20 +137,20 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 
 	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
 		return ZhiPuAiChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withUser(fromOptions.getUser())
-			.withRequestId(fromOptions.getRequestId())
-			.withDoSample(fromOptions.getDoSample())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
+			.model(fromOptions.getModel())
+			.maxTokens(fromOptions.getMaxTokens())
+			.stop(fromOptions.getStop())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.tools(fromOptions.getTools())
+			.toolChoice(fromOptions.getToolChoice())
+			.user(fromOptions.getUser())
+			.requestId(fromOptions.getRequestId())
+			.doSample(fromOptions.getDoSample())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -449,78 +450,220 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 			this.options = options;
 		}
 
+		public Builder model(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder stop(List<String> stop) {
+			this.options.stop = stop;
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder tools(List<ZhiPuAiApi.FunctionTool> tools) {
+			this.options.tools = tools;
+			return this;
+		}
+
+		public Builder toolChoice(String toolChoice) {
+			this.options.toolChoice = toolChoice;
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.user = user;
+			return this;
+		}
+
+		public Builder requestId(String requestId) {
+			this.options.requestId = requestId;
+			return this;
+		}
+
+		public Builder doSample(Boolean doSample) {
+			this.options.doSample = doSample;
+			return this;
+		}
+
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder functions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder function(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.model = model;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stop(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #tools(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTools(List<ZhiPuAiApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #toolChoice(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolChoice(String toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withUser(String user) {
 			this.options.user = user;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #requestId(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withRequestId(String requestId) {
 			this.options.requestId = requestId;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #doSample(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDoSample(Boolean doSample) {
 			this.options.doSample = doSample;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
