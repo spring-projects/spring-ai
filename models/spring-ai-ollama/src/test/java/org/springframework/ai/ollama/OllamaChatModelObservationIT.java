@@ -34,6 +34,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,6 +48,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * Integration tests for observation instrumentation in {@link OllamaChatModel}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @SpringBootTest(classes = OllamaChatModelObservationIT.Config.class)
 public class OllamaChatModelObservationIT extends BaseOllamaIT {
@@ -172,6 +174,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 			return OllamaChatModel.builder()
 				.withOllamaApi(ollamaApi)
 				.withObservationRegistry(observationRegistry)
+				.withRetryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 

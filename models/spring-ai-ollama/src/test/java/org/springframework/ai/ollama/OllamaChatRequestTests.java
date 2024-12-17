@@ -22,12 +22,14 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.retry.RetryUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 public class OllamaChatRequestTests {
 
@@ -35,6 +37,7 @@ public class OllamaChatRequestTests {
 		.withOllamaApi(new OllamaApi())
 		.withDefaultOptions(
 				OllamaOptions.create().withModel("MODEL_NAME").withTopK(99).withTemperature(66.6).withNumGPU(1))
+		.withRetryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 		.build();
 
 	@Test
@@ -108,6 +111,7 @@ public class OllamaChatRequestTests {
 		OllamaChatModel chatModel = OllamaChatModel.builder()
 			.withOllamaApi(new OllamaApi())
 			.withDefaultOptions(OllamaOptions.create().withModel("DEFAULT_OPTIONS_MODEL"))
+			.withRetryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.build();
 
 		var request = chatModel.ollamaChatRequest(new Prompt("Test message content"), true);
