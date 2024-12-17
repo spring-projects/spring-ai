@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.cosmosdb;
 
 import java.util.List;
 
@@ -23,8 +23,9 @@ import java.util.List;
  *
  * @author Theo van Kraay
  * @since 1.0.0
+ * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
  */
-
+@Deprecated(since = "1.0.0-M5", forRemoval = true)
 public class CosmosDBVectorStoreConfig implements AutoCloseable {
 
 	private String containerName;
@@ -45,63 +46,123 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 
 	private List<String> metadataFieldsList;
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public int getVectorStoreThroughput() {
 		return this.vectorStoreThroughput;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setVectorStoreThroughput(int vectorStoreThroughput) {
 		this.vectorStoreThroughput = vectorStoreThroughput;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getMetadataFields() {
 		return this.metadataFields;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setMetadataFields(String metadataFields) {
 		this.metadataFields = metadataFields;
 		this.metadataFieldsList = List.of(metadataFields.split(","));
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public List<String> getMetadataFieldsList() {
 		return this.metadataFieldsList;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getEndpoint() {
 		return this.endpoint;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getKey() {
 		return this.key;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setKey(String key) {
 		this.key = key;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getContainerName() {
 		return this.containerName;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setContainerName(String containerName) {
 		this.containerName = containerName;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getDatabaseName() {
 		return this.databaseName;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDatabaseName(String databaseName) {
 		this.databaseName = databaseName;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getPartitionKeyPath() {
 		return this.partitionKeyPath;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setPartitionKeyPath(String partitionKeyPath) {
 		this.partitionKeyPath = partitionKeyPath;
 	}
@@ -111,10 +172,18 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public long getVectorDimensions() {
 		return this.vectorDimensions;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setVectorDimensions(long vectorDimensions) {
 		this.vectorDimensions = vectorDimensions;
 	}
