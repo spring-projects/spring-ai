@@ -47,7 +47,6 @@ import com.google.protobuf.util.JsonFormat;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -58,6 +57,9 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -77,6 +79,7 @@ import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
@@ -95,6 +98,7 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
@@ -286,6 +290,10 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	// https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return this.internalCall(prompt, null);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		VertexAiGeminiChatOptions vertexAiGeminiChatOptions = vertexAiGeminiChatOptions(prompt);
 
@@ -310,8 +318,10 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 					.flatMap(List::stream)
 					.toList();
 
-				ChatResponse chatResponse = new ChatResponse(generations,
-						toChatResponseMetadata(generateContentResponse));
+				GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
+				Usage currentUsage = (usage != null) ? new VertexAiUsage(usage) : new EmptyUsage();
+				Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
+				ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 
 				observationContext.setResponse(chatResponse);
 				return chatResponse;
@@ -321,7 +331,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
 		}
 
 		return response;
@@ -330,6 +340,10 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return this.internalStream(prompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			VertexAiGeminiChatOptions vertexAiGeminiChatOptions = vertexAiGeminiChatOptions(prompt);
 
@@ -349,32 +363,51 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			try {
 				ResponseStream<GenerateContentResponse> responseStream = request.model
 					.generateContentStream(request.contents);
-
-				return Flux.fromStream(responseStream.stream()).switchMap(response -> {
-
+				Flux<ChatResponse> chatResponseFlux = Flux.fromStream(responseStream.stream()).switchMap(response -> {
 					List<Generation> generations = response.getCandidatesList()
 						.stream()
 						.map(this::responseCandidateToGeneration)
 						.flatMap(List::stream)
 						.toList();
 
-					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(response));
-
-					if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
+					GenerateContentResponse.UsageMetadata usage = response.getUsageMetadata();
+					Usage currentUsage = (usage != null) ? new VertexAiUsage(usage) : new EmptyUsage();
+					Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
+					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
+					return Flux.just(chatResponse);
+				}).buffer(2, 1).filter(bufferedResponses -> {
+					return bufferedResponses.size() == 2;
+				}).map(bufferList -> {
+					ChatResponse firstResponse = bufferList.get(0);
+					ChatResponse secondResponse = bufferList.get(1);
+					if (secondResponse != null && secondResponse.getMetadata() != null) {
+						// This is the usage from the final Chat response for a
+						// given Chat request.
+						Usage usage = secondResponse.getMetadata().getUsage();
+						if (!UsageUtils.isEmpty(usage)) {
+							// Store the usage from the final response to the
+							// penultimate response for accumulation.
+							return new ChatResponse(firstResponse.getResults(), toChatResponseMetadata(usage));
+						}
+					}
+					return firstResponse;
+				});
+				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
+					if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
 							Set.of(FinishReason.STOP.name(), FinishReason.FINISH_REASON_UNSPECIFIED.name()))) {
-						var toolCallConversation = handleToolCalls(prompt, chatResponse);
+						var toolCallConversation = handleToolCalls(prompt, response);
 						// Recursively call the stream method with the tool call message
 						// conversation that contains the call responses.
-						return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+						return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), response);
 					}
-
-					Flux<ChatResponse> chatResponseFlux = Flux.just(chatResponse)
-						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
-						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-
-					return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
-				});
+					else {
+						return Flux.just(response);
+					}
+				})
+					.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 			}
 			catch (Exception e) {
 				throw new RuntimeException("Failed to generate content", e);
@@ -428,6 +461,10 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	private ChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
 		return ChatResponseMetadata.builder().withUsage(new VertexAiUsage(response.getUsageMetadata())).build();
+	}
+
+	private ChatResponseMetadata toChatResponseMetadata(Usage usage) {
+		return ChatResponseMetadata.builder().withUsage(usage).build();
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {

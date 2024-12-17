@@ -127,7 +127,13 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", response);
 
+		assertThat(response.getResult()).isNotNull();
+		assertThat(response.getResult().getOutput()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
+
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(230);
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
@@ -211,6 +217,37 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		logger.info("Response: {}", responseString);
 
 		assertThat(responseString).contains("30", "10", "15");
+
+	}
+
+	@Test
+	public void functionCallTestUsageInferredOpenApiSchemaStream() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = VertexAiGeminiChatOptions.builder()
+			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.schemaType(SchemaType.OPEN_API_SCHEMA)
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
+
+		ChatResponse chatResponse = responseFlux.blockLast();
+
+		logger.info("Response: {}", chatResponse);
+
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getMetadata()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(230);
 
 	}
 
