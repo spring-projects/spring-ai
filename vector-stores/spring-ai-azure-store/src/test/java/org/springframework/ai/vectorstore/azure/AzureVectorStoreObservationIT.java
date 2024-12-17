@@ -183,10 +183,16 @@ public class AzureVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
-					MetadataField.date("activationDate"));
-			return new AzureVectorStore(searchIndexClient, embeddingModel, true, filterableMetaFields,
-					observationRegistry, null, new TokenCountBatchingStrategy());
+			return AzureVectorStore.builder()
+				.searchIndexClient(searchIndexClient)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
+						MetadataField.date("activationDate")))
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean
