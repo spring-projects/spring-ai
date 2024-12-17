@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.cosmosdb;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,10 +63,13 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.util.Assert;
 
 /**
  * Cosmos DB implementation.
@@ -82,14 +85,32 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	private final CosmosAsyncClient cosmosClient;
 
-	private final EmbeddingModel embeddingModel;
+	private final String containerName;
 
-	private final CosmosDBVectorStoreConfig properties;
+	private final String databaseName;
+
+	private final String partitionKeyPath;
+
+	private final int vectorStoreThroughput;
+
+	private final long vectorDimensions;
+
+	private final List<String> metadataFieldsList;
 
 	private final BatchingStrategy batchingStrategy;
 
 	private CosmosAsyncContainer container;
 
+	/**
+	 * Creates a new CosmosDBVectorStore with basic configuration.
+	 * @param observationRegistry the observation registry
+	 * @param customObservationConvention the custom observation convention
+	 * @param cosmosClient the Cosmos DB client
+	 * @param properties the configuration properties
+	 * @param embeddingModel the embedding model
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
 			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel) {
@@ -97,20 +118,61 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				new TokenCountBatchingStrategy());
 	}
 
+	/**
+	 * Creates a new CosmosDBVectorStore with full configuration.
+	 * @param observationRegistry the observation registry
+	 * @param customObservationConvention the custom observation convention
+	 * @param cosmosClient the Cosmos DB client
+	 * @param properties the configuration properties
+	 * @param embeddingModel the embedding model
+	 * @param batchingStrategy the batching strategy
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
 			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
-		super(observationRegistry, customObservationConvention);
-		this.cosmosClient = cosmosClient;
-		this.properties = properties;
-		this.batchingStrategy = batchingStrategy;
-		cosmosClient.createDatabaseIfNotExists(properties.getDatabaseName()).block();
+		this(builder().cosmosClient(cosmosClient)
+			.embeddingModel(embeddingModel)
+			.containerName(properties.getContainerName())
+			.databaseName(properties.getDatabaseName())
+			.partitionKeyPath(properties.getPartitionKeyPath())
+			.vectorStoreThroughput(properties.getVectorStoreThroughput())
+			.vectorDimensions(properties.getVectorDimensions())
+			.metadataFields(properties.getMetadataFieldsList())
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		initializeContainer(properties.getContainerName(), properties.getDatabaseName(),
-				properties.getVectorStoreThroughput(), properties.getVectorDimensions(),
-				properties.getPartitionKeyPath());
+	/**
+	 * Protected constructor that accepts a builder instance. This is the preferred way to
+	 * create new CosmosDBVectorStore instances.
+	 * @param builder the configured builder instance
+	 */
+	protected CosmosDBVectorStore(CosmosDBBuilder builder) {
+		super(builder);
 
-		this.embeddingModel = embeddingModel;
+		Assert.notNull(builder.cosmosClient, "CosmosClient must not be null");
+		Assert.hasText(builder.containerName, "Container name must not be empty");
+		Assert.hasText(builder.databaseName, "Database name must not be empty");
+		Assert.hasText(builder.partitionKeyPath, "Partition key path must not be empty");
+
+		this.cosmosClient = builder.cosmosClient;
+		this.containerName = builder.containerName;
+		this.databaseName = builder.databaseName;
+		this.partitionKeyPath = builder.partitionKeyPath;
+		this.vectorStoreThroughput = builder.vectorStoreThroughput;
+		this.vectorDimensions = builder.vectorDimensions;
+		this.metadataFieldsList = builder.metadataFieldsList;
+		this.batchingStrategy = builder.batchingStrategy;
+
+		cosmosClient.createDatabaseIfNotExists(databaseName).block();
+		initializeContainer(containerName, databaseName, vectorStoreThroughput, vectorDimensions, partitionKeyPath);
+	}
+
+	public static CosmosDBBuilder builder() {
+		return new CosmosDBBuilder();
 	}
 
 	private void initializeContainer(String containerName, String databaseName, int vectorStoreThroughput,
@@ -308,7 +370,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		Filter.Expression filterExpression = request.getFilterExpression();
 		if (filterExpression != null) {
 			CosmosDBFilterExpressionConverter filterExpressionConverter = new CosmosDBFilterExpressionConverter(
-					this.properties.getMetadataFieldsList()); // Use the expression
+					this.metadataFieldsList); // Use the expression
 			// directly as
 			// it handles the
 			// "metadata"
@@ -357,6 +419,134 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			.dimensions(this.embeddingModel.dimensions())
 			.namespace(this.container.getDatabase().getId())
 			.similarityMetric("cosine");
+	}
+
+	/**
+	 * Builder class for creating {@link CosmosDBVectorStore} instances.
+	 * <p>
+	 * Provides a fluent API for configuring all aspects of the Cosmos DB vector store.
+	 *
+	 * @since 1.0.0
+	 */
+	public static class CosmosDBBuilder extends AbstractVectorStoreBuilder<CosmosDBBuilder> {
+
+		private CosmosAsyncClient cosmosClient;
+
+		private String containerName;
+
+		private String databaseName;
+
+		private String partitionKeyPath;
+
+		private int vectorStoreThroughput = 400;
+
+		private long vectorDimensions = 1536;
+
+		private List<String> metadataFieldsList = new ArrayList<>();
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		/**
+		 * Sets the Cosmos DB client.
+		 * @param cosmosClient the client to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if cosmosClient is null
+		 */
+		public CosmosDBBuilder cosmosClient(CosmosAsyncClient cosmosClient) {
+			Assert.notNull(cosmosClient, "CosmosClient must not be null");
+			this.cosmosClient = cosmosClient;
+			return this;
+		}
+
+		/**
+		 * Sets the container name.
+		 * @param containerName the name of the container
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if containerName is null or empty
+		 */
+		public CosmosDBBuilder containerName(String containerName) {
+			Assert.hasText(containerName, "Container name must not be empty");
+			this.containerName = containerName;
+			return this;
+		}
+
+		/**
+		 * Sets the database name.
+		 * @param databaseName the name of the database
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if databaseName is null or empty
+		 */
+		public CosmosDBBuilder databaseName(String databaseName) {
+			Assert.hasText(databaseName, "Database name must not be empty");
+			this.databaseName = databaseName;
+			return this;
+		}
+
+		/**
+		 * Sets the partition key path.
+		 * @param partitionKeyPath the partition key path
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if partitionKeyPath is null or empty
+		 */
+		public CosmosDBBuilder partitionKeyPath(String partitionKeyPath) {
+			Assert.hasText(partitionKeyPath, "Partition key path must not be empty");
+			this.partitionKeyPath = partitionKeyPath;
+			return this;
+		}
+
+		/**
+		 * Sets the vector store throughput.
+		 * @param vectorStoreThroughput the throughput value
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if vectorStoreThroughput is not positive
+		 */
+		public CosmosDBBuilder vectorStoreThroughput(int vectorStoreThroughput) {
+			Assert.isTrue(vectorStoreThroughput > 0, "Vector store throughput must be positive");
+			this.vectorStoreThroughput = vectorStoreThroughput;
+			return this;
+		}
+
+		/**
+		 * Sets the vector dimensions.
+		 * @param vectorDimensions the number of dimensions
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if vectorDimensions is not positive
+		 */
+		public CosmosDBBuilder vectorDimensions(long vectorDimensions) {
+			Assert.isTrue(vectorDimensions > 0, "Vector dimensions must be positive");
+			this.vectorDimensions = vectorDimensions;
+			return this;
+		}
+
+		/**
+		 * Sets the metadata fields list.
+		 * @param metadataFieldsList the list of metadata fields
+		 * @return the builder instance
+		 */
+		public CosmosDBBuilder metadataFields(List<String> metadataFieldsList) {
+			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
+					: new ArrayList<>();
+			return this;
+		}
+
+		/**
+		 * Sets the batching strategy.
+		 * @param batchingStrategy the strategy to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public CosmosDBBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		@Override
+		public CosmosDBVectorStore build() {
+			validate();
+			return new CosmosDBVectorStore(this);
+		}
+
 	}
 
 }
