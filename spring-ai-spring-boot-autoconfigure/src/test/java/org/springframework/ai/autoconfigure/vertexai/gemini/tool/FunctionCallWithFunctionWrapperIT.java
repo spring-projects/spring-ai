@@ -65,7 +65,7 @@ public class FunctionCallWithFunctionWrapperIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("WeatherInfo").build()));
+						VertexAiGeminiChatOptions.builder().function("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);
 

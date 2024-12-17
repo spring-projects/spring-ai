@@ -225,8 +225,8 @@ class VertexAiMultimodalEmbeddingModelIT {
 		@Bean
 		public VertexAiEmbeddingConnectionDetails connectionDetails() {
 			return VertexAiEmbeddingConnectionDetails.builder()
-				.withProjectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
-				.withLocation(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
+				.projectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
+				.location(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 				.build();
 		}
 
@@ -235,7 +235,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 				VertexAiEmbeddingConnectionDetails connectionDetails) {
 
 			VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
-				.withModel(VertexAiMultimodalEmbeddingModelName.MULTIMODAL_EMBEDDING_001)
+				.model(VertexAiMultimodalEmbeddingModelName.MULTIMODAL_EMBEDDING_001)
 				.build();
 
 			return new VertexAiMultimodalEmbeddingModel(connectionDetails, options);

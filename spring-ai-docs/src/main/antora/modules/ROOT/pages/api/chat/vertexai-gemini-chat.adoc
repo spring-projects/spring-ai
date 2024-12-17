@@ -105,7 +105,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         VertexAiGeminiChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -241,8 +241,8 @@ VertexAI vertexApi =  new VertexAI(projectId, location);
 
 var chatModel = new VertexAiGeminiChatModel(this.vertexApi,
     VertexAiGeminiChatOptions.builder()
-        .withModel(ChatModel.GEMINI_PRO_1_5_PRO)
-        .withTemperature(0.4)
+        .model(ChatModel.GEMINI_PRO_1_5_PRO)
+        .temperature(0.4)
     .build());
 
 ChatResponse response = this.chatModel.call(

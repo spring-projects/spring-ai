@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Grogdunn
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -355,85 +356,235 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 		private VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
 
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder topK(Float topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		public Builder candidateCount(Integer candidateCount) {
+			this.options.setCandidateCount(candidateCount);
+			return this;
+		}
+
+		public Builder maxOutputTokens(Integer maxOutputTokens) {
+			this.options.setMaxOutputTokens(maxOutputTokens);
+			return this;
+		}
+
+		public Builder model(String modelName) {
+			this.options.setModel(modelName);
+			return this;
+		}
+
+		public Builder model(ChatModel model) {
+			this.options.setModel(model.getValue());
+			return this;
+		}
+
+		public Builder responseMimeType(String mimeType) {
+			Assert.notNull(mimeType, "mimeType must not be null");
+			this.options.setResponseMimeType(mimeType);
+			return this;
+		}
+
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder functions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder function(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder googleSearchRetrieval(boolean googleSearch) {
+			this.options.googleSearchRetrieval = googleSearch;
+			return this;
+		}
+
+		public Builder safetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+			Assert.notNull(safetySettings, "safetySettings must not be null");
+			this.options.safetySettings = safetySettings;
+			return this;
+		}
+
+		public Builder proxyToolCalls(boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topK(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopK(Float topK) {
 			this.options.setTopK(topK);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #candidateCount(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withCandidateCount(Integer candidateCount) {
 			this.options.setCandidateCount(candidateCount);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxOutputTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxOutputTokens(Integer maxOutputTokens) {
 			this.options.setMaxOutputTokens(maxOutputTokens);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String modelName) {
 			this.options.setModel(modelName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(ChatModel)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(ChatModel model) {
 			this.options.setModel(model.getValue());
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseMimeType(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResponseMimeType(String mimeType) {
 			Assert.notNull(mimeType, "mimeType must not be null");
 			this.options.setResponseMimeType(mimeType);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #googleSearchRetrieval(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withGoogleSearchRetrieval(boolean googleSearch) {
 			this.options.googleSearchRetrieval = googleSearch;
 			return this;
 		}
 
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
 			Assert.notNull(safetySettings, "safetySettings must not be null");
 			this.options.safetySettings = safetySettings;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #proxyToolCalls(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withProxyToolCalls(boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;

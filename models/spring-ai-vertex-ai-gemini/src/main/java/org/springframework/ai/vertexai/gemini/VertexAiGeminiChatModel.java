@@ -123,8 +123,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI) {
-		this(vertexAI,
-				VertexAiGeminiChatOptions.builder().withModel(ChatModel.GEMINI_1_5_PRO).withTemperature(0.8).build());
+		this(vertexAI, VertexAiGeminiChatOptions.builder().model(ChatModel.GEMINI_1_5_PRO).temperature(0.8).build());
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {

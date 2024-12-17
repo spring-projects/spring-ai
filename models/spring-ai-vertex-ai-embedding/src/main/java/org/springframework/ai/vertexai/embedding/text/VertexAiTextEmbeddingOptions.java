@@ -27,6 +27,7 @@ import org.springframework.util.StringUtils;
  * Options for the Vertex AI Text Embedding service.
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -192,31 +193,85 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder model(VertexAiTextEmbeddingModelName model) {
+			this.options.setModel(model.getName());
+			return this;
+		}
+
+		public Builder taskType(TaskType taskType) {
+			this.options.setTaskType(taskType);
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
+			return this;
+		}
+
+		public Builder title(String user) {
+			this.options.setTitle(user);
+			return this;
+		}
+
+		public Builder autoTruncate(Boolean autoTruncate) {
+			this.options.setAutoTruncate(autoTruncate);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(VertexAiTextEmbeddingModelName)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(VertexAiTextEmbeddingModelName model) {
 			this.options.setModel(model.getName());
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #taskType(TaskType)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTaskType(TaskType taskType) {
 			this.options.setTaskType(taskType);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #dimensions(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDimensions(Integer dimensions) {
 			this.options.dimensions = dimensions;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #title(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTitle(String user) {
 			this.options.setTitle(user);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #autoTruncate(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withAutoTruncate(Boolean autoTruncate) {
 			this.options.setAutoTruncate(autoTruncate);
 			return this;

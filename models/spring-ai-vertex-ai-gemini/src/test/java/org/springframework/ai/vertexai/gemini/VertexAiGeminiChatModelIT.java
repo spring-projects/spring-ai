@@ -88,7 +88,7 @@ class VertexAiGeminiChatModelIT {
 
 	@Test
 	void googleSearchTool() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().withGoogleSearchRetrieval(true).build());
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
@@ -295,7 +295,7 @@ class VertexAiGeminiChatModelIT {
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
+						.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
 						.build());
 		}
 
