@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.oracle;
 
 import java.io.ByteArrayOutputStream;
 import java.sql.PreparedStatement;
@@ -46,6 +46,8 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -54,6 +56,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -107,8 +110,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	private final JdbcTemplate jdbcTemplate;
 
-	private final EmbeddingModel embeddingModel;
-
 	private final boolean initializeSchema;
 
 	private final boolean removeExistingVectorStoreTable;
@@ -145,16 +146,46 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
+	/**
+	 * Creates a new OracleVectorStore with default configuration.
+	 * @param jdbcTemplate the JDBC template to use
+	 * @param embeddingModel the embedding model to use
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
 				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, false, false, false);
 	}
 
+	/**
+	 * Creates a new OracleVectorStore with schema initialization option.
+	 * @param jdbcTemplate the JDBC template to use
+	 * @param embeddingModel the embedding model to use
+	 * @param initializeSchema whether to initialize the schema
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, boolean initializeSchema) {
 		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
 				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, initializeSchema, false, false);
 	}
 
+	/**
+	 * Creates a new OracleVectorStore with full configuration options.
+	 * @param jdbcTemplate the JDBC template to use
+	 * @param embeddingModel the embedding model to use
+	 * @param tableName the table name for vector storage
+	 * @param indexType the type of vector index
+	 * @param distanceType the distance type for similarity calculations
+	 * @param dimensions the number of vector dimensions
+	 * @param searchAccuracy the search accuracy parameter
+	 * @param initializeSchema whether to initialize the schema
+	 * @param removeExistingVectorStoreTable whether to remove existing vector store table
+	 * @param forcedNormalization whether to force vector normalization
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
 			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
 			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
@@ -164,43 +195,70 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 				new TokenCountBatchingStrategy());
 	}
 
+	/**
+	 * Creates a new OracleVectorStore with full configuration including observation
+	 * options.
+	 * @param jdbcTemplate the JDBC template to use
+	 * @param embeddingModel the embedding model to use
+	 * @param tableName the table name for vector storage
+	 * @param indexType the type of vector index
+	 * @param distanceType the distance type for similarity calculations
+	 * @param dimensions the number of vector dimensions
+	 * @param searchAccuracy the search accuracy parameter
+	 * @param initializeSchema whether to initialize the schema
+	 * @param removeExistingVectorStoreTable whether to remove existing vector store table
+	 * @param forcedNormalization whether to force vector normalization
+	 * @param observationRegistry the observation registry
+	 * @param customObservationConvention the custom observation convention
+	 * @param batchingStrategy the batching strategy
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
 			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
 			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
 			boolean forcedNormalization, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder().jdbcTemplate(jdbcTemplate)
+			.embeddingModel(embeddingModel)
+			.tableName(tableName)
+			.indexType(indexType)
+			.distanceType(distanceType)
+			.dimensions(dimensions)
+			.searchAccuracy(searchAccuracy)
+			.initializeSchema(initializeSchema)
+			.removeExistingVectorStoreTable(removeExistingVectorStoreTable)
+			.forcedNormalization(forcedNormalization)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		if (dimensions != DEFAULT_DIMENSIONS) {
-			if (dimensions <= 0) {
-				throw new RuntimeException("Number of dimensions must be strictly positive");
-			}
-			if (dimensions > 65535) {
-				throw new RuntimeException("Number of dimensions must be at most 65535");
-			}
-		}
+	/**
+	 * Protected constructor that accepts a builder instance. This is the preferred way to
+	 * create new OracleVectorStore instances.
+	 * @param builder the configured builder instance
+	 */
+	protected OracleVectorStore(OracleBuilder builder) {
+		super(builder);
 
-		if (searchAccuracy != DEFAULT_SEARCH_ACCURACY) {
-			if (searchAccuracy < 1) {
-				throw new RuntimeException("Search accuracy must be greater or equals to 1");
-			}
-			if (searchAccuracy > 100) {
-				throw new RuntimeException("Search accuracy must be lower or equals to 100");
-			}
-		}
+		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
-		this.jdbcTemplate = jdbcTemplate;
-		this.embeddingModel = embeddingModel;
-		this.tableName = tableName;
-		this.indexType = indexType;
-		this.distanceType = distanceType;
-		this.dimensions = dimensions;
-		this.searchAccuracy = searchAccuracy;
-		this.initializeSchema = initializeSchema;
-		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
-		this.forcedNormalization = forcedNormalization;
-		this.batchingStrategy = batchingStrategy;
+		this.jdbcTemplate = builder.jdbcTemplate;
+		this.tableName = builder.tableName;
+		this.indexType = builder.indexType;
+		this.distanceType = builder.distanceType;
+		this.dimensions = builder.dimensions;
+		this.searchAccuracy = builder.searchAccuracy;
+		this.initializeSchema = builder.initializeSchema;
+		this.removeExistingVectorStoreTable = builder.removeExistingVectorStoreTable;
+		this.forcedNormalization = builder.forcedNormalization;
+		this.batchingStrategy = builder.batchingStrategy;
+	}
+
+	public static OracleBuilder builder() {
+		return new OracleBuilder();
 	}
 
 	@Override
@@ -385,11 +443,9 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 						from %s
 						%sorder by distance
 						fetch first %d rows only""",
-						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
-								? "(1+" : "",
+						this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? "(1+" : "",
 						this.distanceType.name(),
-						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
-								? ")/2" : "",
+						this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? ")/2" : "",
 						this.tableName, jsonPathFilter, request.getTopK())
 						: String.format(
 								"""
@@ -397,11 +453,9 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 										from %s
 										%sorder by distance
 										fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
-								this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
-										? "(1+" : "",
+								this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? "(1+" : "",
 								this.distanceType.name(),
-								this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
-										? ")/2" : "",
+								this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? ")/2" : "",
 								this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy);
 
 				logger.debug("SQL query: " + sql);
@@ -418,11 +472,9 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 						from %s
 						%sorder by distance
 						fetch EXACT first %d rows only""",
-						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
-								? "(1+" : "",
+						this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? "(1+" : "",
 						this.distanceType.name(),
-						this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
-								? ")/2" : "",
+						this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? ")/2" : "",
 						this.tableName, jsonPathFilter, request.getTopK());
 
 				logger.debug("SQL query: " + sql);
@@ -431,19 +483,19 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			}
 			else {
 				if (!this.forcedNormalization || (this.distanceType != OracleVectorStoreDistanceType.COSINE
-						&& this.distanceType != org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT)) {
+						&& this.distanceType != OracleVectorStore.OracleVectorStoreDistanceType.DOT)) {
 					throw new RuntimeException(
 							"Similarity threshold filtering requires all vectors to be normalized, see the forcedNormalization parameter for this Vector store. Also only COSINE and DOT distance types are supported.");
 				}
 
-				final double distance = this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+				final double distance = this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT
 						? (1d - request.getSimilarityThreshold()) * 2d - 1d : 1d - request.getSimilarityThreshold();
 
 				if (StringUtils.hasText(nativeFilterExpression)) {
 					jsonPathFilter = String.format(" and JSON_EXISTS( metadata, '%s' )", nativeFilterExpression);
 				}
 
-				final String sql = this.distanceType == org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT
+				final String sql = this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT
 						? (this.searchAccuracy == DEFAULT_SEARCH_ACCURACY
 								? String.format(
 										"""
@@ -680,6 +732,166 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 				result.add(v);
 			}
 			return result;
+		}
+
+	}
+
+	/**
+	 * Builder class for creating {@link OracleVectorStore} instances.
+	 * <p>
+	 * Provides a fluent API for configuring all aspects of the Oracle vector store,
+	 * including database connection, schema initialization, vector dimensions, and search
+	 * parameters.
+	 *
+	 * @since 1.0.0
+	 */
+	public static class OracleBuilder extends AbstractVectorStoreBuilder<OracleBuilder> {
+
+		private JdbcTemplate jdbcTemplate;
+
+		private String tableName = DEFAULT_TABLE_NAME;
+
+		private OracleVectorStoreIndexType indexType = DEFAULT_INDEX_TYPE;
+
+		private OracleVectorStoreDistanceType distanceType = DEFAULT_DISTANCE_TYPE;
+
+		private int dimensions = DEFAULT_DIMENSIONS;
+
+		private int searchAccuracy = DEFAULT_SEARCH_ACCURACY;
+
+		private boolean initializeSchema = false;
+
+		private boolean removeExistingVectorStoreTable = false;
+
+		private boolean forcedNormalization = false;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		/**
+		 * Sets the JdbcTemplate to be used for database operations.
+		 * @param jdbcTemplate the JdbcTemplate instance
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if jdbcTemplate is null
+		 */
+		public OracleBuilder jdbcTemplate(JdbcTemplate jdbcTemplate) {
+			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
+			this.jdbcTemplate = jdbcTemplate;
+			return this;
+		}
+
+		/**
+		 * Sets the table name for vector storage.
+		 * @param tableName the name of the table to use
+		 * @return the builder instance
+		 */
+		public OracleBuilder tableName(String tableName) {
+			if (StringUtils.hasText(tableName)) {
+				this.tableName = tableName;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the vector index type.
+		 * @param indexType the index type to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if indexType is null
+		 */
+		public OracleBuilder indexType(OracleVectorStoreIndexType indexType) {
+			Assert.notNull(indexType, "Index type must not be null");
+			this.indexType = indexType;
+			return this;
+		}
+
+		/**
+		 * Sets the distance type for vector similarity calculations.
+		 * @param distanceType the distance type to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if distanceType is null
+		 */
+		public OracleBuilder distanceType(OracleVectorStoreDistanceType distanceType) {
+			Assert.notNull(distanceType, "Distance type must not be null");
+			this.distanceType = distanceType;
+			return this;
+		}
+
+		/**
+		 * Sets the number of dimensions for the vector space.
+		 * @param dimensions the number of dimensions (must be between 1 and 65535)
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if dimensions is not within valid range
+		 */
+		public OracleBuilder dimensions(int dimensions) {
+			if (dimensions != DEFAULT_DIMENSIONS) {
+				Assert.isTrue(dimensions > 0 && dimensions <= 65535,
+						"Number of dimensions must be between 1 and 65535");
+			}
+			this.dimensions = dimensions;
+			return this;
+		}
+
+		/**
+		 * Sets the search accuracy parameter.
+		 * @param searchAccuracy the search accuracy value (must be between 1 and 100)
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if searchAccuracy is not within valid range
+		 */
+		public OracleBuilder searchAccuracy(int searchAccuracy) {
+			if (searchAccuracy != DEFAULT_SEARCH_ACCURACY) {
+				Assert.isTrue(searchAccuracy >= 1 && searchAccuracy <= 100,
+						"Search accuracy must be between 1 and 100");
+			}
+			this.searchAccuracy = searchAccuracy;
+			return this;
+		}
+
+		/**
+		 * Sets whether to initialize the database schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return the builder instance
+		 */
+		public OracleBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets whether to remove existing vector store table before initialization.
+		 * @param removeExistingVectorStoreTable true to remove existing table, false
+		 * otherwise
+		 * @return the builder instance
+		 */
+		public OracleBuilder removeExistingVectorStoreTable(boolean removeExistingVectorStoreTable) {
+			this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
+			return this;
+		}
+
+		/**
+		 * Sets whether to force vector normalization.
+		 * @param forcedNormalization true to force normalization, false otherwise
+		 * @return the builder instance
+		 */
+		public OracleBuilder forcedNormalization(boolean forcedNormalization) {
+			this.forcedNormalization = forcedNormalization;
+			return this;
+		}
+
+		/**
+		 * Sets the batching strategy for vector operations.
+		 * @param batchingStrategy the strategy to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public OracleBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		@Override
+		public OracleVectorStore build() {
+			validate();
+			return new OracleVectorStore(this);
 		}
 
 	}
