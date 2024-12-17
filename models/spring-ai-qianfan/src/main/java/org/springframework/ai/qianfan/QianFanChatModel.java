@@ -104,8 +104,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	 * @throws IllegalArgumentException if QianFanApi is null
 	 */
 	public QianFanChatModel(QianFanApi qianFanApi) {
-		this(qianFanApi,
-				QianFanChatOptions.builder().withModel(QianFanApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(qianFanApi, QianFanChatOptions.builder().model(QianFanApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**

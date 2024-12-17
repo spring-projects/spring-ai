@@ -59,10 +59,10 @@ public class QianFanImageModelObservationIT {
 	@Test
 	void observationForImageOperation() {
 		var options = QianFanImageOptions.builder()
-			.withModel(QianFanImageApi.ImageModel.Stable_Diffusion_XL.getValue())
-			.withHeight(1024)
-			.withWidth(1024)
-			.withStyle("Base")
+			.model(QianFanImageApi.ImageModel.Stable_Diffusion_XL.getValue())
+			.height(1024)
+			.width(1024)
+			.style("Base")
 			.build();
 
 		var instructions = "Here comes the sun";
