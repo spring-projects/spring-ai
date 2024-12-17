@@ -64,8 +64,10 @@ public class MoonshotStreamFunctionCallingHelper {
 				: previous.finishReason());
 		Integer index = (current.index() != null ? current.index() : previous.index());
 
+		MoonshotApi.Usage usage = current.usage() != null ? current.usage() : previous.usage();
+
 		ChatCompletionMessage message = merge(previous.delta(), current.delta());
-		return new ChunkChoice(index, message, finishReason, null);
+		return new ChunkChoice(index, message, finishReason, usage);
 	}
 
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
