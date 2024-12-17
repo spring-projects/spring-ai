@@ -18,19 +18,18 @@ package org.springframework.ai.bedrock.cohere.api;
 
 // @formatter:off
 
-import java.time.Duration;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingResponse;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+
+import java.time.Duration;
+import java.util.List;
 
 /**
  * Cohere Embedding API.
@@ -123,7 +122,7 @@ public class CohereEmbeddingBedrockApi extends
 		/**
 		 * cohere.embed-multilingual-v3
 		 */
-		COHERE_EMBED_MULTILINGUAL_V1("cohere.embed-multilingual-v3"),
+		COHERE_EMBED_MULTILINGUAL_V3("cohere.embed-multilingual-v3"),
 		/**
 		 * cohere.embed-english-v3
 		 */
