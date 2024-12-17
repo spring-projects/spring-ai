@@ -183,11 +183,11 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		TextParametersBuilder parametersBuilder = TextParametersBuilder.of();
 
 		if (finalOptions.getAutoTruncate() != null) {
-			parametersBuilder.withAutoTruncate(finalOptions.getAutoTruncate());
+			parametersBuilder.autoTruncate(finalOptions.getAutoTruncate());
 		}
 
 		if (finalOptions.getDimensions() != null) {
-			parametersBuilder.withOutputDimensionality(finalOptions.getDimensions());
+			parametersBuilder.outputDimensionality(finalOptions.getDimensions());
 		}
 
 		predictRequestBuilder.setParameters(VertexAiEmbeddingUtils.valueOf(parametersBuilder.build()));
@@ -195,9 +195,9 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		for (int i = 0; i < request.getInstructions().size(); i++) {
 
 			TextInstanceBuilder instanceBuilder = TextInstanceBuilder.of(request.getInstructions().get(i))
-				.withTaskType(finalOptions.getTaskType().name());
+				.taskType(finalOptions.getTaskType().name());
 			if (StringUtils.hasText(finalOptions.getTitle())) {
-				instanceBuilder.withTitle(finalOptions.getTitle());
+				instanceBuilder.title(finalOptions.getTitle());
 			}
 			predictRequestBuilder.addInstances(VertexAiEmbeddingUtils.valueOf(instanceBuilder.build()));
 		}

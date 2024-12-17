@@ -69,14 +69,14 @@ class FunctionCallWithFunctionBeanIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
+						VertexAiGeminiChatOptions.builder().function("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
+						VertexAiGeminiChatOptions.builder().function("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
@@ -116,7 +116,7 @@ class FunctionCallWithFunctionBeanIT {
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
+						VertexAiGeminiChatOptions.builder().function("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 

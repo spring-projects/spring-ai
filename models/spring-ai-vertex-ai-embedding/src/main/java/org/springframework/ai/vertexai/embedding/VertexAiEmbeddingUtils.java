@@ -32,6 +32,7 @@ import org.springframework.util.StringUtils;
  * Utility class for constructing parameter objects for Vertex AI embedding requests.
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public abstract class VertexAiEmbeddingUtils {
@@ -82,12 +83,32 @@ public abstract class VertexAiEmbeddingUtils {
 			return new TextParametersBuilder();
 		}
 
+		public TextParametersBuilder outputDimensionality(Integer outputDimensionality) {
+			Assert.notNull(outputDimensionality, "Output dimensionality must not be null");
+			this.outputDimensionality = outputDimensionality;
+			return this;
+		}
+
+		public TextParametersBuilder autoTruncate(Boolean autoTruncate) {
+			Assert.notNull(autoTruncate, "Auto truncate must not be null");
+			this.autoTruncate = autoTruncate;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #outputDimensionality(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public TextParametersBuilder withOutputDimensionality(Integer outputDimensionality) {
 			Assert.notNull(outputDimensionality, "Output dimensionality must not be null");
 			this.outputDimensionality = outputDimensionality;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #autoTruncate(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public TextParametersBuilder withAutoTruncate(Boolean autoTruncate) {
 			Assert.notNull(autoTruncate, "Auto truncate must not be null");
 			this.autoTruncate = autoTruncate;
@@ -123,12 +144,32 @@ public abstract class VertexAiEmbeddingUtils {
 			return builder;
 		}
 
+		public TextInstanceBuilder taskType(String taskType) {
+			Assert.hasText(taskType, "Task type must not be empty");
+			this.taskType = taskType;
+			return this;
+		}
+
+		public TextInstanceBuilder title(String title) {
+			Assert.hasText(title, "Title must not be empty");
+			this.title = title;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #taskType(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public TextInstanceBuilder withTaskType(String taskType) {
 			Assert.hasText(taskType, "Task type must not be empty");
 			this.taskType = taskType;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #title(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public TextInstanceBuilder withTitle(String title) {
 			Assert.hasText(title, "Title must not be empty");
 			this.title = title;
@@ -179,12 +220,45 @@ public abstract class VertexAiEmbeddingUtils {
 			return new MultimodalInstanceBuilder();
 		}
 
+		public MultimodalInstanceBuilder text(String text) {
+			Assert.hasText(text, "Text must not be empty");
+			this.text = text;
+			return this;
+		}
+
+		public MultimodalInstanceBuilder dimension(Integer dimension) {
+			Assert.isTrue(dimension == 128 || dimension == 256 || dimension == 512 || dimension == 1408,
+					"Invalid dimension value: " + dimension + ". Accepted values: 128, 256, 512, or 1408.");
+			this.dimension = dimension;
+			return this;
+		}
+
+		public MultimodalInstanceBuilder image(Struct image) {
+			Assert.notNull(image, "Image must not be null");
+			this.image = image;
+			return this;
+		}
+
+		public MultimodalInstanceBuilder video(Struct video) {
+			Assert.notNull(video, "Video must not be null");
+			this.video = video;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #text(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public MultimodalInstanceBuilder withText(String text) {
 			Assert.hasText(text, "Text must not be empty");
 			this.text = text;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #dimension(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public MultimodalInstanceBuilder withDimension(Integer dimension) {
 			Assert.isTrue(dimension == 128 || dimension == 256 || dimension == 512 || dimension == 1408,
 					"Invalid dimension value: " + dimension + ". Accepted values: 128, 256, 512, or 1408.");
@@ -192,12 +266,20 @@ public abstract class VertexAiEmbeddingUtils {
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #image(Struct)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public MultimodalInstanceBuilder withImage(Struct image) {
 			Assert.notNull(image, "Image must not be null");
 			this.image = image;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #video(Struct)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public MultimodalInstanceBuilder withVideo(Struct video) {
 			Assert.notNull(video, "Video must not be null");
 			this.video = video;
@@ -255,6 +337,35 @@ public abstract class VertexAiEmbeddingUtils {
 			return builder;
 		}
 
+		public ImageBuilder imageData(Object imageData) {
+			Assert.notNull(imageData, "Image data must not be null");
+			if (imageData instanceof byte[] bytes) {
+				return imageBytes(bytes);
+			}
+			else if (imageData instanceof String uri) {
+				return gcsUri(uri);
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported image data type: " + imageData.getClass());
+			}
+		}
+
+		public ImageBuilder imageBytes(byte[] imageBytes) {
+			Assert.notNull(imageBytes, "Image bytes must not be null");
+			this.imageBytes = imageBytes;
+			return this;
+		}
+
+		public ImageBuilder gcsUri(String gcsUri) {
+			Assert.hasText(gcsUri, "GCS URI must not be empty");
+			this.gcsUri = gcsUri;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #imageData(Object)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public ImageBuilder withImageData(Object imageData) {
 			Assert.notNull(imageData, "Image data must not be null");
 			if (imageData instanceof byte[] bytes) {
@@ -268,12 +379,20 @@ public abstract class VertexAiEmbeddingUtils {
 			}
 		}
 
+		/**
+		 * @deprecated use {@link #imageBytes(byte[])} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public ImageBuilder withImageBytes(byte[] imageBytes) {
 			Assert.notNull(imageBytes, "Image bytes must not be null");
 			this.imageBytes = imageBytes;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #gcsUri(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public ImageBuilder withGcsUri(String gcsUri) {
 			Assert.hasText(gcsUri, "GCS URI must not be empty");
 			this.gcsUri = gcsUri;
@@ -351,31 +470,94 @@ public abstract class VertexAiEmbeddingUtils {
 			return builder;
 		}
 
-		public VideoBuilder withVideoData(Object imageData) {
+		public VideoBuilder videoData(Object imageData) {
 			Assert.notNull(imageData, "Video data must not be null");
 			if (imageData instanceof byte[] imageBytes) {
-				return withVideoBytes(imageBytes);
+				return videoBytes(imageBytes);
 			}
 			else if (imageData instanceof String uri) {
-				return withGcsUri(uri);
+				return gcsUri(uri);
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported image data type: " + imageData.getClass());
 			}
 		}
 
+		public VideoBuilder videoBytes(byte[] imageBytes) {
+			Assert.notNull(imageBytes, "Video bytes must not be null");
+			this.videoBytes = imageBytes;
+			return this;
+		}
+
+		public VideoBuilder gcsUri(String gcsUri) {
+			Assert.hasText(gcsUri, "GCS URI must not be empty");
+			this.gcsUri = gcsUri;
+			return this;
+		}
+
+		public VideoBuilder startOffsetSec(Integer startOffsetSec) {
+			if (startOffsetSec != null) {
+				this.startOffsetSec = startOffsetSec;
+			}
+			return this;
+		}
+
+		public VideoBuilder endOffsetSec(Integer endOffsetSec) {
+			if (endOffsetSec != null) {
+				this.endOffsetSec = endOffsetSec;
+			}
+			return this;
+
+		}
+
+		public VideoBuilder intervalSec(Integer intervalSec) {
+			if (intervalSec != null) {
+				this.intervalSec = intervalSec;
+			}
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #videoData(Object)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public VideoBuilder withVideoData(Object imageData) {
+			Assert.notNull(imageData, "Video data must not be null");
+			if (imageData instanceof byte[] imageBytes) {
+				return videoBytes(imageBytes);
+			}
+			else if (imageData instanceof String uri) {
+				return gcsUri(uri);
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported image data type: " + imageData.getClass());
+			}
+		}
+
+		/**
+		 * @deprecated use {@link #videoBytes(byte[])} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public VideoBuilder withVideoBytes(byte[] imageBytes) {
 			Assert.notNull(imageBytes, "Video bytes must not be null");
 			this.videoBytes = imageBytes;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #gcsUri(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public VideoBuilder withGcsUri(String gcsUri) {
 			Assert.hasText(gcsUri, "GCS URI must not be empty");
 			this.gcsUri = gcsUri;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #startOffsetSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public VideoBuilder withStartOffsetSec(Integer startOffsetSec) {
 			if (startOffsetSec != null) {
 				this.startOffsetSec = startOffsetSec;
@@ -383,6 +565,10 @@ public abstract class VertexAiEmbeddingUtils {
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #endOffsetSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public VideoBuilder withEndOffsetSec(Integer endOffsetSec) {
 			if (endOffsetSec != null) {
 				this.endOffsetSec = endOffsetSec;
@@ -391,6 +577,10 @@ public abstract class VertexAiEmbeddingUtils {
 
 		}
 
+		/**
+		 * @deprecated use {@link #intervalSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public VideoBuilder withIntervalSec(Integer intervalSec) {
 			if (intervalSec != null) {
 				this.intervalSec = intervalSec;
