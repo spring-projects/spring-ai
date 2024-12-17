@@ -142,7 +142,7 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.jackson.Jacksonized;
-import org.springframework.ai.vectorstore.HanaVectorEntity;
+import org.springframework.ai.vectorstore.hanadb.HanaVectorEntity;
 
 @Entity
 @Table(name = "CRICKET_WORLD_CUP")
@@ -165,7 +165,7 @@ package com.interviewpedia.spring.ai.hana;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import org.springframework.ai.vectorstore.HanaVectorRepository;
+import org.springframework.ai.vectorstore.hanadb.HanaVectorRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -246,7 +246,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.HanaCloudVectorStore;
+import org.springframework.ai.vectorstore.hanadb.HanaCloudVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.hanadb;
 
 import java.util.List;
 import java.util.function.Function;
@@ -34,6 +34,7 @@ import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -89,8 +90,13 @@ public class HanaCloudVectorStoreIT {
 		@Bean
 		public VectorStore hanaCloudVectorStore(CricketWorldCupRepository cricketWorldCupRepository,
 				EmbeddingModel embeddingModel) {
-			return new HanaCloudVectorStore(cricketWorldCupRepository, embeddingModel,
-					HanaCloudVectorStoreConfig.builder().tableName("CRICKET_WORLD_CUP").topK(1).build());
+
+			return HanaCloudVectorStore.builder()
+				.repository(cricketWorldCupRepository)
+				.embeddingModel(embeddingModel)
+				.tableName("CRICKET_WORLD_CUP")
+				.topK(1)
+				.build();
 		}
 
 		@Bean
