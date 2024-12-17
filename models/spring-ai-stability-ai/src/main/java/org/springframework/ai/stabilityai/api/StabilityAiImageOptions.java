@@ -434,66 +434,183 @@ public class StabilityAiImageOptions implements ImageOptions {
 			this.options = new StabilityAiImageOptions();
 		}
 
+		public Builder N(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder width(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder height(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder responseFormat(String responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder cfgScale(Float cfgScale) {
+			this.options.setCfgScale(cfgScale);
+			return this;
+		}
+
+		public Builder clipGuidancePreset(String clipGuidancePreset) {
+			this.options.setClipGuidancePreset(clipGuidancePreset);
+			return this;
+		}
+
+		public Builder sampler(String sampler) {
+			this.options.setSampler(sampler);
+			return this;
+		}
+
+		public Builder seed(Long seed) {
+			this.options.setSeed(seed);
+			return this;
+		}
+
+		public Builder steps(Integer steps) {
+			this.options.setSteps(steps);
+			return this;
+		}
+
+		public Builder samples(Integer samples) {
+			this.options.setN(samples);
+			return this;
+		}
+
+		public Builder stylePreset(String stylePreset) {
+			this.options.setStylePreset(stylePreset);
+			return this;
+		}
+
+		public Builder stylePreset(StyleEnum styleEnum) {
+			this.options.setStylePreset(styleEnum.toString());
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #N(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withN(Integer n) {
 			this.options.setN(n);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #width(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withWidth(Integer width) {
 			this.options.setWidth(width);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #height(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withHeight(Integer height) {
 			this.options.setHeight(height);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseFormat(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResponseFormat(String responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #cfgScale(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withCfgScale(Float cfgScale) {
 			this.options.setCfgScale(cfgScale);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #clipGuidancePreset(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withClipGuidancePreset(String clipGuidancePreset) {
 			this.options.setClipGuidancePreset(clipGuidancePreset);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #sampler(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSampler(String sampler) {
 			this.options.setSampler(sampler);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #seed(Long)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSeed(Long seed) {
 			this.options.setSeed(seed);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #steps(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSteps(Integer steps) {
 			this.options.setSteps(steps);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #samples(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSamples(Integer samples) {
 			this.options.setN(samples);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stylePreset(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStylePreset(String stylePreset) {
 			this.options.setStylePreset(stylePreset);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stylePreset(StyleEnum)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStylePreset(StyleEnum styleEnum) {
 			this.options.setStylePreset(styleEnum.toString());
 			return this;
