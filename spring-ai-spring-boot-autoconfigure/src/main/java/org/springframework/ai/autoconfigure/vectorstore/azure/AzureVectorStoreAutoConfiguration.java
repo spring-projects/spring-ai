@@ -84,21 +84,25 @@ public class AzureVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		var vectorStore = new AzureVectorStore(searchIndexClient, embeddingModel, properties.isInitializeSchema(),
-				List.of(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
-
-		vectorStore.setIndexName(properties.getIndexName());
+		var builder = AzureVectorStore.builder()
+			.searchIndexClient(searchIndexClient)
+			.embeddingModel(embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.filterMetadataFields(List.of())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.indexName(properties.getIndexName());
 
 		if (properties.getDefaultTopK() >= 0) {
-			vectorStore.setDefaultTopK(properties.getDefaultTopK());
+			builder.defaultTopK(properties.getDefaultTopK());
 		}
 
 		if (properties.getDefaultSimilarityThreshold() >= 0.0) {
-			vectorStore.setDefaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
+			builder.defaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
 		}
 
-		return vectorStore;
+		return builder.build();
 	}
 
 }

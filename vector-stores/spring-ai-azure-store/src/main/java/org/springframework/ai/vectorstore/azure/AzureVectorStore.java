@@ -55,6 +55,7 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -104,8 +105,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	private final SearchIndexClient searchIndexClient;
 
-	private final EmbeddingModel embeddingModel;
-
 	private final FilterExpressionConverter filterExpressionConverter;
 
 	private final boolean initializeSchema;
@@ -125,31 +124,34 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	private SearchClient searchClient;
 
-	private int defaultTopK = DEFAULT_TOP_K;
+	private int defaultTopK;
 
-	private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
+	private Double defaultSimilarityThreshold;
 
-	private String indexName = DEFAULT_INDEX_NAME;
+	private String indexName;
 
 	/**
-	 * Constructs a new AzureCognitiveSearchVectorStore.
-	 * @param searchIndexClient A pre-configured Azure {@link SearchIndexClient} that CRUD
-	 * for Azure search indexes and factory for {@link SearchClient}.
-	 * @param embeddingModel The client for embedding operations.
+	 * Creates a new AzureVectorStore with basic configuration.
+	 * @param searchIndexClient the Azure search index client
+	 * @param embeddingModel the embedding model to use
+	 * @param initializeSchema whether to initialize schema
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
 		this(searchIndexClient, embeddingModel, initializeSchema, List.of());
 	}
 
 	/**
-	 * Constructs a new AzureCognitiveSearchVectorStore.
-	 * @param searchIndexClient A pre-configured Azure {@link SearchIndexClient} that CRUD
-	 * for Azure search indexes and factory for {@link SearchClient}.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param filterMetadataFields List of metadata fields (as field name and type) that
-	 * can be used in similarity search query filter expressions.
+	 * Creates a new AzureVectorStore with metadata fields configuration.
+	 * @param searchIndexClient the Azure search index client
+	 * @param embeddingModel the embedding model to use
+	 * @param initializeSchema whether to initialize schema
+	 * @param filterMetadataFields list of metadata fields for filtering
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema, List<MetadataField> filterMetadataFields) {
 		this(searchIndexClient, embeddingModel, initializeSchema, filterMetadataFields, ObservationRegistry.NOOP, null,
@@ -157,38 +159,61 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	/**
-	 * Constructs a new AzureCognitiveSearchVectorStore.
-	 * @param searchIndexClient A pre-configured Azure {@link SearchIndexClient} that CRUD
-	 * for Azure search indexes and factory for {@link SearchClient}.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param filterMetadataFields List of metadata fields (as field name and type) that
-	 * can be used in similarity search query filter expressions.
-	 * @param observationRegistry The observation registry to use.
-	 * @param customObservationConvention The optional, custom search observation
-	 * convention to use.
+	 * Creates a new AzureVectorStore with full configuration.
+	 * @param searchIndexClient the Azure search index client
+	 * @param embeddingModel the embedding model to use
+	 * @param initializeSchema whether to initialize schema
+	 * @param filterMetadataFields list of metadata fields for filtering
+	 * @param observationRegistry the observation registry
+	 * @param customObservationConvention the custom observation convention
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema, List<MetadataField> filterMetadataFields, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder().searchIndexClient(searchIndexClient)
+			.embeddingModel(embeddingModel)
+			.initializeSchema(initializeSchema)
+			.filterMetadataFields(filterMetadataFields)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Assert.notNull(embeddingModel, "The embedding model can not be null.");
-		Assert.notNull(searchIndexClient, "The search index client can not be null.");
-		Assert.notNull(filterMetadataFields, "The filterMetadataFields can not be null.");
+	/**
+	 * Protected constructor that accepts a builder instance. This is the preferred way to
+	 * create new AzureVectorStore instances.
+	 * @param builder the configured builder instance
+	 */
+	protected AzureVectorStore(AzureBuilder builder) {
+		super(builder);
 
-		this.initializeSchema = initializeSchema;
-		this.searchIndexClient = searchIndexClient;
-		this.embeddingModel = embeddingModel;
-		this.filterMetadataFields = filterMetadataFields;
+		Assert.notNull(builder.searchIndexClient, "The search index client cannot be null");
+		Assert.notNull(builder.filterMetadataFields, "The filterMetadataFields cannot be null");
+
+		this.searchIndexClient = builder.searchIndexClient;
+		this.initializeSchema = builder.initializeSchema;
+		this.filterMetadataFields = builder.filterMetadataFields;
+		this.batchingStrategy = builder.batchingStrategy;
+		this.defaultTopK = builder.defaultTopK;
+		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
+		this.indexName = builder.indexName;
 		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
-		this.batchingStrategy = batchingStrategy;
+	}
+
+	public static AzureBuilder builder() {
+		return new AzureBuilder();
 	}
 
 	/**
 	 * Change the Index Name.
 	 * @param indexName The Azure VectorStore index name to use.
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} with
+	 * {@link AzureBuilder#indexName(String)} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setIndexName(String indexName) {
 		Assert.hasText(indexName, "The index name can not be empty.");
 		this.indexName = indexName;
@@ -197,7 +222,10 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	/**
 	 * Sets the a default maximum number of similar documents returned.
 	 * @param topK The default maximum number of similar documents returned.
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} with
+	 * {@link AzureBuilder#indexName(String)} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDefaultTopK(int topK) {
 		Assert.isTrue(topK >= 0, "The topK should be positive value.");
 		this.defaultTopK = topK;
@@ -207,7 +235,10 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * Sets the a default similarity threshold for returned documents.
 	 * @param similarityThreshold The a default similarity threshold for returned
 	 * documents.
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} with
+	 * {@link AzureBuilder#indexName(String)} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDefaultSimilarityThreshold(Double similarityThreshold) {
 		Assert.isTrue(similarityThreshold >= 0.0 && similarityThreshold <= 1.0,
 				"The similarity threshold must be in range [0.0:1.00].");
@@ -426,6 +457,119 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * Internal data structure for retrieving and storing documents.
 	 */
 	private record AzureSearchDocument(String id, String content, List<Float> embedding, String metadata) {
+
+	}
+
+	/**
+	 * Builder class for creating {@link AzureVectorStore} instances.
+	 * <p>
+	 * Provides a fluent API for configuring all aspects of the Azure vector store.
+	 *
+	 * @since 1.0.0
+	 */
+	public static class AzureBuilder extends AbstractVectorStoreBuilder<AzureBuilder> {
+
+		private SearchIndexClient searchIndexClient;
+
+		private boolean initializeSchema = false;
+
+		private List<MetadataField> filterMetadataFields = List.of();
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		private int defaultTopK = DEFAULT_TOP_K;
+
+		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
+
+		private String indexName = DEFAULT_INDEX_NAME;
+
+		/**
+		 * Sets the Azure search index client.
+		 * @param searchIndexClient the client to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if searchIndexClient is null
+		 */
+		public AzureBuilder searchIndexClient(SearchIndexClient searchIndexClient) {
+			Assert.notNull(searchIndexClient, "SearchIndexClient must not be null");
+			this.searchIndexClient = searchIndexClient;
+			return this;
+		}
+
+		/**
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return the builder instance
+		 */
+		public AzureBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the metadata fields for filtering.
+		 * @param filterMetadataFields the list of metadata fields
+		 * @return the builder instance
+		 */
+		public AzureBuilder filterMetadataFields(List<MetadataField> filterMetadataFields) {
+			this.filterMetadataFields = filterMetadataFields != null ? filterMetadataFields : List.of();
+			return this;
+		}
+
+		/**
+		 * Sets the batching strategy.
+		 * @param batchingStrategy the strategy to use
+		 * @return the builder instance
+		 */
+		public AzureBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		/**
+		 * Sets the index name for the Azure Vector Store.
+		 * @param indexName the name of the index to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if indexName is null or empty
+		 */
+		public AzureBuilder indexName(String indexName) {
+			Assert.hasText(indexName, "The index name can not be empty.");
+			this.indexName = indexName;
+			return this;
+		}
+
+		/**
+		 * Sets the default maximum number of similar documents to return.
+		 * @param defaultTopK the maximum number of documents
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if defaultTopK is negative
+		 */
+		public AzureBuilder defaultTopK(int defaultTopK) {
+			Assert.isTrue(defaultTopK >= 0, "The topK should be positive value.");
+			this.defaultTopK = defaultTopK;
+			return this;
+		}
+
+		/**
+		 * Sets the default similarity threshold for returned documents.
+		 * @param defaultSimilarityThreshold the similarity threshold (must be between 0.0
+		 * and 1.0)
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if defaultSimilarityThreshold is not between
+		 * 0.0 and 1.0
+		 */
+		public AzureBuilder defaultSimilarityThreshold(Double defaultSimilarityThreshold) {
+			Assert.isTrue(defaultSimilarityThreshold >= 0.0 && defaultSimilarityThreshold <= 1.0,
+					"The similarity threshold must be in range [0.0:1.00].");
+			this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+			return this;
+		}
+
+		@Override
+		public AzureVectorStore build() {
+			validate();
+			return new AzureVectorStore(this);
+		}
 
 	}
 
