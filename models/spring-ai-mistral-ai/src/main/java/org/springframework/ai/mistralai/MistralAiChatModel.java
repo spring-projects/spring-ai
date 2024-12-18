@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,8 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.Media;
+import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -353,8 +357,19 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message instanceof UserMessage userMessage) {
-				return List.of(new MistralAiApi.ChatCompletionMessage(userMessage.getText(),
-						MistralAiApi.ChatCompletionMessage.Role.USER));
+				Object content = message.getText();
+
+				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+					List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
+							List.of(new ChatCompletionMessage.MediaContent(message.getText())));
+
+					contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
+
+					content = contentList;
+				}
+
+				return List
+					.of(new MistralAiApi.ChatCompletionMessage(content, MistralAiApi.ChatCompletionMessage.Role.USER));
 			}
 			else if (message instanceof SystemMessage systemMessage) {
 				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getText(),
@@ -422,6 +437,27 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 		}
 
 		return request;
+	}
+
+	private ChatCompletionMessage.MediaContent mapToMediaContent(Media media) {
+		return new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.ImageUrl(
+				this.fromMediaData(media.getMimeType(), media.getData())));
+	}
+
+	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
+		if (mediaContentData instanceof byte[] bytes) {
+			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
+			// following the prefix pattern.
+			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
+		}
+		else if (mediaContentData instanceof String text) {
+			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
+			return text;
+		}
+		else {
+			throw new IllegalArgumentException(
+					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
+		}
 	}
 
 	private List<MistralAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
