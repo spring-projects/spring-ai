@@ -158,13 +158,13 @@ class AzureOpenAiChatModelFunctionCallIT {
 		streamOptions.setIncludeUsage(true);
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(this.selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.deploymentName(this.selectedModel)
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.withStreamOptions(streamOptions)
+			.streamOptions(streamOptions)
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));

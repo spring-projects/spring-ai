@@ -118,32 +118,32 @@ public class OpenAiModerationModel implements ModerationModel {
 				CategoryScores categoryScores = null;
 				if (result.categories() != null) {
 					categories = Categories.builder()
-						.withSexual(result.categories().sexual())
-						.withHate(result.categories().hate())
-						.withHarassment(result.categories().harassment())
-						.withSelfHarm(result.categories().selfHarm())
-						.withSexualMinors(result.categories().sexualMinors())
-						.withHateThreatening(result.categories().hateThreatening())
-						.withViolenceGraphic(result.categories().violenceGraphic())
-						.withSelfHarmIntent(result.categories().selfHarmIntent())
-						.withSelfHarmInstructions(result.categories().selfHarmInstructions())
-						.withHarassmentThreatening(result.categories().harassmentThreatening())
-						.withViolence(result.categories().violence())
+						.sexual(result.categories().sexual())
+						.hate(result.categories().hate())
+						.harassment(result.categories().harassment())
+						.selfHarm(result.categories().selfHarm())
+						.sexualMinors(result.categories().sexualMinors())
+						.hateThreatening(result.categories().hateThreatening())
+						.violenceGraphic(result.categories().violenceGraphic())
+						.selfHarmIntent(result.categories().selfHarmIntent())
+						.selfHarmInstructions(result.categories().selfHarmInstructions())
+						.harassmentThreatening(result.categories().harassmentThreatening())
+						.violence(result.categories().violence())
 						.build();
 				}
 				if (result.categoryScores() != null) {
 					categoryScores = CategoryScores.builder()
-						.withHate(result.categoryScores().hate())
-						.withHateThreatening(result.categoryScores().hateThreatening())
-						.withHarassment(result.categoryScores().harassment())
-						.withHarassmentThreatening(result.categoryScores().harassmentThreatening())
-						.withSelfHarm(result.categoryScores().selfHarm())
-						.withSelfHarmIntent(result.categoryScores().selfHarmIntent())
-						.withSelfHarmInstructions(result.categoryScores().selfHarmInstructions())
-						.withSexual(result.categoryScores().sexual())
-						.withSexualMinors(result.categoryScores().sexualMinors())
-						.withViolence(result.categoryScores().violence())
-						.withViolenceGraphic(result.categoryScores().violenceGraphic())
+						.hate(result.categoryScores().hate())
+						.hateThreatening(result.categoryScores().hateThreatening())
+						.harassment(result.categoryScores().harassment())
+						.harassmentThreatening(result.categoryScores().harassmentThreatening())
+						.selfHarm(result.categoryScores().selfHarm())
+						.selfHarmIntent(result.categoryScores().selfHarmIntent())
+						.selfHarmInstructions(result.categoryScores().selfHarmInstructions())
+						.sexual(result.categoryScores().sexual())
+						.sexualMinors(result.categoryScores().sexualMinors())
+						.violence(result.categoryScores().violence())
+						.violenceGraphic(result.categoryScores().violenceGraphic())
 						.build();
 				}
 				ModerationResult moderationResult = ModerationResult.builder()
@@ -157,9 +157,9 @@ public class OpenAiModerationModel implements ModerationModel {
 		}
 
 		Moderation moderation = Moderation.builder()
-			.withId(moderationApiResponse.id())
-			.withModel(moderationApiResponse.model())
-			.withResults(moderationResults)
+			.id(moderationApiResponse.id())
+			.model(moderationApiResponse.model())
+			.results(moderationResults)
 			.build();
 
 		return new ModerationResponse(new Generation(moderation));

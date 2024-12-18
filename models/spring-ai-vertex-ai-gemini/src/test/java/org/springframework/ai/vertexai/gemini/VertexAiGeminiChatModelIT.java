@@ -100,7 +100,7 @@ class VertexAiGeminiChatModelIT {
 			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
 			.build());
 		Prompt prompt = new Prompt("What are common digital attack vectors?",
-				VertexAiGeminiChatOptions.builder().withSafetySettings(safetySettings).build());
+				VertexAiGeminiChatOptions.builder().safetySettings(safetySettings).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
