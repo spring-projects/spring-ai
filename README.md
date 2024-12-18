@@ -135,5 +135,7 @@ Checkstyles are currently disabled, but you can enable them by doing the followi
 ./mvnw clean package -DskipTests -Ddisable.checks=false
 ```
 
+## Examples
 
+* [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
 
