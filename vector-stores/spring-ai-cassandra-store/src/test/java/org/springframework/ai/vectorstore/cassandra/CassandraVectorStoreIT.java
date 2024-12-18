@@ -125,7 +125,7 @@ class CassandraVectorStoreIT {
 				List<Document> documents = documents();
 				store.add(documents);
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").topK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -140,7 +140,7 @@ class CassandraVectorStoreIT {
 				// Remove all documents from the store
 				store.delete(documents().stream().map(doc -> doc.getId()).toList());
 
-				results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = store.similaritySearch(SearchRequest.query("Spring").topK(1));
 				assertThat(results).isEmpty();
 			}
 		});
@@ -156,7 +156,7 @@ class CassandraVectorStoreIT {
 				List<Document> documents = documents();
 				store.add(documents);
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").topK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -171,7 +171,7 @@ class CassandraVectorStoreIT {
 				// Remove all documents from the store
 				store.delete(documents().stream().map(doc -> doc.getId()).toList());
 
-				results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = store.similaritySearch(SearchRequest.query("Spring").topK(1));
 				assertThat(results).isEmpty();
 			}
 		});
@@ -193,30 +193,29 @@ class CassandraVectorStoreIT {
 
 				store.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("The World").withTopK(5));
+				List<Document> results = store.similaritySearch(SearchRequest.query("The World").topK(5));
 				assertThat(results).hasSize(3);
 
 				results = store.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression(java.lang.String.format("%s == 'NL'", CassandraVectorStore.DEFAULT_ID_NAME)));
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression(java.lang.String.format("%s == 'NL'", CassandraVectorStore.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 				results = store.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression(
-							java.lang.String.format("%s == 'BG2'", CassandraVectorStore.DEFAULT_ID_NAME)));
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression(java.lang.String.format("%s == 'BG2'", CassandraVectorStore.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
 
 				results = store.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression(java.lang.String.format("%s == 'BG' && year == 2020",
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression(java.lang.String.format("%s == 'BG' && year == 2020",
 							CassandraVectorStore.DEFAULT_ID_NAME)));
 
 				assertThat(results).hasSize(1);
@@ -225,9 +224,9 @@ class CassandraVectorStoreIT {
 				// cassandra server will throw an error
 				Assertions.assertThrows(SyntaxError.class,
 						() -> store.similaritySearch(SearchRequest.query("The World")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression(java.lang.String.format("NOT(%s == 'BG' && year == 2020)",
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression(java.lang.String.format("NOT(%s == 'BG' && year == 2020)",
 									CassandraVectorStore.DEFAULT_ID_NAME))));
 			}
 		});
@@ -247,14 +246,14 @@ class CassandraVectorStoreIT {
 
 				store.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("The World").withTopK(5));
+				List<Document> results = store.similaritySearch(SearchRequest.query("The World").topK(5));
 				assertThat(results).hasSize(3);
 
 				Assertions.assertThrows(InvalidQueryException.class,
 						() -> store.similaritySearch(SearchRequest.query("The World")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression("country == 'NL'")));
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression("country == 'NL'")));
 			}
 		});
 	}
@@ -276,29 +275,29 @@ class CassandraVectorStoreIT {
 
 				store.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("The World").withTopK(5));
+				List<Document> results = store.similaritySearch(SearchRequest.query("The World").topK(5));
 				assertThat(results).hasSize(3);
 
 				results = store.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("country == 'NL'"));
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("country == 'NL'"));
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 				results = store.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("country == 'BG'"));
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("country == 'BG'"));
 
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
 				results = store.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("country == 'BG' && year == 2020"));
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("country == 'BG' && year == 2020"));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
@@ -306,16 +305,16 @@ class CassandraVectorStoreIT {
 				// cassandra server will throw an error
 				Assertions.assertThrows(SyntaxError.class,
 						() -> store.similaritySearch(SearchRequest.query("The World")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression("country == 'BG' || year == 2020")));
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression("country == 'BG' || year == 2020")));
 
 				// cassandra server will throw an error
 				Assertions.assertThrows(SyntaxError.class,
 						() -> store.similaritySearch(SearchRequest.query("The World")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression("NOT(country == 'BG' && year == 2020)")));
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression("NOT(country == 'BG' && year == 2020)")));
 			}
 		});
 	}
@@ -330,7 +329,7 @@ class CassandraVectorStoreIT {
 
 				store.add(List.of(document));
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").topK(5));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -344,7 +343,7 @@ class CassandraVectorStoreIT {
 
 				store.add(List.of(sameIdDocument));
 
-				results = store.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+				results = store.similaritySearch(SearchRequest.query("FooBar").topK(5));
 
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
@@ -364,7 +363,7 @@ class CassandraVectorStoreIT {
 				store.add(documents());
 
 				List<Document> fullResult = store
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
+					.similaritySearch(SearchRequest.query("Spring").topK(5).similarityThresholdAll());
 
 				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
@@ -372,8 +371,8 @@ class CassandraVectorStoreIT {
 
 				double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-				List<Document> results = store.similaritySearch(
-						SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(similarityThreshold));
+				List<Document> results = store
+					.similaritySearch(SearchRequest.query("Spring").topK(5).similarityThreshold(similarityThreshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);

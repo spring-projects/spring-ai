@@ -94,35 +94,35 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
-			var request = SearchRequest.query("The World").withTopK(5);
+			var request = SearchRequest.query("The World").topK(5);
 
 			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(2);
 
 			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+				.similaritySearch(request.similarityThresholdAll().filterExpression("country == 'Bulgaria'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.WEAVIATE,
 					VectorStoreObservationContext.Operation.QUERY);
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+			results = vectorStore
+				.similaritySearch(request.similarityThresholdAll().filterExpression("country == 'Netherlands'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("price > 1.57 && active == true"));
+			results = vectorStore
+				.similaritySearch(request.similarityThresholdAll().filterExpression("price > 1.57 && active == true"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("year in [2020, 2023]"));
+				.similaritySearch(request.similarityThresholdAll().filterExpression("year in [2020, 2023]"));
 			assertThat(results).hasSize(2);
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("year > 2020 && year <= 2023"));
+			results = vectorStore
+				.similaritySearch(request.similarityThresholdAll().filterExpression("year > 2020 && year <= 2023"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

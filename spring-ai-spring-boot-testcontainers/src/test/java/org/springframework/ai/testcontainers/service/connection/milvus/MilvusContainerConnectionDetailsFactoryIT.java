@@ -65,7 +65,7 @@ class MilvusContainerConnectionDetailsFactoryIT {
 	public void addAndSearch() {
 		this.vectorStore.add(this.documents);
 
-		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").topK(1));
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
@@ -78,7 +78,7 @@ class MilvusContainerConnectionDetailsFactoryIT {
 		// Remove all documents from the store
 		this.vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-		results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+		results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").topK(1));
 		assertThat(results).hasSize(0);
 	}
 

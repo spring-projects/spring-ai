@@ -122,7 +122,7 @@ vectorStore.add(documents);
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-   SearchRequest.query("Spring").withTopK(5));
+   SearchRequest.query("Spring").topK(5));
 ----
 
 You should retrieve the document containing the text "Spring AI rocks!!".
@@ -131,7 +131,7 @@ You can also limit the number of results using a similarity threshold:
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-   SearchRequest.query("Spring").withTopK(5)
-      .withSimilarityThreshold(0.5d));
+   SearchRequest.query("Spring").topK(5)
+      .similarityThreshold(0.5d));
 ----
 

@@ -82,13 +82,13 @@ public class TokenSecuredChromaWhereIT {
 					new Document("2", "Article by Jack", Map.of("author", "jack")),
 					new Document("3", "Article by Jill", Map.of("author", "jill"))));
 
-			var request = SearchRequest.query("Give me articles by john").withTopK(5);
+			var request = SearchRequest.query("Give me articles by john").topK(5);
 
 			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("author in ['john', 'jill']"));
+			results = vectorStore
+				.similaritySearch(request.similarityThresholdAll().filterExpression("author in ['john', 'jill']"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");
@@ -107,19 +107,19 @@ public class TokenSecuredChromaWhereIT {
 						new Document("2", "Article by Jack", Map.of("author", "jack", "article_type", "social")),
 						new Document("3", "Article by Jill", Map.of("author", "jill", "article_type", "paper"))));
 
-			var request = SearchRequest.query("Give me articles by john").withTopK(5);
+			var request = SearchRequest.query("Give me articles by john").topK(5);
 
 			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
-				.withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
+			results = vectorStore.similaritySearch(request.similarityThresholdAll()
+				.filterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo("1");
 
-			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
-				.withFilterExpression("author in ['john'] || 'article_type' == 'paper'"));
+			results = vectorStore.similaritySearch(request.similarityThresholdAll()
+				.filterExpression("author in ['john'] || 'article_type' == 'paper'"));
 
 			assertThat(results).hasSize(2);
 

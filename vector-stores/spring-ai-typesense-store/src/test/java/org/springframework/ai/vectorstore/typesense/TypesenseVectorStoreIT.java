@@ -91,7 +91,7 @@ public class TypesenseVectorStoreIT {
 			Map<String, Object> info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
 			assertThat(info.get("num_documents")).isEqualTo(1L);
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -109,7 +109,7 @@ public class TypesenseVectorStoreIT {
 			info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
 			assertThat(info.get("num_documents")).isEqualTo(1L);
 
-			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").topK(5));
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -161,37 +161,37 @@ public class TypesenseVectorStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").topK(5));
 			assertThat(results).hasSize(3);
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'NL'"));
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'NL'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country in ['BG']"));
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country in ['BG']"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG' && year == 2020"));
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'BG' && year == 2020"));
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("NOT(country == 'BG' && year == 2020)"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
@@ -211,7 +211,7 @@ public class TypesenseVectorStoreIT {
 			vectorStore.add(this.documents);
 
 			List<Document> fullResult = vectorStore
-				.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
+				.similaritySearch(SearchRequest.query("Spring").topK(5).similarityThresholdAll());
 
 			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
@@ -219,8 +219,8 @@ public class TypesenseVectorStoreIT {
 
 			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch(
-					SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(similarityThreshold));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Spring").topK(5).similarityThreshold(similarityThreshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);

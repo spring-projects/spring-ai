@@ -83,13 +83,13 @@ public class BasicAuthChromaWhereIT {
 
 			String query = "Give me articles by john";
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query(query).withTopK(5));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query(query).topK(5));
 			assertThat(results).hasSize(3);
 
 			results = vectorStore.similaritySearch(SearchRequest.query(query)
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("author in ['john', 'jill']"));
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("author in ['john', 'jill']"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");

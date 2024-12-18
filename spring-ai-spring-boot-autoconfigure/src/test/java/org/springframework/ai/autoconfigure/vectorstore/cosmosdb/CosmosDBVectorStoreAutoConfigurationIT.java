@@ -78,7 +78,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		this.vectorStore.add(List.of(document1, document2));
 
 		// Perform a similarity search
-		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").withTopK(1));
+		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").topK(1));
 
 		// Verify the search results
 		assertThat(results).isNotEmpty();
@@ -88,7 +88,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		this.vectorStore.delete(List.of(document1.getId(), document2.getId()));
 
 		// Perform a similarity search again
-		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").withTopK(1));
+		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").topK(1));
 
 		// Verify the search results
 		assertThat(results2).isEmpty();
@@ -129,24 +129,23 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 
 		this.vectorStore.add(List.of(document1, document2, document3, document4));
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
-		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("The World")
-			.withTopK(10)
-			.withFilterExpression((b.in("country", "UK", "NL")).build()));
+		List<Document> results = this.vectorStore.similaritySearch(
+				SearchRequest.query("The World").topK(10).filterExpression((b.in("country", "UK", "NL")).build()));
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
 
 		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.query("The World")
-			.withTopK(10)
-			.withFilterExpression(
+			.topK(10)
+			.filterExpression(
 					b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build()));
 
 		assertThat(results2).hasSize(1);
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
 
 		List<Document> results3 = this.vectorStore.similaritySearch(SearchRequest.query("The World")
-			.withTopK(10)
-			.withFilterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
+			.topK(10)
+			.filterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build()));
 
 		assertThat(results3).hasSize(1);
 		assertThat(results3).extracting(Document::getId).containsExactlyInAnyOrder("4");
@@ -154,7 +153,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		this.vectorStore.delete(List.of(document1.getId(), document2.getId(), document3.getId(), document4.getId()));
 
 		// Perform a similarity search again
-		List<Document> results4 = this.vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(1));
+		List<Document> results4 = this.vectorStore.similaritySearch(SearchRequest.query("The World").topK(1));
 
 		// Verify the search results
 		assertThat(results4).isEmpty();

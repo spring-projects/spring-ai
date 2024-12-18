@@ -129,13 +129,13 @@ public class PineconeVectorStoreObservationIT {
 				.hasBeenStopped();
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1)),
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("What is Great Depression").topK(1)),
 						hasSize(1));
 
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+				.similaritySearch(SearchRequest.query("What is Great Depression").topK(1));
 
 			assertThat(results).isNotEmpty();
 
@@ -169,7 +169,7 @@ public class PineconeVectorStoreObservationIT {
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
+				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").topK(1)), hasSize(0));
 
 		});
 	}
