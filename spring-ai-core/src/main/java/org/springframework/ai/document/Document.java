@@ -34,10 +34,9 @@ import org.springframework.util.StringUtils;
 
 /**
  * A document is a container for the content and metadata of a document. It also contains
- * the document's unique ID and an optional embedding.
+ * the document's unique ID.
  *
- * A Document can hold either text content or media content, but not both. This ensures
- * clear content type handling and processing.
+ * A Document can hold either text content or media content, but not both.
  *
  * It is intended to be used to take data from external sources as part of spring-ai's ETL
  * pipeline and create an embedding for the text or media and store that embedding in a
@@ -121,12 +120,6 @@ public class Document {
 	 */
 	@Nullable
 	private final Double score;
-
-	/**
-	 * Embedding of the document. Note: ephemeral field.
-	 */
-	@JsonProperty(index = 100)
-	private float[] embedding = new float[0];
 
 	/**
 	 * Mutable, ephemeral, content to text formatter. Defaults to Document text.
@@ -261,22 +254,6 @@ public class Document {
 	}
 
 	/**
-	 * Return the embedding that were calculated.
-	 * @deprecated We are considering getting rid of this, please comment on
-	 * https://github.com/spring-projects/spring-ai/issues/1781
-	 * @return the embeddings
-	 */
-	@Deprecated(since = "1.0.0-M4")
-	public float[] getEmbedding() {
-		return this.embedding;
-	}
-
-	public void setEmbedding(float[] embedding) {
-		Assert.notNull(embedding, "embedding must not be null");
-		this.embedding = embedding;
-	}
-
-	/**
 	 * Returns the content formatter associated with this document.
 	 * @deprecated We are considering getting rid of this, please comment on
 	 * https://github.com/spring-projects/spring-ai/issues/1782
@@ -331,8 +308,6 @@ public class Document {
 		private Media media;
 
 		private Map<String, Object> metadata = new HashMap<>();
-
-		private float[] embedding = new float[0];
 
 		@Nullable
 		private Double score;
@@ -406,12 +381,6 @@ public class Document {
 			return this;
 		}
 
-		public Builder embedding(float[] embedding) {
-			Assert.notNull(embedding, "embedding cannot be null");
-			this.embedding = embedding;
-			return this;
-		}
-
 		/**
 		 * Sets a score value for this document.
 		 * <p>
@@ -436,9 +405,7 @@ public class Document {
 			if (!StringUtils.hasText(this.id)) {
 				this.id = this.idGenerator.generateId(this.text, this.metadata);
 			}
-			var document = new Document(this.id, this.text, this.media, this.metadata, this.score);
-			document.setEmbedding(this.embedding);
-			return document;
+			return new Document(this.id, this.text, this.media, this.metadata, this.score);
 		}
 
 	}
