@@ -21,7 +21,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -99,7 +102,6 @@ public class JdbcChatMemory implements ChatMemory {
 			return switch (type) {
 				case USER -> new UserMessage(content);
 				case ASSISTANT -> new AssistantMessage(content);
-				case SYSTEM -> new SystemMessage(content);
 				default -> null;
 			};
 		}
