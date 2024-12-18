@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.coherence;
 
 import com.tangosol.util.Filters;
 import com.tangosol.util.ValueExtractor;

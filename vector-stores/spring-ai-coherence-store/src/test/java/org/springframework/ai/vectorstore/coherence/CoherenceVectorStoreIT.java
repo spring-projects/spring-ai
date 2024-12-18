@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.coherence;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +50,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -309,10 +311,14 @@ public class CoherenceVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(EmbeddingModel embeddingModel, Session session) {
-			return new CoherenceVectorStore(embeddingModel, session).setDistanceType(this.distanceType)
-				.setIndexType(this.indexType)
-				.setForcedNormalization(this.distanceType == CoherenceVectorStore.DistanceType.COSINE
-						|| this.distanceType == CoherenceVectorStore.DistanceType.IP);
+			return CoherenceVectorStore.builder()
+				.embeddingModel(embeddingModel)
+				.session(session)
+				.distanceType(this.distanceType)
+				.indexType(this.indexType)
+				.forcedNormalization(this.distanceType == CoherenceVectorStore.DistanceType.COSINE
+						|| this.distanceType == CoherenceVectorStore.DistanceType.IP)
+				.build();
 		}
 
 		@Bean
