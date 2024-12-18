@@ -18,9 +18,9 @@ package org.springframework.ai.autoconfigure.vectorstore.oracle;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vectorstore.OracleVectorStore;
-import org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType;
-import org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreIndexType;
+import org.springframework.ai.vectorstore.oracle.OracleVectorStore;
+import org.springframework.ai.vectorstore.oracle.OracleVectorStore.OracleVectorStoreDistanceType;
+import org.springframework.ai.vectorstore.oracle.OracleVectorStore.OracleVectorStoreIndexType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

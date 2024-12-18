@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.oracle;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +40,9 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.oracle.OracleVectorStore.OracleVectorStoreDistanceType;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -185,10 +187,21 @@ public class OracleVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return new OracleVectorStore(jdbcTemplate, embeddingModel, OracleVectorStore.DEFAULT_TABLE_NAME,
-					OracleVectorStore.OracleVectorStoreIndexType.IVF, OracleVectorStoreDistanceType.COSINE, 384,
-					OracleVectorStore.DEFAULT_SEARCH_ACCURACY, true, true, true, observationRegistry, null,
-					new TokenCountBatchingStrategy());
+			return OracleVectorStore.builder()
+				.jdbcTemplate(jdbcTemplate)
+				.embeddingModel(embeddingModel)
+				.tableName(OracleVectorStore.DEFAULT_TABLE_NAME)
+				.indexType(OracleVectorStore.OracleVectorStoreIndexType.IVF)
+				.distanceType(OracleVectorStoreDistanceType.COSINE)
+				.dimensions(384)
+				.searchAccuracy(OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+				.initializeSchema(true)
+				.removeExistingVectorStoreTable(true)
+				.forcedNormalization(true)
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean

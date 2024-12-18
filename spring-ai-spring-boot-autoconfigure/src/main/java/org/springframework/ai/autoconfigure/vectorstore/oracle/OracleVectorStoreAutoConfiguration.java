@@ -23,7 +23,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.OracleVectorStore;
+import org.springframework.ai.vectorstore.oracle.OracleVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -59,11 +59,22 @@ public class OracleVectorStoreAutoConfiguration {
 			OracleVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-		return new OracleVectorStore(jdbcTemplate, embeddingModel, properties.getTableName(), properties.getIndexType(),
-				properties.getDistanceType(), properties.getDimensions(), properties.getSearchAccuracy(),
-				properties.isInitializeSchema(), properties.isRemoveExistingVectorStoreTable(),
-				properties.isForcedNormalization(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+
+		return OracleVectorStore.builder()
+			.jdbcTemplate(jdbcTemplate)
+			.embeddingModel(embeddingModel)
+			.tableName(properties.getTableName())
+			.indexType(properties.getIndexType())
+			.distanceType(properties.getDistanceType())
+			.dimensions(properties.getDimensions())
+			.searchAccuracy(properties.getSearchAccuracy())
+			.initializeSchema(properties.isInitializeSchema())
+			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
+			.forcedNormalization(properties.isForcedNormalization())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 }

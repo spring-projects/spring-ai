@@ -17,7 +17,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.oracle;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
-import org.springframework.ai.vectorstore.OracleVectorStore;
+import org.springframework.ai.vectorstore.oracle.OracleVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -42,7 +42,7 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private boolean forcedNormalization;
 
-	private int searchAccuracy = org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARCH_ACCURACY;
+	private int searchAccuracy = OracleVectorStore.DEFAULT_SEARCH_ACCURACY;
 
 	public String getTableName() {
 		return this.tableName;
