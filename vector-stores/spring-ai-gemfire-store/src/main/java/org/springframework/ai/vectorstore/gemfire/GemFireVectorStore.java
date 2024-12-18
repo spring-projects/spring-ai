@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.gemfire;
 
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +40,8 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -71,11 +73,35 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	private static final String EMBEDDINGS = "/embeddings";
 
-	private final WebClient client;
-
-	private final EmbeddingModel embeddingModel;
+	// Query Defaults
+	private static final String QUERY = "/query";
 
 	private static final String DOCUMENT_FIELD = "document";
+
+	// Create Index DEFAULT Values
+	public static final String DEFAULT_HOST = "localhost";
+
+	public static final int DEFAULT_PORT = 8080;
+
+	public static final String DEFAULT_INDEX_NAME = "spring-ai-gemfire-index";
+
+	public static final int UPPER_BOUND_BEAM_WIDTH = 3200;
+
+	public static final int DEFAULT_BEAM_WIDTH = 100;
+
+	private static final int UPPER_BOUND_MAX_CONNECTIONS = 512;
+
+	public static final int DEFAULT_MAX_CONNECTIONS = 16;
+
+	public static final String DEFAULT_SIMILARITY_FUNCTION = "COSINE";
+
+	public static final String[] DEFAULT_FIELDS = new String[] {};
+
+	public static final int DEFAULT_BUCKETS = 0;
+
+	public static final boolean DEFAULT_SSL_ENABLED = false;
+
+	private final WebClient client;
 
 	private final boolean initializeSchema;
 
@@ -83,13 +109,26 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	private final ObjectMapper objectMapper;
 
+	private final String indexName;
+
+	private final int beamWidth;
+
+	private final int maxConnections;
+
+	private final int buckets;
+
+	private final String vectorSimilarityFunction;
+
+	private final String[] fields;
+
 	/**
-	 * Configures and initializes a GemFireVectorStore instance based on the provided
-	 * configuration.
-	 * @param config the configuration for the GemFireVectorStore
-	 * @param embeddingModel the embedding client used for generating embeddings
-	 * @param initializeSchema whether to initialize the schema during initialization
+	 * Creates a new GemFireVectorStore with basic configuration.
+	 * @param config the vector store configuration
+	 * @param embeddingModel the embedding model to use
+	 * @param initializeSchema whether to initialize schema
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
 		this(config, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
@@ -97,81 +136,86 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	/**
-	 * Configures and initializes a GemFireVectorStore instance based on the provided
-	 * configuration.
-	 * @param config the configuration for the GemFireVectorStore
-	 * @param embeddingModel the embedding client used for generating embeddings
-	 * @param initializeSchema whether to initialize the schema during initialization
-	 * @param observationRegistry the observation registry to use for recording
-	 * observations
-	 * @param customObservationConvention the custom observation convention to use for
-	 * observing operations
+	 * Creates a new GemFireVectorStore with observation configuration.
+	 * @param config the vector store configuration
+	 * @param embeddingModel the embedding model to use
+	 * @param initializeSchema whether to initialize schema
+	 * @param observationRegistry the observation registry
+	 * @param customObservationConvention the custom observation convention
+	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		super(observationRegistry, customObservationConvention);
+		this(builder().embeddingModel(embeddingModel)
+			.host(config.host)
+			.port(config.port)
+			.sslEnabled(config.sslEnabled)
+			.indexName(config.indexName)
+			.beamWidth(config.beamWidth)
+			.maxConnections(config.maxConnections)
+			.buckets(config.buckets)
+			.vectorSimilarityFunction(config.vectorSimilarityFunction)
+			.fields(config.fields)
+			.initializeSchema(initializeSchema)
+			.observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
+	}
 
-		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
-		this.initializeSchema = initializeSchema;
-		this.indexName = config.indexName;
-		this.embeddingModel = embeddingModel;
-		this.beamWidth = config.beamWidth;
-		this.maxConnections = config.maxConnections;
-		this.buckets = config.buckets;
-		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
-		this.fields = config.fields;
+	/**
+	 * Protected constructor that accepts a builder instance. This is the preferred way to
+	 * create new GemFireVectorStore instances.
+	 * @param builder the configured builder instance
+	 */
+	protected GemFireVectorStore(GemFireBuilder builder) {
+		super(builder);
+
+		this.initializeSchema = builder.initializeSchema;
+		this.indexName = builder.indexName;
+		this.beamWidth = builder.beamWidth;
+		this.maxConnections = builder.maxConnections;
+		this.buckets = builder.buckets;
+		this.vectorSimilarityFunction = builder.vectorSimilarityFunction;
+		this.fields = builder.fields;
+		this.batchingStrategy = builder.batchingStrategy;
 
 		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
-			.build(config.sslEnabled ? "s" : "", config.host, config.port)
+			.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
 			.toString();
 		this.client = WebClient.create(base);
-		this.batchingStrategy = batchingStrategy;
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
-	// Create Index Parameters
-
-	private String indexName;
+	public static GemFireBuilder builder() {
+		return new GemFireBuilder();
+	}
 
 	public String getIndexName() {
 		return this.indexName;
 	}
 
-	private int beamWidth;
-
 	public int getBeamWidth() {
 		return this.beamWidth;
 	}
-
-	private int maxConnections;
 
 	public int getMaxConnections() {
 		return this.maxConnections;
 	}
 
-	private int buckets;
-
 	public int getBuckets() {
 		return this.buckets;
 	}
-
-	private String vectorSimilarityFunction;
 
 	public String getVectorSimilarityFunction() {
 		return this.vectorSimilarityFunction;
 	}
 
-	private String[] fields;
-
 	public String[] getFields() {
 		return this.fields;
 	}
-
-	// Query Defaults
-	private static final String QUERY = "/query";
 
 	/**
 	 * Initializes the GemFireVectorStore after properties are set. This method is called
@@ -556,6 +600,12 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	}
 
+	/**
+	 * Configuration class for GemFire Vector Store.
+	 *
+	 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static final class GemFireVectorStoreConfig {
 
 		// Create Index DEFAULT Values
@@ -599,6 +649,10 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		boolean sslEnabled;
 
+		/**
+		 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
+		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		private GemFireVectorStoreConfig(Builder builder) {
 			this.host = builder.host;
 			this.port = builder.port;
@@ -614,11 +668,17 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		/**
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration.
+		 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
 		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static Builder builder() {
 			return new Builder();
 		}
 
+		/**
+		 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
+		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static class Builder {
 
 			// Create Index DEFAULT Values
@@ -640,29 +700,54 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 			boolean sslEnabled = GemFireVectorStoreConfig.DEFAULT_SSL_ENABLED;
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setHost(String host) {
 				Assert.hasText(host, "host must have a value");
 				this.host = host;
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setPort(int port) {
 				Assert.isTrue(port > 0, "port must be positive");
 				this.port = port;
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setSslEnabled(boolean sslEnabled) {
 				this.sslEnabled = sslEnabled;
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setIndexName(String indexName) {
 				Assert.hasText(indexName, "indexName must have a value");
 				this.indexName = indexName;
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setBeamWidth(int beamWidth) {
 				Assert.isTrue(beamWidth > 0, "beamWidth must be positive");
 				Assert.isTrue(beamWidth <= GemFireVectorStoreConfig.UPPER_BOUND_BEAM_WIDTH,
@@ -671,6 +756,11 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setMaxConnections(int maxConnections) {
 				Assert.isTrue(maxConnections > 0, "maxConnections must be positive");
 				Assert.isTrue(maxConnections <= GemFireVectorStoreConfig.UPPER_BOUND_MAX_CONNECTIONS,
@@ -680,27 +770,216 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setBuckets(int buckets) {
 				Assert.isTrue(buckets >= 0, "bucket must be 1 or more");
 				this.buckets = buckets;
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setVectorSimilarityFunction(String vectorSimilarityFunction) {
 				Assert.hasText(vectorSimilarityFunction, "vectorSimilarityFunction must have a value");
 				this.vectorSimilarityFunction = vectorSimilarityFunction;
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setFields(String[] fields) {
 				this.fields = fields;
 				return this;
 			}
 
+			/**
+			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
+			 * instead
+			 */
+			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public GemFireVectorStoreConfig build() {
 				return new GemFireVectorStoreConfig(this);
 			}
 
+		}
+
+	}
+
+	/**
+	 * Builder class for creating {@link GemFireVectorStore} instances.
+	 * <p>
+	 * Provides a fluent API for configuring all aspects of the GemFire vector store.
+	 *
+	 * @since 1.0.0
+	 */
+	public static class GemFireBuilder extends AbstractVectorStoreBuilder<GemFireBuilder> {
+
+		private String host = GemFireVectorStore.DEFAULT_HOST;
+
+		private int port = GemFireVectorStore.DEFAULT_PORT;
+
+		private boolean sslEnabled = GemFireVectorStore.DEFAULT_SSL_ENABLED;
+
+		private String indexName = GemFireVectorStore.DEFAULT_INDEX_NAME;
+
+		private int beamWidth = GemFireVectorStore.DEFAULT_BEAM_WIDTH;
+
+		private int maxConnections = GemFireVectorStore.DEFAULT_MAX_CONNECTIONS;
+
+		private int buckets = GemFireVectorStore.DEFAULT_BUCKETS;
+
+		private String vectorSimilarityFunction = GemFireVectorStore.DEFAULT_SIMILARITY_FUNCTION;
+
+		private String[] fields = GemFireVectorStore.DEFAULT_FIELDS;
+
+		private boolean initializeSchema = false;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		/**
+		 * Sets the host for the GemFire connection.
+		 * @param host the host to connect to
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if host is null or empty
+		 */
+		public GemFireBuilder host(String host) {
+			Assert.hasText(host, "host must have a value");
+			this.host = host;
+			return this;
+		}
+
+		/**
+		 * Sets the port for the GemFire connection.
+		 * @param port the port to connect to
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if port is not positive
+		 */
+		public GemFireBuilder port(int port) {
+			Assert.isTrue(port > 0, "port must be positive");
+			this.port = port;
+			return this;
+		}
+
+		/**
+		 * Sets whether SSL is enabled for the connection.
+		 * @param sslEnabled true to enable SSL, false otherwise
+		 * @return the builder instance
+		 */
+		public GemFireBuilder sslEnabled(boolean sslEnabled) {
+			this.sslEnabled = sslEnabled;
+			return this;
+		}
+
+		/**
+		 * Sets the index name.
+		 * @param indexName the name of the index
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if indexName is null or empty
+		 */
+		public GemFireBuilder indexName(String indexName) {
+			Assert.hasText(indexName, "indexName must have a value");
+			this.indexName = indexName;
+			return this;
+		}
+
+		/**
+		 * Sets the beam width.
+		 * @param beamWidth the beam width value
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if beamWidth is not within valid range
+		 */
+		public GemFireBuilder beamWidth(int beamWidth) {
+			Assert.isTrue(beamWidth > 0, "beamWidth must be positive");
+			Assert.isTrue(beamWidth <= GemFireVectorStore.UPPER_BOUND_BEAM_WIDTH,
+					"beamWidth must be less than or equal to " + GemFireVectorStore.UPPER_BOUND_BEAM_WIDTH);
+			this.beamWidth = beamWidth;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of connections.
+		 * @param maxConnections the maximum connections value
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if maxConnections is not within valid range
+		 */
+		public GemFireBuilder maxConnections(int maxConnections) {
+			Assert.isTrue(maxConnections > 0, "maxConnections must be positive");
+			Assert.isTrue(maxConnections <= GemFireVectorStore.UPPER_BOUND_MAX_CONNECTIONS,
+					"maxConnections must be less than or equal to " + GemFireVectorStore.UPPER_BOUND_MAX_CONNECTIONS);
+			this.maxConnections = maxConnections;
+			return this;
+		}
+
+		/**
+		 * Sets the number of buckets.
+		 * @param buckets the number of buckets
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if buckets is negative
+		 */
+		public GemFireBuilder buckets(int buckets) {
+			Assert.isTrue(buckets >= 0, "buckets must not be negative");
+			this.buckets = buckets;
+			return this;
+		}
+
+		/**
+		 * Sets the vector similarity function.
+		 * @param vectorSimilarityFunction the similarity function to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if vectorSimilarityFunction is null or empty
+		 */
+		public GemFireBuilder vectorSimilarityFunction(String vectorSimilarityFunction) {
+			Assert.hasText(vectorSimilarityFunction, "vectorSimilarityFunction must have a value");
+			this.vectorSimilarityFunction = vectorSimilarityFunction;
+			return this;
+		}
+
+		/**
+		 * Sets the fields array.
+		 * @param fields the fields to use
+		 * @return the builder instance
+		 */
+		public GemFireBuilder fields(String[] fields) {
+			this.fields = fields;
+			return this;
+		}
+
+		/**
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return the builder instance
+		 */
+		public GemFireBuilder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the batching strategy.
+		 * @param batchingStrategy the strategy to use
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if batchingStrategy is null
+		 */
+		public GemFireBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
+		@Override
+		public GemFireVectorStore build() {
+			validate();
+			return new GemFireVectorStore(this);
 		}
 
 	}

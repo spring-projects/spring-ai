@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.gemfire;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +40,8 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -198,11 +200,16 @@ public class GemFireVectorStoreObservationIT {
 
 		@Bean
 		public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
-			return new GemFireVectorStore(GemFireVectorStore.GemFireVectorStoreConfig.builder()
-				.setHost("localhost")
-				.setPort(HTTP_SERVICE_PORT)
-				.setIndexName(TEST_INDEX_NAME)
-				.build(), embeddingModel, true, observationRegistry, null, new TokenCountBatchingStrategy());
+			return GemFireVectorStore.builder()
+				.host("localhost")
+				.port(HTTP_SERVICE_PORT)
+				.indexName(TEST_INDEX_NAME)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean

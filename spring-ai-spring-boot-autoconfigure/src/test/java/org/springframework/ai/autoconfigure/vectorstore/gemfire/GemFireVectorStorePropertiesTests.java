@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vectorstore.GemFireVectorStore;
+import org.springframework.ai.vectorstore.gemfire.GemFireVectorStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

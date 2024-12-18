@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.gemfire;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +37,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -216,11 +218,13 @@ public class GemFireVectorStoreIT {
 
 		@Bean
 		public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel) {
-			return new GemFireVectorStore(GemFireVectorStore.GemFireVectorStoreConfig.builder()
-				.setHost("localhost")
-				.setPort(HTTP_SERVICE_PORT)
-				.setIndexName(INDEX_NAME)
-				.build(), embeddingModel, true);
+			return GemFireVectorStore.builder()
+				.host("localhost")
+				.port(HTTP_SERVICE_PORT)
+				.indexName(INDEX_NAME)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean

@@ -21,7 +21,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.GemFireVectorStore;
+import org.springframework.ai.vectorstore.gemfire.GemFireVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -63,20 +63,23 @@ public class GemFireVectorStoreAutoConfiguration {
 			GemFireConnectionDetails gemFireConnectionDetails, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-		var builder = new GemFireVectorStore.GemFireVectorStoreConfig.Builder();
 
-		builder.setHost(gemFireConnectionDetails.getHost())
-			.setPort(gemFireConnectionDetails.getPort())
-			.setIndexName(properties.getIndexName())
-			.setBeamWidth(properties.getBeamWidth())
-			.setMaxConnections(properties.getMaxConnections())
-			.setBuckets(properties.getBuckets())
-			.setVectorSimilarityFunction(properties.getVectorSimilarityFunction())
-			.setFields(properties.getFields())
-			.setSslEnabled(properties.isSslEnabled());
-		return new GemFireVectorStore(builder.build(), embeddingModel, properties.isInitializeSchema(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+		return GemFireVectorStore.builder()
+			.host(gemFireConnectionDetails.getHost())
+			.port(gemFireConnectionDetails.getPort())
+			.indexName(properties.getIndexName())
+			.beamWidth(properties.getBeamWidth())
+			.maxConnections(properties.getMaxConnections())
+			.buckets(properties.getBuckets())
+			.vectorSimilarityFunction(properties.getVectorSimilarityFunction())
+			.fields(properties.getFields())
+			.sslEnabled(properties.isSslEnabled())
+			.embeddingModel(embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 	private static class PropertiesGemFireConnectionDetails implements GemFireConnectionDetails {
