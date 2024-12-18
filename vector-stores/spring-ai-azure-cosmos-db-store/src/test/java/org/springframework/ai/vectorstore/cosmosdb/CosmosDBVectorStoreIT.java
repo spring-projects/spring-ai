@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.cosmosdb;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +30,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.boot.SpringBootConfiguration;
@@ -165,13 +167,15 @@ public class CosmosDBVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel,
 				VectorStoreObservationConvention convention) {
-			CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
-			config.setDatabaseName("test-database");
-			config.setContainerName("test-container");
-			config.setMetadataFields("country,year,city");
-			config.setVectorStoreThroughput(1000);
-			return new CosmosDBVectorStore(null, convention, cosmosClient, config, embeddingModel);
-
+			return CosmosDBVectorStore.builder()
+				.databaseName("test-database")
+				.containerName("test-container")
+				.metadataFields(List.of("country", "year", "city"))
+				.vectorStoreThroughput(1000)
+				.cosmosClient(cosmosClient)
+				.embeddingModel(embeddingModel)
+				.customObservationConvention(convention)
+				.build();
 		}
 
 		@Bean
