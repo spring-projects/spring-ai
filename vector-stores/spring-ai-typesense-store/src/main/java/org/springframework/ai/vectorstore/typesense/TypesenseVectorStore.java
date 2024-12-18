@@ -443,10 +443,10 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.TYPESENSE.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName(this.collectionName)
-			.withFieldName(EMBEDDING_FIELD_NAME)
-			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+			.dimensions(this.embeddingModel.dimensions())
+			.collectionName(this.collectionName)
+			.fieldName(EMBEDDING_FIELD_NAME)
+			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 	public static final class TypesenseBuilder extends AbstractVectorStoreBuilder<TypesenseBuilder> {

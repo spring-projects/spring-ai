@@ -345,9 +345,9 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.MONGODB.value(), operationName)
-			.withCollectionName(this.collectionName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withFieldName(this.pathName);
+			.collectionName(this.collectionName)
+			.dimensions(this.embeddingModel.dimensions())
+			.fieldName(this.pathName);
 	}
 
 	/**

@@ -18,7 +18,6 @@ package org.springframework.ai.vectorstore;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -354,10 +353,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.COSMOSDB.value(), operationName)
-			.withCollectionName(this.container.getId())
-			.withDimensions(this.embeddingModel.dimensions())
-			.withNamespace(this.container.getDatabase().getId())
-			.withSimilarityMetric("cosine");
+			.collectionName(this.container.getId())
+			.dimensions(this.embeddingModel.dimensions())
+			.namespace(this.container.getDatabase().getId())
+			.similarityMetric("cosine");
 	}
 
 }

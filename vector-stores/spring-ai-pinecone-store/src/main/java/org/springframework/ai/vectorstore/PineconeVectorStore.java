@@ -287,10 +287,10 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.PINECONE.value(), operationName)
-			.withCollectionName(this.pineconeIndexName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withNamespace(this.pineconeNamespace)
-			.withFieldName(this.pineconeContentFieldName);
+			.collectionName(this.pineconeIndexName)
+			.dimensions(this.embeddingModel.dimensions())
+			.namespace(this.pineconeNamespace)
+			.fieldName(this.pineconeContentFieldName);
 	}
 
 	/**

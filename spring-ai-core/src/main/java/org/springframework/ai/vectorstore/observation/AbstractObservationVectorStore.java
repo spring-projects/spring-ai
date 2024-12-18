@@ -111,7 +111,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 
 		VectorStoreObservationContext searchObservationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
-			.withQueryRequest(request)
+			.queryRequest(request)
 			.build();
 
 		return VectorStoreObservationDocumentation.AI_VECTOR_STORE

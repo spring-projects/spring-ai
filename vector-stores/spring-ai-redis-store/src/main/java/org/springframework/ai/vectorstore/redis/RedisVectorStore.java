@@ -454,10 +454,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
-			.withCollectionName(this.indexName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withFieldName(this.embeddingFieldName)
-			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+			.collectionName(this.indexName)
+			.dimensions(this.embeddingModel.dimensions())
+			.fieldName(this.embeddingFieldName)
+			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 
 	}
 

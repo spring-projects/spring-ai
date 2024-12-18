@@ -504,10 +504,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.MARIADB.value(), operationName)
-			.withCollectionName(this.vectorTableName)
-			.withDimensions(this.embeddingDimensions())
-			.withNamespace(this.schemaName)
-			.withSimilarityMetric(getSimilarityMetric());
+			.collectionName(this.vectorTableName)
+			.dimensions(this.embeddingDimensions())
+			.namespace(this.schemaName)
+			.similarityMetric(getSimilarityMetric());
 	}
 
 	private String getSimilarityMetric() {

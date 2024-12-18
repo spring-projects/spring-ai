@@ -362,9 +362,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
-			.withCollectionName(this.options.getIndexName())
-			.withDimensions(this.embeddingModel.dimensions())
-			.withSimilarityMetric(getSimilarityMetric());
+			.collectionName(this.options.getIndexName())
+			.dimensions(this.embeddingModel.dimensions())
+			.similarityMetric(getSimilarityMetric());
 	}
 
 	private String getSimilarityMetric() {
