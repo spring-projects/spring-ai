@@ -16,18 +16,12 @@
 
 package org.springframework.ai.mistralai;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -35,6 +29,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -42,18 +37,31 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeTypeUtils;
+import reactor.core.publisher.Flux;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
@@ -242,9 +250,65 @@ class MistralAiChatModelIT {
 		assertThat(content).containsAnyOf("10.0", "10");
 	}
 
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "pixtral-large-latest" })
+	void multiModalityEmbeddedImage(String modelName) {
+		var imageData = new ClassPathResource("/test.png");
+
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+
+		var response = this.chatModel
+			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
+
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "pixtral-large-latest" })
+	void multiModalityImageUrl(String modelName) throws IOException {
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
+
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
+	}
+
+	@Test
+	void streamingMultiModalityImageUrl() throws IOException {
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
+
+		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
+				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+
+		String content = response.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+		assertThat(content).contains("bananas", "apple");
+		assertThat(content).containsAnyOf("bowl", "basket", "fruit stand");
+	}
+
 	@Test
 	void streamFunctionCallUsageTest() {
-
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius");
 
