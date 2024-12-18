@@ -147,9 +147,9 @@ public class OpenAiModerationModel implements ModerationModel {
 						.build();
 				}
 				ModerationResult moderationResult = ModerationResult.builder()
-					.withCategories(categories)
-					.withCategoryScores(categoryScores)
-					.withFlagged(result.flagged())
+					.categories(categories)
+					.categoryScores(categoryScores)
+					.flagged(result.flagged())
 					.build();
 				moderationResults.add(moderationResult);
 			}
