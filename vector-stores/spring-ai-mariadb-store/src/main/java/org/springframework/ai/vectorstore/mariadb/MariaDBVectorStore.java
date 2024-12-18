@@ -421,10 +421,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		double distance = 1 - request.getSimilarityThreshold();
 		final String sql = String.format(
-				"SELECT * FROM (select %s, %s, %s, %s, vec_distance_%s(%s, ?) as distance "
+				"SELECT * FROM (select %s, %s, %s, vec_distance_%s(%s, ?) as distance "
 						+ "from %s) as t where distance < ? %sorder by distance asc LIMIT ?",
-				this.idFieldName, this.contentFieldName, this.metadataFieldName, this.embeddingFieldName, distanceType,
-				this.embeddingFieldName, getFullyQualifiedTableName(), jsonPathFilter);
+				this.idFieldName, this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
+				getFullyQualifiedTableName(), jsonPathFilter);
 
 		logger.debug("SQL query: " + sql);
 
@@ -536,15 +536,11 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			String id = rs.getString(1);
 			String content = rs.getString(2);
 			Map<String, Object> metadata = toMap(rs.getString(3));
-			float[] embedding = rs.getObject(4, float[].class);
-			float distance = rs.getFloat(5);
+			float distance = rs.getFloat(4);
 
 			metadata.put("distance", distance);
 
-			Document document = new Document(id, content, metadata);
-			document.setEmbedding(embedding);
-
-			return document;
+			return new Document(id, content, metadata);
 		}
 
 		private Map<String, Object> toMap(String source) {
