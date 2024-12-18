@@ -310,9 +310,13 @@ public class AzureVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
-			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
-					MetadataField.date("activationDate"));
-			return new AzureVectorStore(searchIndexClient, embeddingModel, true, filterableMetaFields);
+			return AzureVectorStore.builder()
+				.searchIndexClient(searchIndexClient)
+				.embeddingModel(embeddingModel)
+				.initializeSchema(true)
+				.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
+						MetadataField.date("activationDate")))
+				.build();
 		}
 
 		@Bean
