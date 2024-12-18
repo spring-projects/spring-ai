@@ -124,7 +124,7 @@ public class TypesenseVectorStoreObservationIT {
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+				.similaritySearch(SearchRequest.builder().query("What is Great Depression").topK(1).build());
 
 			assertThat(results).isNotEmpty();
 

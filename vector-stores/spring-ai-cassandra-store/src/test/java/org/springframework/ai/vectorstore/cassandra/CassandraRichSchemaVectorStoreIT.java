@@ -154,7 +154,7 @@ class CassandraRichSchemaVectorStoreIT {
 			try (CassandraVectorStore store = createStore(context, false)) {
 				Assertions.assertNotNull(store);
 				store.checkSchemaValid();
-				store.similaritySearch(SearchRequest.query("1843").withTopK(1));
+				store.similaritySearch(SearchRequest.builder().query("1843").topK(1).build());
 			}
 		});
 	}
@@ -170,7 +170,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 				store.checkSchemaValid();
 
-				store.similaritySearch(SearchRequest.query("1843").withTopK(1));
+				store.similaritySearch(SearchRequest.builder().query("1843").topK(1).build());
 
 				CassandraVectorStore.dropKeyspace(builder);
 				executeCqlFile(context, "test_wiki_partial_3_schema.cql");
@@ -201,7 +201,7 @@ class CassandraRichSchemaVectorStoreIT {
 				try {
 					store.checkSchemaValid();
 
-					store.similaritySearch(SearchRequest.query("1843").withTopK(1));
+					store.similaritySearch(SearchRequest.builder().query("1843").topK(1).build());
 				}
 				finally {
 					CassandraVectorStore.dropKeyspace(builder);
@@ -220,8 +220,8 @@ class CassandraRichSchemaVectorStoreIT {
 			try (CassandraVectorStore store = createStore(context, false)) {
 				store.add(documents);
 
-				List<Document> results = store
-					.similaritySearch(SearchRequest.query("Neptunes gravity makes its atmosphere").withTopK(1));
+				List<Document> results = store.similaritySearch(
+						SearchRequest.builder().query("Neptunes gravity makes its atmosphere").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -236,7 +236,7 @@ class CassandraRichSchemaVectorStoreIT {
 				// Remove all documents from the createStore
 				store.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-				results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = store.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).isEmpty();
 			}
 		});
@@ -272,8 +272,10 @@ class CassandraRichSchemaVectorStoreIT {
 							}
 							store.add(documents);
 
-							var results = store.similaritySearch(
-									SearchRequest.query(RandomStringUtils.randomAlphanumeric(20)).withTopK(10));
+							var results = store.similaritySearch(SearchRequest.builder()
+								.query(RandomStringUtils.randomAlphanumeric(20))
+								.topK(10)
+								.build());
 
 							assertThat(results).hasSize(10);
 						}, executor);
@@ -292,13 +294,16 @@ class CassandraRichSchemaVectorStoreIT {
 			try (CassandraVectorStore store = createStore(context, false)) {
 				store.add(documents);
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("Great Dark Spot").withTopK(5));
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query("Great Dark Spot").topK(5).build());
 				assertThat(results).hasSize(3);
 
-				results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("wiki == 'simplewiki' && language == 'en' && title == 'Neptune'"));
+				results = store.similaritySearch(SearchRequest.builder()
+					.query(URANUS_ORBIT_QUERY)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("wiki == 'simplewiki' && language == 'en' && title == 'Neptune'")
+					.build());
 
 				assertThat(results).hasSize(3);
 				assertThat(results.get(0).getId()).isEqualTo(documents.get(1).getId());
@@ -317,21 +322,24 @@ class CassandraRichSchemaVectorStoreIT {
 				// assertThat(results).hasSize(1);
 				// assertThat(results.get(0).getId()).isEqualTo(documents.get(0).getId());
 
-				results = store.similaritySearch(SearchRequest.query("Great Dark Spot")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression(
-							"wiki == 'simplewiki' && language == 'en' && title == 'Neptune' && id == 558"));
+				results = store.similaritySearch(SearchRequest.builder()
+					.query("Great Dark Spot")
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("wiki == 'simplewiki' && language == 'en' && title == 'Neptune' && id == 558")
+					.build());
 
 				assertThat(results).hasSize(3);
 
 				// cassandra server will throw an error
 				Assertions.assertThrows(SyntaxError.class,
-						() -> store.similaritySearch(SearchRequest.query("Great Dark Spot")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression(
-									"NOT(wiki == 'simplewiki' && language == 'en' && title == 'Neptune' && id == 1)")));
+						() -> store.similaritySearch(SearchRequest.builder()
+							.query("Great Dark Spot")
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression(
+									"NOT(wiki == 'simplewiki' && language == 'en' && title == 'Neptune' && id == 1)")
+							.build()));
 			}
 		});
 	}
@@ -342,14 +350,17 @@ class CassandraRichSchemaVectorStoreIT {
 			try (CassandraVectorStore store = createStore(context, false)) {
 				store.add(documents);
 
-				List<Document> results = store.similaritySearch(SearchRequest.query("Great Dark Spot").withTopK(5));
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query("Great Dark Spot").topK(5).build());
 				assertThat(results).hasSize(3);
 
 				Assertions.assertThrows(InvalidQueryException.class,
-						() -> store.similaritySearch(SearchRequest.query("The World")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression("revision == 9385813")));
+						() -> store.similaritySearch(SearchRequest.builder()
+							.query("The World")
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression("revision == 9385813")
+							.build()));
 			}
 		});
 	}
@@ -360,29 +371,36 @@ class CassandraRichSchemaVectorStoreIT {
 			try (CassandraVectorStore store = createStore(context, false)) {
 				store.add(documents);
 
-				List<Document> results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY).withTopK(5));
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query(URANUS_ORBIT_QUERY).topK(5).build());
 				assertThat(results).hasSize(3);
 
-				results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("id == 558"));
-
-				assertThat(results).hasSize(3);
-				assertThat(results.get(0).getId()).isEqualTo(documents.get(1).getId());
-
-				results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("id > 557"));
+				results = store.similaritySearch(SearchRequest.builder()
+					.query(URANUS_ORBIT_QUERY)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("id == 558")
+					.build());
 
 				assertThat(results).hasSize(3);
 				assertThat(results.get(0).getId()).isEqualTo(documents.get(1).getId());
 
-				results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("id >= 558"));
+				results = store.similaritySearch(SearchRequest.builder()
+					.query(URANUS_ORBIT_QUERY)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("id > 557")
+					.build());
+
+				assertThat(results).hasSize(3);
+				assertThat(results.get(0).getId()).isEqualTo(documents.get(1).getId());
+
+				results = store.similaritySearch(SearchRequest.builder()
+					.query(URANUS_ORBIT_QUERY)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("id >= 558")
+					.build());
 
 				assertThat(results).hasSize(3);
 				assertThat(results.get(0).getId()).isEqualTo(documents.get(1).getId());
@@ -393,25 +411,31 @@ class CassandraRichSchemaVectorStoreIT {
 				// achieve
 				// e.g. searchWithFilterOnPrimaryKeys()
 				Assertions.assertThrows(InvalidQueryException.class,
-						() -> store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression("id > 557 && \"chunk_no\" == 1")));
+						() -> store.similaritySearch(SearchRequest.builder()
+							.query(URANUS_ORBIT_QUERY)
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression("id > 557 && \"chunk_no\" == 1")
+							.build()));
 
 				// cassandra server will throw an error,
 				// as revision is not searchable (i.e. no SAI index on it)
 				Assertions.assertThrows(SyntaxError.class,
-						() -> store.similaritySearch(SearchRequest.query("Great Dark Spot")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression("id == 558 || revision == 2020")));
+						() -> store.similaritySearch(SearchRequest.builder()
+							.query("Great Dark Spot")
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression("id == 558 || revision == 2020")
+							.build()));
 
 				// cassandra java-driver will throw an error
 				Assertions.assertThrows(InvalidQueryException.class,
-						() -> store.similaritySearch(SearchRequest.query("Great Dark Spot")
-							.withTopK(5)
-							.withSimilarityThresholdAll()
-							.withFilterExpression("NOT(id == 557 || revision == 2020)")));
+						() -> store.similaritySearch(SearchRequest.builder()
+							.query("Great Dark Spot")
+							.topK(5)
+							.similarityThresholdAll()
+							.filterExpression("NOT(id == 557 || revision == 2020)")
+							.build()));
 			}
 		});
 	}
@@ -428,13 +452,16 @@ class CassandraRichSchemaVectorStoreIT {
 
 				store.add(documents);
 
-				List<Document> results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY).withTopK(5));
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query(URANUS_ORBIT_QUERY).topK(5).build());
 				assertThat(results).hasSize(3);
 
-				store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("id > 557 && \"chunk_no\" == 1"));
+				store.similaritySearch(SearchRequest.builder()
+					.query(URANUS_ORBIT_QUERY)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("id > 557 && \"chunk_no\" == 1")
+					.build());
 
 				assertThat(results).hasSize(3);
 				assertThat(results.get(0).getId()).isEqualTo(documents.get(1).getId());
@@ -458,7 +485,8 @@ class CassandraRichSchemaVectorStoreIT {
 			try (CassandraVectorStore store = createStore(context, false)) {
 				store.add(documents);
 
-				List<Document> results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY).withTopK(1));
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query(URANUS_ORBIT_QUERY).topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -490,7 +518,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 				store.delete(List.of(sameIdDocument.getId()));
 
-				results = store.similaritySearch(SearchRequest.query(newContent).withTopK(1));
+				results = store.similaritySearch(SearchRequest.builder().query(newContent).topK(1).build());
 
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
@@ -508,8 +536,8 @@ class CassandraRichSchemaVectorStoreIT {
 			try (CassandraVectorStore store = createStore(context, false)) {
 				store.add(documents);
 
-				List<Document> fullResult = store
-					.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY).withTopK(5).withSimilarityThresholdAll());
+				List<Document> fullResult = store.similaritySearch(
+						SearchRequest.builder().query(URANUS_ORBIT_QUERY).topK(5).similarityThresholdAll().build());
 
 				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
@@ -517,9 +545,11 @@ class CassandraRichSchemaVectorStoreIT {
 
 				double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-				List<Document> results = store.similaritySearch(SearchRequest.query(URANUS_ORBIT_QUERY)
-					.withTopK(5)
-					.withSimilarityThreshold(similarityThreshold));
+				List<Document> results = store.similaritySearch(SearchRequest.builder()
+					.query(URANUS_ORBIT_QUERY)
+					.topK(5)
+					.similarityThreshold(similarityThreshold)
+					.build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);

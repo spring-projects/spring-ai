@@ -144,14 +144,14 @@ public class OpenSearchVectorStoreObservationIT {
 				.hasBeenStopped();
 
 			Awaitility.await()
-				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThreshold(0).build()),
 						hasSize(1));
 
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+				.similaritySearch(SearchRequest.builder().query("What is Great Depression").topK(1).build());
 
 			assertThat(results).isNotEmpty();
 
@@ -187,8 +187,8 @@ public class OpenSearchVectorStoreObservationIT {
 			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 			Awaitility.await()
-				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThreshold(0).build()),
 						hasSize(0));
 
 		});

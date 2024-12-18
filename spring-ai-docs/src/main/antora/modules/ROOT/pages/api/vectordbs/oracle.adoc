@@ -91,7 +91,7 @@ List<Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5));
 ----
 
 [[oracle-properties]]
@@ -129,10 +129,10 @@ For example, you can use either the text expression language:
 ----
 vectorStore.similaritySearch(
     SearchRequest.defaults()
-    .withQuery("The World")
-    .withTopK(TOP_K)
-    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+    .query("The World")
+    .topK(TOP_K)
+    .similarityThreshold(SIMILARITY_THRESHOLD)
+    .filterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -142,10 +142,10 @@ or programmatically using the `Filter.Expression` DSL:
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(SearchRequest.defaults()
-    .withQuery("The World")
-    .withTopK(TOP_K)
-    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-    .withFilterExpression(b.and(
+    .queryString("The World")
+    .topK(TOP_K)
+    .similarityThreshold(SIMILARITY_THRESHOLD)
+    .filterExpression(b.and(
         b.in("author","john", "jill"),
         b.eq("article_type", "blog")).build()));
 ----

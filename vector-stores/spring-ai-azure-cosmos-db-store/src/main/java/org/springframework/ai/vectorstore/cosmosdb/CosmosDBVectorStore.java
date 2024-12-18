@@ -344,7 +344,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return similaritySearch(SearchRequest.query(query));
+		return similaritySearch(SearchRequest.builder().query(query).build());
 	}
 
 	@Override

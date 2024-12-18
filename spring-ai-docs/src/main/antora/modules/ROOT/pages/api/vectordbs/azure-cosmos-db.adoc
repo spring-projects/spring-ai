@@ -69,7 +69,7 @@ public class DemoApplication implements CommandLineRunner {
         Document document1 = new Document(UUID.randomUUID().toString(), "Sample content1", Map.of("key1", "value1"));
         Document document2 = new Document(UUID.randomUUID().toString(), "Sample content2", Map.of("key2", "value2"));
 		this.vectorStore.add(List.of(document1, document2));
-        List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").withTopK(1));
+        List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").topK(1));
 
         log.info("Search results: {}", results);
 
@@ -140,8 +140,8 @@ vectorStore.add(List.of(document1, document2));
 
 FilterExpressionBuilder builder = new FilterExpressionBuilder();
 List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
-    .withTopK(10)
-    .withFilterExpression((this.builder.in("country", "UK", "NL")).build()));
+    .topK(10)
+    .filterExpression((this.builder.in("country", "UK", "NL")).build()));
 ----
 
 == Setting up Azure Cosmos DB Vector Store without Auto Configuration
@@ -192,7 +192,7 @@ public class DemoApplication implements CommandLineRunner {
         Document document2 = new Document(UUID.randomUUID().toString(), "Sample content2", Map.of("key2", "value2"));
 		this.vectorStore.add(List.of(document1, document2));
 
-        List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").withTopK(1));
+        List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Sample content").topK(1));
         log.info("Search results: {}", results);
     }
 

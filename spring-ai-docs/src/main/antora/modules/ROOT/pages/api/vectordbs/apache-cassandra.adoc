@@ -142,7 +142,7 @@ And retrieve documents similar to a query:
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-    SearchRequest.query("Spring").withTopK(5));
+    SearchRequest.query("Spring").topK(5));
 ----
 
 You can also limit results based on a similarity threshold:
@@ -151,8 +151,8 @@ You can also limit results based on a similarity threshold:
 ----
 List<Document> results = vectorStore.similaritySearch(
     SearchRequest.query("Spring")
-        .withTopK(5)
-        .withSimilarityThreshold(0.5d));
+        .topK(5)
+        .similarityThreshold(0.5d));
 ----
 
 === Advanced Configuration
@@ -193,8 +193,8 @@ For example, you can use either the text expression language:
 ----
 vectorStore.similaritySearch(
     SearchRequest.query("The World")
-        .withTopK(5)
-        .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+        .topK(5)
+        .filterExpression("country in ['UK', 'NL'] && year >= 2020"));
 ----
 
 or programmatically using the expression DSL:
@@ -209,8 +209,8 @@ Filter.Expression f = new FilterExpressionBuilder()
 
 vectorStore.similaritySearch(
     SearchRequest.query("The World")
-        .withTopK(5)
-        .withFilterExpression(f));
+        .topK(5)
+        .filterExpression(f));
 ----
 
 The portable filter expressions get automatically converted into link:https://cassandra.apache.org/doc/latest/cassandra/developing/cql/index.html[CQL queries].

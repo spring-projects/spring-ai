@@ -80,7 +80,7 @@ public interface VectorStore extends DocumentWriter {
 	 */
 	@Nullable
 	default List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.query(query));
+		return this.similaritySearch(SearchRequest.builder().query(query).build());
 	}
 
 	/**

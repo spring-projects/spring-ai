@@ -315,9 +315,11 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.query(query)
-			.withTopK(this.defaultTopK)
-			.withSimilarityThreshold(this.defaultSimilarityThreshold));
+		return this.similaritySearch(SearchRequest.builder()
+			.query(query)
+			.topK(this.defaultTopK)
+			.similarityThreshold(this.defaultSimilarityThreshold)
+			.build());
 	}
 
 	@Override

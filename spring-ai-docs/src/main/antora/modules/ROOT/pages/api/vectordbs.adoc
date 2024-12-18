@@ -53,11 +53,11 @@ public class SearchRequest {
 
 	private SearchRequest(String query) { this.query = query; }
 
-	public SearchRequest withTopK(int topK) {...}
-	public SearchRequest withSimilarityThreshold(double threshold) {...}
-	public SearchRequest withSimilarityThresholdAll() {...}
-	public SearchRequest withFilterExpression(Filter.Expression expression) {...}
-	public SearchRequest withFilterExpression(String textExpression) {...}
+	public SearchRequest topK(int topK) {...}
+	public SearchRequest similarityThreshold(double threshold) {...}
+	public SearchRequest similarityThresholdAll() {...}
+	public SearchRequest filterExpression(Filter.Expression expression) {...}
+	public SearchRequest filterExpression(String textExpression) {...}
 
 	public String getQuery() {...}
 	public int getTopK() {...}

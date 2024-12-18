@@ -112,7 +112,7 @@ public class QuestionAnswerAdvisorTests {
 			.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
-				SearchRequest.defaults().withSimilarityThreshold(0.99d).withTopK(6));
+				SearchRequest.builder().similarityThreshold(0.99d).topK(6).build());
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
@@ -186,7 +186,7 @@ public class QuestionAnswerAdvisorTests {
 				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.defaults());
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
 
 		var userTextTemplate = "Please answer my question {question}";
 		// @formatter:off
@@ -214,7 +214,7 @@ public class QuestionAnswerAdvisorTests {
 				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.defaults());
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
 
 		var userTextTemplate = "Please answer my question {question}";
 		var userPromptTemplate = new PromptTemplate(userTextTemplate, Map.of("question", "XYZ"));

@@ -109,14 +109,16 @@ public class AzureVectorStoreAutoConfigurationIT {
 				vectorStore.add(this.documents);
 
 				Awaitility.await()
-					.until(() -> vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1)), hasSize(1));
+					.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build()),
+							hasSize(1));
 
 				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
 					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
 							VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -135,7 +137,8 @@ public class AzureVectorStoreAutoConfigurationIT {
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 				Awaitility.await()
-					.until(() -> vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1)), hasSize(0));
+					.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build()),
+							hasSize(0));
 
 				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
 					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,

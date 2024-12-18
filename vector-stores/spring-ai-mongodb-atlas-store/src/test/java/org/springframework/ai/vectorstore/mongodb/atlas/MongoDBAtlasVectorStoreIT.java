@@ -97,7 +97,8 @@ class MongoDBAtlasVectorStoreIT {
 			vectorStore.add(documents);
 			Thread.sleep(5000); // Await a second for the document to be indexed
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -109,7 +110,8 @@ class MongoDBAtlasVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
 
-			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results2 = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
 			assertThat(results2).isEmpty();
 
 		});
@@ -126,7 +128,8 @@ class MongoDBAtlasVectorStoreIT {
 			vectorStore.add(List.of(document));
 			Thread.sleep(5000); // Await a second for the document to be indexed
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -140,7 +143,7 @@ class MongoDBAtlasVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+			results = vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -165,37 +168,46 @@ class MongoDBAtlasVectorStoreIT {
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 			Thread.sleep(5000); // Await a second for the document to be indexed
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'NL'"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'NL'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG'"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'BG'")
+				.build());
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG' && year == 2020"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'BG' && year == 2020")
+				.build());
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("NOT(country == 'BG' && year == 2020)")
+				.build());
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
@@ -220,7 +232,7 @@ class MongoDBAtlasVectorStoreIT {
 			Thread.sleep(5000); // Await a second for the document to be indexed
 
 			List<Document> fullResult = vectorStore
-				.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
+				.similaritySearch(SearchRequest.builder().query("Spring").topK(5).similarityThresholdAll().build());
 			assertThat(fullResult).hasSize(3);
 
 			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
@@ -230,7 +242,7 @@ class MongoDBAtlasVectorStoreIT {
 			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
 			List<Document> results = vectorStore.similaritySearch(
-					SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(similarityThreshold));
+					SearchRequest.builder().query("Spring").topK(5).similarityThreshold(similarityThreshold).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);

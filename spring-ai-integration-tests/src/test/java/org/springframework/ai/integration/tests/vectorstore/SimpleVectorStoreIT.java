@@ -90,7 +90,7 @@ public class SimpleVectorStoreIT {
 
 		vectorStore.add(List.of(document));
 
-		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+		List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
@@ -107,7 +107,7 @@ public class SimpleVectorStoreIT {
 
 		vectorStore.add(List.of(sameIdDocument));
 
-		results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+		results = vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		resultDoc = results.get(0);

@@ -86,7 +86,8 @@ class CassandraVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -101,7 +102,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).isEmpty();
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,

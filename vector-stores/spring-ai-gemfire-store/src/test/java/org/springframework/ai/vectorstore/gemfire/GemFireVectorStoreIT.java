@@ -115,8 +115,8 @@ public class GemFireVectorStoreIT {
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await()
 				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(3)),
-						hasSize(0));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(3).build()), hasSize(0));
 		});
 	}
 
@@ -128,10 +128,11 @@ public class GemFireVectorStoreIT {
 
 			Awaitility.await()
 				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
-						hasSize(1));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build()), hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(5));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Great Depression").topK(5).build());
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939)" + " was an economic shock");
@@ -149,11 +150,11 @@ public class GemFireVectorStoreIT {
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
 					Collections.singletonMap("meta1", "meta1"));
 			vectorStore.add(List.of(document));
-			SearchRequest springSearchRequest = SearchRequest.query("Spring").withTopK(5);
+			SearchRequest springSearchRequest = SearchRequest.builder().query("Spring").topK(5).build();
 			Awaitility.await()
 				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
-						hasSize(1));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build()), hasSize(1));
 			List<Document> results = vectorStore.similaritySearch(springSearchRequest);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
@@ -166,7 +167,7 @@ public class GemFireVectorStoreIT {
 					Collections.singletonMap("meta2", "meta2"));
 
 			vectorStore.add(List.of(sameIdDocument));
-			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5);
+			SearchRequest fooBarSearchRequest = SearchRequest.builder().query("FooBar").topK(5).build();
 			results = vectorStore.similaritySearch(fooBarSearchRequest);
 
 			assertThat(results).hasSize(1);
@@ -187,19 +188,22 @@ public class GemFireVectorStoreIT {
 
 			Awaitility.await()
 				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
-				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(5).withSimilarityThresholdAll()),
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(5).similarityThresholdAll().build()),
 						hasSize(3));
 
 			List<Document> fullResult = vectorStore
-				.similaritySearch(SearchRequest.query("Depression").withTopK(5).withSimilarityThresholdAll());
+				.similaritySearch(SearchRequest.builder().query("Depression").topK(5).similarityThresholdAll().build());
 
 			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 			assertThat(scores).hasSize(3);
 
 			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
-			List<Document> results = vectorStore.similaritySearch(
-					SearchRequest.query("Depression").withTopK(5).withSimilarityThreshold(similarityThreshold));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Depression")
+				.topK(5)
+				.similarityThreshold(similarityThreshold)
+				.build());
 
 			assertThat(results).hasSize(1);
 

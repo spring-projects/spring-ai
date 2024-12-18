@@ -83,7 +83,10 @@ class DefaultVectorStoreObservationConventionTests {
 			.fieldName("FIELD_NAME")
 			.namespace("NAMESPACE")
 			.similarityMetric("SIMILARITY_METRIC")
-			.queryRequest(SearchRequest.query("VDB QUERY").withFilterExpression("country == 'UK' && year >= 2020"))
+			.queryRequest(SearchRequest.builder()
+				.query("VDB QUERY")
+				.filterExpression("country == 'UK' && year >= 2020")
+				.build())
 			.build();
 
 		List<Document> queryResponseDocs = List.of(new Document("doc1"), new Document("doc2"));

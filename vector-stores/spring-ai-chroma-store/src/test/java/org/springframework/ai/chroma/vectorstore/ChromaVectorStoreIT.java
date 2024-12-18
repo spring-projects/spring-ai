@@ -24,13 +24,13 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chroma.ChromaImage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -76,7 +76,8 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -89,7 +90,8 @@ public class ChromaVectorStoreIT {
 			assertThat(vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList()))
 				.isEqualTo(Optional.of(Boolean.TRUE));
 
-			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results2 = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
 			assertThat(results2).hasSize(0);
 		});
 	}
@@ -117,7 +119,7 @@ public class ChromaVectorStoreIT {
 			// Remove all documents from the store
 			assertThat(vectorStore.delete(List.of(document.getId()))).isEqualTo(Optional.of(Boolean.TRUE));
 
-			results = vectorStore.similaritySearch(SearchRequest.query("Why is the sky blue?"));
+			results = vectorStore.similaritySearch(SearchRequest.builder().query("Why is the sky blue?").build());
 			assertThat(results).hasSize(0);
 		});
 	}
@@ -136,23 +138,29 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
-			var request = SearchRequest.query("The World").withTopK(5);
+			var request = SearchRequest.builder().query("The World").topK(5).build();
 
 			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(2);
 
-			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("country == 'Bulgaria'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("country == 'Netherlands'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("NOT(country == 'Netherlands')"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("NOT(country == 'Netherlands')")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
@@ -174,7 +182,8 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -189,7 +198,7 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+			results = vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -212,8 +221,9 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			var request = SearchRequest.query("Great").withTopK(5);
-			List<Document> fullResult = vectorStore.similaritySearch(request.withSimilarityThresholdAll());
+			var request = SearchRequest.builder().query("Great").topK(5).build();
+			List<Document> fullResult = vectorStore
+				.similaritySearch(SearchRequest.from(request).similarityThresholdAll().build());
 
 			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
@@ -221,7 +231,8 @@ public class ChromaVectorStoreIT {
 
 			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch(request.withSimilarityThreshold(similarityThreshold));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.from(request).similarityThreshold(similarityThreshold).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);

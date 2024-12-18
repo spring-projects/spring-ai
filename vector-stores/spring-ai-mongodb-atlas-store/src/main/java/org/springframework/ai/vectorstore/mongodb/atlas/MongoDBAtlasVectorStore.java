@@ -312,7 +312,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return similaritySearch(SearchRequest.query(query));
+		return similaritySearch(SearchRequest.builder().query(query).build());
 	}
 
 	@Override

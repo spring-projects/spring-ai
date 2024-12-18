@@ -100,7 +100,8 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 				vectorStore.add(this.documents);
 
-				List<Document> fullResult = vectorStore.similaritySearch(SearchRequest.query("Spring"));
+				List<Document> fullResult = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").build());
 
 				List<Float> distances = fullResult.stream()
 					.map(doc -> (Float) doc.getMetadata().get("distance"))
@@ -110,8 +111,8 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(1 - threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -140,7 +141,8 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 				vectorStore.add(this.documents);
 
-				List<Document> fullResult = vectorStore.similaritySearch(SearchRequest.query("Spring"));
+				List<Document> fullResult = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").build());
 
 				List<Float> distances = fullResult.stream()
 					.map(doc -> (Float) doc.getMetadata().get("distance"))
@@ -150,8 +152,8 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(1 - threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -182,7 +184,8 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 				vectorStore.add(this.documents);
 
-				List<Document> fullResult = vectorStore.similaritySearch(SearchRequest.query("Spring"));
+				List<Document> fullResult = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").build());
 
 				List<Float> distances = fullResult.stream()
 					.map(doc -> (Float) doc.getMetadata().get("distance"))
@@ -192,8 +195,8 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(1 - threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);

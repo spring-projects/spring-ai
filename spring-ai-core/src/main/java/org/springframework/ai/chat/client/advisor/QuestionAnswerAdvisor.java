@@ -88,7 +88,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 * @param vectorStore The vector store to use
 	 */
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
-		this(vectorStore, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE);
+		this(vectorStore, SearchRequest.builder().build(), DEFAULT_USER_TEXT_ADVISE);
 	}
 
 	/**
@@ -218,8 +218,9 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		// 2. Search for similar documents in the vector store.
 		String query = new PromptTemplate(request.userText(), request.userParams()).render();
 		var searchRequestToUse = SearchRequest.from(this.searchRequest)
-			.withQuery(query)
-			.withFilterExpression(doGetFilterExpression(context));
+			.query(query)
+			.filterExpression(doGetFilterExpression(context))
+			.build();
 
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
 
@@ -273,7 +274,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 		private final VectorStore vectorStore;
 
-		private SearchRequest searchRequest = SearchRequest.defaults();
+		private SearchRequest searchRequest = SearchRequest.builder().build();
 
 		private String userTextAdvise = DEFAULT_USER_TEXT_ADVISE;
 

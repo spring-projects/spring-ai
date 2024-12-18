@@ -61,7 +61,7 @@ class WikiVectorStoreExample {
 			Assertions.assertNotNull(store);
 			store.checkSchemaValid();
 
-			store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+			store.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 		});
 	}
 
@@ -72,7 +72,7 @@ class WikiVectorStoreExample {
 			Assertions.assertNotNull(store);
 			store.checkSchemaValid();
 
-			var results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+			var results = store.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 			assertThat(results).hasSize(1);
 		});
 	}

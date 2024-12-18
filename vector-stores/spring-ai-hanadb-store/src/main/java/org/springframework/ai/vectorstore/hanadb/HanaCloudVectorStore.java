@@ -177,7 +177,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return similaritySearch(SearchRequest.query(query).withTopK(this.topK));
+		return similaritySearch(SearchRequest.builder().query(query).topK(this.topK).build());
 	}
 
 	@Override

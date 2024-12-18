@@ -138,10 +138,12 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			advisedSystemText = this.systemTextAdvise;
 		}
 
-		var searchRequest = SearchRequest.query(request.userText())
-			.withTopK(this.doGetChatMemoryRetrieveSize(request.adviseContext()))
-			.withFilterExpression(DOCUMENT_METADATA_CONVERSATION_ID + "=='"
-					+ this.doGetConversationId(request.adviseContext()) + "'");
+		var searchRequest = SearchRequest.builder()
+			.query(request.userText())
+			.topK(this.doGetChatMemoryRetrieveSize(request.adviseContext()))
+			.filterExpression(
+					DOCUMENT_METADATA_CONVERSATION_ID + "=='" + this.doGetConversationId(request.adviseContext()) + "'")
+			.build();
 
 		List<Document> documents = this.getChatMemoryStore().similaritySearch(searchRequest);
 
