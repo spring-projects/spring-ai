@@ -36,7 +36,6 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 
 /**
@@ -175,9 +174,9 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.HANA.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName(this.config.getTableName())
-			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+			.dimensions(this.embeddingModel.dimensions())
+			.collectionName(this.config.getTableName())
+			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 }

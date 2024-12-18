@@ -272,8 +272,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName(this.collectionName + ":" + this.collectionId);
+			.dimensions(this.embeddingModel.dimensions())
+			.collectionName(this.collectionName + ":" + this.collectionId);
 	}
 
 	public static class ChromaBuilder extends AbstractVectorStoreBuilder<ChromaBuilder> {

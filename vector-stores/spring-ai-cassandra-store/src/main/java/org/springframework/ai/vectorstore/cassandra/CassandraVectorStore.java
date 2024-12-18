@@ -502,10 +502,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CASSANDRA.value(), operationName)
-			.withCollectionName(this.schema.table())
-			.withDimensions(this.embeddingModel.dimensions())
-			.withNamespace(this.schema.keyspace())
-			.withSimilarityMetric(getSimilarityMetric());
+			.collectionName(this.schema.table())
+			.dimensions(this.embeddingModel.dimensions())
+			.namespace(this.schema.keyspace())
+			.similarityMetric(getSimilarityMetric());
 	}
 
 	private String getSimilarityMetric() {

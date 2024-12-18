@@ -494,10 +494,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
-			.withCollectionName(this.vectorTableName)
-			.withDimensions(this.embeddingDimensions())
-			.withNamespace(this.schemaName)
-			.withSimilarityMetric(getSimilarityMetric());
+			.collectionName(this.vectorTableName)
+			.dimensions(this.embeddingDimensions())
+			.namespace(this.schemaName)
+			.similarityMetric(getSimilarityMetric());
 	}
 
 	private String getSimilarityMetric() {

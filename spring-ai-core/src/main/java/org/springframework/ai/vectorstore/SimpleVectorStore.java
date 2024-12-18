@@ -246,9 +246,9 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName("in-memory-map")
-			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+			.dimensions(this.embeddingModel.dimensions())
+			.collectionName("in-memory-map")
+			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 	public static final class EmbeddingMath {

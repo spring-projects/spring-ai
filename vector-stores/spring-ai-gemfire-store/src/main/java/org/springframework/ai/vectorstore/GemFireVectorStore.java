@@ -340,9 +340,9 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.GEMFIRE.value(), operationName)
-			.withCollectionName(this.indexName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withFieldName(EMBEDDINGS);
+			.collectionName(this.indexName)
+			.dimensions(this.embeddingModel.dimensions())
+			.fieldName(EMBEDDINGS);
 	}
 
 	public static class CreateRequest {

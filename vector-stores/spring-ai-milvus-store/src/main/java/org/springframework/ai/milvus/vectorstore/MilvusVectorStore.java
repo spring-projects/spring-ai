@@ -564,10 +564,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.MILVUS.value(), operationName)
-			.withCollectionName(this.collectionName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withSimilarityMetric(getSimilarityMetric())
-			.withNamespace(this.databaseName);
+			.collectionName(this.collectionName)
+			.dimensions(this.embeddingModel.dimensions())
+			.similarityMetric(getSimilarityMetric())
+			.namespace(this.databaseName);
 	}
 
 	private String getSimilarityMetric() {

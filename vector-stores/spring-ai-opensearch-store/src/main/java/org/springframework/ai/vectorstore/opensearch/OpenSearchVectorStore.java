@@ -418,9 +418,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
-			.withCollectionName(this.index)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withSimilarityMetric(getSimilarityFunction());
+			.collectionName(this.index)
+			.dimensions(this.embeddingModel.dimensions())
+			.similarityMetric(getSimilarityFunction());
 	}
 
 	private String getSimilarityFunction() {
