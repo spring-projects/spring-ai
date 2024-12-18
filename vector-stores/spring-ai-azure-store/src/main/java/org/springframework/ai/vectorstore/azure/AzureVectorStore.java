@@ -59,7 +59,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -282,9 +281,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.query(query)
-			.withTopK(this.defaultTopK)
-			.withSimilarityThreshold(this.defaultSimilarityThreshold));
+		return this.similaritySearch(
+				SearchRequest.query(query).topK(this.defaultTopK).similarityThreshold(this.defaultSimilarityThreshold));
 	}
 
 	@Override

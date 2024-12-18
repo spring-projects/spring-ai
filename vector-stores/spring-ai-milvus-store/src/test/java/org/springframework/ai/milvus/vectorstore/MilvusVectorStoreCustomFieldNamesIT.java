@@ -111,7 +111,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
 				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+					.similaritySearch(SearchRequest.query("Spring").topK(5).similarityThreshold(1 - threshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -151,7 +151,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
 				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+					.similaritySearch(SearchRequest.query("Spring").topK(5).similarityThreshold(1 - threshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -193,7 +193,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
 				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+					.similaritySearch(SearchRequest.query("Spring").topK(5).similarityThreshold(1 - threshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);

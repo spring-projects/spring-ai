@@ -36,7 +36,6 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 
 /**
@@ -131,7 +130,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return similaritySearch(SearchRequest.query(query).withTopK(this.config.getTopK()));
+		return similaritySearch(SearchRequest.query(query).topK(this.config.getTopK()));
 	}
 
 	@Override

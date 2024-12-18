@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.junit.Assert;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,7 +41,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
-import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -144,7 +142,7 @@ public class MariaDBStoreIT {
 				vectorStore.add(this.documents);
 
 				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+					.similaritySearch(SearchRequest.query("What is Great Depression").topK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -154,8 +152,7 @@ public class MariaDBStoreIT {
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-				List<Document> results2 = vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+				List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great Depression").topK(1));
 				assertThat(results2).hasSize(0);
 
 				dropTable(context);
@@ -179,9 +176,9 @@ public class MariaDBStoreIT {
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
 			SearchRequest searchRequest = SearchRequest.query("The World")
-				.withFilterExpression(expression)
-				.withTopK(5)
-				.withSimilarityThresholdAll();
+				.filterExpression(expression)
+				.topK(5)
+				.similarityThresholdAll();
 
 			List<Document> results = vectorStore.similaritySearch(searchRequest);
 
@@ -209,51 +206,51 @@ public class MariaDBStoreIT {
 
 				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-				SearchRequest searchRequest = SearchRequest.query("The World").withTopK(5).withSimilarityThresholdAll();
+				SearchRequest searchRequest = SearchRequest.query("The World").topK(5).similarityThresholdAll();
 
 				List<Document> results = vectorStore.similaritySearch(searchRequest);
 
 				assertThat(results).hasSize(3);
 
-				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'NL'"));
+				results = vectorStore.similaritySearch(searchRequest.filterExpression("country == 'NL'"));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'BG'"));
+				results = vectorStore.similaritySearch(searchRequest.filterExpression("country == 'BG'"));
 
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
 				results = vectorStore
-					.similaritySearch(searchRequest.withFilterExpression("country == 'BG' && year == 2020"));
+					.similaritySearch(searchRequest.filterExpression("country == 'BG' && year == 2020"));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 				results = vectorStore.similaritySearch(
-						searchRequest.withFilterExpression("(country == 'BG' && year == 2020) || (country == 'NL')"));
+						searchRequest.filterExpression("(country == 'BG' && year == 2020) || (country == 'NL')"));
 
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 
-				results = vectorStore.similaritySearch(searchRequest
-					.withFilterExpression("NOT((country == 'BG' && year == 2020) || (country == 'NL'))"));
+				results = vectorStore.similaritySearch(
+						searchRequest.filterExpression("NOT((country == 'BG' && year == 2020) || (country == 'NL'))"));
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
 
 				results = vectorStore.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("\"foo bar 1\" == 'bar.foo'"));
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("\"foo bar 1\" == 'bar.foo'"));
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 				try {
-					vectorStore.similaritySearch(searchRequest.withFilterExpression("country == NL"));
+					vectorStore.similaritySearch(searchRequest.filterExpression("country == NL"));
 					Assert.fail("Invalid filter expression should have been cached!");
 				}
 				catch (FilterExpressionParseException e) {
@@ -278,7 +275,7 @@ public class MariaDBStoreIT {
 
 				vectorStore.add(List.of(document));
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -292,7 +289,7 @@ public class MariaDBStoreIT {
 
 				vectorStore.add(List.of(sameIdDocument));
 
-				results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+				results = vectorStore.similaritySearch(SearchRequest.query("FooBar").topK(5));
 
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
@@ -315,7 +312,7 @@ public class MariaDBStoreIT {
 				vectorStore.add(this.documents);
 
 				List<Document> fullResult = vectorStore
-					.similaritySearch(SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThresholdAll());
+					.similaritySearch(SearchRequest.query("Time Shelter").topK(5).similarityThresholdAll());
 
 				assertThat(fullResult).hasSize(3);
 
@@ -327,8 +324,8 @@ public class MariaDBStoreIT {
 
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(1 - threshold));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.query("Time Shelter").topK(5).similarityThreshold(1 - threshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);

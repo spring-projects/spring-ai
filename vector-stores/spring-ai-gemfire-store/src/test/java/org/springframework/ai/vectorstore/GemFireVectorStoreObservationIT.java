@@ -148,13 +148,13 @@ public class GemFireVectorStoreObservationIT {
 			Awaitility.await()
 				.atMost(1, java.util.concurrent.TimeUnit.MINUTES)
 				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(5).withSimilarityThresholdAll()),
+					.similaritySearch(SearchRequest.query("Great Depression").topK(5).similarityThresholdAll()),
 						hasSize(3));
 
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+				.similaritySearch(SearchRequest.query("What is Great Depression").topK(1));
 
 			assertThat(results).isNotEmpty();
 

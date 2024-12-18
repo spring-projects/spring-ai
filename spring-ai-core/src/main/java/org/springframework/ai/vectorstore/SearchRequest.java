@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 public final class SearchRequest {
 
@@ -73,8 +74,8 @@ public final class SearchRequest {
 
 	/**
 	 * Create a new {@link SearchRequest} builder instance with an empty embedding query
-	 * string. Use the {@link #withQuery(String query)} to set/update the embedding query
-	 * text.
+	 * string. Use the {@link #queryString(String query)} to set/update the embedding
+	 * query text.
 	 * @return Returns new {@link SearchRequest} builder instance.
 	 */
 	public static SearchRequest defaults() {
@@ -87,16 +88,16 @@ public final class SearchRequest {
 	 * @return Returns new {@link SearchRequest} builder instance.
 	 */
 	public static SearchRequest from(SearchRequest originalSearchRequest) {
-		return new SearchRequest(originalSearchRequest.getQuery()).withTopK(originalSearchRequest.getTopK())
-			.withSimilarityThreshold(originalSearchRequest.getSimilarityThreshold())
-			.withFilterExpression(originalSearchRequest.getFilterExpression());
+		return new SearchRequest(originalSearchRequest.getQuery()).topK(originalSearchRequest.getTopK())
+			.similarityThreshold(originalSearchRequest.getSimilarityThreshold())
+			.filterExpression(originalSearchRequest.getFilterExpression());
 	}
 
 	/**
 	 * @param query Text to use for embedding similarity comparison.
 	 * @return this builder.
 	 */
-	public SearchRequest withQuery(String query) {
+	public SearchRequest queryString(String query) {
 		Assert.notNull(query, "Query can not be null.");
 		this.query = query;
 		return this;
@@ -106,7 +107,7 @@ public final class SearchRequest {
 	 * @param topK the top 'k' similar results to return.
 	 * @return this builder.
 	 */
-	public SearchRequest withTopK(int topK) {
+	public SearchRequest topK(int topK) {
 		Assert.isTrue(topK >= 0, "TopK should be positive.");
 		this.topK = topK;
 		return this;
@@ -121,7 +122,7 @@ public final class SearchRequest {
 	 * @param threshold The lower bound of the similarity score.
 	 * @return this builder.
 	 */
-	public SearchRequest withSimilarityThreshold(double threshold) {
+	public SearchRequest similarityThreshold(double threshold) {
 		Assert.isTrue(threshold >= 0 && threshold <= 1, "Similarity threshold must be in [0,1] range.");
 		this.similarityThreshold = threshold;
 		return this;
@@ -132,8 +133,8 @@ public final class SearchRequest {
 	 * accepted.
 	 * @return this builder.
 	 */
-	public SearchRequest withSimilarityThresholdAll() {
-		return withSimilarityThreshold(SIMILARITY_THRESHOLD_ACCEPT_ALL);
+	public SearchRequest similarityThresholdAll() {
+		return similarityThreshold(SIMILARITY_THRESHOLD_ACCEPT_ALL);
 	}
 
 	/**
@@ -189,7 +190,7 @@ public final class SearchRequest {
 	 * filter criteria. The 'null' value stands for no expression filters.
 	 * @return this builder.
 	 */
-	public SearchRequest withFilterExpression(@Nullable Filter.Expression expression) {
+	public SearchRequest filterExpression(@Nullable Filter.Expression expression) {
 		this.filterExpression = expression;
 		return this;
 	}
@@ -228,6 +229,63 @@ public final class SearchRequest {
 	 * 'null' value stands for no expression filters.
 	 * @return this.builder
 	 */
+	public SearchRequest filterExpression(@Nullable String textExpression) {
+		this.filterExpression = (textExpression != null) ? new FilterExpressionTextParser().parse(textExpression)
+				: null;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #queryString(String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withQuery(String query) {
+		Assert.notNull(query, "Query can not be null.");
+		this.query = query;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #topK(int)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withTopK(int topK) {
+		Assert.isTrue(topK >= 0, "TopK should be positive.");
+		this.topK = topK;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #similarityThreshold(double)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withSimilarityThreshold(double threshold) {
+		Assert.isTrue(threshold >= 0 && threshold <= 1, "Similarity threshold must be in [0,1] range.");
+		this.similarityThreshold = threshold;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #similarityThresholdAll()} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withSimilarityThresholdAll() {
+		return withSimilarityThreshold(SIMILARITY_THRESHOLD_ACCEPT_ALL);
+	}
+
+	/**
+	 * @deprecated use {@link #filterExpression(Filter.Expression)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withFilterExpression(@Nullable Filter.Expression expression) {
+		this.filterExpression = expression;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #filterExpression(String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public SearchRequest withFilterExpression(@Nullable String textExpression) {
 		this.filterExpression = (textExpression != null) ? new FilterExpressionTextParser().parse(textExpression)
 				: null;

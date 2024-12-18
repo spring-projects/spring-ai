@@ -218,8 +218,8 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		// 2. Search for similar documents in the vector store.
 		String query = new PromptTemplate(request.userText(), request.userParams()).render();
 		var searchRequestToUse = SearchRequest.from(this.searchRequest)
-			.withQuery(query)
-			.withFilterExpression(doGetFilterExpression(context));
+			.queryString(query)
+			.filterExpression(doGetFilterExpression(context));
 
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
 

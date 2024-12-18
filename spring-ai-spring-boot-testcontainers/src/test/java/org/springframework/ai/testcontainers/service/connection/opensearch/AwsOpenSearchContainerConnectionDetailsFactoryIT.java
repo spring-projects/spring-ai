@@ -101,11 +101,10 @@ class AwsOpenSearchContainerConnectionDetailsFactoryIT {
 
 		Awaitility.await()
 			.until(() -> this.vectorStore
-				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
-					hasSize(1));
+				.similaritySearch(SearchRequest.query("Great Depression").topK(1).similarityThreshold(0)), hasSize(1));
 
 		List<Document> results = this.vectorStore
-			.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
+			.similaritySearch(SearchRequest.query("Great Depression").topK(1).similarityThreshold(0));
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
@@ -120,8 +119,7 @@ class AwsOpenSearchContainerConnectionDetailsFactoryIT {
 
 		Awaitility.await()
 			.until(() -> this.vectorStore
-				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
-					hasSize(0));
+				.similaritySearch(SearchRequest.query("Great Depression").topK(1).similarityThreshold(0)), hasSize(0));
 	}
 
 	private String getText(String uri) {

@@ -101,7 +101,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 			Thread.sleep(5000); // Await a second for the document to be indexed
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").topK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -121,7 +121,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 
-			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").topK(1));
 			assertThat(results2).isEmpty();
 
 			context.getBean(MongoTemplate.class).dropCollection("test_collection");
@@ -138,15 +138,13 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 				Thread.sleep(5000); // Await a second for the document to be indexed
 
-				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("Testcontainers").withTopK(2));
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Testcontainers").topK(2));
 				assertThat(results).hasSize(2);
 				results.forEach(doc -> assertThat(doc.getContent().contains("Testcontainers")).isTrue());
 
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
-				results = vectorStore.similaritySearch(SearchRequest.query("Testcontainers")
-					.withTopK(2)
-					.withFilterExpression(b.eq("foo", "bar").build()));
+				results = vectorStore.similaritySearch(
+						SearchRequest.query("Testcontainers").topK(2).filterExpression(b.eq("foo", "bar").build()));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);

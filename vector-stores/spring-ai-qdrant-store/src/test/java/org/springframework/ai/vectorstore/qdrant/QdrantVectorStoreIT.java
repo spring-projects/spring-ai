@@ -101,7 +101,7 @@ public class QdrantVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").topK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -113,7 +113,7 @@ public class QdrantVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").topK(1));
 			assertThat(results2).hasSize(0);
 		});
 	}
@@ -132,33 +132,33 @@ public class QdrantVectorStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
-			var request = SearchRequest.query("The World").withTopK(5);
+			var request = SearchRequest.query("The World").topK(5);
 
 			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(2);
 
 			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+				.similaritySearch(request.similarityThresholdAll().filterExpression("country == 'Bulgaria'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+			results = vectorStore
+				.similaritySearch(request.similarityThresholdAll().filterExpression("country == 'Netherlands'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("NOT(country == 'Netherlands')"));
+			results = vectorStore
+				.similaritySearch(request.similarityThresholdAll().filterExpression("NOT(country == 'Netherlands')"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("number in [3, 5, 12]"));
+				.similaritySearch(request.similarityThresholdAll().filterExpression("number in [3, 5, 12]"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("number nin [3, 5, 12]"));
+				.similaritySearch(request.similarityThresholdAll().filterExpression("number nin [3, 5, 12]"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
@@ -179,7 +179,7 @@ public class QdrantVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -194,7 +194,7 @@ public class QdrantVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").topK(5));
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -216,8 +216,8 @@ public class QdrantVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			var request = SearchRequest.query("Great").withTopK(5);
-			List<Document> fullResult = vectorStore.similaritySearch(request.withSimilarityThresholdAll());
+			var request = SearchRequest.query("Great").topK(5);
+			List<Document> fullResult = vectorStore.similaritySearch(request.similarityThresholdAll());
 
 			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
@@ -225,7 +225,7 @@ public class QdrantVectorStoreIT {
 
 			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch(request.withSimilarityThreshold(similarityThreshold));
+			List<Document> results = vectorStore.similaritySearch(request.similarityThreshold(similarityThreshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);

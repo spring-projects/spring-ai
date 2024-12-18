@@ -125,7 +125,7 @@ class SimpleVectorStoreTests {
 
 		this.vectorStore.add(List.of(doc));
 
-		SearchRequest request = SearchRequest.query("query").withSimilarityThreshold(0.99f).withTopK(5);
+		SearchRequest request = SearchRequest.query("query").similarityThreshold(0.99f).topK(5);
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 		assertThat(results).isEmpty();
@@ -191,7 +191,7 @@ class SimpleVectorStoreTests {
 			thread.join();
 		}
 
-		SearchRequest request = SearchRequest.query("test").withTopK(numThreads);
+		SearchRequest request = SearchRequest.query("test").topK(numThreads);
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 
@@ -213,14 +213,14 @@ class SimpleVectorStoreTests {
 
 	@Test
 	void shouldRejectInvalidSimilarityThreshold() {
-		assertThatThrownBy(() -> SearchRequest.query("test").withSimilarityThreshold(2.0f))
+		assertThatThrownBy(() -> SearchRequest.query("test").similarityThreshold(2.0f))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Similarity threshold must be in [0,1] range.");
 	}
 
 	@Test
 	void shouldRejectNegativeTopK() {
-		assertThatThrownBy(() -> SearchRequest.query("test").withTopK(-1)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> SearchRequest.query("test").topK(-1)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("TopK should be positive.");
 	}
 

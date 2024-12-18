@@ -112,7 +112,7 @@ public class QuestionAnswerAdvisorTests {
 			.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
-				SearchRequest.defaults().withSimilarityThreshold(0.99d).withTopK(6));
+				SearchRequest.defaults().similarityThreshold(0.99d).topK(6));
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
