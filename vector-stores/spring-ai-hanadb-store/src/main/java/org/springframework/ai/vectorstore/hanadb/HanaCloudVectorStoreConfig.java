@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.hanadb;
 
 /**
  * The {@code HanaCloudVectorStoreConfig} class represents the configuration for the
@@ -23,7 +23,9 @@ package org.springframework.ai.vectorstore;
  *
  * @author Rahul Mittal
  * @since 1.0.0
+ * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
  */
+@Deprecated(since = "1.0.0-M5", forRemoval = true)
 public final class HanaCloudVectorStoreConfig {
 
 	private String tableName;
@@ -33,34 +35,64 @@ public final class HanaCloudVectorStoreConfig {
 	private HanaCloudVectorStoreConfig() {
 	}
 
+	/**
+	 * Creates a new builder for HanaCloudVectorStoreConfig.
+	 * @return a new builder instance
+	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static HanaCloudVectorStoreConfigBuilder builder() {
 		return new HanaCloudVectorStoreConfigBuilder();
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getTableName() {
 		return this.tableName;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public int getTopK() {
 		return this.topK;
 	}
 
+	/**
+	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 */
+	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static class HanaCloudVectorStoreConfigBuilder {
 
 		private String tableName;
 
 		private int topK;
 
+		/**
+		 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public HanaCloudVectorStoreConfigBuilder tableName(String tableName) {
 			this.tableName = tableName;
 			return this;
 		}
 
+		/**
+		 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public HanaCloudVectorStoreConfigBuilder topK(int topK) {
 			this.topK = topK;
 			return this;
 		}
 
+		/**
+		 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public HanaCloudVectorStoreConfig build() {
 			HanaCloudVectorStoreConfig config = new HanaCloudVectorStoreConfig();
 			config.tableName = this.tableName;

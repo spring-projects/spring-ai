@@ -14,25 +14,33 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.hanadb;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 
 /**
+ * The {@code HanaVectorEntity} is an abstract class that represents a mapped superclass
+ * for entities that have a vector representation stored in a HANA vector repository. It
+ * provides methods for converting the entity to JSON format and retrieving the unique
+ * identifier of the entity.
+ *
  * @author Rahul Mittal
  * @since 1.0.0
  */
-@Entity
-@Table(name = "CRICKET_WORLD_CUP")
-public class CricketWorldCup extends HanaVectorEntity {
+@MappedSuperclass
+public abstract class HanaVectorEntity {
 
-	@Column(name = "content")
-	private String content;
+	@Id
+	@Column(name = "_id")
+	protected String _id;
 
-	public String getContent() {
-		return this.content;
+	public HanaVectorEntity() {
+	}
+
+	public String get_id() {
+		return this._id;
 	}
 
 }

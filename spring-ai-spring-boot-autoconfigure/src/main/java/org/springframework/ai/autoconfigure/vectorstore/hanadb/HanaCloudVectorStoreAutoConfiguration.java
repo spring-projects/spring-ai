@@ -21,10 +21,9 @@ import javax.sql.DataSource;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.HanaCloudVectorStore;
-import org.springframework.ai.vectorstore.HanaCloudVectorStoreConfig;
-import org.springframework.ai.vectorstore.HanaVectorEntity;
-import org.springframework.ai.vectorstore.HanaVectorRepository;
+import org.springframework.ai.vectorstore.hanadb.HanaCloudVectorStore;
+import org.springframework.ai.vectorstore.hanadb.HanaVectorEntity;
+import org.springframework.ai.vectorstore.hanadb.HanaVectorRepository;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -39,6 +38,7 @@ import org.springframework.context.annotation.Bean;
  *
  * @author Rahul Mittal
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 1.0.0
  */
 @AutoConfiguration(after = { JpaRepositoriesAutoConfiguration.class })
@@ -53,13 +53,14 @@ public class HanaCloudVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		return new HanaCloudVectorStore(repository, embeddingModel,
-				HanaCloudVectorStoreConfig.builder()
-					.tableName(properties.getTableName())
-					.topK(properties.getTopK())
-					.build(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
+		return HanaCloudVectorStore.builder()
+			.repository(repository)
+			.embeddingModel(embeddingModel)
+			.tableName(properties.getTableName())
+			.topK(properties.getTopK())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.build();
 	}
 
 }
