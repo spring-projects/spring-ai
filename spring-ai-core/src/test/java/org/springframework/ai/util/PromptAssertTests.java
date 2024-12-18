@@ -52,7 +52,8 @@ class PromptAssertTests {
 
 	@Test
 	void whenPlaceholdersIsNullThenThrow() {
-		assertThatThrownBy(() -> PromptAssert.templateHasRequiredPlaceholders(new PromptTemplate("{query}"), null))
+		assertThatThrownBy(
+				() -> PromptAssert.templateHasRequiredPlaceholders(new PromptTemplate("{query}"), (String[]) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("placeholders cannot be null or empty");
 	}
