@@ -68,13 +68,13 @@ class WeaviateContainerConnectionDetailsFactoryIT {
 		assertThat(this.properties.getFilterField()).hasSize(4);
 
 		assertThat(this.properties.getFilterField().get("country"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.TEXT);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.TEXT);
 		assertThat(this.properties.getFilterField().get("year"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.NUMBER);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.NUMBER);
 		assertThat(this.properties.getFilterField().get("active"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.BOOLEAN);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.BOOLEAN);
 		assertThat(this.properties.getFilterField().get("price"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.NUMBER);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.NUMBER);
 
 		var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 				Map.of("country", "Bulgaria", "price", 3.14, "active", true, "year", 2020));
