@@ -438,7 +438,7 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	}
 
 	/**
-	 * @deprecated use {@link Builder#keepAlive instead.
+	 * @deprecated use {@link Builder#keepAlive} instead.
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public OllamaOptions withKeepAlive(String keepAlive) {
