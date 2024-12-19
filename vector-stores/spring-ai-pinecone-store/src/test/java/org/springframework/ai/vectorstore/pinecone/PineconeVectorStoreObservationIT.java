@@ -187,8 +187,7 @@ public class PineconeVectorStoreObservationIT {
 
 		@Bean
 		public VectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
-			return PineconeVectorStore.builder()
-				.embeddingModel(embeddingModel)
+			return PineconeVectorStore.builder(embeddingModel)
 				.apiKey(System.getenv("PINECONE_API_KEY"))
 				.environment(PINECONE_ENVIRONMENT)
 				.projectId(PINECONE_PROJECT_ID)

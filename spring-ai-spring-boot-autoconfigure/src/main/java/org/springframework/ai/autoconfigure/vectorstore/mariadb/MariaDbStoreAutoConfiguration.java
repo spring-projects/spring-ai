@@ -57,8 +57,7 @@ public class MariaDbStoreAutoConfiguration {
 
 		var initializeSchema = properties.isInitializeSchema();
 
-		return MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
+		return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
 			.schemaName(properties.getSchemaName())
 			.vectorTableName(properties.getTableName())
 			.schemaValidation(properties.isSchemaValidation())

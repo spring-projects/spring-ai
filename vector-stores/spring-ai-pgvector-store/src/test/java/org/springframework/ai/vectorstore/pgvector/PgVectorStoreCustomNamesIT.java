@@ -196,9 +196,7 @@ public class PgVectorStoreCustomNamesIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 
-			return PgVectorStore.builder()
-				.jdbcTemplate(jdbcTemplate)
-				.embeddingModel(embeddingModel)
+			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 				.schemaName(this.schemaName)
 				.vectorTableName(this.vectorTableName)
 				.vectorTableValidationsEnabled(this.schemaValidation)

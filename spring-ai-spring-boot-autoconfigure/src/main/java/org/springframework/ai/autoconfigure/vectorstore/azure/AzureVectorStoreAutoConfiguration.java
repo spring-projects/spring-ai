@@ -84,9 +84,7 @@ public class AzureVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		var builder = AzureVectorStore.builder()
-			.searchIndexClient(searchIndexClient)
-			.embeddingModel(embeddingModel)
+		var builder = AzureVectorStore.builder(searchIndexClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.filterMetadataFields(List.of())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

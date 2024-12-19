@@ -81,9 +81,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return WeaviateVectorStore.builder()
-			.weaviateClient(weaviateClient)
-			.embeddingModel(embeddingModel)
+		return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
 			.objectClass(properties.getObjectClass())
 			.filterMetadataFields(properties.getFilterField()
 				.entrySet()

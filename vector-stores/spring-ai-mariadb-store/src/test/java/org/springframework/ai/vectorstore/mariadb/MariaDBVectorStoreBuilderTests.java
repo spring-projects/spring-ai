@@ -38,22 +38,21 @@ class MariaDBVectorStoreBuilderTests {
 
 	@Test
 	void shouldFailOnMissingEmbeddingModel() {
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate).build())
+		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate, null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("EmbeddingModel must be configured");
 	}
 
 	@Test
 	void shouldFailOnMissingJdbcTemplate() {
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(null).build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> MariaDBVectorStore.builder(null, embeddingModel).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("JdbcTemplate must not be null");
 	}
 
 	@Test
 	void shouldUseDefaultValues() {
-		MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.build();
+		MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).build();
 
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("vectorTableName", "vector_store")
 			.hasFieldOrPropertyWithValue("schemaName", null)
@@ -71,8 +70,7 @@ class MariaDBVectorStoreBuilderTests {
 
 	@Test
 	void shouldConfigureCustomValues() {
-		MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
+		MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
 			.schemaName("custom_schema")
 			.vectorTableName("custom_vectors")
 			.schemaValidation(true)
@@ -103,60 +101,49 @@ class MariaDBVectorStoreBuilderTests {
 
 	@Test
 	void shouldValidateFieldNames() {
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.contentFieldName("")
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).contentFieldName("").build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("ContentFieldName must not be empty");
 
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.embeddingFieldName("")
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(
+				() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).embeddingFieldName("").build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("EmbeddingFieldName must not be empty");
 
-		assertThatThrownBy(
-				() -> MariaDBVectorStore.builder(jdbcTemplate).embeddingModel(embeddingModel).idFieldName("").build())
+		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).idFieldName("").build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("IdFieldName must not be empty");
 
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.metadataFieldName("")
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).metadataFieldName("").build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MetadataFieldName must not be empty");
 	}
 
 	@Test
 	void shouldValidateMaxDocumentBatchSize() {
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.maxDocumentBatchSize(0)
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(
+				() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).maxDocumentBatchSize(0).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MaxDocumentBatchSize must be positive");
 
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.maxDocumentBatchSize(-1)
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(
+				() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).maxDocumentBatchSize(-1).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MaxDocumentBatchSize must be positive");
 	}
 
 	@Test
 	void shouldValidateDistanceType() {
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.distanceType(null)
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).distanceType(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("DistanceType must not be null");
 	}
 
 	@Test
 	void shouldValidateBatchingStrategy() {
-		assertThatThrownBy(() -> MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.batchingStrategy(null)
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(
+				() -> MariaDBVectorStore.builder(jdbcTemplate, embeddingModel).batchingStrategy(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("BatchingStrategy must not be null");
 	}
 

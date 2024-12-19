@@ -194,9 +194,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().client(client)
-			.embeddingModel(embeddingModel)
-			.collectionName(config.collectionName)
+		this(builder(client, embeddingModel).collectionName(config.collectionName)
 			.embeddingDimension(config.embeddingDimension)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
@@ -232,8 +230,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	 * a TypesenseVectorStore.
 	 * @return a new TypesenseBuilder instance
 	 */
-	public static TypesenseBuilder builder() {
-		return new TypesenseBuilder();
+	public static TypesenseBuilder builder(Client client, EmbeddingModel embeddingModel) {
+		return new TypesenseBuilder(client, embeddingModel);
 	}
 
 	@Override
@@ -455,7 +453,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
 
-		private Client client;
+		private final Client client;
 
 		private boolean initializeSchema = false;
 
@@ -467,10 +465,10 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if client is null
 		 */
-		public TypesenseBuilder client(Client client) {
+		public TypesenseBuilder(Client client, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(client, "client must not be null");
 			this.client = client;
-			return this;
 		}
 
 		/**
@@ -521,7 +519,6 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		@Override
 		public TypesenseVectorStore build() {
-			validate();
 			return new TypesenseVectorStore(this);
 		}
 

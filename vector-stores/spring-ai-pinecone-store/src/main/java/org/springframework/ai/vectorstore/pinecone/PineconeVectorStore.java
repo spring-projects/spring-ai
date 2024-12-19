@@ -109,8 +109,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	public PineconeVectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-		this(builder().embeddingModel(embeddingModel)
-			.apiKey(config.clientConfig.getApiKey())
+		this(builder(embeddingModel).apiKey(config.clientConfig.getApiKey())
 			.projectId(config.clientConfig.getProjectName())
 			.environment(config.clientConfig.getEnvironment())
 			.indexName(config.connectionConfig.getIndexName())
@@ -156,8 +155,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * Creates a new builder instance for configuring a PineconeVectorStore.
 	 * @return A new PineconeBuilder instance
 	 */
-	public static PineconeBuilder builder() {
-		return new PineconeBuilder();
+	public static PineconeBuilder builder(EmbeddingModel embeddingModel) {
+		return new PineconeBuilder(embeddingModel);
 	}
 
 	/**
@@ -358,6 +357,10 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
+		private PineconeBuilder(EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+		}
+
 		/**
 		 * Sets the Pinecone API key.
 		 * @param apiKey The API key to use
@@ -467,7 +470,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 */
 		@Override
 		public PineconeVectorStore build() {
-			validate();
 			return new PineconeVectorStore(this);
 		}
 

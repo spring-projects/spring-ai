@@ -33,12 +33,17 @@ import org.springframework.util.Assert;
 public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBuilder<T>>
 		implements VectorStore.Builder<T> {
 
-	protected EmbeddingModel embeddingModel;
+	protected final EmbeddingModel embeddingModel;
 
 	protected ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	@Nullable
 	protected VectorStoreObservationConvention customObservationConvention;
+
+	public AbstractVectorStoreBuilder(EmbeddingModel embeddingModel) {
+		Assert.notNull(embeddingModel, "EmbeddingModel must be configured");
+		this.embeddingModel = embeddingModel;
+	}
 
 	public EmbeddingModel getEmbeddingModel() {
 		return this.embeddingModel;
@@ -71,20 +76,9 @@ public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBu
 	}
 
 	@Override
-	public T customObservationConvention(VectorStoreObservationConvention convention) {
+	public T customObservationConvention(@Nullable VectorStoreObservationConvention convention) {
 		this.customObservationConvention = convention;
 		return self();
-	}
-
-	@Override
-	public T embeddingModel(EmbeddingModel embeddingModel) {
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
-		this.embeddingModel = embeddingModel;
-		return self();
-	}
-
-	protected void validate() {
-		Assert.notNull(this.embeddingModel, "EmbeddingModel must be configured");
 	}
 
 }

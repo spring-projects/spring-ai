@@ -132,9 +132,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
 			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
-		this(builder().cosmosClient(cosmosClient)
-			.embeddingModel(embeddingModel)
-			.containerName(properties.getContainerName())
+		this(builder(cosmosClient, embeddingModel).containerName(properties.getContainerName())
 			.databaseName(properties.getDatabaseName())
 			.partitionKeyPath(properties.getPartitionKeyPath())
 			.vectorStoreThroughput(properties.getVectorStoreThroughput())
@@ -171,8 +169,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		initializeContainer(containerName, databaseName, vectorStoreThroughput, vectorDimensions, partitionKeyPath);
 	}
 
-	public static CosmosDBBuilder builder() {
-		return new CosmosDBBuilder();
+	public static CosmosDBBuilder builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
+		return new CosmosDBBuilder(cosmosClient, embeddingModel);
 	}
 
 	private void initializeContainer(String containerName, String databaseName, int vectorStoreThroughput,
@@ -430,7 +428,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	 */
 	public static class CosmosDBBuilder extends AbstractVectorStoreBuilder<CosmosDBBuilder> {
 
-		private CosmosAsyncClient cosmosClient;
+		private final CosmosAsyncClient cosmosClient;
 
 		private String containerName;
 
@@ -452,10 +450,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if cosmosClient is null
 		 */
-		public CosmosDBBuilder cosmosClient(CosmosAsyncClient cosmosClient) {
+		public CosmosDBBuilder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(cosmosClient, "CosmosClient must not be null");
 			this.cosmosClient = cosmosClient;
-			return this;
 		}
 
 		/**
@@ -543,7 +541,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		@Override
 		public CosmosDBVectorStore build() {
-			validate();
 			return new CosmosDBVectorStore(this);
 		}
 

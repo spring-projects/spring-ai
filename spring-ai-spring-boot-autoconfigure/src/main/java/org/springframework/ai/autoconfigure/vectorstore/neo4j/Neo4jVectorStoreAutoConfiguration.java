@@ -58,9 +58,7 @@ public class Neo4jVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return Neo4jVectorStore.builder()
-			.driver(driver)
-			.embeddingModel(embeddingModel)
+		return Neo4jVectorStore.builder(driver, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))

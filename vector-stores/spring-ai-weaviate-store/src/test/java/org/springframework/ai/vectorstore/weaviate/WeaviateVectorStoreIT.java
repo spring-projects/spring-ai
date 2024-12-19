@@ -252,9 +252,7 @@ public class WeaviateVectorStoreIT {
 			WeaviateClient weaviateClient = new WeaviateClient(
 					new Config("http", weaviateContainer.getHttpHostAddress()));
 
-			return WeaviateVectorStore.builder()
-				.weaviateClient(weaviateClient)
-				.embeddingModel(embeddingModel)
+			return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
 				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country"),
 						WeaviateVectorStore.MetadataField.number("year")))
 				.consistencyLevel(WeaviateVectorStore.ConsistentLevel.ONE)

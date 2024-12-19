@@ -115,9 +115,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 			EmbeddingModel embeddingModel, HanaCloudVectorStoreConfig config, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention) {
 
-		this(builder().repository(repository)
-			.embeddingModel(embeddingModel)
-			.tableName(config.getTableName())
+		this(builder(repository, embeddingModel).tableName(config.getTableName())
 			.topK(config.getTopK())
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention));
@@ -143,8 +141,9 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	 * Creates a new builder for configuring and creating HanaCloudVectorStore instances.
 	 * @return a new builder instance
 	 */
-	public static HanaCloudBuilder builder() {
-		return new HanaCloudBuilder();
+	public static HanaCloudBuilder builder(HanaVectorRepository<? extends HanaVectorEntity> repository,
+			EmbeddingModel embeddingModel) {
+		return new HanaCloudBuilder(repository, embeddingModel);
 	}
 
 	@Override
@@ -233,7 +232,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	 */
 	public static class HanaCloudBuilder extends AbstractVectorStoreBuilder<HanaCloudBuilder> {
 
-		private HanaVectorRepository<? extends HanaVectorEntity> repository;
+		private final HanaVectorRepository<? extends HanaVectorEntity> repository;
 
 		private String tableName;
 
@@ -245,10 +244,11 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if repository is null
 		 */
-		public HanaCloudBuilder repository(HanaVectorRepository<? extends HanaVectorEntity> repository) {
+		public HanaCloudBuilder(HanaVectorRepository<? extends HanaVectorEntity> repository,
+				EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(repository, "Repository must not be null");
 			this.repository = repository;
-			return this;
 		}
 
 		/**
@@ -273,7 +273,6 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 		@Override
 		public HanaCloudVectorStore build() {
-			validate();
 			return new HanaCloudVectorStore(this);
 		}
 
