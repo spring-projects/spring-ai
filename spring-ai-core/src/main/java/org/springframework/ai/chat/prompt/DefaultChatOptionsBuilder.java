@@ -23,7 +23,7 @@ import java.util.List;
  */
 public class DefaultChatOptionsBuilder<T extends DefaultChatOptionsBuilder<T>> implements ChatOptions.Builder<T> {
 
-	private final DefaultChatOptions options = new DefaultChatOptions();
+	protected DefaultChatOptions options = new DefaultChatOptions();
 
 	protected T self() {
 		return (T) this;

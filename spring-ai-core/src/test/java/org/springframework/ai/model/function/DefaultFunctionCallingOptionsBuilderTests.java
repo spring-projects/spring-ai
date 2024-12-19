@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -40,6 +42,109 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	void setUp() {
 		builder = new DefaultFunctionCallingOptionsBuilder();
 	}
+
+	// Tests for inherited ChatOptions properties
+
+	@Test
+	void shouldBuildWithModel() {
+		// When
+		ChatOptions options = builder.model("gpt-4").build();
+
+		// Then
+		assertThat(options.getModel()).isEqualTo("gpt-4");
+	}
+
+	@Test
+	void shouldBuildWithFrequencyPenalty() {
+		// When
+		ChatOptions options = builder.frequencyPenalty(0.5).build();
+
+		// Then
+		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
+	}
+
+	@Test
+	void shouldBuildWithMaxTokens() {
+		// When
+		ChatOptions options = builder.maxTokens(100).build();
+
+		// Then
+		assertThat(options.getMaxTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void shouldBuildWithPresencePenalty() {
+		// When
+		ChatOptions options = builder.presencePenalty(0.7).build();
+
+		// Then
+		assertThat(options.getPresencePenalty()).isEqualTo(0.7);
+	}
+
+	@Test
+	void shouldBuildWithStopSequences() {
+		// Given
+		List<String> stopSequences = List.of("stop1", "stop2");
+
+		// When
+		ChatOptions options = builder.stopSequences(stopSequences).build();
+
+		// Then
+		assertThat(options.getStopSequences()).hasSize(2).containsExactlyElementsOf(stopSequences);
+	}
+
+	@Test
+	void shouldBuildWithTemperature() {
+		// When
+		ChatOptions options = builder.temperature(0.8).build();
+
+		// Then
+		assertThat(options.getTemperature()).isEqualTo(0.8);
+	}
+
+	@Test
+	void shouldBuildWithTopK() {
+		// When
+		ChatOptions options = builder.topK(5).build();
+
+		// Then
+		assertThat(options.getTopK()).isEqualTo(5);
+	}
+
+	@Test
+	void shouldBuildWithTopP() {
+		// When
+		ChatOptions options = builder.topP(0.9).build();
+
+		// Then
+		assertThat(options.getTopP()).isEqualTo(0.9);
+	}
+
+	@Test
+	void shouldBuildWithAllInheritedOptions() {
+		// When
+		ChatOptions options = builder.model("gpt-4")
+			.frequencyPenalty(0.5)
+			.maxTokens(100)
+			.presencePenalty(0.7)
+			.stopSequences(List.of("stop1", "stop2"))
+			.temperature(0.8)
+			.topK(5)
+			.topP(0.9)
+			.build();
+
+		// Then
+		assertThat(options.getModel()).isEqualTo("gpt-4");
+		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
+		assertThat(options.getMaxTokens()).isEqualTo(100);
+		assertThat(options.getPresencePenalty()).isEqualTo(0.7);
+		assertThat(options.getStopSequences()).containsExactly("stop1", "stop2");
+		assertThat(options.getTemperature()).isEqualTo(0.8);
+		assertThat(options.getTopK()).isEqualTo(5);
+		assertThat(options.getTopP()).isEqualTo(0.9);
+	}
+
+	// Original FunctionCallingOptions tests
 
 	@Test
 	void shouldBuildWithFunctionCallbacksList() {
@@ -195,7 +300,15 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		Map<String, Object> context = Map.of("key1", "value1");
 
 		// When
-		FunctionCallingOptions options = builder.functionCallbacks(callback)
+		FunctionCallingOptions options = builder.model("gpt-4")
+			.frequencyPenalty(0.5)
+			.maxTokens(100)
+			.presencePenalty(0.7)
+			.stopSequences(List.of("stop1", "stop2"))
+			.temperature(0.8)
+			.topK(5)
+			.topP(0.9)
+			.functionCallbacks(callback)
 			.functions(functions)
 			.proxyToolCalls(true)
 			.toolContext(context)
@@ -206,6 +319,16 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		assertThat(options.getFunctions()).hasSize(1).containsExactlyElementsOf(functions);
 		assertThat(options.getProxyToolCalls()).isTrue();
 		assertThat(options.getToolContext()).hasSize(1).containsAllEntriesOf(context);
+
+		ChatOptions chatOptions = options;
+		assertThat(chatOptions.getModel()).isEqualTo("gpt-4");
+		assertThat(chatOptions.getFrequencyPenalty()).isEqualTo(0.5);
+		assertThat(chatOptions.getMaxTokens()).isEqualTo(100);
+		assertThat(chatOptions.getPresencePenalty()).isEqualTo(0.7);
+		assertThat(chatOptions.getStopSequences()).containsExactly("stop1", "stop2");
+		assertThat(chatOptions.getTemperature()).isEqualTo(0.8);
+		assertThat(chatOptions.getTopK()).isEqualTo(5);
+		assertThat(chatOptions.getTopP()).isEqualTo(0.9);
 	}
 
 }

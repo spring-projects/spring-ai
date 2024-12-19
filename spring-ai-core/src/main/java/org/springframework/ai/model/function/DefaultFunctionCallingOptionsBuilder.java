@@ -36,22 +36,28 @@ public class DefaultFunctionCallingOptionsBuilder
 		extends DefaultChatOptionsBuilder<DefaultFunctionCallingOptionsBuilder>
 		implements FunctionCallingOptions.Builder<DefaultFunctionCallingOptionsBuilder> {
 
-	private final DefaultFunctionCallingOptions functionCallingOptions = new DefaultFunctionCallingOptions();
+	private final DefaultFunctionCallingOptions functionCallingOptions;
+
+	public DefaultFunctionCallingOptionsBuilder() {
+		this.functionCallingOptions = new DefaultFunctionCallingOptions();
+		// Set the options in the parent class to be the same instance
+		super.options = this.functionCallingOptions;
+	}
 
 	public DefaultFunctionCallingOptionsBuilder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 		this.functionCallingOptions.setFunctionCallbacks(functionCallbacks);
-		return this;
+		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder functionCallbacks(FunctionCallback... functionCallbacks) {
 		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
 		this.functionCallingOptions.setFunctionCallbacks(List.of(functionCallbacks));
-		return this;
+		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder functions(Set<String> functions) {
 		this.functionCallingOptions.setFunctions(functions);
-		return this;
+		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder function(String function) {
@@ -59,12 +65,12 @@ public class DefaultFunctionCallingOptionsBuilder
 		var set = new HashSet<>(this.functionCallingOptions.getFunctions());
 		set.add(function);
 		this.functionCallingOptions.setFunctions(set);
-		return this;
+		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder proxyToolCalls(Boolean proxyToolCalls) {
 		this.functionCallingOptions.setProxyToolCalls(proxyToolCalls);
-		return this;
+		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder toolContext(Map<String, Object> context) {
@@ -72,7 +78,7 @@ public class DefaultFunctionCallingOptionsBuilder
 		Map<String, Object> newContext = new HashMap<>(this.functionCallingOptions.getToolContext());
 		newContext.putAll(context);
 		this.functionCallingOptions.setToolContext(newContext);
-		return this;
+		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder toolContext(String key, Object value) {
@@ -81,7 +87,7 @@ public class DefaultFunctionCallingOptionsBuilder
 		Map<String, Object> newContext = new HashMap<>(this.functionCallingOptions.getToolContext());
 		newContext.put(key, value);
 		this.functionCallingOptions.setToolContext(newContext);
-		return this;
+		return self();
 	}
 
 	public FunctionCallingOptions build() {
