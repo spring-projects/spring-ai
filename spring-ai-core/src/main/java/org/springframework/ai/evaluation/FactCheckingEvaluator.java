@@ -64,19 +64,46 @@ import org.springframework.ai.chat.client.ChatClient;
 public class FactCheckingEvaluator implements Evaluator {
 
 	private static final String DEFAULT_EVALUATION_PROMPT_TEXT = """
+				Evaluate whether or not the following claim is supported by the provided document.
+				Respond with "yes" if the claim is supported, or "no" if it is not.
+				Document: \\n {document}\\n
+				Claim: \\n {claim}
+			""";
+
+	private static final String BESPOKE_EVALUATION_PROMPT_TEXT = """
 				Document: \\n {document}\\n
 				Claim: \\n {claim}
 			""";
 
 	private final ChatClient.Builder chatClientBuilder;
+	private final String evaluationPrompt;
 
 	/**
 	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder.
-	 * @param chatClientBuilder The builder for the ChatClient used to perform the
-	 * evaluation
+	 * Uses the default evaluation prompt suitable for general purpose LLMs.
+	 * @param chatClientBuilder The builder for the ChatClient used to perform the evaluation
 	 */
 	public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
+		this(chatClientBuilder, DEFAULT_EVALUATION_PROMPT_TEXT);
+	}
+
+	/**
+	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder and evaluation prompt.
+	 * @param chatClientBuilder The builder for the ChatClient used to perform the evaluation
+	 * @param evaluationPrompt The prompt text to use for evaluation
+	 */
+	public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder, String evaluationPrompt) {
 		this.chatClientBuilder = chatClientBuilder;
+		this.evaluationPrompt = evaluationPrompt;
+	}
+
+	/**
+	 * Creates a FactCheckingEvaluator configured for use with the Bespoke Minicheck model.
+	 * @param chatClientBuilder The builder for the ChatClient used to perform the evaluation
+	 * @return A FactCheckingEvaluator configured for Bespoke Minicheck
+	 */
+	public static FactCheckingEvaluator forBespokeMinicheck(ChatClient.Builder chatClientBuilder) {
+		return new FactCheckingEvaluator(chatClientBuilder, BESPOKE_EVALUATION_PROMPT_TEXT);
 	}
 
 	/**
@@ -94,7 +121,7 @@ public class FactCheckingEvaluator implements Evaluator {
 
 		String evaluationResponse = this.chatClientBuilder.build()
 			.prompt()
-			.user(userSpec -> userSpec.text(DEFAULT_EVALUATION_PROMPT_TEXT)
+			.user(userSpec -> userSpec.text(evaluationPrompt)
 				.param("document", context)
 				.param("claim", response))
 			.call()
