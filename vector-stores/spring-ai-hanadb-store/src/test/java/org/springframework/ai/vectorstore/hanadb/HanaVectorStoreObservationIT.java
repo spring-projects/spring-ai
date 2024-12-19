@@ -167,9 +167,7 @@ public class HanaVectorStoreObservationIT {
 		public VectorStore hanaCloudVectorStore(CricketWorldCupRepository cricketWorldCupRepository,
 				EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
 
-			return HanaCloudVectorStore.builder()
-				.repository(cricketWorldCupRepository)
-				.embeddingModel(embeddingModel)
+			return HanaCloudVectorStore.builder(cricketWorldCupRepository, embeddingModel)
 				.tableName(TEST_TABLE_NAME)
 				.topK(1)
 				.observationRegistry(observationRegistry)

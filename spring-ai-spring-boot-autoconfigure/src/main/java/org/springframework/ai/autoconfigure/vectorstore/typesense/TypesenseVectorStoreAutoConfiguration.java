@@ -70,9 +70,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return TypesenseVectorStore.builder()
-			.client(typesenseClient)
-			.embeddingModel(embeddingModel)
+		return TypesenseVectorStore.builder(typesenseClient, embeddingModel)
 			.collectionName(properties.getCollectionName())
 			.embeddingDimension(properties.getEmbeddingDimension())
 			.initializeSchema(properties.isInitializeSchema())

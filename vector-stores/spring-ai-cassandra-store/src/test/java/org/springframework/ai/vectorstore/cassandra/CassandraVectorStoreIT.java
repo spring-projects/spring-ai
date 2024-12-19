@@ -85,14 +85,16 @@ class CassandraVectorStoreIT {
 		}
 	}
 
-	private static CassandraVectorStore.CassandraBuilder storeBuilder(CqlSession cqlSession) {
-		return CassandraVectorStore.builder()
+	private static CassandraVectorStore.CassandraBuilder storeBuilder(CqlSession cqlSession,
+			EmbeddingModel embeddingModel) {
+		return CassandraVectorStore.builder(embeddingModel)
 			.session(cqlSession)
 			.keyspace("test_" + CassandraVectorStore.DEFAULT_KEYSPACE_NAME);
 	}
 
 	private static CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
-		CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class))
+		CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class),
+				context.getBean(EmbeddingModel.class))
 			.addMetadataColumns(metadataFields);
 
 		return createTestStore(context, builder);
@@ -101,7 +103,6 @@ class CassandraVectorStoreIT {
 	private static CassandraVectorStore createTestStore(ApplicationContext context,
 			CassandraVectorStore.CassandraBuilder builder) {
 		CassandraVectorStore.dropKeyspace(builder);
-		builder.embeddingModel(context.getBean(EmbeddingModel.class));
 		CassandraVectorStore store = builder.build();
 		return store;
 	}
@@ -149,7 +150,8 @@ class CassandraVectorStoreIT {
 	@Test
 	void addAndSearchReturnEmbeddings() {
 		this.contextRunner.run(context -> {
-			CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class))
+			CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class),
+					context.getBean(EmbeddingModel.class))
 				.returnEmbeddings(true);
 
 			try (CassandraVectorStore store = createTestStore(context, builder)) {
@@ -395,12 +397,11 @@ class CassandraVectorStoreIT {
 		@Bean
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel) {
 
-			CassandraVectorStore.CassandraBuilder builder = storeBuilder(cqlSession)
-				.addMetadataColumns(new CassandraVectorStore.SchemaColumn("meta1", DataTypes.TEXT),
-						new CassandraVectorStore.SchemaColumn("meta2", DataTypes.TEXT),
-						new CassandraVectorStore.SchemaColumn("country", DataTypes.TEXT),
-						new CassandraVectorStore.SchemaColumn("year", DataTypes.SMALLINT))
-				.embeddingModel(embeddingModel);
+			CassandraVectorStore.CassandraBuilder builder = storeBuilder(cqlSession, embeddingModel).addMetadataColumns(
+					new CassandraVectorStore.SchemaColumn("meta1", DataTypes.TEXT),
+					new CassandraVectorStore.SchemaColumn("meta2", DataTypes.TEXT),
+					new CassandraVectorStore.SchemaColumn("country", DataTypes.TEXT),
+					new CassandraVectorStore.SchemaColumn("year", DataTypes.SMALLINT));
 
 			CassandraVectorStore.dropKeyspace(builder);
 			return builder.build();

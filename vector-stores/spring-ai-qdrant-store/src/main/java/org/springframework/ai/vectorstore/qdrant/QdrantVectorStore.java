@@ -149,7 +149,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 * @param collectionName The name of the collection to use in Qdrant.
 	 * @param embeddingModel The client for embedding operations.
 	 * @param initializeSchema A boolean indicating whether to initialize the schema.
-	 * @deprecated Use {@link #builder(QdrantClient)}
+	 * @deprecated Use {@link #builder(QdrantClient, EmbeddingModel)}
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
@@ -166,15 +166,14 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 * @param initializeSchema A boolean indicating whether to initialize the schema.
 	 * @param observationRegistry The observation registry to use.
 	 * @param customObservationConvention The custom search observation convention to use.
-	 * @deprecated Use {@link #builder(QdrantClient)}
+	 * @deprecated Use {@link #builder(QdrantClient, EmbeddingModel)}
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder(qdrantClient).embeddingModel(embeddingModel)
-			.collectionName(collectionName)
+		this(builder(qdrantClient, embeddingModel).collectionName(collectionName)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
@@ -206,8 +205,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 * @param qdrantClient the client for interfacing with Qdrant
 	 * @return a new QdrantBuilder instance
 	 */
-	public static QdrantBuilder builder(QdrantClient qdrantClient) {
-		return new QdrantBuilder(qdrantClient);
+	public static QdrantBuilder builder(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
+		return new QdrantBuilder(qdrantClient, embeddingModel);
 	}
 
 	/**
@@ -386,7 +385,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 * @param qdrantClient the client for Qdrant operations
 		 * @throws IllegalArgumentException if qdrantClient is null
 		 */
-		QdrantBuilder(QdrantClient qdrantClient) {
+		private QdrantBuilder(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(qdrantClient, "QdrantClient must not be null");
 			this.qdrantClient = qdrantClient;
 		}
@@ -434,7 +434,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 */
 		@Override
 		public QdrantVectorStore build() {
-			validate();
 			return new QdrantVectorStore(this);
 		}
 

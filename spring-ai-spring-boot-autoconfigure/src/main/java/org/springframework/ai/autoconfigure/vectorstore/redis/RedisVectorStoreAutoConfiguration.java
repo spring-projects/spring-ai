@@ -60,9 +60,9 @@ public class RedisVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return RedisVectorStore.builder()
-			.jedis(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()))
-			.embeddingModel(embeddingModel)
+		JedisPooled jedisPooled = new JedisPooled(jedisConnectionFactory.getHostName(),
+				jedisConnectionFactory.getPort());
+		return RedisVectorStore.builder(jedisPooled, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))

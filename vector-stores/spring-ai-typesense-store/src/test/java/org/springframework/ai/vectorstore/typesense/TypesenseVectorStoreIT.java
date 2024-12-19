@@ -242,9 +242,7 @@ public class TypesenseVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel) {
 
-			return TypesenseVectorStore.builder()
-				.client(client)
-				.embeddingModel(embeddingModel)
+			return TypesenseVectorStore.builder(client, embeddingModel)
 				.collectionName("test_vector_store")
 				.embeddingDimension(embeddingModel.dimensions())
 				.initializeSchema(true)

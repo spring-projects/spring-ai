@@ -166,9 +166,7 @@ public class WeaviateVectorStoreObservationIT {
 			WeaviateClient weaviateClient = new WeaviateClient(
 					new io.weaviate.client.Config("http", weaviateContainer.getHttpHostAddress()));
 
-			return WeaviateVectorStore.builder()
-				.weaviateClient(weaviateClient)
-				.embeddingModel(embeddingModel)
+			return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
 				.consistencyLevel(WeaviateVectorStore.ConsistentLevel.ONE)
 				.observationRegistry(observationRegistry)
 				.batchingStrategy(new TokenCountBatchingStrategy())

@@ -187,9 +187,7 @@ public class MongoDbVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return MongoDBAtlasVectorStore.builder()
-				.mongoTemplate(mongoTemplate)
-				.embeddingModel(embeddingModel)
+			return MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
 				.metadataFieldsToFilter(List.of("country", "year"))
 				.initializeSchema(true)
 				.observationRegistry(observationRegistry)

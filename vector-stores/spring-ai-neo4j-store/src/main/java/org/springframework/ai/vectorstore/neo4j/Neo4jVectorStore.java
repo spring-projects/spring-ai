@@ -196,9 +196,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().driver(driver)
-			.embeddingModel(embeddingModel)
-			.sessionConfig(config.sessionConfig)
+		this(builder(driver, embeddingModel).sessionConfig(config.sessionConfig)
 			.embeddingDimension(config.embeddingDimension)
 			.distanceType(config.distanceType)
 			.embeddingProperty(config.embeddingProperty)
@@ -400,13 +398,13 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
-	public static Neo4jBuilder builder() {
-		return new Neo4jBuilder();
+	public static Neo4jBuilder builder(Driver driver, EmbeddingModel embeddingModel) {
+		return new Neo4jBuilder(driver, embeddingModel);
 	}
 
 	public static class Neo4jBuilder extends AbstractVectorStoreBuilder<Neo4jBuilder> {
 
-		private Driver driver;
+		private final Driver driver;
 
 		private SessionConfig sessionConfig = SessionConfig.defaultConfig();
 
@@ -428,10 +426,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		public Neo4jBuilder driver(Driver driver) {
+		public Neo4jBuilder(Driver driver, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(driver, "Neo4j driver must not be null");
 			this.driver = driver;
-			return this;
 		}
 
 		/**
@@ -565,7 +563,6 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		@Override
 		public Neo4jVectorStore build() {
-			validate();
 			return new Neo4jVectorStore(this);
 		}
 

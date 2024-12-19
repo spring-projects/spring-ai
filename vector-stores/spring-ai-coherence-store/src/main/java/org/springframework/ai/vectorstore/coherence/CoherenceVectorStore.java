@@ -147,7 +147,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CoherenceVectorStore(EmbeddingModel embeddingModel, Session session) {
-		this(builder().embeddingModel(embeddingModel).session(session));
+		this(builder(session, embeddingModel));
 	}
 
 	/**
@@ -172,8 +172,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 * Creates a new builder for configuring and creating CoherenceVectorStore instances.
 	 * @return a new builder instance
 	 */
-	public static CoherenceBuilder builder() {
-		return new CoherenceBuilder();
+	public static CoherenceBuilder builder(Session session, EmbeddingModel embeddingModel) {
+		return new CoherenceBuilder(session, embeddingModel);
 	}
 
 	/**
@@ -332,7 +332,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 */
 	public static class CoherenceBuilder extends AbstractVectorStoreBuilder<CoherenceBuilder> {
 
-		private Session session;
+		private final Session session;
 
 		private String mapName = DEFAULT_MAP_NAME;
 
@@ -348,10 +348,10 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if session is null
 		 */
-		public CoherenceBuilder session(Session session) {
+		public CoherenceBuilder(Session session, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(session, "Session must not be null");
 			this.session = session;
-			return this;
 		}
 
 		/**
@@ -402,7 +402,6 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 
 		@Override
 		public CoherenceVectorStore build() {
-			validate();
 			return new CoherenceVectorStore(this);
 		}
 

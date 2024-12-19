@@ -167,13 +167,11 @@ public class CosmosDBVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel,
 				VectorStoreObservationConvention convention) {
-			return CosmosDBVectorStore.builder()
+			return CosmosDBVectorStore.builder(cosmosClient, embeddingModel)
 				.databaseName("test-database")
 				.containerName("test-container")
 				.metadataFields(List.of("country", "year", "city"))
 				.vectorStoreThroughput(1000)
-				.cosmosClient(cosmosClient)
-				.embeddingModel(embeddingModel)
 				.customObservationConvention(convention)
 				.build();
 		}

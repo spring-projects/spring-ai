@@ -259,9 +259,7 @@ class MongoDBAtlasVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
-			return MongoDBAtlasVectorStore.builder()
-				.mongoTemplate(mongoTemplate)
-				.embeddingModel(embeddingModel)
+			return MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
 				.metadataFieldsToFilter(List.of("country", "year"))
 				.initializeSchema(true)
 				.build();

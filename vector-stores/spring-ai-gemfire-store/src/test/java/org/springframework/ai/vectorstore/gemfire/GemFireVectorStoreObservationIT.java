@@ -200,11 +200,10 @@ public class GemFireVectorStoreObservationIT {
 
 		@Bean
 		public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
-			return GemFireVectorStore.builder()
+			return GemFireVectorStore.builder(embeddingModel)
 				.host("localhost")
 				.port(HTTP_SERVICE_PORT)
 				.indexName(TEST_INDEX_NAME)
-				.embeddingModel(embeddingModel)
 				.initializeSchema(true)
 				.observationRegistry(observationRegistry)
 				.customObservationConvention(null)

@@ -311,9 +311,7 @@ public class CoherenceVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(EmbeddingModel embeddingModel, Session session) {
-			return CoherenceVectorStore.builder()
-				.embeddingModel(embeddingModel)
-				.session(session)
+			return CoherenceVectorStore.builder(session, embeddingModel)
 				.distanceType(this.distanceType)
 				.indexType(this.indexType)
 				.forcedNormalization(this.distanceType == CoherenceVectorStore.DistanceType.COSINE

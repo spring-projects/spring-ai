@@ -70,8 +70,7 @@ public class MariaDBStoreTests {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var mariadbVectorStore = MariaDBVectorStore.builder(jdbcTemplate)
-			.embeddingModel(embeddingModel)
+		var mariadbVectorStore = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
 			.maxDocumentBatchSize(1000)
 			.build();
 

@@ -249,8 +249,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-		this(builder().session(conf.session)
-			.embeddingModel(embeddingModel)
+		this(builder(embeddingModel).session(conf.session)
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
 			.batchingStrategy(batchingStrategy));
@@ -289,8 +288,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		this.returnEmbeddings = builder.returnEmbeddings;
 	}
 
-	public static CassandraBuilder builder() {
-		return new CassandraBuilder();
+	public static CassandraBuilder builder(EmbeddingModel embeddingModel) {
+		return new CassandraBuilder(embeddingModel);
 	}
 
 	private static Float[] toFloatArray(float[] embedding) {
@@ -827,16 +826,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		private boolean returnEmbeddings = false;
 
-		/**
-		 * Executor to use when adding documents. The hotspot is the call to the
-		 * embeddingModel. For remote transformers you probably want a higher value to
-		 * utilize network. For local transformers you probably want a lower value to
-		 * avoid saturation.
-		 **/
-		public CassandraBuilder fixedThreadPoolExecutorSize(int threads) {
-			Preconditions.checkArgument(0 < threads);
-			this.fixedThreadPoolExecutorSize = threads;
-			return this;
+		private CassandraBuilder(EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+			Assert.notNull(session, "Session must not be null");
 		}
 
 		/**
@@ -848,6 +840,18 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		public CassandraBuilder session(CqlSession session) {
 			Assert.notNull(session, "Session must not be null");
 			this.session = session;
+			return this;
+		}
+
+		/**
+		 * Executor to use when adding documents. The hotspot is the call to the
+		 * embeddingModel. For remote transformers you probably want a higher value to
+		 * utilize network. For local transformers you probably want a lower value to
+		 * avoid saturation.
+		 **/
+		public CassandraBuilder fixedThreadPoolExecutorSize(int threads) {
+			Preconditions.checkArgument(0 < threads);
+			this.fixedThreadPoolExecutorSize = threads;
 			return this;
 		}
 
@@ -1073,7 +1077,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		@Override
 		public CassandraVectorStore build() {
-			validate();
 			if (session == null && sessionBuilder != null) {
 				session = sessionBuilder.build();
 				closeSessionOnClose = true;

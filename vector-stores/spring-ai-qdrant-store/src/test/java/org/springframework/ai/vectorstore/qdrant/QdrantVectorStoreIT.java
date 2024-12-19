@@ -254,9 +254,8 @@ public class QdrantVectorStoreIT {
 
 		@Bean
 		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel, QdrantClient qdrantClient) {
-			return QdrantVectorStore.builder(qdrantClient)
+			return QdrantVectorStore.builder(qdrantClient, embeddingModel)
 				.collectionName(COLLECTION_NAME)
-				.embeddingModel(embeddingModel)
 				.initializeSchema(true)
 				.build();
 		}

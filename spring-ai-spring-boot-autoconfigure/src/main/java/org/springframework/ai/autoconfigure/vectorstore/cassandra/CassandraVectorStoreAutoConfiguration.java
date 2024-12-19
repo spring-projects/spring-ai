@@ -62,7 +62,7 @@ public class CassandraVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return CassandraVectorStore.builder()
+		return CassandraVectorStore.builder(embeddingModel)
 			.session(cqlSession)
 			.keyspace(properties.getKeyspace())
 			.table(properties.getTable())
@@ -72,7 +72,6 @@ public class CassandraVectorStoreAutoConfiguration {
 			.fixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize())
 			.disallowSchemaChanges(!properties.isInitializeSchema())
 			.returnEmbeddings(properties.getReturnEmbeddings())
-			.embeddingModel(embeddingModel)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)

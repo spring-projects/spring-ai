@@ -181,9 +181,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			WeaviateClient weaviateClient, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().embeddingModel(embeddingModel)
-			.weaviateClient(weaviateClient)
-			.observationRegistry(observationRegistry)
+		this(builder(weaviateClient, embeddingModel).observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
 			.batchingStrategy(batchingStrategy));
 	}
@@ -217,8 +215,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * a WeaviateVectorStore.
 	 * @return a new WeaviateBuilder instance
 	 */
-	public static WeaviateBuilder builder() {
-		return new WeaviateBuilder();
+	public static WeaviateBuilder builder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
+		return new WeaviateBuilder(weaviateClient, embeddingModel);
 	}
 
 	private Field[] buildWeaviateSimilaritySearchFields() {
@@ -550,10 +548,10 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if weaviateClient is null
 		 */
-		public WeaviateBuilder weaviateClient(WeaviateClient weaviateClient) {
-			Assert.notNull(weaviateClient, "weaviateClient must not be null");
+		private WeaviateBuilder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+			Assert.notNull(weaviateClient, "WeaviateClient must not be null");
 			this.weaviateClient = weaviateClient;
-			return this;
 		}
 
 		/**
@@ -612,7 +610,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 */
 		@Override
 		public WeaviateVectorStore build() {
-			validate();
 			return new WeaviateVectorStore(this);
 		}
 

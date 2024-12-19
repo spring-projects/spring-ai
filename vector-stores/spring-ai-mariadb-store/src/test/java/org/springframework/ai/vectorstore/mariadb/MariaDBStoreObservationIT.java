@@ -177,8 +177,7 @@ public class MariaDBStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return MariaDBVectorStore.builder(jdbcTemplate)
-				.embeddingModel(embeddingModel)
+			return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
 				.schemaName(schemaName)
 				.distanceType(MariaDBVectorStore.MariaDBDistanceType.COSINE)
 				.observationRegistry(observationRegistry)

@@ -275,8 +275,7 @@ public class PineconeVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(EmbeddingModel embeddingModel) {
 			String apikey = System.getenv("PINECONE_API_KEY");
-			return PineconeVectorStore.builder()
-				.embeddingModel(embeddingModel)
+			return PineconeVectorStore.builder(embeddingModel)
 				.apiKey(apikey)
 				.environment(PINECONE_ENVIRONMENT)
 				.projectId(PINECONE_PROJECT_ID)

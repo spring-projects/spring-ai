@@ -120,7 +120,7 @@ class CassandraRichSchemaVectorStoreIT {
 		List<CassandraVectorStore.SchemaColumn> partitionKeys = List.of(wikiSC, langSC, titleSC);
 		List<CassandraVectorStore.SchemaColumn> clusteringKeys = List.of(chunkNoSC);
 
-		return CassandraVectorStore.builder()
+		return CassandraVectorStore.builder(context.getBean(EmbeddingModel.class))
 			.session(context.getBean(CqlSession.class))
 			.keyspace("test_wikidata")
 			.table("articles")
@@ -253,7 +253,6 @@ class CassandraRichSchemaVectorStoreIT {
 		this.contextRunner.run(context -> {
 
 			try (CassandraVectorStore store = storeBuilder(context, List.of()).fixedThreadPoolExecutorSize(nThreads)
-				.embeddingModel(context.getBean(EmbeddingModel.class))
 				.build()) {
 
 				var executor = Executors.newFixedThreadPool((int) (nThreads * 1.2));
@@ -552,7 +551,6 @@ class CassandraRichSchemaVectorStoreIT {
 			CassandraVectorStore.dropKeyspace(builder);
 		}
 
-		builder.embeddingModel(context.getBean(EmbeddingModel.class));
 		return new CassandraVectorStore(builder);
 	}
 
@@ -569,7 +567,6 @@ class CassandraRichSchemaVectorStoreIT {
 			CassandraVectorStore.dropKeyspace(builder);
 		}
 
-		builder.embeddingModel(context.getBean(EmbeddingModel.class));
 		return builder;
 	}
 

@@ -62,9 +62,7 @@ public class PgVectorStoreAutoConfiguration {
 
 		var initializeSchema = properties.isInitializeSchema();
 
-		return PgVectorStore.builder()
-			.jdbcTemplate(jdbcTemplate)
-			.embeddingModel(embeddingModel)
+		return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.schemaName(properties.getSchemaName())
 			.vectorTableName(properties.getTableName())
 			.vectorTableValidationsEnabled(properties.isSchemaValidation())

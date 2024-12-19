@@ -172,7 +172,7 @@ public class CassandraVectorStoreObservationIT {
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 
-			CassandraVectorStore.CassandraBuilder builder = CassandraVectorStore.builder()
+			CassandraVectorStore.CassandraBuilder builder = CassandraVectorStore.builder(embeddingModel)
 				.session(cqlSession)
 				.session(cqlSession)
 				.keyspace("test_" + CassandraVectorStore.DEFAULT_KEYSPACE_NAME)
@@ -180,7 +180,6 @@ public class CassandraVectorStoreObservationIT {
 						new CassandraVectorStore.SchemaColumn("meta2", DataTypes.TEXT),
 						new CassandraVectorStore.SchemaColumn("country", DataTypes.TEXT),
 						new CassandraVectorStore.SchemaColumn("year", DataTypes.SMALLINT))
-				.embeddingModel(embeddingModel)
 				.observationRegistry(observationRegistry)
 				.batchingStrategy(new TokenCountBatchingStrategy());
 

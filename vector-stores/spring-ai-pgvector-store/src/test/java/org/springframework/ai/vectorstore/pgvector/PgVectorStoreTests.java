@@ -79,11 +79,7 @@ public class PgVectorStoreTests {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var pgVectorStore = PgVectorStore.builder()
-			.jdbcTemplate(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.maxDocumentBatchSize(1000)
-			.build();
+		var pgVectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel).maxDocumentBatchSize(1000).build();
 
 		// Testing with 9989 documents
 		var documents = Collections.nCopies(9989, new Document("foo"));

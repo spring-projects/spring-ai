@@ -23,7 +23,6 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.lang.Nullable;
@@ -59,6 +58,7 @@ public interface VectorStore extends DocumentWriter {
 	 * @param idList list of document ids for which documents will be removed.
 	 * @return Returns true if the documents were successfully deleted.
 	 */
+	@Nullable
 	Optional<Boolean> delete(List<String> idList);
 
 	/**
@@ -68,6 +68,7 @@ public interface VectorStore extends DocumentWriter {
 	 * topK, similarity threshold and metadata filter expressions.
 	 * @return Returns documents th match the query request conditions.
 	 */
+	@Nullable
 	List<Document> similaritySearch(SearchRequest request);
 
 	/**
@@ -77,6 +78,7 @@ public interface VectorStore extends DocumentWriter {
 	 * @return Returns a list of documents that have embeddings similar to the query text
 	 * embedding.
 	 */
+	@Nullable
 	default List<Document> similaritySearch(String query) {
 		return this.similaritySearch(SearchRequest.query(query));
 	}
@@ -89,8 +91,6 @@ public interface VectorStore extends DocumentWriter {
 	 * return type
 	 */
 	interface Builder<T extends Builder<T>> {
-
-		T embeddingModel(EmbeddingModel embeddingModel);
 
 		/**
 		 * Sets the registry for collecting observations and metrics. Defaults to

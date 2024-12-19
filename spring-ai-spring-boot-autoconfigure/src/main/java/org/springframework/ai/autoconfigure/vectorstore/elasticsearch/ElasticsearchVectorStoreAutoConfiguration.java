@@ -73,10 +73,8 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
 		}
 
-		return ElasticsearchVectorStore.builder()
-			.restClient(restClient)
+		return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 			.options(elasticsearchVectorStoreOptions)
-			.embeddingModel(embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))

@@ -183,9 +183,7 @@ public class AzureVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return AzureVectorStore.builder()
-				.searchIndexClient(searchIndexClient)
-				.embeddingModel(embeddingModel)
+			return AzureVectorStore.builder(searchIndexClient, embeddingModel)
 				.initializeSchema(true)
 				.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
 						MetadataField.date("activationDate")))

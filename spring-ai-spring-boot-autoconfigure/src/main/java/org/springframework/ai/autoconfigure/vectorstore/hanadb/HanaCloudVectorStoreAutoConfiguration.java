@@ -53,9 +53,7 @@ public class HanaCloudVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		return HanaCloudVectorStore.builder()
-			.repository(repository)
-			.embeddingModel(embeddingModel)
+		return HanaCloudVectorStore.builder(repository, embeddingModel)
 			.tableName(properties.getTableName())
 			.topK(properties.getTopK())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

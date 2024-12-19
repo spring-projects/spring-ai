@@ -47,8 +47,7 @@ public class MariaDBEmbeddingDimensionsTests {
 
 		final int explicitDimensions = 696;
 
-		MariaDBVectorStore mariaDBVectorStore = MariaDBVectorStore.builder(this.jdbcTemplate)
-			.embeddingModel(this.embeddingModel)
+		MariaDBVectorStore mariaDBVectorStore = MariaDBVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
 			.dimensions(explicitDimensions)
 			.build();
 		var dim = mariaDBVectorStore.embeddingDimensions();
@@ -61,8 +60,7 @@ public class MariaDBEmbeddingDimensionsTests {
 	public void embeddingModelDimensions() {
 		when(this.embeddingModel.dimensions()).thenReturn(969);
 
-		MariaDBVectorStore mariaDBVectorStore = MariaDBVectorStore.builder(this.jdbcTemplate)
-			.embeddingModel(this.embeddingModel)
+		MariaDBVectorStore mariaDBVectorStore = MariaDBVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
 			.build();
 		var dim = mariaDBVectorStore.embeddingDimensions();
 
@@ -76,8 +74,7 @@ public class MariaDBEmbeddingDimensionsTests {
 
 		when(this.embeddingModel.dimensions()).thenThrow(new RuntimeException());
 
-		MariaDBVectorStore mariaDBVectorStore = MariaDBVectorStore.builder(this.jdbcTemplate)
-			.embeddingModel(this.embeddingModel)
+		MariaDBVectorStore mariaDBVectorStore = MariaDBVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
 			.build();
 		var dim = mariaDBVectorStore.embeddingDimensions();
 

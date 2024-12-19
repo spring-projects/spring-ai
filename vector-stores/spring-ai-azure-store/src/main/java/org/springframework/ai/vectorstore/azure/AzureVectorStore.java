@@ -173,9 +173,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			boolean initializeSchema, List<MetadataField> filterMetadataFields, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().searchIndexClient(searchIndexClient)
-			.embeddingModel(embeddingModel)
-			.initializeSchema(initializeSchema)
+		this(builder(searchIndexClient, embeddingModel).initializeSchema(initializeSchema)
 			.filterMetadataFields(filterMetadataFields)
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
@@ -203,8 +201,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
 	}
 
-	public static AzureBuilder builder() {
-		return new AzureBuilder();
+	public static AzureBuilder builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+		return new AzureBuilder(searchIndexClient, embeddingModel);
 	}
 
 	/**
@@ -469,7 +467,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 */
 	public static class AzureBuilder extends AbstractVectorStoreBuilder<AzureBuilder> {
 
-		private SearchIndexClient searchIndexClient;
+		private final SearchIndexClient searchIndexClient;
 
 		private boolean initializeSchema = false;
 
@@ -489,10 +487,10 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if searchIndexClient is null
 		 */
-		public AzureBuilder searchIndexClient(SearchIndexClient searchIndexClient) {
+		public AzureBuilder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(searchIndexClient, "SearchIndexClient must not be null");
 			this.searchIndexClient = searchIndexClient;
-			return this;
 		}
 
 		/**
@@ -567,7 +565,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		@Override
 		public AzureVectorStore build() {
-			validate();
 			return new AzureVectorStore(this);
 		}
 

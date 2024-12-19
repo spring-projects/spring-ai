@@ -79,10 +79,8 @@ public class OpenSearchVectorStoreAutoConfiguration {
 		var mappingJson = Optional.ofNullable(properties.getMappingJson())
 			.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION);
 
-		return OpenSearchVectorStore.builder()
+		return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
 			.index(indexName)
-			.openSearchClient(openSearchClient)
-			.embeddingModel(embeddingModel)
 			.mappingJson(mappingJson)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

@@ -144,9 +144,7 @@ public class TokenSecuredChromaWhereIT {
 
 		@Bean
 		public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-			return ChromaVectorStore.builder()
-				.chromaApi(chromaApi)
-				.embeddingModel(embeddingModel)
+			return ChromaVectorStore.builder(chromaApi, embeddingModel)
 				.collectionName("TestCollection")
 				.initializeSchema(true)
 				.build();

@@ -218,11 +218,10 @@ public class GemFireVectorStoreIT {
 
 		@Bean
 		public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel) {
-			return GemFireVectorStore.builder()
+			return GemFireVectorStore.builder(embeddingModel)
 				.host("localhost")
 				.port(HTTP_SERVICE_PORT)
 				.indexName(INDEX_NAME)
-				.embeddingModel(embeddingModel)
 				.initializeSchema(true)
 				.build();
 		}

@@ -47,10 +47,7 @@ class WeaviateVectorStoreBuilderTests {
 	void shouldBuildWithMinimalConfiguration() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
-		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder()
-			.weaviateClient(weaviateClient)
-			.embeddingModel(embeddingModel)
-			.build();
+		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel).build();
 
 		assertThat(vectorStore).isNotNull();
 	}
@@ -59,9 +56,7 @@ class WeaviateVectorStoreBuilderTests {
 	void shouldBuildWithCustomConfiguration() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
-		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder()
-			.weaviateClient(weaviateClient)
-			.embeddingModel(embeddingModel)
+		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
 			.objectClass("CustomClass")
 			.consistencyLevel(ConsistentLevel.QUORUM)
 			.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.number("year")))
@@ -72,7 +67,7 @@ class WeaviateVectorStoreBuilderTests {
 
 	@Test
 	void shouldFailWithoutWeaviateClient() {
-		assertThatThrownBy(() -> WeaviateVectorStore.builder().embeddingModel(embeddingModel).build())
+		assertThatThrownBy(() -> WeaviateVectorStore.builder(null, embeddingModel).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("WeaviateClient must not be null");
 	}
@@ -81,7 +76,7 @@ class WeaviateVectorStoreBuilderTests {
 	void shouldFailWithoutEmbeddingModel() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
-		assertThatThrownBy(() -> WeaviateVectorStore.builder().weaviateClient(weaviateClient).build())
+		assertThatThrownBy(() -> WeaviateVectorStore.builder(weaviateClient, null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("EmbeddingModel must be configured");
 	}
@@ -90,33 +85,29 @@ class WeaviateVectorStoreBuilderTests {
 	void shouldFailWithInvalidObjectClass() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
-		assertThatThrownBy(() -> WeaviateVectorStore.builder()
-			.weaviateClient(weaviateClient)
-			.embeddingModel(embeddingModel)
-			.objectClass("")
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("objectClass must not be empty");
+		assertThatThrownBy(() -> WeaviateVectorStore.builder(weaviateClient, embeddingModel).objectClass("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("objectClass must not be empty");
 	}
 
 	@Test
 	void shouldFailWithNullConsistencyLevel() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
-		assertThatThrownBy(() -> WeaviateVectorStore.builder()
-			.weaviateClient(weaviateClient)
-			.embeddingModel(embeddingModel)
-			.consistencyLevel(null)
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("consistencyLevel must not be null");
+		assertThatThrownBy(
+				() -> WeaviateVectorStore.builder(weaviateClient, embeddingModel).consistencyLevel(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("consistencyLevel must not be null");
 	}
 
 	@Test
 	void shouldFailWithNullFilterMetadataFields() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
-		assertThatThrownBy(() -> WeaviateVectorStore.builder()
-			.weaviateClient(weaviateClient)
-			.embeddingModel(embeddingModel)
-			.filterMetadataFields(null)
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("filterMetadataFields must not be null");
+		assertThatThrownBy(
+				() -> WeaviateVectorStore.builder(weaviateClient, embeddingModel).filterMetadataFields(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("filterMetadataFields must not be null");
 	}
 
 	@Test

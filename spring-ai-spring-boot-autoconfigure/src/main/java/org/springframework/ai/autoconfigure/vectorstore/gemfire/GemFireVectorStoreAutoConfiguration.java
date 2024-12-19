@@ -64,7 +64,7 @@ public class GemFireVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return GemFireVectorStore.builder()
+		return GemFireVectorStore.builder(embeddingModel)
 			.host(gemFireConnectionDetails.getHost())
 			.port(gemFireConnectionDetails.getPort())
 			.indexName(properties.getIndexName())
@@ -74,7 +74,6 @@ public class GemFireVectorStoreAutoConfiguration {
 			.vectorSimilarityFunction(properties.getVectorSimilarityFunction())
 			.fields(properties.getFields())
 			.sslEnabled(properties.isSslEnabled())
-			.embeddingModel(embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))

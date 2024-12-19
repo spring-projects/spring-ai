@@ -57,7 +57,7 @@ class SimpleVectorStoreTests {
 		when(this.mockEmbeddingModel.dimensions()).thenReturn(3);
 		when(this.mockEmbeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 		when(this.mockEmbeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-		this.vectorStore = new SimpleVectorStore(SimpleVectorStore.builder().embeddingModel(this.mockEmbeddingModel));
+		this.vectorStore = new SimpleVectorStore(SimpleVectorStore.builder(this.mockEmbeddingModel));
 	}
 
 	@Test

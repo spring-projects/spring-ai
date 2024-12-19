@@ -100,11 +100,9 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
+			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().chromaApi(chromaApi)
-			.embeddingModel(embeddingModel)
-			.collectionName(collectionName)
+		this(builder(chromaApi, embeddingModel).collectionName(collectionName)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
@@ -116,8 +114,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	 */
 	protected ChromaVectorStore(ChromaBuilder builder) {
 		super(builder);
-
-		Assert.notNull(builder.chromaApi, "ChromaApi must not be null");
 
 		this.chromaApi = builder.chromaApi;
 		this.collectionName = builder.collectionName;
@@ -136,6 +132,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		}
 	}
 
+	public static ChromaBuilder builder(ChromaApi chromaApi, EmbeddingModel embeddingModel) {
+		return new ChromaBuilder(chromaApi, embeddingModel);
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		if (!this.initialized) {
@@ -150,13 +150,11 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 							+ " doesn't exist and won't be created as the initializeSchema is set to false.");
 				}
 			}
-			this.collectionId = collection.id();
+			if (collection != null) {
+				this.collectionId = collection.id();
+			}
 			this.initialized = true;
 		}
-	}
-
-	public static ChromaBuilder builder() {
-		return new ChromaBuilder();
 	}
 
 	@Override
@@ -177,7 +175,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		for (Document document : documents) {
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
-			contents.add(document.getContent());
+			contents.add(document.getText());
 			embeddings.add(documentEmbeddings.get(documents.indexOf(document)));
 		}
 
@@ -278,7 +276,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	public static class ChromaBuilder extends AbstractVectorStoreBuilder<ChromaBuilder> {
 
-		private ChromaApi chromaApi;
+		private final ChromaApi chromaApi;
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
@@ -290,10 +288,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeImmediately = false;
 
-		public ChromaBuilder chromaApi(ChromaApi chromaApi) {
+		private ChromaBuilder(ChromaApi chromaApi, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(chromaApi, "ChromaApi must not be null");
 			this.chromaApi = chromaApi;
-			return this;
 		}
 
 		/**
@@ -358,7 +356,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @throws IllegalStateException if the builder is in an invalid state
 		 */
 		public ChromaVectorStore build() {
-			validate();
 			return new ChromaVectorStore(this);
 		}
 

@@ -248,9 +248,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().jedis(jedis)
-			.embeddingModel(embeddingModel)
-			.indexName(config.indexName)
+		this(builder(jedis, embeddingModel).indexName(config.indexName)
 			.prefix(config.prefix)
 			.contentFieldName(config.contentFieldName)
 			.embeddingFieldName(config.embeddingFieldName)
@@ -483,13 +481,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
-	public static RedisBuilder builder() {
-		return new RedisBuilder();
+	public static RedisBuilder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+		return new RedisBuilder(jedis, embeddingModel);
 	}
 
 	public static class RedisBuilder extends AbstractVectorStoreBuilder<RedisBuilder> {
 
-		private JedisPooled jedis;
+		private final JedisPooled jedis;
 
 		private String indexName = DEFAULT_INDEX_NAME;
 
@@ -507,10 +505,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		public RedisBuilder jedis(JedisPooled jedis) {
+		public RedisBuilder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(jedis, "JedisPooled must not be null");
 			this.jedis = jedis;
-			return this;
 		}
 
 		/**
@@ -618,7 +616,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		@Override
 		public RedisVectorStore build() {
-			validate();
 			return new RedisVectorStore(this);
 		}
 

@@ -71,9 +71,7 @@ public class MilvusVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		return MilvusVectorStore.builder()
-			.milvusClient(milvusClient)
-			.embeddingModel(embeddingModel)
+		return MilvusVectorStore.builder(milvusClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.batchingStrategy(batchingStrategy)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

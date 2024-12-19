@@ -347,8 +347,7 @@ public class MariaDBStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return MariaDBVectorStore.builder(jdbcTemplate)
-				.embeddingModel(embeddingModel)
+			return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
 				.dimensions(MariaDBVectorStore.INVALID_EMBEDDING_DIMENSION)
 				.distanceType(this.distanceType)
 				.removeExistingVectorStoreTable(true)

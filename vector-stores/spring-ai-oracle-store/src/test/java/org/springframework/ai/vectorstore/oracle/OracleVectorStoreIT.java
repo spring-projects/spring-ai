@@ -310,9 +310,7 @@ public class OracleVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return OracleVectorStore.builder()
-				.jdbcTemplate(jdbcTemplate)
-				.embeddingModel(embeddingModel)
+			return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
 				.tableName(OracleVectorStore.DEFAULT_TABLE_NAME)
 				.indexType(OracleVectorStore.OracleVectorStoreIndexType.IVF)
 				.distanceType(distanceType)

@@ -195,9 +195,8 @@ public class QdrantVectorStoreObservationIT {
 		@Bean
 		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel, QdrantClient qdrantClient,
 				ObservationRegistry observationRegistry) {
-			return QdrantVectorStore.builder(qdrantClient)
+			return QdrantVectorStore.builder(qdrantClient, embeddingModel)
 				.collectionName(COLLECTION_NAME)
-				.embeddingModel(embeddingModel)
 				.initializeSchema(true)
 				.observationRegistry(observationRegistry)
 				.customObservationConvention(null)

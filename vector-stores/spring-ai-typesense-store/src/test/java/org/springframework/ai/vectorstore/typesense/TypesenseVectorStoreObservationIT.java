@@ -170,9 +170,7 @@ public class TypesenseVectorStoreObservationIT {
 		public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 
-			return TypesenseVectorStore.builder()
-				.client(client)
-				.embeddingModel(embeddingModel)
+			return TypesenseVectorStore.builder(client, embeddingModel)
 				.collectionName(TEST_COLLECTION_NAME)
 				.embeddingDimension(embeddingModel.dimensions())
 				.initializeSchema(true)

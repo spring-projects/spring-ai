@@ -256,8 +256,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			int maxDocumentBatchSize, String contentFieldName, String embeddingFieldName, String idFieldName,
 			String metadataFieldName) {
 
-		this(builder(jdbcTemplate).vectorTableName(vectorTableName)
-			.embeddingModel(embeddingModel)
+		this(builder(jdbcTemplate, embeddingModel).vectorTableName(vectorTableName)
 			.dimensions(dimensions)
 			.distanceType(distanceType)
 			.removeExistingVectorStoreTable(removeExistingVectorStoreTable)
@@ -319,8 +318,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	 * MariaDBVectorStore.
 	 * @return a new MariaDBBuilder instance
 	 */
-	public static MariaDBBuilder builder(JdbcTemplate jdbcTemplate) {
-		return new MariaDBBuilder(jdbcTemplate);
+	public static MariaDBBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		return new MariaDBBuilder(jdbcTemplate, embeddingModel);
 	}
 
 	public MariaDBDistanceType getDistanceType() {
@@ -595,7 +594,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		 * @param jdbcTemplate the JDBC template for database operations
 		 * @throws IllegalArgumentException if jdbcTemplate is null
 		 */
-		MariaDBBuilder(JdbcTemplate jdbcTemplate) {
+		private MariaDBBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
 			this.jdbcTemplate = jdbcTemplate;
 		}
@@ -758,7 +758,6 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		 */
 		@Override
 		public MariaDBVectorStore build() {
-			validate();
 			return new MariaDBVectorStore(this);
 		}
 

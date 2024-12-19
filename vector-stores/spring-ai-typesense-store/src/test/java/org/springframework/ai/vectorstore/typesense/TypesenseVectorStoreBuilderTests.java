@@ -51,10 +51,7 @@ class TypesenseVectorStoreBuilderTests {
 
 	@Test
 	void defaultConfiguration() {
-		TypesenseVectorStore vectorStore = TypesenseVectorStore.builder()
-			.client(client)
-			.embeddingModel(embeddingModel)
-			.build();
+		TypesenseVectorStore vectorStore = TypesenseVectorStore.builder(client, embeddingModel).build();
 
 		// Verify default values
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("collectionName", "vector_store");
@@ -65,9 +62,7 @@ class TypesenseVectorStoreBuilderTests {
 
 	@Test
 	void customConfiguration() {
-		TypesenseVectorStore vectorStore = TypesenseVectorStore.builder()
-			.client(client)
-			.embeddingModel(embeddingModel)
+		TypesenseVectorStore vectorStore = TypesenseVectorStore.builder(client, embeddingModel)
 			.collectionName("custom_collection")
 			.embeddingDimension(1536)
 			.initializeSchema(true)
@@ -80,44 +75,37 @@ class TypesenseVectorStoreBuilderTests {
 
 	@Test
 	void nullClientShouldThrowException() {
-		assertThatThrownBy(() -> TypesenseVectorStore.builder().client(null).build())
+		assertThatThrownBy(() -> TypesenseVectorStore.builder(null, embeddingModel).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("client must not be null");
 	}
 
 	@Test
 	void nullEmbeddingModelShouldThrowException() {
-		assertThatThrownBy(() -> TypesenseVectorStore.builder().client(client).embeddingModel(null).build())
+		assertThatThrownBy(() -> TypesenseVectorStore.builder(client, null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("EmbeddingModel must not be null");
+			.hasMessage("EmbeddingModel must be configured");
 	}
 
 	@Test
 	void invalidEmbeddingDimensionShouldThrowException() {
-		assertThatThrownBy(() -> TypesenseVectorStore.builder()
-			.client(client)
-			.embeddingModel(embeddingModel)
-			.embeddingDimension(0)
-			.build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> TypesenseVectorStore.builder(client, embeddingModel).embeddingDimension(0).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Embedding dimension must be greater than 0");
 	}
 
 	@Test
 	void emptyCollectionNameShouldThrowException() {
-		assertThatThrownBy(() -> TypesenseVectorStore.builder()
-			.client(client)
-			.embeddingModel(embeddingModel)
-			.collectionName("")
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("collectionName must not be empty");
+		assertThatThrownBy(() -> TypesenseVectorStore.builder(client, embeddingModel).collectionName("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("collectionName must not be empty");
 	}
 
 	@Test
 	void nullBatchingStrategyShouldThrowException() {
-		assertThatThrownBy(() -> TypesenseVectorStore.builder()
-			.client(client)
-			.embeddingModel(embeddingModel)
-			.batchingStrategy(null)
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("batchingStrategy must not be null");
+		assertThatThrownBy(() -> TypesenseVectorStore.builder(client, embeddingModel).batchingStrategy(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("batchingStrategy must not be null");
 	}
 
 }

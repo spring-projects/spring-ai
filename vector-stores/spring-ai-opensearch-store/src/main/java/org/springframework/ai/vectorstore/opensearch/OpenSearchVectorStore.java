@@ -238,9 +238,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().openSearchClient(openSearchClient)
-			.embeddingModel(embeddingModel)
-			.index(index)
+		this(builder(openSearchClient, embeddingModel).index(index)
 			.mappingJson(mappingJson)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
@@ -272,8 +270,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	 * Creates a new builder instance for configuring an OpenSearchVectorStore.
 	 * @return A new OpenSearchBuilder instance
 	 */
-	public static OpenSearchBuilder builder() {
-		return new OpenSearchBuilder();
+	public static OpenSearchBuilder builder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
+		return new OpenSearchBuilder(openSearchClient, embeddingModel);
 	}
 
 	public OpenSearchVectorStore withSimilarityFunction(String similarityFunction) {
@@ -450,7 +448,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	 */
 	public static class OpenSearchBuilder extends AbstractVectorStoreBuilder<OpenSearchBuilder> {
 
-		private OpenSearchClient openSearchClient;
+		private final OpenSearchClient openSearchClient;
 
 		private String index = DEFAULT_INDEX_NAME;
 
@@ -470,22 +468,10 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if openSearchClient is null
 		 */
-		public OpenSearchBuilder openSearchClient(OpenSearchClient openSearchClient) {
+		public OpenSearchBuilder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(openSearchClient, "OpenSearchClient must not be null");
 			this.openSearchClient = openSearchClient;
-			return this;
-		}
-
-		/**
-		 * Sets the embedding model.
-		 * @param embeddingModel The embedding model to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if embeddingModel is null
-		 */
-		public OpenSearchBuilder embeddingModel(EmbeddingModel embeddingModel) {
-			Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
-			this.embeddingModel = embeddingModel;
-			return this;
 		}
 
 		/**
@@ -567,7 +553,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 */
 		@Override
 		public OpenSearchVectorStore build() {
-			validate();
 			return new OpenSearchVectorStore(this);
 		}
 

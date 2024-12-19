@@ -377,11 +377,7 @@ class ElasticsearchVectorStoreIT {
 
 		@Bean("vectorStore_cosine")
 		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, RestClient restClient) {
-			return ElasticsearchVectorStore.builder()
-				.restClient(restClient)
-				.embeddingModel(embeddingModel)
-				.initializeSchema(true)
-				.build();
+			return ElasticsearchVectorStore.builder(restClient, embeddingModel).initializeSchema(true).build();
 		}
 
 		@Bean("vectorStore_l2_norm")
@@ -389,9 +385,7 @@ class ElasticsearchVectorStoreIT {
 			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 			options.setIndexName("index_l2");
 			options.setSimilarity(SimilarityFunction.l2_norm);
-			return ElasticsearchVectorStore.builder()
-				.restClient(restClient)
-				.embeddingModel(embeddingModel)
+			return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 				.initializeSchema(true)
 				.options(options)
 				.build();
@@ -402,9 +396,7 @@ class ElasticsearchVectorStoreIT {
 			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 			options.setIndexName("index_dot_product");
 			options.setSimilarity(SimilarityFunction.dot_product);
-			return ElasticsearchVectorStore.builder()
-				.restClient(restClient)
-				.embeddingModel(embeddingModel)
+			return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 				.initializeSchema(true)
 				.options(options)
 				.build();
