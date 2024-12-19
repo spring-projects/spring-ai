@@ -44,6 +44,7 @@ class PagePdfDocumentReaderTests {
 						.withNumberOfTopTextLinesToDelete(0)
 						.withNumberOfBottomTextLinesToDelete(3)
 						.withNumberOfTopPagesToSkipBeforeDelete(0)
+						.overrideLineSeparator("\n")
 						.build())
 					.withPagesPerDocument(1)
 					.build());
