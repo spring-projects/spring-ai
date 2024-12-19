@@ -36,62 +36,59 @@ public class DefaultFunctionCallingOptionsBuilder
 		extends DefaultChatOptionsBuilder<DefaultFunctionCallingOptionsBuilder>
 		implements FunctionCallingOptions.Builder<DefaultFunctionCallingOptionsBuilder> {
 
-	private final DefaultFunctionCallingOptions functionCallingOptions;
-
 	public DefaultFunctionCallingOptionsBuilder() {
-		this.functionCallingOptions = new DefaultFunctionCallingOptions();
 		// Set the options in the parent class to be the same instance
-		super.options = this.functionCallingOptions;
+		super(new DefaultFunctionCallingOptions());
 	}
 
 	public DefaultFunctionCallingOptionsBuilder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallingOptions.setFunctionCallbacks(functionCallbacks);
+		((FunctionCallingOptions) this.options).setFunctionCallbacks(functionCallbacks);
 		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder functionCallbacks(FunctionCallback... functionCallbacks) {
 		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
-		this.functionCallingOptions.setFunctionCallbacks(List.of(functionCallbacks));
+		((FunctionCallingOptions) this.options).setFunctionCallbacks(List.of(functionCallbacks));
 		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder functions(Set<String> functions) {
-		this.functionCallingOptions.setFunctions(functions);
+		((FunctionCallingOptions) this.options).setFunctions(functions);
 		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder function(String function) {
 		Assert.notNull(function, "Function must not be null");
-		var set = new HashSet<>(this.functionCallingOptions.getFunctions());
+		var set = new HashSet<>(((FunctionCallingOptions) this.options).getFunctions());
 		set.add(function);
-		this.functionCallingOptions.setFunctions(set);
+		((FunctionCallingOptions) this.options).setFunctions(set);
 		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder proxyToolCalls(Boolean proxyToolCalls) {
-		this.functionCallingOptions.setProxyToolCalls(proxyToolCalls);
+		((FunctionCallingOptions) this.options).setProxyToolCalls(proxyToolCalls);
 		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder toolContext(Map<String, Object> context) {
 		Assert.notNull(context, "Tool context must not be null");
-		Map<String, Object> newContext = new HashMap<>(this.functionCallingOptions.getToolContext());
+		Map<String, Object> newContext = new HashMap<>(((FunctionCallingOptions) this.options).getToolContext());
 		newContext.putAll(context);
-		this.functionCallingOptions.setToolContext(newContext);
+		((FunctionCallingOptions) this.options).setToolContext(newContext);
 		return self();
 	}
 
 	public DefaultFunctionCallingOptionsBuilder toolContext(String key, Object value) {
 		Assert.notNull(key, "Key must not be null");
 		Assert.notNull(value, "Value must not be null");
-		Map<String, Object> newContext = new HashMap<>(this.functionCallingOptions.getToolContext());
+		Map<String, Object> newContext = new HashMap<>(((FunctionCallingOptions) this.options).getToolContext());
 		newContext.put(key, value);
-		this.functionCallingOptions.setToolContext(newContext);
+		((FunctionCallingOptions) this.options).setToolContext(newContext);
 		return self();
 	}
 
 	public FunctionCallingOptions build() {
-		return this.functionCallingOptions;
+		return ((FunctionCallingOptions) this.options);
 	}
 
 }
