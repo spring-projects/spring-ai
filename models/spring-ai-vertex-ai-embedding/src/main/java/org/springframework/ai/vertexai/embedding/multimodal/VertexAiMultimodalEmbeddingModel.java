@@ -37,7 +37,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
@@ -101,7 +100,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		// merge the runtime and default vertex ai options.
 		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
+		if (request.getOptions() != null) {
 			var defaultOptionsCopy = VertexAiMultimodalEmbeddingOptions.builder().from(this.defaultOptions).build();
 			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
 					VertexAiMultimodalEmbeddingOptions.class);

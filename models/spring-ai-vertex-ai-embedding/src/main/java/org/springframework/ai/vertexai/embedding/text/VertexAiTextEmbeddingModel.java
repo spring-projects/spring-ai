@@ -34,7 +34,6 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -167,7 +166,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 		VertexAiTextEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
+		if (request.getOptions() != null) {
 			var defaultOptionsCopy = VertexAiTextEmbeddingOptions.builder().from(this.defaultOptions).build();
 			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
 					VertexAiTextEmbeddingOptions.class);
