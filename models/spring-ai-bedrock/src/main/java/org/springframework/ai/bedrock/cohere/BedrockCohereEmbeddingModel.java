@@ -130,7 +130,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 					.truncate(CohereEmbeddingRequest.Truncate.NONE)
 					.build();
 
-		if (requestOptions != null && !EmbeddingOptions.EMPTY.equals(requestOptions)) {
+		if (requestOptions != null) {
 			options = ModelOptionsUtils.merge(requestOptions, options, BedrockCohereEmbeddingOptions.class);
 		}
 
