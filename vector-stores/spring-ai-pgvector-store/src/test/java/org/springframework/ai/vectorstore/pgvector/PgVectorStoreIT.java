@@ -356,9 +356,7 @@ public class PgVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return PgVectorStore.builder()
-				.jdbcTemplate(jdbcTemplate)
-				.embeddingModel(embeddingModel)
+			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 				.dimensions(PgVectorStore.INVALID_EMBEDDING_DIMENSION)
 				.distanceType(this.distanceType)
 				.initializeSchema(true)

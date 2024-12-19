@@ -92,8 +92,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public SimpleVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention) {
-		this(builder().embeddingModel(embeddingModel)
-			.observationRegistry(observationRegistry)
+		this(builder(embeddingModel).observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention));
 	}
 
@@ -106,8 +105,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	 * Creates an instance of SimpleVectorStore builder.
 	 * @return the SimpleVectorStore builder.
 	 */
-	public static SimpleVectorStoreBuilder builder() {
-		return new SimpleVectorStoreBuilder();
+	public static SimpleVectorStoreBuilder builder(EmbeddingModel embeddingModel) {
+		return new SimpleVectorStoreBuilder(embeddingModel);
 	}
 
 	@Override
@@ -297,9 +296,12 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	public static final class SimpleVectorStoreBuilder extends AbstractVectorStoreBuilder<SimpleVectorStoreBuilder> {
 
+		private SimpleVectorStoreBuilder(EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+		}
+
 		@Override
 		public SimpleVectorStore build() {
-			validate();
 			return new SimpleVectorStore(this);
 		}
 

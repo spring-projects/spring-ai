@@ -398,13 +398,10 @@ class OpenSearchVectorStoreIT {
 		@Qualifier("vectorStore")
 		public OpenSearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			try {
-				return OpenSearchVectorStore.builder()
-					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
-						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-						.build()))
-					.embeddingModel(embeddingModel)
-					.initializeSchema(true)
-					.build();
+				OpenSearchClient openSearchClient = new OpenSearchClient(ApacheHttpClient5TransportBuilder
+					.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+					.build());
+				return OpenSearchVectorStore.builder(openSearchClient, embeddingModel).initializeSchema(true).build();
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);
@@ -415,12 +412,11 @@ class OpenSearchVectorStoreIT {
 		@Qualifier("anotherVectorStore")
 		public OpenSearchVectorStore anotherVectorStore(EmbeddingModel embeddingModel) {
 			try {
-				return OpenSearchVectorStore.builder()
+				OpenSearchClient openSearchClient = new OpenSearchClient(ApacheHttpClient5TransportBuilder
+					.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+					.build());
+				return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
 					.index("another_index")
-					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
-						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-						.build()))
-					.embeddingModel(embeddingModel)
 					.mappingJson(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION)
 					.initializeSchema(true)
 					.build();

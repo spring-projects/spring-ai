@@ -217,8 +217,7 @@ public class MariaDBStoreCustomNamesIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 
-			return MariaDBVectorStore.builder(jdbcTemplate)
-				.embeddingModel(embeddingModel)
+			return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
 				.schemaName(this.schemaName)
 				.vectorTableName(this.vectorTableName)
 				.schemaValidation(this.schemaValidation)

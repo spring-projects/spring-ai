@@ -269,9 +269,7 @@ public class MilvusVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
-			return MilvusVectorStore.builder()
-				.milvusClient(milvusClient)
-				.embeddingModel(embeddingModel)
+			return MilvusVectorStore.builder(milvusClient, embeddingModel)
 				.collectionName("test_vector_store")
 				.databaseName("default")
 				.indexType(IndexType.IVF_FLAT)

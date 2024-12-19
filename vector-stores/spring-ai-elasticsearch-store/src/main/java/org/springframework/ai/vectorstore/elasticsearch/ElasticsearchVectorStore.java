@@ -187,9 +187,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			EmbeddingModel embeddingModel, boolean initializeSchema, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().restClient(restClient)
-			.options(options)
-			.embeddingModel(embeddingModel)
+		this(builder(restClient, embeddingModel).options(options)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
@@ -389,13 +387,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 * Creates a new builder instance for ElasticsearchVectorStore.
 	 * @return a new ElasticsearchBuilder instance
 	 */
-	public static ElasticsearchBuilder builder() {
-		return new ElasticsearchBuilder();
+	public static ElasticsearchBuilder builder(RestClient restClient, EmbeddingModel embeddingModel) {
+		return new ElasticsearchBuilder(restClient, embeddingModel);
 	}
 
 	public static class ElasticsearchBuilder extends AbstractVectorStoreBuilder<ElasticsearchBuilder> {
 
-		private RestClient restClient;
+		private final RestClient restClient;
 
 		private ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 
@@ -411,10 +409,10 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if restClient is null
 		 */
-		public ElasticsearchBuilder restClient(RestClient restClient) {
+		public ElasticsearchBuilder(RestClient restClient, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(restClient, "RestClient must not be null");
 			this.restClient = restClient;
-			return this;
 		}
 
 		/**
@@ -470,7 +468,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 */
 		@Override
 		public ElasticsearchVectorStore build() {
-			validate();
 			return new ElasticsearchVectorStore(this);
 		}
 

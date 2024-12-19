@@ -220,9 +220,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			boolean forcedNormalization, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().jdbcTemplate(jdbcTemplate)
-			.embeddingModel(embeddingModel)
-			.tableName(tableName)
+		this(builder(jdbcTemplate, embeddingModel).tableName(tableName)
 			.indexType(indexType)
 			.distanceType(distanceType)
 			.dimensions(dimensions)
@@ -257,8 +255,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		this.batchingStrategy = builder.batchingStrategy;
 	}
 
-	public static OracleBuilder builder() {
-		return new OracleBuilder();
+	public static OracleBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		return new OracleBuilder(jdbcTemplate, embeddingModel);
 	}
 
 	@Override
@@ -773,10 +771,10 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if jdbcTemplate is null
 		 */
-		public OracleBuilder jdbcTemplate(JdbcTemplate jdbcTemplate) {
+		public OracleBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
 			this.jdbcTemplate = jdbcTemplate;
-			return this;
 		}
 
 		/**
@@ -890,7 +888,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 		@Override
 		public OracleVectorStore build() {
-			validate();
 			return new OracleVectorStore(this);
 		}
 

@@ -230,9 +230,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			MilvusVectorStoreConfig config, boolean initializeSchema, BatchingStrategy batchingStrategy,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
 
-		this(builder().milvusClient(milvusClient)
-			.embeddingModel(embeddingModel)
-			.observationRegistry(observationRegistry)
+		this(builder(milvusClient, embeddingModel).observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
 			.initializeSchema(initializeSchema)
 			.batchingStrategy(batchingStrategy));
@@ -268,8 +266,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	 * recommended way to instantiate a MilvusBuilder.
 	 * @return a new MilvusBuilder instance
 	 */
-	public static MilvusBuilder builder() {
-		return new MilvusBuilder();
+	public static MilvusBuilder builder(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
+		return new MilvusBuilder(milvusClient, embeddingModel);
 	}
 
 	@Override
@@ -579,6 +577,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	public static final class MilvusBuilder extends AbstractVectorStoreBuilder<MilvusBuilder> {
 
+		private final MilvusServiceClient milvusClient;
+
 		private String databaseName = DEFAULT_DATABASE_NAME;
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
@@ -603,18 +603,16 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeSchema = false;
 
-		private MilvusServiceClient milvusClient;
-
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		/**
 		 * @param milvusClient the Milvus service client to use for database operations
 		 * @throws IllegalArgumentException if milvusClient is null
 		 */
-		public MilvusBuilder milvusClient(MilvusServiceClient milvusClient) {
+		private MilvusBuilder(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(milvusClient, "milvusClient must not be null");
 			this.milvusClient = milvusClient;
-			return this;
 		}
 
 		/**
@@ -773,7 +771,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 * @throws IllegalStateException if the builder configuration is invalid
 		 */
 		public MilvusVectorStore build() {
-			validate();
 			return new MilvusVectorStore(this);
 		}
 

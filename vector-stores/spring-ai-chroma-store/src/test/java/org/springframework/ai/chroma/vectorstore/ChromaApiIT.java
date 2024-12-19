@@ -207,9 +207,7 @@ public class ChromaApiIT {
 		assertThat(collection).isNotNull();
 		assertThat(collection.name()).isEqualTo("test-collection");
 
-		ChromaVectorStore store = ChromaVectorStore.builder()
-			.chromaApi(this.chromaApi)
-			.embeddingModel(this.embeddingModel)
+		ChromaVectorStore store = ChromaVectorStore.builder(this.chromaApi, this.embeddingModel)
 			.collectionName("test-collection")
 			.initializeImmediately(true)
 			.build();
@@ -220,8 +218,7 @@ public class ChromaApiIT {
 
 	@Test
 	void shouldCreateNewCollectionWhenSchemaInitializationEnabled() {
-		ChromaVectorStore store = new ChromaVectorStore.ChromaBuilder().chromaApi(this.chromaApi)
-			.embeddingModel(this.embeddingModel)
+		ChromaVectorStore store = ChromaVectorStore.builder(this.chromaApi, this.embeddingModel)
 			.collectionName("new-collection")
 			.initializeSchema(true)
 			.initializeImmediately(true)
@@ -237,8 +234,7 @@ public class ChromaApiIT {
 
 	@Test
 	void shouldFailWhenCollectionDoesNotExist() {
-		assertThatThrownBy(() -> new ChromaVectorStore.ChromaBuilder().chromaApi(this.chromaApi)
-			.embeddingModel(this.embeddingModel)
+		assertThatThrownBy(() -> ChromaVectorStore.builder(this.chromaApi, this.embeddingModel)
 			.collectionName("non-existent")
 			.initializeSchema(false)
 			.initializeImmediately(true)

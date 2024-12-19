@@ -239,8 +239,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			int dimensions, PgDistanceType distanceType, boolean removeExistingVectorStoreTable,
 			PgIndexType createIndexMethod, boolean initializeSchema) {
 
-		this(builder().jdbcTemplate(jdbcTemplate)
-			.schemaName(DEFAULT_SCHEMA_NAME)
+		this(builder(jdbcTemplate, embeddingModel).schemaName(DEFAULT_SCHEMA_NAME)
 			.vectorTableName(vectorTableName)
 			.vectorTableValidationsEnabled(DEFAULT_SCHEMA_VALIDATION)
 			.dimensions(dimensions)
@@ -286,8 +285,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.distanceType;
 	}
 
-	public static PgVectorStoreBuilder builder() {
-		return new PgVectorStoreBuilder();
+	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		return new PgVectorStoreBuilder(jdbcTemplate, embeddingModel);
 	}
 
 	@Override
@@ -647,10 +646,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
-		public PgVectorStoreBuilder jdbcTemplate(JdbcTemplate jdbcTemplate) {
+		private PgVectorStoreBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
 			this.jdbcTemplate = jdbcTemplate;
-			return this;
 		}
 
 		public PgVectorStoreBuilder schemaName(String schemaName) {
@@ -704,7 +703,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		public PgVectorStore build() {
-			validate();
 			return new PgVectorStore(this);
 		}
 
@@ -811,9 +809,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		public PgVectorStore build() {
-			return PgVectorStore.builder()
-				.jdbcTemplate(this.jdbcTemplate)
-				.embeddingModel(this.embeddingModel)
+			return PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
 				.schemaName(this.schemaName)
 				.vectorTableName(this.vectorTableName)
 				.vectorTableValidationsEnabled(this.vectorTableValidationsEnabled)

@@ -170,9 +170,7 @@ public class MilvusVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return MilvusVectorStore.builder()
-				.milvusClient(milvusClient)
-				.embeddingModel(embeddingModel)
+			return MilvusVectorStore.builder(milvusClient, embeddingModel)
 				.observationRegistry(observationRegistry)
 				.collectionName(TEST_COLLECTION_NAME)
 				.databaseName("default")

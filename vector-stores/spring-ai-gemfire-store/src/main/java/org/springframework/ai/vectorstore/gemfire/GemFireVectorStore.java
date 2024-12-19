@@ -149,8 +149,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		this(builder().embeddingModel(embeddingModel)
-			.host(config.host)
+		this(builder(embeddingModel).host(config.host)
 			.port(config.port)
 			.sslEnabled(config.sslEnabled)
 			.indexName(config.indexName)
@@ -189,8 +188,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
-	public static GemFireBuilder builder() {
-		return new GemFireBuilder();
+	public static GemFireBuilder builder(EmbeddingModel embeddingModel) {
+		return new GemFireBuilder(embeddingModel);
 	}
 
 	public String getIndexName() {
@@ -846,6 +845,10 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
+		private GemFireBuilder(EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+		}
+
 		/**
 		 * Sets the host for the GemFire connection.
 		 * @param host the host to connect to
@@ -978,7 +981,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		@Override
 		public GemFireVectorStore build() {
-			validate();
 			return new GemFireVectorStore(this);
 		}
 

@@ -60,9 +60,7 @@ public class OracleVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return OracleVectorStore.builder()
-			.jdbcTemplate(jdbcTemplate)
-			.embeddingModel(embeddingModel)
+		return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
 			.tableName(properties.getTableName())
 			.indexType(properties.getIndexType())
 			.distanceType(properties.getDistanceType())

@@ -207,12 +207,11 @@ public class OpenSearchVectorStoreObservationIT {
 		public OpenSearchVectorStore vectorStore(EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 			try {
-				return OpenSearchVectorStore.builder()
+				OpenSearchClient openSearchClient = new OpenSearchClient(ApacheHttpClient5TransportBuilder
+					.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
+					.build());
+				return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
 					.index(OpenSearchVectorStore.DEFAULT_INDEX_NAME)
-					.openSearchClient(new OpenSearchClient(ApacheHttpClient5TransportBuilder
-						.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-						.build()))
-					.embeddingModel(embeddingModel)
 					.mappingJson(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION)
 					.initializeSchema(true)
 					.observationRegistry(observationRegistry)

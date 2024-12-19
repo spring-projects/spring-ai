@@ -47,9 +47,7 @@ public class PgVectorEmbeddingDimensionsTests {
 
 		final int explicitDimensions = 696;
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder()
-			.jdbcTemplate(this.jdbcTemplate)
-			.embeddingModel(this.embeddingModel)
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
 			.dimensions(explicitDimensions)
 			.build();
 		var dim = pgVectorStore.embeddingDimensions();
@@ -62,10 +60,7 @@ public class PgVectorEmbeddingDimensionsTests {
 	public void embeddingModelDimensions() {
 		given(this.embeddingModel.dimensions()).willReturn(969);
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder()
-			.jdbcTemplate(this.jdbcTemplate)
-			.embeddingModel(this.embeddingModel)
-			.build();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
 		var dim = pgVectorStore.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(969);
@@ -78,10 +73,7 @@ public class PgVectorEmbeddingDimensionsTests {
 
 		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException());
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder()
-			.jdbcTemplate(this.jdbcTemplate)
-			.embeddingModel(this.embeddingModel)
-			.build();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
 		var dim = pgVectorStore.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);

@@ -91,9 +91,7 @@ public class HanaCloudVectorStoreIT {
 		public VectorStore hanaCloudVectorStore(CricketWorldCupRepository cricketWorldCupRepository,
 				EmbeddingModel embeddingModel) {
 
-			return HanaCloudVectorStore.builder()
-				.repository(cricketWorldCupRepository)
-				.embeddingModel(embeddingModel)
+			return HanaCloudVectorStore.builder(cricketWorldCupRepository, embeddingModel)
 				.tableName("CRICKET_WORLD_CUP")
 				.topK(1)
 				.build();

@@ -93,7 +93,7 @@ class WikiVectorStoreExample {
 			List<SchemaColumn> extraColumns = List.of(new SchemaColumn("revision", DataTypes.INT),
 					new SchemaColumn("id", DataTypes.INT));
 
-			return CassandraVectorStore.builder()
+			return CassandraVectorStore.builder(embeddingModel)
 				.session(cqlSession)
 				.keyspace("wikidata")
 				.table("articles")
@@ -118,7 +118,6 @@ class WikiVectorStoreExample {
 					int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;
 					return List.of("simplewiki", "en", title, chunk_no, 0);
 				})
-				.embeddingModel(embeddingModel())
 				.build();
 		}
 
