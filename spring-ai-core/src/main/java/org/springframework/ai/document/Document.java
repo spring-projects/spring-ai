@@ -78,7 +78,7 @@ import org.springframework.util.StringUtils;
  * }
  * }</pre>
  */
-@JsonIgnoreProperties({ "contentFormatter" })
+@JsonIgnoreProperties({ "contentFormatter", "embedding" })
 public class Document {
 
 	public static final ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();

@@ -47,18 +47,20 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
-	 * This property is interconnected with the 'size' property - setting both width and height
-	 * will automatically compute and set the size in "widthxheight" format. Conversely,
-	 * setting a valid size string will parse and set the individual width and height values.
+	 * This property is interconnected with the 'size' property - setting both width and
+	 * height will automatically compute and set the size in "widthxheight" format.
+	 * Conversely, setting a valid size string will parse and set the individual width and
+	 * height values.
 	 */
 	@JsonProperty("size_width")
 	private Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
-	 * This property is interconnected with the 'size' property - setting both width and height
-	 * will automatically compute and set the size in "widthxheight" format. Conversely,
-	 * setting a valid size string will parse and set the individual width and height values.
+	 * This property is interconnected with the 'size' property - setting both width and
+	 * height will automatically compute and set the size in "widthxheight" format.
+	 * Conversely, setting a valid size string will parse and set the individual width and
+	 * height values.
 	 */
 	@JsonProperty("size_height")
 	private Integer height;
@@ -81,10 +83,10 @@ public class OpenAiImageOptions implements ImageOptions {
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
 	 * dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
-	 * This property is automatically computed when both width and height are set, following
-	 * the format "widthxheight". When setting this property directly, it must follow the
-	 * format "WxH" where W and H are valid integers. Invalid formats will result in null
-	 * width and height values.
+	 * This property is automatically computed when both width and height are set,
+	 * following the format "widthxheight". When setting this property directly, it must
+	 * follow the format "WxH" where W and H are valid integers. Invalid formats will
+	 * result in null width and height values.
 	 */
 	@JsonProperty("size")
 	private String size;
