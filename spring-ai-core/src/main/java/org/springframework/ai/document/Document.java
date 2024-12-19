@@ -123,12 +123,6 @@ public class Document {
 	private final Double score;
 
 	/**
-	 * Embedding of the document. Note: ephemeral field.
-	 */
-	@JsonProperty(index = 100)
-	private float[] embedding = new float[0];
-
-	/**
 	 * Mutable, ephemeral, content to text formatter. Defaults to Document text.
 	 */
 	@JsonIgnore
@@ -258,22 +252,6 @@ public class Document {
 	@Nullable
 	public Double getScore() {
 		return this.score;
-	}
-
-	/**
-	 * Return the embedding that were calculated.
-	 * @deprecated We are considering getting rid of this, please comment on
-	 * https://github.com/spring-projects/spring-ai/issues/1781
-	 * @return the embeddings
-	 */
-	@Deprecated(since = "1.0.0-M4")
-	public float[] getEmbedding() {
-		return this.embedding;
-	}
-
-	public void setEmbedding(float[] embedding) {
-		Assert.notNull(embedding, "embedding must not be null");
-		this.embedding = embedding;
 	}
 
 	/**
@@ -436,9 +414,7 @@ public class Document {
 			if (!StringUtils.hasText(this.id)) {
 				this.id = this.idGenerator.generateId(this.text, this.metadata);
 			}
-			var document = new Document(this.id, this.text, this.media, this.metadata, this.score);
-			document.setEmbedding(this.embedding);
-			return document;
+			return new Document(this.id, this.text, this.media, this.metadata, this.score);
 		}
 
 	}
