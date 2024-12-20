@@ -203,11 +203,6 @@ public class DemoApplication implements CommandLineRunner {
 
     @Bean
     public VectorStore vectorStore(ObservationRegistry observationRegistry) {
-        CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
-        config.setDatabaseName("spring-ai-sample");
-        config.setContainerName("container");
-        config.setMetadataFields("country,city");
-        config.setVectorStoreThroughput(400);
 
         CosmosAsyncClient cosmosClient = new CosmosClientBuilder()
                 .endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
@@ -216,7 +211,13 @@ public class DemoApplication implements CommandLineRunner {
                 .gatewayMode()
                 .buildAsyncClient();
 
-        return new CosmosDBVectorStore(observationRegistry, null, cosmosClient, config, this.embeddingModel);
+		return CosmosDBVectorStore.builder(cosmosClient, this.embeddingModel)
+				.databaseName("test-database")
+				.containerName("test-container")
+				.metadataFields(List.of("country", "year", "city"))
+				.vectorStoreThroughput(1000)
+                .observationRegistry(observationRegistry)
+				.build();
     }
 
     @Bean

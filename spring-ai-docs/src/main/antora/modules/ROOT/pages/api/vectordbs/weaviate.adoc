@@ -119,10 +119,8 @@ public WeaviateClient weaviateClient() {
 }
 
 @Bean
-public VectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient) {
-    return WeaviateVectorStore.builder()
-        .weaviateClient(weaviateClient)
-        .embeddingModel(embeddingModel)
+public VectorStore vectorStore(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
+    return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
         .objectClass("CustomClass")                    // Optional: defaults to "SpringAiWeaviate"
         .consistencyLevel(ConsistentLevel.QUORUM)      // Optional: defaults to ConsistentLevel.ONE
         .filterMetadataFields(List.of(                 // Optional: fields that can be used in filters

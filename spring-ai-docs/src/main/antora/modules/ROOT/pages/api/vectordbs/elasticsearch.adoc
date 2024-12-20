@@ -256,9 +256,7 @@ public VectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingMo
     options.setSimilarity(COSINE);           // Optional: defaults to COSINE
     options.setDimensions(1536);             // Optional: defaults to model dimensions or 1536
 
-    return ElasticsearchVectorStore.builder()
-        .restClient(restClient)
-        .embeddingModel(embeddingModel)
+    return ElasticsearchVectorStore.builder(restClient, embeddingModel)
         .options(options)                     // Optional: use custom options
         .initializeSchema(true)               // Optional: defaults to false
         .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy

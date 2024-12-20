@@ -83,10 +83,13 @@ Here is a sample that creates an instance of the `GemfireVectorStore` instead of
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(EmbeddingModel embeddingModel) {
-    return new GemFireVectorStore(new GemFireVectorStoreConfig()
-                                    .setIndexName("my-vector-index")
-                                    .setPort(7071), embeddingClient);
+public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel) {
+    return GemFireVectorStore.builder(embeddingModel)
+        .host("localhost")
+        .port(7071)
+        .indexName("my-vector-index")
+        .initializeSchema(true)
+        .build();
 }
 ----
 
