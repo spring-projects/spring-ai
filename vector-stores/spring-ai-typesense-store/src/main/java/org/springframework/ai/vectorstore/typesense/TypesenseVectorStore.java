@@ -207,13 +207,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	 * Protected constructor for creating a TypesenseVectorStore instance using the
 	 * builder pattern. This constructor initializes the vector store with the configured
 	 * settings from the builder and performs necessary validations.
-	 * @param builder the {@link TypesenseBuilder} containing all configuration settings
+	 * @param builder the {@link Builder} containing all configuration settings
 	 * @throws IllegalArgumentException if the client is null
 	 * @throws IllegalArgumentException if the embeddingModel is null
-	 * @see TypesenseBuilder
+	 * @see Builder
 	 * @since 1.0.0
 	 */
-	protected TypesenseVectorStore(TypesenseBuilder builder) {
+	protected TypesenseVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.client, "Typesense must not be null");
@@ -231,8 +231,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	 * a TypesenseVectorStore.
 	 * @return a new TypesenseBuilder instance
 	 */
-	public static TypesenseBuilder builder(Client client, EmbeddingModel embeddingModel) {
-		return new TypesenseBuilder(client, embeddingModel);
+	public static Builder builder(Client client, EmbeddingModel embeddingModel) {
+		return new Builder(client, embeddingModel);
 	}
 
 	@Override
@@ -449,7 +449,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
-	public static final class TypesenseBuilder extends AbstractVectorStoreBuilder<TypesenseBuilder> {
+	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
@@ -468,7 +468,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 * @param embeddingModel The embedding model used for vector transformations.
 		 * @throws IllegalArgumentException if client is null
 		 */
-		public TypesenseBuilder(Client client, EmbeddingModel embeddingModel) {
+		public Builder(Client client, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(client, "client must not be null");
 			this.client = client;
@@ -480,7 +480,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if collectionName is null or empty
 		 */
-		public TypesenseBuilder collectionName(String collectionName) {
+		public Builder collectionName(String collectionName) {
 			Assert.hasText(collectionName, "collectionName must not be empty");
 			this.collectionName = collectionName;
 			return this;
@@ -492,7 +492,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if dimension is invalid
 		 */
-		public TypesenseBuilder embeddingDimension(int embeddingDimension) {
+		public Builder embeddingDimension(int embeddingDimension) {
 			Assert.isTrue(embeddingDimension > 0, "Embedding dimension must be greater than 0");
 			this.embeddingDimension = embeddingDimension;
 			return this;
@@ -503,7 +503,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 * @param initializeSchema true to initialize schema automatically
 		 * @return this builder instance
 		 */
-		public TypesenseBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -514,7 +514,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public TypesenseBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;

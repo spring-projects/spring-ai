@@ -93,7 +93,7 @@ class CassandraRichSchemaVectorStoreIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
 
-	static CassandraVectorStore.CassandraBuilder storeBuilder(ApplicationContext context,
+	static CassandraVectorStore.Builder storeBuilder(ApplicationContext context,
 			List<CassandraVectorStore.SchemaColumn> columnOverrides) throws IOException {
 
 		Optional<CassandraVectorStore.SchemaColumn> wikiOverride = columnOverrides.stream()
@@ -572,7 +572,7 @@ class CassandraRichSchemaVectorStoreIT {
 	private CassandraVectorStore createStore(ApplicationContext context, List<SchemaColumn> columnOverrides,
 			boolean disallowSchemaCreation, boolean dropKeyspaceFirst) throws IOException {
 
-		CassandraVectorStore.CassandraBuilder builder = storeBuilder(context, columnOverrides);
+		CassandraVectorStore.Builder builder = storeBuilder(context, columnOverrides);
 		if (disallowSchemaCreation) {
 			builder = builder.disallowSchemaChanges(true);
 		}
@@ -584,11 +584,10 @@ class CassandraRichSchemaVectorStoreIT {
 		return new CassandraVectorStore(builder);
 	}
 
-	private CassandraVectorStore.CassandraBuilder createBuilder(ApplicationContext context,
-			List<SchemaColumn> columnOverrides, boolean disallowSchemaCreation, boolean dropKeyspaceFirst)
-			throws IOException {
+	private CassandraVectorStore.Builder createBuilder(ApplicationContext context, List<SchemaColumn> columnOverrides,
+			boolean disallowSchemaCreation, boolean dropKeyspaceFirst) throws IOException {
 
-		CassandraVectorStore.CassandraBuilder builder = storeBuilder(context, columnOverrides);
+		CassandraVectorStore.Builder builder = storeBuilder(context, columnOverrides);
 		if (disallowSchemaCreation) {
 			builder = builder.disallowSchemaChanges(true);
 		}

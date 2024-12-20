@@ -169,7 +169,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	 * create new GemFireVectorStore instances.
 	 * @param builder the configured builder instance
 	 */
-	protected GemFireVectorStore(GemFireBuilder builder) {
+	protected GemFireVectorStore(Builder builder) {
 		super(builder);
 
 		this.initializeSchema = builder.initializeSchema;
@@ -188,8 +188,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
-	public static GemFireBuilder builder(EmbeddingModel embeddingModel) {
-		return new GemFireBuilder(embeddingModel);
+	public static Builder builder(EmbeddingModel embeddingModel) {
+		return new Builder(embeddingModel);
 	}
 
 	public String getIndexName() {
@@ -826,7 +826,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	 *
 	 * @since 1.0.0
 	 */
-	public static class GemFireBuilder extends AbstractVectorStoreBuilder<GemFireBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String host = GemFireVectorStore.DEFAULT_HOST;
 
@@ -850,7 +850,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		private GemFireBuilder(EmbeddingModel embeddingModel) {
+		private Builder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 		}
 
@@ -860,7 +860,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if host is null or empty
 		 */
-		public GemFireBuilder host(String host) {
+		public Builder host(String host) {
 			Assert.hasText(host, "host must have a value");
 			this.host = host;
 			return this;
@@ -872,7 +872,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if port is not positive
 		 */
-		public GemFireBuilder port(int port) {
+		public Builder port(int port) {
 			Assert.isTrue(port > 0, "port must be positive");
 			this.port = port;
 			return this;
@@ -883,7 +883,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @param sslEnabled true to enable SSL, false otherwise
 		 * @return the builder instance
 		 */
-		public GemFireBuilder sslEnabled(boolean sslEnabled) {
+		public Builder sslEnabled(boolean sslEnabled) {
 			this.sslEnabled = sslEnabled;
 			return this;
 		}
@@ -894,7 +894,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if indexName is null or empty
 		 */
-		public GemFireBuilder indexName(String indexName) {
+		public Builder indexName(String indexName) {
 			Assert.hasText(indexName, "indexName must have a value");
 			this.indexName = indexName;
 			return this;
@@ -906,7 +906,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if beamWidth is not within valid range
 		 */
-		public GemFireBuilder beamWidth(int beamWidth) {
+		public Builder beamWidth(int beamWidth) {
 			Assert.isTrue(beamWidth > 0, "beamWidth must be positive");
 			Assert.isTrue(beamWidth <= GemFireVectorStore.UPPER_BOUND_BEAM_WIDTH,
 					"beamWidth must be less than or equal to " + GemFireVectorStore.UPPER_BOUND_BEAM_WIDTH);
@@ -920,7 +920,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if maxConnections is not within valid range
 		 */
-		public GemFireBuilder maxConnections(int maxConnections) {
+		public Builder maxConnections(int maxConnections) {
 			Assert.isTrue(maxConnections > 0, "maxConnections must be positive");
 			Assert.isTrue(maxConnections <= GemFireVectorStore.UPPER_BOUND_MAX_CONNECTIONS,
 					"maxConnections must be less than or equal to " + GemFireVectorStore.UPPER_BOUND_MAX_CONNECTIONS);
@@ -934,7 +934,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if buckets is negative
 		 */
-		public GemFireBuilder buckets(int buckets) {
+		public Builder buckets(int buckets) {
 			Assert.isTrue(buckets >= 0, "buckets must not be negative");
 			this.buckets = buckets;
 			return this;
@@ -946,7 +946,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if vectorSimilarityFunction is null or empty
 		 */
-		public GemFireBuilder vectorSimilarityFunction(String vectorSimilarityFunction) {
+		public Builder vectorSimilarityFunction(String vectorSimilarityFunction) {
 			Assert.hasText(vectorSimilarityFunction, "vectorSimilarityFunction must have a value");
 			this.vectorSimilarityFunction = vectorSimilarityFunction;
 			return this;
@@ -957,7 +957,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @param fields the fields to use
 		 * @return the builder instance
 		 */
-		public GemFireBuilder fields(String[] fields) {
+		public Builder fields(String[] fields) {
 			this.fields = fields;
 			return this;
 		}
@@ -967,7 +967,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public GemFireBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -978,7 +978,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public GemFireBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;

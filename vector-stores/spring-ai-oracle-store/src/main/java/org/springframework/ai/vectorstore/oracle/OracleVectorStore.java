@@ -242,7 +242,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	 * create new OracleVectorStore instances.
 	 * @param builder the configured builder instance
 	 */
-	protected OracleVectorStore(OracleBuilder builder) {
+	protected OracleVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
@@ -259,8 +259,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		this.batchingStrategy = builder.batchingStrategy;
 	}
 
-	public static OracleBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-		return new OracleBuilder(jdbcTemplate, embeddingModel);
+	public static Builder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		return new Builder(jdbcTemplate, embeddingModel);
 	}
 
 	@Override
@@ -747,7 +747,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	 *
 	 * @since 1.0.0
 	 */
-	public static class OracleBuilder extends AbstractVectorStoreBuilder<OracleBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final JdbcTemplate jdbcTemplate;
 
@@ -774,7 +774,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @param jdbcTemplate the JdbcTemplate instance
 		 * @param embeddingModel the Embedding Model to be used
 		 */
-		public OracleBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		public Builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
 			this.jdbcTemplate = jdbcTemplate;
@@ -785,7 +785,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @param tableName the name of the table to use
 		 * @return the builder instance
 		 */
-		public OracleBuilder tableName(String tableName) {
+		public Builder tableName(String tableName) {
 			if (StringUtils.hasText(tableName)) {
 				this.tableName = tableName;
 			}
@@ -798,7 +798,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if indexType is null
 		 */
-		public OracleBuilder indexType(OracleVectorStoreIndexType indexType) {
+		public Builder indexType(OracleVectorStoreIndexType indexType) {
 			Assert.notNull(indexType, "Index type must not be null");
 			this.indexType = indexType;
 			return this;
@@ -810,7 +810,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if distanceType is null
 		 */
-		public OracleBuilder distanceType(OracleVectorStoreDistanceType distanceType) {
+		public Builder distanceType(OracleVectorStoreDistanceType distanceType) {
 			Assert.notNull(distanceType, "Distance type must not be null");
 			this.distanceType = distanceType;
 			return this;
@@ -822,7 +822,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if dimensions is not within valid range
 		 */
-		public OracleBuilder dimensions(int dimensions) {
+		public Builder dimensions(int dimensions) {
 			if (dimensions != DEFAULT_DIMENSIONS) {
 				Assert.isTrue(dimensions > 0 && dimensions <= 65535,
 						"Number of dimensions must be between 1 and 65535");
@@ -837,7 +837,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if searchAccuracy is not within valid range
 		 */
-		public OracleBuilder searchAccuracy(int searchAccuracy) {
+		public Builder searchAccuracy(int searchAccuracy) {
 			if (searchAccuracy != DEFAULT_SEARCH_ACCURACY) {
 				Assert.isTrue(searchAccuracy >= 1 && searchAccuracy <= 100,
 						"Search accuracy must be between 1 and 100");
@@ -851,7 +851,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public OracleBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -862,7 +862,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * otherwise
 		 * @return the builder instance
 		 */
-		public OracleBuilder removeExistingVectorStoreTable(boolean removeExistingVectorStoreTable) {
+		public Builder removeExistingVectorStoreTable(boolean removeExistingVectorStoreTable) {
 			this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
 			return this;
 		}
@@ -872,7 +872,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @param forcedNormalization true to force normalization, false otherwise
 		 * @return the builder instance
 		 */
-		public OracleBuilder forcedNormalization(boolean forcedNormalization) {
+		public Builder forcedNormalization(boolean forcedNormalization) {
 			this.forcedNormalization = forcedNormalization;
 			return this;
 		}
@@ -883,7 +883,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public OracleBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;

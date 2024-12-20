@@ -250,7 +250,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	 * Creates a new OpenSearchVectorStore using the builder pattern.
 	 * @param builder The configured builder instance
 	 */
-	protected OpenSearchVectorStore(OpenSearchBuilder builder) {
+	protected OpenSearchVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.openSearchClient, "OpenSearchClient must not be null");
@@ -270,8 +270,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	 * Creates a new builder instance for configuring an OpenSearchVectorStore.
 	 * @return A new OpenSearchBuilder instance
 	 */
-	public static OpenSearchBuilder builder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
-		return new OpenSearchBuilder(openSearchClient, embeddingModel);
+	public static Builder builder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
+		return new Builder(openSearchClient, embeddingModel);
 	}
 
 	public OpenSearchVectorStore withSimilarityFunction(String similarityFunction) {
@@ -446,7 +446,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	/**
 	 * Builder class for creating OpenSearchVectorStore instances.
 	 */
-	public static class OpenSearchBuilder extends AbstractVectorStoreBuilder<OpenSearchBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final OpenSearchClient openSearchClient;
 
@@ -468,7 +468,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if openSearchClient is null
 		 */
-		private OpenSearchBuilder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
+		private Builder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(openSearchClient, "OpenSearchClient must not be null");
 			this.openSearchClient = openSearchClient;
@@ -480,7 +480,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if index is null or empty
 		 */
-		public OpenSearchBuilder index(String index) {
+		public Builder index(String index) {
 			Assert.hasText(index, "index must not be null or empty");
 			this.index = index;
 			return this;
@@ -492,7 +492,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if mappingJson is null or empty
 		 */
-		public OpenSearchBuilder mappingJson(String mappingJson) {
+		public Builder mappingJson(String mappingJson) {
 			Assert.hasText(mappingJson, "mappingJson must not be null or empty");
 			this.mappingJson = mappingJson;
 			return this;
@@ -503,7 +503,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return The builder instance
 		 */
-		public OpenSearchBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -514,7 +514,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public OpenSearchBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
@@ -526,7 +526,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if converter is null
 		 */
-		public OpenSearchBuilder filterExpressionConverter(FilterExpressionConverter converter) {
+		public Builder filterExpressionConverter(FilterExpressionConverter converter) {
 			Assert.notNull(converter, "filterExpressionConverter must not be null");
 			this.filterExpressionConverter = converter;
 			return this;
@@ -540,7 +540,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if similarityFunction is null or empty
 		 */
-		public OpenSearchBuilder similarityFunction(String similarityFunction) {
+		public Builder similarityFunction(String similarityFunction) {
 			Assert.hasText(similarityFunction, "similarityFunction must not be null or empty");
 			this.similarityFunction = similarityFunction;
 			return this;
