@@ -70,14 +70,14 @@ class QdrantVectorStoreBuilderTests {
 	@Test
 	void nullQdrantClientInConstructorShouldThrowException() {
 		assertThatThrownBy(() -> QdrantVectorStore.builder(null, null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("QdrantClient must not be null");
+			.hasMessage("EmbeddingModel must be configured");
 	}
 
 	@Test
 	void nullEmbeddingModelShouldThrowException() {
 		assertThatThrownBy(() -> QdrantVectorStore.builder(qdrantClient, null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("EmbeddingModel must not be null");
+			.hasMessage("EmbeddingModel must be configured");
 	}
 
 	@Test
