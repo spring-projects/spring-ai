@@ -19,6 +19,8 @@ package org.springframework.ai.rag.preretrieval.query.transformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
@@ -27,79 +29,82 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
- * Uses a large language model to translate a query to a target language that is supported
- * by the embedding model used to generate the document embeddings. If the query is
- * already in the target language, it is returned unchanged. If the language of the query
- * is unknown, it is also returned unchanged.
+ * Uses a large language model to compress a conversation history and a follow-up query
+ * into a standalone query that captures the essence of the conversation.
  * <p>
- * This transformer is useful when the embedding model is trained on a specific language
- * and the user query is in a different language.
- * <p>
- * Example usage: <pre>{@code
- * QueryTransformer transformer = TranslationQueryTransformer.builder()
- *    .chatClientBuilder(chatClientBuilder)
- *    .targetLanguage("english")
- *    .build();
- * Query transformedQuery = transformer.transform(new Query("Hvad er Danmarks hovedstad?"));
- * }</pre>
+ * This transformer is useful when the conversation history is long and the follow-up
+ * query is related to the conversation context.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public final class TranslationQueryTransformer implements QueryTransformer {
+public class CompressionQueryTransformer implements QueryTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(TranslationQueryTransformer.class);
+	private static final Logger logger = LoggerFactory.getLogger(CompressionQueryTransformer.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
-			Given a user query, translate it to {targetLanguage}.
-			If the query is already in {targetLanguage}, return it unchanged.
-			If you don't know the language of the query, return it unchanged.
-			Do not add explanations nor any other text.
+			Given the following conversation history and a follow-up query, your task is to synthesize
+			a concise, standalone query that incorporates the context from the history.
+			Ensure the standalone query is clear, specific, and maintains the user's intent.
 
-			Original query: {query}
+			Conversation history:
+			{history}
 
-			Translated query:
+			Follow-up query:
+			{query}
+
+			Standalone query:
 			""");
 
 	private final ChatClient chatClient;
 
 	private final PromptTemplate promptTemplate;
 
-	private final String targetLanguage;
-
-	public TranslationQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,
-			String targetLanguage) {
+	public CompressionQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate) {
 		Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
-		Assert.hasText(targetLanguage, "targetLanguage cannot be null or empty");
 
 		this.chatClient = chatClientBuilder.build();
 		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
-		this.targetLanguage = targetLanguage;
 
-		PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "targetLanguage", "query");
+		PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "history", "query");
 	}
 
 	@Override
 	public Query transform(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
-		logger.debug("Translating query to target language: {}", this.targetLanguage);
+		logger.debug("Compressing conversation history and follow-up query into a standalone query");
 
-		var translatedQueryText = this.chatClient.prompt()
+		var compressedQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
-				.param("targetLanguage", this.targetLanguage)
+				.param("history", formatConversationHistory(query.history()))
 				.param("query", query.text()))
 			.options(ChatOptions.builder().temperature(0.0).build())
 			.call()
 			.content();
 
-		if (!StringUtils.hasText(translatedQueryText)) {
-			logger.warn("Query translation result is null/empty. Returning the input query unchanged.");
+		if (!StringUtils.hasText(compressedQueryText)) {
+			logger.warn("Query compression result is null/empty. Returning the input query unchanged.");
 			return query;
 		}
 
-		return query.mutate().text(translatedQueryText).build();
+		return query.mutate().text(compressedQueryText).build();
+	}
+
+	private String formatConversationHistory(List<Message> history) {
+		if (history.isEmpty()) {
+			return "";
+		}
+
+		return history.stream()
+			.filter(message -> message.getMessageType().equals(MessageType.USER)
+					|| message.getMessageType().equals(MessageType.ASSISTANT))
+			.map(message -> "%s: %s".formatted(message.getMessageType(), message.getText()))
+			.collect(Collectors.joining("\n"));
 	}
 
 	public static Builder builder() {
@@ -112,8 +117,6 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 
 		@Nullable
 		private PromptTemplate promptTemplate;
-
-		private String targetLanguage;
 
 		private Builder() {
 		}
@@ -128,13 +131,8 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 			return this;
 		}
 
-		public Builder targetLanguage(String targetLanguage) {
-			this.targetLanguage = targetLanguage;
-			return this;
-		}
-
-		public TranslationQueryTransformer build() {
-			return new TranslationQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetLanguage);
+		public CompressionQueryTransformer build() {
+			return new CompressionQueryTransformer(chatClientBuilder, promptTemplate);
 		}
 
 	}

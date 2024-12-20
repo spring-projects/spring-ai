@@ -1,0 +1,368 @@
+[[rag]]
+= Retrieval Augmented Generation
+
+Retrieval Augmented Generation (RAG) is a technique useful to overcome the limitations of large language models
+that struggle with long-form content, factual accuracy, and context-awareness.
+
+Spring AI supports RAG by providing a modular architecture that allows you to build custom RAG flows yourself
+or use out-of-the-box RAG flows using the `Advisor` API.
+
+NOTE: Learn more about Retrieval Augmented Generation in the xref:concepts.adoc#concept-rag[concepts] section.
+
+== Advisors
+
+Spring AI provides out-of-the-box support for common RAG flows using the `Advisor` API.
+
+=== QuestionAnswerAdvisor
+
+A vector database stores data that the AI model is unaware of.
+When a user question is sent to the AI model, a `QuestionAnswerAdvisor` queries the vector database for documents related to the user question.
+
+The response from the vector database is appended to the user text to provide context for the AI model to generate a response.
+
+Assuming you have already loaded data into a `VectorStore`, you can perform Retrieval Augmented Generation (RAG) by providing an instance of `QuestionAnswerAdvisor` to the `ChatClient`.
+
+[source,java]
+----
+ChatResponse response = ChatClient.builder(chatModel)
+        .build().prompt()
+        .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+        .user(userText)
+        .call()
+        .chatResponse();
+----
+
+In this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
+To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
+
+==== Dynamic Filter Expressions
+
+Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRESSION` advisor context parameter:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+    .build();
+
+// Update filter expression at runtime
+String content = this.chatClient.prompt()
+    .user("Please answer my question XYZ")
+    .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
+    .call()
+    .content();
+----
+
+The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search results based on the provided expression.
+
+=== RetrievalAugmentationAdvisor (Incubating)
+
+Spring AI includes a xref:api/retrieval-augmented-generation.adoc#modules[library of RAG modules] that you can use to build your own RAG flows.
+The `RetrievalAugmentationAdvisor` is an experimental `Advisor` providing an out-of-the-box implementation for the most common RAG flows,
+based on a modular architecture.
+
+WARNING: The `RetrievalAugmentationAdvisor` is an experimental feature and is subject to change in future releases.
+
+==== Sequential RAG Flows
+
+===== Naive RAG
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+----
+
+By default, the `RetrievalAugmentationAdvisor` does not allow the retrieved context to be empty. When that happens,
+it instructs the model not to answer the user query. You can allow empty context as follows.
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .queryAugmenter(ContextualQueryAugmenter.builder()
+                .allowEmptyContext(true)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+----
+
+===== Advanced RAG
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .queryTransformer(RewriteQueryTransformer.builder()
+                .chatClientBuilder(chatClientBuilder.build().mutate())
+                .build())
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+----
+
+[[modules]]
+== Modules
+
+Spring AI implements a Modular RAG architecture inspired by the concept of modularity detailed in the paper
+"https://arxiv.org/abs/2407.21059[Modular RAG: Transforming RAG Systems into LEGO-like Reconfigurable Frameworks]".
+
+WARNING:: Modular RAG is an experimental feature and is subject to change in future releases.
+
+=== Pre-Retrieval
+
+Pre-Retrieval modules are responsible for processing the user query to achieve the best possible retrieval results.
+
+==== Query Transformation
+
+A component for transforming the input query to make it more effective for retrieval tasks, addressing challenges
+such as poorly formed queries, ambiguous terms, complex vocabulary, or unsupported languages.
+
+===== CompressionQueryTransformer
+
+A `CompressionQueryTransformer` uses a large language model to compress a conversation history and a follow-up query
+into a standalone query that captures the essence of the conversation.
+
+This transformer is useful when the conversation history is long and the follow-up query is related
+to the conversation context.
+
+[source,java]
+----
+Query query = Query.builder()
+        .text("And what is its second largest city?")
+        .history(new UserMessage("What is the capital of Denmark?"),
+                new AssistantMessage("Copenhagen is the capital of Denmark."))
+        .build();
+
+QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+        .chatClientBuilder(chatClientBuilder)
+        .build();
+
+Query transformedQuery = queryTransformer.transform(query);
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+===== RewriteQueryTransformer
+
+A `RewriteQueryTransformer` uses a large language model to rewrite a user query to provide better results when
+querying a target system, such as a vector store or a web search engine.
+
+This transformer is useful when the user query is verbose, ambiguous, or contains irrelevant information
+that may affect the quality of the search results.
+
+[source,java]
+----
+Query query = new Query("I'm studying machine learning. What is an LLM?");
+
+QueryTransformer queryTransformer = RewriteQueryTransformer.builder()
+        .chatClientBuilder(chatClientBuilder)
+        .build();
+
+Query transformedQuery = queryTransformer.transform(query);
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+===== TranslationQueryTransformer
+
+A `TranslationQueryTransformer` uses a large language model to translate a query to a target language that is supported
+by the embedding model used to generate the document embeddings. If the query is already in the target language,
+it is returned unchanged. If the language of the query is unknown, it is also returned unchanged.
+
+This transformer is useful when the embedding model is trained on a specific language and the user query
+is in a different language.
+
+[source,java]
+----
+Query query = new Query("Hvad er Danmarks hovedstad?");
+
+QueryTransformer queryTransformer = TranslationQueryTransformer.builder()
+        .chatClientBuilder(chatClientBuilder)
+        .targetLanguage("english")
+        .build();
+
+Query transformedQuery = queryTransformer.transform(query);
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+==== Query Expansion
+
+A component for expanding the input query into a list of queries, addressing challenges such as poorly formed queries
+by providing alternative query formulations, or by breaking down complex problems into simpler sub-queries.
+
+===== MultiQueryExpander
+
+A `MultiQueryExpander` uses a large language model to expand a query into multiple semantically diverse variations
+to capture different perspectives, useful for retrieving additional contextual information and increasing the chances
+of finding relevant results.
+
+[source,java]
+----
+MultiQueryExpander queryExpander = MultiQueryExpander.builder()
+    .chatClientBuilder(chatClientBuilder)
+    .numberOfQueries(3)
+    .build();
+List<Query> queries = expander.expand(new Query("How to run a Spring Boot app?"));
+----
+
+By default, the `MultiQueryExpander` includes the original query in the list of expanded queries. You can disable this behavior
+via the `includeOriginal` method in the builder.
+
+[source,java]
+----
+MultiQueryExpander queryExpander = MultiQueryExpander.builder()
+    .chatClientBuilder(chatClientBuilder)
+    .includeOriginal(false)
+    .build();
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+=== Retrieval
+
+Retrieval modules are responsible for querying data systems like vector store and retrieving the most relevant documents.
+
+==== Document Search
+
+Component responsible for retrieving `Documents` from an underlying data source, such as a search engine, a vector store,
+a database, or a knowledge graph.
+
+===== VectorStoreDocumentRetriever
+
+A `VectorStoreDocumentRetriever` retrieves documents from a vector store that are semantically similar to the input
+query. It supports filtering based on metadata, similarity threshold, and top-k results.
+
+[source,java]
+----
+DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
+    .vectorStore(vectorStore)
+    .similarityThreshold(0.73)
+    .topK(5)
+    .filterExpression(new FilterExpressionBuilder()
+        .eq("genre", "fairytale")
+        .build())
+    .build();
+List<Document> documents = retriever.retrieve(new Query("What is the main character of the story?"));
+----
+
+The filter expression can be static or dynamic. For dynamic filter expressions, you can pass a `Supplier`.
+
+[source,java]
+----
+DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
+    .vectorStore(vectorStore)
+    .filterExpression(() -> new FilterExpressionBuilder()
+        .eq("tenant", TenantContextHolder.getTenantIdentifier())
+        .build())
+    .build();
+List<Document> documents = retriever.retrieve(new Query("What are the KPIs for the next semester?"));
+----
+
+==== Document Join
+
+A component for combining documents retrieved based on multiple queries and from multiple data sources into
+a single collection of documents. As part of the joining process, it can also handle duplicate documents and reciprocal
+ranking strategies.
+
+===== ConcatenationDocumentJoiner
+
+A `ConcatenationDocumentJoiner` combines documents retrieved based on multiple queries and from multiple data sources
+by concatenating them into a single collection of documents. In case of duplicate documents, the first occurrence is kept.
+The score of each document is kept as is.
+
+[source,java]
+----
+Map<Query, List<List<Document>>> documentsForQuery = ...
+DocumentJoiner documentJoiner = new ConcatenationDocumentJoiner();
+List<Document> documents = documentJoiner.join(documentsForQuery);
+----
+
+=== Post-Retrieval
+
+Post-Retrieval modules are responsible for processing the retrieved documents to achieve the best possible generation results.
+
+==== Document Ranking
+
+A component for ordering and ranking documents based on their relevance to a query to bring the most relevant documents
+to the top of the list, addressing challenges such as _lost-in-the-middle_.
+
+Unlike `DocumentSelector`, this component does not remove entire documents from the list, but rather changes
+the order/score of the documents in the list. Unlike `DocumentCompressor`, this component does not alter the content
+of the documents.
+
+==== Document Selection
+
+A component for removing irrelevant or redundant documents from a list of retrieved documents, addressing challenges
+such as _lost-in-the-middle_ and context length restrictions from the model.
+
+Unlike `DocumentRanker`, this component does not change the order/score of the documents in the list, but rather
+removes irrelevant or redundant documents. Unlike `DocumentCompressor`, this component does not alter the content
+of the documents, but rather removes entire documents.
+
+==== Document Compression
+
+A component for compressing the content of each document to reduce noise and redundancy in the retrieved information,
+addressing challenges such as _lost-in-the-middle_ and context length restrictions from the model.
+
+Unlike `DocumentSelector`, this component does not remove entire documents from the list, but rather alters the content
+of the documents. Unlike `DocumentRanker`, this component does not change the order/score of the documents in the list.
+
+=== Generation
+
+Generation modules are responsible for generating the final response based on the user query and retrieved documents.
+
+==== Query Augmentation
+
+A component for augmenting an input query with additional data, useful to provide a large language model
+with the necessary context to answer the user query.
+
+===== ContextualQueryAugmenter
+
+The `ContextualQueryAugmenter` augments the user query with contextual data from the content of the provided documents.
+
+[source,java]
+----
+QueryAugmenter queryAugmenter = ContextualQueryAugmenter.builder().build();
+----
+
+By default, the `ContextualQueryAugmenter` does not allow the retrieved context to be empty. When that happens,
+it instructs the model not to answer the user query.
+
+You can enable the `allowEmptyContext` option to allow the model to generate a response even when the retrieved context is empty.
+
+[source,java]
+----
+QueryAugmenter queryAugmenter = ContextualQueryAugmenter.builder()
+        .allowEmptyContext(true)
+        .build();
+----
+
+The prompts used by this component can be customized via the `promptTemplate()` and `emptyContextPromptTemplate()` methods
+available in the builder.

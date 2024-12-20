@@ -28,78 +28,69 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Uses a large language model to translate a query to a target language that is supported
- * by the embedding model used to generate the document embeddings. If the query is
- * already in the target language, it is returned unchanged. If the language of the query
- * is unknown, it is also returned unchanged.
+ * Uses a large language model to rewrite a user query to provide better results when
+ * querying a target system, such as a vector store or a web search engine.
  * <p>
- * This transformer is useful when the embedding model is trained on a specific language
- * and the user query is in a different language.
- * <p>
- * Example usage: <pre>{@code
- * QueryTransformer transformer = TranslationQueryTransformer.builder()
- *    .chatClientBuilder(chatClientBuilder)
- *    .targetLanguage("english")
- *    .build();
- * Query transformedQuery = transformer.transform(new Query("Hvad er Danmarks hovedstad?"));
- * }</pre>
+ * This transformer is useful when the user query is verbose, ambiguous, or contains
+ * irrelevant information that may affect the quality of the search results.
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @see <a href="https://arxiv.org/pdf/2305.14283">arXiv:2305.14283</a>
  */
-public final class TranslationQueryTransformer implements QueryTransformer {
+public class RewriteQueryTransformer implements QueryTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(TranslationQueryTransformer.class);
+	private static final Logger logger = LoggerFactory.getLogger(RewriteQueryTransformer.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
-			Given a user query, translate it to {targetLanguage}.
-			If the query is already in {targetLanguage}, return it unchanged.
-			If you don't know the language of the query, return it unchanged.
-			Do not add explanations nor any other text.
+			Given a user query, rewrite it to provide better results when querying a {target}.
+			Remove any irrelevant information, and ensure the query is concise and specific.
 
-			Original query: {query}
+			Original query:
+			{query}
 
-			Translated query:
+			Rewritten query:
 			""");
+
+	private static final String DEFAULT_TARGET = "vector store";
 
 	private final ChatClient chatClient;
 
 	private final PromptTemplate promptTemplate;
 
-	private final String targetLanguage;
+	private final String targetSearchSystem;
 
-	public TranslationQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,
-			String targetLanguage) {
+	public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,
+			@Nullable String targetSearchSystem) {
 		Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
-		Assert.hasText(targetLanguage, "targetLanguage cannot be null or empty");
 
 		this.chatClient = chatClientBuilder.build();
 		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
-		this.targetLanguage = targetLanguage;
+		this.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;
 
-		PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "targetLanguage", "query");
+		PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "target", "query");
 	}
 
 	@Override
 	public Query transform(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
-		logger.debug("Translating query to target language: {}", this.targetLanguage);
+		logger.debug("Rewriting query to optimize for querying a {}.", this.targetSearchSystem);
 
-		var translatedQueryText = this.chatClient.prompt()
+		var rewrittenQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
-				.param("targetLanguage", this.targetLanguage)
+				.param("target", targetSearchSystem)
 				.param("query", query.text()))
 			.options(ChatOptions.builder().temperature(0.0).build())
 			.call()
 			.content();
 
-		if (!StringUtils.hasText(translatedQueryText)) {
-			logger.warn("Query translation result is null/empty. Returning the input query unchanged.");
+		if (!StringUtils.hasText(rewrittenQueryText)) {
+			logger.warn("Query rewrite result is null/empty. Returning the input query unchanged.");
 			return query;
 		}
 
-		return query.mutate().text(translatedQueryText).build();
+		return query.mutate().text(rewrittenQueryText).build();
 	}
 
 	public static Builder builder() {
@@ -113,7 +104,8 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 		@Nullable
 		private PromptTemplate promptTemplate;
 
-		private String targetLanguage;
+		@Nullable
+		private String targetSearchSystem;
 
 		private Builder() {
 		}
@@ -128,13 +120,13 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 			return this;
 		}
 
-		public Builder targetLanguage(String targetLanguage) {
-			this.targetLanguage = targetLanguage;
+		public Builder targetSearchSystem(String targetSearchSystem) {
+			this.targetSearchSystem = targetSearchSystem;
 			return this;
 		}
 
-		public TranslationQueryTransformer build() {
-			return new TranslationQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetLanguage);
+		public RewriteQueryTransformer build() {
+			return new RewriteQueryTransformer(chatClientBuilder, promptTemplate, targetSearchSystem);
 		}
 
 	}

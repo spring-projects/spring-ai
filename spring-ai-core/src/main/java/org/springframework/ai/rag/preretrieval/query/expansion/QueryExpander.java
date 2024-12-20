@@ -24,7 +24,7 @@ import org.springframework.ai.rag.Query;
 /**
  * A component for expanding the input query into a list of queries, addressing challenges
  * such as poorly formed queries by providing alternative query formulations, or by
- * breaking down complex problems into simpler sub-queries,
+ * breaking down complex problems into simpler sub-queries.
  *
  * @author Thomas Vitale
  * @since 1.0.0
