@@ -172,9 +172,7 @@ Then create the `Neo4jVectorStore` bean using the builder pattern:
 ----
 @Bean
 public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
-    return Neo4jVectorStore.builder()
-        .driver(driver)
-        .embeddingModel(embeddingModel)
+    return Neo4jVectorStore.builder(driver, embeddingModel)
         .databaseName("neo4j")                // Optional: defaults to "neo4j"
         .distanceType(Neo4jDistanceType.COSINE) // Optional: defaults to COSINE
         .dimensions(1536)                      // Optional: defaults to 1536

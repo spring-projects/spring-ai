@@ -231,7 +231,10 @@ Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to y
 ----
 @Bean
 public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
- return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection", false);
+ return ChromaVectorStore.builder(chromaApi, embeddingModel)
+				.collectionName("TestCollection")
+				.initializeSchema(true)
+				.build();
 }
 ----
 
