@@ -43,7 +43,10 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
 	private final TitanChatBedrockApi chatApi;

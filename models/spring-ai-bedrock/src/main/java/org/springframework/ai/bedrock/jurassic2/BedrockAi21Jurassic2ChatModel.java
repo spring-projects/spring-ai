@@ -34,7 +34,10 @@ import org.springframework.util.Assert;
  *
  * @author Ahmed Yousri
  * @since 1.0.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
 	private final Ai21Jurassic2ChatBedrockApi chatApi;
