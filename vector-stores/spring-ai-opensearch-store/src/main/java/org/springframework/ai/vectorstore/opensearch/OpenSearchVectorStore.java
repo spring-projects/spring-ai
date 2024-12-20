@@ -176,7 +176,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	/**
 	 * Creates a new OpenSearchVectorStore with default mapping and collection name.
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
 	 * @param openSearchClient The OpenSearch client
 	 * @param embeddingModel The embedding model to use
 	 * @param initializeSchema Whether to initialize the schema
@@ -190,7 +190,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	/**
 	 * Creates a new OpenSearchVectorStore with custom mapping.
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
 	 * @param openSearchClient The OpenSearch client
 	 * @param embeddingModel The embedding model to use
 	 * @param mappingJson The JSON mapping for the index
@@ -205,7 +205,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	/**
 	 * Creates a new OpenSearchVectorStore with custom index name and mapping.
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
 	 * @param index The name of the index
 	 * @param openSearchClient The OpenSearch client
 	 * @param embeddingModel The embedding model to use
@@ -222,7 +222,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	/**
 	 * Creates a new OpenSearchVectorStore with all configuration options.
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
 	 * @param index The name of the index
 	 * @param openSearchClient The OpenSearch client
 	 * @param embeddingModel The embedding model to use
@@ -285,7 +285,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				this.batchingStrategy);
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (Document document : documents) {
-			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(), document.getContent(),
+			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(), document.getText(),
 					document.getMetadata(), embedding.get(documents.indexOf(document)));
 			bulkRequestBuilder.operations(op -> op
 				.index(idx -> idx.index(this.index).id(openSearchDocument.id()).document(openSearchDocument)));
@@ -468,7 +468,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if openSearchClient is null
 		 */
-		public OpenSearchBuilder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
+		private OpenSearchBuilder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(openSearchClient, "OpenSearchClient must not be null");
 			this.openSearchClient = openSearchClient;

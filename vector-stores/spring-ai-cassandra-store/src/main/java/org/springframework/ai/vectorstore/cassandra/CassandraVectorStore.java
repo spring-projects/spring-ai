@@ -235,7 +235,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	private final boolean returnEmbeddings;
 
 	/**
-	 * @deprecated since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated since 1.0.0-M5, use {@link #builder(EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
@@ -243,7 +243,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated since 1.0.0-M5, use {@link #builder(EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel,
@@ -319,7 +319,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 					builder = builder.set(keyColumn.name(), primaryKeyValues.get(k), keyColumn.javaType());
 				}
 
-				builder = builder.setString(this.schema.content(), d.getContent())
+				builder = builder.setString(this.schema.content(), d.getText())
 					.setVector(this.schema.embedding(),
 							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(documents.indexOf(d)))),
 							Float.class);

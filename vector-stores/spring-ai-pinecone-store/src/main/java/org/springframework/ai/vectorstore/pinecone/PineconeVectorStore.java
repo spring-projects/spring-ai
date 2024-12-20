@@ -52,6 +52,7 @@ import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpress
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -87,7 +88,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	/**
 	 * Constructs a new PineconeVectorStore.
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(EmbeddingModel, String, String, String, String)}
+	 * ()} instead
 	 * @param config The configuration for the store
 	 * @param embeddingModel The client for embedding operations
 	 */
@@ -98,7 +100,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	/**
 	 * Constructs a new PineconeVectorStore.
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(EmbeddingModel, String, String, String, String)}
+	 * ()} instead
 	 * @param config The configuration for the store
 	 * @param embeddingModel The client for embedding operations
 	 * @param observationRegistry The registry for observations
@@ -109,10 +112,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	public PineconeVectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel,
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-		this(builder(embeddingModel).apiKey(config.clientConfig.getApiKey())
-			.projectId(config.clientConfig.getProjectName())
-			.environment(config.clientConfig.getEnvironment())
-			.indexName(config.connectionConfig.getIndexName())
+		this(builder(embeddingModel, config.clientConfig.getApiKey(), config.clientConfig.getProjectName(),
+				config.clientConfig.getEnvironment(), config.connectionConfig.getIndexName())
 			.namespace(config.namespace)
 			.contentFieldName(config.contentFieldName)
 			.distanceMetadataFieldName(config.distanceMetadataFieldName)
@@ -155,8 +156,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * Creates a new builder instance for configuring a PineconeVectorStore.
 	 * @return A new PineconeBuilder instance
 	 */
-	public static PineconeBuilder builder(EmbeddingModel embeddingModel) {
-		return new PineconeBuilder(embeddingModel);
+	public static PineconeBuilder builder(EmbeddingModel embeddingModel, String apiKey, String projectId,
+			String environment, String indexName) {
+		return new PineconeBuilder(embeddingModel, apiKey, projectId, environment, indexName);
 	}
 
 	/**
@@ -217,7 +219,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @return The content value.
 	 */
 	private Value contentValue(Document document) {
-		return Value.newBuilder().setStringValue(document.getContent()).build();
+		return Value.newBuilder().setStringValue(document.getText()).build();
 	}
 
 	/**
@@ -297,8 +299,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		try {
 			var structBuilder = Struct.newBuilder();
 			JsonFormat.parser().ignoringUnknownFields().merge(metadataFilters, structBuilder);
-			var filterStruct = structBuilder.build();
-			return filterStruct;
+			return structBuilder.build();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -339,13 +340,13 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 */
 	public static class PineconeBuilder extends AbstractVectorStoreBuilder<PineconeBuilder> {
 
-		private String apiKey;
+		private final String apiKey;
 
-		private String projectId;
+		private final String projectId;
 
-		private String environment;
+		private final String environment;
 
-		private String indexName;
+		private final String indexName;
 
 		private String namespace = "";
 
@@ -357,56 +358,19 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		private PineconeBuilder(EmbeddingModel embeddingModel) {
+		private PineconeBuilder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
+				String indexName) {
 			super(embeddingModel);
-		}
 
-		/**
-		 * Sets the Pinecone API key.
-		 * @param apiKey The API key to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if apiKey is null or empty
-		 */
-		public PineconeBuilder apiKey(String apiKey) {
 			Assert.hasText(apiKey, "ApiKey must not be null or empty");
-			this.apiKey = apiKey;
-			return this;
-		}
-
-		/**
-		 * Sets the Pinecone project ID.
-		 * @param projectId The project ID to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if projectId is null or empty
-		 */
-		public PineconeBuilder projectId(String projectId) {
 			Assert.hasText(projectId, "ProjectId must not be null or empty");
-			this.projectId = projectId;
-			return this;
-		}
-
-		/**
-		 * Sets the Pinecone environment.
-		 * @param environment The environment to use (e.g. gcp-starter)
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if environment is null or empty
-		 */
-		public PineconeBuilder environment(String environment) {
 			Assert.hasText(environment, "Environment must not be null or empty");
-			this.environment = environment;
-			return this;
-		}
-
-		/**
-		 * Sets the Pinecone index name.
-		 * @param indexName The index name to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if indexName is null or empty
-		 */
-		public PineconeBuilder indexName(String indexName) {
 			Assert.hasText(indexName, "IndexName must not be null or empty");
+
+			this.apiKey = apiKey;
+			this.projectId = projectId;
+			this.environment = environment;
 			this.indexName = indexName;
-			return this;
 		}
 
 		/**
@@ -415,7 +379,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param namespace The namespace to use (leave empty for free tier)
 		 * @return The builder instance
 		 */
-		public PineconeBuilder namespace(String namespace) {
+		public PineconeBuilder namespace(@Nullable String namespace) {
 			this.namespace = namespace != null ? namespace : "";
 			return this;
 		}
@@ -425,7 +389,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param contentFieldName The content field name to use
 		 * @return The builder instance
 		 */
-		public PineconeBuilder contentFieldName(String contentFieldName) {
+		public PineconeBuilder contentFieldName(@Nullable String contentFieldName) {
 			this.contentFieldName = contentFieldName != null ? contentFieldName : CONTENT_FIELD_NAME;
 			return this;
 		}
@@ -435,7 +399,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param distanceMetadataFieldName The distance metadata field name to use
 		 * @return The builder instance
 		 */
-		public PineconeBuilder distanceMetadataFieldName(String distanceMetadataFieldName) {
+		public PineconeBuilder distanceMetadataFieldName(@Nullable String distanceMetadataFieldName) {
 			this.distanceMetadataFieldName = distanceMetadataFieldName != null ? distanceMetadataFieldName
 					: DocumentMetadata.DISTANCE.value();
 			return this;
@@ -446,7 +410,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param serverSideTimeout The timeout duration to use
 		 * @return The builder instance
 		 */
-		public PineconeBuilder serverSideTimeout(Duration serverSideTimeout) {
+		public PineconeBuilder serverSideTimeout(@Nullable Duration serverSideTimeout) {
 			this.serverSideTimeout = serverSideTimeout != null ? serverSideTimeout : Duration.ofSeconds(20);
 			return this;
 		}
@@ -478,8 +442,10 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	/**
 	 * Configuration for PineconeVectorStore.
 	 *
-	 * @deprecated Use {@link PineconeVectorStore#builder()} instead. This class will be
-	 * removed in a future release as part of the migration to the builder pattern.
+	 * @deprecated Use
+	 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+	 * ()} instead. This class will be removed in a future release as part of the
+	 * migration to the builder pattern.
 	 * @since 1.0.0
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
@@ -502,7 +468,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Constructor using the builder.
 		 * @param builder The configuration builder
-		 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+		 * @deprecated Use
+		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+		 * ()} instead
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public PineconeVectorStoreConfig(Builder builder) {
@@ -520,7 +488,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration
-		 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+		 * @deprecated Use
+		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+		 * ()} instead
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static Builder builder() {
@@ -529,7 +499,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		/**
 		 * {@return the default config}
-		 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+		 * @deprecated Use
+		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+		 * ()} instead
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static PineconeVectorStoreConfig defaultConfig() {
@@ -539,8 +511,10 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Builder for PineconeVectorStoreConfig.
 		 *
-		 * @deprecated Use {@link PineconeVectorStore#builder()} instead. This class will
-		 * be removed in a future release as part of the migration to the builder pattern.
+		 * @deprecated Use
+		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+		 * ()} instead. This class will be removed in a future release as part of the
+		 * migration to the builder pattern.
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static final class Builder {
@@ -573,7 +547,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * Pinecone api key.
 			 * @param apiKey key to use
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withApiKey(String apiKey) {
@@ -585,7 +561,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * Pinecone project id.
 			 * @param projectId Project id to use
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withProjectId(String projectId) {
@@ -597,7 +575,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * Pinecone environment name.
 			 * @param environment Environment name (e.g. gcp-starter)
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withEnvironment(String environment) {
@@ -609,7 +589,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * Pinecone index name.
 			 * @param indexName Pinecone index name to use
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withIndexName(String indexName) {
@@ -622,7 +604,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * For free-tier leave the namespace empty.
 			 * @param namespace Pinecone namespace to use
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withNamespace(String namespace) {
@@ -634,7 +618,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * Content field name.
 			 * @param contentFieldName content field name to use
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withContentFieldName(String contentFieldName) {
@@ -646,7 +632,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * Distance metadata field name.
 			 * @param distanceMetadataFieldName distance metadata field name to use
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withDistanceMetadataFieldName(String distanceMetadataFieldName) {
@@ -658,7 +646,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			 * Pinecone server side timeout.
 			 * @param serverSideTimeout server timeout to use
 			 * @return this builder
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder withServerSideTimeout(Duration serverSideTimeout) {
@@ -668,7 +658,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 			/**
 			 * {@return the immutable configuration}
-			 * @deprecated Use {@link PineconeVectorStore#builder()} instead
+			 * @deprecated Use
+			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
+			 * ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public PineconeVectorStoreConfig build() {

@@ -52,6 +52,7 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -169,7 +170,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	private final int embeddingDimension;
 
 	/**
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(Client, EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel) {
@@ -177,7 +178,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(Client, EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
@@ -187,7 +188,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated Use {@link #builder()} instead
+	 * @deprecated Use {@link #builder(Client, EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
@@ -244,7 +245,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
-			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
+			typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
 			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
 
@@ -424,6 +425,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		}
 	}
 
+	@Nullable
 	Map<String, Object> getCollectionInfo() {
 		try {
 			CollectionResponse retrievedCollection = this.client.collections(this.collectionName).retrieve();
@@ -460,9 +462,10 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		/**
-		 * Configures the Typesense client.
-		 * @param client the client for Typesense operations
-		 * @return this builder instance
+		 * Constructs a new TypesenseBuilder instance.
+		 * @param client The Typesense client instance used for database operations. Must
+		 * not be null.
+		 * @param embeddingModel The embedding model used for vector transformations.
 		 * @throws IllegalArgumentException if client is null
 		 */
 		public TypesenseBuilder(Client client, EmbeddingModel embeddingModel) {
@@ -525,7 +528,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated Use {@link TypesenseVectorStore#builder()} instead
+	 * @deprecated Use {@link TypesenseVectorStore#builder(Client, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static class TypesenseVectorStoreConfig {

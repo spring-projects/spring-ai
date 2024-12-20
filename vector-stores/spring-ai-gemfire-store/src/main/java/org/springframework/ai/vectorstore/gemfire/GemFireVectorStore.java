@@ -31,7 +31,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.DocumentMetadata;
-import reactor.util.annotation.NonNull;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -48,6 +47,7 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationConv
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -126,7 +126,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	 * @param config the vector store configuration
 	 * @param embeddingModel the embedding model to use
 	 * @param initializeSchema whether to initialize schema
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
@@ -142,7 +142,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	 * @param initializeSchema whether to initialize schema
 	 * @param observationRegistry the observation registry
 	 * @param customObservationConvention the custom observation convention
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema,
@@ -240,6 +240,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		return !indexResponse.isEmpty();
 	}
 
+	@Nullable
 	public String getIndex() {
 		return this.client.get()
 			.uri("/" + this.indexName)
@@ -255,7 +256,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 				this.batchingStrategy);
 		UploadRequest upload = new UploadRequest(documents.stream()
 			.map(document -> new UploadRequest.Embedding(document.getId(), embeddings.get(documents.indexOf(document)),
-					DOCUMENT_FIELD, document.getContent(), document.getMetadata()))
+					DOCUMENT_FIELD, document.getText(), document.getMetadata()))
 			.toList());
 
 		String embeddingsJson = null;
@@ -295,6 +296,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
+	@Nullable
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
@@ -514,7 +516,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	private static final class QueryRequest {
 
 		@JsonProperty("vector")
-		@NonNull
 		private final float[] vector;
 
 		@JsonProperty("top-k")
@@ -649,7 +650,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		boolean sslEnabled;
 
 		/**
-		 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
+		 * @deprecated Since 1.0.0-M5, use
+		 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		private GemFireVectorStoreConfig(Builder builder) {
@@ -667,7 +669,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		/**
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration.
-		 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
+		 * @deprecated Since 1.0.0-M5, use
+		 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static Builder builder() {
@@ -675,7 +678,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		}
 
 		/**
-		 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
+		 * @deprecated Since 1.0.0-M5, use
+		 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public static class Builder {
@@ -700,8 +704,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			boolean sslEnabled = GemFireVectorStoreConfig.DEFAULT_SSL_ENABLED;
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setHost(String host) {
@@ -711,8 +715,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setPort(int port) {
@@ -722,8 +726,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setSslEnabled(boolean sslEnabled) {
@@ -732,8 +736,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setIndexName(String indexName) {
@@ -743,8 +747,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setBeamWidth(int beamWidth) {
@@ -756,8 +760,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setMaxConnections(int maxConnections) {
@@ -770,8 +774,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setBuckets(int buckets) {
@@ -781,8 +785,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setVectorSimilarityFunction(String vectorSimilarityFunction) {
@@ -792,8 +796,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public Builder setFields(String[] fields) {
@@ -802,8 +806,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			}
 
 			/**
-			 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()}
-			 * instead
+			 * @deprecated Since 1.0.0-M5, use
+			 * {@link GemFireVectorStore#builder(EmbeddingModel)} ()} instead
 			 */
 			@Deprecated(since = "1.0.0-M5", forRemoval = true)
 			public GemFireVectorStoreConfig build() {

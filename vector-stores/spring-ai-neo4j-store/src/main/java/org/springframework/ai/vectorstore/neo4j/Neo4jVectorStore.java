@@ -154,7 +154,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	public static final String DEFAULT_CONSTRAINT_NAME = DEFAULT_LABEL + "_unique_idx";
 
-	private static Map<Neo4jDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+	private static final Map<Neo4jDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			Neo4jDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE, Neo4jDistanceType.EUCLIDEAN,
 			VectorStoreSimilarityMetric.EUCLIDEAN);
 
@@ -339,7 +339,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		row.put("id", document.getId());
 
 		var properties = new HashMap<String, Object>();
-		properties.put("text", document.getContent());
+		properties.put("text", document.getText());
 
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
@@ -426,7 +426,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		public Neo4jBuilder(Driver driver, EmbeddingModel embeddingModel) {
+		private Neo4jBuilder(Driver driver, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(driver, "Neo4j driver must not be null");
 			this.driver = driver;

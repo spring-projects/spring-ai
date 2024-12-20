@@ -62,6 +62,7 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -291,7 +292,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			for (Document document : documents) {
 				var fields = new HashMap<String, Object>();
 				fields.put(this.embeddingFieldName, embeddings.get(documents.indexOf(document)));
-				fields.put(this.contentFieldName, document.getContent());
+				fields.put(this.contentFieldName, document.getText());
 				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
 			}
@@ -505,7 +506,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		public RedisBuilder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+		private RedisBuilder(JedisPooled jedis, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(jedis, "JedisPooled must not be null");
 			this.jedis = jedis;
@@ -564,7 +565,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param algorithm the vector algorithm to use
 		 * @return the builder instance
 		 */
-		public RedisBuilder vectorAlgorithm(Algorithm algorithm) {
+		public RedisBuilder vectorAlgorithm(@Nullable Algorithm algorithm) {
 			if (algorithm != null) {
 				this.vectorAlgorithm = algorithm;
 			}
@@ -585,7 +586,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param fields the list of metadata fields to include
 		 * @return the builder instance
 		 */
-		public RedisBuilder metadataFields(List<MetadataField> fields) {
+		public RedisBuilder metadataFields(@Nullable List<MetadataField> fields) {
 			if (fields != null && !fields.isEmpty()) {
 				this.metadataFields = new ArrayList<>(fields);
 			}

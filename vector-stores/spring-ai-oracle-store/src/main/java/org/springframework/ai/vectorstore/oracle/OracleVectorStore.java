@@ -101,10 +101,10 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	private static final Logger logger = LoggerFactory.getLogger(OracleVectorStore.class);
 
-	private static Map<OracleVectorStoreDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
-			OracleVectorStoreDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE,
-			OracleVectorStoreDistanceType.EUCLIDEAN, VectorStoreSimilarityMetric.EUCLIDEAN,
-			OracleVectorStoreDistanceType.DOT, VectorStoreSimilarityMetric.DOT);
+	private static final Map<OracleVectorStoreDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map
+		.of(OracleVectorStoreDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE,
+				OracleVectorStoreDistanceType.EUCLIDEAN, VectorStoreSimilarityMetric.EUCLIDEAN,
+				OracleVectorStoreDistanceType.DOT, VectorStoreSimilarityMetric.DOT);
 
 	public final FilterExpressionConverter filterExpressionConverter = new SqlJsonPathFilterExpressionConverter();
 
@@ -150,7 +150,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	 * Creates a new OracleVectorStore with default configuration.
 	 * @param jdbcTemplate the JDBC template to use
 	 * @param embeddingModel the embedding model to use
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
@@ -163,7 +164,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	 * @param jdbcTemplate the JDBC template to use
 	 * @param embeddingModel the embedding model to use
 	 * @param initializeSchema whether to initialize the schema
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, boolean initializeSchema) {
@@ -183,7 +185,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	 * @param initializeSchema whether to initialize the schema
 	 * @param removeExistingVectorStoreTable whether to remove existing vector store table
 	 * @param forcedNormalization whether to force vector normalization
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
@@ -211,7 +214,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	 * @param observationRegistry the observation registry
 	 * @param customObservationConvention the custom observation convention
 	 * @param batchingStrategy the batching strategy
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
@@ -268,7 +272,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 				final Document document = documents.get(i);
-				final String content = document.getContent();
+				final String content = document.getText();
 				final byte[] json = toJson(document.getMetadata());
 				final VECTOR embeddingVector = toVECTOR(embeddings.get(documents.indexOf(document)));
 
@@ -745,7 +749,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	 */
 	public static class OracleBuilder extends AbstractVectorStoreBuilder<OracleBuilder> {
 
-		private JdbcTemplate jdbcTemplate;
+		private final JdbcTemplate jdbcTemplate;
 
 		private String tableName = DEFAULT_TABLE_NAME;
 

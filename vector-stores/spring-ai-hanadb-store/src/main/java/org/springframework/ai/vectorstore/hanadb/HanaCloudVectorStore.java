@@ -39,6 +39,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -93,7 +94,8 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	 * @param repository the HANA vector repository
 	 * @param embeddingModel the embedding model to use
 	 * @param config the vector store configuration
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link #builder(HanaVectorRepository, EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public HanaCloudVectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
@@ -108,7 +110,8 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	 * @param config the vector store configuration
 	 * @param observationRegistry the observation registry
 	 * @param customObservationConvention the custom observation convention
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link #builder(HanaVectorRepository, EmbeddingModel)} ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public HanaCloudVectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
@@ -152,7 +155,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		for (Document document : documents) {
 			logger.info("[{}/{}] Calling EmbeddingModel for document id = {}", count++, documents.size(),
 					document.getId());
-			String content = document.getContent().replaceAll("\\s+", " ");
+			String content = document.getText().replaceAll("\\s+", " ");
 			String embedding = getEmbedding(document);
 			this.repository.save(this.tableName, document.getId(), embedding, content);
 		}
@@ -234,6 +237,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 		private final HanaVectorRepository<? extends HanaVectorEntity> repository;
 
+		@Nullable
 		private String tableName;
 
 		private int topK;
@@ -244,7 +248,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if repository is null
 		 */
-		public HanaCloudBuilder(HanaVectorRepository<? extends HanaVectorEntity> repository,
+		private HanaCloudBuilder(HanaVectorRepository<? extends HanaVectorEntity> repository,
 				EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(repository, "Repository must not be null");

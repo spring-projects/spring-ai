@@ -196,7 +196,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	private final int maxDocumentBatchSize;
 
 	/**
-	 * @deprecated Use {@link #builder(JdbcTemplate)} instead
+	 * @deprecated Use {@link #builder(JdbcTemplate, EmbeddingModel)} (JdbcTemplate)}
+	 * instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MariaDBVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
@@ -204,7 +205,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	/**
-	 * @deprecated Use {@link #builder(JdbcTemplate)} instead
+	 * @deprecated Use {@link #builder(JdbcTemplate, EmbeddingModel)} (JdbcTemplate)}
+	 * instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MariaDBVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions) {
@@ -212,7 +214,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	/**
-	 * @deprecated Use {@link #builder(JdbcTemplate)} instead
+	 * @deprecated Use {@link #builder(JdbcTemplate, EmbeddingModel)} (JdbcTemplate)}
+	 * instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MariaDBVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions,
@@ -222,7 +225,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	/**
-	 * @deprecated Use {@link #builder(JdbcTemplate)} instead
+	 * @deprecated Use {@link #builder(JdbcTemplate, EmbeddingModel)} (JdbcTemplate)}
+	 * instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public MariaDBVectorStore(String vectorTableName, JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
@@ -233,7 +237,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	/**
-	 * @deprecated Use {@link #builder(JdbcTemplate)} instead
+	 * @deprecated Use {@link #builder(JdbcTemplate, EmbeddingModel)} (JdbcTemplate)}
+	 * instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	private MariaDBVectorStore(String schemaName, String vectorTableName, boolean vectorTableValidationsEnabled,
@@ -246,7 +251,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	/**
-	 * @deprecated Use {@link #builder(JdbcTemplate)} instead
+	 * @deprecated Use {@link #builder(JdbcTemplate, EmbeddingModel)} (JdbcTemplate)}
+	 * instead
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	private MariaDBVectorStore(String schemaName, String vectorTableName, boolean vectorTableValidationsEnabled,
@@ -286,12 +292,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
-		this.vectorTableName = (null == builder.vectorTableName || builder.vectorTableName.isEmpty())
-				? DEFAULT_TABLE_NAME
+		this.vectorTableName = builder.vectorTableName.isEmpty() ? DEFAULT_TABLE_NAME
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.vectorTableName.trim(), false);
 
-		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
-				(vectorTableName == null || vectorTableName.isEmpty()));
+		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName, vectorTableName.isEmpty());
 
 		this.schemaName = builder.schemaName == null ? null
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.schemaName, false);
@@ -341,14 +345,14 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		List<MariaDBDocument> mariaDBDocuments = new ArrayList<>(documents.size());
 		if (embeddings.size() == documents.size()) {
 			for (Document document : documents) {
-				mariaDBDocuments.add(new MariaDBDocument(document.getId(), document.getContent(),
-						document.getMetadata(), embeddings.get(documents.indexOf(document))));
+				mariaDBDocuments.add(new MariaDBDocument(document.getId(), document.getText(), document.getMetadata(),
+						embeddings.get(documents.indexOf(document))));
 			}
 		}
 		else {
 			for (Document document : documents) {
 				mariaDBDocuments
-					.add(new MariaDBDocument(document.getId(), document.getContent(), document.getMetadata(), null));
+					.add(new MariaDBDocument(document.getId(), document.getText(), document.getMetadata(), null));
 			}
 		}
 
@@ -571,6 +575,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		private final JdbcTemplate jdbcTemplate;
 
+		@Nullable
 		private String schemaName;
 
 		private String vectorTableName = DEFAULT_TABLE_NAME;
@@ -940,7 +945,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	 * @param metadata The metadata of the document
 	 * @param embedding The vectors representing the content of the document
 	 */
-	public record MariaDBDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
+	public record MariaDBDocument(String id, @Nullable String content, Map<String, Object> metadata,
+			@Nullable float[] embedding) {
 	}
 
 }
