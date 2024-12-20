@@ -144,7 +144,7 @@ class SimpleVectorStoreTests {
 		File saveFile = this.tempDir.resolve("vector-store.json").toFile();
 		this.vectorStore.save(saveFile);
 
-		SimpleVectorStore loadedStore = new SimpleVectorStore(this.mockEmbeddingModel);
+		SimpleVectorStore loadedStore = SimpleVectorStore.builder(this.mockEmbeddingModel).build();
 		loadedStore.load(saveFile);
 
 		List<Document> results = loadedStore.similaritySearch("test content");
