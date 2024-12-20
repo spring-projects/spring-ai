@@ -172,7 +172,7 @@ public class CassandraVectorStoreObservationIT {
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 
-			CassandraVectorStore.CassandraBuilder builder = CassandraVectorStore.builder(embeddingModel)
+			CassandraVectorStore.Builder builder = CassandraVectorStore.builder(embeddingModel)
 				.session(cqlSession)
 				.session(cqlSession)
 				.keyspace("test_" + CassandraVectorStore.DEFAULT_KEYSPACE_NAME)

@@ -194,7 +194,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			.batchingStrategy(batchingStrategy));
 	}
 
-	protected ElasticsearchVectorStore(ElasticsearchBuilder builder) {
+	protected ElasticsearchVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.restClient, "RestClient must not be null");
@@ -387,11 +387,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 * Creates a new builder instance for ElasticsearchVectorStore.
 	 * @return a new ElasticsearchBuilder instance
 	 */
-	public static ElasticsearchBuilder builder(RestClient restClient, EmbeddingModel embeddingModel) {
-		return new ElasticsearchBuilder(restClient, embeddingModel);
+	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
+		return new Builder(restClient, embeddingModel);
 	}
 
-	public static class ElasticsearchBuilder extends AbstractVectorStoreBuilder<ElasticsearchBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final RestClient restClient;
 
@@ -409,7 +409,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if restClient is null
 		 */
-		public ElasticsearchBuilder(RestClient restClient, EmbeddingModel embeddingModel) {
+		public Builder(RestClient restClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(restClient, "RestClient must not be null");
 			this.restClient = restClient;
@@ -421,7 +421,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if options is null
 		 */
-		public ElasticsearchBuilder options(ElasticsearchVectorStoreOptions options) {
+		public Builder options(ElasticsearchVectorStoreOptions options) {
 			Assert.notNull(options, "options must not be null");
 			this.options = options;
 			return this;
@@ -432,7 +432,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public ElasticsearchBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -443,7 +443,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public ElasticsearchBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
@@ -455,7 +455,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if converter is null
 		 */
-		public ElasticsearchBuilder filterExpressionConverter(FilterExpressionConverter converter) {
+		public Builder filterExpressionConverter(FilterExpressionConverter converter) {
 			Assert.notNull(converter, "filterExpressionConverter must not be null");
 			this.filterExpressionConverter = converter;
 			return this;

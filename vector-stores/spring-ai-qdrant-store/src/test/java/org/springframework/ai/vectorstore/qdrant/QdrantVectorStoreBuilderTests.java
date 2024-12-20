@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
- * Tests for {@link QdrantVectorStore.QdrantBuilder}.
+ * Tests for {@link QdrantVectorStore.Builder}.
  *
  * @author Mark Pollack
  */

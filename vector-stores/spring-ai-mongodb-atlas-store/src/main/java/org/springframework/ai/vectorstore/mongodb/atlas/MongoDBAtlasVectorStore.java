@@ -198,7 +198,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			.batchingStrategy(batchingStrategy));
 	}
 
-	protected MongoDBAtlasVectorStore(MongoDBBuilder builder) {
+	protected MongoDBAtlasVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.mongoTemplate, "MongoTemplate must not be null");
@@ -352,11 +352,11 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	 * Creates a new builder instance for MongoDBAtlasVectorStore.
 	 * @return a new MongoDBBuilder instance
 	 */
-	public static MongoDBBuilder builder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
-		return new MongoDBBuilder(mongoTemplate, embeddingModel);
+	public static Builder builder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+		return new Builder(mongoTemplate, embeddingModel);
 	}
 
-	public static class MongoDBBuilder extends AbstractVectorStoreBuilder<MongoDBBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final MongoTemplate mongoTemplate;
 
@@ -379,7 +379,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		/**
 		 * @throws IllegalArgumentException if mongoTemplate is null
 		 */
-		private MongoDBBuilder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+		private Builder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(mongoTemplate, "MongoTemplate must not be null");
 			this.mongoTemplate = mongoTemplate;
@@ -392,7 +392,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if collectionName is null or empty
 		 */
-		public MongoDBBuilder collectionName(String collectionName) {
+		public Builder collectionName(String collectionName) {
 			Assert.hasText(collectionName, "Collection Name must not be null or empty");
 			this.collectionName = collectionName;
 			return this;
@@ -405,7 +405,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if vectorIndexName is null or empty
 		 */
-		public MongoDBBuilder vectorIndexName(String vectorIndexName) {
+		public Builder vectorIndexName(String vectorIndexName) {
 			Assert.hasText(vectorIndexName, "Vector Index Name must not be null or empty");
 			this.vectorIndexName = vectorIndexName;
 			return this;
@@ -418,7 +418,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if pathName is null or empty
 		 */
-		public MongoDBBuilder pathName(String pathName) {
+		public Builder pathName(String pathName) {
 			Assert.hasText(pathName, "Path Name must not be null or empty");
 			this.pathName = pathName;
 			return this;
@@ -429,7 +429,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @param numCandidates the number of candidates
 		 * @return the builder instance
 		 */
-		public MongoDBBuilder numCandidates(int numCandidates) {
+		public Builder numCandidates(int numCandidates) {
 			this.numCandidates = numCandidates;
 			return this;
 		}
@@ -440,7 +440,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if metadataFieldsToFilter is null or empty
 		 */
-		public MongoDBBuilder metadataFieldsToFilter(List<String> metadataFieldsToFilter) {
+		public Builder metadataFieldsToFilter(List<String> metadataFieldsToFilter) {
 			Assert.notEmpty(metadataFieldsToFilter, "Fields list must not be empty");
 			this.metadataFieldsToFilter = metadataFieldsToFilter;
 			return this;
@@ -451,7 +451,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public MongoDBBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -462,7 +462,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public MongoDBBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
@@ -474,7 +474,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if converter is null
 		 */
-		public MongoDBBuilder filterExpressionConverter(MongoDBAtlasFilterExpressionConverter converter) {
+		public Builder filterExpressionConverter(MongoDBAtlasFilterExpressionConverter converter) {
 			Assert.notNull(converter, "filterExpressionConverter must not be null");
 			this.filterExpressionConverter = converter;
 			return this;

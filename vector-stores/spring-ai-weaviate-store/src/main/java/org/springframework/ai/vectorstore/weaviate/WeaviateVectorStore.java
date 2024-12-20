@@ -193,12 +193,12 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * Protected constructor for creating a WeaviateVectorStore instance using the builder
 	 * pattern. This constructor initializes the vector store with the configured settings
 	 * from the builder and performs necessary validations.
-	 * @param builder the {@link WeaviateBuilder} containing all configuration settings
+	 * @param builder the {@link Builder} containing all configuration settings
 	 * @throws IllegalArgumentException if the weaviateClient is null
-	 * @see WeaviateBuilder
+	 * @see Builder
 	 * @since 1.0.0
 	 */
-	protected WeaviateVectorStore(WeaviateBuilder builder) {
+	protected WeaviateVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.weaviateClient, "WeaviateClient must not be null");
@@ -218,8 +218,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * a WeaviateVectorStore.
 	 * @return a new WeaviateBuilder instance
 	 */
-	public static WeaviateBuilder builder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
-		return new WeaviateBuilder(weaviateClient, embeddingModel);
+	public static Builder builder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
+		return new Builder(weaviateClient, embeddingModel);
 	}
 
 	private Field[] buildWeaviateSimilaritySearchFields() {
@@ -533,7 +533,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 	}
 
-	public static final class WeaviateBuilder extends AbstractVectorStoreBuilder<WeaviateBuilder> {
+	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String weaviateObjectClass = "SpringAiWeaviate";
 
@@ -552,7 +552,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 * @param embeddingModel The embedding model used for vector transformations.
 		 * @throws IllegalArgumentException if weaviateClient is null
 		 */
-		private WeaviateBuilder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
+		private Builder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(weaviateClient, "WeaviateClient must not be null");
 			this.weaviateClient = weaviateClient;
@@ -564,7 +564,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if objectClass is null or empty
 		 */
-		public WeaviateBuilder objectClass(String objectClass) {
+		public Builder objectClass(String objectClass) {
 			Assert.hasText(objectClass, "objectClass must not be empty");
 			this.weaviateObjectClass = objectClass;
 			return this;
@@ -576,7 +576,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if consistencyLevel is null
 		 */
-		public WeaviateBuilder consistencyLevel(ConsistentLevel consistencyLevel) {
+		public Builder consistencyLevel(ConsistentLevel consistencyLevel) {
 			Assert.notNull(consistencyLevel, "consistencyLevel must not be null");
 			this.consistencyLevel = consistencyLevel;
 			return this;
@@ -588,7 +588,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if filterMetadataFields is null
 		 */
-		public WeaviateBuilder filterMetadataFields(List<MetadataField> filterMetadataFields) {
+		public Builder filterMetadataFields(List<MetadataField> filterMetadataFields) {
 			Assert.notNull(filterMetadataFields, "filterMetadataFields must not be null");
 			this.filterMetadataFields = filterMetadataFields;
 			return this;
@@ -600,7 +600,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public WeaviateBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
@@ -833,8 +833,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			 * @return this builder
 			 * @throws IllegalArgumentException if filterMetadataFields is null
 			 * @deprecated Use
-			 * {@link WeaviateVectorStore.WeaviateBuilder#filterMetadataFields(List)}
-			 * instead
+			 * {@link WeaviateVectorStore.Builder#filterMetadataFields(List)} instead
 			 */
 			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withFilterableMetadataFields(List<MetadataField> filterMetadataFields) {
@@ -863,8 +862,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			 * @param objectClass objectClass to use
 			 * @return this builder
 			 * @throws IllegalArgumentException if objectClass is empty or null
-			 * @deprecated Use
-			 * {@link WeaviateVectorStore.WeaviateBuilder#objectClass(String)} instead
+			 * @deprecated Use {@link WeaviateVectorStore.Builder#objectClass(String)}
+			 * instead
 			 */
 			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withObjectClass(String objectClass) {
@@ -879,7 +878,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			 * @return this builder
 			 * @throws IllegalArgumentException if consistencyLevel is null
 			 * @deprecated Use
-			 * {@link WeaviateVectorStore.WeaviateBuilder#consistencyLevel(WeaviateVectorStore.ConsistentLevel)}
+			 * {@link WeaviateVectorStore.Builder#consistencyLevel(WeaviateVectorStore.ConsistentLevel)}
 			 * instead
 			 */
 			@Deprecated(forRemoval = true, since = "1.0.0-M5")

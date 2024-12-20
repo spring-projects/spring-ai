@@ -156,7 +156,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 * create new CoherenceVectorStore instances.
 	 * @param builder the configured builder instance
 	 */
-	protected CoherenceVectorStore(CoherenceBuilder builder) {
+	protected CoherenceVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.session, "Session must not be null");
@@ -173,8 +173,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 * Creates a new builder for configuring and creating CoherenceVectorStore instances.
 	 * @return a new builder instance
 	 */
-	public static CoherenceBuilder builder(Session session, EmbeddingModel embeddingModel) {
-		return new CoherenceBuilder(session, embeddingModel);
+	public static Builder builder(Session session, EmbeddingModel embeddingModel) {
+		return new Builder(session, embeddingModel);
 	}
 
 	/**
@@ -335,7 +335,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 *
 	 * @since 1.0.0
 	 */
-	public static class CoherenceBuilder extends AbstractVectorStoreBuilder<CoherenceBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final Session session;
 
@@ -347,7 +347,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 
 		private IndexType indexType = IndexType.NONE;
 
-		private CoherenceBuilder(Session session, EmbeddingModel embeddingModel) {
+		private Builder(Session session, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(session, "Session must not be null");
 			this.session = session;
@@ -358,7 +358,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		 * @param mapName the name of the map to use
 		 * @return the builder instance
 		 */
-		public CoherenceBuilder mapName(String mapName) {
+		public Builder mapName(String mapName) {
 			if (StringUtils.hasText(mapName)) {
 				this.mapName = mapName;
 			}
@@ -371,7 +371,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if distanceType is null
 		 */
-		public CoherenceBuilder distanceType(DistanceType distanceType) {
+		public Builder distanceType(DistanceType distanceType) {
 			Assert.notNull(distanceType, "DistanceType must not be null");
 			this.distanceType = distanceType;
 			return this;
@@ -382,7 +382,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		 * @param forcedNormalization true to force normalization, false otherwise
 		 * @return the builder instance
 		 */
-		public CoherenceBuilder forcedNormalization(boolean forcedNormalization) {
+		public Builder forcedNormalization(boolean forcedNormalization) {
 			this.forcedNormalization = forcedNormalization;
 			return this;
 		}
@@ -393,7 +393,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if indexType is null
 		 */
-		public CoherenceBuilder indexType(IndexType indexType) {
+		public Builder indexType(IndexType indexType) {
 			Assert.notNull(indexType, "IndexType must not be null");
 			this.indexType = indexType;
 			return this;
