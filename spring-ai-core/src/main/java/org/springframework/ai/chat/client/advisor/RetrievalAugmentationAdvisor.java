@@ -34,8 +34,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.generation.augmentation.QueryAugmenter;
-import org.springframework.ai.rag.orchestration.routing.AllRetrieversQueryRouter;
-import org.springframework.ai.rag.orchestration.routing.QueryRouter;
 import org.springframework.ai.rag.preretrieval.query.expansion.QueryExpander;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner;
@@ -57,6 +55,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  * @see <a href="http://export.arxiv.org/abs/2407.21059">arXiv:2407.21059</a>
  * @see <a href="https://export.arxiv.org/abs/2312.10997">arXiv:2312.10997</a>
+ * @see <a href="https://export.arxiv.org/abs/2410.20878">arXiv:2410.20878</a>
  */
 public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
@@ -67,7 +66,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	@Nullable
 	private final QueryExpander queryExpander;
 
-	private final QueryRouter queryRouter;
+	private final DocumentRetriever documentRetriever;
 
 	private final DocumentJoiner documentJoiner;
 
@@ -80,14 +79,14 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	private final int order;
 
 	public RetrievalAugmentationAdvisor(@Nullable List<QueryTransformer> queryTransformers,
-			@Nullable QueryExpander queryExpander, QueryRouter queryRouter, @Nullable DocumentJoiner documentJoiner,
-			@Nullable QueryAugmenter queryAugmenter, @Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler,
-			@Nullable Integer order) {
-		Assert.notNull(queryRouter, "queryRouter cannot be null");
+			@Nullable QueryExpander queryExpander, DocumentRetriever documentRetriever,
+			@Nullable DocumentJoiner documentJoiner, @Nullable QueryAugmenter queryAugmenter,
+			@Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler, @Nullable Integer order) {
+		Assert.notNull(documentRetriever, "documentRetriever cannot be null");
 		Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
 		this.queryTransformers = queryTransformers != null ? queryTransformers : List.of();
 		this.queryExpander = queryExpander;
-		this.queryRouter = queryRouter;
+		this.documentRetriever = documentRetriever;
 		this.documentJoiner = documentJoiner != null ? documentJoiner : new ConcatenationDocumentJoiner();
 		this.queryAugmenter = queryAugmenter != null ? queryAugmenter : ContextualQueryAugmenter.builder().build();
 		this.taskExecutor = taskExecutor != null ? taskExecutor : buildDefaultTaskExecutor();
@@ -122,7 +121,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 			.toList()
 			.stream()
 			.map(CompletableFuture::join)
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			.collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of(entry.getValue())));
 
 		// 4. Combine documents retrieved based on multiple queries and from multiple data
 		// sources.
@@ -140,14 +139,8 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	 * Processes a single query by routing it to document retrievers and collecting
 	 * documents.
 	 */
-	private Map.Entry<Query, List<List<Document>>> getDocumentsForQuery(Query query) {
-		List<DocumentRetriever> retrievers = this.queryRouter.route(query);
-		List<List<Document>> documents = retrievers.stream()
-			.map(retriever -> CompletableFuture.supplyAsync(() -> retriever.retrieve(query), this.taskExecutor))
-			.toList()
-			.stream()
-			.map(CompletableFuture::join)
-			.toList();
+	private Map.Entry<Query, List<Document>> getDocumentsForQuery(Query query) {
+		List<Document> documents = documentRetriever.retrieve(query);
 		return Map.entry(query, documents);
 	}
 
@@ -160,7 +153,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		else {
 			chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
 		}
-		chatResponseBuilder.withMetadata(DOCUMENT_CONTEXT, advisedResponse.adviseContext().get(DOCUMENT_CONTEXT));
+		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, advisedResponse.adviseContext().get(DOCUMENT_CONTEXT));
 		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
 	}
 
@@ -190,7 +183,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 		private QueryExpander queryExpander;
 
-		private QueryRouter queryRouter;
+		private DocumentRetriever documentRetriever;
 
 		private DocumentJoiner documentJoiner;
 
@@ -220,15 +213,8 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 			return this;
 		}
 
-		public Builder queryRouter(QueryRouter queryRouter) {
-			Assert.isNull(this.queryRouter, "Cannot set both documentRetriever and queryRouter");
-			this.queryRouter = queryRouter;
-			return this;
-		}
-
 		public Builder documentRetriever(DocumentRetriever documentRetriever) {
-			Assert.isNull(this.queryRouter, "Cannot set both documentRetriever and queryRouter");
-			this.queryRouter = AllRetrieversQueryRouter.builder().documentRetrievers(documentRetriever).build();
+			this.documentRetriever = documentRetriever;
 			return this;
 		}
 
@@ -258,7 +244,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		}
 
 		public RetrievalAugmentationAdvisor build() {
-			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.queryExpander, this.queryRouter,
+			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.queryExpander, this.documentRetriever,
 					this.documentJoiner, this.queryAugmenter, this.taskExecutor, this.scheduler, this.order);
 		}
 

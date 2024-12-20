@@ -366,45 +366,7 @@ In this configuration, the `MessageChatMemoryAdvisor` will be executed first, ad
 
 === Retrieval Augmented Generation
 
-A vector database stores data that the AI model is unaware of.
-When a user question is sent to the AI model, a `QuestionAnswerAdvisor` queries the vector database for documents related to the user question.
-
-The response from the vector database is appended to the user text to provide context for the AI model to generate a response.
-
-Assuming you have already loaded data into a `VectorStore`, you can perform Retrieval Augmented Generation (RAG) by providing an instance of `QuestionAnswerAdvisor` to the `ChatClient`.
-
-[source,java]
-----
-ChatResponse response = ChatClient.builder(chatModel)
-        .build().prompt()
-        .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
-        .user(userText)
-        .call()
-        .chatResponse();
-----
-
-In this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
-To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
-
-==== Dynamic Filter Expressions
-
-Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRESSION` advisor context parameter:
-
-[source,java]
-----
-ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
-    .build();
-
-// Update filter expression at runtime
-String content = this.chatClient.prompt()
-    .user("Please answer my question XYZ")
-    .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
-    .call()
-    .content();
-----
-
-The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search results based on the provided expression.
+Refer to the xref:_retrieval_augmented_generation[Retrieval Augmented Generation] guide.
 
 === Chat Memory
 
