@@ -101,7 +101,7 @@ List <Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5));
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 === Configuration properties
@@ -137,11 +137,11 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-                    SearchRequest.defaults()
-                            .queryString("The World")
+                    SearchRequest.builder()
+                            .query("The World")
                             .topK(TOP_K)
                             .similarityThreshold(SIMILARITY_THRESHOLD)
-                            .filterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+                            .filterExpression("author in ['john', 'jill'] && article_type == 'blog'").build());
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -150,13 +150,13 @@ or programmatically using the `Filter.Expression` DSL:
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
-vectorStore.similaritySearch(SearchRequest.defaults()
-                    .queryString("The World")
+vectorStore.similaritySearch(SearchRequest.builder()
+                    .query("The World")
                     .topK(TOP_K)
                     .similarityThreshold(SIMILARITY_THRESHOLD)
                     .filterExpression(b.and(
                             b.in("john", "jill"),
-                            b.eq("article_type", "blog")).build()));
+                            b.eq("article_type", "blog")).build()).build());
 ----
 
 NOTE: Those (portable) filter expressions get automatically converted into the proprietary Chroma `where` link:https://docs.trychroma.com/usage-guide#using-where-filters[filter expressions].

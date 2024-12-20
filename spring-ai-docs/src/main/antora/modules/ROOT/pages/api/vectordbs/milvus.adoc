@@ -85,7 +85,7 @@ List <Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5));
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 === Manual Configuration
@@ -136,11 +136,11 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-    SearchRequest.defaults()
-    .queryString("The World")
+    SearchRequest.builder()
+    .query("The World")
     .topK(TOP_K)
     .similarityThreshold(SIMILARITY_THRESHOLD)
-    .filterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+    .filterExpression("author in ['john', 'jill'] && article_type == 'blog'").build());
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -149,13 +149,13 @@ or programmatically using the `Filter.Expression` DSL:
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
-vectorStore.similaritySearch(SearchRequest.defaults()
-    .queryString("The World")
+vectorStore.similaritySearch(SearchRequest.builder()
+    .query("The World")
     .topK(TOP_K)
     .similarityThreshold(SIMILARITY_THRESHOLD)
     .filterExpression(b.and(
         b.in("author","john", "jill"),
-        b.eq("article_type", "blog")).build()));
+        b.eq("article_type", "blog")).build()).build());
 ----
 
 NOTE: These filter expressions are converted into the equivalent Milvus filters.
