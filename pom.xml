@@ -99,6 +99,7 @@
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
 		<module>models/spring-ai-qianfan</module>
+		<module>models/spring-ai-solar</module>
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
