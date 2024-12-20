@@ -148,8 +148,7 @@ Then create the `QdrantVectorStore` bean using the builder pattern:
 ----
 @Bean
 public VectorStore vectorStore(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
-    return QdrantVectorStore.builder(qdrantClient)
-        .embeddingModel(embeddingModel)
+    return QdrantVectorStore.builder(qdrantClient, embeddingModel)
         .collectionName("custom-collection")     // Optional: defaults to "vector_store"
         .initializeSchema(true)                  // Optional: defaults to false
         .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy

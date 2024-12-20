@@ -85,15 +85,14 @@ class CassandraVectorStoreIT {
 		}
 	}
 
-	private static CassandraVectorStore.CassandraBuilder storeBuilder(CqlSession cqlSession,
-			EmbeddingModel embeddingModel) {
+	private static CassandraVectorStore.Builder storeBuilder(CqlSession cqlSession, EmbeddingModel embeddingModel) {
 		return CassandraVectorStore.builder(embeddingModel)
 			.session(cqlSession)
 			.keyspace("test_" + CassandraVectorStore.DEFAULT_KEYSPACE_NAME);
 	}
 
 	private static CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
-		CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class),
+		CassandraVectorStore.Builder builder = storeBuilder(context.getBean(CqlSession.class),
 				context.getBean(EmbeddingModel.class))
 			.addMetadataColumns(metadataFields);
 
@@ -101,7 +100,7 @@ class CassandraVectorStoreIT {
 	}
 
 	private static CassandraVectorStore createTestStore(ApplicationContext context,
-			CassandraVectorStore.CassandraBuilder builder) {
+			CassandraVectorStore.Builder builder) {
 		CassandraVectorStore.dropKeyspace(builder);
 		CassandraVectorStore store = builder.build();
 		return store;
@@ -151,7 +150,7 @@ class CassandraVectorStoreIT {
 	@Test
 	void addAndSearchReturnEmbeddings() {
 		this.contextRunner.run(context -> {
-			CassandraVectorStore.CassandraBuilder builder = storeBuilder(context.getBean(CqlSession.class),
+			CassandraVectorStore.Builder builder = storeBuilder(context.getBean(CqlSession.class),
 					context.getBean(EmbeddingModel.class))
 				.returnEmbeddings(true);
 
@@ -425,7 +424,7 @@ class CassandraVectorStoreIT {
 		@Bean
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel) {
 
-			CassandraVectorStore.CassandraBuilder builder = storeBuilder(cqlSession, embeddingModel).addMetadataColumns(
+			CassandraVectorStore.Builder builder = storeBuilder(cqlSession, embeddingModel).addMetadataColumns(
 					new CassandraVectorStore.SchemaColumn("meta1", DataTypes.TEXT),
 					new CassandraVectorStore.SchemaColumn("meta2", DataTypes.TEXT),
 					new CassandraVectorStore.SchemaColumn("country", DataTypes.TEXT),

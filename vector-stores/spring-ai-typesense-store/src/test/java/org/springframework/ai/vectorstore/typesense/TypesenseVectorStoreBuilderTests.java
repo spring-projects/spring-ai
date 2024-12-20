@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
- * Tests for {@link TypesenseVectorStore.TypesenseBuilder}.
+ * Tests for {@link TypesenseVectorStore.Builder}.
  *
  * @author Mark Pollack
  */

@@ -161,9 +161,7 @@ Then create the `TypesenseVectorStore` bean using the builder pattern:
 ----
 @Bean
 public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel) {
-    return TypesenseVectorStore.builder()
-        .client(client)
-        .embeddingModel(embeddingModel)
+    return TypesenseVectorStore.builder(client, embeddingModel)
         .collectionName("custom_vectors")     // Optional: defaults to "vector_store"
         .embeddingDimension(1536)            // Optional: defaults to 1536
         .initializeSchema(true)              // Optional: defaults to false

@@ -188,27 +188,12 @@ To configure Pinecone in your application, you can use the following setup:
 [source,java]
 ----
 @Bean
-public PineconeVectorStoreConfig pineconeVectorStoreConfig() {
-
-    return PineconeVectorStoreConfig.builder()
-        .withApiKey(<PINECONE_API_KEY>)
-        .withEnvironment("gcp-starter")
-        .withProjectId("89309e6")
-        .withIndexName("spring-ai-test-index")
-        .withNamespace("") // the free tier doesn't support namespaces.
-        .withContentFieldName("my_content") // optional field to store the original content. Defaults to `document_content`
+public VectorStore pineconeVectorStore(EmbeddingModel embeddingModel) {
+    return PineconeVectorStore
+        .builder(embeddingModel, PINECONE_API_KEY, PINECONE_PROJECT_ID, PINECONE_ENVIRONMENT, PINECONE_INDEX_NAME)
+        .namespace(PINECONE_NAMESPACE) // the free tier doesn't support namespaces.
+        .contentFieldName(CUSTOM_CONTENT_FIELD_NAME) // optional field to store the original content. Defaults to `document_content`
         .build();
-}
-----
-
-Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to your project.
-This provides you with an implementation of the Embeddings client:
-
-[source,java]
-----
-@Bean
-public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel) {
-    return new PineconeVectorStore(config, embeddingModel);
 }
 ----
 

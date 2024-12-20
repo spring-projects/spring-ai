@@ -261,7 +261,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.batchingStrategy(batchingStrategy));
 	}
 
-	protected RedisVectorStore(RedisBuilder builder) {
+	protected RedisVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.jedis, "JedisPooled must not be null");
@@ -482,11 +482,11 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
-	public static RedisBuilder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
-		return new RedisBuilder(jedis, embeddingModel);
+	public static Builder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+		return new Builder(jedis, embeddingModel);
 	}
 
-	public static class RedisBuilder extends AbstractVectorStoreBuilder<RedisBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final JedisPooled jedis;
 
@@ -506,7 +506,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		private RedisBuilder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+		private Builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(jedis, "JedisPooled must not be null");
 			this.jedis = jedis;
@@ -517,7 +517,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param indexName the index name to use
 		 * @return the builder instance
 		 */
-		public RedisBuilder indexName(String indexName) {
+		public Builder indexName(String indexName) {
 			if (StringUtils.hasText(indexName)) {
 				this.indexName = indexName;
 			}
@@ -529,7 +529,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param prefix the prefix to use
 		 * @return the builder instance
 		 */
-		public RedisBuilder prefix(String prefix) {
+		public Builder prefix(String prefix) {
 			if (StringUtils.hasText(prefix)) {
 				this.prefix = prefix;
 			}
@@ -541,7 +541,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param fieldName the content field name to use
 		 * @return the builder instance
 		 */
-		public RedisBuilder contentFieldName(String fieldName) {
+		public Builder contentFieldName(String fieldName) {
 			if (StringUtils.hasText(fieldName)) {
 				this.contentFieldName = fieldName;
 			}
@@ -553,7 +553,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param fieldName the embedding field name to use
 		 * @return the builder instance
 		 */
-		public RedisBuilder embeddingFieldName(String fieldName) {
+		public Builder embeddingFieldName(String fieldName) {
 			if (StringUtils.hasText(fieldName)) {
 				this.embeddingFieldName = fieldName;
 			}
@@ -565,7 +565,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param algorithm the vector algorithm to use
 		 * @return the builder instance
 		 */
-		public RedisBuilder vectorAlgorithm(@Nullable Algorithm algorithm) {
+		public Builder vectorAlgorithm(@Nullable Algorithm algorithm) {
 			if (algorithm != null) {
 				this.vectorAlgorithm = algorithm;
 			}
@@ -577,7 +577,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param fields the metadata fields to include
 		 * @return the builder instance
 		 */
-		public RedisBuilder metadataFields(MetadataField... fields) {
+		public Builder metadataFields(MetadataField... fields) {
 			return metadataFields(Arrays.asList(fields));
 		}
 
@@ -586,7 +586,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param fields the list of metadata fields to include
 		 * @return the builder instance
 		 */
-		public RedisBuilder metadataFields(@Nullable List<MetadataField> fields) {
+		public Builder metadataFields(@Nullable List<MetadataField> fields) {
 			if (fields != null && !fields.isEmpty()) {
 				this.metadataFields = new ArrayList<>(fields);
 			}
@@ -598,7 +598,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public RedisBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -609,7 +609,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public RedisBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;

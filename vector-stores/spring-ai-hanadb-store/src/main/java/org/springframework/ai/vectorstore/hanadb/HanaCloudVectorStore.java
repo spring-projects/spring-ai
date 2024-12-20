@@ -129,7 +129,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	 * create new HanaCloudVectorStore instances.
 	 * @param builder the configured builder instance
 	 */
-	protected HanaCloudVectorStore(HanaCloudBuilder builder) {
+	protected HanaCloudVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.repository, "Repository must not be null");
@@ -144,9 +144,9 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	 * Creates a new builder for configuring and creating HanaCloudVectorStore instances.
 	 * @return a new builder instance
 	 */
-	public static HanaCloudBuilder builder(HanaVectorRepository<? extends HanaVectorEntity> repository,
+	public static Builder builder(HanaVectorRepository<? extends HanaVectorEntity> repository,
 			EmbeddingModel embeddingModel) {
-		return new HanaCloudBuilder(repository, embeddingModel);
+		return new Builder(repository, embeddingModel);
 	}
 
 	@Override
@@ -233,7 +233,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	 *
 	 * @since 1.0.0
 	 */
-	public static class HanaCloudBuilder extends AbstractVectorStoreBuilder<HanaCloudBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final HanaVectorRepository<? extends HanaVectorEntity> repository;
 
@@ -248,8 +248,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if repository is null
 		 */
-		private HanaCloudBuilder(HanaVectorRepository<? extends HanaVectorEntity> repository,
-				EmbeddingModel embeddingModel) {
+		private Builder(HanaVectorRepository<? extends HanaVectorEntity> repository, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(repository, "Repository must not be null");
 			this.repository = repository;
@@ -260,7 +259,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		 * @param tableName the name of the table to use
 		 * @return the builder instance
 		 */
-		public HanaCloudBuilder tableName(String tableName) {
+		public Builder tableName(String tableName) {
 			this.tableName = tableName;
 			return this;
 		}
@@ -270,7 +269,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		 * @param topK the number of results
 		 * @return the builder instance
 		 */
-		public HanaCloudBuilder topK(int topK) {
+		public Builder topK(int topK) {
 			this.topK = topK;
 			return this;
 		}

@@ -183,12 +183,12 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	/**
 	 * Protected constructor for creating a QdrantVectorStore instance using the builder
 	 * pattern.
-	 * @param builder the {@link QdrantBuilder} containing all configuration settings
+	 * @param builder the {@link Builder} containing all configuration settings
 	 * @throws IllegalArgumentException if qdrant client is missing
-	 * @see QdrantBuilder
+	 * @see Builder
 	 * @since 1.0.0
 	 */
-	protected QdrantVectorStore(QdrantBuilder builder) {
+	protected QdrantVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.qdrantClient, "QdrantClient must not be null");
@@ -205,8 +205,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 * @param qdrantClient the client for interfacing with Qdrant
 	 * @return a new QdrantBuilder instance
 	 */
-	public static QdrantBuilder builder(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
-		return new QdrantBuilder(qdrantClient, embeddingModel);
+	public static Builder builder(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
+		return new Builder(qdrantClient, embeddingModel);
 	}
 
 	/**
@@ -369,7 +369,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 *
 	 * @since 1.0.0
 	 */
-	public static final class QdrantBuilder extends AbstractVectorStoreBuilder<QdrantBuilder> {
+	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final QdrantClient qdrantClient;
 
@@ -385,7 +385,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 * @param qdrantClient the client for Qdrant operations
 		 * @throws IllegalArgumentException if qdrantClient is null
 		 */
-		private QdrantBuilder(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
+		private Builder(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(qdrantClient, "QdrantClient must not be null");
 			this.qdrantClient = qdrantClient;
@@ -398,7 +398,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if collectionName is null or empty
 		 */
-		public QdrantBuilder collectionName(String collectionName) {
+		public Builder collectionName(String collectionName) {
 			Assert.hasText(collectionName, "collectionName must not be empty");
 			this.collectionName = collectionName;
 			return this;
@@ -409,7 +409,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 * @param initializeSchema true to initialize schema automatically
 		 * @return this builder instance
 		 */
-		public QdrantBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -420,7 +420,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public QdrantBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;

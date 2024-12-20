@@ -131,12 +131,14 @@ To create a vector store, you can use the following code by injecting the `Searc
 ----
 @Bean
 public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
-  return new AzureVectorStore(searchIndexClient, embeddingModel,
+
+  return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+    .initializeSchema(true)
     // Define the metadata fields to be used
     // in the similarity search filters.
-    List.of(MetadataField.text("country"),
-            MetadataField.int64("year"),
-            MetadataField.bool("active")));
+    .filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
+            MetadataField.date("activationDate")))
+    .build();
 }
 ----
 

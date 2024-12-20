@@ -177,9 +177,7 @@ Then create the `OpenSearchVectorStore` bean using the builder pattern:
 ----
 @Bean
 public VectorStore vectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
-    return OpenSearchVectorStore.builder()
-        .openSearchClient(openSearchClient)
-        .embeddingModel(embeddingModel)
+    return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
         .index("custom-index")                // Optional: defaults to "spring-ai-document-index"
         .similarityFunction("l2")             // Optional: defaults to "cosinesimil"
         .initializeSchema(true)               // Optional: defaults to false

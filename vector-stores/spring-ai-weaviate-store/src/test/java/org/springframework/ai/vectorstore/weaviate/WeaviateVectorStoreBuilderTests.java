@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests for {@link WeaviateVectorStore.WeaviateBuilder}.
+ * Tests for {@link WeaviateVectorStore.Builder}.
  *
  * @author Mark Pollack
  */

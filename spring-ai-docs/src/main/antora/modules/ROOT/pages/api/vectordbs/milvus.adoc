@@ -109,13 +109,14 @@ To configure MilvusVectorStore in your application, you can use the following se
 ----
 	@Bean
 	public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
-		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
-			.withCollectionName("test_vector_store")
-			.withDatabaseName("default")
-			.withIndexType(IndexType.IVF_FLAT)
-			.withMetricType(MetricType.COSINE)
-			.build();
-		return new MilvusVectorStore(milvusClient, embeddingModel, config);
+		return MilvusVectorStore.builder(milvusClient, embeddingModel)
+				.collectionName("test_vector_store")
+				.databaseName("default")
+				.indexType(IndexType.IVF_FLAT)
+				.metricType(MetricType.COSINE)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.initializeSchema(true)
+				.build();
 	}
 
 	@Bean

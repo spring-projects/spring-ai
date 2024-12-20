@@ -149,8 +149,7 @@ Then create the `MariaDBVectorStore` bean using the builder pattern:
 ----
 @Bean
 public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-    return MariaDBVectorStore.builder(jdbcTemplate)
-        .embeddingModel(embeddingModel)
+    return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
         .dimensions(1536)                      // Optional: defaults to 1536
         .distanceType(MariaDBDistanceType.COSINE) // Optional: defaults to COSINE
         .schemaName("mydb")                    // Optional: defaults to null

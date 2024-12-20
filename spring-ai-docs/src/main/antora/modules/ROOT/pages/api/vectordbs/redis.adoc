@@ -189,9 +189,7 @@ Then create the `RedisVectorStore` bean using the builder pattern:
 ----
 @Bean
 public VectorStore vectorStore(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
-    return RedisVectorStore.builder()
-        .jedis(jedisPooled)
-        .embeddingModel(embeddingModel)
+    return RedisVectorStore.builder(jedisPooled, embeddingModel)
         .indexName("custom-index")                // Optional: defaults to "spring-ai-index"
         .prefix("custom-prefix")                  // Optional: defaults to "embedding:"
         .metadataFields(                         // Optional: define metadata fields for filtering

@@ -190,7 +190,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * create new AzureVectorStore instances.
 	 * @param builder the configured builder instance
 	 */
-	protected AzureVectorStore(AzureBuilder builder) {
+	protected AzureVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.searchIndexClient, "The search index client cannot be null");
@@ -206,15 +206,15 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
 	}
 
-	public static AzureBuilder builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
-		return new AzureBuilder(searchIndexClient, embeddingModel);
+	public static Builder builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+		return new Builder(searchIndexClient, embeddingModel);
 	}
 
 	/**
 	 * Change the Index Name.
 	 * @param indexName The Azure VectorStore index name to use.
 	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link AzureBuilder#indexName(String)} instead
+	 * ()} with {@link Builder#indexName(String)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setIndexName(String indexName) {
@@ -226,7 +226,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * Sets the a default maximum number of similar documents returned.
 	 * @param topK The default maximum number of similar documents returned.
 	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link AzureBuilder#indexName(String)} instead
+	 * ()} with {@link Builder#indexName(String)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDefaultTopK(int topK) {
@@ -239,7 +239,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * @param similarityThreshold The a default similarity threshold for returned
 	 * documents.
 	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link AzureBuilder#indexName(String)} instead
+	 * ()} with {@link Builder#indexName(String)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDefaultSimilarityThreshold(Double similarityThreshold) {
@@ -472,7 +472,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 *
 	 * @since 1.0.0
 	 */
-	public static class AzureBuilder extends AbstractVectorStoreBuilder<AzureBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final SearchIndexClient searchIndexClient;
 
@@ -488,7 +488,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		private String indexName = DEFAULT_INDEX_NAME;
 
-		private AzureBuilder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+		private Builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(searchIndexClient, "SearchIndexClient must not be null");
 			this.searchIndexClient = searchIndexClient;
@@ -499,7 +499,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public AzureBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -509,7 +509,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 * @param filterMetadataFields the list of metadata fields
 		 * @return the builder instance
 		 */
-		public AzureBuilder filterMetadataFields(List<MetadataField> filterMetadataFields) {
+		public Builder filterMetadataFields(List<MetadataField> filterMetadataFields) {
 			this.filterMetadataFields = filterMetadataFields != null ? filterMetadataFields : List.of();
 			return this;
 		}
@@ -519,7 +519,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 * @param batchingStrategy the strategy to use
 		 * @return the builder instance
 		 */
-		public AzureBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
@@ -531,7 +531,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if indexName is null or empty
 		 */
-		public AzureBuilder indexName(String indexName) {
+		public Builder indexName(String indexName) {
 			Assert.hasText(indexName, "The index name can not be empty.");
 			this.indexName = indexName;
 			return this;
@@ -543,7 +543,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if defaultTopK is negative
 		 */
-		public AzureBuilder defaultTopK(int defaultTopK) {
+		public Builder defaultTopK(int defaultTopK) {
 			Assert.isTrue(defaultTopK >= 0, "The topK should be positive value.");
 			this.defaultTopK = defaultTopK;
 			return this;
@@ -557,7 +557,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 * @throws IllegalArgumentException if defaultSimilarityThreshold is not between
 		 * 0.0 and 1.0
 		 */
-		public AzureBuilder defaultSimilarityThreshold(Double defaultSimilarityThreshold) {
+		public Builder defaultSimilarityThreshold(Double defaultSimilarityThreshold) {
 			Assert.isTrue(defaultSimilarityThreshold >= 0.0 && defaultSimilarityThreshold <= 1.0,
 					"The similarity threshold must be in range [0.0:1.00].");
 			this.defaultSimilarityThreshold = defaultSimilarityThreshold;

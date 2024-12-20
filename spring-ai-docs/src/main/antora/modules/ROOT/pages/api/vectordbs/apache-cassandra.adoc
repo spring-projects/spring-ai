@@ -163,9 +163,7 @@ For more complex scenarios, the builder pattern offers extensive configuration o
 ----
 @Bean
 public VectorStore vectorStore(CqlSession session, EmbeddingModel embeddingModel) {
-    return CassandraVectorStore.builder()
-        .session(session)
-        .embeddingModel(embeddingModel)
+    return CassandraVectorStore.builder(embeddingModel)
         .keyspace("my_keyspace")
         .table("my_vectors")
         .partitionKeys(List.of(new SchemaColumn("id", DataTypes.TEXT)))

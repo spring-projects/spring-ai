@@ -146,9 +146,7 @@ Then create the `MongoDBAtlasVectorStore` bean using the builder pattern:
 ----
 @Bean
 public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
-    return MongoDBAtlasVectorStore.builder()
-        .mongoTemplate(mongoTemplate)
-        .embeddingModel(embeddingModel)
+    return MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
         .collectionName("custom_vector_store")           // Optional: defaults to "vector_store"
         .vectorIndexName("custom_vector_index")          // Optional: defaults to "vector_index"
         .pathName("custom_embedding")                    // Optional: defaults to "embedding"

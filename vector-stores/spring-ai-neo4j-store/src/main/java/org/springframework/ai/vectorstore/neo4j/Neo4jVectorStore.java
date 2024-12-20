@@ -210,7 +210,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			.batchingStrategy(batchingStrategy));
 	}
 
-	protected Neo4jVectorStore(Neo4jBuilder builder) {
+	protected Neo4jVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.driver, "Neo4j driver must not be null");
@@ -398,11 +398,11 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
-	public static Neo4jBuilder builder(Driver driver, EmbeddingModel embeddingModel) {
-		return new Neo4jBuilder(driver, embeddingModel);
+	public static Builder builder(Driver driver, EmbeddingModel embeddingModel) {
+		return new Builder(driver, embeddingModel);
 	}
 
-	public static class Neo4jBuilder extends AbstractVectorStoreBuilder<Neo4jBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final Driver driver;
 
@@ -426,7 +426,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		private Neo4jBuilder(Driver driver, EmbeddingModel embeddingModel) {
+		private Builder(Driver driver, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(driver, "Neo4j driver must not be null");
 			this.driver = driver;
@@ -438,7 +438,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param databaseName the database name to use
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder databaseName(String databaseName) {
+		public Builder databaseName(String databaseName) {
 			if (StringUtils.hasText(databaseName)) {
 				this.sessionConfig = SessionConfig.forDatabase(databaseName);
 			}
@@ -450,7 +450,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param sessionConfig the session configuration to use
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder sessionConfig(SessionConfig sessionConfig) {
+		public Builder sessionConfig(SessionConfig sessionConfig) {
 			this.sessionConfig = sessionConfig;
 			return this;
 		}
@@ -461,7 +461,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if dimension is less than 1
 		 */
-		public Neo4jBuilder embeddingDimension(int dimension) {
+		public Builder embeddingDimension(int dimension) {
 			Assert.isTrue(dimension >= 1, "Dimension has to be positive");
 			this.embeddingDimension = dimension;
 			return this;
@@ -473,7 +473,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if distanceType is null
 		 */
-		public Neo4jBuilder distanceType(Neo4jDistanceType distanceType) {
+		public Builder distanceType(Neo4jDistanceType distanceType) {
 			Assert.notNull(distanceType, "Distance type may not be null");
 			this.distanceType = distanceType;
 			return this;
@@ -484,7 +484,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param label the label to use
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder label(String label) {
+		public Builder label(String label) {
 			if (StringUtils.hasText(label)) {
 				this.label = label;
 			}
@@ -496,7 +496,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param embeddingProperty the property name to use
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder embeddingProperty(String embeddingProperty) {
+		public Builder embeddingProperty(String embeddingProperty) {
 			if (StringUtils.hasText(embeddingProperty)) {
 				this.embeddingProperty = embeddingProperty;
 			}
@@ -508,7 +508,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param indexName the index name to use
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder indexName(String indexName) {
+		public Builder indexName(String indexName) {
 			if (StringUtils.hasText(indexName)) {
 				this.indexName = indexName;
 			}
@@ -520,7 +520,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param idProperty the property name to use
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder idProperty(String idProperty) {
+		public Builder idProperty(String idProperty) {
 			if (StringUtils.hasText(idProperty)) {
 				this.idProperty = idProperty;
 			}
@@ -532,7 +532,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param constraintName the constraint name to use
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder constraintName(String constraintName) {
+		public Builder constraintName(String constraintName) {
 			if (StringUtils.hasText(constraintName)) {
 				this.constraintName = constraintName;
 			}
@@ -544,7 +544,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public Neo4jBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -555,7 +555,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public Neo4jBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;

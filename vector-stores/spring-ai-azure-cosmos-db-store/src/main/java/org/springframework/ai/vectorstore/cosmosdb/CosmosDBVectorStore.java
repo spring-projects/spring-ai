@@ -151,7 +151,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	 * create new CosmosDBVectorStore instances.
 	 * @param builder the configured builder instance
 	 */
-	protected CosmosDBVectorStore(CosmosDBBuilder builder) {
+	protected CosmosDBVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.cosmosClient, "CosmosClient must not be null");
@@ -172,8 +172,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		initializeContainer(containerName, databaseName, vectorStoreThroughput, vectorDimensions, partitionKeyPath);
 	}
 
-	public static CosmosDBBuilder builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
-		return new CosmosDBBuilder(cosmosClient, embeddingModel);
+	public static Builder builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
+		return new Builder(cosmosClient, embeddingModel);
 	}
 
 	private void initializeContainer(String containerName, String databaseName, int vectorStoreThroughput,
@@ -429,7 +429,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	 *
 	 * @since 1.0.0
 	 */
-	public static class CosmosDBBuilder extends AbstractVectorStoreBuilder<CosmosDBBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final CosmosAsyncClient cosmosClient;
 
@@ -450,7 +450,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		private CosmosDBBuilder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
+		private Builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(cosmosClient, "CosmosClient must not be null");
 			this.cosmosClient = cosmosClient;
@@ -462,7 +462,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if containerName is null or empty
 		 */
-		public CosmosDBBuilder containerName(String containerName) {
+		public Builder containerName(String containerName) {
 			Assert.hasText(containerName, "Container name must not be empty");
 			this.containerName = containerName;
 			return this;
@@ -474,7 +474,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if databaseName is null or empty
 		 */
-		public CosmosDBBuilder databaseName(String databaseName) {
+		public Builder databaseName(String databaseName) {
 			Assert.hasText(databaseName, "Database name must not be empty");
 			this.databaseName = databaseName;
 			return this;
@@ -486,7 +486,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if partitionKeyPath is null or empty
 		 */
-		public CosmosDBBuilder partitionKeyPath(String partitionKeyPath) {
+		public Builder partitionKeyPath(String partitionKeyPath) {
 			Assert.hasText(partitionKeyPath, "Partition key path must not be empty");
 			this.partitionKeyPath = partitionKeyPath;
 			return this;
@@ -498,7 +498,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if vectorStoreThroughput is not positive
 		 */
-		public CosmosDBBuilder vectorStoreThroughput(int vectorStoreThroughput) {
+		public Builder vectorStoreThroughput(int vectorStoreThroughput) {
 			Assert.isTrue(vectorStoreThroughput > 0, "Vector store throughput must be positive");
 			this.vectorStoreThroughput = vectorStoreThroughput;
 			return this;
@@ -510,7 +510,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if vectorDimensions is not positive
 		 */
-		public CosmosDBBuilder vectorDimensions(long vectorDimensions) {
+		public Builder vectorDimensions(long vectorDimensions) {
 			Assert.isTrue(vectorDimensions > 0, "Vector dimensions must be positive");
 			this.vectorDimensions = vectorDimensions;
 			return this;
@@ -521,7 +521,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @param metadataFieldsList the list of metadata fields
 		 * @return the builder instance
 		 */
-		public CosmosDBBuilder metadataFields(List<String> metadataFieldsList) {
+		public Builder metadataFields(List<String> metadataFieldsList) {
 			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
 					: new ArrayList<>();
 			return this;
@@ -533,7 +533,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public CosmosDBBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;

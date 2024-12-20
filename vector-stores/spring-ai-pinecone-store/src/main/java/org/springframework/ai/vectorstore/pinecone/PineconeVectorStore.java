@@ -127,7 +127,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * Creates a new PineconeVectorStore using the builder pattern.
 	 * @param builder The configured builder instance
 	 */
-	protected PineconeVectorStore(PineconeBuilder builder) {
+	protected PineconeVectorStore(Builder builder) {
 		super(builder);
 
 		Assert.hasText(builder.apiKey, "ApiKey must not be null or empty");
@@ -156,9 +156,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * Creates a new builder instance for configuring a PineconeVectorStore.
 	 * @return A new PineconeBuilder instance
 	 */
-	public static PineconeBuilder builder(EmbeddingModel embeddingModel, String apiKey, String projectId,
-			String environment, String indexName) {
-		return new PineconeBuilder(embeddingModel, apiKey, projectId, environment, indexName);
+	public static Builder builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
+			String indexName) {
+		return new Builder(embeddingModel, apiKey, projectId, environment, indexName);
 	}
 
 	/**
@@ -338,7 +338,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	/**
 	 * Builder class for creating PineconeVectorStore instances.
 	 */
-	public static class PineconeBuilder extends AbstractVectorStoreBuilder<PineconeBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final String apiKey;
 
@@ -358,7 +358,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		private PineconeBuilder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
+		private Builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
 				String indexName) {
 			super(embeddingModel);
 
@@ -379,7 +379,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param namespace The namespace to use (leave empty for free tier)
 		 * @return The builder instance
 		 */
-		public PineconeBuilder namespace(@Nullable String namespace) {
+		public Builder namespace(@Nullable String namespace) {
 			this.namespace = namespace != null ? namespace : "";
 			return this;
 		}
@@ -389,7 +389,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param contentFieldName The content field name to use
 		 * @return The builder instance
 		 */
-		public PineconeBuilder contentFieldName(@Nullable String contentFieldName) {
+		public Builder contentFieldName(@Nullable String contentFieldName) {
 			this.contentFieldName = contentFieldName != null ? contentFieldName : CONTENT_FIELD_NAME;
 			return this;
 		}
@@ -399,7 +399,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param distanceMetadataFieldName The distance metadata field name to use
 		 * @return The builder instance
 		 */
-		public PineconeBuilder distanceMetadataFieldName(@Nullable String distanceMetadataFieldName) {
+		public Builder distanceMetadataFieldName(@Nullable String distanceMetadataFieldName) {
 			this.distanceMetadataFieldName = distanceMetadataFieldName != null ? distanceMetadataFieldName
 					: DocumentMetadata.DISTANCE.value();
 			return this;
@@ -410,7 +410,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @param serverSideTimeout The timeout duration to use
 		 * @return The builder instance
 		 */
-		public PineconeBuilder serverSideTimeout(@Nullable Duration serverSideTimeout) {
+		public Builder serverSideTimeout(@Nullable Duration serverSideTimeout) {
 			this.serverSideTimeout = serverSideTimeout != null ? serverSideTimeout : Duration.ofSeconds(20);
 			return this;
 		}
@@ -421,7 +421,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public PineconeBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
