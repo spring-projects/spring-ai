@@ -828,7 +828,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		private CassandraBuilder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
-			Assert.notNull(session, "Session must not be null");
 		}
 
 		/**
