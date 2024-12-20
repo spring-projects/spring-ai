@@ -32,6 +32,7 @@ import io.weaviate.client.base.Result;
 import io.weaviate.client.base.WeaviateErrorMessage;
 import io.weaviate.client.v1.batch.model.BatchDeleteResponse;
 import io.weaviate.client.v1.batch.model.ObjectGetResponse;
+import io.weaviate.client.v1.batch.model.ObjectsGetResponseAO2Result;
 import io.weaviate.client.v1.data.model.WeaviateObject;
 import io.weaviate.client.v1.filters.Operator;
 import io.weaviate.client.v1.filters.WhereFilter;
@@ -151,9 +152,10 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * @param vectorStoreConfig The configuration for the store
 	 * @param embeddingModel The client for embedding operations
 	 * @param weaviateClient The client for Weaviate operations
-	 * @deprecated Use {@link #builder()} instead to create instances of
-	 * WeaviateVectorStore. This constructor will be removed in a future release.
-	 * @see #builder()
+	 * @deprecated Use {@link #builder(WeaviateClient, EmbeddingModel)} ()} instead to
+	 * create instances of WeaviateVectorStore. This constructor will be removed in a
+	 * future release.
+	 * @see #builder(WeaviateClient, EmbeddingModel) ()
 	 * @since 1.0.0
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
@@ -171,9 +173,10 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * @param observationRegistry The registry for observations
 	 * @param customObservationConvention The custom observation convention
 	 * @param batchingStrategy The strategy for batching operations
-	 * @deprecated Use {@link #builder()} instead to create instances of
-	 * WeaviateVectorStore. This constructor will be removed in a future release.
-	 * @see #builder()
+	 * @deprecated Use {@link #builder(WeaviateClient, EmbeddingModel)} ()} instead to
+	 * create instances of WeaviateVectorStore. This constructor will be removed in a
+	 * future release.
+	 * @see #builder(WeaviateClient, EmbeddingModel) ()
 	 * @since 1.0.0
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
@@ -265,7 +268,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			errorMessages.add(response.getError()
 				.getMessages()
 				.stream()
-				.map(wm -> wm.getMessage())
+				.map(WeaviateErrorMessage::getMessage)
 				.collect(Collectors.joining(System.lineSeparator())));
 			throw new RuntimeException("Failed to add documents because: \n" + errorMessages);
 		}
@@ -276,7 +279,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 					var error = r.getResult().getErrors();
 					errorMessages.add(error.getError()
 						.stream()
-						.map(e -> e.getMessage())
+						.map(ObjectsGetResponseAO2Result.ErrorItem::getMessage)
 						.collect(Collectors.joining(System.lineSeparator())));
 				}
 			}
@@ -291,13 +294,13 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();
-		fields.put(CONTENT_FIELD_NAME, document.getContent());
+		fields.put(CONTENT_FIELD_NAME, document.getText());
 		try {
 			String metadataString = this.objectMapper.writeValueAsString(document.getMetadata());
 			fields.put(METADATA_FIELD_NAME, metadataString);
 		}
 		catch (JsonProcessingException e) {
-			throw new RuntimeException("Failed to serialize the Document metadata: " + document.getContent());
+			throw new RuntimeException("Failed to serialize the Document metadata: " + document.getText());
 		}
 
 		// Add the filterable metadata fields as top level fields, allowing filler
@@ -334,7 +337,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			String errorMessages = result.getError()
 				.getMessages()
 				.stream()
-				.map(wm -> wm.getMessage())
+				.map(WeaviateErrorMessage::getMessage)
 				.collect(Collectors.joining(","));
 			throw new RuntimeException("Failed to delete documents because: \n" + errorMessages);
 		}
@@ -538,14 +541,15 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		private List<MetadataField> filterMetadataFields = List.of();
 
-		private WeaviateClient weaviateClient;
+		private final WeaviateClient weaviateClient;
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		/**
-		 * Configures the Weaviate client.
-		 * @param weaviateClient the client for Weaviate operations
-		 * @return this builder instance
+		 * Constructs a new WeaviateBuilder instance.
+		 * @param weaviateClient The Weaviate client instance used for database
+		 * operations. Must not be null.
+		 * @param embeddingModel The embedding model used for vector transformations.
 		 * @throws IllegalArgumentException if weaviateClient is null
 		 */
 		private WeaviateBuilder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
@@ -618,9 +622,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	/**
 	 * Configuration class for WeaviateVectorStore.
 	 *
-	 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
-	 * create instances of WeaviateVectorStore. This class will be removed in a future
-	 * release. Example migration: <pre>{@code
+	 * @deprecated Use {@link WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel)}
+	 * ()} instead to configure and create instances of WeaviateVectorStore. This class
+	 * will be removed in a future release. Example migration: <pre>{@code
 	 * // Old approach:
 	 * WeaviateVectorStoreConfig config = WeaviateVectorStoreConfig.builder()
 	 *     .withObjectClass("CustomClass")
@@ -633,7 +637,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 *     .consistencyLevel(ConsistentLevel.QUORUM)
 	 *     .build();
 	 * }</pre>
-	 * @see WeaviateVectorStore#builder()
+	 * @see WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel) ()
 	 * @since 1.0.0
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
@@ -655,7 +659,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Constructor using the builder.
 		 * @param builder The configuration builder
-		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead
+		 * @deprecated Use
+		 * {@link WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel)} ()} instead
 		 */
 		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public WeaviateVectorStoreConfig(Builder builder) {
@@ -668,8 +673,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration
-		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
-		 * create instances of WeaviateVectorStore
+		 * @deprecated Use
+		 * {@link WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel)} ()} instead
+		 * to configure and create instances of WeaviateVectorStore
 		 */
 		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static Builder builder() {
@@ -679,8 +685,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Returns the default configuration.
 		 * @return the default configuration
-		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
-		 * create instances of WeaviateVectorStore with default settings
+		 * @deprecated Use
+		 * {@link WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel)} ()} instead
+		 * to configure and create instances of WeaviateVectorStore with default settings
 		 */
 		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public static WeaviateVectorStoreConfig defaultConfig() {
@@ -801,8 +808,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Builder for WeaviateVectorStoreConfig.
 		 *
-		 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure and
-		 * create instances of WeaviateVectorStore
+		 * @deprecated Use
+		 * {@link WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel)} ()} instead
+		 * to configure and create instances of WeaviateVectorStore
 		 * @since 1.0.0
 		 */
 		@Deprecated(forRemoval = true, since = "1.0.0-M5")
@@ -841,7 +849,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			 * @return this builder
 			 * @throws IllegalArgumentException if headers is null
 			 * @deprecated Use the new builder API in
-			 * {@link WeaviateVectorStore#builder()}
+			 * {@link WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel)} ()}
 			 */
 			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withHeaders(Map<String, String> headers) {
@@ -884,8 +892,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			/**
 			 * Builds and returns the immutable configuration.
 			 * @return the immutable configuration
-			 * @deprecated Use {@link WeaviateVectorStore#builder()} instead to configure
-			 * and create instances of WeaviateVectorStore
+			 * @deprecated Use
+			 * {@link WeaviateVectorStore#builder(WeaviateClient, EmbeddingModel)} ()}
+			 * instead to configure and create instances of WeaviateVectorStore
 			 */
 			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public WeaviateVectorStoreConfig build() {

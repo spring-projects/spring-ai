@@ -143,7 +143,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 * Creates a new CoherenceVectorStore with minimal configuration.
 	 * @param embeddingModel the embedding model to use
 	 * @param session the Coherence session
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CoherenceVectorStore(EmbeddingModel embeddingModel, Session session) {
@@ -177,7 +178,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CoherenceVectorStore setMapName(String mapName) {
@@ -186,7 +188,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CoherenceVectorStore setDistanceType(DistanceType distanceType) {
@@ -195,7 +198,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CoherenceVectorStore setIndexType(IndexType indexType) {
@@ -204,7 +208,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CoherenceVectorStore setForcedNormalization(boolean forcedNormalization) {
@@ -217,7 +222,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(documents.size() / 0.75f));
 		for (Document doc : documents) {
 			var id = toChunkId(doc.getId());
-			var chunk = new DocumentChunk(doc.getContent(), doc.getMetadata(),
+			var chunk = new DocumentChunk(doc.getText(), doc.getMetadata(),
 					toFloat32Vector(this.embeddingModel.embed(doc)));
 			chunks.put(id, chunk);
 		}
@@ -342,13 +347,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 
 		private IndexType indexType = IndexType.NONE;
 
-		/**
-		 * Sets the Coherence session.
-		 * @param session the session to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if session is null
-		 */
-		public CoherenceBuilder(Session session, EmbeddingModel embeddingModel) {
+		private CoherenceBuilder(Session session, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(session, "Session must not be null");
 			this.session = session;

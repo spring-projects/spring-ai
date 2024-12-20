@@ -62,6 +62,7 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -122,6 +123,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 */
 	private final List<MetadataField> filterMetadataFields;
 
+	@Nullable
 	private SearchClient searchClient;
 
 	private int defaultTopK;
@@ -135,7 +137,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * @param searchIndexClient the Azure search index client
 	 * @param embeddingModel the embedding model to use
 	 * @param initializeSchema whether to initialize schema
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
+	 * ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
@@ -149,7 +152,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * @param embeddingModel the embedding model to use
 	 * @param initializeSchema whether to initialize schema
 	 * @param filterMetadataFields list of metadata fields for filtering
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
+	 * ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
@@ -166,7 +170,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * @param filterMetadataFields list of metadata fields for filtering
 	 * @param observationRegistry the observation registry
 	 * @param customObservationConvention the custom observation convention
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
+	 * ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
@@ -208,8 +213,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	/**
 	 * Change the Index Name.
 	 * @param indexName The Azure VectorStore index name to use.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} with
-	 * {@link AzureBuilder#indexName(String)} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
+	 * ()} with {@link AzureBuilder#indexName(String)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setIndexName(String indexName) {
@@ -220,8 +225,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	/**
 	 * Sets the a default maximum number of similar documents returned.
 	 * @param topK The default maximum number of similar documents returned.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} with
-	 * {@link AzureBuilder#indexName(String)} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
+	 * ()} with {@link AzureBuilder#indexName(String)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDefaultTopK(int topK) {
@@ -233,8 +238,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 * Sets the a default similarity threshold for returned documents.
 	 * @param similarityThreshold The a default similarity threshold for returned
 	 * documents.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} with
-	 * {@link AzureBuilder#indexName(String)} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
+	 * ()} with {@link AzureBuilder#indexName(String)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDefaultSimilarityThreshold(Double similarityThreshold) {
@@ -258,7 +263,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
 			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
-			searchDocument.put(CONTENT_FIELD_NAME, document.getContent());
+			searchDocument.put(CONTENT_FIELD_NAME, document.getText());
 			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
 
 			// Add the filterable metadata fields as top level fields, allowing filler
@@ -481,13 +486,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		private String indexName = DEFAULT_INDEX_NAME;
 
-		/**
-		 * Sets the Azure search index client.
-		 * @param searchIndexClient the client to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if searchIndexClient is null
-		 */
-		public AzureBuilder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+		private AzureBuilder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(searchIndexClient, "SearchIndexClient must not be null");
 			this.searchIndexClient = searchIndexClient;

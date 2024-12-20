@@ -260,9 +260,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		String vectorTable = builder.vectorTableName;
-		this.vectorTableName = (null == vectorTable || vectorTable.isEmpty()) ? DEFAULT_TABLE_NAME : vectorTable.trim();
+		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
 		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
-				(this.vectorTableName == null || this.vectorTableName.isEmpty()));
+				this.vectorTableName.isEmpty());
 
 		this.vectorIndexName = this.vectorTableName.equals(DEFAULT_TABLE_NAME) ? DEFAULT_VECTOR_INDEX_NAME
 				: this.vectorTableName + "_index";
@@ -317,7 +317,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 
 				var document = batch.get(i);
-				var content = document.getContent();
+				var content = document.getText();
 				var json = toJson(document.getMetadata());
 				var embedding = embeddings.get(documents.indexOf(document));
 				var pGvector = new PGvector(embedding);
@@ -388,7 +388,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				new RowMapper<Double>() {
 
 					@Override
-					@Nullable
 					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
 						return rs.getDouble(DocumentRowMapper.COLUMN_DISTANCE);
 					}
@@ -624,7 +623,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static class PgVectorStoreBuilder extends AbstractVectorStoreBuilder<PgVectorStoreBuilder> {
 
-		private JdbcTemplate jdbcTemplate;
+		private final JdbcTemplate jdbcTemplate;
 
 		private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
 

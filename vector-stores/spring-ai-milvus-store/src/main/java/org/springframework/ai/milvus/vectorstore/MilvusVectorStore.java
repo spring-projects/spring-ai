@@ -169,9 +169,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
-	private static Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(MetricType.COSINE,
-			VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN, MetricType.IP,
-			VectorStoreSimilarityMetric.DOT);
+	private static final Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+			MetricType.COSINE, VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN,
+			MetricType.IP, VectorStoreSimilarityMetric.DOT);
 
 	public final FilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
 
@@ -288,7 +288,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
-			contentArray.add(document.getContent());
+			contentArray.add(document.getText());
 			metadataArray.add(new JSONObject(document.getMetadata()));
 			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
 		}

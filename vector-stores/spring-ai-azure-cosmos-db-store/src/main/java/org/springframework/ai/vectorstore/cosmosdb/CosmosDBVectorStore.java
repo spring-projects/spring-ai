@@ -69,6 +69,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -108,7 +109,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	 * @param cosmosClient the Cosmos DB client
 	 * @param properties the configuration properties
 	 * @param embeddingModel the embedding model
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(CosmosAsyncClient, EmbeddingModel)}
+	 * ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
@@ -126,7 +128,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	 * @param properties the configuration properties
 	 * @param embeddingModel the embedding model
 	 * @param batchingStrategy the batching strategy
-	 * @deprecated Since 1.0.0-M5, use {@link #builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link #builder(CosmosAsyncClient, EmbeddingModel)}
+	 * ()} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
@@ -241,7 +244,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		String id = document.getId();
-		String content = document.getContent();
+		String content = document.getText();
 
 		// Convert metadata and embedding directly to JsonNode
 		JsonNode metadataNode = objectMapper.valueToTree(document.getMetadata());
@@ -430,10 +433,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		private final CosmosAsyncClient cosmosClient;
 
+		@Nullable
 		private String containerName;
 
+		@Nullable
 		private String databaseName;
 
+		@Nullable
 		private String partitionKeyPath;
 
 		private int vectorStoreThroughput = 400;
@@ -444,13 +450,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
-		/**
-		 * Sets the Cosmos DB client.
-		 * @param cosmosClient the client to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if cosmosClient is null
-		 */
-		public CosmosDBBuilder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
+		private CosmosDBBuilder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(cosmosClient, "CosmosClient must not be null");
 			this.cosmosClient = cosmosClient;

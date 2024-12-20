@@ -156,7 +156,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchVectorStore.class);
 
-	private static Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+	private static final Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
 			VectorStoreSimilarityMetric.EUCLIDEAN, SimilarityFunction.dot_product, VectorStoreSimilarityMetric.DOT);
 
@@ -224,7 +224,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				this.batchingStrategy);
 
 		for (Document document : documents) {
-			ElasticSearchDocument doc = new ElasticSearchDocument(document.getId(), document.getContent(),
+			ElasticSearchDocument doc = new ElasticSearchDocument(document.getId(), document.getText(),
 					document.getMetadata(), embeddings.get(documents.indexOf(document)));
 			bulkRequestBuilder.operations(
 					op -> op.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(doc)));

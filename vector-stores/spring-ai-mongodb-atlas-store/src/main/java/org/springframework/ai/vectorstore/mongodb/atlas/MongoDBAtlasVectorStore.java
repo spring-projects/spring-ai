@@ -294,7 +294,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
 				this.batchingStrategy);
 		for (Document document : documents) {
-			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getContent(),
+			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getText(),
 					document.getMetadata(), embeddings.get(documents.indexOf(document)));
 			this.mongoTemplate.save(mdbDocument, this.collectionName);
 		}
@@ -379,7 +379,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		/**
 		 * @throws IllegalArgumentException if mongoTemplate is null
 		 */
-		public MongoDBBuilder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+		private MongoDBBuilder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(mongoTemplate, "MongoTemplate must not be null");
 			this.mongoTemplate = mongoTemplate;
