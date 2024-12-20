@@ -36,7 +36,7 @@ import org.springframework.ai.model.ResponseMetadata;
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	private final static Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
 
 	private String id = ""; // Set to blank to preserve backward compat with previous
 
