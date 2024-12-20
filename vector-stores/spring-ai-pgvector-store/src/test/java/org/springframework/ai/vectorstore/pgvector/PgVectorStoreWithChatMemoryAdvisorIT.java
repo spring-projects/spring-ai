@@ -84,9 +84,10 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 
 	private static PgVectorStore createPgVectorStoreUsingTestcontainer(EmbeddingModel embeddingModel) throws Exception {
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore vectorStore = new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withDimensions(3) // match
+		PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.dimensions(3) // match
 			// embeddings
-			.withInitializeSchema(true)
+			.initializeSchema(true)
 			.build();
 		initStore(vectorStore);
 		return vectorStore;
