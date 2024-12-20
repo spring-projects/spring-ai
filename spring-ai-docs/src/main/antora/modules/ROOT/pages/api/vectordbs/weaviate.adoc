@@ -141,11 +141,11 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-    SearchRequest.defaults()
-        .queryString("The World")
+    SearchRequest.builder()
+        .query("The World")
         .topK(TOP_K)
         .similarityThreshold(SIMILARITY_THRESHOLD)
-        .filterExpression("country in ['UK', 'NL'] && year >= 2020"));
+        .filterExpression("country in ['UK', 'NL'] && year >= 2020").build());
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -154,13 +154,13 @@ or programmatically using the `Filter.Expression` DSL:
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
-vectorStore.similaritySearch(SearchRequest.defaults()
-    .queryString("The World")
+vectorStore.similaritySearch(SearchRequest.builder()
+    .query("The World")
     .topK(TOP_K)
     .similarityThreshold(SIMILARITY_THRESHOLD)
     .filterExpression(b.and(
         b.in("country", "UK", "NL"),
-        b.gte("year", 2020)).build()));
+        b.gte("year", 2020)).build()).build());
 ----
 
 NOTE: Those (portable) filter expressions get automatically converted into the proprietary Weaviate link:https://weaviate.io/developers/weaviate/api/graphql/filters[where filters].

@@ -14,7 +14,7 @@ You can configure existing advisors using the xref:api/chatclient.adoc#_advisor_
 var chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(
         new MessageChatMemoryAdvisor(chatMemory), // chat-memory advisor
-        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()) // RAG advisor
+        new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build()) // RAG advisor
     )
     .build();
 

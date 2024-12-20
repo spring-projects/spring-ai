@@ -355,7 +355,7 @@ ChatClient.builder(chatModel)
     .prompt()
     .advisors(
         new MessageChatMemoryAdvisor(chatMemory),
-        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
+        new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build())
     )
     .user(userText)
     .call()
@@ -424,7 +424,7 @@ public class CustomerSupportAssistant {
                     """)
             .defaultAdvisors(
                     new MessageChatMemoryAdvisor(chatMemory), // CHAT MEMORY
-                    new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()), // RAG
+                    new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build()), // RAG
                     new SimpleLoggerAdvisor())
             .defaultFunctions("getBookingDetails", "changeBooking", "cancelBooking") // FUNCTION CALLING
             .build();
