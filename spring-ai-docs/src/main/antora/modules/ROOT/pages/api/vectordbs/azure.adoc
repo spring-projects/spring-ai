@@ -169,9 +169,9 @@ And finally, retrieve documents similar to a query:
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-    SearchRequest
+    SearchRequest.builder()
       .query("Spring")
-      .topK(5));
+      .topK(5).build());
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
@@ -185,11 +185,11 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-   SearchRequest
+   SearchRequest.builder()
       .query("The World")
       .topK(TOP_K)
       .similarityThreshold(SIMILARITY_THRESHOLD)
-      .filterExpression("country in ['UK', 'NL'] && year >= 2020"));
+      .filterExpression("country in ['UK', 'NL'] && year >= 2020").build());
 ----
 
 or programmatically using the expression DSL:
@@ -199,13 +199,13 @@ or programmatically using the expression DSL:
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(
-    SearchRequest
+    SearchRequest.builder()
       .query("The World")
       .topK(TOP_K)
       .similarityThreshold(SIMILARITY_THRESHOLD)
       .filterExpression(b.and(
          b.in("country", "UK", "NL"),
-         b.gte("year", 2020)).build()));
+         b.gte("year", 2020)).build()).build());
 ----
 
 The portable filter expressions get automatically converted into the proprietary Azure Search link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[OData filters]. For example, the following portable filter expression:

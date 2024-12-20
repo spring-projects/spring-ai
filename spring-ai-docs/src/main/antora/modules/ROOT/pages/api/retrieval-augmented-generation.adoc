@@ -26,14 +26,27 @@ Assuming you have already loaded data into a `VectorStore`, you can perform Retr
 ----
 ChatResponse response = ChatClient.builder(chatModel)
         .build().prompt()
-        .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+        .advisors(new QuestionAnswerAdvisor(vectorStore)
         .user(userText)
         .call()
         .chatResponse();
 ----
 
-In this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
+In this example, the `QuestionAnswerAdvisor` will perform a similarity search over all documents in the Vector Database.
 To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
+
+This filter expression can be configured when creating the `QuestionAnswerAdvisor` and hence will always apply to all `ChatClient` requests or it can be provided at runtime per request.
+
+Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` reulsts.
+
+
+[source,java]
+----
+var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
+        SearchRequest.builder().similarityThreshold(0.8d).topK(6).build());
+----
+
+
 
 ==== Dynamic Filter Expressions
 
@@ -42,7 +55,7 @@ Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRES
 [source,java]
 ----
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build()))
     .build();
 
 // Update filter expression at runtime

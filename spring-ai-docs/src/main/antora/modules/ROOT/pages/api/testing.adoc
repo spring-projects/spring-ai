@@ -75,7 +75,7 @@ void testEvaluation() {
 
     ChatResponse response = ChatClient.builder(chatModel)
             .build().prompt()
-            .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+            .advisors(new QuestionAnswerAdvisor(vectorStore))
             .user(userText)
             .call()
             .chatResponse();

@@ -44,20 +44,69 @@ and the related `SearchRequest` builder:
 ```java
 public class SearchRequest {
 
-	public final String query;
-	private int topK = 4;
-	private double similarityThreshold = SIMILARITY_THRESHOLD_ALL;
+	public static final double SIMILARITY_THRESHOLD_ACCEPT_ALL = 0.0;
+
+	public static final int DEFAULT_TOP_K = 4;
+
+	private String query = "";
+
+	private int topK = DEFAULT_TOP_K;
+
+	private double similarityThreshold = SIMILARITY_THRESHOLD_ACCEPT_ALL;
+
+	@Nullable
 	private Filter.Expression filterExpression;
 
-	public static SearchRequest query(String query) { return new SearchRequest(query); }
+    public static Builder from(SearchRequest originalSearchRequest) {
+		return builder().query(originalSearchRequest.getQuery())
+			.topK(originalSearchRequest.getTopK())
+			.similarityThreshold(originalSearchRequest.getSimilarityThreshold())
+			.filterExpression(originalSearchRequest.getFilterExpression());
+	}
 
-	private SearchRequest(String query) { this.query = query; }
+	public static class Builder {
 
-	public SearchRequest topK(int topK) {...}
-	public SearchRequest similarityThreshold(double threshold) {...}
-	public SearchRequest similarityThresholdAll() {...}
-	public SearchRequest filterExpression(Filter.Expression expression) {...}
-	public SearchRequest filterExpression(String textExpression) {...}
+		private final SearchRequest searchRequest = new SearchRequest();
+
+		public Builder query(String query) {
+			Assert.notNull(query, "Query can not be null.");
+			this.searchRequest.query = query;
+			return this;
+		}
+
+		public Builder topK(int topK) {
+			Assert.isTrue(topK >= 0, "TopK should be positive.");
+			this.searchRequest.topK = topK;
+			return this;
+		}
+
+		public Builder similarityThreshold(double threshold) {
+			Assert.isTrue(threshold >= 0 && threshold <= 1, "Similarity threshold must be in [0,1] range.");
+			this.searchRequest.similarityThreshold = threshold;
+			return this;
+		}
+
+		public Builder similarityThresholdAll() {
+			this.searchRequest.similarityThreshold = 0.0;
+			return this;
+		}
+
+		public Builder filterExpression(@Nullable Filter.Expression expression) {
+			this.searchRequest.filterExpression = expression;
+			return this;
+		}
+
+		public Builder filterExpression(@Nullable String textExpression) {
+			this.searchRequest.filterExpression = (textExpression != null)
+					? new FilterExpressionTextParser().parse(textExpression) : null;
+			return this;
+		}
+
+		public SearchRequest build() {
+			return this.searchRequest;
+		}
+
+	}
 
 	public String getQuery() {...}
 	public int getTopK() {...}

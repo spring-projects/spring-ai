@@ -5,7 +5,7 @@
 The Spring AI Advisors API provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications. 
 By leveraging the Advisors API, developers can create more sophisticated, reusable, and maintainable AI components.
 
-The key benefits include encapsulating recurring Generative AI patterns, transforming data sent to and from Language Models (LLMs), and providing portability across various models and use cases.
+The key benefits include encapsulating recurring Generative AI patterns, transforming data sent to and from Large Language Models (LLMs), and providing portability across various models and use cases.
 
 You can configure existing advisors using the xref:api/chatclient.adoc#_advisor_configuration_in_chatclient[ChatClient API] as shown in the following example:
 
@@ -14,7 +14,7 @@ You can configure existing advisors using the xref:api/chatclient.adoc#_advisor_
 var chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(
         new MessageChatMemoryAdvisor(chatMemory), // chat-memory advisor
-        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()) // RAG advisor
+        new QuestionAnswerAdvisor(vectorStore)    // RAG advisor
     )
     .build();
 
@@ -30,6 +30,8 @@ String response = this.chatClient.prompt()
 It is recommend to register the advisors at build time using builder's `defaultAdvisors()` method.
 
 Advisors also participate in the Observability stack, so you can view metrics and traces related to their execution.
+
+xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
 == Core Components
 

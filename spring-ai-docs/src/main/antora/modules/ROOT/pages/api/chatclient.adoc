@@ -355,7 +355,7 @@ ChatClient.builder(chatModel)
     .prompt()
     .advisors(
         new MessageChatMemoryAdvisor(chatMemory),
-        new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
+        new QuestionAnswerAdvisor(vectorStore)
     )
     .user(userText)
     .call()
@@ -363,6 +363,8 @@ ChatClient.builder(chatModel)
 ----
 
 In this configuration, the `MessageChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
+
+xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
 === Retrieval Augmented Generation
 
@@ -424,7 +426,7 @@ public class CustomerSupportAssistant {
                     """)
             .defaultAdvisors(
                     new MessageChatMemoryAdvisor(chatMemory), // CHAT MEMORY
-                    new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()), // RAG
+                    new QuestionAnswerAdvisor(vectorStore), // RAG
                     new SimpleLoggerAdvisor())
             .defaultFunctions("getBookingDetails", "changeBooking", "cancelBooking") // FUNCTION CALLING
             .build();
@@ -443,7 +445,7 @@ public class CustomerSupportAssistant {
 }
 ----
 
-
+xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
 === Logging
 
