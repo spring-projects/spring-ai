@@ -21,7 +21,8 @@ import java.util.List;
 /**
  * Implementation of {@link ChatOptions.Builder} to create {@link DefaultChatOptions}.
  */
-public class DefaultChatOptionsBuilder<T extends DefaultChatOptionsBuilder<T>> implements ChatOptions.Builder<T> {
+public class DefaultChatOptionsBuilder<T extends DefaultChatOptionsBuilder<T, C>, C extends ChatOptions>
+		implements ChatOptions.Builder<T, C> {
 
 	protected DefaultChatOptions options;
 
@@ -77,8 +78,8 @@ public class DefaultChatOptionsBuilder<T extends DefaultChatOptionsBuilder<T>> i
 		return self();
 	}
 
-	public ChatOptions build() {
-		return this.options;
+	public C build() {
+		return (C) this.options;
 	}
 
 }

@@ -35,7 +35,7 @@ public interface FunctionCallingOptions extends ChatOptions {
 	 * @return Returns {@link DefaultFunctionCallingOptionsBuilder} to create a new
 	 * instance of {@link FunctionCallingOptions}.
 	 */
-	static FunctionCallingOptions.Builder<? extends FunctionCallingOptions.Builder> builder() {
+	static DefaultFunctionCallingOptionsBuilder builder() {
 		return new DefaultFunctionCallingOptionsBuilder();
 	}
 
@@ -87,7 +87,7 @@ public interface FunctionCallingOptions extends ChatOptions {
 	/**
 	 * Builder for creating {@link FunctionCallingOptions} instance.
 	 */
-	interface Builder<T extends Builder<T>> extends ChatOptions.Builder<T> {
+	interface Builder<T extends Builder<T, F>, F extends FunctionCallingOptions> extends ChatOptions.Builder<T, F> {
 
 		/**
 		 * The list of Function Callbacks to be registered with the Chat model.
@@ -143,7 +143,7 @@ public interface FunctionCallingOptions extends ChatOptions {
 		 * Builds the {@link FunctionCallingOptions}.
 		 * @return the FunctionCalling options.
 		 */
-		FunctionCallingOptions build();
+		F build();
 
 	}
 

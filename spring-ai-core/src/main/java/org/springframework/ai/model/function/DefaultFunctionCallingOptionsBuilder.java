@@ -33,8 +33,8 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  */
 public class DefaultFunctionCallingOptionsBuilder
-		extends DefaultChatOptionsBuilder<DefaultFunctionCallingOptionsBuilder>
-		implements FunctionCallingOptions.Builder<DefaultFunctionCallingOptionsBuilder> {
+		extends DefaultChatOptionsBuilder<DefaultFunctionCallingOptionsBuilder, FunctionCallingOptions>
+		implements FunctionCallingOptions.Builder<DefaultFunctionCallingOptionsBuilder, FunctionCallingOptions> {
 
 	public DefaultFunctionCallingOptionsBuilder() {
 		// Set the options in the parent class to be the same instance
