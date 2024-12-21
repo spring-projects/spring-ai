@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -77,7 +79,7 @@ public class DefaultChatOptions implements ChatOptions {
 
 	@Override
 	public List<String> getStopSequences() {
-		return this.stopSequences;
+		return this.stopSequences != null ? Collections.unmodifiableList(this.stopSequences) : null;
 	}
 
 	public void setStopSequences(List<String> stopSequences) {
@@ -112,17 +114,18 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public ChatOptions copy() {
-		return ChatOptions.builder()
-			.model(this.model)
-			.frequencyPenalty(this.frequencyPenalty)
-			.maxTokens(this.maxTokens)
-			.presencePenalty(this.presencePenalty)
-			.stopSequences(this.stopSequences != null ? List.copyOf(this.stopSequences) : null)
-			.temperature(this.temperature)
-			.topK(this.topK)
-			.topP(this.topP)
-			.build();
+	@SuppressWarnings("unchecked")
+	public <T extends ChatOptions> T copy() {
+		DefaultChatOptions copy = new DefaultChatOptions();
+		copy.setModel(this.getModel());
+		copy.setFrequencyPenalty(this.getFrequencyPenalty());
+		copy.setMaxTokens(this.getMaxTokens());
+		copy.setPresencePenalty(this.getPresencePenalty());
+		copy.setStopSequences(this.getStopSequences() != null ? new ArrayList<>(this.getStopSequences()) : null);
+		copy.setTemperature(this.getTemperature());
+		copy.setTopK(this.getTopK());
+		copy.setTopP(this.getTopP());
+		return (T) copy;
 	}
 
 }

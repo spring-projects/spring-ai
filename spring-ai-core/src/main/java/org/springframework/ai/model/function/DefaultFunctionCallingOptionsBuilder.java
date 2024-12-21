@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder;
 import org.springframework.util.Assert;
 
 /**
@@ -32,63 +31,120 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  */
-public class DefaultFunctionCallingOptionsBuilder
-		extends DefaultChatOptionsBuilder<DefaultFunctionCallingOptionsBuilder>
-		implements FunctionCallingOptions.Builder<DefaultFunctionCallingOptionsBuilder> {
+public class DefaultFunctionCallingOptionsBuilder implements FunctionCallingOptions.Builder {
+
+	private final DefaultFunctionCallingOptions options;
 
 	public DefaultFunctionCallingOptionsBuilder() {
-		// Set the options in the parent class to be the same instance
-		super(new DefaultFunctionCallingOptions());
+		this.options = new DefaultFunctionCallingOptions();
 	}
 
-	public DefaultFunctionCallingOptionsBuilder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-		((FunctionCallingOptions) this.options).setFunctionCallbacks(functionCallbacks);
-		return self();
+	// Function calling specific methods
+	@Override
+	public FunctionCallingOptions.Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.options.setFunctionCallbacks(functionCallbacks);
+		return this;
 	}
 
-	public DefaultFunctionCallingOptionsBuilder functionCallbacks(FunctionCallback... functionCallbacks) {
+	@Override
+	public FunctionCallingOptions.Builder functionCallbacks(FunctionCallback... functionCallbacks) {
 		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
-		((FunctionCallingOptions) this.options).setFunctionCallbacks(List.of(functionCallbacks));
-		return self();
+		this.options.setFunctionCallbacks(List.of(functionCallbacks));
+		return this;
 	}
 
-	public DefaultFunctionCallingOptionsBuilder functions(Set<String> functions) {
-		((FunctionCallingOptions) this.options).setFunctions(functions);
-		return self();
+	@Override
+	public FunctionCallingOptions.Builder functions(Set<String> functions) {
+		this.options.setFunctions(functions);
+		return this;
 	}
 
-	public DefaultFunctionCallingOptionsBuilder function(String function) {
+	@Override
+	public FunctionCallingOptions.Builder function(String function) {
 		Assert.notNull(function, "Function must not be null");
-		var set = new HashSet<>(((FunctionCallingOptions) this.options).getFunctions());
+		var set = new HashSet<>(this.options.getFunctions());
 		set.add(function);
-		((FunctionCallingOptions) this.options).setFunctions(set);
-		return self();
+		this.options.setFunctions(set);
+		return this;
 	}
 
-	public DefaultFunctionCallingOptionsBuilder proxyToolCalls(Boolean proxyToolCalls) {
-		((FunctionCallingOptions) this.options).setProxyToolCalls(proxyToolCalls);
-		return self();
+	@Override
+	public FunctionCallingOptions.Builder proxyToolCalls(Boolean proxyToolCalls) {
+		this.options.setProxyToolCalls(proxyToolCalls);
+		return this;
 	}
 
-	public DefaultFunctionCallingOptionsBuilder toolContext(Map<String, Object> context) {
+	@Override
+	public FunctionCallingOptions.Builder toolContext(Map<String, Object> context) {
 		Assert.notNull(context, "Tool context must not be null");
-		Map<String, Object> newContext = new HashMap<>(((FunctionCallingOptions) this.options).getToolContext());
+		Map<String, Object> newContext = new HashMap<>(this.options.getToolContext());
 		newContext.putAll(context);
-		((FunctionCallingOptions) this.options).setToolContext(newContext);
-		return self();
+		this.options.setToolContext(newContext);
+		return this;
 	}
 
-	public DefaultFunctionCallingOptionsBuilder toolContext(String key, Object value) {
+	@Override
+	public FunctionCallingOptions.Builder toolContext(String key, Object value) {
 		Assert.notNull(key, "Key must not be null");
 		Assert.notNull(value, "Value must not be null");
-		Map<String, Object> newContext = new HashMap<>(((FunctionCallingOptions) this.options).getToolContext());
+		Map<String, Object> newContext = new HashMap<>(this.options.getToolContext());
 		newContext.put(key, value);
-		((FunctionCallingOptions) this.options).setToolContext(newContext);
-		return self();
+		this.options.setToolContext(newContext);
+		return this;
 	}
 
+	// ChatOptions.Builder methods with covariant return type
+	@Override
+	public FunctionCallingOptions.Builder model(String model) {
+		this.options.setModel(model);
+		return this;
+	}
+
+	@Override
+	public FunctionCallingOptions.Builder frequencyPenalty(Double frequencyPenalty) {
+		this.options.setFrequencyPenalty(frequencyPenalty);
+		return this;
+	}
+
+	@Override
+	public FunctionCallingOptions.Builder maxTokens(Integer maxTokens) {
+		this.options.setMaxTokens(maxTokens);
+		return this;
+	}
+
+	@Override
+	public FunctionCallingOptions.Builder presencePenalty(Double presencePenalty) {
+		this.options.setPresencePenalty(presencePenalty);
+		return this;
+	}
+
+	@Override
+	public FunctionCallingOptions.Builder stopSequences(List<String> stop) {
+		this.options.setStopSequences(stop);
+		return this;
+	}
+
+	@Override
+	public FunctionCallingOptions.Builder temperature(Double temperature) {
+		this.options.setTemperature(temperature);
+		return this;
+	}
+
+	@Override
+	public FunctionCallingOptions.Builder topK(Integer topK) {
+		this.options.setTopK(topK);
+		return this;
+	}
+
+	@Override
+	public FunctionCallingOptions.Builder topP(Double topP) {
+		this.options.setTopP(topP);
+		return this;
+	}
+
+	@Override
 	public FunctionCallingOptions build() {
-		return ((FunctionCallingOptions) this.options);
+		return this.options.copy();
 	}
 
 }

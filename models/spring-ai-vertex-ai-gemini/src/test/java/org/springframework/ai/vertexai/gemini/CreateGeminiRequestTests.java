@@ -203,7 +203,7 @@ public class CreateGeminiRequestTests {
 					.model("DEFAULT_MODEL")
 					.temperature(66.6)
 					.maxOutputTokens(100)
-					.topK(10.0f)
+					.topK(10)
 					.topP(5.0)
 					.stopSequences(List.of("stop1", "stop2"))
 					.candidateCount(1)
@@ -218,7 +218,7 @@ public class CreateGeminiRequestTests {
 		assertThat(request.model().getModelName()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.model().getGenerationConfig().getTemperature()).isEqualTo(66.6f);
 		assertThat(request.model().getGenerationConfig().getMaxOutputTokens()).isEqualTo(100);
-		assertThat(request.model().getGenerationConfig().getTopK()).isEqualTo(10.0f);
+		assertThat(request.model().getGenerationConfig().getTopK()).isEqualTo(10);
 		assertThat(request.model().getGenerationConfig().getTopP()).isEqualTo(5.0f);
 		assertThat(request.model().getGenerationConfig().getCandidateCount()).isEqualTo(1);
 		assertThat(request.model().getGenerationConfig().getStopSequences(0)).isEqualTo("stop1");

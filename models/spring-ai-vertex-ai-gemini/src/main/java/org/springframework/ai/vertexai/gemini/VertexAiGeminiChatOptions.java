@@ -17,6 +17,7 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
@@ -68,7 +70,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	/**
 	 * Optional. If specified, top k sampling will be used.
 	 */
-	private @JsonProperty("topK") Float topK;
+	private @JsonProperty("topK") Integer topK;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
@@ -183,16 +185,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public Integer getTopK() {
-		return (this.topK != null) ? this.topK.intValue() : null;
+		return this.topK;
 	}
 
-	public void setTopK(Float topK) {
-		this.topK = topK;
-	}
-
-	@JsonIgnore
 	public void setTopK(Integer topK) {
-		this.topK = (topK != null) ? topK.floatValue() : null;
+		this.topK = topK;
 	}
 
 	public Integer getCandidateCount() {
@@ -346,6 +343,67 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		return fromOptions(this);
 	}
 
+	public FunctionCallingOptions merge(ChatOptions options) {
+		VertexAiGeminiChatOptions.Builder builder = VertexAiGeminiChatOptions.builder();
+
+		// Merge chat-specific options
+		builder.model(options.getModel() != null ? options.getModel() : this.getModel())
+			.maxOutputTokens(options.getMaxTokens() != null ? options.getMaxTokens() : this.getMaxOutputTokens())
+			.stopSequences(options.getStopSequences() != null ? options.getStopSequences() : this.getStopSequences())
+			.temperature(options.getTemperature() != null ? options.getTemperature() : this.getTemperature())
+			.topP(options.getTopP() != null ? options.getTopP() : this.getTopP())
+			.topK(options.getTopK() != null ? options.getTopK() : this.getTopK());
+
+		// Try to get function-specific properties if options is a FunctionCallingOptions
+		if (options instanceof FunctionCallingOptions functionOptions) {
+			builder.proxyToolCalls(functionOptions.getProxyToolCalls() != null ? functionOptions.getProxyToolCalls()
+					: this.proxyToolCalls);
+
+			Set<String> functions = new HashSet<>();
+			if (this.functions != null) {
+				functions.addAll(this.functions);
+			}
+			if (functionOptions.getFunctions() != null) {
+				functions.addAll(functionOptions.getFunctions());
+			}
+			builder.functions(functions);
+
+			List<FunctionCallback> functionCallbacks = new ArrayList<>();
+			if (this.functionCallbacks != null) {
+				functionCallbacks.addAll(this.functionCallbacks);
+			}
+			if (functionOptions.getFunctionCallbacks() != null) {
+				functionCallbacks.addAll(functionOptions.getFunctionCallbacks());
+			}
+			builder.functionCallbacks(functionCallbacks);
+
+			Map<String, Object> context = new HashMap<>();
+			if (this.toolContext != null) {
+				context.putAll(this.toolContext);
+			}
+			if (functionOptions.getToolContext() != null) {
+				context.putAll(functionOptions.getToolContext());
+			}
+			builder.toolContext(context);
+		}
+		else {
+			// If not a FunctionCallingOptions, preserve current function-specific
+			// properties
+			builder.proxyToolCalls(this.proxyToolCalls);
+			builder.functions(this.functions != null ? new HashSet<>(this.functions) : null);
+			builder.functionCallbacks(this.functionCallbacks != null ? new ArrayList<>(this.functionCallbacks) : null);
+			builder.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null);
+		}
+
+		// Preserve Vertex AI Gemini-specific properties
+		builder.candidateCount(this.candidateCount)
+			.responseMimeType(this.responseMimeType)
+			.googleSearchRetrieval(this.googleSearchRetrieval)
+			.safetySettings(this.safetySettings != null ? new ArrayList<>(this.safetySettings) : null);
+
+		return builder.build();
+	}
+
 	public enum TransportType {
 
 		GRPC, REST
@@ -371,7 +429,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		public Builder topK(Float topK) {
+		public Builder topK(Integer topK) {
 			this.options.setTopK(topK);
 			return this;
 		}
@@ -473,10 +531,10 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		}
 
 		/**
-		 * @deprecated use {@link #topK(Float)} instead.
+		 * @deprecated use {@link #topK(Integer)} instead.
 		 */
 		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopK(Float topK) {
+		public Builder withTopK(Integer topK) {
 			this.options.setTopK(topK);
 			return this;
 		}

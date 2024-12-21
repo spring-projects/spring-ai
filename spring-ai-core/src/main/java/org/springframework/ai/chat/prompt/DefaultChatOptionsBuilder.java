@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Implementation of {@link ChatOptions.Builder} to create {@link DefaultChatOptions}.
  */
-public class DefaultChatOptionsBuilder<T extends DefaultChatOptionsBuilder<T>> implements ChatOptions.Builder<T> {
+public class DefaultChatOptionsBuilder implements ChatOptions.Builder {
 
 	protected DefaultChatOptions options;
 
@@ -33,52 +33,48 @@ public class DefaultChatOptionsBuilder<T extends DefaultChatOptionsBuilder<T>> i
 		this.options = options;
 	}
 
-	protected T self() {
-		return (T) this;
-	}
-
-	public T model(String model) {
+	public DefaultChatOptionsBuilder model(String model) {
 		this.options.setModel(model);
-		return self();
+		return this;
 	}
 
-	public T frequencyPenalty(Double frequencyPenalty) {
+	public DefaultChatOptionsBuilder frequencyPenalty(Double frequencyPenalty) {
 		this.options.setFrequencyPenalty(frequencyPenalty);
-		return self();
+		return this;
 	}
 
-	public T maxTokens(Integer maxTokens) {
+	public DefaultChatOptionsBuilder maxTokens(Integer maxTokens) {
 		this.options.setMaxTokens(maxTokens);
-		return self();
+		return this;
 	}
 
-	public T presencePenalty(Double presencePenalty) {
+	public DefaultChatOptionsBuilder presencePenalty(Double presencePenalty) {
 		this.options.setPresencePenalty(presencePenalty);
-		return self();
+		return this;
 	}
 
-	public T stopSequences(List<String> stop) {
+	public DefaultChatOptionsBuilder stopSequences(List<String> stop) {
 		this.options.setStopSequences(stop);
-		return self();
+		return this;
 	}
 
-	public T temperature(Double temperature) {
+	public DefaultChatOptionsBuilder temperature(Double temperature) {
 		this.options.setTemperature(temperature);
-		return self();
+		return this;
 	}
 
-	public T topK(Integer topK) {
+	public DefaultChatOptionsBuilder topK(Integer topK) {
 		this.options.setTopK(topK);
-		return self();
+		return this;
 	}
 
-	public T topP(Double topP) {
+	public DefaultChatOptionsBuilder topP(Double topP) {
 		this.options.setTopP(topP);
-		return self();
+		return this;
 	}
 
 	public ChatOptions build() {
-		return this.options;
+		return this.options.copy();
 	}
 
 }

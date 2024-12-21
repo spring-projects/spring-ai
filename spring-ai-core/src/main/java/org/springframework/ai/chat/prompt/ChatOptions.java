@@ -87,77 +87,77 @@ public interface ChatOptions extends ModelOptions {
 	 * Returns a copy of this {@link ChatOptions}.
 	 * @return a copy of this {@link ChatOptions}
 	 */
-	ChatOptions copy();
+	<T extends ChatOptions> T copy();
 
 	/**
 	 * Creates a new {@link ChatOptions.Builder} to create the default
 	 * {@link ChatOptions}.
 	 * @return Returns a new {@link ChatOptions.Builder}.
 	 */
-	static ChatOptions.Builder<? extends DefaultChatOptionsBuilder> builder() {
+	static ChatOptions.Builder builder() {
 		return new DefaultChatOptionsBuilder();
 	}
 
 	/**
 	 * Builder for creating {@link ChatOptions} instance.
 	 */
-	interface Builder<B extends Builder<B>> {
+	interface Builder {
 
 		/**
 		 * Builds with the model to use for the chat.
 		 * @param model
 		 * @return the builder
 		 */
-		B model(String model);
+		Builder model(String model);
 
 		/**
 		 * Builds with the frequency penalty to use for the chat.
 		 * @param frequencyPenalty
 		 * @return the builder.
 		 */
-		B frequencyPenalty(Double frequencyPenalty);
+		Builder frequencyPenalty(Double frequencyPenalty);
 
 		/**
 		 * Builds with the maximum number of tokens to use for the chat.
 		 * @param maxTokens
 		 * @return the builder.
 		 */
-		B maxTokens(Integer maxTokens);
+		Builder maxTokens(Integer maxTokens);
 
 		/**
 		 * Builds with the presence penalty to use for the chat.
 		 * @param presencePenalty
 		 * @return the builder.
 		 */
-		B presencePenalty(Double presencePenalty);
+		Builder presencePenalty(Double presencePenalty);
 
 		/**
 		 * Builds with the stop sequences to use for the chat.
 		 * @param stopSequences
 		 * @return the builder.
 		 */
-		B stopSequences(List<String> stopSequences);
+		Builder stopSequences(List<String> stopSequences);
 
 		/**
 		 * Builds with the temperature to use for the chat.
 		 * @param temperature
 		 * @return the builder.
 		 */
-		B temperature(Double temperature);
+		Builder temperature(Double temperature);
 
 		/**
 		 * Builds with the top K to use for the chat.
 		 * @param topK
 		 * @return the builder.
 		 */
-		B topK(Integer topK);
+		Builder topK(Integer topK);
 
 		/**
 		 * Builds with the top P to use for the chat.
 		 * @param topP
 		 * @return the builder.
 		 */
-		B topP(Double topP);
+		Builder topP(Double topP);
 
 		/**
 		 * Build the {@link ChatOptions}.
