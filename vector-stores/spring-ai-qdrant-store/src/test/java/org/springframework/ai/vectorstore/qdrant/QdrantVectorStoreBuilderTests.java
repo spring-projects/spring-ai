@@ -46,7 +46,7 @@ class QdrantVectorStoreBuilderTests {
 
 	@Test
 	void defaultConfiguration() {
-		QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient, embeddingModel).build();
+		QdrantVectorStore vectorStore = QdrantVectorStore.builder(this.qdrantClient, this.embeddingModel).build();
 
 		// Verify default values
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("collectionName", "vector_store");
@@ -56,7 +56,7 @@ class QdrantVectorStoreBuilderTests {
 
 	@Test
 	void customConfiguration() {
-		QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient, embeddingModel)
+		QdrantVectorStore vectorStore = QdrantVectorStore.builder(this.qdrantClient, this.embeddingModel)
 			.collectionName("custom_collection")
 			.initializeSchema(true)
 			.batchingStrategy(new TokenCountBatchingStrategy())
@@ -75,21 +75,23 @@ class QdrantVectorStoreBuilderTests {
 
 	@Test
 	void nullEmbeddingModelShouldThrowException() {
-		assertThatThrownBy(() -> QdrantVectorStore.builder(qdrantClient, null).build())
+		assertThatThrownBy(() -> QdrantVectorStore.builder(this.qdrantClient, null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("EmbeddingModel must be configured");
 	}
 
 	@Test
 	void emptyCollectionNameShouldThrowException() {
-		assertThatThrownBy(() -> QdrantVectorStore.builder(qdrantClient, embeddingModel).collectionName("").build())
+		assertThatThrownBy(
+				() -> QdrantVectorStore.builder(this.qdrantClient, this.embeddingModel).collectionName("").build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("collectionName must not be empty");
 	}
 
 	@Test
 	void nullBatchingStrategyShouldThrowException() {
-		assertThatThrownBy(() -> QdrantVectorStore.builder(qdrantClient, embeddingModel).batchingStrategy(null).build())
+		assertThatThrownBy(
+				() -> QdrantVectorStore.builder(this.qdrantClient, this.embeddingModel).batchingStrategy(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("BatchingStrategy must not be null");
 	}

@@ -16,23 +16,28 @@
 
 package org.springframework.ai.vectorstore.mariadb;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micrometer.observation.ObservationRegistry;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -305,7 +310,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		this.distanceType = builder.distanceType;
 		this.removeExistingVectorStoreTable = builder.removeExistingVectorStoreTable;
 		this.initializeSchema = builder.initializeSchema;
-		this.schemaValidator = new MariaDBSchemaValidator(jdbcTemplate);
+		this.schemaValidator = new MariaDBSchemaValidator(this.jdbcTemplate);
 		this.batchingStrategy = builder.batchingStrategy;
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
 
@@ -314,7 +319,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 				false);
 		this.idFieldName = MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.idFieldName, false);
 		this.metadataFieldName = MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.metadataFieldName, false);
-		filterExpressionConverter = new MariaDBFilterExpressionConverter(this.metadataFieldName);
+		this.filterExpressionConverter = new MariaDBFilterExpressionConverter(this.metadataFieldName);
 	}
 
 	/**
@@ -447,8 +452,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
 
 		if (this.schemaValidation) {
-			this.schemaValidator.validateTableSchema(this.schemaName, this.vectorTableName, idFieldName,
-					contentFieldName, metadataFieldName, embeddingFieldName, this.embeddingDimensions());
+			this.schemaValidator.validateTableSchema(this.schemaName, this.vectorTableName, this.idFieldName,
+					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName, this.embeddingDimensions());
 		}
 
 		if (!this.initializeSchema) {
@@ -456,8 +461,9 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			return;
 		}
 
-		if (this.schemaName != null)
+		if (this.schemaName != null) {
 			this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", this.schemaName));
+		}
 
 		// Remove existing VectorStoreTable
 		if (this.removeExistingVectorStoreTable) {
@@ -472,15 +478,16 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 					%s VECTOR(%d) NOT NULL,
 					VECTOR INDEX %s_idx (%s)
 				) ENGINE=InnoDB
-				""", this.getFullyQualifiedTableName(), idFieldName, contentFieldName, metadataFieldName,
-				embeddingFieldName, this.embeddingDimensions(),
-				(vectorTableName + "_" + embeddingFieldName).replaceAll("[^\\n\\r\\t\\p{Print}]", ""),
-				embeddingFieldName));
+				""", this.getFullyQualifiedTableName(), this.idFieldName, this.contentFieldName, this.metadataFieldName,
+				this.embeddingFieldName, this.embeddingDimensions(),
+				(this.vectorTableName + "_" + this.embeddingFieldName).replaceAll("[^\\n\\r\\t\\p{Print}]", ""),
+				this.embeddingFieldName));
 	}
 
 	private String getFullyQualifiedTableName() {
-		if (this.schemaName != null)
+		if (this.schemaName != null) {
 			return this.schemaName + "." + this.vectorTableName;
+		}
 		return this.vectorTableName;
 	}
 
@@ -522,7 +529,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	public enum MariaDBDistanceType {
 
-		EUCLIDEAN, COSINE;
+		EUCLIDEAN, COSINE
 
 	}
 
@@ -530,7 +537,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		private final ObjectMapper objectMapper;
 
-		public DocumentRowMapper(ObjectMapper objectMapper) {
+		DocumentRowMapper(ObjectMapper objectMapper) {
 			this.objectMapper = objectMapper;
 		}
 

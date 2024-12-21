@@ -572,7 +572,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		return SIMILARITY_TYPE_MAPPING.get(this.metricType).value();
 	}
 
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final MilvusServiceClient milvusClient;
 

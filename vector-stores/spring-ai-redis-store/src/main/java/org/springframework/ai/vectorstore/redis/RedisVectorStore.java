@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.DocumentMetadata;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -48,6 +47,7 @@ import redis.clients.jedis.search.schemafields.VectorField;
 import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -458,6 +458,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
+	public static Builder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+		return new Builder(jedis, embeddingModel);
+	}
+
 	public enum Algorithm {
 
 		FLAT, HSNW
@@ -478,10 +482,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			return new MetadataField(name, FieldType.TAG);
 		}
 
-	}
-
-	public static Builder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
-		return new Builder(jedis, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {

@@ -16,9 +16,6 @@
 
 package org.springframework.ai.vectorstore.mariadb;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -27,13 +24,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+
 import javax.sql.DataSource;
+
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.Assert;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -54,9 +58,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
-import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Diego Dupin
@@ -121,7 +124,8 @@ public class MariaDBStoreIT {
 		}
 
 		Iterator<Float> iter = distances.iterator();
-		Float current, previous = iter.next();
+		Float current;
+		Float previous = iter.next();
 		while (iter.hasNext()) {
 			current = iter.next();
 			if (previous > current) {

@@ -270,10 +270,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		prepareAddStatement(Set.of());
 		this.deleteStmt = prepareDeleteStatement();
 
-		TableMetadata cassandraMetadata = session.getMetadata()
-			.getKeyspace(schema.keyspace())
+		TableMetadata cassandraMetadata = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace())
 			.get()
-			.getTable(schema.table())
+			.getTable(this.schema.table())
 			.get();
 
 		this.similarity = getIndexSimilarity(cassandraMetadata);
@@ -870,11 +870,11 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		 * @throws IllegalStateException if session is already set
 		 */
 		public Builder contactPoint(InetSocketAddress contactPoint) {
-			Assert.state(session == null, "Cannot call addContactPoint(..) when session is already set");
-			if (sessionBuilder == null) {
-				sessionBuilder = new CqlSessionBuilder();
+			Assert.state(this.session == null, "Cannot call addContactPoint(..) when session is already set");
+			if (this.sessionBuilder == null) {
+				this.sessionBuilder = new CqlSessionBuilder();
 			}
-			sessionBuilder.addContactPoint(contactPoint);
+			this.sessionBuilder.addContactPoint(contactPoint);
 			return this;
 		}
 
@@ -885,11 +885,11 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		 * @throws IllegalStateException if session is already set
 		 */
 		public Builder localDatacenter(String localDatacenter) {
-			Assert.state(session == null, "Cannot call withLocalDatacenter(..) when session is already set");
-			if (sessionBuilder == null) {
-				sessionBuilder = new CqlSessionBuilder();
+			Assert.state(this.session == null, "Cannot call withLocalDatacenter(..) when session is already set");
+			if (this.sessionBuilder == null) {
+				this.sessionBuilder = new CqlSessionBuilder();
 			}
-			sessionBuilder.withLocalDatacenter(localDatacenter);
+			this.sessionBuilder.withLocalDatacenter(localDatacenter);
 			return this;
 		}
 
@@ -1035,49 +1035,49 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		Schema buildSchema() {
 			if (this.indexName == null) {
-				this.indexName = String.format("%s_%s_%s", table, embeddingColumnName, DEFAULT_INDEX_SUFFIX);
+				this.indexName = String.format("%s_%s_%s", this.table, this.embeddingColumnName, DEFAULT_INDEX_SUFFIX);
 			}
 
 			validateSchema();
 
-			return new Schema(keyspace, table, partitionKeys, clusteringKeys, contentColumnName, embeddingColumnName,
-					indexName, metadataColumns);
+			return new Schema(this.keyspace, this.table, this.partitionKeys, this.clusteringKeys,
+					this.contentColumnName, this.embeddingColumnName, this.indexName, this.metadataColumns);
 		}
 
 		private void validateSchema() {
-			for (SchemaColumn metadata : metadataColumns) {
-				Assert.isTrue(!partitionKeys.stream().anyMatch(c -> c.name().equals(metadata.name())),
+			for (SchemaColumn metadata : this.metadataColumns) {
+				Assert.isTrue(!this.partitionKeys.stream().anyMatch(c -> c.name().equals(metadata.name())),
 						"metadataColumn " + metadata.name() + " cannot have same name as a partition key");
 
-				Assert.isTrue(!clusteringKeys.stream().anyMatch(c -> c.name().equals(metadata.name())),
+				Assert.isTrue(!this.clusteringKeys.stream().anyMatch(c -> c.name().equals(metadata.name())),
 						"metadataColumn " + metadata.name() + " cannot have same name as a clustering key");
 
-				Assert.isTrue(!metadata.name().equals(contentColumnName),
+				Assert.isTrue(!metadata.name().equals(this.contentColumnName),
 						"metadataColumn " + metadata.name() + " cannot have same name as content column name");
 
-				Assert.isTrue(!metadata.name().equals(embeddingColumnName),
+				Assert.isTrue(!metadata.name().equals(this.embeddingColumnName),
 						"metadataColumn " + metadata.name() + " cannot have same name as embedding column name");
 			}
 
-			int primaryKeyColumnsCount = partitionKeys.size() + clusteringKeys.size();
-			String exampleId = primaryKeyTranslator.apply(Collections.emptyList());
-			List<Object> testIdTranslation = documentIdTranslator.apply(exampleId);
+			int primaryKeyColumnsCount = this.partitionKeys.size() + this.clusteringKeys.size();
+			String exampleId = this.primaryKeyTranslator.apply(Collections.emptyList());
+			List<Object> testIdTranslation = this.documentIdTranslator.apply(exampleId);
 
 			Assert.isTrue(testIdTranslation.size() == primaryKeyColumnsCount,
 					"documentIdTranslator results length " + testIdTranslation.size()
 							+ " doesn't match number of primary key columns " + primaryKeyColumnsCount);
 
-			Assert.isTrue(exampleId.equals(primaryKeyTranslator.apply(documentIdTranslator.apply(exampleId))),
+			Assert.isTrue(exampleId.equals(this.primaryKeyTranslator.apply(this.documentIdTranslator.apply(exampleId))),
 					"primaryKeyTranslator is not an inverse function to documentIdTranslator");
 		}
 
 		@Override
 		public CassandraVectorStore build() {
-			if (session == null && sessionBuilder != null) {
-				session = sessionBuilder.build();
-				closeSessionOnClose = true;
+			if (this.session == null && this.sessionBuilder != null) {
+				this.session = this.sessionBuilder.build();
+				this.closeSessionOnClose = true;
 			}
-			Assert.notNull(session, "Either session must be set directly or configured via sessionBuilder");
+			Assert.notNull(this.session, "Either session must be set directly or configured via sessionBuilder");
 			return new CassandraVectorStore(this);
 		}
 

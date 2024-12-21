@@ -34,6 +34,20 @@
 	<suppress files="MethodInvokingFunctionCallbackTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="DefaultFunctionCallbackBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
+	<suppress files="MistralAiApi.java" checks="RegexpSinglelineJava"/>
+	<suppress files="MariaDBSchemaValidator.java" checks="RegexpSinglelineJava"/>
+	<suppress files="OpenAiApi.java" checks="AnnotationLocation"/>
+
+	<suppress files="AzureVectorStore.java" checks="FinalClass"/>
+	<suppress files="CassandraVectorStore.java" checks="FinalClass"/>
+	<suppress files="MilvusVectorStore.java" checks="FinalClass"/>
+	<suppress files="HanaCloudVectorStore.java" checks="FinalClass"/>
+	<suppress files="PineconeVectorStore.java" checks="FinalClass"/>
+	<suppress files="TypesenseVectorStore.java" checks="FinalClass"/>
+	<suppress files="WeaviateVectorStore.java" checks="FinalClass"/>
+	<suppress files="ChromaVectorStore.java" checks="FinalClass"/>
+	<suppress files="QdrantVectorStore.java" checks="FinalClass"/>
+	<suppress files="RedisVectorStore.java" checks="FinalClass"/>
 
 
 </suppressions>

@@ -16,15 +16,15 @@
 
 package org.springframework.ai.model.function;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 
@@ -41,7 +41,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 
 	@BeforeEach
 	void setUp() {
-		builder = new DefaultFunctionCallingOptionsBuilder();
+		this.builder = new DefaultFunctionCallingOptionsBuilder();
 	}
 
 	// Tests for inherited ChatOptions properties
@@ -49,7 +49,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithModel() {
 		// When
-		ChatOptions options = builder.model("gpt-4").build();
+		ChatOptions options = this.builder.model("gpt-4").build();
 
 		// Then
 		assertThat(options.getModel()).isEqualTo("gpt-4");
@@ -58,7 +58,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithFrequencyPenalty() {
 		// When
-		ChatOptions options = builder.frequencyPenalty(0.5).build();
+		ChatOptions options = this.builder.frequencyPenalty(0.5).build();
 
 		// Then
 		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
@@ -67,7 +67,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithMaxTokens() {
 		// When
-		ChatOptions options = builder.maxTokens(100).build();
+		ChatOptions options = this.builder.maxTokens(100).build();
 
 		// Then
 		assertThat(options.getMaxTokens()).isEqualTo(100);
@@ -76,7 +76,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithPresencePenalty() {
 		// When
-		ChatOptions options = builder.presencePenalty(0.7).build();
+		ChatOptions options = this.builder.presencePenalty(0.7).build();
 
 		// Then
 		assertThat(options.getPresencePenalty()).isEqualTo(0.7);
@@ -88,7 +88,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		List<String> stopSequences = List.of("stop1", "stop2");
 
 		// When
-		ChatOptions options = builder.stopSequences(stopSequences).build();
+		ChatOptions options = this.builder.stopSequences(stopSequences).build();
 
 		// Then
 		assertThat(options.getStopSequences()).hasSize(2).containsExactlyElementsOf(stopSequences);
@@ -97,7 +97,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithTemperature() {
 		// When
-		ChatOptions options = builder.temperature(0.8).build();
+		ChatOptions options = this.builder.temperature(0.8).build();
 
 		// Then
 		assertThat(options.getTemperature()).isEqualTo(0.8);
@@ -106,7 +106,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithTopK() {
 		// When
-		ChatOptions options = builder.topK(5).build();
+		ChatOptions options = this.builder.topK(5).build();
 
 		// Then
 		assertThat(options.getTopK()).isEqualTo(5);
@@ -115,7 +115,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithTopP() {
 		// When
-		ChatOptions options = builder.topP(0.9).build();
+		ChatOptions options = this.builder.topP(0.9).build();
 
 		// Then
 		assertThat(options.getTopP()).isEqualTo(0.9);
@@ -124,7 +124,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithAllInheritedOptions() {
 		// When
-		ChatOptions options = builder.model("gpt-4")
+		ChatOptions options = this.builder.model("gpt-4")
 			.frequencyPenalty(0.5)
 			.maxTokens(100)
 			.presencePenalty(0.7)
@@ -163,7 +163,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		List<FunctionCallback> callbacks = List.of(callback1, callback2);
 
 		// When
-		FunctionCallingOptions options = builder.functionCallbacks(callbacks).build();
+		FunctionCallingOptions options = this.builder.functionCallbacks(callbacks).build();
 
 		// Then
 		assertThat(options.getFunctionCallbacks()).hasSize(2).containsExactlyElementsOf(callbacks);
@@ -184,7 +184,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 			.build();
 
 		// When
-		FunctionCallingOptions options = builder.functionCallbacks(callback1, callback2).build();
+		FunctionCallingOptions options = this.builder.functionCallbacks(callback1, callback2).build();
 
 		// Then
 		assertThat(options.getFunctionCallbacks()).hasSize(2).containsExactly(callback1, callback2);
@@ -192,7 +192,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 
 	@Test
 	void shouldThrowExceptionWhenFunctionCallbacksVarargsIsNull() {
-		assertThatThrownBy(() -> builder.functionCallbacks((FunctionCallback[]) null))
+		assertThatThrownBy(() -> this.builder.functionCallbacks((FunctionCallback[]) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("FunctionCallbacks must not be null");
 	}
@@ -203,7 +203,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		Set<String> functions = Set.of("function1", "function2");
 
 		// When
-		FunctionCallingOptions options = builder.functions(functions).build();
+		FunctionCallingOptions options = this.builder.functions(functions).build();
 
 		// Then
 		assertThat(options.getFunctions()).hasSize(2).containsExactlyInAnyOrderElementsOf(functions);
@@ -212,7 +212,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithSingleFunction() {
 		// When
-		FunctionCallingOptions options = builder.function("function1").function("function2").build();
+		FunctionCallingOptions options = this.builder.function("function1").function("function2").build();
 
 		// Then
 		assertThat(options.getFunctions()).hasSize(2).containsExactlyInAnyOrder("function1", "function2");
@@ -220,14 +220,14 @@ class DefaultFunctionCallingOptionsBuilderTests {
 
 	@Test
 	void shouldThrowExceptionWhenFunctionIsNull() {
-		assertThatThrownBy(() -> builder.function(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.function(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Function must not be null");
 	}
 
 	@Test
 	void shouldBuildWithProxyToolCalls() {
 		// When
-		FunctionCallingOptions options = builder.proxyToolCalls(true).build();
+		FunctionCallingOptions options = this.builder.proxyToolCalls(true).build();
 
 		// Then
 		assertThat(options.getProxyToolCalls()).isTrue();
@@ -239,7 +239,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		Map<String, Object> context = Map.of("key1", "value1", "key2", 42);
 
 		// When
-		FunctionCallingOptions options = builder.toolContext(context).build();
+		FunctionCallingOptions options = this.builder.toolContext(context).build();
 
 		// Then
 		assertThat(options.getToolContext()).hasSize(2).containsAllEntriesOf(context);
@@ -247,7 +247,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 
 	@Test
 	void shouldThrowExceptionWhenToolContextMapIsNull() {
-		assertThatThrownBy(() -> builder.toolContext((Map<String, Object>) null))
+		assertThatThrownBy(() -> this.builder.toolContext((Map<String, Object>) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Tool context must not be null");
 	}
@@ -255,7 +255,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithToolContextKeyValue() {
 		// When
-		FunctionCallingOptions options = builder.toolContext("key1", "value1").toolContext("key2", 42).build();
+		FunctionCallingOptions options = this.builder.toolContext("key1", "value1").toolContext("key2", 42).build();
 
 		// Then
 		assertThat(options.getToolContext()).hasSize(2).containsEntry("key1", "value1").containsEntry("key2", 42);
@@ -263,13 +263,13 @@ class DefaultFunctionCallingOptionsBuilderTests {
 
 	@Test
 	void shouldThrowExceptionWhenToolContextKeyIsNull() {
-		assertThatThrownBy(() -> builder.toolContext(null, "value")).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.toolContext(null, "value")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Key must not be null");
 	}
 
 	@Test
 	void shouldThrowExceptionWhenToolContextValueIsNull() {
-		assertThatThrownBy(() -> builder.toolContext("key", null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.builder.toolContext("key", null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Value must not be null");
 	}
 
@@ -280,7 +280,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		Map<String, Object> context2 = Map.of("key2", "updated", "key3", true);
 
 		// When
-		FunctionCallingOptions options = builder.toolContext(context1).toolContext(context2).build();
+		FunctionCallingOptions options = this.builder.toolContext(context1).toolContext(context2).build();
 
 		// Then
 		assertThat(options.getToolContext()).hasSize(3)
@@ -301,7 +301,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		Map<String, Object> context = Map.of("key1", "value1");
 
 		// When
-		FunctionCallingOptions options = builder.model("gpt-4")
+		FunctionCallingOptions options = this.builder.model("gpt-4")
 			.frequencyPenalty(0.5)
 			.maxTokens(100)
 			.presencePenalty(0.7)
@@ -335,7 +335,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithEmptyFunctionCallbacks() {
 		// When
-		FunctionCallingOptions options = builder.functionCallbacks(List.of()).build();
+		FunctionCallingOptions options = this.builder.functionCallbacks(List.of()).build();
 
 		// Then
 		assertThat(options.getFunctionCallbacks()).isEmpty();
@@ -344,7 +344,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithEmptyFunctions() {
 		// When
-		FunctionCallingOptions options = builder.functions(Set.of()).build();
+		FunctionCallingOptions options = this.builder.functions(Set.of()).build();
 
 		// Then
 		assertThat(options.getFunctions()).isEmpty();
@@ -353,7 +353,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldBuildWithEmptyToolContext() {
 		// When
-		FunctionCallingOptions options = builder.toolContext(Map.of()).build();
+		FunctionCallingOptions options = this.builder.toolContext(Map.of()).build();
 
 		// Then
 		assertThat(options.getToolContext()).isEmpty();
@@ -362,7 +362,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldDeduplicateFunctions() {
 		// When
-		FunctionCallingOptions options = builder.function("function1")
+		FunctionCallingOptions options = this.builder.function("function1")
 			.function("function1") // Duplicate
 			.function("function2")
 			.build();
@@ -379,7 +379,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 			.description("Test function")
 			.inputType(String.class)
 			.build();
-		FunctionCallingOptions original = builder.model("gpt-4")
+		FunctionCallingOptions original = this.builder.model("gpt-4")
 			.frequencyPenalty(0.5)
 			.maxTokens(100)
 			.presencePenalty(0.7)
@@ -418,7 +418,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 			.inputType(String.class)
 			.build();
 
-		DefaultFunctionCallingOptions options1 = (DefaultFunctionCallingOptions) builder.model("gpt-4")
+		DefaultFunctionCallingOptions options1 = (DefaultFunctionCallingOptions) this.builder.model("gpt-4")
 			.temperature(0.8)
 			.functionCallbacks(callback1)
 			.function("function1")
@@ -457,7 +457,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 			.inputType(String.class)
 			.build();
 
-		DefaultFunctionCallingOptions options1 = (DefaultFunctionCallingOptions) builder.model("gpt-4")
+		DefaultFunctionCallingOptions options1 = (DefaultFunctionCallingOptions) this.builder.model("gpt-4")
 			.temperature(0.8)
 			.functionCallbacks(callback)
 			.function("function1")
@@ -496,9 +496,12 @@ class DefaultFunctionCallingOptionsBuilderTests {
 			.build();
 
 		// When
-		FunctionCallingOptions options1 = builder.model("model1").temperature(0.7).functionCallbacks(callback1).build();
+		FunctionCallingOptions options1 = this.builder.model("model1")
+			.temperature(0.7)
+			.functionCallbacks(callback1)
+			.build();
 
-		FunctionCallingOptions options2 = builder.model("model2").functionCallbacks(callback2).build();
+		FunctionCallingOptions options2 = this.builder.model("model2").functionCallbacks(callback2).build();
 
 		// Then
 		assertThat(options1.getModel()).isEqualTo("model1");
@@ -515,16 +518,16 @@ class DefaultFunctionCallingOptionsBuilderTests {
 	@Test
 	void shouldReturnSameBuilderInstanceOnEachMethod() {
 		// When
-		FunctionCallingOptions.Builder returnedBuilder = builder.model("test");
+		FunctionCallingOptions.Builder returnedBuilder = this.builder.model("test");
 
 		// Then
-		assertThat(returnedBuilder).isSameAs(builder);
+		assertThat(returnedBuilder).isSameAs(this.builder);
 	}
 
 	@Test
 	void shouldHaveExpectedDefaultValues() {
 		// When
-		FunctionCallingOptions options = builder.build();
+		FunctionCallingOptions options = this.builder.build();
 
 		// Then
 		// ChatOptions defaults
@@ -557,7 +560,7 @@ class DefaultFunctionCallingOptionsBuilderTests {
 		Set<String> functions = new HashSet<>(Set.of("function1", "function2"));
 		Map<String, Object> context = new HashMap<>(Map.of("key1", "value1"));
 
-		FunctionCallingOptions options = builder.stopSequences(stopSequences)
+		FunctionCallingOptions options = this.builder.stopSequences(stopSequences)
 			.functionCallbacks(callback)
 			.functions(functions)
 			.toolContext(context)

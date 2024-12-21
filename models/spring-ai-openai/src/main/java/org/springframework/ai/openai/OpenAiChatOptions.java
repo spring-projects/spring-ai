@@ -325,7 +325,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public List<String> getOutputModalities() {
-		return outputModalities;
+		return this.outputModalities;
 	}
 
 	public void setOutputModalities(List<String> modalities) {
@@ -333,7 +333,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public AudioParameters getOutputAudio() {
-		return outputAudio;
+		return this.outputAudio;
 	}
 
 	public void setOutputAudio(AudioParameters audio) {

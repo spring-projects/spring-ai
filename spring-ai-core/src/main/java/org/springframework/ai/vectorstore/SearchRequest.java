@@ -93,6 +93,109 @@ public final class SearchRequest {
 	}
 
 	/**
+	 * @deprecated use {@link Builder#query(String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withQuery(String query) {
+		Assert.notNull(query, "Query can not be null.");
+		this.query = query;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link Builder#topK(int)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withTopK(int topK) {
+		Assert.isTrue(topK >= 0, "TopK should be positive.");
+		this.topK = topK;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link Builder#similarityThreshold(double)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withSimilarityThreshold(double threshold) {
+		Assert.isTrue(threshold >= 0 && threshold <= 1, "Similarity threshold must be in [0,1] range.");
+		this.similarityThreshold = threshold;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link Builder#similarityThresholdAll()} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withSimilarityThresholdAll() {
+		return withSimilarityThreshold(SIMILARITY_THRESHOLD_ACCEPT_ALL);
+	}
+
+	/**
+	 * @deprecated use {@link Builder#filterExpression(Filter.Expression)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withFilterExpression(@Nullable Filter.Expression expression) {
+		this.filterExpression = expression;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link Builder#filterExpression(String)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
+	public SearchRequest withFilterExpression(@Nullable String textExpression) {
+		this.filterExpression = (textExpression != null) ? new FilterExpressionTextParser().parse(textExpression)
+				: null;
+		return this;
+	}
+
+	public String getQuery() {
+		return this.query;
+	}
+
+	public int getTopK() {
+		return this.topK;
+	}
+
+	public double getSimilarityThreshold() {
+		return this.similarityThreshold;
+	}
+
+	@Nullable
+	public Filter.Expression getFilterExpression() {
+		return this.filterExpression;
+	}
+
+	public boolean hasFilterExpression() {
+		return this.filterExpression != null;
+	}
+
+	@Override
+	public String toString() {
+		return "SearchRequest{" + "query='" + this.query + '\'' + ", topK=" + this.topK + ", similarityThreshold="
+				+ this.similarityThreshold + ", filterExpression=" + this.filterExpression + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SearchRequest that = (SearchRequest) o;
+		return this.topK == that.topK && Double.compare(that.similarityThreshold, this.similarityThreshold) == 0
+				&& Objects.equals(this.query, that.query)
+				&& Objects.equals(this.filterExpression, that.filterExpression);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.query, this.topK, this.similarityThreshold, this.filterExpression);
+	}
+
+	/**
 	 * Builder for creating the SearchRequest instance.
 	 * @return the builder.
 	 */
@@ -256,109 +359,6 @@ public final class SearchRequest {
 			return this.searchRequest;
 		}
 
-	}
-
-	/**
-	 * @deprecated use {@link Builder#query(String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SearchRequest withQuery(String query) {
-		Assert.notNull(query, "Query can not be null.");
-		this.query = query;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#topK(int)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SearchRequest withTopK(int topK) {
-		Assert.isTrue(topK >= 0, "TopK should be positive.");
-		this.topK = topK;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#similarityThreshold(double)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SearchRequest withSimilarityThreshold(double threshold) {
-		Assert.isTrue(threshold >= 0 && threshold <= 1, "Similarity threshold must be in [0,1] range.");
-		this.similarityThreshold = threshold;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#similarityThresholdAll()} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SearchRequest withSimilarityThresholdAll() {
-		return withSimilarityThreshold(SIMILARITY_THRESHOLD_ACCEPT_ALL);
-	}
-
-	/**
-	 * @deprecated use {@link Builder#filterExpression(Filter.Expression)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SearchRequest withFilterExpression(@Nullable Filter.Expression expression) {
-		this.filterExpression = expression;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#filterExpression(String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SearchRequest withFilterExpression(@Nullable String textExpression) {
-		this.filterExpression = (textExpression != null) ? new FilterExpressionTextParser().parse(textExpression)
-				: null;
-		return this;
-	}
-
-	public String getQuery() {
-		return this.query;
-	}
-
-	public int getTopK() {
-		return this.topK;
-	}
-
-	public double getSimilarityThreshold() {
-		return this.similarityThreshold;
-	}
-
-	@Nullable
-	public Filter.Expression getFilterExpression() {
-		return this.filterExpression;
-	}
-
-	public boolean hasFilterExpression() {
-		return this.filterExpression != null;
-	}
-
-	@Override
-	public String toString() {
-		return "SearchRequest{" + "query='" + this.query + '\'' + ", topK=" + this.topK + ", similarityThreshold="
-				+ this.similarityThreshold + ", filterExpression=" + this.filterExpression + '}';
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		SearchRequest that = (SearchRequest) o;
-		return this.topK == that.topK && Double.compare(that.similarityThreshold, this.similarityThreshold) == 0
-				&& Objects.equals(this.query, that.query)
-				&& Objects.equals(this.filterExpression, that.filterExpression);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.query, this.topK, this.similarityThreshold, this.filterExpression);
 	}
 
 }

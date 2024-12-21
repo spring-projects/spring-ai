@@ -32,13 +32,13 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.MountableFile;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -328,9 +328,9 @@ public class OracleVectorStoreIT {
 			return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
 				.tableName(OracleVectorStore.DEFAULT_TABLE_NAME)
 				.indexType(OracleVectorStore.OracleVectorStoreIndexType.IVF)
-				.distanceType(distanceType)
+				.distanceType(this.distanceType)
 				.dimensions(384)
-				.searchAccuracy(searchAccuracy)
+				.searchAccuracy(this.searchAccuracy)
 				.initializeSchema(true)
 				.removeExistingVectorStoreTable(true)
 				.forcedNormalization(true)

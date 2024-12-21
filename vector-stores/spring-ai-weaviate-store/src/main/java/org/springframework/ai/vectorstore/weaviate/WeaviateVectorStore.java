@@ -531,7 +531,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 	}
 
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String weaviateObjectClass = "SpringAiWeaviate";
 

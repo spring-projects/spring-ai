@@ -393,7 +393,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 

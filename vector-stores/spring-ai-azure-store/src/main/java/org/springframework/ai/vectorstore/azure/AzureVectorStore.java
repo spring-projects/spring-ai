@@ -203,7 +203,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		this.defaultTopK = builder.defaultTopK;
 		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
 		this.indexName = builder.indexName;
-		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
+		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(this.filterMetadataFields);
 	}
 
 	public static Builder builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {

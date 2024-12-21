@@ -672,15 +672,15 @@ public class OllamaApi {
 		}
 
 		public Duration getTotalDuration() {
-			return (this.totalDuration() != null)? Duration.ofNanos(this.totalDuration()) : null;
+			return (this.totalDuration() != null) ? Duration.ofNanos(this.totalDuration()) : null;
 		}
 
 		public Duration getLoadDuration() {
-			return (this.loadDuration() != null)? Duration.ofNanos(this.loadDuration()) : null;
+			return (this.loadDuration() != null) ? Duration.ofNanos(this.loadDuration()) : null;
 		}
 
 		public Duration getPromptEvalDuration() {
-			return (this.promptEvalDuration() != null)? Duration.ofNanos(this.promptEvalDuration()) : null;
+			return (this.promptEvalDuration() != null) ? Duration.ofNanos(this.promptEvalDuration()) : null;
 		}
 
 		public Duration getEvalDuration() {

@@ -617,7 +617,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	}
 
-	public static class PgVectorStoreBuilder extends AbstractVectorStoreBuilder<PgVectorStoreBuilder> {
+	public static final class PgVectorStoreBuilder extends AbstractVectorStoreBuilder<PgVectorStoreBuilder> {
 
 		private final JdbcTemplate jdbcTemplate;
 

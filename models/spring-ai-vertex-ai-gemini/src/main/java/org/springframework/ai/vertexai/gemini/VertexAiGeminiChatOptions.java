@@ -273,7 +273,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	}
 
 	public List<VertexAiGeminiSafetySetting> getSafetySettings() {
-		return safetySettings;
+		return this.safetySettings;
 	}
 
 	public void setSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
