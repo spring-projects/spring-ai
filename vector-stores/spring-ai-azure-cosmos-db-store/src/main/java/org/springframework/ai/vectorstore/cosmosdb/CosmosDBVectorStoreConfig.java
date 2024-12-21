@@ -18,12 +18,17 @@ package org.springframework.ai.vectorstore.cosmosdb;
 
 import java.util.List;
 
+import com.azure.cosmos.CosmosAsyncClient;
+
+import org.springframework.ai.embedding.EmbeddingModel;
+
 /**
  * Configuration properties for a CosmosDB vector store.
  *
  * @author Theo van Kraay
  * @since 1.0.0
- * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+ * @deprecated Since 1.0.0-M5, use
+ * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead.
  */
 @Deprecated(since = "1.0.0-M5", forRemoval = true)
 public class CosmosDBVectorStoreConfig implements AutoCloseable {
@@ -47,7 +52,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	private List<String> metadataFieldsList;
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public int getVectorStoreThroughput() {
@@ -55,7 +61,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setVectorStoreThroughput(int vectorStoreThroughput) {
@@ -63,7 +70,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getMetadataFields() {
@@ -71,7 +79,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setMetadataFields(String metadataFields) {
@@ -80,7 +89,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public List<String> getMetadataFieldsList() {
@@ -88,7 +98,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getEndpoint() {
@@ -96,7 +107,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setEndpoint(String endpoint) {
@@ -104,7 +116,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getKey() {
@@ -112,7 +125,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setKey(String key) {
@@ -120,7 +134,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getContainerName() {
@@ -128,7 +143,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} )} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setContainerName(String containerName) {
@@ -136,7 +152,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getDatabaseName() {
@@ -144,7 +161,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setDatabaseName(String databaseName) {
@@ -152,7 +170,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getPartitionKeyPath() {
@@ -160,7 +179,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setPartitionKeyPath(String partitionKeyPath) {
@@ -173,7 +193,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public long getVectorDimensions() {
@@ -181,7 +202,8 @@ public class CosmosDBVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link CosmosDBVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link CosmosDBVectorStore#builder(CosmosAsyncClient, EmbeddingModel)} instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public void setVectorDimensions(long vectorDimensions) {

@@ -772,8 +772,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		/**
 		 * Sets the JdbcTemplate to be used for database operations.
 		 * @param jdbcTemplate the JdbcTemplate instance
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if jdbcTemplate is null
+		 * @param embeddingModel the Embedding Model to be used
 		 */
 		public OracleBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			super(embeddingModel);

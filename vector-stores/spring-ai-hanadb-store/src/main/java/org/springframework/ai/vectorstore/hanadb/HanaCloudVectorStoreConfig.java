@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.hanadb;
 
+import org.springframework.ai.embedding.EmbeddingModel;
+
 /**
  * The {@code HanaCloudVectorStoreConfig} class represents the configuration for the
  * HanaCloudVectorStore. It provides methods to retrieve the table name and the topK
@@ -23,7 +25,8 @@ package org.springframework.ai.vectorstore.hanadb;
  *
  * @author Rahul Mittal
  * @since 1.0.0
- * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+ * @deprecated Since 1.0.0-M5, use
+ * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
  */
 @Deprecated(since = "1.0.0-M5", forRemoval = true)
 public final class HanaCloudVectorStoreConfig {
@@ -38,7 +41,8 @@ public final class HanaCloudVectorStoreConfig {
 	/**
 	 * Creates a new builder for HanaCloudVectorStoreConfig.
 	 * @return a new builder instance
-	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static HanaCloudVectorStoreConfigBuilder builder() {
@@ -46,7 +50,8 @@ public final class HanaCloudVectorStoreConfig {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public String getTableName() {
@@ -54,7 +59,8 @@ public final class HanaCloudVectorStoreConfig {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public int getTopK() {
@@ -62,7 +68,8 @@ public final class HanaCloudVectorStoreConfig {
 	}
 
 	/**
-	 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+	 * @deprecated Since 1.0.0-M5, use
+	 * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static class HanaCloudVectorStoreConfigBuilder {
@@ -72,7 +79,8 @@ public final class HanaCloudVectorStoreConfig {
 		private int topK;
 
 		/**
-		 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+		 * @deprecated Since 1.0.0-M5, use
+		 * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public HanaCloudVectorStoreConfigBuilder tableName(String tableName) {
@@ -81,7 +89,8 @@ public final class HanaCloudVectorStoreConfig {
 		}
 
 		/**
-		 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+		 * @deprecated Since 1.0.0-M5, use
+		 * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public HanaCloudVectorStoreConfigBuilder topK(int topK) {
@@ -90,7 +99,8 @@ public final class HanaCloudVectorStoreConfig {
 		}
 
 		/**
-		 * @deprecated Since 1.0.0-M5, use {@link HanaCloudVectorStore#builder()}
+		 * @deprecated Since 1.0.0-M5, use
+		 * {@link HanaCloudVectorStore#builder(HanaVectorRepository, EmbeddingModel)}
 		 */
 		@Deprecated(since = "1.0.0-M5", forRemoval = true)
 		public HanaCloudVectorStoreConfig build() {

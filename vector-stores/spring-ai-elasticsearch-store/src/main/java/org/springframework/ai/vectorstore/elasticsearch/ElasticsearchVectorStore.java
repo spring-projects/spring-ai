@@ -406,8 +406,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		/**
 		 * Sets the Elasticsearch REST client.
 		 * @param restClient the Elasticsearch REST client
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if restClient is null
+		 * @param embeddingModel the Embedding Model to be used
 		 */
 		public ElasticsearchBuilder(RestClient restClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);

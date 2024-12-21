@@ -85,7 +85,7 @@ public final class SearchRequest {
 	 * string. Use the {@link Builder#query(String query)} to set/update the embedding
 	 * query text.
 	 * @return Returns new {@link SearchRequest} builder instance.
-	 * @deprecated use {@link Builder#builder().build()} instead.
+	 * @deprecated use {@link Builder#builder()} instead.
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public static Builder defaults() {

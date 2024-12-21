@@ -603,7 +603,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	/**
 	 * Configuration class for GemFire Vector Store.
 	 *
-	 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder()} instead
+	 * @deprecated Since 1.0.0-M5, use {@link GemFireVectorStore#builder(EmbeddingModel)}
+	 * instead
 	 */
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public static final class GemFireVectorStoreConfig {

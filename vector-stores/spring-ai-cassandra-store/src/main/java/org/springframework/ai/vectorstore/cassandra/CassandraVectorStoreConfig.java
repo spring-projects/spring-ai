@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.cassandra.SchemaUtil;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.lang.Nullable;
 
 /**
@@ -65,7 +66,8 @@ import org.springframework.lang.Nullable;
  *
  * @author Mick Semb Wever
  * @since 1.0.0
- * @deprecated since 1.0.0-M5, use {@link CassandraVectorStore#builder()} instead
+ * @deprecated since 1.0.0-M5, use {@link CassandraVectorStore#builder(EmbeddingModel)}
+ * instead.
  */
 @Deprecated(since = "1.0.0-M5", forRemoval = true)
 public final class CassandraVectorStoreConfig implements AutoCloseable {
