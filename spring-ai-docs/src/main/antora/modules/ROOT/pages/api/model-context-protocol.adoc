@@ -39,8 +39,8 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.experimental</groupId>
-    <artifactId>spring-ai-mcp-spring</artifactId>
-    <version>0.1.0</version>
+    <artifactId>spring-ai-mcp</artifactId>
+    <version>0.2.0</version>
 </dependency>
 ----
 
@@ -49,12 +49,30 @@ Gradle::
 [source,groovy,indent=0,subs="verbatim,quotes"]
 ----
 dependencies {
-    implementation 'org.springframework.experimental:spring-ai-mcp-spring:0.1.0'
+    implementation 'org.springframework.experimental:spring-ai-mcp:0.2.0'
 }
 ----
 ======
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add the Spring Milestone Repository to your build file.
+[NOTE]
+====
+The Spring AI MCP milestones are not available in the Maven Central Repository yet. 
+Please add tehe Spring Milestone Repository to your build file to access the Spring AI MCP artifacts:
+
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<repositories>
+  <repository>
+    <id>spring-milestones</id>
+    <name>Spring Milestones</name>
+    <url>https://repo.spring.io/libs-milestone-local</url>
+    <snapshots>
+      <enabled>false</enabled>
+    </snapshots>
+  </repository>
+</repositories>
+----
+====
 
 The latter builds on top of mcp-core to provide some useful Spring AI abstractions, such as `McpFunctionCallback`. 
 
@@ -68,7 +86,7 @@ var stdioParams = ServerParameters.builder("npx")
         .addEnvVar("BRAVE_API_KEY", System.getenv("BRAVE_API_KEY"))
         .build();
 
-var mcpClient = McpClient.sync(new StdioServerTransport(stdioParams));
+var mcpClient = McpClient.using(new StdioClientTransport(stdioParams)).sync();
 
 var init = mcpClient.initialize();
 
