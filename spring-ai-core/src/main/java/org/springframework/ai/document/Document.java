@@ -39,8 +39,7 @@ import org.springframework.util.StringUtils;
  * A Document can hold either text content or media content, but not both.
  *
  * It is intended to be used to take data from external sources as part of spring-ai's ETL
- * pipeline and create an embedding for the text or media and store that embedding in a
- * vector database.
+ * pipeline.
  *
  * <p>
  * Example of creating a text document: <pre>{@code
@@ -110,8 +109,9 @@ public class Document {
 	 * <p>
 	 * Common uses include:
 	 * <ul>
-	 * <li>Measure of similarity between the document embedding and a query vector, where
-	 * higher scores indicate greater similarity (opposite of distance measure)
+	 * <li>Measure of similarity between the embedding value of the document's text/media
+	 * and a query vector, where higher scores indicate greater similarity (opposite of
+	 * distance measure)
 	 * <li>Text relevancy rankings from retrieval systems
 	 * <li>Custom relevancy metrics from RAG patterns
 	 * </ul>
@@ -386,8 +386,9 @@ public class Document {
 		 * <p>
 		 * Common uses include:
 		 * <ul>
-		 * <li>Measure of similarity between the document embedding and a query vector,
-		 * where higher scores indicate greater similarity (opposite of distance measure)
+		 * <li>Measure of similarity between the embedding value of the document's
+		 * text/media and a query vector, where higher scores indicate greater similarity
+		 * (opposite of distance measure)
 		 * <li>Text relevancy rankings from retrieval systems
 		 * <li>Custom relevancy metrics from RAG patterns
 		 * </ul>
