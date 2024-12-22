@@ -31,14 +31,13 @@ class GemFireVectorStorePropertiesTests {
 	@Test
 	void defaultValues() {
 		var props = new GemFireVectorStoreProperties();
-		assertThat(props.getIndexName()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_INDEX_NAME);
-		assertThat(props.getHost()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_HOST);
-		assertThat(props.getPort()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_PORT);
-		assertThat(props.getBeamWidth()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_BEAM_WIDTH);
-		assertThat(props.getMaxConnections())
-			.isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_MAX_CONNECTIONS);
-		assertThat(props.getFields()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_FIELDS);
-		assertThat(props.getBuckets()).isEqualTo(GemFireVectorStore.GemFireVectorStoreConfig.DEFAULT_BUCKETS);
+		assertThat(props.getIndexName()).isEqualTo(GemFireVectorStore.DEFAULT_INDEX_NAME);
+		assertThat(props.getHost()).isEqualTo(GemFireVectorStore.DEFAULT_HOST);
+		assertThat(props.getPort()).isEqualTo(GemFireVectorStore.DEFAULT_PORT);
+		assertThat(props.getBeamWidth()).isEqualTo(GemFireVectorStore.DEFAULT_BEAM_WIDTH);
+		assertThat(props.getMaxConnections()).isEqualTo(GemFireVectorStore.DEFAULT_MAX_CONNECTIONS);
+		assertThat(props.getFields()).isEqualTo(GemFireVectorStore.DEFAULT_FIELDS);
+		assertThat(props.getBuckets()).isEqualTo(GemFireVectorStore.DEFAULT_BUCKETS);
 	}
 
 	@Test

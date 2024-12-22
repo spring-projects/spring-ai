@@ -323,8 +323,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.NEO4J.value(), operationName)
-			.withCollectionName(this.mapName)
-			.withDimensions(this.embeddingModel.dimensions());
+			.collectionName(this.mapName)
+			.dimensions(this.embeddingModel.dimensions());
 	}
 
 	/**
