@@ -24,6 +24,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
@@ -43,6 +47,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * The Anthropic API client.
@@ -687,7 +692,7 @@ public class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Type type, Source source) {
-			this(type, source, null, null, null, null, null, null, null);
+			this(type, source, null, null, null, null, null, null, null, null);
 		}
 
 		/**

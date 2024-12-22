@@ -120,7 +120,7 @@ public abstract class AbstractMessage implements Message {
 		this.metadata.put(MESSAGE_TYPE, messageType);
 		this.cache = cache;
 	}
-	
+
 	/**
 	 * Get the content of the message.
 	 * @return the content of the message
