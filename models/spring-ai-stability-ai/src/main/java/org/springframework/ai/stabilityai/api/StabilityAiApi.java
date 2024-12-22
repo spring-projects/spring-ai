@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.stabilityai.api;
 
 import java.util.List;
@@ -73,8 +74,8 @@ public class StabilityAiApi {
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(apiKey);
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON)); // base64 in JSON +
-																	// metadata or return
-																	// image in bytes.
+			// metadata or return
+			// image in bytes.
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -84,21 +85,30 @@ public class StabilityAiApi {
 			.build();
 	}
 
+	public GenerateImageResponse generateImage(GenerateImageRequest request) {
+		Assert.notNull(request, "The request body can not be null.");
+		return this.restClient.post()
+			.uri("/generation/{model}/text-to-image", this.model)
+			.body(request)
+			.retrieve()
+			.body(GenerateImageResponse.class);
+	}
+
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record GenerateImageRequest(@JsonProperty("text_prompts") List<TextPrompts> textPrompts,
 			@JsonProperty("height") Integer height, @JsonProperty("width") Integer width,
 			@JsonProperty("cfg_scale") Float cfgScale, @JsonProperty("clip_guidance_preset") String clipGuidancePreset,
 			@JsonProperty("sampler") String sampler, @JsonProperty("samples") Integer samples,
 			@JsonProperty("seed") Long seed, @JsonProperty("steps") Integer steps,
-			@JsonProperty("style_present") String stylePreset) {
+			@JsonProperty("style_preset") String stylePreset) {
+
+		public static Builder builder() {
+			return new Builder();
+		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record TextPrompts(@JsonProperty("text") String text, @JsonProperty("weight") Float weight) {
 
-		}
-
-		public static Builder builder() {
-			return new Builder();
 		}
 
 		public static class Builder {
@@ -127,79 +137,164 @@ public class StabilityAiApi {
 
 			}
 
+			public Builder textPrompts(List<TextPrompts> textPrompts) {
+				this.textPrompts = textPrompts;
+				return this;
+			}
+
+			public Builder height(Integer height) {
+				this.height = height;
+				return this;
+			}
+
+			public Builder width(Integer width) {
+				this.width = width;
+				return this;
+			}
+
+			public Builder cfgScale(Float cfgScale) {
+				this.cfgScale = cfgScale;
+				return this;
+			}
+
+			public Builder clipGuidancePreset(String clipGuidancePreset) {
+				this.clipGuidancePreset = clipGuidancePreset;
+				return this;
+			}
+
+			public Builder sampler(String sampler) {
+				this.sampler = sampler;
+				return this;
+			}
+
+			public Builder samples(Integer samples) {
+				this.samples = samples;
+				return this;
+			}
+
+			public Builder seed(Long seed) {
+				this.seed = seed;
+				return this;
+			}
+
+			public Builder steps(Integer steps) {
+				this.steps = steps;
+				return this;
+			}
+
+			public Builder stylePreset(String stylePreset) {
+				this.stylePreset = stylePreset;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #textPrompts(List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTextPrompts(List<TextPrompts> textPrompts) {
 				this.textPrompts = textPrompts;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #height(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withHeight(Integer height) {
 				this.height = height;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #width(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withWidth(Integer width) {
 				this.width = width;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #cfgScale(Float)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withCfgScale(Float cfgScale) {
 				this.cfgScale = cfgScale;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #clipGuidancePreset(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withClipGuidancePreset(String clipGuidancePreset) {
 				this.clipGuidancePreset = clipGuidancePreset;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #sampler(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSampler(String sampler) {
 				this.sampler = sampler;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #samples(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSamples(Integer samples) {
 				this.samples = samples;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #seed(Long)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSeed(Long seed) {
 				this.seed = seed;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #steps(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSteps(Integer steps) {
 				this.steps = steps;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #stylePreset(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withStylePreset(String stylePreset) {
 				this.stylePreset = stylePreset;
 				return this;
 			}
 
 			public GenerateImageRequest build() {
-				return new GenerateImageRequest(textPrompts, height, width, cfgScale, clipGuidancePreset, sampler,
-						samples, seed, steps, stylePreset);
+				return new GenerateImageRequest(this.textPrompts, this.height, this.width, this.cfgScale,
+						this.clipGuidancePreset, this.sampler, this.samples, this.seed, this.steps, this.stylePreset);
 			}
 
 		}
+
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record GenerateImageResponse(@JsonProperty("result") String result,
 			@JsonProperty("artifacts") List<Artifacts> artifacts) {
+
 		public record Artifacts(@JsonProperty("seed") long seed, @JsonProperty("base64") String base64,
 				@JsonProperty("finishReason") String finishReason) {
-		}
-	}
 
-	public GenerateImageResponse generateImage(GenerateImageRequest request) {
-		Assert.notNull(request, "The request body can not be null.");
-		return this.restClient.post()
-			.uri("/generation/{model}/text-to-image", this.model)
-			.body(request)
-			.retrieve()
-			.body(GenerateImageResponse.class);
+		}
+
 	}
 
 }

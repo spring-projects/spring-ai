@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.image.ImageOptions;
 
 import java.util.Objects;
@@ -47,12 +47,20 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
+	 * This property is interconnected with the 'size' property - setting both width and
+	 * height will automatically compute and set the size in "widthxheight" format.
+	 * Conversely, setting a valid size string will parse and set the individual width and
+	 * height values.
 	 */
 	@JsonProperty("size_width")
 	private Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
+	 * This property is interconnected with the 'size' property - setting both width and
+	 * height will automatically compute and set the size in "widthxheight" format.
+	 * Conversely, setting a valid size string will parse and set the individual width and
+	 * height values.
 	 */
 	@JsonProperty("size_height")
 	private Integer height;
@@ -75,6 +83,10 @@ public class OpenAiImageOptions implements ImageOptions {
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
 	 * dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
+	 * This property is automatically computed when both width and height are set,
+	 * following the format "widthxheight". When setting this property directly, it must
+	 * follow the format "WxH" where W and H are valid integers. Invalid formats will
+	 * result in null width and height values.
 	 */
 	@JsonProperty("size")
 	private String size;
@@ -97,60 +109,6 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public static class Builder {
-
-		private final OpenAiImageOptions options;
-
-		private Builder() {
-			this.options = new OpenAiImageOptions();
-		}
-
-		public Builder withN(Integer n) {
-			options.setN(n);
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			options.setModel(model);
-			return this;
-		}
-
-		public Builder withQuality(String quality) {
-			options.setQuality(quality);
-			return this;
-		}
-
-		public Builder withResponseFormat(String responseFormat) {
-			options.setResponseFormat(responseFormat);
-			return this;
-		}
-
-		public Builder withWidth(Integer width) {
-			options.setWidth(width);
-			return this;
-		}
-
-		public Builder withHeight(Integer height) {
-			options.setHeight(height);
-			return this;
-		}
-
-		public Builder withStyle(String style) {
-			options.setStyle(style);
-			return this;
-		}
-
-		public Builder withUser(String user) {
-			options.setUser(user);
-			return this;
-		}
-
-		public OpenAiImageOptions build() {
-			return options;
-		}
-
 	}
 
 	@Override
@@ -181,7 +139,7 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
-		return responseFormat;
+		return this.responseFormat;
 	}
 
 	public void setResponseFormat(String responseFormat) {
@@ -195,9 +153,13 @@ public class OpenAiImageOptions implements ImageOptions {
 		}
 		else if (this.size != null) {
 			try {
-				return Integer.parseInt(this.size.split("x")[0]);
+				String[] dimensions = this.size.split("x");
+				if (dimensions.length != 2) {
+					return null;
+				}
+				return Integer.parseInt(dimensions[0]);
 			}
-			catch (NumberFormatException ex) {
+			catch (Exception ex) {
 				return null;
 			}
 		}
@@ -206,7 +168,9 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public void setWidth(Integer width) {
 		this.width = width;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
@@ -216,9 +180,13 @@ public class OpenAiImageOptions implements ImageOptions {
 		}
 		else if (this.size != null) {
 			try {
-				return Integer.parseInt(this.size.split("x")[1]);
+				String[] dimensions = this.size.split("x");
+				if (dimensions.length != 2) {
+					return null;
+				}
+				return Integer.parseInt(dimensions[1]);
 			}
-			catch (NumberFormatException ex) {
+			catch (Exception ex) {
 				return null;
 			}
 		}
@@ -227,7 +195,9 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public void setHeight(Integer height) {
 		this.height = height;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
@@ -247,10 +217,6 @@ public class OpenAiImageOptions implements ImageOptions {
 		this.user = user;
 	}
 
-	public void setSize(String size) {
-		this.size = size;
-	}
-
 	public String getSize() {
 		if (this.size != null) {
 			return this.size;
@@ -258,28 +224,131 @@ public class OpenAiImageOptions implements ImageOptions {
 		return (this.width != null && this.height != null) ? this.width + "x" + this.height : null;
 	}
 
+	public void setSize(String size) {
+		this.size = size;
+	}
+
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof OpenAiImageOptions that))
+		}
+		if (!(o instanceof OpenAiImageOptions that)) {
 			return false;
-		return Objects.equals(n, that.n) && Objects.equals(model, that.model) && Objects.equals(width, that.width)
-				&& Objects.equals(height, that.height) && Objects.equals(quality, that.quality)
-				&& Objects.equals(responseFormat, that.responseFormat) && Objects.equals(size, that.size)
-				&& Objects.equals(style, that.style) && Objects.equals(user, that.user);
+		}
+		return Objects.equals(this.n, that.n) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.width, that.width) && Objects.equals(this.height, that.height)
+				&& Objects.equals(this.quality, that.quality)
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.size, that.size)
+				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(n, model, width, height, quality, responseFormat, size, style, user);
+		return Objects.hash(this.n, this.model, this.width, this.height, this.quality, this.responseFormat, this.size,
+				this.style, this.user);
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiImageOptions{" + "n=" + n + ", model='" + model + '\'' + ", width=" + width + ", height=" + height
-				+ ", quality='" + quality + '\'' + ", responseFormat='" + responseFormat + '\'' + ", size='" + size
-				+ '\'' + ", style='" + style + '\'' + ", user='" + user + '\'' + '}';
+		return "OpenAiImageOptions{" + "n=" + this.n + ", model='" + this.model + '\'' + ", width=" + this.width
+				+ ", height=" + this.height + ", quality='" + this.quality + '\'' + ", responseFormat='"
+				+ this.responseFormat + '\'' + ", size='" + this.size + '\'' + ", style='" + this.style + '\''
+				+ ", user='" + this.user + '\'' + '}';
+	}
+
+	public static final class Builder {
+
+		private final OpenAiImageOptions options;
+
+		private Builder() {
+			this.options = new OpenAiImageOptions();
+		}
+
+		public Builder N(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder quality(String quality) {
+			this.options.setQuality(quality);
+			return this;
+		}
+
+		public Builder responseFormat(String responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder width(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder height(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder style(String style) {
+			this.options.setStyle(style);
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public Builder withN(Integer n) {
+			this.options.setN(n);
+			return this;
+		}
+
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder withQuality(String quality) {
+			this.options.setQuality(quality);
+			return this;
+		}
+
+		public Builder withResponseFormat(String responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder withWidth(Integer width) {
+			this.options.setWidth(width);
+			return this;
+		}
+
+		public Builder withHeight(Integer height) {
+			this.options.setHeight(height);
+			return this;
+		}
+
+		public Builder withStyle(String style) {
+			this.options.setStyle(style);
+			return this;
+		}
+
+		public Builder withUser(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public OpenAiImageOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

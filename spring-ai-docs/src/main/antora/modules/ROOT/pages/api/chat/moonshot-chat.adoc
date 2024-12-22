@@ -53,7 +53,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Moonshot AI Chat model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -70,7 +70,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.moonshot` is used as the property prefix that lets you connect to Moonshot.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -82,7 +82,7 @@ The prefix `spring.ai.moonshot` is used as the property prefix that lets you con
 
 The prefix `spring.ai.moonshot.chat` is the property prefix that lets you configure the chat model implementation for Moonshot.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -120,8 +120,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MoonshotChatOptions.builder()
-            .withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-            .withTemperature(0.5)
+            .model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -160,13 +160,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -202,17 +202,17 @@ Next, create a `MoonshotChatModel` and use it for text generations:
 ----
 var moonshotApi = new MoonshotApi(System.getenv("MOONSHOT_API_KEY"));
 
-var chatModel = new MoonshotChatModel(moonshotApi, MoonshotChatOptions.builder()
-                .withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+var chatModel = new MoonshotChatModel(this.moonshotApi, MoonshotChatOptions.builder()
+                .model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> streamResponse = chatModel.stream(
+Flux<ChatResponse> streamResponse = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -234,12 +234,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = moonshotApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.7, false));
+ResponseEntity<ChatCompletion> response = this.moonshotApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.7, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = moonshotApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.7, true));
+Flux<ChatCompletionChunk> streamResponse = this.moonshotApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/main/java/org/springframework/ai/moonshot/api/MoonshotApi.java[MoonshotApi.java]'s JavaDoc for further information.

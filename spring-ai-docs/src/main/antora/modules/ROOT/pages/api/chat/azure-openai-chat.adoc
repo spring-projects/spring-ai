@@ -26,7 +26,6 @@ export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT AZURE KEY HERE>
 export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 ----
 
-
 === OpenAI Key
 
 To authenticate with the OpenAI service (not Azure), provide an OpenAI API key. This will automatically set the endpoint to https://api.openai.com/v1.
@@ -67,13 +66,13 @@ This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 
 NOTE: The property `spring.ai.azure.openai.chat.options.model` has been renamed to `spring.ai.azure.openai.chat.options.deployment-name`.
 
-NOTE: If you decide to connect to `OpenAI` instead of `Azure OpeanAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property, 
+NOTE: If you decide to connect to `OpenAI` instead of `Azure OpenAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property, 
 then the `spring.ai.azure.openai.chat.options.deployment-name` is treathed as an link:https://platform.openai.com/docs/models[OpenAI model] name.
 
 ==== Access the OpenAI Model
 
 You can configure the client to use directly `OpenAI` instead of the `Azure OpenAI` deployed models. 
-For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` instead of `spring.ai.azure.openai.api-key=<Yur Azure OpenAi Key>`.
+For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` instead of `spring.ai.azure.openai.api-key=<Your Azure OpenAi Key>`.
 
 === Add Repositories and BOM
 
@@ -85,8 +84,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Chat Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -95,14 +98,15 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -110,7 +114,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.azure.openai` is the property prefix to configure the connection to Azure OpenAI.
 
-[cols="3,5,3"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -118,12 +122,13 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
 | spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
-With this configuraiton the `spring.ai.azure.openai.chat.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+With this configuration the `spring.ai.azure.openai.chat.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+| spring.ai.azure.openai.custom-headers | A map of custom headers to be included in the API requests. Each entry in the map represents a header, where the key is the header name and the value is the header value. | Empty map
 |====
 
 The prefix `spring.ai.azure.openai.chat` is the property prefix that configures the `ChatModel` implementation for Azure OpenAI.
 
-[cols="3,5,3"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -163,8 +168,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AzureOpenAiChatOptions.builder()
-            .withModel("gpt-4-o")
-            .withTemperature(0.4)
+            .deploymentName("gpt-4o")
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -184,7 +189,7 @@ Multimodality refers to a model's ability to simultaneously understand and proce
 Presently, the Azure OpenAI `gpt-4o` model offers multimodal support.
 
 The Azure OpenAI can incorporate a list of base64-encoded images or image urls with the message.
-Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
 Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L293[OpenAiChatModelIT.java], illustrating the fusion of user text with an image using the the `GPT_4_O` model.
@@ -193,8 +198,8 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 ----
 URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 String response = ChatClient.create(chatModel).prompt()
-        .options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt4o").build())
-        .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+        .options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
+        .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, this.url))
         .call()
         .content();
 ----
@@ -224,9 +229,9 @@ Resource resource = new ClassPathResource("multimodality/multimodal.test.png");
 
 String response = ChatClient.create(chatModel).prompt()
     .options(AzureOpenAiChatOptions.builder()
-    .withDeploymentName("gpt-4o").build())
+    .deploymentName("gpt-4o").build())
     .user(u -> u.text("Explain what do you see on this picture?")
-    .media(MimeTypeUtils.IMAGE_PNG, resource))
+    .media(MimeTypeUtils.IMAGE_PNG, this.resource))
     .call()
     .content();
 ----
@@ -265,13 +270,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -312,18 +317,18 @@ var openAIClient = new OpenAIClientBuilder()
   .buildClient();
 
 var openAIChatOptions = AzureOpenAiChatOptions.builder()
-  .withDeploymentName("gpt-4o")
-  .withTemperature(0.4)
-  .withMaxTokens(200)
+  .deploymentName("gpt-4o")
+  .temperature(0.4)
+  .maxTokens(200)
   .build();
 
-var chatModel = new AzureOpenAiChatModel(openAIClient, openAIChatOptions);
+var chatModel = new AzureOpenAiChatModel(this.openAIClient, this.openAIChatOptions);
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
   new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
   new Prompt("Generate the names of 5 famous pirates."));
 
 ----

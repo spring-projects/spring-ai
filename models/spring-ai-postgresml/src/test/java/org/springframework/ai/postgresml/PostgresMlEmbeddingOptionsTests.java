@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.postgresml;
 
 import java.util.Map;
@@ -20,7 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,10 +44,10 @@ public class PostgresMlEmbeddingOptionsTests {
 	@Test
 	public void newOptions() {
 		PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
-			.withTransformer("intfloat/e5-small")
-			.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
-			.withMetadataMode(org.springframework.ai.document.MetadataMode.ALL)
-			.withKwargs(Map.of("device", "cpu"))
+			.transformer("intfloat/e5-small")
+			.vectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
+			.metadataMode(org.springframework.ai.document.MetadataMode.ALL)
+			.kwargs(Map.of("device", "cpu"))
 			.build();
 
 		assertThat(options.getTransformer()).isEqualTo("intfloat/e5-small");
@@ -61,7 +62,7 @@ public class PostgresMlEmbeddingOptionsTests {
 		var jdbcTemplate = Mockito.mock(JdbcTemplate.class);
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(jdbcTemplate);
 
-		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptions.EMPTY);
+		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptionsBuilder.builder().build());
 
 		// Default options
 		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);
@@ -71,8 +72,8 @@ public class PostgresMlEmbeddingOptionsTests {
 
 		// Partial override
 		options = embeddingModel.mergeOptions(PostgresMlEmbeddingOptions.builder()
-			.withTransformer("intfloat/e5-small")
-			.withKwargs(Map.of("device", "cpu"))
+			.transformer("intfloat/e5-small")
+			.kwargs(Map.of("device", "cpu"))
 			.build());
 
 		assertThat(options.getTransformer()).isEqualTo("intfloat/e5-small");
@@ -82,10 +83,10 @@ public class PostgresMlEmbeddingOptionsTests {
 
 		// Complete override
 		options = embeddingModel.mergeOptions(PostgresMlEmbeddingOptions.builder()
-			.withTransformer("intfloat/e5-small")
-			.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
-			.withMetadataMode(org.springframework.ai.document.MetadataMode.ALL)
-			.withKwargs(Map.of("device", "cpu"))
+			.transformer("intfloat/e5-small")
+			.vectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
+			.metadataMode(org.springframework.ai.document.MetadataMode.ALL)
+			.kwargs(Map.of("device", "cpu"))
 			.build());
 
 		assertThat(options.getTransformer()).isEqualTo("intfloat/e5-small");

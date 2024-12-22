@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
@@ -24,21 +25,28 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
+ * Implementation of the {@link ChatModel} and {@link StreamingChatModel} interfaces that
+ * uses the Titan Chat API.
+ *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
 	private final TitanChatBedrockApi chatApi;
@@ -59,9 +67,10 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
-		List<Generation> generations = response.results().stream().map(result -> {
-			return new Generation(result.outputText());
-		}).toList();
+		List<Generation> generations = response.results()
+			.stream()
+			.map(result -> new Generation(new AssistantMessage(result.outputText())))
+			.toList();
 
 		return new ChatResponse(generations);
 	}
@@ -69,21 +78,23 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt)).map(chunk -> {
-
-			Generation generation = new Generation(chunk.outputText());
-
+			ChatGenerationMetadata chatGenerationMetadata = null;
 			if (chunk.amazonBedrockInvocationMetrics() != null) {
 				String completionReason = chunk.completionReason().name();
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(completionReason)
+					.metadata("usage", chunk.amazonBedrockInvocationMetrics())
+					.build();
 			}
 			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
 				String completionReason = chunk.completionReason().name();
-				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from(completionReason, extractUsage(chunk)));
-
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(completionReason)
+					.metadata("usage", extractUsage(chunk))
+					.build();
 			}
-			return new ChatResponse(List.of(generation));
+			return new ChatResponse(
+					List.of(new Generation(new AssistantMessage(chunk.outputText()), chatGenerationMetadata)));
 		});
 	}
 
@@ -111,16 +122,16 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
 	private TitanChatRequest.Builder update(TitanChatRequest.Builder builder, BedrockTitanChatOptions options) {
 		if (options.getTemperature() != null) {
-			builder.withTemperature(options.getTemperature());
+			builder.temperature(options.getTemperature());
 		}
 		if (options.getTopP() != null) {
-			builder.withTopP(options.getTopP());
+			builder.topP(options.getTopP());
 		}
 		if (options.getMaxTokenCount() != null) {
-			builder.withMaxTokenCount(options.getMaxTokenCount());
+			builder.maxTokenCount(options.getMaxTokenCount());
 		}
 		if (options.getStopSequences() != null) {
-			builder.withStopSequences(options.getStopSequences());
+			builder.stopSequences(options.getStopSequences());
 		}
 		return builder;
 	}

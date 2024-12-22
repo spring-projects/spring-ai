@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,27 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vertexai.gemini.function;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.vertexai.gemini.function;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.cloud.vertexai.Transport;
+import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,10 +44,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
-
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
@@ -68,34 +68,34 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 				{
 					"type": "OBJECT",
 					"properties": {
-					  "location": {
+						"location": {
 						"type": "STRING",
 						"description": "The city and state e.g. San Francisco, CA"
-					  },
-					  "unit" : {
+					},
+						"unit" : {
 						"type" : "STRING",
 						"enum" : [ "C", "F" ],
 						"description" : "Temperature unit"
-					  }
+						}
 					},
 					"required": ["location", "unit"]
-				  }
+					}
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			// .withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("get_current_weather")
-				.withDescription("Get the current weather in a given location")
-				.withInputTypeSchema(openApiSchema)
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("get_current_weather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputTypeSchema(openApiSchema)
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -106,33 +106,35 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.withFunctionCallbacks(List.of(
-					FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_current_weather")
-						.withDescription("Get the current weather in a given location.")
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+			.functionCallbacks(List.of(
+					FunctionCallback.builder()
+						.function("get_current_weather", new MockWeatherService())
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description("Get the current weather in a given location.")
+						.inputType(MockWeatherService.Request.class)
 						.build(),
-					FunctionCallbackWrapper.builder(new PaymentStatus())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_payment_status")
-						.withDescription(
+					FunctionCallback.builder()
+						.function("get_payment_status", new PaymentStatus())
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description(
 								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.inputType(PaymentInfoRequest.class)
 						.build()))
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
 
-		ChatResponse response2 = chatModel
+		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
 
 		logger.info("Response: {}", response2);
 
-		assertThat(response2.getResult().getOutput().getContent()).containsIgnoringCase("transaction 696 is PAYED");
+		assertThat(response2.getResult().getOutput().getText()).containsIgnoringCase("transaction 696 is PAYED");
 
 	}
 
@@ -145,33 +147,35 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.withFunctionCallbacks(List.of(
-					FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_current_weather")
-						.withDescription("Get the current weather in a given location.")
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+			.functionCallbacks(List.of(
+					FunctionCallback.builder()
+						.function("get_current_weather", new MockWeatherService())
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description("Get the current weather in a given location.")
+						.inputType(MockWeatherService.Request.class)
 						.build(),
-					FunctionCallbackWrapper.builder(new PaymentStatus())
-						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-						.withName("get_payment_status")
-						.withDescription(
+					FunctionCallback.builder()
+						.function("get_payment_status", new PaymentStatus())
+						.schemaType(SchemaType.OPEN_API_SCHEMA)
+						.description(
 								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.inputType(PaymentInfoRequest.class)
 						.build()))
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
-		ChatResponse response2 = chatModel
+		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
 
 		logger.info("Response: {}", response2);
 
-		assertThat(response2.getResult().getOutput().getContent()).containsIgnoringCase("transaction 696 is PAYED");
+		assertThat(response2.getResult().getOutput().getText()).containsIgnoringCase("transaction 696 is PAYED");
 
 	}
 
@@ -184,15 +188,16 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.schemaType(SchemaType.OPEN_API_SCHEMA)
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
 
 		String responseString = response.collectList()
 			.block()
@@ -200,7 +205,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", responseString);
@@ -210,9 +215,11 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 	}
 
 	public record PaymentInfoRequest(String id) {
+
 	}
 
 	public record TransactionStatus(String status) {
+
 	}
 
 	public static class PaymentStatus implements Function<PaymentInfoRequest, TransactionStatus> {
@@ -241,8 +248,8 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
-						.withTemperature(0.9)
+						.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
+						.temperature(0.9)
 						.build());
 		}
 

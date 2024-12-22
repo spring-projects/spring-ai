@@ -1,6 +1,6 @@
 # Qdrant Vector Store
 
-[Reference Documentation](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/vectordbs/qdrant.html)
+[Reference Documentation](https://docs.spring.io/spring-ai/reference/api/vectordbs/qdrant.html)
 
 ## Run locally
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.model;
 
 import java.util.List;
@@ -20,12 +21,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.util.CollectionUtils;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.
+ *
+ * @author Christian Tzolov
+ * @author Mark Pollack
+ * @author Soby Chacko
+ * @author John Blum
+ * @author Alexandros Pappas
  */
 public class ChatResponse implements ModelResponse<Generation> {
 
@@ -55,6 +62,10 @@ public class ChatResponse implements ModelResponse<Generation> {
 	public ChatResponse(List<Generation> generations, ChatResponseMetadata chatResponseMetadata) {
 		this.chatResponseMetadata = chatResponseMetadata;
 		this.generations = List.copyOf(generations);
+	}
+
+	public static ChatResponse.Builder builder() {
+		return new ChatResponse.Builder();
 	}
 
 	/**
@@ -91,29 +102,27 @@ public class ChatResponse implements ModelResponse<Generation> {
 
 	@Override
 	public String toString() {
-		return "ChatResponse [metadata=" + chatResponseMetadata + ", generations=" + generations + "]";
+		return "ChatResponse [metadata=" + this.chatResponseMetadata + ", generations=" + this.generations + "]";
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ChatResponse that))
+		}
+		if (!(o instanceof ChatResponse that)) {
 			return false;
-		return Objects.equals(chatResponseMetadata, that.chatResponseMetadata)
-				&& Objects.equals(generations, that.generations);
+		}
+		return Objects.equals(this.chatResponseMetadata, that.chatResponseMetadata)
+				&& Objects.equals(this.generations, that.generations);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(chatResponseMetadata, generations);
+		return Objects.hash(this.chatResponseMetadata, this.generations);
 	}
 
-	public static ChatResponse.Builder builder() {
-		return new ChatResponse.Builder();
-	}
-
-	public static class Builder {
+	public static final class Builder {
 
 		private List<Generation> generations;
 
@@ -125,26 +134,54 @@ public class ChatResponse implements ModelResponse<Generation> {
 
 		public Builder from(ChatResponse other) {
 			this.generations = other.generations;
-			Set<Map.Entry<String, Object>> entries = other.chatResponseMetadata.entrySet();
+			return this.metadata(other.chatResponseMetadata);
+		}
+
+		/**
+		 * @deprecated Use {@link #metadata(String, Object)} instead.
+		 */
+		@Deprecated
+		public Builder withMetadata(String key, Object value) {
+			this.chatResponseMetadataBuilder.keyValue(key, value);
+			return this;
+		}
+
+		public Builder metadata(String key, Object value) {
+			this.chatResponseMetadataBuilder.keyValue(key, value);
+			return this;
+		}
+
+		public Builder metadata(ChatResponseMetadata other) {
+			this.chatResponseMetadataBuilder.model(other.getModel());
+			this.chatResponseMetadataBuilder.id(other.getId());
+			this.chatResponseMetadataBuilder.rateLimit(other.getRateLimit());
+			this.chatResponseMetadataBuilder.usage(other.getUsage());
+			this.chatResponseMetadataBuilder.promptMetadata(other.getPromptMetadata());
+			Set<Map.Entry<String, Object>> entries = other.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
-				this.chatResponseMetadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+				this.chatResponseMetadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 			return this;
 		}
 
-		public Builder withMetadata(String key, Object value) {
-			this.chatResponseMetadataBuilder.withKeyValue(key, value);
-			return this;
-		}
-
+		/**
+		 * @deprecated Use {@link #generations(List)} instead.
+		 */
+		@Deprecated
 		public Builder withGenerations(List<Generation> generations) {
 			this.generations = generations;
 			return this;
 
 		}
 
+		public Builder generations(List<Generation> generations) {
+			this.generations = generations;
+			return this;
+
+		}
+
 		public ChatResponse build() {
-			return new ChatResponse(generations, chatResponseMetadataBuilder.build());
+			return new ChatResponse(this.generations, this.chatResponseMetadataBuilder.build());
 		}
 
 	}

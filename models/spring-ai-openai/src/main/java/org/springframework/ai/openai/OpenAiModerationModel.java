@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,27 @@
 
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.moderation.*;
+import org.springframework.ai.moderation.Categories;
+import org.springframework.ai.moderation.CategoryScores;
+import org.springframework.ai.moderation.Generation;
+import org.springframework.ai.moderation.Moderation;
+import org.springframework.ai.moderation.ModerationModel;
+import org.springframework.ai.moderation.ModerationOptions;
+import org.springframework.ai.moderation.ModerationPrompt;
+import org.springframework.ai.moderation.ModerationResponse;
+import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * OpenAiModerationModel is a class that implements the ModerationModel interface. It
@@ -40,11 +49,11 @@ public class OpenAiModerationModel implements ModerationModel {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private OpenAiModerationOptions defaultOptions;
-
 	private final OpenAiModerationApi openAiModerationApi;
 
 	private final RetryTemplate retryTemplate;
+
+	private OpenAiModerationOptions defaultOptions;
 
 	public OpenAiModerationModel(OpenAiModerationApi openAiModerationApi) {
 		this(openAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE);
@@ -109,38 +118,38 @@ public class OpenAiModerationModel implements ModerationModel {
 				CategoryScores categoryScores = null;
 				if (result.categories() != null) {
 					categories = Categories.builder()
-						.withSexual(result.categories().sexual())
-						.withHate(result.categories().hate())
-						.withHarassment(result.categories().harassment())
-						.withSelfHarm(result.categories().selfHarm())
-						.withSexualMinors(result.categories().sexualMinors())
-						.withHateThreatening(result.categories().hateThreatening())
-						.withViolenceGraphic(result.categories().violenceGraphic())
-						.withSelfHarmIntent(result.categories().selfHarmIntent())
-						.withSelfHarmInstructions(result.categories().selfHarmInstructions())
-						.withHarassmentThreatening(result.categories().harassmentThreatening())
-						.withViolence(result.categories().violence())
+						.sexual(result.categories().sexual())
+						.hate(result.categories().hate())
+						.harassment(result.categories().harassment())
+						.selfHarm(result.categories().selfHarm())
+						.sexualMinors(result.categories().sexualMinors())
+						.hateThreatening(result.categories().hateThreatening())
+						.violenceGraphic(result.categories().violenceGraphic())
+						.selfHarmIntent(result.categories().selfHarmIntent())
+						.selfHarmInstructions(result.categories().selfHarmInstructions())
+						.harassmentThreatening(result.categories().harassmentThreatening())
+						.violence(result.categories().violence())
 						.build();
 				}
 				if (result.categoryScores() != null) {
 					categoryScores = CategoryScores.builder()
-						.withHate(result.categoryScores().hate())
-						.withHateThreatening(result.categoryScores().hateThreatening())
-						.withHarassment(result.categoryScores().harassment())
-						.withHarassmentThreatening(result.categoryScores().harassmentThreatening())
-						.withSelfHarm(result.categoryScores().selfHarm())
-						.withSelfHarmIntent(result.categoryScores().selfHarmIntent())
-						.withSelfHarmInstructions(result.categoryScores().selfHarmInstructions())
-						.withSexual(result.categoryScores().sexual())
-						.withSexualMinors(result.categoryScores().sexualMinors())
-						.withViolence(result.categoryScores().violence())
-						.withViolenceGraphic(result.categoryScores().violenceGraphic())
+						.hate(result.categoryScores().hate())
+						.hateThreatening(result.categoryScores().hateThreatening())
+						.harassment(result.categoryScores().harassment())
+						.harassmentThreatening(result.categoryScores().harassmentThreatening())
+						.selfHarm(result.categoryScores().selfHarm())
+						.selfHarmIntent(result.categoryScores().selfHarmIntent())
+						.selfHarmInstructions(result.categoryScores().selfHarmInstructions())
+						.sexual(result.categoryScores().sexual())
+						.sexualMinors(result.categoryScores().sexualMinors())
+						.violence(result.categoryScores().violence())
+						.violenceGraphic(result.categoryScores().violenceGraphic())
 						.build();
 				}
 				ModerationResult moderationResult = ModerationResult.builder()
-					.withCategories(categories)
-					.withCategoryScores(categoryScores)
-					.withFlagged(result.flagged())
+					.categories(categories)
+					.categoryScores(categoryScores)
+					.flagged(result.flagged())
 					.build();
 				moderationResults.add(moderationResult);
 			}
@@ -148,9 +157,9 @@ public class OpenAiModerationModel implements ModerationModel {
 		}
 
 		Moderation moderation = Moderation.builder()
-			.withId(moderationApiResponse.id())
-			.withModel(moderationApiResponse.model())
-			.withResults(moderationResults)
+			.id(moderationApiResponse.id())
+			.model(moderationApiResponse.model())
+			.results(moderationResults)
 			.build();
 
 		return new ModerationResponse(new Generation(moderation));
@@ -164,7 +173,7 @@ public class OpenAiModerationModel implements ModerationModel {
 		OpenAiModerationOptions.Builder openAiModerationOptionsBuilder = OpenAiModerationOptions.builder();
 		// Handle portable moderation options
 		if (runtimeModerationOptions != null && runtimeModerationOptions.getModel() != null) {
-			openAiModerationOptionsBuilder.withModel(runtimeModerationOptions.getModel());
+			openAiModerationOptionsBuilder.model(runtimeModerationOptions.getModel());
 		}
 		return openAiModerationOptionsBuilder.build();
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.ai.openai.chat;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,13 +26,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.AdvisedRequest;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -48,7 +49,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 import org.springframework.core.ParameterizedTypeReference;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
@@ -59,40 +60,11 @@ public class OpenAiPaymentTransactionIT {
 
 	private final static Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);
 
+	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
+			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
+
 	@Autowired
 	ChatClient chatClient;
-
-	record TransactionStatusResponse(String id, String status) {
-	}
-
-	private static class LoggingAdvisor implements RequestAdvisor, ResponseAdvisor {
-
-		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
-
-		public String getName() {
-			return this.getClass().getSimpleName();
-		}
-
-		@Override
-		public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
-			logger.info("System text: \n" + request.systemText());
-			logger.info("System params: " + request.systemParams());
-			logger.info("User text: \n" + request.userText());
-			logger.info("User params:" + request.userParams());
-			logger.info("Function names: " + request.functionNames());
-
-			logger.info("Options: " + request.chatOptions().toString());
-
-			return request;
-		}
-
-		@Override
-		public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-			logger.info("Response: " + response);
-			return response;
-		}
-
-	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "paymentStatus", "paymentStatuses" })
@@ -105,6 +77,7 @@ public class OpenAiPaymentTransactionIT {
 					""")
 			.call()
 			.entity(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
+
 			});
 
 		logger.info("" + content);
@@ -124,6 +97,7 @@ public class OpenAiPaymentTransactionIT {
 	public void streamingPaymentStatuses(String functionName) {
 
 		var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
+
 		});
 
 		Flux<String> flux = this.chatClient.prompt()
@@ -152,20 +126,68 @@ public class OpenAiPaymentTransactionIT {
 		assertThat(structure.get(2).status()).isEqualTo("rejected");
 	}
 
+	record TransactionStatusResponse(String id, String status) {
+
+	}
+
+	private static class LoggingAdvisor implements CallAroundAdvisor {
+
+		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
+
+		public String getName() {
+			return this.getClass().getSimpleName();
+		}
+
+		@Override
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
+		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+
+			advisedRequest = this.before(advisedRequest);
+
+			AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+
+			this.observeAfter(advisedResponse);
+
+			return advisedResponse;
+		}
+
+		private AdvisedRequest before(AdvisedRequest request) {
+			logger.info("System text: \n" + request.systemText());
+			logger.info("System params: " + request.systemParams());
+			logger.info("User text: \n" + request.userText());
+			logger.info("User params:" + request.userParams());
+			logger.info("Function names: " + request.functionNames());
+
+			logger.info("Options: " + request.chatOptions().toString());
+
+			return request;
+		}
+
+		private void observeAfter(AdvisedResponse advisedResponse) {
+			logger.info("Response: " + advisedResponse.response());
+		}
+
+	}
+
 	record Transaction(String id) {
+
 	}
 
 	record Status(String name) {
+
 	}
 
 	record Transactions(List<Transaction> transactions) {
+
 	}
 
 	record Statuses(List<Status> statuses) {
-	}
 
-	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
-			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
+	}
 
 	@SpringBootConfiguration
 	public static class TestConfiguration {
@@ -199,22 +221,19 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackContext functionCallbackContext) {
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackResolver functionCallbackResolver) {
 			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder()
-						.withModel(ChatModel.GPT_4_O_MINI.getName())
-						.withTemperature(0.1)
-						.build(),
-					functionCallbackContext, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+					OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build(),
+					functionCallbackResolver, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 		}
 
 		/**
-		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance must
+		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
 		 * different from the other JSON schema types.
 		 */
 		@Bean
-		public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-			FunctionCallbackContext manager = new FunctionCallbackContext();
+		public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+			DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 			manager.setApplicationContext(context);
 			return manager;
 		}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.prompt;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
+package org.springframework.ai.prompt;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -33,6 +24,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,11 +41,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PromptTemplateTest {
 
+	private static Map<String, Object> createTestMap() {
+		Map<String, Object> model = new HashMap<>();
+		model.put("key1", "value1");
+		model.put("key2", true);
+		return model;
+	}
+
+	private static void assertEqualsWithNormalizedEOLs(String expected, String actual) {
+		assertEquals(expected.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()),
+				actual.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()));
+	}
+
 	@Test
 	public void testCreateWithEmptyModelAndChatOptions() {
 		String template = "This is a test prompt with no variables";
 		PromptTemplate promptTemplate = new PromptTemplate(template);
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.7).withTopK(3).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.7).topK(3).build();
 
 		Prompt prompt = promptTemplate.create(chatOptions);
 
@@ -60,7 +73,7 @@ public class PromptTemplateTest {
 		model.put("name", "Alice");
 		model.put("age", 30);
 		PromptTemplate promptTemplate = new PromptTemplate(template, model);
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.5).withMaxTokens(100).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
 
 		Prompt prompt = promptTemplate.create(model, chatOptions);
 
@@ -79,7 +92,7 @@ public class PromptTemplateTest {
 
 		Map<String, Object> overriddenModel = new HashMap<>();
 		overriddenModel.put("color", "red");
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().withTemperature(0.8).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.8).build();
 
 		Prompt prompt = promptTemplate.create(overriddenModel, chatOptions);
 
@@ -101,7 +114,7 @@ public class PromptTemplateTest {
 		// don't normalize EOLs.
 		// It should be fine on Unix systems. In addition, Git will replace CRLF by LF by
 		// default.
-		assertEqualsWithNormalizedEOLs(expected, message.getContent());
+		assertEqualsWithNormalizedEOLs(expected, message.getText());
 
 		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)
@@ -154,13 +167,6 @@ public class PromptTemplateTest {
 		assertEquals(expected, result);
 	}
 
-	private static Map<String, Object> createTestMap() {
-		Map<String, Object> model = new HashMap<>();
-		model.put("key1", "value1");
-		model.put("key2", true);
-		return model;
-	}
-
 	@Disabled("Need to improve PromptTemplate to better handle Resource toString and tracking with 'dynamicModel' for underlying StringTemplate")
 	@Test
 	public void testRenderResourceAsValue() throws Exception {
@@ -197,11 +203,6 @@ public class PromptTemplateTest {
 
 		// Rendering the template with a missing key should throw an exception
 		assertThrows(IllegalStateException.class, promptTemplate::render);
-	}
-
-	private static void assertEqualsWithNormalizedEOLs(String expected, String actual) {
-		assertEquals(expected.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()),
-				actual.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()));
 	}
 
 }

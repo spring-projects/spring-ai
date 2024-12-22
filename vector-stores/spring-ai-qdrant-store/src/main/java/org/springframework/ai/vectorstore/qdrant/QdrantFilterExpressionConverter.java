@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,19 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore.qdrant;
 
-import static io.qdrant.client.ConditionFactory.filter;
-import static io.qdrant.client.ConditionFactory.match;
-import static io.qdrant.client.ConditionFactory.matchExceptKeywords;
-import static io.qdrant.client.ConditionFactory.matchExceptValues;
-import static io.qdrant.client.ConditionFactory.matchKeyword;
-import static io.qdrant.client.ConditionFactory.matchKeywords;
-import static io.qdrant.client.ConditionFactory.matchValues;
-import static io.qdrant.client.ConditionFactory.range;
+package org.springframework.ai.vectorstore.qdrant;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import io.qdrant.client.grpc.Points.Condition;
+import io.qdrant.client.grpc.Points.Filter;
+import io.qdrant.client.grpc.Points.Range;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
@@ -33,10 +29,6 @@ import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
-
-import io.qdrant.client.grpc.Points.Condition;
-import io.qdrant.client.grpc.Points.Filter;
-import io.qdrant.client.grpc.Points.Range;
 
 /**
  * @author Anush Shetty
@@ -56,15 +48,15 @@ class QdrantFilterExpressionConverter {
 
 		if (operand instanceof Expression expression) {
 			if (expression.type() == ExpressionType.NOT && expression.left() instanceof Group group) {
-				mustNotClauses.add(filter(convertOperand(group.content())));
+				mustNotClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(group.content())));
 			}
 			else if (expression.type() == ExpressionType.AND) {
-				mustClauses.add(filter(convertOperand(expression.left())));
-				mustClauses.add(filter(convertOperand(expression.right())));
+				mustClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.left())));
+				mustClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.right())));
 			}
 			else if (expression.type() == ExpressionType.OR) {
-				shouldClauses.add(filter(convertOperand(expression.left())));
-				shouldClauses.add(filter(convertOperand(expression.right())));
+				shouldClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.left())));
+				shouldClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.right())));
 			}
 			else {
 				if (!(expression.right() instanceof Value)) {
@@ -82,44 +74,35 @@ class QdrantFilterExpressionConverter {
 
 		ExpressionType type = exp.type();
 		switch (type) {
-			case EQ: {
+			case EQ:
 				return buildEqCondition(key, value);
-			}
-			case NE: {
+			case NE:
 				return buildNeCondition(key, value);
-			}
-			case GT: {
+			case GT:
 				return buildGtCondition(key, value);
-			}
-			case GTE: {
+			case GTE:
 				return buildGteCondition(key, value);
-			}
-			case LT: {
+			case LT:
 				return buildLtCondition(key, value);
-			}
-			case LTE: {
+			case LTE:
 				return buildLteCondition(key, value);
-			}
-			case IN: {
+			case IN:
 				return buildInCondition(key, value);
-			}
-			case NIN: {
+			case NIN:
 				return buildNInCondition(key, value);
-			}
-			default: {
+			default:
 				throw new RuntimeException("Unsupported expression type: " + type);
-			}
 		}
 	}
 
 	protected Condition buildEqCondition(Key key, Value value) {
 		String identifier = doKey(key);
 		if (value.value() instanceof String valueStr) {
-			return matchKeyword(identifier, valueStr);
+			return io.qdrant.client.ConditionFactory.matchKeyword(identifier, valueStr);
 		}
 		else if (value.value() instanceof Number valueNum) {
 			long lValue = Long.parseLong(valueNum.toString());
-			return match(identifier, lValue);
+			return io.qdrant.client.ConditionFactory.match(identifier, lValue);
 		}
 
 		throw new IllegalArgumentException("Invalid value type for EQ. Can either be a string or Number");
@@ -129,12 +112,14 @@ class QdrantFilterExpressionConverter {
 	protected Condition buildNeCondition(Key key, Value value) {
 		String identifier = doKey(key);
 		if (value.value() instanceof String valueStr) {
-			return filter(Filter.newBuilder().addMustNot(matchKeyword(identifier, valueStr)).build());
+			return io.qdrant.client.ConditionFactory.filter(Filter.newBuilder()
+				.addMustNot(io.qdrant.client.ConditionFactory.matchKeyword(identifier, valueStr))
+				.build());
 		}
 		else if (value.value() instanceof Number valueNum) {
 			long lValue = Long.parseLong(valueNum.toString());
-			Condition condition = match(identifier, lValue);
-			return filter(Filter.newBuilder().addMustNot(condition).build());
+			Condition condition = io.qdrant.client.ConditionFactory.match(identifier, lValue);
+			return io.qdrant.client.ConditionFactory.filter(Filter.newBuilder().addMustNot(condition).build());
 		}
 
 		throw new IllegalArgumentException("Invalid value type for NEQ. Can either be a string or Number");
@@ -145,7 +130,7 @@ class QdrantFilterExpressionConverter {
 		String identifier = doKey(key);
 		if (value.value() instanceof Number valueNum) {
 			Double dvalue = Double.parseDouble(valueNum.toString());
-			return range(identifier, Range.newBuilder().setGt(dvalue).build());
+			return io.qdrant.client.ConditionFactory.range(identifier, Range.newBuilder().setGt(dvalue).build());
 		}
 		throw new RuntimeException("Unsupported value type for GT condition. Only supports Number");
 
@@ -155,7 +140,7 @@ class QdrantFilterExpressionConverter {
 		String identifier = doKey(key);
 		if (value.value() instanceof Number valueNum) {
 			Double dvalue = Double.parseDouble(valueNum.toString());
-			return range(identifier, Range.newBuilder().setLt(dvalue).build());
+			return io.qdrant.client.ConditionFactory.range(identifier, Range.newBuilder().setLt(dvalue).build());
 		}
 		throw new RuntimeException("Unsupported value type for LT condition. Only supports Number");
 
@@ -165,7 +150,7 @@ class QdrantFilterExpressionConverter {
 		String identifier = doKey(key);
 		if (value.value() instanceof Number valueNum) {
 			Double dvalue = Double.parseDouble(valueNum.toString());
-			return range(identifier, Range.newBuilder().setGte(dvalue).build());
+			return io.qdrant.client.ConditionFactory.range(identifier, Range.newBuilder().setGte(dvalue).build());
 		}
 		throw new RuntimeException("Unsupported value type for GTE condition. Only supports Number");
 
@@ -175,7 +160,7 @@ class QdrantFilterExpressionConverter {
 		String identifier = doKey(key);
 		if (value.value() instanceof Number valueNum) {
 			Double dvalue = Double.parseDouble(valueNum.toString());
-			return range(identifier, Range.newBuilder().setLte(dvalue).build());
+			return io.qdrant.client.ConditionFactory.range(identifier, Range.newBuilder().setLte(dvalue).build());
 		}
 		throw new RuntimeException("Unsupported value type for LTE condition. Only supports Number");
 
@@ -192,7 +177,7 @@ class QdrantFilterExpressionConverter {
 				for (Object valueObj : valueList) {
 					stringValues.add(valueObj.toString());
 				}
-				return matchKeywords(identifier, stringValues);
+				return io.qdrant.client.ConditionFactory.matchKeywords(identifier, stringValues);
 			}
 			else if (firstValue instanceof Number) {
 				// If the first value is a number, then all values should be numbers
@@ -201,7 +186,7 @@ class QdrantFilterExpressionConverter {
 					Long longValue = Long.parseLong(valueObj.toString());
 					longValues.add(longValue);
 				}
-				return matchValues(identifier, longValues);
+				return io.qdrant.client.ConditionFactory.matchValues(identifier, longValues);
 			}
 			else {
 				throw new RuntimeException("Unsupported value in IN value list. Only supports String or Number");
@@ -223,7 +208,7 @@ class QdrantFilterExpressionConverter {
 				for (Object valueObj : valueList) {
 					stringValues.add(valueObj.toString());
 				}
-				return matchExceptKeywords(identifier, stringValues);
+				return io.qdrant.client.ConditionFactory.matchExceptKeywords(identifier, stringValues);
 			}
 			else if (firstValue instanceof Number) {
 				// If the first value is a number, then all values should be numbers
@@ -232,7 +217,7 @@ class QdrantFilterExpressionConverter {
 					Long longValue = Long.parseLong(valueObj.toString());
 					longValues.add(longValue);
 				}
-				return matchExceptValues(identifier, longValues);
+				return io.qdrant.client.ConditionFactory.matchExceptValues(identifier, longValues);
 			}
 			else {
 				throw new RuntimeException("Unsupported value in NIN value list. Only supports String or Number");

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.converter;
 
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.lang.NonNull;
 
 /**
  * Converts the (raw) LLM output into a structured responses of type. The
@@ -28,12 +28,5 @@ import org.springframework.lang.NonNull;
  * @author Christian Tzolov
  */
 public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
-
-	/**
-	 * @deprecated Use the {@link #convert(Object)} instead.
-	 */
-	default T parse(@NonNull String source) {
-		return this.convert(source);
-	}
 
 }

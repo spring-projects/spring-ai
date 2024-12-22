@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package org.springframework.ai.moderation;
 
-import org.springframework.ai.model.ModelRequest;
 import java.util.Objects;
+
+import org.springframework.ai.model.ModelRequest;
 
 /**
  * Represents a prompt for moderation containing a single message and the options for the
@@ -50,11 +51,11 @@ public class ModerationPrompt implements ModelRequest<ModerationMessage> {
 
 	@Override
 	public ModerationMessage getInstructions() {
-		return message;
+		return this.message;
 	}
 
 	public ModerationOptions getOptions() {
-		return moderationModelOptions;
+		return this.moderationModelOptions;
 	}
 
 	public void setOptions(ModerationOptions moderationModelOptions) {
@@ -63,23 +64,26 @@ public class ModerationPrompt implements ModelRequest<ModerationMessage> {
 
 	@Override
 	public String toString() {
-		return "ModerationPrompt{" + "message=" + message + ", moderationModelOptions=" + moderationModelOptions + '}';
+		return "ModerationPrompt{" + "message=" + this.message + ", moderationModelOptions="
+				+ this.moderationModelOptions + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ModerationPrompt))
+		}
+		if (!(o instanceof ModerationPrompt)) {
 			return false;
+		}
 		ModerationPrompt that = (ModerationPrompt) o;
-		return Objects.equals(message, that.message)
-				&& Objects.equals(moderationModelOptions, that.moderationModelOptions);
+		return Objects.equals(this.message, that.message)
+				&& Objects.equals(this.moderationModelOptions, that.moderationModelOptions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(message, moderationModelOptions);
+		return Objects.hash(this.message, this.moderationModelOptions);
 	}
 
 }

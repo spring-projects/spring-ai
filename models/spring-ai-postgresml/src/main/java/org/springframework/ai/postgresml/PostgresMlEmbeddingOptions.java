@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.postgresml;
 
 import java.util.Map;
@@ -28,8 +29,11 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 /**
+ * PostgresML Embedding Options.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
@@ -61,45 +65,6 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		protected PostgresMlEmbeddingOptions options;
-
-		public Builder() {
-			this.options = new PostgresMlEmbeddingOptions();
-		}
-
-		public Builder withTransformer(String transformer) {
-			this.options.setTransformer(transformer);
-			return this;
-		}
-
-		public Builder withVectorType(VectorType vectorType) {
-			this.options.setVectorType(vectorType);
-			return this;
-		}
-
-		public Builder withKwargs(String kwargs) {
-			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
-			return this;
-		}
-
-		public Builder withKwargs(Map<String, Object> kwargs) {
-			this.options.setKwargs(kwargs);
-			return this;
-		}
-
-		public Builder withMetadataMode(MetadataMode metadataMode) {
-			this.options.setMetadataMode(metadataMode);
-			return this;
-		}
-
-		public PostgresMlEmbeddingOptions build() {
-			return this.options;
-		}
-
-	}
-
 	public String getTransformer() {
 		return this.transformer;
 	}
@@ -125,7 +90,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	public MetadataMode getMetadataMode() {
-		return metadataMode;
+		return this.metadataMode;
 	}
 
 	public void setMetadataMode(MetadataMode metadataMode) {
@@ -142,6 +107,90 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
+	}
+
+	public static class Builder {
+
+		protected PostgresMlEmbeddingOptions options;
+
+		public Builder() {
+			this.options = new PostgresMlEmbeddingOptions();
+		}
+
+		public Builder transformer(String transformer) {
+			this.options.setTransformer(transformer);
+			return this;
+		}
+
+		public Builder vectorType(VectorType vectorType) {
+			this.options.setVectorType(vectorType);
+			return this;
+		}
+
+		public Builder kwargs(String kwargs) {
+			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
+			return this;
+		}
+
+		public Builder kwargs(Map<String, Object> kwargs) {
+			this.options.setKwargs(kwargs);
+			return this;
+		}
+
+		public Builder metadataMode(MetadataMode metadataMode) {
+			this.options.setMetadataMode(metadataMode);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #transformer(String)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTransformer(String transformer) {
+			this.options.setTransformer(transformer);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #vectorType(VectorType)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withVectorType(VectorType vectorType) {
+			this.options.setVectorType(vectorType);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #kwargs(String)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withKwargs(String kwargs) {
+			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #kwargs(Map)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withKwargs(Map<String, Object> kwargs) {
+			this.options.setKwargs(kwargs);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #metadataMode(MetadataMode)} )} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMetadataMode(MetadataMode metadataMode) {
+			this.options.setMetadataMode(metadataMode);
+			return this;
+		}
+
+		public PostgresMlEmbeddingOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

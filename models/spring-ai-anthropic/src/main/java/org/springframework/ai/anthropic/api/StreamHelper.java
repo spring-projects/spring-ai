@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.anthropic.api;
 
 import java.util.ArrayList;
@@ -22,22 +23,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
-import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent;
-import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent;
-import org.springframework.ai.anthropic.api.AnthropicApi.ToolUseAggregationEvent;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.ai.anthropic.api.AnthropicApi.MessageDeltaEvent;
-import org.springframework.ai.anthropic.api.AnthropicApi.MessageStartEvent;
-import org.springframework.ai.anthropic.api.AnthropicApi.StreamEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent.ContentBlockDeltaJson;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent.ContentBlockDeltaText;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent.ContentBlockText;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent.ContentBlockToolUse;
 import org.springframework.ai.anthropic.api.AnthropicApi.EventType;
+import org.springframework.ai.anthropic.api.AnthropicApi.MessageDeltaEvent;
+import org.springframework.ai.anthropic.api.AnthropicApi.MessageStartEvent;
+import org.springframework.ai.anthropic.api.AnthropicApi.Role;
+import org.springframework.ai.anthropic.api.AnthropicApi.StreamEvent;
+import org.springframework.ai.anthropic.api.AnthropicApi.ToolUseAggregationEvent;
+import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Helper class to support streaming function calling.
@@ -47,6 +48,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.EventType;
  *
  * @author Mariusz Bernacki
  * @author Christian Tzolov
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class StreamHelper {
@@ -84,10 +86,10 @@ public class StreamHelper {
 			}
 		}
 		else if (event.type() == EventType.CONTENT_BLOCK_DELTA) {
-			ContentBlockDeltaEvent contentBolckDelta = (ContentBlockDeltaEvent) event;
-			if (ContentBlock.Type.INPUT_JSON_DELTA.getValue().equals(contentBolckDelta.delta().type())) {
+			ContentBlockDeltaEvent contentBlockDelta = (ContentBlockDeltaEvent) event;
+			if (ContentBlock.Type.INPUT_JSON_DELTA.getValue().equals(contentBlockDelta.delta().type())) {
 				return eventAggregator
-					.appendPartialJson(((ContentBlockDeltaJson) contentBolckDelta.delta()).partialJson());
+					.appendPartialJson(((ContentBlockDeltaJson) contentBlockDelta.delta()).partialJson());
 			}
 		}
 		else if (event.type() == EventType.CONTENT_BLOCK_STOP) {
@@ -118,7 +120,7 @@ public class StreamHelper {
 				.withUsage(messageStartEvent.message().usage())
 				.withContent(new ArrayList<>());
 		}
-		else if (event.type().equals(EventType.TOOL_USE_AGGREATE)) {
+		else if (event.type().equals(EventType.TOOL_USE_AGGREGATE)) {
 			ToolUseAggregationEvent eventToolUseBuilder = (ToolUseAggregationEvent) event;
 
 			if (!CollectionUtils.isEmpty(eventToolUseBuilder.getToolContentBlocks())) {
@@ -177,6 +179,7 @@ public class StreamHelper {
 			}
 		}
 		else if (event.type().equals(EventType.MESSAGE_STOP)) {
+			// pass through
 		}
 		else {
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of());

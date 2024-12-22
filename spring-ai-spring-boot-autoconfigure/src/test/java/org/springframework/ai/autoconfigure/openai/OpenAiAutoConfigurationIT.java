@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.openai;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.autoconfigure.openai;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +24,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -37,12 +38,13 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiAutoConfigurationIT {
@@ -54,8 +56,8 @@ public class OpenAiAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class));
 
 	@Test
-	void generate() {
-		contextRunner.run(context -> {
+	void chatCall() {
+		this.contextRunner.run(context -> {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
@@ -64,8 +66,27 @@ public class OpenAiAutoConfigurationIT {
 	}
 
 	@Test
+	void chatCallAudioResponse() {
+		this.contextRunner
+			.withPropertyValues(
+					"spring.ai.openai.chat.options.model=" + OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(),
+					"spring.ai.openai.chat.options.output-modalities=text,audio",
+					"spring.ai.openai.chat.options.output-audio.voice=ALLOY",
+					"spring.ai.openai.chat.options.output-audio.format=WAV")
+			.run(context -> {
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				ChatResponse response = chatModel
+					.call(new Prompt(new UserMessage("Tell me joke about Spring Framework")));
+				assertThat(response).isNotNull();
+				logger.info("Response: " + response);
+				// AudioPlayer.play(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray());
+			});
+	}
+
+	@Test
 	void transcribe() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			OpenAiAudioTranscriptionModel transcriptionModel = context.getBean(OpenAiAudioTranscriptionModel.class);
 			Resource audioFile = new ClassPathResource("/speech/jfk.flac");
 			String response = transcriptionModel.call(audioFile);
@@ -76,7 +97,7 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void speech() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			OpenAiAudioSpeechModel speechModel = context.getBean(OpenAiAudioSpeechModel.class);
 			byte[] response = speechModel.call("H");
 			assertThat(response).isNotNull();
@@ -85,7 +106,7 @@ public class OpenAiAutoConfigurationIT {
 				.isTrue();
 			assertThat(response.length).isNotEqualTo(0);
 
-			logger.info("Response: " + Arrays.toString(response));
+			logger.debug("Response: " + Arrays.toString(response));
 		});
 	}
 
@@ -102,12 +123,14 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
-			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
-				return chatResponse.getResults().get(0).getOutput().getContent();
-			}).collect(Collectors.joining());
+			String response = responseFlux.collectList()
+				.block()
+				.stream()
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
+				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
@@ -116,7 +139,7 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.stream-usage=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.stream-usage=true").run(context -> {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
@@ -124,7 +147,7 @@ public class OpenAiAutoConfigurationIT {
 			Usage[] streamingTokenUsage = new Usage[1];
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
 				streamingTokenUsage[0] = chatResponse.getMetadata().getUsage();
-				return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getContent() : "";
+				return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getText() : "";
 			}).collect(Collectors.joining());
 
 			assertThat(streamingTokenUsage[0].getPromptTokens()).isGreaterThan(0);
@@ -138,7 +161,7 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			OpenAiEmbeddingModel embeddingModel = context.getBean(OpenAiEmbeddingModel.class);
 
 			EmbeddingResponse embeddingResponse = embeddingModel
@@ -155,7 +178,7 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		contextRunner.withPropertyValues("spring.ai.openai.image.options.size=1024x1024").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.image.options.size=1024x1024").run(context -> {
 			OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 			ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 			assertThat(imageResponse.getResults()).hasSize(1);
@@ -167,7 +190,7 @@ public class OpenAiAutoConfigurationIT {
 	@Test
 	void generateImageWithModel() {
 		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
-		contextRunner
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.image.options.model=dall-e-2",
 					"spring.ai.openai.image.options.size=256x256")
 			.run(context -> {

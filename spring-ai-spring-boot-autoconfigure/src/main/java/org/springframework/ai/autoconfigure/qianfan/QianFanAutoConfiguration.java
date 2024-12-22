@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,15 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.qianfan;
 
+import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.qianfan.QianFanChatModel;
 import org.springframework.ai.qianfan.QianFanEmbeddingModel;
 import org.springframework.ai.qianfan.QianFanImageModel;
 import org.springframework.ai.qianfan.api.QianFanApi;
 import org.springframework.ai.qianfan.api.QianFanImageApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -37,6 +45,9 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for QianFan Chat, Embedding, and Image
+ * Models.
+ *
  * @author Geng Rong
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
@@ -50,14 +61,22 @@ public class QianFanAutoConfiguration {
 	@ConditionalOnProperty(prefix = QianFanChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public QianFanChatModel qianFanChatModel(QianFanConnectionProperties commonProperties,
-			QianFanChatProperties chatProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			QianFanChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var qianFanApi = qianFanApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(), chatProperties.getSecretKey(),
-				commonProperties.getSecretKey(), restClientBuilder, responseErrorHandler);
+				commonProperties.getSecretKey(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler);
 
-		return new QianFanChatModel(qianFanApi, chatProperties.getOptions(), retryTemplate);
+		var chatModel = new QianFanChatModel(qianFanApi, chatProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+		return chatModel;
 	}
 
 	@Bean
@@ -65,15 +84,23 @@ public class QianFanAutoConfiguration {
 	@ConditionalOnProperty(prefix = QianFanEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public QianFanEmbeddingModel qianFanEmbeddingModel(QianFanConnectionProperties commonProperties,
-			QianFanEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
+			QianFanEmbeddingProperties embeddingProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var qianFanApi = qianFanApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				embeddingProperties.getApiKey(), commonProperties.getApiKey(), embeddingProperties.getSecretKey(),
-				commonProperties.getSecretKey(), restClientBuilder, responseErrorHandler);
+				commonProperties.getSecretKey(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler);
 
-		return new QianFanEmbeddingModel(qianFanApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate);
+		var embeddingModel = new QianFanEmbeddingModel(qianFanApi, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
+
+		return embeddingModel;
 	}
 
 	@Bean
@@ -81,8 +108,10 @@ public class QianFanAutoConfiguration {
 	@ConditionalOnProperty(prefix = QianFanImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public QianFanImageModel qianFanImageModel(QianFanConnectionProperties commonProperties,
-			QianFanImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			QianFanImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -97,9 +126,15 @@ public class QianFanAutoConfiguration {
 		Assert.hasText(secretKey, "QianFan secret key must be set.  Use the property: spring.ai.qianfan.secret-key");
 		Assert.hasText(baseUrl, "QianFan base URL must be set.  Use the property: spring.ai.qianfan.base-url");
 
-		var qianFanImageApi = new QianFanImageApi(baseUrl, apiKey, secretKey, restClientBuilder, responseErrorHandler);
+		var qianFanImageApi = new QianFanImageApi(baseUrl, apiKey, secretKey,
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
-		return new QianFanImageModel(qianFanImageApi, imageProperties.getOptions(), retryTemplate);
+		var imageModel = new QianFanImageModel(qianFanImageApi, imageProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(imageModel::setObservationConvention);
+
+		return imageModel;
 	}
 
 	private QianFanApi qianFanApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
@@ -121,8 +156,8 @@ public class QianFanAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}

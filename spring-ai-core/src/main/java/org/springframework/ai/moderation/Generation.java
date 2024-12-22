@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,15 @@ public class Generation implements ModelResult<Moderation> {
 		this.moderationGenerationMetadata = moderationGenerationMetadata;
 	}
 
+	public Generation generationMetadata(@Nullable ModerationGenerationMetadata moderationGenerationMetadata) {
+		this.moderationGenerationMetadata = moderationGenerationMetadata;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #generationMetadata(ModerationGenerationMetadata)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public Generation withGenerationMetadata(@Nullable ModerationGenerationMetadata moderationGenerationMetadata) {
 		this.moderationGenerationMetadata = moderationGenerationMetadata;
 		return this;
@@ -52,18 +61,18 @@ public class Generation implements ModelResult<Moderation> {
 
 	@Override
 	public Moderation getOutput() {
-		return moderation;
+		return this.moderation;
 	}
 
 	@Override
 	public ModerationGenerationMetadata getMetadata() {
-		return moderationGenerationMetadata;
+		return this.moderationGenerationMetadata;
 	}
 
 	@Override
 	public String toString() {
-		return "Generation{" + "moderationGenerationMetadata=" + moderationGenerationMetadata + ", moderation="
-				+ moderation + '}';
+		return "Generation{" + "moderationGenerationMetadata=" + this.moderationGenerationMetadata + ", moderation="
+				+ this.moderation + '}';
 	}
 
 }

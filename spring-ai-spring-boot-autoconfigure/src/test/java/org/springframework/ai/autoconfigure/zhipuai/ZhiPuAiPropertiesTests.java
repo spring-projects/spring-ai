@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.zhipuai;
 
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
@@ -271,11 +273,11 @@ public class ZhiPuAiPropertiesTests {
 
 				assertThat(chatProperties.getOptions().getTools()).hasSize(1);
 				var tool = chatProperties.getOptions().getTools().get(0);
-				assertThat(tool.type()).isEqualTo(ZhiPuAiApi.FunctionTool.Type.FUNCTION);
-				var function = tool.function();
-				assertThat(function.name()).isEqualTo("myFunction1");
-				assertThat(function.description()).isEqualTo("function description");
-				assertThat(function.parameters()).isNotEmpty();
+				assertThat(tool.getType()).isEqualTo(ZhiPuAiApi.FunctionTool.Type.FUNCTION);
+				var function = tool.getFunction();
+				assertThat(function.getName()).isEqualTo("myFunction1");
+				assertThat(function.getDescription()).isEqualTo("function description");
+				assertThat(function.getParameters()).isNotEmpty();
 			});
 	}
 

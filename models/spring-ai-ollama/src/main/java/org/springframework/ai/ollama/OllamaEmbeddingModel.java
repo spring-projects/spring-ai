@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.ollama;
 
 import java.time.Duration;
@@ -22,9 +23,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.springframework.ai.chat.metadata.EmptyUsage;
+
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.*;
+import org.springframework.ai.embedding.AbstractEmbeddingModel;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -32,25 +40,25 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
+import org.springframework.ai.ollama.management.OllamaModelManager;
+import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.ollama.metadata.OllamaEmbeddingUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link EmbeddingModel} implementation for {@literal Ollama}.
- *
- * Ollama allows developers to run large language models and generate embeddings locally.
- * It supports open-source models available on [Ollama AI
- * Library](https://ollama.ai/library).
- *
- * Examples of models supported: - Llama 2 (7B parameters, 3.8GB size) - Mistral (7B
- * parameters, 4.1GB size)
- *
- * Please refer to the <a href="https://ollama.ai/">official Ollama website</a> for the
- * most up-to-date information on available models.
+ * {@link EmbeddingModel} implementation for {@literal Ollama}. Ollama allows developers
+ * to run large language models and generate embeddings locally. It supports open-source
+ * models available on [Ollama AI Library](<a href="https://ollama.ai/library">...</a>)
+ * and on Hugging Face. Please refer to the <a href="https://ollama.ai/">official Ollama
+ * website</a> for the most up-to-date information on available models.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
@@ -59,38 +67,31 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OllamaApi ollamaApi;
 
-	/**
-	 * Default options to be used for all chat requests.
-	 */
 	private final OllamaOptions defaultOptions;
 
-	/**
-	 * Observation registry used for instrumentation.
-	 */
 	private final ObservationRegistry observationRegistry;
 
-	/**
-	 * Conventions to use for generating observations.
-	 */
+	private final OllamaModelManager modelManager;
+
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public OllamaEmbeddingModel(OllamaApi ollamaApi) {
-		this(ollamaApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
-	}
-
-	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions) {
-		this(ollamaApi, defaultOptions, ObservationRegistry.NOOP);
-	}
-
 	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
-			ObservationRegistry observationRegistry) {
-		Assert.notNull(ollamaApi, "openAiApi must not be null");
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "options must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
 
 		this.ollamaApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
+		this.modelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
+
+		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -125,7 +126,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 					.toList();
 
 				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
-						new EmptyUsage());
+						OllamaEmbeddingUsage.from(response));
 
 				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 
@@ -160,6 +161,15 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingOptions buildRequestOptions(OllamaApi.EmbeddingsRequest request) {
 		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
+	}
+
+	/**
+	 * Pull the given model into Ollama based on the specified strategy.
+	 */
+	private void initializeModel(String model, PullModelStrategy pullModelStrategy) {
+		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
+			this.modelManager.pullModel(model, pullModelStrategy);
+		}
 	}
 
 	/**
@@ -198,6 +208,85 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			else {
 				throw new IllegalArgumentException("Invalid duration format: " + input);
 			}
+		}
+
+	}
+
+	public static final class Builder {
+
+		private OllamaApi ollamaApi;
+
+		private OllamaOptions defaultOptions = OllamaOptions.builder()
+			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
+			.build();
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private ModelManagementOptions modelManagementOptions = ModelManagementOptions.defaults();
+
+		private Builder() {
+		}
+
+		public Builder ollamaApi(OllamaApi ollamaApi) {
+			this.ollamaApi = ollamaApi;
+			return this;
+		}
+
+		public Builder defaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
+			this.modelManagementOptions = modelManagementOptions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #ollamaApi(OllamaApi)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withOllamaApi(OllamaApi ollamaApi) {
+			this.ollamaApi = ollamaApi;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #defaultOptions(OllamaOptions)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #observationRegistry(ObservationRegistry)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #modelManagementOptions(ModelManagementOptions)}
+		 * instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
+			this.modelManagementOptions = modelManagementOptions;
+			return this;
+		}
+
+		public OllamaEmbeddingModel build() {
+			return new OllamaEmbeddingModel(this.ollamaApi, this.defaultOptions, this.observationRegistry,
+					this.modelManagementOptions);
 		}
 
 	}

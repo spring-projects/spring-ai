@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.anthropic.client;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.anthropic.client;
 
 import java.io.IOException;
 import java.net.URL;
@@ -31,6 +30,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -41,6 +42,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,7 +53,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
@@ -66,16 +68,13 @@ class AnthropicChatClientIT {
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
 
-	record ActorsFilms(String actor, List<String> movies) {
-	}
-
 	@Test
 	void call() {
 
 		// @formatter:off
-		ChatResponse response = ChatClient.create(chatModel).prompt()
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.advisors(new SimpleLoggerAdvisor())
-				.system(s -> s.text(systemTextResource)
+				.system(s -> s.text(this.systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
@@ -85,17 +84,17 @@ class AnthropicChatClientIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
 	void listOutputConverterString() {
 		// @formatter:off
-		List<String> collection = ChatClient.create(chatModel).prompt()
+		List<String> collection = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
-				.entity(new ParameterizedTypeReference<List<String>>() {});
+				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
 
 		logger.info(collection.toString());
@@ -106,7 +105,7 @@ class AnthropicChatClientIT {
 	void listOutputConverterBean() {
 
 		// @formatter:off
-		List<ActorsFilms> actorsFilms = ChatClient.create(chatModel).prompt()
+		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
 				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
@@ -123,7 +122,7 @@ class AnthropicChatClientIT {
 		var toStringListConverter = new ListOutputConverter(new DefaultConversionService());
 
 		// @formatter:off
-		List<String> flavors = ChatClient.create(chatModel).prompt()
+		List<String> flavors = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("List five {subject}")
 				.param("subject", "ice cream flavors"))
 				.call()
@@ -138,7 +137,7 @@ class AnthropicChatClientIT {
 	@Test
 	void mapOutputConverter() {
 		// @formatter:off
-		Map<String, Object> result = ChatClient.create(chatModel).prompt()
+		Map<String, Object> result = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
@@ -153,7 +152,7 @@ class AnthropicChatClientIT {
 	void beanOutputConverter() {
 
 		// @formatter:off
-		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography for a random actor.")
 				.call()
 				.entity(ActorsFilms.class);
@@ -167,7 +166,7 @@ class AnthropicChatClientIT {
 	void beanOutputConverterRecords() {
 
 		// @formatter:off
-		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks.")
 				.call()
 				.entity(ActorsFilms.class);
@@ -184,7 +183,7 @@ class AnthropicChatClientIT {
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
 		// @formatter:off
-		Flux<String> chatResponse = ChatClient.create(chatModel)
+		Flux<String> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
 				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
@@ -211,9 +210,31 @@ class AnthropicChatClientIT {
 	void functionCallTest() {
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius."))
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(FunctionCallback.builder()
+					.function("getCurrentWeather", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallWithGeneratedDescription() {
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.functions(FunctionCallback.builder()
+					.function("getCurrentWeatherInLocation", new MockWeatherService())
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -227,8 +248,12 @@ class AnthropicChatClientIT {
 	void defaultFunctionCallTest() {
 
 		// @formatter:off
-		String response = ChatClient.builder(chatModel)
-				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+		String response = ChatClient.builder(this.chatModel)
+				.defaultFunctions(FunctionCallback.builder()
+					.function("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius."))
 				.build()
 			.prompt()
@@ -245,9 +270,13 @@ class AnthropicChatClientIT {
 	void streamFunctionCallTest() {
 
 		// @formatter:off
-		Flux<String> response = ChatClient.create(chatModel).prompt()
+		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.functions(FunctionCallback.builder()
+					.function("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.stream()
 				.content();
 		// @formatter:on
@@ -260,12 +289,12 @@ class AnthropicChatClientIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20240620" })
+			"claude-3-5-sonnet-20241022" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
-				.options(AnthropicChatOptions.builder().withModel(modelName).build())
+		String response = ChatClient.create(this.chatModel).prompt()
+				.options(AnthropicChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -280,16 +309,16 @@ class AnthropicChatClientIT {
 	@Disabled("Currently Anthropic API does not support external image URLs")
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20240620" })
+			"claude-3-5-sonnet-20241022" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0.0-SNAPSHOT/_images/multimodal.test.png");
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
+		String response = ChatClient.create(this.chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				.options(AnthropicChatOptions.builder().withModel(modelName).build())
+				.options(AnthropicChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -304,8 +333,8 @@ class AnthropicChatClientIT {
 	void streamingMultiModality() throws IOException {
 
 		// @formatter:off
-		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.options(AnthropicChatOptions.builder().withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET)
+		Flux<String> response = ChatClient.create(this.chatModel).prompt()
+				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
@@ -318,6 +347,10 @@ class AnthropicChatClientIT {
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");
+	}
+
+	record ActorsFilms(String actor, List<String> movies) {
+
 	}
 
 }

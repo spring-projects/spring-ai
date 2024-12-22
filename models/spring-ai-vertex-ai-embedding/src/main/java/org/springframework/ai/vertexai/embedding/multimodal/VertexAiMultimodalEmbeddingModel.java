@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vertexai.embedding.multimodal;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictRequest;
@@ -23,49 +31,40 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.Media;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddigConnectionDetails;
+import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.MultimodalInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.VideoBuilder;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Implementation of the Vertex AI Multimodal Embedding Model. Note: This implementation
  * is not yet fully functional and is subject to change.
  *
  * @author Christian Tzolov
+ * @author Mark Pollack
  * @since 1.0.0
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
-
-	public final VertexAiMultimodalEmbeddingOptions defaultOptions;
 
 	private static final MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
@@ -76,9 +75,16 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 	private static final List<MimeType> SUPPORTED_IMAGE_MIME_SUB_TYPES = List.of(MimeTypeUtils.IMAGE_JPEG,
 			MimeTypeUtils.IMAGE_GIF, MimeTypeUtils.IMAGE_PNG, MimeTypeUtils.parseMimeType("image/bmp"));
 
-	private final VertexAiEmbeddigConnectionDetails connectionDetails;
+	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
+		.of(VertexAiMultimodalEmbeddingModelName.values())
+		.collect(Collectors.toMap(VertexAiMultimodalEmbeddingModelName::getName,
+				VertexAiMultimodalEmbeddingModelName::getDimensions));
 
-	public VertexAiMultimodalEmbeddingModel(VertexAiEmbeddigConnectionDetails connectionDetails,
+	public final VertexAiMultimodalEmbeddingOptions defaultOptions;
+
+	private final VertexAiEmbeddingConnectionDetails connectionDetails;
+
+	public VertexAiMultimodalEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiMultimodalEmbeddingOptions defaultEmbeddingOptions) {
 
 		Assert.notNull(defaultEmbeddingOptions, "VertexAiMultimodalEmbeddingOptions must not be null");
@@ -94,7 +100,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		// merge the runtime and default vertex ai options.
 		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
+		if (request.getOptions() != null) {
 			var defaultOptionsCopy = VertexAiMultimodalEmbeddingOptions.builder().from(this.defaultOptions).build();
 			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
 					VertexAiMultimodalEmbeddingOptions.class);
@@ -122,9 +128,6 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		return finalResponse;
 	}
 
-	record DocumentMetadata(String documentId, MimeType mimeType, Object data) {
-	}
-
 	private EmbeddingResponse doSingleDocumentPrediction(PredictionServiceClient client, EndpointName endpointName,
 			Document document, VertexAiMultimodalEmbeddingOptions mergedOptions) throws InvalidProtocolBufferException {
 
@@ -134,53 +137,50 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		// optional dimensions parameter
 		if (mergedOptions.getDimensions() != null) {
-			instanceBuilder.withDimension(mergedOptions.getDimensions());
+			instanceBuilder.dimension(mergedOptions.getDimensions());
 		}
 
 		// optional text parameter
 		if (StringUtils.hasText(document.getContent())) {
-			instanceBuilder.withText(document.getContent());
+			instanceBuilder.text(document.getContent());
 			documentMetadata.put(ModalityType.TEXT,
 					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getContent()));
 		}
 
-		if (!CollectionUtils.isEmpty(document.getMedia())) {
-
-			for (Media media : document.getMedia()) {
-				if (media.getMimeType().isCompatibleWith(TEXT_MIME_TYPE)) {
-					instanceBuilder.withText(media.getData().toString());
-					documentMetadata.put(ModalityType.TEXT,
-							new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-					if (StringUtils.hasText(document.getContent())) {
-						logger.warn("Media type String overrides the Document text content!");
-					}
+		Media media = document.getMedia();
+		if (media != null) {
+			if (media.getMimeType().isCompatibleWith(TEXT_MIME_TYPE)) {
+				instanceBuilder.text(media.getData().toString());
+				documentMetadata.put(ModalityType.TEXT,
+						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
+				if (StringUtils.hasText(document.getContent())) {
+					logger.warn("Media type String overrides the Document text content!");
 				}
-				else if (media.getMimeType().isCompatibleWith(IMAGE_MIME_TYPE)) {
-					if (SUPPORTED_IMAGE_MIME_SUB_TYPES.contains(media.getMimeType())) {
-						instanceBuilder
-							.withImage(ImageBuilder.of(media.getMimeType()).withImageData(media.getData()).build());
-						documentMetadata.put(ModalityType.IMAGE,
-								new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
-					}
-					else {
-						logger.warn("Unsupported image mime type: {}", media.getMimeType());
-						throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
-					}
-				}
-				else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
-					instanceBuilder.withVideo(VideoBuilder.of(media.getMimeType())
-						.withVideoData(media.getData())
-						.withStartOffsetSec(mergedOptions.getVideoStartOffsetSec())
-						.withEndOffsetSec(mergedOptions.getVideoEndOffsetSec())
-						.withIntervalSec(mergedOptions.getVideoIntervalSec())
-						.build());
-					documentMetadata.put(ModalityType.VIDEO,
+			}
+			else if (media.getMimeType().isCompatibleWith(IMAGE_MIME_TYPE)) {
+				if (SUPPORTED_IMAGE_MIME_SUB_TYPES.contains(media.getMimeType())) {
+					instanceBuilder.image(ImageBuilder.of(media.getMimeType()).imageData(media.getData()).build());
+					documentMetadata.put(ModalityType.IMAGE,
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
 				else {
-					logger.warn("Unsupported media type: {}", media.getMimeType());
-					throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
+					logger.warn("Unsupported image mime type: {}", media.getMimeType());
+					throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
 				}
+			}
+			else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
+				instanceBuilder.video(VideoBuilder.of(media.getMimeType())
+					.videoData(media.getData())
+					.startOffsetSec(mergedOptions.getVideoStartOffsetSec())
+					.endOffsetSec(mergedOptions.getVideoEndOffsetSec())
+					.intervalSec(mergedOptions.getVideoIntervalSec())
+					.build());
+				documentMetadata.put(ModalityType.VIDEO,
+						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
+			}
+			else {
+				logger.warn("Unsupported media type: {}", media.getMimeType());
+				throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
 			}
 		}
 
@@ -251,9 +251,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), 768);
 	}
 
-	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
-		.of(VertexAiMultimodalEmbeddingModelName.values())
-		.collect(Collectors.toMap(VertexAiMultimodalEmbeddingModelName::getName,
-				VertexAiMultimodalEmbeddingModelName::getDimensions));
+	record DocumentMetadata(String documentId, MimeType mimeType, Object data) {
+
+	}
 
 }

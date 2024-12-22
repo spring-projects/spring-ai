@@ -3,7 +3,6 @@
 
 link:https://cloud.google.com/vertex-ai/docs/reference[VertexAI API] provides high-quality custom machine learning models with minimal machine learning expertise and effort.
 
-Spring AI provides integration with VertexAI API through the following clients:
+Spring AI provides integration with VertexAI API through the following client(s):
 
-* xref:api/chat/vertexai-palm2-chat.adoc[]
 * xref:api/chat/vertexai-gemini-chat.adoc[]

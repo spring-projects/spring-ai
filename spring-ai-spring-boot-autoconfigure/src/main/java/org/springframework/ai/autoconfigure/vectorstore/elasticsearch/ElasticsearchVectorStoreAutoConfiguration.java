@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,14 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.elasticsearch.client.RestClient;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.ElasticsearchVectorStore;
-import org.springframework.ai.vectorstore.ElasticsearchVectorStoreOptions;
+import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStoreOptions;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -33,9 +34,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
-import io.micrometer.observation.ObservationRegistry;
-
 /**
+ * {@link AutoConfiguration Auto-configuration} for Elasticsearch Vector Store.
+ *
  * @author Eddú Meléndez
  * @author Wei Jiang
  * @author Josh Long
@@ -46,7 +47,7 @@ import io.micrometer.observation.ObservationRegistry;
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
 @ConditionalOnClass({ ElasticsearchVectorStore.class, EmbeddingModel.class, RestClient.class })
 @EnableConfigurationProperties(ElasticsearchVectorStoreProperties.class)
-class ElasticsearchVectorStoreAutoConfiguration {
+public class ElasticsearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(BatchingStrategy.class)
@@ -72,9 +73,13 @@ class ElasticsearchVectorStoreAutoConfiguration {
 			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
 		}
 
-		return new ElasticsearchVectorStore(elasticsearchVectorStoreOptions, restClient, embeddingModel,
-				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+		return ElasticsearchVectorStore.builder(restClient, embeddingModel)
+			.options(elasticsearchVectorStoreOptions)
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 }

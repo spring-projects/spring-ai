@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.audio.transcription;
 
 import org.junit.jupiter.api.Test;
@@ -28,12 +29,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit Tests for {@link TranscriptionModel}.
@@ -53,11 +53,11 @@ class TranscriptionModelTests {
 
 		// Create a mock Transcript
 		AudioTranscription transcript = Mockito.mock(AudioTranscription.class);
-		when(transcript.getOutput()).thenReturn(mockTranscription);
+		given(transcript.getOutput()).willReturn(mockTranscription);
 
 		// Create a mock TranscriptionResponse with the mock Transcript
 		AudioTranscriptionResponse response = Mockito.mock(AudioTranscriptionResponse.class);
-		when(response.getResult()).thenReturn(transcript);
+		given(response.getResult()).willReturn(transcript);
 
 		// Transcript transcript = spy(new Transcript(responseMessage));
 		// TranscriptionResponse response = spy(new
@@ -65,16 +65,14 @@ class TranscriptionModelTests {
 
 		doCallRealMethod().when(mockClient).call(any(Resource.class));
 
-		doAnswer(invocationOnMock -> {
-
-			AudioTranscriptionPrompt transcriptionRequest = invocationOnMock.getArgument(0);
+		given(mockClient.call(any(AudioTranscriptionPrompt.class))).will(invocation -> {
+			AudioTranscriptionPrompt transcriptionRequest = invocation.getArgument(0);
 
 			assertThat(transcriptionRequest).isNotNull();
 			assertThat(transcriptionRequest.getInstructions()).isEqualTo(mockAudioFile);
 
 			return response;
-
-		}).when(mockClient).call(any(AudioTranscriptionPrompt.class));
+		});
 
 		assertThat(mockClient.call(mockAudioFile)).isEqualTo(mockTranscription);
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.anthropic;
 
 import java.util.List;
 
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
-import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 
@@ -38,7 +40,10 @@ import org.springframework.ai.model.ModelOptionsUtils;
  *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final AnthropicChatBedrockApi anthropicChatApi;
@@ -48,10 +53,10 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi) {
 		this(chatApi,
 				AnthropicChatOptions.builder()
-					.withTemperature(0.8)
-					.withMaxTokensToSample(500)
-					.withTopK(10)
-					.withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+					.temperature(0.8)
+					.maxTokensToSample(500)
+					.topK(10)
+					.anthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 					.build());
 	}
 
@@ -67,7 +72,7 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.completion())));
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(response.completion()))));
 	}
 
 	@Override
@@ -79,12 +84,15 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
-			var generation = new Generation(response.completion());
+			ChatGenerationMetadata chatGenerationMetadata = null;
 			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+				chatGenerationMetadata = ChatGenerationMetadata.builder()
+					.finishReason(stopReason)
+					.metadata("metrics", response.amazonBedrockInvocationMetrics())
+					.build();
 			}
-			return new ChatResponse(List.of(generation));
+			return new ChatResponse(
+					List.of(new Generation(new AssistantMessage(response.completion()), chatGenerationMetadata)));
 		});
 	}
 

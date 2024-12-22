@@ -1,5 +1,18 @@
 = Bedrock Anthropic 2 Chat
 
+[NOTE]
+====
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all chat conversation implementations in Spring AI. 
+While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] for several key benefits:
+
+- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
+- Model Flexibility: Seamlessly switch between different conversation models without code changes
+- Extended Functionality: Support for model-specific parameters through dedicated structures
+- Tool Support: Native integration with function calling and tool usage capabilities
+- Multimodal Capabilities: Built-in support for vision and other multimodal features
+- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+====
+
 NOTE: The Anthropic 2 Chat API is deprecated and replaced by the new Anthropic Claude 3 Message API.
 Please use the xref:api/chat/bedrock/bedrock-anthropic3.adoc[Anthropic Claude 3 Message API] for new projects.
 
@@ -111,7 +124,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AnthropicChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -155,13 +168,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -198,24 +211,24 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
     AnthropicChatBedrockApi.AnthropicModel.CLAUDE_V2.id(),
     EnvironmentVariableCredentialsProvider.create(),
-    Region.EU_CENTRAL_1.id(),
+    Region.US_EAST_1.id(),
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(anthropicApi,
+BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(this.anthropicApi,
     AnthropicChatOptions.builder()
-        .withTemperature(0.6)
-        .withTopK(10)
-        .withTopP(0.8)
-        .withMaxTokensToSample(100)
-        .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+        .temperature(0.6)
+        .topK(10)
+        .topP(0.8)
+        .maxTokensToSample(100)
+        .anthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
         .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -234,21 +247,21 @@ Here is a simple snippet how to use the api programmatically:
 [source,java]
 ----
 AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(
-   AnthropicModel.CLAUDE_V2.id(), Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
+   AnthropicModel.CLAUDE_V2.id(), Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-  .withTemperature(0.8)
-  .withMaxTokensToSample(300)
-  .withTopK(10)
+  .temperature(0.8)
+  .maxTokensToSample(300)
+  .topK(10)
   .build();
 
 // Sync request
-AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
+AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(this.request);
 
 // Streaming request
-Flux<AnthropicChatResponse> responseStream = anthropicChatApi.chatCompletionStream(request);
-List<AnthropicChatResponse> responses = responseStream.collectList().block();
+Flux<AnthropicChatResponse> responseStream = this.anthropicChatApi.chatCompletionStream(this.request);
+List<AnthropicChatResponse> responses = this.responseStream.collectList().block();
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi.java]'s JavaDoc for further information.

@@ -54,7 +54,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Mistral AI chat model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -71,7 +71,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.mistralai` is used as the property prefix that lets you connect to OpenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -83,7 +83,7 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 
 The prefix `spring.ai.mistralai.chat` is the property prefix that lets you configure the chat model implementation for Mistral AI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -126,8 +126,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MistralAiChatOptions.builder()
-            .withModel(MistralAiApi.ChatModel.LARGE.getValue())
-            .withTemperature(0.5)
+            .model(MistralAiApi.ChatModel.LARGE.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -139,6 +139,62 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 You can register custom Java functions with the `MistralAiChatModel` and have the Mistral AI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI Function Calling].
+
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
+Mistral AI supports text and vision modalities.
+
+=== Vision
+
+Mistral AI models that offer vision multimodal support include `pixtral-large-latest`.
+Refer to the link:https://docs.mistral.ai/capabilities/vision/[Vision] guide for more information.
+
+The Mistral AI link:https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post[User Message API] can incorporate a list of base64-encoded images or image urls with the message.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/Media.java[Media] type.
+This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
+
+Below is a code example excerpted from `MistralAiChatModelIT.java`, illustrating the fusion of user text with an image.
+
+[source,java]
+----
+var imageResource = new ClassPathResource("/multimodal.test.png");
+
+var userMessage = new UserMessage("Explain what do you see on this picture?",
+        new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
+
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
+        ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+----
+
+or the image URL equivalent:
+
+[source,java]
+----
+var userMessage = new UserMessage("Explain what do you see on this picture?",
+        new Media(MimeTypeUtils.IMAGE_PNG,
+                "https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"));
+
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
+        ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+----
+
+TIP: You can pass multiple images as well.
+
+The example shows a model taking as an input the `multimodal.test.png` image:
+
+image::multimodal.test.png[Multimodal Test Image, 200, 200, align="left"]
+
+along with the text message "Explain what do you see on this picture?", and generating a response like this:
+
+----
+This is an image of a fruit bowl with a simple design. The bowl is made of metal with curved wire edges that
+create an open structure, allowing the fruit to be visible from all angles. Inside the bowl, there are two
+yellow bananas resting on top of what appears to be a red apple. The bananas are slightly overripe, as
+indicated by the brown spots on their peels. The bowl has a metal ring at the top, likely to serve as a handle
+for carrying. The bowl is placed on a flat surface with a neutral-colored background that provides a clear
+view of the fruit inside.
+----
 
 == OpenAI API Compatibility
 
@@ -179,13 +235,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map<String,String> generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -221,17 +277,17 @@ Next, create a `MistralAiChatModel` and use it for text generations:
 ----
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
-var chatModel = new MistralAiChatModel(mistralAiApi, MistralAiChatOptions.builder()
-                .withModel(MistralAiApi.ChatModel.LARGE.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+var chatModel = new MistralAiChatModel(this.mistralAiApi, MistralAiChatOptions.builder()
+                .model(MistralAiApi.ChatModel.LARGE.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -252,12 +308,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = mistralAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, false));
+ResponseEntity<ChatCompletion> response = this.mistralAiApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = mistralAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, true));
+Flux<ChatCompletionChunk> streamResponse = this.mistralAiApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralAiApi.java[MistralAiApi.java]'s JavaDoc for further information.

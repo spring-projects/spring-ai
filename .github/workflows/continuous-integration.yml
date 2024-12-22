@@ -8,6 +8,13 @@ jobs:
   build:
     name: Build branch
     runs-on: ubuntu-latest
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+    env:
+      OLLAMA_WITH_REUSE: true
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -25,6 +32,10 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Configure Testcontainers
+        run: |
+          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
+
       # - name: Cache Docker images.
       #   uses: ScribeMD/docker-cache@0.3.7
       #   with:
@@ -36,7 +47,11 @@ jobs:
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        run: mvn -s settings.xml -Pintegration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 --batch-mode --update-snapshots deploy
+          OLLAMA_AUTOCONF_TESTS_ENABLED: "true"
+          OLLAMA_WITH_REUSE: true
+        run: |
+          mvn -s settings.xml -Pci-fast-integration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 \
+          --batch-mode --update-snapshots deploy
 
       - name: Generate Java docs
         run: mvn javadoc:aggregate
@@ -66,5 +81,6 @@ jobs:
         working-directory: spring-ai-docs/target
         run: |
           unzip spring-ai-$PROJECT_VERSION-docs.zip
-          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $PROJECT_VERSION/api"
-          scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION/api
+          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $PROJECT_VERSION"
+          scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION
+  

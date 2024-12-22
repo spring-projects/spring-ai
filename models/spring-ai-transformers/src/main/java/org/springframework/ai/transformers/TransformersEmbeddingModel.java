@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.transformers;
 
 import java.nio.FloatBuffer;
@@ -35,6 +36,7 @@ import ai.onnxruntime.OnnxValue;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -42,9 +44,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
@@ -52,13 +59,26 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * https://www.sbert.net/index.html https://www.sbert.net/docs/pretrained_models.html
+ * An implementation of the AbstractEmbeddingModel that uses ONNX-based Transformer models
+ * for text embeddings.
+ *
+ * <p>
+ * By default, it uses the all-MiniLM-L6-v2 model, but can be configured to use other
+ * ONNX-compatible models. The class supports both CPU and GPU inference, caching of model
+ * resources, and various tokenization options.
+ * </p>
+ *
+ * <p>
+ * For more information on the underlying SBERT framework, see:
+ * <a href="https://www.sbert.net/index.html">SBERT Documentation</a>
+ * <a href="https://www.sbert.net/docs/pretrained_models.html">SBERT Pre-trained
+ * Models</a>
+ * </p>
  *
  * @author Christian Tzolov
+ * @since 1.0.0
  */
 public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
-
-	private static final Log logger = LogFactory.getLog(TransformersEmbeddingModel.class);
 
 	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
 	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
@@ -69,7 +89,26 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 	public final static String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
+	private static final Log logger = LogFactory.getLog(TransformersEmbeddingModel.class);
+
+	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+
 	private final static int EMBEDDING_AXIS = 1;
+
+	/**
+	 * Specifies what parts of the {@link Document}'s content and metadata will be used
+	 * for computing the embeddings. Applicable for the {@link #embed(Document)} method
+	 * only. Has no effect on the {@link #embed(String)} or {@link #embed(List)}. Defaults
+	 * to {@link MetadataMode#NONE}.
+	 */
+	private final MetadataMode metadataMode;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	public Map<String, String> tokenizerOptions = Map.of();
 
 	private Resource tokenizerResource = toResource(DEFAULT_ONNX_TOKENIZER_URI);
 
@@ -94,14 +133,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	private OrtSession session;
 
 	/**
-	 * Specifies what parts of the {@link Document}'s content and metadata will be used
-	 * for computing the embeddings. Applicable for the {@link #embed(Document)} method
-	 * only. Has no effect on the {@link #embed(String)} or {@link #embed(List)}. Defaults
-	 * to {@link MetadataMode#NONE}.
-	 */
-	private final MetadataMode metadataMode;
-
-	/**
 	 * Resource cache directory. Used to cache remote resources, such as the ONNX models,
 	 * to the local file system.
 	 */
@@ -120,19 +151,32 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 */
 	private ResourceCacheService cacheService;
 
-	public Map<String, String> tokenizerOptions = Map.of();
-
 	private String modelOutputName = DEFAULT_MODEL_OUTPUT_NAME;
 
 	private Set<String> onnxModelInputs;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public TransformersEmbeddingModel() {
 		this(MetadataMode.NONE);
 	}
 
 	public TransformersEmbeddingModel(MetadataMode metadataMode) {
+		this(metadataMode, ObservationRegistry.NOOP);
+	}
+
+	public TransformersEmbeddingModel(MetadataMode metadataMode, ObservationRegistry observationRegistry) {
 		Assert.notNull(metadataMode, "Metadata mode should not be null");
+		Assert.notNull(observationRegistry, "Observation registry should not be null");
 		this.metadataMode = metadataMode;
+		this.observationRegistry = observationRegistry;
+	}
+
+	private static Resource toResource(String uri) {
+		return new DefaultResourceLoader().getResource(uri);
 	}
 
 	public void setTokenizerOptions(Map<String, String> tokenizerOptions) {
@@ -185,13 +229,14 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		// onnxruntime
 		this.environment = OrtEnvironment.getEnvironment();
 
-		var sessionOptions = new OrtSession.SessionOptions();
-		if (this.gpuDeviceId >= 0) {
-			sessionOptions.addCUDA(this.gpuDeviceId); // Run on a GPU or with another
-														// provider
+		try (var sessionOptions = new OrtSession.SessionOptions()) {
+			if (this.gpuDeviceId >= 0) {
+				sessionOptions.addCUDA(this.gpuDeviceId); // Run on a GPU or with another
+				// provider
+			}
+			this.session = this.environment.createSession(getCachedResource(this.modelResource).getContentAsByteArray(),
+					sessionOptions);
 		}
-		this.session = this.environment.createSession(getCachedResource(this.modelResource).getContentAsByteArray(),
-				sessionOptions);
 
 		this.onnxModelInputs = this.session.getInputNames();
 		Set<String> onnxModelOutputs = this.session.getOutputNames();
@@ -231,7 +276,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 	@Override
 	public List<float[]> embed(List<String> texts) {
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()))
 			.getResults()
 			.stream()
 			.map(e -> e.getOutput())
@@ -241,70 +286,86 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
-		List<float[]> resultEmbeddings = new ArrayList<>();
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(request)
+			.provider(AiProvider.ONNX.value())
+			.requestOptions(request.getOptions())
+			.build();
 
-		try {
+		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				List<float[]> resultEmbeddings = new ArrayList<>();
 
-			Encoding[] encodings = this.tokenizer.batchEncode(request.getInstructions());
+				try {
 
-			long[][] input_ids0 = new long[encodings.length][];
-			long[][] attention_mask0 = new long[encodings.length][];
-			long[][] token_type_ids0 = new long[encodings.length][];
+					Encoding[] encodings = this.tokenizer.batchEncode(request.getInstructions());
 
-			for (int i = 0; i < encodings.length; i++) {
-				input_ids0[i] = encodings[i].getIds();
-				attention_mask0[i] = encodings[i].getAttentionMask();
-				token_type_ids0[i] = encodings[i].getTypeIds();
-			}
+					long[][] input_ids0 = new long[encodings.length][];
+					long[][] attention_mask0 = new long[encodings.length][];
+					long[][] token_type_ids0 = new long[encodings.length][];
 
-			OnnxTensor inputIds = OnnxTensor.createTensor(this.environment, input_ids0);
-			OnnxTensor attentionMask = OnnxTensor.createTensor(this.environment, attention_mask0);
-			OnnxTensor tokenTypeIds = OnnxTensor.createTensor(this.environment, token_type_ids0);
+					for (int i = 0; i < encodings.length; i++) {
+						input_ids0[i] = encodings[i].getIds();
+						attention_mask0[i] = encodings[i].getAttentionMask();
+						token_type_ids0[i] = encodings[i].getTypeIds();
+					}
 
-			Map<String, OnnxTensor> modelInputs = Map.of("input_ids", inputIds, "attention_mask", attentionMask,
-					"token_type_ids", tokenTypeIds);
+					try (OnnxTensor inputIds = OnnxTensor.createTensor(this.environment, input_ids0);
+							OnnxTensor attentionMask = OnnxTensor.createTensor(this.environment, attention_mask0);
+							OnnxTensor tokenTypeIds = OnnxTensor.createTensor(this.environment, token_type_ids0);) {
 
-			modelInputs = removeUnknownModelInputs(modelInputs);
+						Map<String, OnnxTensor> modelInputs = Map.of("input_ids", inputIds, "attention_mask",
+								attentionMask, "token_type_ids", tokenTypeIds);
 
-			// The Run result object is AutoCloseable to prevent references from leaking
-			// out. Once the Result object is
-			// closed, all it’s child OnnxValues are closed too.
-			try (OrtSession.Result results = this.session.run(modelInputs)) {
+						modelInputs = removeUnknownModelInputs(modelInputs);
 
-				// OnnxValue lastHiddenState = results.get(0);
-				OnnxValue lastHiddenState = results.get(this.modelOutputName).get();
+						// The Run result object is AutoCloseable to prevent references
+						// from leaking out. Once the Result object is
+						// closed, all it’s child OnnxValues are closed too.
+						try (OrtSession.Result results = this.session.run(modelInputs)) {
 
-				// 0 - batch_size (1..x)
-				// 1 - sequence_length (128)
-				// 2 - embedding dimensions (384)
-				float[][][] tokenEmbeddings = (float[][][]) lastHiddenState.getValue();
+							// OnnxValue lastHiddenState = results.get(0);
+							OnnxValue lastHiddenState = results.get(this.modelOutputName).get();
 
-				try (NDManager manager = NDManager.newBaseManager()) {
-					NDArray ndTokenEmbeddings = create(tokenEmbeddings, manager);
-					NDArray ndAttentionMask = manager.create(attention_mask0);
+							// 0 - batch_size (1..x)
+							// 1 - sequence_length (128)
+							// 2 - embedding dimensions (384)
+							float[][][] tokenEmbeddings = (float[][][]) lastHiddenState.getValue();
 
-					NDArray embedding = meanPooling(ndTokenEmbeddings, ndAttentionMask);
+							try (NDManager manager = NDManager.newBaseManager()) {
+								NDArray ndTokenEmbeddings = create(tokenEmbeddings, manager);
+								NDArray ndAttentionMask = manager.create(attention_mask0);
 
-					for (int i = 0; i < embedding.size(0); i++) {
-						resultEmbeddings.add(embedding.get(i).toFloatArray());
+								NDArray embedding = meanPooling(ndTokenEmbeddings, ndAttentionMask);
+
+								for (int i = 0; i < embedding.size(0); i++) {
+									resultEmbeddings.add(embedding.get(i).toFloatArray());
+								}
+							}
+						}
 					}
 				}
-			}
-		}
-		catch (OrtException ex) {
-			throw new RuntimeException(ex);
-		}
+				catch (OrtException ex) {
+					throw new RuntimeException(ex);
+				}
 
-		var indexCounter = new AtomicInteger(0);
-		return new EmbeddingResponse(
-				resultEmbeddings.stream().map(e -> new Embedding(e, indexCounter.incrementAndGet())).toList());
+				var indexCounter = new AtomicInteger(0);
+
+				EmbeddingResponse embeddingResponse = new EmbeddingResponse(
+						resultEmbeddings.stream().map(e -> new Embedding(e, indexCounter.incrementAndGet())).toList());
+				observationContext.setResponse(embeddingResponse);
+
+				return embeddingResponse;
+			});
 	}
 
 	private Map<String, OnnxTensor> removeUnknownModelInputs(Map<String, OnnxTensor> modelInputs) {
 
 		return modelInputs.entrySet()
 			.stream()
-			.filter(a -> onnxModelInputs.contains(a.getKey()))
+			.filter(a -> this.onnxModelInputs.contains(a.getKey()))
 			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
 	}
@@ -343,8 +404,13 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		return sumEmbeddings.div(sumMask);
 	}
 
-	private static Resource toResource(String uri) {
-		return new DefaultResourceLoader().getResource(uri);
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }

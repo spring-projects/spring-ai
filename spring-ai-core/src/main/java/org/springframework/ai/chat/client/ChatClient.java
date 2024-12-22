@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.client;
 
 import java.net.URL;
@@ -21,21 +22,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import io.micrometer.observation.ObservationRegistry;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
-
-import io.micrometer.observation.ObservationRegistry;
-import reactor.core.publisher.Flux;
 
 /**
  * Client to perform stateless requests to an AI Model, using a fluent API.
@@ -46,6 +51,7 @@ import reactor.core.publisher.Flux;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public interface ChatClient {
@@ -59,7 +65,9 @@ public interface ChatClient {
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
-			ChatClientObservationConvention observationConvention) {
+			@Nullable ChatClientObservationConvention observationConvention) {
+		Assert.notNull(chatModel, "chatModel cannot be null");
+		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		return builder(chatModel, observationRegistry, observationConvention).build();
 	}
 
@@ -68,7 +76,9 @@ public interface ChatClient {
 	}
 
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			ChatClientObservationConvention customObservationConvention) {
+			@Nullable ChatClientObservationConvention customObservationConvention) {
+		Assert.notNull(chatModel, "chatModel cannot be null");
+		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		return new DefaultChatClientBuilder(chatModel, observationRegistry, customObservationConvention);
 	}
 
@@ -105,6 +115,9 @@ public interface ChatClient {
 
 	}
 
+	/**
+	 * Specification for a prompt system.
+	 */
 	interface PromptSystemSpec {
 
 		PromptSystemSpec text(String text);
@@ -133,14 +146,19 @@ public interface ChatClient {
 
 	interface CallResponseSpec {
 
+		@Nullable
 		<T> T entity(ParameterizedTypeReference<T> type);
 
+		@Nullable
 		<T> T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
+		@Nullable
 		<T> T entity(Class<T> type);
 
+		@Nullable
 		ChatResponse chatResponse();
 
+		@Nullable
 		String content();
 
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
@@ -197,13 +215,32 @@ public interface ChatClient {
 
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
+		/**
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
 
+		/**
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
+		<I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.BiFunction<I, ToolContext, O> function);
+
+		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
+
+		/**
+		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);
+
+		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
 		ChatClientRequestSpec system(String text);
 
@@ -256,9 +293,26 @@ public interface ChatClient {
 
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
+		/**
+		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
 		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
 
+		/**
+		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
+		 */
+		@Deprecated
+		<I, O> Builder defaultFunction(String name, String description,
+				java.util.function.BiFunction<I, ToolContext, O> function);
+
 		Builder defaultFunctions(String... functionNames);
+
+		Builder defaultFunctions(FunctionCallback... functionCallbacks);
+
+		Builder defaultToolContext(Map<String, Object> toolContext);
+
+		Builder clone();
 
 		ChatClient build();
 

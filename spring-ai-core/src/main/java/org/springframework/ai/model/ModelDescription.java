@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,24 @@ package org.springframework.ai.model;
  */
 public interface ModelDescription {
 
+	/**
+	 * Returns the name of the model.
+	 * @return the name of the model
+	 */
 	String getName();
 
+	/**
+	 * Returns the description of the model.
+	 * @return the description of the model
+	 */
 	default String getDescription() {
 		return "";
 	}
 
+	/**
+	 * Returns the version of the model.
+	 * @return the version of the model
+	 */
 	default String getVersion() {
 		return "";
 	}

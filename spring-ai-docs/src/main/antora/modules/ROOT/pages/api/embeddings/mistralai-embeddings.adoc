@@ -53,7 +53,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Mistral AI Embedding model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -70,7 +70,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.mistralai` is used as the property prefix that lets you connect to MistralAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -82,7 +82,7 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 
 The prefix `spring.ai.mistralai.embedding` is property prefix that configures the `EmbeddingModel` implementation for MistralAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -96,7 +96,7 @@ The prefix `spring.ai.mistralai.embedding` is property prefix that configures th
 
 NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.mistralai.embedding.base-url` and `spring.ai.mistralai.embedding.api-key` properties if set take precedence over the common properties.
-Similarly, the `spring.ai.mistralai.embedding.base-url` and `spring.ai.mistralai.embedding.api-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.mistralai.chat.base-url` and `spring.ai.mistralai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different MistralAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.mistralai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
@@ -184,13 +184,13 @@ Next, create an `MistralAiEmbeddingModel` instance and use it to compute the sim
 ----
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
-var embeddingModel = new MistralAiEmbeddingModel(mistralAiApi,
+var embeddingModel = new MistralAiEmbeddingModel(this.mistralAiApi,
         MistralAiEmbeddingOptions.builder()
                 .withModel("mistral-embed")
                 .withEncodingFormat("float")
                 .build());
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
         .embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

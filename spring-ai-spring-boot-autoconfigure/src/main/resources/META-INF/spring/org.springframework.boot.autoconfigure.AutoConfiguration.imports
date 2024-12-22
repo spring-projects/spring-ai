@@ -1,9 +1,25 @@
+#
+# Copyright 2023-2024 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration
+org.springframework.ai.autoconfigure.oci.genai.OCIGenAiAutoConfiguration
 org.springframework.ai.autoconfigure.stabilityai.StabilityAiImageAutoConfiguration
 org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingModelAutoConfiguration
 org.springframework.ai.autoconfigure.huggingface.HuggingfaceChatAutoConfiguration
-org.springframework.ai.autoconfigure.vertexai.palm2.VertexAiPalm2AutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockAi21Jurassic2ChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.llama.BedrockLlamaChatAutoConfiguration
@@ -13,6 +29,7 @@ org.springframework.ai.autoconfigure.bedrock.anthropic.BedrockAnthropicChatAutoC
 org.springframework.ai.autoconfigure.bedrock.anthropic3.BedrockAnthropic3ChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanEmbeddingAutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.converse.BedrockConverseProxyChatAutoConfiguration
 org.springframework.ai.autoconfigure.chat.observation.ChatObservationAutoConfiguration
 org.springframework.ai.autoconfigure.embedding.observation.EmbeddingObservationAutoConfiguration
 org.springframework.ai.autoconfigure.image.observation.ImageObservationAutoConfiguration
@@ -29,6 +46,8 @@ org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateVectorStoreAut
 org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.hanadb.HanaCloudVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.mariadb.MariaDbStoreAutoConfiguration
 org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 org.springframework.ai.autoconfigure.postgresml.PostgresMlAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.mongo.MongoDBAtlasVectorStoreAutoConfiguration

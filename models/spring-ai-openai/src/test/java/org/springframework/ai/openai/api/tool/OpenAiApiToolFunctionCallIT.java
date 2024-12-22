@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,9 +32,8 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * https://platform.openai.com/docs/guides/function-calling/parallel-function-calling
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiApiToolFunctionCallIT {
@@ -54,6 +54,15 @@ public class OpenAiApiToolFunctionCallIT {
 
 	OpenAiApi completionApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 
+	private static <T> T fromJson(String json, Class<T> targetClass) {
+		try {
+			return new ObjectMapper().readValue(json, targetClass);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	@SuppressWarnings("null")
 	@Test
 	public void toolFunctionCall() {
@@ -62,7 +71,7 @@ public class OpenAiApiToolFunctionCallIT {
 		var message = new ChatCompletionMessage("What's the weather like in San Francisco, Tokyo, and Paris?",
 				Role.USER);
 
-		var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION,
+		var functionTool = new OpenAiApi.FunctionTool(OpenAiApi.FunctionTool.Type.FUNCTION,
 				new OpenAiApi.FunctionTool.Function("Get the weather in location. Return temperature in Celsius.",
 						"getCurrentWeather", ModelOptionsUtils.jsonToMap("""
 								{
@@ -87,7 +96,7 @@ public class OpenAiApiToolFunctionCallIT {
 									},
 									"required": ["location", "lat", "lon", "unit"]
 								}
-								""")));
+								"""), null));
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
@@ -95,7 +104,7 @@ public class OpenAiApiToolFunctionCallIT {
 				List.of(functionTool), ToolChoiceBuilder.AUTO);
 		// List.of(functionTool), ToolChoiceBuilder.FUNCTION("getCurrentWeather"));
 
-		ResponseEntity<ChatCompletion> chatCompletion = completionApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletion> chatCompletion = this.completionApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(chatCompletion.getBody()).isNotNull();
 		assertThat(chatCompletion.getBody().choices()).isNotEmpty();
@@ -116,17 +125,18 @@ public class OpenAiApiToolFunctionCallIT {
 				MockWeatherService.Request weatherRequest = fromJson(toolCall.function().arguments(),
 						MockWeatherService.Request.class);
 
-				MockWeatherService.Response weatherResponse = weatherService.apply(weatherRequest);
+				MockWeatherService.Response weatherResponse = this.weatherService.apply(weatherRequest);
 
 				// extend conversation with function response.
 				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
-						functionName, toolCall.id(), null, null));
+						functionName, toolCall.id(), null, null, null));
 			}
 		}
 
 		var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4o", 0.5);
 
-		ResponseEntity<ChatCompletion> chatCompletion2 = completionApi.chatCompletionEntity(functionResponseRequest);
+		ResponseEntity<ChatCompletion> chatCompletion2 = this.completionApi
+			.chatCompletionEntity(functionResponseRequest);
 
 		logger.info("Final response: " + chatCompletion2.getBody());
 
@@ -137,20 +147,8 @@ public class OpenAiApiToolFunctionCallIT {
 			.containsAnyOf("30.0°C", "30°C");
 		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
 			.containsAnyOf("10.0°C", "10°C");
-		;
 		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
 			.containsAnyOf("15.0°C", "15°C");
-		;
-
-	}
-
-	private static <T> T fromJson(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 }

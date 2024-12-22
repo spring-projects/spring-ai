@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
 
 import java.lang.reflect.Constructor;
@@ -47,7 +48,20 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MergeUtils {
+public final class MergeUtils {
+
+	private static final Class<?>[] CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES = new Class<?>[] { String.class,
+			OffsetDateTime.class, List.class, CompletionsUsage.class };
+
+	private static final Class<?>[] chatChoiceConstructorArgumentTypes = new Class<?>[] {
+			ChatChoiceLogProbabilityInfo.class, int.class, CompletionsFinishReason.class };
+
+	private static final Class<?>[] chatResponseMessageConstructorArgumentTypes = new Class<?>[] { ChatRole.class,
+			String.class, String.class };
+
+	private MergeUtils() {
+
+	}
 
 	/**
 	 * Create a new instance of the given class using the constructor at the given index.
@@ -106,9 +120,6 @@ public class MergeUtils {
 		return chatCompletionsInstance;
 	}
 
-	private static final Class<?>[] CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES = new Class<?>[] { String.class,
-			OffsetDateTime.class, List.class, CompletionsUsage.class };
-
 	/**
 	 * Merge two ChatCompletions instances into a single ChatCompletions instance.
 	 * @param left the left ChatCompletions instance.
@@ -158,9 +169,6 @@ public class MergeUtils {
 		return instance;
 	}
 
-	private static final Class<?>[] chatChoiceConstructorArgumentTypes = new Class<?>[] {
-			ChatChoiceLogProbabilityInfo.class, int.class, CompletionsFinishReason.class };
-
 	/**
 	 * Merge two ChatChoice instances into a single ChatChoice instance.
 	 * @param left the left ChatChoice instance to merge.
@@ -202,17 +210,11 @@ public class MergeUtils {
 				? left.getContentFilterResults() : right.getContentFilterResults();
 		setField(instance, "contentFilterResults", contentFilterResults);
 
-		var finishDetails = left.getFinishDetails() != null ? left.getFinishDetails() : right.getFinishDetails();
-		setField(instance, "finishDetails", finishDetails);
-
 		var enhancements = left.getEnhancements() != null ? left.getEnhancements() : right.getEnhancements();
 		setField(instance, "enhancements", enhancements);
 
 		return instance;
 	}
-
-	private static final Class<?>[] chatResponseMessageConstructorArgumentTypes = new Class<?>[] { ChatRole.class,
-			String.class };
 
 	/**
 	 * Merge two ChatResponseMessage instances into a single ChatResponseMessage instance.
@@ -234,8 +236,10 @@ public class MergeUtils {
 			content = left.getContent();
 		}
 
+		String refusal = left.getRefusal() != null ? left.getRefusal() : right.getRefusal();
+
 		ChatResponseMessage instance = newInstance(chatResponseMessageConstructorArgumentTypes,
-				ChatResponseMessage.class, role, content);
+				ChatResponseMessage.class, role, refusal, content);
 
 		List<ChatCompletionsToolCall> toolCalls = new ArrayList<>();
 		if (left.getToolCalls() == null) {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.zhipuai.chat;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -21,6 +31,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -35,7 +47,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.ai.zhipuai.ZhiPuAiTestConfiguration;
 import org.springframework.ai.zhipuai.api.MockWeatherService;
@@ -47,16 +59,6 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
-import reactor.core.publisher.Flux;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,13 +69,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".+")
 class ZhiPuAiChatModelIT {
 
+	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiChatModelIT.class);
+
 	@Autowired
 	protected ChatModel chatModel;
 
 	@Autowired
 	protected StreamingChatModel streamingChatModel;
-
-	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiChatModelIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -82,12 +84,12 @@ class ZhiPuAiChatModelIT {
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
 	}
 
@@ -95,10 +97,10 @@ class ZhiPuAiChatModelIT {
 	void streamRoleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		Flux<ChatResponse> flux = streamingChatModel.stream(prompt);
+		Flux<ChatResponse> flux = this.streamingChatModel.stream(prompt);
 
 		List<ChatResponse> responses = flux.collectList().block();
 		assertThat(responses.size()).isGreaterThan(1);
@@ -107,7 +109,7 @@ class ZhiPuAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -129,7 +131,7 @@ class ZhiPuAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 
 	}
@@ -146,9 +148,9 @@ class ZhiPuAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -165,12 +167,9 @@ class ZhiPuAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
 	}
 
 	@Test
@@ -185,9 +184,9 @@ class ZhiPuAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -207,12 +206,12 @@ class ZhiPuAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = Objects
-			.requireNonNull(streamingChatModel.stream(prompt).collectList().block())
+			.requireNonNull(this.streamingChatModel.stream(prompt).collectList().block())
 			.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -230,21 +229,21 @@ class ZhiPuAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = ZhiPuAiChatOptions.builder()
-			.withModel(ZhiPuAiApi.ChatModel.GLM_4.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+			.model(ZhiPuAiApi.ChatModel.GLM_4.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
 	}
 
 	@Test
@@ -256,22 +255,22 @@ class ZhiPuAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = ZhiPuAiChatOptions.builder()
-			.withModel(ZhiPuAiApi.ChatModel.GLM_4.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+			.model(ZhiPuAiApi.ChatModel.GLM_4.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = streamingChatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
 
 		String content = Objects.requireNonNull(response.collectList().block())
 			.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -289,50 +288,58 @@ class ZhiPuAiChatModelIT {
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-		var response = chatModel
-			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withModel(modelName).build()));
+		var response = this.chatModel
+			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "glm-4v" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?", List
-			.of(new Media(MimeTypeUtils.IMAGE_PNG,
-					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
-		ChatResponse response = chatModel
-			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withModel(modelName).build()));
+		ChatResponse response = this.chatModel
+			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?", List
-			.of(new Media(MimeTypeUtils.IMAGE_PNG,
-					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
-		Flux<ChatResponse> response = streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ZhiPuAiChatOptions.builder().withModel(ZhiPuAiApi.ChatModel.GLM_4V.getValue()).build()));
+		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
+				ZhiPuAiChatOptions.builder().model(ZhiPuAiApi.ChatModel.GLM_4V.getValue()).build()));
 
 		String content = Objects.requireNonNull(response.collectList().block())
 			.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,19 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.chat.memory.cassandra;
 
 import java.time.Duration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.chat.memory.CommonChatMemoryProperties;
-import org.springframework.ai.chat.memory.CassandraChatMemoryConfig;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.lang.Nullable;
 
 /**
+ * Configuration properties for Cassandra chat memory.
+ *
  * @author Mick Semb Wever
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 @ConfigurationProperties(CassandraChatMemoryProperties.CONFIG_PREFIX)
@@ -43,7 +48,7 @@ public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
 
 	private String userColumn = CassandraChatMemoryConfig.DEFAULT_USER_COLUMN_NAME;
 
-	private Duration timeToLiveSeconds = null;
+	private Duration timeToLive = null;
 
 	public String getKeyspace() {
 		return this.keyspace;
@@ -62,7 +67,7 @@ public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	public String getAssistantColumn() {
-		return assistantColumn;
+		return this.assistantColumn;
 	}
 
 	public void setAssistantColumn(String assistantColumn) {
@@ -70,7 +75,7 @@ public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	public String getUserColumn() {
-		return userColumn;
+		return this.userColumn;
 	}
 
 	public void setUserColumn(String userColumn) {
@@ -78,12 +83,12 @@ public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
 	}
 
 	@Nullable
-	public Duration getTimeToLiveSeconds() {
-		return timeToLiveSeconds;
+	public Duration getTimeToLive() {
+		return this.timeToLive;
 	}
 
-	public void setTimeToLiveSeconds(Duration timeToLiveSeconds) {
-		this.timeToLiveSeconds = timeToLiveSeconds;
+	public void setTimeToLive(Duration timeToLive) {
+		this.timeToLive = timeToLive;
 	}
 
 }

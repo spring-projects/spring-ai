@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.anthropic.tool;
 
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.autoconfigure.anthropic.tool;
 
 import java.util.List;
 import java.util.function.Function;
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -33,11 +33,14 @@ import org.springframework.ai.autoconfigure.anthropic.tool.MockWeatherService.Re
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
 class FunctionCallWithFunctionBeanIT {
@@ -52,9 +55,9 @@ class FunctionCallWithFunctionBeanIT {
 	@Test
 	void functionCallTest() {
 
-		contextRunner
+		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
@@ -63,19 +66,41 @@ class FunctionCallWithFunctionBeanIT {
 						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						AnthropicChatOptions.builder().withFunction("weatherFunction").build()));
+						AnthropicChatOptions.builder().function("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						AnthropicChatOptions.builder().withFunction("weatherFunction3").build()));
+						AnthropicChatOptions.builder().function("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
+			});
+	}
+
+	@Test
+	void functionCallWithPortableFunctionCallingOptions() {
+
+		this.contextRunner
+			.withPropertyValues(
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+			.run(context -> {
+
+				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+
+				var userMessage = new UserMessage(
+						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
+
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+						FunctionCallingOptions.builder().function("weatherFunction").build()));
+
+				logger.info("Response: {}", response);
+
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
 	}
 

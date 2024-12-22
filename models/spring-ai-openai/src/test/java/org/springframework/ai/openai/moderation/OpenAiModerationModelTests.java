@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,18 @@
 
 package org.springframework.ai.openai.moderation;
 
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.moderation.*;
+
+import org.springframework.ai.moderation.Categories;
+import org.springframework.ai.moderation.CategoryScores;
+import org.springframework.ai.moderation.Generation;
+import org.springframework.ai.moderation.Moderation;
+import org.springframework.ai.moderation.ModerationPrompt;
+import org.springframework.ai.moderation.ModerationResponse;
+import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.OpenAiModerationModel;
 import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
@@ -33,10 +42,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
@@ -56,7 +65,7 @@ public class OpenAiModerationModelTests {
 
 	@AfterEach
 	void resetMockServer() {
-		server.reset();
+		this.server.reset();
 	}
 
 	@Test
@@ -121,7 +130,7 @@ public class OpenAiModerationModelTests {
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER.getName(), "112358");
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_RESET_HEADER.getName(), "27h55s451ms");
 
-		server.expect(requestTo("v1/moderations"))
+		this.server.expect(requestTo("v1/moderations"))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess(getJson(), MediaType.APPLICATION_JSON).headers(httpHeaders));
@@ -130,40 +139,40 @@ public class OpenAiModerationModelTests {
 
 	private String getJson() {
 		return """
-				{
-				  "id": "modr-XXXXX",
-				  "model": "text-moderation-005",
-				  "results": [
-				    {
-				      "flagged": true,
-				      "categories": {
-				        "sexual": false,
-				        "hate": false,
-				        "harassment": false,
-				        "self-harm": false,
-				        "sexual/minors": false,
-				        "hate/threatening": false,
-				        "violence/graphic": false,
-				        "self-harm/intent": false,
-				        "self-harm/instructions": false,
-				        "harassment/threatening": true,
-				        "violence": true
-				      },
-				      "category_scores": {
-				        "sexual": 1.2282071e-06,
-				        "hate": 0.010696256,
-				        "harassment": 0.29842457,
-				        "self-harm": 1.5236925e-08,
-				        "sexual/minors": 5.7246268e-08,
-				        "hate/threatening": 0.0060676364,
-				        "violence/graphic": 4.435014e-06,
-				        "self-harm/intent": 8.098441e-10,
-				        "self-harm/instructions": 2.8498655e-11,
-				        "harassment/threatening": 0.63055265,
-				        "violence": 0.99011886
-				      }
-				    }
-				  ]
+					{
+						"id": "modr-XXXXX",
+						"model": "text-moderation-005",
+						"results": [
+							{
+								"flagged": true,
+								"categories": {
+								"sexual": false,
+								"hate": false,
+								"harassment": false,
+								"self-harm": false,
+								"sexual/minors": false,
+								"hate/threatening": false,
+								"violence/graphic": false,
+								"self-harm/intent": false,
+								"self-harm/instructions": false,
+								"harassment/threatening": true,
+								"violence": true
+							},
+							"category_scores": {
+								"sexual": 1.2282071e-06,
+								"hate": 0.010696256,
+								"harassment": 0.29842457,
+								"self-harm": 1.5236925e-08,
+								"sexual/minors": 5.7246268e-08,
+								"hate/threatening": 0.0060676364,
+								"violence/graphic": 4.435014e-06,
+								"self-harm/intent": 8.098441e-10,
+								"self-harm/instructions": 2.8498655e-11,
+								"harassment/threatening": 0.63055265,
+								"violence": 0.99011886
+							}
+						}
+					]
 				}
 				""";
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package org.springframework.ai.openai.chat;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -32,10 +29,12 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.model.Media;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
@@ -44,10 +43,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.MultiValueMap;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -64,50 +65,51 @@ public class MessageTypeContentTests {
 	@Captor
 	ArgumentCaptor<MultiValueMap<String, String>> headersCaptor;
 
-	Flux<ChatCompletionChunk> fluxResponse = Flux
-		.generate(() -> new ChatCompletionChunk("id", List.of(), 0l, "model", "fp", "object", null), (state, sink) -> {
-			sink.next(state);
-			sink.complete();
-			return state;
-		});
+	Flux<ChatCompletionChunk> fluxResponse = Flux.generate(
+			() -> new ChatCompletionChunk("id", List.of(), 0L, "model", null, "fp", "object", null), (state, sink) -> {
+				sink.next(state);
+				sink.complete();
+				return state;
+			});
 
 	@BeforeEach
 	public void beforeEach() {
-		chatModel = new OpenAiChatModel(openAiApi);
+		this.chatModel = new OpenAiChatModel(this.openAiApi);
 	}
 
 	@Test
 	public void systemMessageSimpleContentType() {
 
-		when(openAiApi.chatCompletionEntity(pomptCaptor.capture(), headersCaptor.capture()))
-			.thenReturn(Mockito.mock(ResponseEntity.class));
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
 
-		chatModel.call(new Prompt(List.of(new SystemMessage("test message"))));
+		this.chatModel.call(new Prompt(List.of(new SystemMessage("test message"))));
 
-		validateStringContent(pomptCaptor.getValue());
-		assertThat(headersCaptor.getValue()).isEmpty();
+		validateStringContent(this.pomptCaptor.getValue());
+		assertThat(this.headersCaptor.getValue()).isEmpty();
 	}
 
 	@Test
 	public void userMessageSimpleContentType() {
 
-		when(openAiApi.chatCompletionEntity(pomptCaptor.capture(), headersCaptor.capture()))
-			.thenReturn(Mockito.mock(ResponseEntity.class));
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
 
-		chatModel.call(new Prompt(List.of(new UserMessage("test message"))));
+		this.chatModel.call(new Prompt(List.of(new UserMessage("test message"))));
 
-		validateStringContent(pomptCaptor.getValue());
+		validateStringContent(this.pomptCaptor.getValue());
 	}
 
 	@Test
 	public void streamUserMessageSimpleContentType() {
 
-		when(openAiApi.chatCompletionStream(pomptCaptor.capture(), headersCaptor.capture())).thenReturn(fluxResponse);
+		given(this.openAiApi.chatCompletionStream(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(this.fluxResponse);
 
-		chatModel.stream(new Prompt(List.of(new UserMessage("test message")))).subscribe();
+		this.chatModel.stream(new Prompt(List.of(new UserMessage("test message")))).subscribe();
 
-		validateStringContent(pomptCaptor.getValue());
-		assertThat(headersCaptor.getValue()).isEmpty();
+		validateStringContent(this.pomptCaptor.getValue());
+		assertThat(this.headersCaptor.getValue()).isEmpty();
 	}
 
 	private void validateStringContent(ChatCompletionRequest chatCompletionRequest) {
@@ -121,28 +123,28 @@ public class MessageTypeContentTests {
 	@Test
 	public void userMessageWithMediaType() throws MalformedURLException {
 
-		when(openAiApi.chatCompletionEntity(pomptCaptor.capture(), headersCaptor.capture()))
-			.thenReturn(Mockito.mock(ResponseEntity.class));
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
 
 		URL mediaUrl = new URL("http://test");
-		chatModel.call(new Prompt(
-				List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))));
+		this.chatModel.call(new Prompt(List.of(new UserMessage("test message",
+				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))));
 
-		validateComplexContent(pomptCaptor.getValue());
+		validateComplexContent(this.pomptCaptor.getValue());
 	}
 
 	@Test
 	public void streamUserMessageWithMediaType() throws MalformedURLException {
 
-		when(openAiApi.chatCompletionStream(pomptCaptor.capture(), headersCaptor.capture())).thenReturn(fluxResponse);
+		given(this.openAiApi.chatCompletionStream(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(this.fluxResponse);
 
 		URL mediaUrl = new URL("http://test");
-		chatModel
-			.stream(new Prompt(
-					List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))))
+		this.chatModel.stream(new Prompt(List.of(new UserMessage("test message",
+				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))))
 			.subscribe();
 
-		validateComplexContent(pomptCaptor.getValue());
+		validateComplexContent(this.pomptCaptor.getValue());
 	}
 
 	private void validateComplexContent(ChatCompletionRequest chatCompletionRequest) {

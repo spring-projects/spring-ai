@@ -1,1 +1,1 @@
-[VertexAI Gemini Chat](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/chat/vertexai-gemini-chat.html)
+[VertexAI Gemini Chat](https://docs.spring.io/spring-ai/reference/api/chat/vertexai-gemini-chat.html)

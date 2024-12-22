@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
+
+import java.util.concurrent.TimeUnit;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
+
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.MilvusVectorStore;
-import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.milvus.vectorstore.MilvusVectorStore;
+import org.springframework.ai.milvus.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -34,12 +38,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
-import java.util.concurrent.TimeUnit;
-
 /**
+ * {@link AutoConfiguration Auto-configuration} for Milvus Vector Store.
+ *
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
  */
 @AutoConfiguration
 @ConditionalOnClass({ MilvusVectorStore.class, EmbeddingModel.class })
@@ -66,18 +71,12 @@ public class MilvusVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
-			.withCollectionName(properties.getCollectionName())
-			.withDatabaseName(properties.getDatabaseName())
-			.withIndexType(IndexType.valueOf(properties.getIndexType().name()))
-			.withMetricType(MetricType.valueOf(properties.getMetricType().name()))
-			.withIndexParameters(properties.getIndexParameters())
-			.withEmbeddingDimension(properties.getEmbeddingDimension())
+		return MilvusVectorStore.builder(milvusClient, embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.batchingStrategy(batchingStrategy)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.build();
-
-		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema(),
-				batchingStrategy, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	@Bean

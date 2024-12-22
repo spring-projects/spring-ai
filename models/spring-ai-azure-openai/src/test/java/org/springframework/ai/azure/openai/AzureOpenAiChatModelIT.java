@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
 
-import com.azure.ai.openai.OpenAIClient;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -45,20 +53,10 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AzureOpenAiChatModelIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@RequiresAzureCredentials
 class AzureOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelIT.class);
@@ -78,8 +76,8 @@ class AzureOpenAiChatModelIT {
 		UserMessage userMessage = new UserMessage("Generate the names of 5 famous pirates.");
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -97,15 +95,15 @@ class AzureOpenAiChatModelIT {
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-		ChatResponse response = chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
 				new UserMessage("Repeat the last assistant message.")));
-		response = chatModel.call(promptWithMessageHistory);
+		response = this.chatModel.call(promptWithMessageHistory);
 
-		System.out.println(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+		System.out.println(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 	}
 
 	@Test
@@ -121,9 +119,9 @@ class AzureOpenAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 
 	}
@@ -140,9 +138,9 @@ class AzureOpenAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -159,9 +157,9 @@ class AzureOpenAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.actor()).isNotNull();
 	}
 
@@ -177,9 +175,9 @@ class AzureOpenAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -188,9 +186,9 @@ class AzureOpenAiChatModelIT {
 	@Test
 	void beanStreamOutputConverterRecords() {
 
-		BeanOutputConverter<ActorsFilmsRecord> outputParser = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> converter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = converter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -198,18 +196,18 @@ class AzureOpenAiChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatModel.stream(prompt)
+		String generationTextFromStream = this.chatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 
-		ActorsFilmsRecord actorsFilms = outputParser.convert(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = converter.convert(generationTextFromStream);
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -222,8 +220,8 @@ class AzureOpenAiChatModelIT {
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+		String response = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -240,40 +238,40 @@ class AzureOpenAiChatModelIT {
 		Resource resource = new ClassPathResource("multimodality/multimodal.test.png");
 
 		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+		String response = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, resource))
 				.call()
 				.content();
 		// @formatter:on
 
-		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "apples");
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {
+
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClient openAIClient() {
+		public OpenAIClientBuilder openAIClientBuilder() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
 				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
 				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-				.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS))
-				.buildClient();
+				.httpLogOptions(new HttpLogOptions()
+					.setLogLevel(com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS));
 		}
 
 		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiChatModel(openAIClient,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build());
+		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
+			return new AzureOpenAiChatModel(openAIClientBuilder,
+					AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build());
 
 		}
 

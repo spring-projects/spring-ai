@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,12 @@
 
 package org.springframework.ai.azure.openai;
 
-import com.azure.ai.openai.OpenAIClient;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
-import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 import org.junit.jupiter.api.Test;
@@ -29,10 +32,6 @@ import org.mockito.Mockito;
 
 import org.springframework.ai.chat.prompt.Prompt;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -41,30 +40,35 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class AzureChatCompletionsOptionsTests {
 
+	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
+		return Stream.of(Arguments.of(0.0, 0.0), Arguments.of(0.0, 1.0), Arguments.of(1.0, 0.0), Arguments.of(1.0, 1.0),
+				Arguments.of(1.0, null), Arguments.of(null, 1.0), Arguments.of(null, null));
+	}
+
 	@Test
 	public void createRequestWithChatOptions() {
 
-		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
 
 		AzureChatEnhancementConfiguration mockAzureChatEnhancementConfiguration = Mockito
 			.mock(AzureChatEnhancementConfiguration.class);
 
 		var defaultOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName("DEFAULT_MODEL")
-			.withTemperature(66.6)
-			.withFrequencyPenalty(696.9)
-			.withPresencePenalty(969.6)
-			.withLogitBias(Map.of("foo", 1))
-			.withMaxTokens(969)
-			.withN(69)
-			.withStop(List.of("foo", "bar"))
-			.withTopP(0.69)
-			.withUser("user")
-			.withSeed(123L)
-			.withLogprobs(true)
-			.withTopLogprobs(5)
-			.withEnhancements(mockAzureChatEnhancementConfiguration)
-			.withResponseFormat(AzureOpenAiResponseFormat.TEXT)
+			.deploymentName("DEFAULT_MODEL")
+			.temperature(66.6)
+			.frequencyPenalty(696.9)
+			.presencePenalty(969.6)
+			.logitBias(Map.of("foo", 1))
+			.maxTokens(969)
+			.N(69)
+			.stop(List.of("foo", "bar"))
+			.topP(0.69)
+			.user("user")
+			.seed(123L)
+			.logprobs(true)
+			.topLogprobs(5)
+			.enhancements(mockAzureChatEnhancementConfiguration)
+			.responseFormat(AzureOpenAiResponseFormat.TEXT)
 			.build();
 
 		var client = new AzureOpenAiChatModel(mockClient, defaultOptions);
@@ -93,21 +97,21 @@ public class AzureChatCompletionsOptionsTests {
 			.mock(AzureChatEnhancementConfiguration.class);
 
 		var runtimeOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName("PROMPT_MODEL")
-			.withTemperature(99.9)
-			.withFrequencyPenalty(100.0)
-			.withPresencePenalty(100.0)
-			.withLogitBias(Map.of("foo", 2))
-			.withMaxTokens(100)
-			.withN(100)
-			.withStop(List.of("foo", "bar"))
-			.withTopP(0.111)
-			.withUser("user2")
-			.withSeed(1234L)
-			.withLogprobs(true)
-			.withTopLogprobs(4)
-			.withEnhancements(anotherMockAzureChatEnhancementConfiguration)
-			.withResponseFormat(AzureOpenAiResponseFormat.JSON)
+			.deploymentName("PROMPT_MODEL")
+			.temperature(99.9)
+			.frequencyPenalty(100.0)
+			.presencePenalty(100.0)
+			.logitBias(Map.of("foo", 2))
+			.maxTokens(100)
+			.N(100)
+			.stop(List.of("foo", "bar"))
+			.topP(0.111)
+			.user("user2")
+			.seed(1234L)
+			.logprobs(true)
+			.topLogprobs(4)
+			.enhancements(anotherMockAzureChatEnhancementConfiguration)
+			.responseFormat(AzureOpenAiResponseFormat.JSON)
 			.build();
 
 		requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content", runtimeOptions));
@@ -131,21 +135,16 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getResponseFormat()).isInstanceOf(ChatCompletionsJsonResponseFormat.class);
 	}
 
-	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
-		return Stream.of(Arguments.of(0.0, 0.0), Arguments.of(0.0, 1.0), Arguments.of(1.0, 0.0), Arguments.of(1.0, 1.0),
-				Arguments.of(1.0, null), Arguments.of(null, 1.0), Arguments.of(null, null));
-	}
-
 	@ParameterizedTest
 	@MethodSource("providePresencePenaltyAndFrequencyPenaltyTest")
 	public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Double presencePenalty,
 			Double frequencyPenalty) {
 		var options = AzureOpenAiChatOptions.builder()
-			.withMaxTokens(800)
-			.withTemperature(0.7)
-			.withTopP(0.95)
-			.withPresencePenalty(presencePenalty)
-			.withFrequencyPenalty(frequencyPenalty)
+			.maxTokens(800)
+			.temperature(0.7)
+			.topP(0.95)
+			.presencePenalty(presencePenalty)
+			.frequencyPenalty(frequencyPenalty)
 			.build();
 
 		if (presencePenalty == null) {

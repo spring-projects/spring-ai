@@ -1,9 +1,32 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.minimax.chat;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -13,15 +36,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import reactor.core.publisher.Flux;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat;
 
 /**
  * @author Geng Rong
@@ -42,16 +58,16 @@ public class MiniMaxChatOptionsTests {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		// markSensitiveInfo is enabled by default
-		ChatResponse response = chatModel.call(new Prompt(messages));
-		String responseContent = response.getResult().getOutput().getContent();
+		ChatResponse response = this.chatModel.call(new Prompt(messages));
+		String responseContent = response.getResult().getOutput().getText();
 
 		assertThat(responseContent).contains("133-**");
 		assertThat(responseContent).doesNotContain("133-12345678");
 
-		var chatOptions = MiniMaxChatOptions.builder().withMaskSensitiveInfo(false).build();
+		var chatOptions = MiniMaxChatOptions.builder().maskSensitiveInfo(false).build();
 
-		ChatResponse unmaskResponse = chatModel.call(new Prompt(messages, chatOptions));
-		String unmaskResponseContent = unmaskResponse.getResult().getOutput().getContent();
+		ChatResponse unmaskResponse = this.chatModel.call(new Prompt(messages, chatOptions));
+		String unmaskResponseContent = unmaskResponse.getResult().getOutput().getText();
 
 		assertThat(unmaskResponseContent).contains("133-12345678");
 	}
@@ -76,12 +92,12 @@ public class MiniMaxChatOptionsTests {
 		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-			.withModel(ABAB_6_5_S_Chat.value)
-			.withTools(functionTool)
+			.model(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
+			.tools(functionTool)
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, options));
-		String responseContent = response.getResult().getOutput().getContent();
+		ChatResponse response = this.chatModel.call(new Prompt(messages, options));
+		String responseContent = response.getResult().getOutput().getText();
 
 		assertThat(responseContent).contains("40");
 	}
@@ -106,17 +122,17 @@ public class MiniMaxChatOptionsTests {
 		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-			.withModel(ABAB_6_5_S_Chat.value)
-			.withTools(functionTool)
+			.model(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
+			.tools(functionTool)
 			.build();
 
-		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, options));
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, options));
 		String content = Objects.requireNonNull(response.collectList().block())
 			.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);

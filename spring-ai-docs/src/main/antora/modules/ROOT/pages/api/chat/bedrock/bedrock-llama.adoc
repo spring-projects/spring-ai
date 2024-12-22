@@ -1,5 +1,18 @@
 = Llama Chat
 
+[NOTE]
+====
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI. 
+While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] for several key benefits:
+
+- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
+- Model Flexibility: Seamlessly switch between different conversation models without code changes
+- Extended Functionality: Support for model-specific parameters through dedicated structures
+- Tool Support: Native integration with function calling and tool usage capabilities
+- Multimodal Capabilities: Built-in support for vision and other multimodal features
+- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+====
+
 https://ai.meta.com/llama/[Meta's Llama Chat] is part of the Llama collection of large language models.
 It excels in dialogue-based applications with a parameter scale ranging from 7 billion to 70 billion.
 Leveraging public datasets and over 1 million human annotations, Llama Chat offers context-aware dialogues.
@@ -102,7 +115,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         BedrockLlamaChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -145,13 +158,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -191,17 +204,17 @@ LlamaChatBedrockApi api = new LlamaChatBedrockApi(LlamaChatModel.LLAMA2_70B_CHAT
 	new ObjectMapper(),
 	Duration.ofMillis(1000L));
 
-BedrockLlamaChatModel chatModel = new BedrockLlamaChatModel(api,
+BedrockLlamaChatModel chatModel = new BedrockLlamaChatModel(this.api,
     BedrockLlamaChatOptions.builder()
-        .withTemperature(0.5)
-        .withMaxGenLen(100)
-        .withTopP(0.9).build());
+        .temperature(0.5)
+        .maxGenLen(100)
+        .topP(0.9).build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -225,16 +238,16 @@ LlamaChatBedrockApi llamaChatApi = new LlamaChatBedrockApi(
         Duration.ofMillis(1000L));
 
 LlamaChatRequest request = LlamaChatRequest.builder("Hello, my name is")
-		.withTemperature(0.9)
-		.withTopP(0.9)
-		.withMaxGenLen(20)
+		.temperature(0.9)
+		.topP(0.9)
+		.maxGenLen(20)
 		.build();
 
-LlamaChatResponse response = llamaChatApi.chatCompletion(request);
+LlamaChatResponse response = this.llamaChatApi.chatCompletion(this.request);
 
 // Streaming response
-Flux<LlamaChatResponse> responseStream = llamaChatApi.chatCompletionStream(request);
-List<LlamaChatResponse> responses = responseStream.collectList().block();
+Flux<LlamaChatResponse> responseStream = this.llamaChatApi.chatCompletionStream(this.request);
+List<LlamaChatResponse> responses = this.responseStream.collectList().block();
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama/api/LlamaChatBedrockApi.java[LlamaChatBedrockApi.java]'s JavaDoc for further information.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,9 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -33,18 +36,38 @@ import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.StringUtils;
 
-import reactor.core.publisher.Flux;
-
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a
  * single AssistantMessage. Job is performed in parallel to the chat response processing.
  *
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class MessageAggregator {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
+
+	public Flux<AdvisedResponse> aggregateAdvisedResponse(Flux<AdvisedResponse> advisedResponses,
+			Consumer<AdvisedResponse> aggregationHandler) {
+
+		AtomicReference<Map<String, Object>> adviseContext = new AtomicReference<>(new HashMap<>());
+
+		return new MessageAggregator().aggregate(advisedResponses.map(ar -> {
+			adviseContext.get().putAll(ar.adviseContext());
+			return ar.response();
+
+		}), aggregatedChatResponse -> {
+
+			AdvisedResponse aggregatedAdvisedResponse = AdvisedResponse.builder()
+				.response(aggregatedChatResponse)
+				.adviseContext(adviseContext.get())
+				.build();
+
+			aggregationHandler.accept(aggregatedAdvisedResponse);
+
+		}).map(cr -> new AdvisedResponse(cr, adviseContext.get()));
+	}
 
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
@@ -86,8 +109,8 @@ public class MessageAggregator {
 						&& chatResponse.getResult().getMetadata() != ChatGenerationMetadata.NULL) {
 					generationMetadataRef.set(chatResponse.getResult().getMetadata());
 				}
-				if (chatResponse.getResult().getOutput().getContent() != null) {
-					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getContent());
+				if (chatResponse.getResult().getOutput().getText() != null) {
+					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getText());
 				}
 				if (chatResponse.getResult().getOutput().getMetadata() != null) {
 					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
@@ -124,11 +147,11 @@ public class MessageAggregator {
 					metadataUsageTotalTokensRef.get());
 
 			var chatResponseMetadata = ChatResponseMetadata.builder()
-				.withId(metadataIdRef.get())
-				.withModel(metadataModelRef.get())
-				.withRateLimit(metadataRateLimitRef.get())
-				.withUsage(usage)
-				.withPromptMetadata(metadataPromptMetadataRef.get())
+				.id(metadataIdRef.get())
+				.model(metadataModelRef.get())
+				.rateLimit(metadataRateLimitRef.get())
+				.usage(usage)
+				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(
@@ -145,9 +168,7 @@ public class MessageAggregator {
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
-		}).doOnError(e -> {
-			logger.error("Aggregation Error", e);
-		});
+		}).doOnError(e -> logger.error("Aggregation Error", e));
 	}
 
 	public record DefaultUsage(long promptTokens, long generationTokens, long totalTokens) implements Usage {
@@ -166,6 +187,7 @@ public class MessageAggregator {
 		public Long getTotalTokens() {
 			return totalTokens();
 		}
+
 	}
 
 }

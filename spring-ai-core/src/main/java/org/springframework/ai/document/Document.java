@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,35 +13,74 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.document;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.MediaContent;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * A document is a container for the content and metadata of a document. It also contains
- * the document's unique ID and an optional embedding.
+ * the document's unique ID.
+ *
+ * A Document can hold either text content or media content, but not both.
+ *
+ * It is intended to be used to take data from external sources as part of spring-ai's ETL
+ * pipeline.
+ *
+ * <p>
+ * Example of creating a text document: <pre>{@code
+ * // Using constructor
+ * Document textDoc = new Document("Sample text content", Map.of("source", "user-input"));
+ *
+ * // Using builder
+ * Document textDoc = Document.builder()
+ *     .text("Sample text content")
+ *     .metadata("source", "user-input")
+ *     .build();
+ * }</pre>
+ *
+ * <p>
+ * Example of creating a media document: <pre>{@code
+ * // Using constructor
+ * Media imageContent = new Media(MediaType.IMAGE_PNG, new byte[] {...});
+ * Document mediaDoc = new Document(imageContent, Map.of("filename", "sample.png"));
+ *
+ * // Using builder
+ * Document mediaDoc = Document.builder()
+ *     .media(new Media(MediaType.IMAGE_PNG, new byte[] {...}))
+ *     .metadata("filename", "sample.png")
+ *     .build();
+ * }</pre>
+ *
+ * <p>
+ * Example of checking content type and accessing content: <pre>{@code
+ * if (document.isText()) {
+ *     String textContent = document.getText();
+ *     // Process text content
+ * } else {
+ *     Media mediaContent = document.getMedia();
+ *     // Process media content
+ * }
+ * }</pre>
  */
-@JsonIgnoreProperties({ "contentFormatter" })
-public class Document implements MediaContent {
+@JsonIgnoreProperties({ "contentFormatter", "embedding" })
+public class Document {
 
-	public final static ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
-
-	public final static String EMPTY_TEXT = "";
+	public static final ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
 
 	/**
 	 * Unique ID
@@ -49,23 +88,38 @@ public class Document implements MediaContent {
 	private final String id;
 
 	/**
+	 * Document string content.
+	 */
+	private final String text;
+
+	/**
+	 * Document media content
+	 */
+	private final Media media;
+
+	/**
 	 * Metadata for the document. It should not be nested and values should be restricted
 	 * to string, int, float, boolean for simple use with Vector Dbs.
 	 */
-	private Map<String, Object> metadata;
+	private final Map<String, Object> metadata;
 
 	/**
-	 * Document content.
+	 * A numeric score associated with this document that can represent various types of
+	 * relevance measures.
+	 * <p>
+	 * Common uses include:
+	 * <ul>
+	 * <li>Measure of similarity between the embedding value of the document's text/media
+	 * and a query vector, where higher scores indicate greater similarity (opposite of
+	 * distance measure)
+	 * <li>Text relevancy rankings from retrieval systems
+	 * <li>Custom relevancy metrics from RAG patterns
+	 * </ul>
+	 * <p>
+	 * Higher values typically indicate greater relevance or similarity.
 	 */
-	private final String content;
-
-	private final Collection<Media> media;
-
-	/**
-	 * Embedding of the document. Note: ephemeral field.
-	 */
-	@JsonProperty(index = 100)
-	private float[] embedding = new float[0];
+	@Nullable
+	private final Double score;
 
 	/**
 	 * Mutable, ephemeral, content to text formatter. Defaults to Document text.
@@ -78,112 +132,89 @@ public class Document implements MediaContent {
 		this(content, new HashMap<>());
 	}
 
-	public Document(String content, Map<String, Object> metadata) {
-		this(content, metadata, new RandomIdGenerator());
+	public Document(String text, Map<String, Object> metadata) {
+		this(new RandomIdGenerator().generateId(), text, null, metadata, null);
 	}
 
-	public Document(String content, Collection<Media> media, Map<String, Object> metadata) {
-		this(new RandomIdGenerator().generateId(content, metadata), content, media, metadata);
+	public Document(String id, String text, Map<String, Object> metadata) {
+		this(id, text, null, metadata, null);
 	}
 
-	public Document(String content, Map<String, Object> metadata, IdGenerator idGenerator) {
-		this(idGenerator.generateId(content, metadata), content, metadata);
+	public Document(Media media, Map<String, Object> metadata) {
+		this(new RandomIdGenerator().generateId(), null, media, metadata, null);
 	}
 
-	public Document(String id, String content, Map<String, Object> metadata) {
-		this(id, content, List.of(), metadata);
+	public Document(String id, Media media, Map<String, Object> metadata) {
+		this(id, null, media, metadata, null);
 	}
 
-	public Document(String id, String content, Collection<Media> media, Map<String, Object> metadata) {
-		Assert.hasText(id, "id must not be null or empty");
-		Assert.notNull(content, "content must not be null");
-		Assert.notNull(metadata, "metadata must not be null");
+	private Document(String id, String text, Media media, Map<String, Object> metadata, @Nullable Double score) {
+		Assert.hasText(id, "id cannot be null or empty");
+		Assert.notNull(metadata, "metadata cannot be null");
+		Assert.noNullElements(metadata.keySet(), "metadata cannot have null keys");
+		Assert.noNullElements(metadata.values(), "metadata cannot have null values");
+		Assert.isTrue(text != null ^ media != null, "exactly one of text or media must be specified");
 
 		this.id = id;
-		this.content = content;
+		this.text = text;
 		this.media = media;
-		this.metadata = metadata;
+		this.metadata = new HashMap<>(metadata);
+		this.score = score;
 	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private String id;
-
-		private String content = Document.EMPTY_TEXT;
-
-		private List<Media> media = new ArrayList<>();
-
-		private Map<String, Object> metadata = new HashMap<>();
-
-		private IdGenerator idGenerator = new RandomIdGenerator();
-
-		public Builder withIdGenerator(IdGenerator idGenerator) {
-			Assert.notNull(idGenerator, "idGenerator must not be null");
-			this.idGenerator = idGenerator;
-			return this;
-		}
-
-		public Builder withId(String id) {
-			Assert.hasText(id, "id must not be null or empty");
-			this.id = id;
-			return this;
-		}
-
-		public Builder withContent(String content) {
-			Assert.notNull(content, "content must not be null");
-			this.content = content;
-			return this;
-		}
-
-		public Builder withMedia(List<Media> media) {
-			Assert.notNull(media, "media must not be null");
-			this.media = media;
-			return this;
-		}
-
-		public Builder withMedia(Media media) {
-			Assert.notNull(media, "media must not be null");
-			this.media.add(media);
-			return this;
-		}
-
-		public Builder withMetadata(Map<String, Object> metadata) {
-			Assert.notNull(metadata, "metadata must not be null");
-			this.metadata = metadata;
-			return this;
-		}
-
-		public Builder withMetadata(String key, Object value) {
-			Assert.notNull(key, "key must not be null");
-			Assert.notNull(value, "value must not be null");
-			this.metadata.put(key, value);
-			return this;
-		}
-
-		public Document build() {
-			if (!StringUtils.hasText(this.id)) {
-				this.id = this.idGenerator.generateId(content, metadata);
-			}
-			return new Document(id, content, media, metadata);
-		}
-
-	}
-
+	/**
+	 * Returns the unique identifier for this document.
+	 * <p>
+	 * This ID is either explicitly provided during document creation or generated using
+	 * the configured {@link IdGenerator} (defaults to {@link RandomIdGenerator}).
+	 * @return the unique identifier of this document
+	 * @see RandomIdGenerator
+	 */
 	public String getId() {
-		return id;
+		return this.id;
 	}
 
-	@Override
+	/**
+	 * @deprecated Use getText() instead as it more accurately reflects the content type
+	 */
+	@Deprecated
 	public String getContent() {
-		return this.content;
+		return this.getText();
 	}
 
-	@Override
-	public Collection<Media> getMedia() {
+	/**
+	 * Returns the document's text content, if any.
+	 * @return the text content if {@link #isText()} is true, null otherwise
+	 * @see #isText()
+	 * @see #getMedia()
+	 */
+	@Nullable
+	public String getText() {
+		return this.text;
+	}
+
+	/**
+	 * Determines whether this document contains text or media content.
+	 * @return true if this document contains text content (accessible via
+	 * {@link #getText()}), false if it contains media content (accessible via
+	 * {@link #getMedia()})
+	 */
+	public boolean isText() {
+		return this.text != null;
+	}
+
+	/**
+	 * Returns the document's media content, if any.
+	 * @return the media content if {@link #isText()} is false, null otherwise
+	 * @see #isText()
+	 * @see #getText()
+	 */
+	@Nullable
+	public Media getMedia() {
 		return this.media;
 	}
 
@@ -206,9 +237,32 @@ public class Document implements MediaContent {
 		return formatter.format(this, metadataMode);
 	}
 
-	public void setEmbedding(float[] embedding) {
-		Assert.notNull(embedding, "embedding must not be null");
-		this.embedding = embedding;
+	/**
+	 * Returns the metadata associated with this document.
+	 * <p>
+	 * The metadata values are restricted to simple types (string, int, float, boolean)
+	 * for compatibility with Vector Databases.
+	 * @return the metadata map
+	 */
+	public Map<String, Object> getMetadata() {
+		return this.metadata;
+	}
+
+	@Nullable
+	public Double getScore() {
+		return this.score;
+	}
+
+	/**
+	 * Returns the content formatter associated with this document.
+	 * @deprecated We are considering getting rid of this, please comment on
+	 * https://github.com/spring-projects/spring-ai/issues/1782
+	 * @return the current ContentFormatter instance used for formatting the document
+	 * content.
+	 */
+	@Deprecated(since = "1.0.0-M4")
+	public ContentFormatter getContentFormatter() {
+		return this.contentFormatter;
 	}
 
 	/**
@@ -219,63 +273,142 @@ public class Document implements MediaContent {
 		this.contentFormatter = contentFormatter;
 	}
 
+	public Builder mutate() {
+		return new Builder().id(this.id).text(this.text).media(this.media).metadata(this.metadata).score(this.score);
+	}
+
 	@Override
-	public Map<String, Object> getMetadata() {
-		return this.metadata;
-	}
-
-	public float[] getEmbedding() {
-		return this.embedding;
-	}
-
-	public ContentFormatter getContentFormatter() {
-		return contentFormatter;
+	public boolean equals(Object o) {
+		if (o == null || this.getClass() != o.getClass()) {
+			return false;
+		}
+		Document document = (Document) o;
+		return Objects.equals(this.id, document.id) && Objects.equals(this.text, document.text)
+				&& Objects.equals(this.media, document.media) && Objects.equals(this.metadata, document.metadata)
+				&& Objects.equals(this.score, document.score);
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result + ((metadata == null) ? 0 : metadata.hashCode());
-		result = prime * result + ((content == null) ? 0 : content.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Document other = (Document) obj;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		}
-		else if (!id.equals(other.id))
-			return false;
-		if (metadata == null) {
-			if (other.metadata != null)
-				return false;
-		}
-		else if (!metadata.equals(other.metadata))
-			return false;
-		if (content == null) {
-			if (other.content != null)
-				return false;
-		}
-		else if (!content.equals(other.content))
-			return false;
-		return true;
+		return Objects.hash(this.id, this.text, this.media, this.metadata, this.score);
 	}
 
 	@Override
 	public String toString() {
-		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", content='" + content + '\'' + ", media="
-				+ media + '}';
+		return "Document{" + "id='" + this.id + '\'' + ", text='" + this.text + '\'' + ", media='" + this.media + '\''
+				+ ", metadata=" + this.metadata + ", score=" + this.score + '}';
+	}
+
+	public static class Builder {
+
+		private String id;
+
+		private String text;
+
+		private Media media;
+
+		private Map<String, Object> metadata = new HashMap<>();
+
+		@Nullable
+		private Double score;
+
+		private IdGenerator idGenerator = new RandomIdGenerator();
+
+		public Builder idGenerator(IdGenerator idGenerator) {
+			Assert.notNull(idGenerator, "idGenerator cannot be null");
+			this.idGenerator = idGenerator;
+			return this;
+		}
+
+		public Builder id(String id) {
+			Assert.hasText(id, "id cannot be null or empty");
+			this.id = id;
+			return this;
+		}
+
+		/**
+		 * Sets the text content of the document.
+		 * <p>
+		 * Either text or media content must be set before building the document, but not
+		 * both.
+		 * @param text the text content
+		 * @return the builder instance
+		 * @see #media(Media)
+		 */
+		public Builder text(@Nullable String text) {
+			this.text = text;
+			return this;
+		}
+
+		/**
+		 * Sets the text content of the document.
+		 * @param text the text content to set
+		 * @return the builder instance
+		 * @deprecated since 1.0.0-M5, use {@link #text(String)} instead as it more
+		 * accurately reflects that this Document instance will contain text rather than
+		 * generic content. This method will be removed in a future release.
+		 */
+		@Deprecated(since = "1.0.0-M5", forRemoval = true)
+		public Builder content(@Nullable String text) {
+			this.text = text;
+			return this;
+		}
+
+		/**
+		 * Sets the media content of the document.
+		 * <p>
+		 * Either text or media content must be set before building the document, but not
+		 * both.
+		 * @param media the media content
+		 * @return the builder instance
+		 * @see #text(String)
+		 */
+		public Builder media(@Nullable Media media) {
+			this.media = media;
+			return this;
+		}
+
+		public Builder metadata(Map<String, Object> metadata) {
+			Assert.notNull(metadata, "metadata cannot be null");
+			this.metadata = metadata;
+			return this;
+		}
+
+		public Builder metadata(String key, Object value) {
+			Assert.notNull(key, "metadata key cannot be null");
+			Assert.notNull(value, "metadata value cannot be null");
+			this.metadata.put(key, value);
+			return this;
+		}
+
+		/**
+		 * Sets a score value for this document.
+		 * <p>
+		 * Common uses include:
+		 * <ul>
+		 * <li>Measure of similarity between the embedding value of the document's
+		 * text/media and a query vector, where higher scores indicate greater similarity
+		 * (opposite of distance measure)
+		 * <li>Text relevancy rankings from retrieval systems
+		 * <li>Custom relevancy metrics from RAG patterns
+		 * </ul>
+		 * <p>
+		 * Higher values typically indicate greater relevance or similarity.
+		 * @param score the document score, may be null
+		 * @return the builder instance
+		 */
+		public Builder score(@Nullable Double score) {
+			this.score = score;
+			return this;
+		}
+
+		public Document build() {
+			if (!StringUtils.hasText(this.id)) {
+				this.id = this.idGenerator.generateId(this.text, this.metadata);
+			}
+			return new Document(this.id, this.text, this.media, this.metadata, this.score);
+		}
+
 	}
 
 }

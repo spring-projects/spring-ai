@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.openai;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit Tests for {@link OpenAiChatProperties} #options#responseFormat support.
@@ -40,15 +42,15 @@ public class OpenAiResponseFormatPropertiesTests {
 
 		String responseFormatJsonSchema = """
 				{
-					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-					  "type" : "object",
-					  "properties" : {
-					    "someString" : {
-					      "type" : "string"
-					    }
-					  },
-					  "additionalProperties" : false
-					}
+					"$schema" : "https://json-schema.org/draft/2020-12/schema",
+					"type" : "object",
+					"properties" : {
+						"someString" : {
+						"type" : "string"
+						}
+					},
+					"additionalProperties" : false
+				}
 				""";
 
 		new ApplicationContextRunner().withPropertyValues(
@@ -68,8 +70,8 @@ public class OpenAiResponseFormatPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(chatProperties.getOptions().getResponseFormat()).isEqualTo(
-						new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, "MyName", responseFormatJsonSchema, true));
+				assertThat(chatProperties.getOptions().getResponseFormat())
+					.isEqualTo(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, responseFormatJsonSchema));
 			});
 	}
 
@@ -85,7 +87,7 @@ public class OpenAiResponseFormatPropertiesTests {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 
 				assertThat(chatProperties.getOptions().getResponseFormat())
-					.isEqualTo(new ResponseFormat(ResponseFormat.Type.JSON_OBJECT));
+					.isEqualTo(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build());
 			});
 	}
 

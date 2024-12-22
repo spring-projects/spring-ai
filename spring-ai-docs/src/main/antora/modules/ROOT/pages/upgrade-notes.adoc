@@ -1,7 +1,14 @@
 [[upgrade-notes]]
 = Upgrading Notes
 
-== Upgrading to 1.0.0.RC1
+
+== Upgrading to 1.0.0.M5
+
+* Vector Builders have been refactored for consistency.
+* Current VectorStore implementation constructors have been deprecated, use the builder pattern.
+* VectorStore implementation packages have been moved into unique package names, avoiding conflicts across artifact.  For example `org.springframework.ai.vectorstore` to `org.springframework.ai.pgvector.vectorstore`.
+
+== Upgrading to 1.0.0.RC3
 
 * The type of the portable chat options (`frequencyPenalty`, `presencePenalty`, `temperature`, `topP`) has been changed from `Float` to `Double`.
 
@@ -32,7 +39,7 @@ On our march to release 1.0.0 M1 we have made several breaking changes.  Apologi
 
 === ChatClient changes
 
-A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done do support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/1.0.0-SNAPSHOT/api/) for more information on the Fluent API, proper reference documentation is coming shortly.
+A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done do support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/api) for more information on the Fluent API, proper reference documentation is coming shortly.
 
 We renamed the 'old' `ModelClient` to `Model` and renamed implementing classes, for example `ImageClient` was renamed to `ImageModel`.  The `Model` implementation represent the portability layer that converts between the Spring AI API and the underlying AI Model API.
 
@@ -58,7 +65,7 @@ public class OldSimpleAiController {
 
     @GetMapping("/ai/simple")
     Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", this.chatClient.call(message));
     }
 }
 ```
@@ -77,7 +84,7 @@ public class SimpleAiController {
 
     @GetMapping("/ai/simple")
     Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 }
 ```
@@ -109,7 +116,7 @@ class OldSimpleAiController {
 	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
 		return Map.of(
                 "generation",
-                chatClient.call(message)
+				this.chatClient.call(message)
         );
 	}
 }
@@ -131,7 +138,7 @@ class SimpleAiController {
     Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         return Map.of(
                 "generation",
-                chatClient.prompt().user(message).call().content()
+				this.chatClient.prompt().user(message).call().content()
         );
     }
 }
@@ -300,4 +307,10 @@ You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://mar
     <version>0.7.1-SNAPSHOT</version>
 </dependency>
 ----
+
+== Upgrading to 1.0.0.M4
+
+* PaLM API support removal
+
+As a follow up to the announcement to https://ai.google.dev/palm_docs/deprecation[deprecate PaLM API], the PaLM API support is removed.
 

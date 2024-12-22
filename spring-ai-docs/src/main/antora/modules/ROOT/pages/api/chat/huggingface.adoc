@@ -1,6 +1,10 @@
 = Hugging Face Chat
 
-Hugging Face Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
+Hugging Face Text Generation Inference (TGI) is a specialized deployment solution for serving Large Language Models (LLMs) in the cloud, making them accessible via an API. TGI provides optimized performance for text generation tasks through features like continuous batching, token streaming, and efficient memory management.
+
+IMPORTANT: Text Generation Inference requires models to be compatible with its architecture-specific optimizations. While many popular LLMs are supported, not all models on Hugging Face Hub can be deployed using TGI. If you need to deploy other types of models, consider using standard Hugging Face Inference Endpoints instead.
+
+TIP: For a complete and up-to-date list of supported models and architectures, see the link:https://huggingface.co/docs/text-generation-inference/en/supported_models[Text Generation Inference supported models documentation].
 
 == Prerequisites
 
@@ -52,7 +56,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.huggingface` is the property prefix that lets you configure the chat model implementation for Hugging Face.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 | spring.ai.huggingface.chat.api-key    | API Key to authenticate with the Inference Endpoint.  |  -
@@ -91,7 +95,7 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 }
 ----
@@ -127,7 +131,7 @@ Next, create a `HuggingfaceChatModel` and use it for text generations:
 ----
 HuggingfaceChatModel chatModel = new HuggingfaceChatModel(apiKey, url);
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 System.out.println(response.getGeneration().getResult().getOutput().getContent());

@@ -1,5 +1,18 @@
 = Titan Chat
 
+[NOTE]
+====
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI. 
+While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] for several key benefits:
+
+- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
+- Model Flexibility: Seamlessly switch between different conversation models without code changes
+- Extended Functionality: Support for model-specific parameters through dedicated structures
+- Tool Support: Native integration with function calling and tool usage capabilities
+- Multimodal Capabilities: Built-in support for vision and other multimodal features
+- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+====
+
 link:https://aws.amazon.com/bedrock/titan/[Amazon Titan] foundation models (FMs) provide customers with a breadth of high-performing image, multimodal embeddings, and text model choices, via a fully managed API.
 Amazon Titan models are created by AWS and pretrained on large datasets, making them powerful, general-purpose models built to support a variety of use cases, while also supporting the responsible use of AI.
 Use them as is or privately customize them with your own data.
@@ -100,7 +113,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         BedrockTitanChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -143,13 +156,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -190,18 +203,18 @@ TitanChatBedrockApi titanApi = new TitanChatBedrockApi(
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockTitanChatModel chatModel = new BedrockTitanChatModel(titanApi,
+BedrockTitanChatModel chatModel = new BedrockTitanChatModel(this.titanApi,
     BedrockTitanChatOptions.builder()
-        .withTemperature(0.6)
-        .withTopP(0.8)
-        .withMaxTokenCount(100)
+        .temperature(0.6)
+        .topP(0.8)
+        .maxTokenCount(100)
     .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -220,20 +233,20 @@ Here is a simple snippet how to use the api programmatically:
 [source,java]
 ----
 TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatCompletionModel.TITAN_TEXT_EXPRESS_V1.id(),
-		Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
+		Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
-	.withTemperature(0.5)
-	.withTopP(0.9)
-	.withMaxTokenCount(100)
-	.withStopSequences(List.of("|"))
+	.temperature(0.5)
+	.topP(0.9)
+	.maxTokenCount(100)
+	.stopSequences(List.of("|"))
 	.build();
 
-TitanChatResponse response = titanBedrockApi.chatCompletion(titanChatRequest);
+TitanChatResponse response = this.titanBedrockApi.chatCompletion(this.titanChatRequest);
 
-Flux<TitanChatResponseChunk> response = titanBedrockApi.chatCompletionStream(titanChatRequest);
+Flux<TitanChatResponseChunk> response = this.titanBedrockApi.chatCompletionStream(this.titanChatRequest);
 
-List<TitanChatResponseChunk> results = response.collectList().block();
+List<TitanChatResponseChunk> results = this.response.collectList().block();
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/api/TitanChatBedrockApi.java[TitanChatBedrockApi]'s JavaDoc for further information.

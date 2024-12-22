@@ -1,11 +1,28 @@
-package org.springframework.ai.reader.markdown;
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
+package org.springframework.ai.reader.markdown;
 
 import java.util.List;
 import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -22,7 +39,7 @@ class MarkdownDocumentReaderTest {
 		List<Document> documents = reader.get();
 
 		assertThat(documents).hasSize(4)
-			.extracting(Document::getMetadata, Document::getContent)
+			.extracting(Document::getMetadata, Document::getText)
 			.containsOnly(tuple(Map.of("category", "header_1", "title", "Header 1a"),
 					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue."),
 					tuple(Map.of("category", "header_1", "title", "Header 1b"),
@@ -40,7 +57,7 @@ class MarkdownDocumentReaderTest {
 		List<Document> documents = reader.get();
 
 		assertThat(documents).hasSize(2)
-			.extracting(Document::getMetadata, Document::getContent)
+			.extracting(Document::getMetadata, Document::getText)
 			.containsOnly(tuple(Map.of("category", "header_1", "title", "This is a fancy header name"),
 					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec tincidunt velit non bibendum gravida. Cras accumsan tincidunt ornare. Donec hendrerit consequat tellus blandit accumsan. Aenean aliquam metus at arcu elementum dignissim."),
 					tuple(Map.of("category", "header_3", "title", "Header 3"),
@@ -58,7 +75,7 @@ class MarkdownDocumentReaderTest {
 		List<Document> documents = reader.get();
 
 		assertThat(documents).hasSize(7)
-			.extracting(Document::getMetadata, Document::getContent)
+			.extracting(Document::getMetadata, Document::getText)
 			.containsOnly(tuple(Map.of(),
 					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec tincidunt velit non bibendum gravida."),
 					tuple(Map.of(),
@@ -170,7 +187,7 @@ class MarkdownDocumentReaderTest {
 		List<Document> documents = reader.get();
 
 		assertThat(documents).hasSize(2)
-			.extracting(Document::getMetadata, Document::getContent)
+			.extracting(Document::getMetadata, Document::getText)
 			.containsOnly(tuple(Map.of(),
 					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue."),
 					tuple(Map.of("category", "blockquote"),
@@ -202,7 +219,7 @@ class MarkdownDocumentReaderTest {
 		List<Document> documents = reader.get();
 
 		assertThat(documents).hasSize(2)
-			.extracting(Document::getMetadata, Document::getContent)
+			.extracting(Document::getMetadata, Document::getText)
 			.containsOnly(tuple(Map.of("category", "header_2", "title", "Ordered list"),
 					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue. Proin vel laoreet leo, sed luctus augue. Sed et ligula commodo, commodo lacus at, consequat turpis. Maecenas eget sapien odio. Pellentesque auctor pharetra eros, viverra sodales lorem aliquet id. Curabitur semper nisi vel sem interdum suscipit. Maecenas urna lectus, pellentesque in accumsan aliquam, congue eu libero. Ut rhoncus nec justo a porttitor."),
 					tuple(Map.of("category", "header_2", "title", "Unordered list"),

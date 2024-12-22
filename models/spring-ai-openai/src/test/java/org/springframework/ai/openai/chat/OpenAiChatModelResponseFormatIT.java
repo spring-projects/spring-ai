@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,45 +13,60 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.chat;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
+import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 @SpringBootTest(classes = OpenAiChatModelResponseFormatIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelResponseFormatIT {
 
+	private static ObjectMapper MAPPER = new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
 	private OpenAiChatModel openAiChatModel;
+
+	public static boolean isValidJson(String json) {
+		try {
+			MAPPER.readTree(json);
+		}
+		catch (JacksonException e) {
+			return false;
+		}
+		return true;
+	}
 
 	@Test
 	void jsonObject() throws JsonMappingException, JsonProcessingException {
@@ -67,14 +82,14 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("List 8 planets. Use JSON response",
 				OpenAiChatOptions.builder()
-					.withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_OBJECT))
+					.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
 					.build());
 
 		ChatResponse response = this.openAiChatModel.call(prompt);
 
 		assertThat(response).isNotNull();
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		logger.info("Response content: {}", content);
 
@@ -109,15 +124,15 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiChatOptions.builder()
-					.withModel(ChatModel.GPT_4_O_MINI)
-					.withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+					.model(ChatModel.GPT_4_O_MINI)
+					.responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
 					.build());
 
 		ChatResponse response = this.openAiChatModel.call(prompt);
 
 		assertThat(response).isNotNull();
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		logger.info("Response content: {}", content);
 
@@ -127,54 +142,91 @@ public class OpenAiChatModelResponseFormatIT {
 	@Test
 	void jsonSchemaBeanConverter() throws JsonMappingException, JsonProcessingException {
 
+		@JsonPropertyOrder({ "steps", "final_answer" })
 		record MathReasoning(@JsonProperty(required = true, value = "steps") Steps steps,
 				@JsonProperty(required = true, value = "final_answer") String finalAnswer) {
 
 			record Steps(@JsonProperty(required = true, value = "items") Items[] items) {
 
+				@JsonPropertyOrder({ "output", "explanation" })
 				record Items(@JsonProperty(required = true, value = "explanation") String explanation,
 						@JsonProperty(required = true, value = "output") String output) {
+
 				}
+
 			}
+
 		}
 
 		var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
-
+		// @formatter:off
+		// CHECKSTYLE:OFF
+		var expectedJsonSchema = """
+				{
+				  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+				  "type" : "object",
+				  "properties" : {
+				    "steps" : {
+				      "type" : "object",
+				      "properties" : {
+				        "items" : {
+				          "type" : "array",
+				          "items" : {
+				            "type" : "object",
+				            "properties" : {
+				              "output" : {
+				                "type" : "string"
+				              },
+				              "explanation" : {
+				                "type" : "string"
+				              }
+				            },
+				            "required" : [ "output", "explanation" ],
+				            "additionalProperties" : false
+				          }
+				        }
+				      },
+				      "required" : [ "items" ],
+				      "additionalProperties" : false
+				    },
+				    "final_answer" : {
+				      "type" : "string"
+				    }
+				  },
+				  "required" : [ "steps", "final_answer" ],
+				  "additionalProperties" : false
+				}""";
+		// @formatter:on
+		// CHECKSTYLE:ON
 		var jsonSchema1 = outputConverter.getJsonSchema();
 
-		System.out.println(jsonSchema1);
+		assertThat(jsonSchema1).isNotNull();
+		assertThat(jsonSchema1).isEqualTo(expectedJsonSchema);
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiChatOptions.builder()
-					.withModel(ChatModel.GPT_4_O_MINI)
-					.withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema1))
+					.model(ChatModel.GPT_4_O_MINI)
+					.responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema1))
 					.build());
 
 		ChatResponse response = this.openAiChatModel.call(prompt);
 
 		assertThat(response).isNotNull();
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		logger.info("Response content: {}", content);
 
+		assertThat(isValidJson(content)).isTrue();
+
+		// Check if the order is correct as specified in the schema. Steps should come
+		// first before final answer.
+		assertThat(content.startsWith("{\"steps\":{\"items\":["));
+
 		MathReasoning mathReasoning = outputConverter.convert(content);
 
-		System.out.println(mathReasoning);
-
-		assertThat(isValidJson(content)).isTrue();
-	}
-
-	private static ObjectMapper MAPPER = new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
-
-	public static boolean isValidJson(String json) {
-		try {
-			MAPPER.readTree(json);
-		}
-		catch (JacksonException e) {
-			return false;
-		}
-		return true;
+		assertThat(mathReasoning).isNotNull();
+		logger.info(mathReasoning.toString());
 	}
 
 	@SpringBootConfiguration

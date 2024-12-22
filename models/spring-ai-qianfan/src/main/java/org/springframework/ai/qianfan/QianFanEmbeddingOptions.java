@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.qianfan;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
@@ -26,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -48,30 +51,6 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		protected QianFanEmbeddingOptions options;
-
-		public Builder() {
-			this.options = new QianFanEmbeddingOptions();
-		}
-
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		public Builder withUser(String user) {
-			this.options.setUser(user);
-			return this;
-		}
-
-		public QianFanEmbeddingOptions build() {
-			return this.options;
-		}
-
-	}
-
 	@Override
 	public String getModel() {
 		return this.model;
@@ -82,7 +61,7 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	public String getUser() {
-		return user;
+		return this.user;
 	}
 
 	public void setUser(String user) {
@@ -93,6 +72,48 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
+	}
+
+	public static class Builder {
+
+		protected QianFanEmbeddingOptions options;
+
+		public Builder() {
+			this.options = new QianFanEmbeddingOptions();
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUser(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public QianFanEmbeddingOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

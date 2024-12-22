@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.bedrock.anthropic3;
 
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic3.Anthropic3ChatOptions;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -46,10 +47,10 @@ public class BedrockAnthropic3ChatProperties {
 
 	@NestedConfigurationProperty
 	private Anthropic3ChatOptions options = Anthropic3ChatOptions.builder()
-		.withTemperature(0.7)
-		.withMaxTokens(300)
-		.withTopK(10)
-		.withAnthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+		.temperature(0.7)
+		.maxTokens(300)
+		.topK(10)
+		.anthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 		// .withStopSequences(List.of("\n\nHuman:"))
 		.build();
 
@@ -70,12 +71,12 @@ public class BedrockAnthropic3ChatProperties {
 	}
 
 	public Anthropic3ChatOptions getOptions() {
-		return options;
+		return this.options;
 	}
 
 	public void setOptions(Anthropic3ChatOptions options) {
-		Assert.notNull(options, "AnthropicChatOptions must not be null");
-		Assert.notNull(options.getTemperature(), "AnthropicChatOptions.temperature must not be null");
+		Assert.notNull(options, "Anthropic3ChatOptions must not be null");
+		Assert.notNull(options.getTemperature(), "Anthropic3ChatOptions.temperature must not be null");
 
 		this.options = options;
 	}

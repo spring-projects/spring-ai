@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.cohere;
 
 import java.time.Duration;
@@ -45,17 +46,17 @@ public class BedrockCohereChatCreateRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new BedrockCohereChatModel(chatApi,
+		var client = new BedrockCohereChatModel(this.chatApi,
 				BedrockCohereChatOptions.builder()
-					.withTemperature(66.6)
-					.withTopK(66)
-					.withTopP(0.66)
-					.withMaxTokens(678)
-					.withStopSequences(List.of("stop1", "stop2"))
-					.withReturnLikelihoods(ReturnLikelihoods.ALL)
-					.withNumGenerations(3)
-					.withLogitBias(new LogitBias("t", 6.6f))
-					.withTruncate(Truncate.END)
+					.temperature(66.6)
+					.topK(66)
+					.topP(0.66)
+					.maxTokens(678)
+					.stopSequences(List.of("stop1", "stop2"))
+					.returnLikelihoods(ReturnLikelihoods.ALL)
+					.numGenerations(3)
+					.logitBias(new LogitBias("t", 6.6f))
+					.truncate(Truncate.END)
 					.build());
 
 		CohereChatRequest request = client.createRequest(new Prompt("Test message content"), true);
@@ -75,15 +76,15 @@ public class BedrockCohereChatCreateRequestTests {
 
 		request = client.createRequest(new Prompt("Test message content",
 				BedrockCohereChatOptions.builder()
-					.withTemperature(99.9)
-					.withTopK(99)
-					.withTopP(0.99)
-					.withMaxTokens(888)
-					.withStopSequences(List.of("stop3", "stop4"))
-					.withReturnLikelihoods(ReturnLikelihoods.GENERATION)
-					.withNumGenerations(13)
-					.withLogitBias(new LogitBias("t", 9.9f))
-					.withTruncate(Truncate.START)
+					.temperature(99.9)
+					.topK(99)
+					.topP(0.99)
+					.maxTokens(888)
+					.stopSequences(List.of("stop3", "stop4"))
+					.returnLikelihoods(ReturnLikelihoods.GENERATION)
+					.numGenerations(13)
+					.logitBias(new LogitBias("t", 9.9f))
+					.truncate(Truncate.START)
 					.build()),
 				false
 

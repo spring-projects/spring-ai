@@ -1,29 +1,40 @@
 [[introduction]]
-= Spring AI
+
+image::spring_ai_logo_with_text.svg[Integration Problem, width=300, align="left"]
 
 The `Spring AI` project aims to streamline the development of applications that incorporate artificial intelligence functionality without unnecessary complexity.
 
 The project draws inspiration from notable Python projects, such as LangChain and LlamaIndex, but Spring AI is not a direct port of those projects.
 The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
 
-At its core, Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
+NOTE: Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
 
-image::spring-ai-integrationproblem.png[Integration Problem, width=300, align="center"]
+image::spring-ai-integration-diagram-3.svg[Interactive,500,opts=interactive]
 
 Spring AI provides abstractions that serve as the foundation for developing AI applications.
 These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.
 
 Spring AI provides the following features:
 
-* Support for all major Model providers such as OpenAI, Microsoft, Amazon, Google, and Hugging Face.
-* Supported Model types are Chat, Text to Image, Audio Transcription, Text to Speech, Moderation, and more on the way.
-* Portable API across AI providers for all models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
-* Mapping of AI Model output to POJOs.
-* Support for all major Vector Database providers such as Apache Cassandra, Azure Vector Search, Chroma, Milvus, MongoDB Atlas, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate.
-* Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
-* Function calling.
+* Portable API support across AI providers for Chat, text-to-image, and Embedding models. Both synchronous and streaming API options are supported. Access to model-specific features is also available.
+* Support for all major xref:api/index.adoc[AI Model providers] such as Anthropic, OpenAI, Microsoft, Amazon, Google, and Ollama. Supported model types include:
+** xref:api/chatmodel.adoc[Chat Completion]
+** xref:api/embeddings.adoc[Embedding]
+** xref:api/imageclient.adoc[Text to Image]
+** xref:api/audio/transcriptions.adoc[Audio Transcription]
+** xref:api/audio/speech.adoc[Text to Speech]
+** xref:api/moderation[Moderation]
+* xref:api/structured-output-converter.adoc[Structured Outputs] - Mapping of AI Model output to POJOs.
+* Support for all major xref:api/vectordbs.adoc[Vector Database providers] such as Apache Cassandra, Azure Cosmos DB, Azure Vector Search, Chroma, Elasticsearch, GemFire, MariaDB, Milvus, MongoDB Atlas, Neo4j, OpenSearch, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, SAP Hana, Typesense and Weaviate.
+* Portable API across Vector Store providers, including a novel SQL-like metadata filter API.
+* xref:api/functions.adoc[Tools/Function Calling] - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
+* xref:observability/index.adoc[Observability] - Provides insights into AI-related operations.
+* Document injection xref:api/etl-pipeline.adoc[ETL framework] for Data Engineering.
+* xref:api/testing.adoc[AI Model Evaluation] - Utilities to help evaluate generated content and protect against hallucinated response.
 * Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
-* ETL framework for Data Engineering.
+* xref:api/chatclient.adoc[ChatClient API] - Fluent API for communicating with AI Chat Models, idiomatically similar to the WebClient and RestClient APIs.
+* xref:api/advisors.adoc[Advisors API] - Encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases.
+* Support for xref:api/chatclient.adoc#_chat_memory[Chat Conversation Memory] and xref:api/chatclient.adoc#_retrieval_augmented_generation[Retrieval Augmented Generation (RAG)].
 
 This feature set lets you implement common use cases such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
 

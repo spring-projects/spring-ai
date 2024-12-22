@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.GranularityType;
-import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,12 +37,12 @@ public class TranscriptionRequestTests {
 
 		var client = new OpenAiAudioTranscriptionModel(new OpenAiAudioApi("TEST"),
 				OpenAiAudioTranscriptionOptions.builder()
-					.withModel("DEFAULT_MODEL")
-					.withResponseFormat(TranscriptResponseFormat.TEXT)
-					.withLanguage("en")
-					.withPrompt("Prompt1")
-					.withGranularityType(GranularityType.WORD)
-					.withTemperature(66.6f)
+					.model("DEFAULT_MODEL")
+					.responseFormat(TranscriptResponseFormat.TEXT)
+					.language("en")
+					.prompt("Prompt1")
+					.granularityType(GranularityType.WORD)
+					.temperature(66.6f)
 					.build());
 
 		var request = client.createRequest(
@@ -60,23 +61,23 @@ public class TranscriptionRequestTests {
 
 		var client = new OpenAiAudioTranscriptionModel(new OpenAiAudioApi("TEST"),
 				OpenAiAudioTranscriptionOptions.builder()
-					.withModel("DEFAULT_MODEL")
-					.withResponseFormat(TranscriptResponseFormat.TEXT)
-					.withLanguage("en")
-					.withPrompt("Prompt1")
-					.withGranularityType(GranularityType.WORD)
-					.withTemperature(66.6f)
+					.model("DEFAULT_MODEL")
+					.responseFormat(TranscriptResponseFormat.TEXT)
+					.language("en")
+					.prompt("Prompt1")
+					.granularityType(GranularityType.WORD)
+					.temperature(66.6f)
 					.build());
 
 		var request = client
 			.createRequest(new AudioTranscriptionPrompt(new DefaultResourceLoader().getResource("classpath:/test.png"),
 					OpenAiAudioTranscriptionOptions.builder()
-						.withModel("RUNTIME_MODEL")
-						.withResponseFormat(TranscriptResponseFormat.JSON)
-						.withLanguage("bg")
-						.withPrompt("Prompt2")
-						.withGranularityType(GranularityType.SEGMENT)
-						.withTemperature(99.9f)
+						.model("RUNTIME_MODEL")
+						.responseFormat(TranscriptResponseFormat.JSON)
+						.language("bg")
+						.prompt("Prompt2")
+						.granularityType(GranularityType.SEGMENT)
+						.temperature(99.9f)
 						.build()));
 
 		assertThat(request.model()).isEqualTo("RUNTIME_MODEL");

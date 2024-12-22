@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.image;
 
 import org.springframework.ai.model.MutableResponseMetadata;
-import org.springframework.ai.model.ResponseMetadata;
-
-import java.util.HashMap;
 
 /**
  * Represents metadata associated with an image response. It provides additional
@@ -31,10 +29,10 @@ import java.util.HashMap;
  */
 public class ImageResponseMetadata extends MutableResponseMetadata {
 
-	private Long created;
+	private final Long created;
 
 	public ImageResponseMetadata() {
-		this.created = System.currentTimeMillis();
+		this(System.currentTimeMillis());
 	}
 
 	public ImageResponseMetadata(Long created) {

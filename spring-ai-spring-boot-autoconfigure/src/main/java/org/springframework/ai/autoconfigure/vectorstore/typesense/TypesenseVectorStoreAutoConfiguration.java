@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,20 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+
+import io.micrometer.observation.ObservationRegistry;
+import org.typesense.api.Client;
+import org.typesense.api.Configuration;
+import org.typesense.resources.Node;
+
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.TypesenseVectorStore;
-import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
+import org.springframework.ai.vectorstore.typesense.TypesenseVectorStore;
+import org.springframework.ai.vectorstore.typesense.TypesenseVectorStore.TypesenseVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -28,17 +37,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.typesense.api.Client;
-import org.typesense.api.Configuration;
-import org.typesense.resources.Node;
-
-import io.micrometer.observation.ObservationRegistry;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Typesense Vector Store.
+ *
  * @author Pablo Sanchidrian Herrera
  * @author Eddú Meléndez
  * @author Soby Chacko
@@ -68,14 +70,14 @@ public class TypesenseVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
-			.withCollectionName(properties.getCollectionName())
-			.withEmbeddingDimension(properties.getEmbeddingDimension())
+		return TypesenseVectorStore.builder(typesenseClient, embeddingModel)
+			.collectionName(properties.getCollectionName())
+			.embeddingDimension(properties.getEmbeddingDimension())
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
 			.build();
-
-		return new TypesenseVectorStore(typesenseClient, embeddingModel, config, properties.isInitializeSchema(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
 	}
 
 	@Bean

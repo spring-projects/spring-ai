@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.anthropic.api.tool;
 
 import java.util.List;
@@ -25,10 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
-import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.tool.XmlHelper.FunctionCalls;
 import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools;
@@ -60,10 +61,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("null")
 public class AnthropicApiLegacyToolIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiLegacyToolIT.class);
-
-	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
-
 	public static final String TOO_SYSTEM_PROMPT_TEMPLATE = """
 			In this environment you have access to a set of tools you can use to answer the user's question.
 
@@ -84,9 +81,9 @@ public class AnthropicApiLegacyToolIT {
 
 	public static final ConcurrentHashMap<String, Function> FUNCTIONS = new ConcurrentHashMap<>();
 
-	static {
-		FUNCTIONS.put("getCurrentWeather", new MockWeatherService());
-	}
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiLegacyToolIT.class);
+
+	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
 
 	@Test
 	void toolCalls() {
@@ -120,7 +117,7 @@ public class AnthropicApiLegacyToolIT {
 
 	private ResponseEntity<ChatCompletionResponse> doCall(ChatCompletionRequest chatCompletionRequest) {
 
-		ResponseEntity<ChatCompletionResponse> response = anthropicApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi.chatCompletionEntity(chatCompletionRequest);
 
 		FunctionCalls functionCalls = XmlHelper.extractFunctionCalls(response.getBody().content().get(0).text());
 
@@ -148,6 +145,10 @@ public class AnthropicApiLegacyToolIT {
 
 		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
 				List.of(chatCompletionMessage2), null, 500, 0.8, false));
+	}
+
+	static {
+		FUNCTIONS.put("getCurrentWeather", new MockWeatherService());
 	}
 
 }

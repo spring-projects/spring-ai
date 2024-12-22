@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.qianfan.api;
+
+import java.util.List;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.qianfan.api.auth.AuthApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
@@ -27,11 +34,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.function.Predicate;
 
 // @formatter:off
 /**
@@ -60,7 +62,7 @@ public class QianFanApi extends AuthApi {
 	 * @param secretKey QianFan secret key.
 	 */
 	public QianFanApi(String apiKey, String secretKey) {
-		this(ApiUtils.DEFAULT_BASE_URL, apiKey, secretKey);
+		this(QianFanConstants.DEFAULT_BASE_URL, apiKey, secretKey);
 	}
 
 	/**
@@ -110,19 +112,83 @@ public class QianFanApi extends AuthApi {
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public QianFanApi(String baseUrl, String apiKey, String secretKey, RestClient.Builder restClientBuilder,
-					  WebClient.Builder webClientBuilder,ResponseErrorHandler responseErrorHandler) {
+					WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		super(apiKey, secretKey);
 
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders())
+				.defaultHeaders(QianFanUtils.defaultHeaders())
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = webClientBuilder
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders())
+				.defaultHeaders(QianFanUtils.defaultHeaders())
 				.build();
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}", chatRequest.model, getAccessToken())
+				.body(chatRequest)
+				.retrieve()
+				.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		return this.webClient.post()
+				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}", chatRequest.model, getAccessToken())
+				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+				.retrieve()
+				.bodyToFlux(ChatCompletionChunk.class)
+				.takeUntil(SSE_DONE_PREDICATE);
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
+	 */
+	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		// Input text to embed, encoded as a string or array of tokens. To embed multiple
+		// inputs in a single
+		// request, pass an array of strings or array of token arrays.
+		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
+
+		// The input must not an empty string, and any array must be 16 dimensions or
+		// less.
+		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
+		Assert.isTrue(embeddingRequest.texts().size() <= 16, "The list must be 16 dimensions or less");
+
+		return this.restClient.post()
+				.uri("/v1/wenxinworkshop/embeddings/{model}?access_token={token}", embeddingRequest.model, getAccessToken())
+				.body(embeddingRequest)
+				.retrieve()
+				.toEntity(new ParameterizedTypeReference<>() {
+
+				});
 	}
 
 	/**
@@ -157,7 +223,44 @@ public class QianFanApi extends AuthApi {
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
+		}
+	}
+
+	/**
+	 * QianFan Embeddings Models:
+	 * <a href="https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu#%E5%90%91%E9%87%8Fembeddings">Embeddings</a>.
+	 */
+	public enum EmbeddingModel {
+
+		/**
+		 * DIMENSION: 384
+		 */
+		EMBEDDING_V1("embedding-v1"),
+
+		/**
+		 * DIMENSION: 1024
+		 */
+		BGE_LARGE_ZH("bge_large_zh"),
+
+		/**
+		 * DIMENSION: 1024
+		 */
+		BGE_LARGE_EN("bge_large_en"),
+
+		/**
+		 * DIMENSION: 1024
+		 */
+		TAO_8K("tao_8k");
+
+		public final String  value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
 		}
 	}
 
@@ -165,12 +268,15 @@ public class QianFanApi extends AuthApi {
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
+	 * @param system The system ID to use.
 	 * @param model ID of the model to use.
 	 * @param frequencyPenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
+	 * @param presencePenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
+	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 * @param responseFormat An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 * @param stop Up to 4 sequences where the API will stop generating further tokens.
@@ -184,7 +290,7 @@ public class QianFanApi extends AuthApi {
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest (
+	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("system") String system,
 			@JsonProperty("model") String model,
@@ -205,7 +311,7 @@ public class QianFanApi extends AuthApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature) {
-			this(messages, system, model, null,null,
+			this(messages, system, model, null, null,
 					null, null, null, false, temperature, null);
 		}
 
@@ -219,7 +325,7 @@ public class QianFanApi extends AuthApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature, boolean stream) {
-			this(messages, system, model, null,null,
+			this(messages, system, model, null, null,
 					null, null, null, stream, temperature, null);
 		}
 
@@ -233,7 +339,7 @@ public class QianFanApi extends AuthApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, Boolean stream) {
-			this(messages, system, DEFAULT_CHAT_MODEL, null,null,
+			this(messages, system, DEFAULT_CHAT_MODEL, null, null,
 					null, null, null, stream, 0.8, null);
 		}
 
@@ -279,15 +385,18 @@ public class QianFanApi extends AuthApi {
 			/**
 			 * System message.
 			 */
-			@JsonProperty("system") SYSTEM,
+			@JsonProperty("system")
+			SYSTEM,
 			/**
 			 * User message.
 			 */
-			@JsonProperty("user") USER,
+			@JsonProperty("user")
+			USER,
 			/**
 			 * Assistant message.
 			 */
-			@JsonProperty("assistant") ASSISTANT
+			@JsonProperty("assistant")
+			ASSISTANT
 		}
 	}
 
@@ -300,6 +409,7 @@ public class QianFanApi extends AuthApi {
 	 * used in conjunction with the seed request parameter to understand when backend changes have been made that might
 	 * impact determinism.
 	 * @param object The object type, which is always chat.completion.
+	 * @param finishReason The reason the chat completion finished.
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
@@ -308,17 +418,20 @@ public class QianFanApi extends AuthApi {
 			@JsonProperty("object") String object,
 			@JsonProperty("created") Long created,
 			@JsonProperty("result") String result,
+			@JsonProperty("finish_reason") String finishReason,
 			@JsonProperty("usage") Usage usage) {
 	}
 
 	/**
 	 * Usage statistics for the completion request.
 	 *
+	 * @param completionTokens Number of tokens in the completion.
 	 * @param promptTokens Number of tokens in the prompt.
 	 * @param totalTokens Total number of tokens used in the request (prompt + completion).
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(
+			@JsonProperty("completion_tokens") Integer completionTokens,
 			@JsonProperty("prompt_tokens") Integer promptTokens,
 			@JsonProperty("total_tokens") Integer totalTokens) {
 
@@ -332,6 +445,9 @@ public class QianFanApi extends AuthApi {
 	 * @param created The Unix timestamp (in seconds) of when the chat completion was created. Each chunk has the same
 	 * timestamp.
 	 * @param result Result of chat completion message.
+	 * @param finishReason The reason the chat completion finished.
+	 * @param end If true, the chat completion is finished.
+	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
@@ -339,6 +455,7 @@ public class QianFanApi extends AuthApi {
 			@JsonProperty("object") String object,
 			@JsonProperty("created") Long created,
 			@JsonProperty("result") String result,
+			@JsonProperty("finish_reason") String finishReason,
 			@JsonProperty("is_end") Boolean end,
 
 			@JsonProperty("usage") Usage usage
@@ -346,82 +463,10 @@ public class QianFanApi extends AuthApi {
 	}
 
 	/**
-	 * Creates a model response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(ChatCompletion.class);
-	}
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		return this.webClient.post()
-				.uri("/v1/wenxinworkshop/chat/{model}?access_token={token}",chatRequest.model, getAccessToken())
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(ChatCompletionChunk.class)
-				.takeUntil(SSE_DONE_PREDICATE);
-	}
-
-	/**
-	 * QianFan Embeddings Models:
-	 * <a href="https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu#%E5%90%91%E9%87%8Fembeddings">Embeddings</a>.
-	 */
-	public enum EmbeddingModel {
-
-		/**
-		 * DIMENSION: 384
-		 */
-		EMBEDDING_V1("embedding-v1"),
-
-		/**
-		 * DIMENSION: 1024
-		 */
-		BGE_LARGE_ZH("bge_large_zh"),
-
-		/**
-		 * DIMENSION: 1024
-		 */
-		BGE_LARGE_EN("bge_large_en"),
-
-		/**
-		 * DIMENSION: 1024
-		 */
-		TAO_8K("tao_8k");
-
-		public final String  value;
-
-		EmbeddingModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
 	 * Creates an embedding vector representing the input text.
 	 *
 	 * @param texts Input text to embed, encoded as a string or array of tokens.
+	 * @param model ID of the model to use.
 	 * @param user A unique identifier representing your end-user, which can help QianFan to
 	 * 		monitor and detect abuse.
 	 */
@@ -450,7 +495,7 @@ public class QianFanApi extends AuthApi {
 		 * @param userId A unique identifier representing your end-user, which can help QianFan to
 		 * 		monitor and detect abuse.
 		 */
-		public EmbeddingRequest(String text,String model,String userId) {
+		public EmbeddingRequest(String text, String model, String userId) {
 			this(List.of(text), model, userId);
 		}
 
@@ -499,6 +544,7 @@ public class QianFanApi extends AuthApi {
 		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
+
 	}
 
 	/**
@@ -507,6 +553,8 @@ public class QianFanApi extends AuthApi {
 	 * @param object Must have value "embedding_list".
 	 * @param data List of entities.
 	 * @param model ID of the model to use.
+	 * @param errorCode Error code if any.
+	 * @param errorNsg Error message if any.
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
@@ -519,33 +567,6 @@ public class QianFanApi extends AuthApi {
 			@JsonProperty("error_msg") String errorNsg,
 			@JsonProperty("usage") Usage usage) {
 		// @formatter:on
-	}
-
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns list of {@link Embedding} wrapped in {@link EmbeddingList}.
-	 */
-	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		// Input text to embed, encoded as a string or array of tokens. To embed multiple
-		// inputs in a single
-		// request, pass an array of strings or array of token arrays.
-		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
-
-		// The input must not an empty string, and any array must be 16 dimensions or
-		// less.
-		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
-		Assert.isTrue(embeddingRequest.texts().size() <= 16, "The list must be 16 dimensions or less");
-
-		return this.restClient.post()
-			.uri("/v1/wenxinworkshop/embeddings/{model}?access_token={token}", embeddingRequest.model, getAccessToken())
-			.body(embeddingRequest)
-			.retrieve()
-			.toEntity(new ParameterizedTypeReference<>() {
-			});
 	}
 
 }

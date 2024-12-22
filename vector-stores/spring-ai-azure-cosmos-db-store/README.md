@@ -1,0 +1,1 @@
+[Azure Cosmos DB Vector Store Documentation](https://docs.spring.io/spring-ai/reference/api/vectordbs/azure-cosmos-db.html)

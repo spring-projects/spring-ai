@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.titan.api;
 
 import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -81,6 +82,42 @@ public class TitanEmbeddingBedrockApi extends
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
+	@Override
+	public TitanEmbeddingResponse embedding(TitanEmbeddingRequest request) {
+		return this.internalInvocation(request, TitanEmbeddingResponse.class);
+	}
+
+	/**
+	 * Titan Embedding model ids.
+	 */
+	public enum TitanEmbeddingModel {
+		/**
+		 * amazon.titan-embed-image-v1
+		 */
+		TITAN_EMBED_IMAGE_V1("amazon.titan-embed-image-v1"),
+		/**
+		 * amazon.titan-embed-text-v1
+		 */
+		TITAN_EMBED_TEXT_V1("amazon.titan-embed-text-v1"),
+		/**
+		 * amazon.titan-embed-text-v2
+		 */
+		TITAN_EMBED_TEXT_V2("amazon.titan-embed-text-v2:0");
+
+		private final String id;
+
+		TitanEmbeddingModel(String value) {
+			this.id = value;
+		}
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return this.id;
+		}
+	}
+
 	/**
 	 * Titan Embedding request parameters.
 	 *
@@ -106,15 +143,34 @@ public class TitanEmbeddingBedrockApi extends
 			private String inputText;
 			private String inputImage;
 
+			public Builder inputText(String inputText) {
+				this.inputText = inputText;
+				return this;
+			}
+
+			public Builder inputImage(String inputImage) {
+				this.inputImage = inputImage;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #inputText( String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withInputText(String inputText) {
 				this.inputText = inputText;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #inputImage( String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withInputImage(String inputImage) {
 				this.inputImage = inputImage;
 				return this;
 			}
+
 
 			public TitanEmbeddingRequest build() {
 				Assert.isTrue(this.inputText != null || this.inputImage != null,
@@ -133,49 +189,17 @@ public class TitanEmbeddingBedrockApi extends
 	 *
 	 * @param embedding The embedding vector.
 	 * @param inputTextTokenCount The number of tokens in the input text.
+	 * @param embeddingsByType The embeddings by type.
 	 * @param message No idea what this is.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TitanEmbeddingResponse(
 			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("inputTextTokenCount") Integer inputTextTokenCount,
+			@JsonProperty("embeddingsByType") Map<String, Object> embeddingsByType,
 			@JsonProperty("message") Object message) {
-	}
 
-	/**
-	 * Titan Embedding model ids.
-	 */
-	public enum TitanEmbeddingModel {
-		/**
-		 * amazon.titan-embed-image-v1
-		 */
-		TITAN_EMBED_IMAGE_V1("amazon.titan-embed-image-v1"),
-		/**
-		 * amazon.titan-embed-text-v1
-		 */
-		TITAN_EMBED_TEXT_V1("amazon.titan-embed-text-v1"),
-		/**
-		 * amazon.titan-embed-text-v2
-		 */
-		TITAN_EMBED_TEXT_V2("amazon.titan-embed-text-v2:0");;
 
-		private final String id;
-
-		/**
-		 * @return The model id.
-		 */
-		public String id() {
-			return id;
-		}
-
-		TitanEmbeddingModel(String value) {
-			this.id = value;
-		}
-	}
-
-	@Override
-	public TitanEmbeddingResponse embedding(TitanEmbeddingRequest request) {
-		return this.internalInvocation(request, TitanEmbeddingResponse.class);
 	}
 }
 // @formatter:on

@@ -31,8 +31,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Anthropic Chat Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` file:
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -41,14 +45,15 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-anthropic-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -58,7 +63,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Anthropic chat model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -77,7 +82,7 @@ NOTE: currently the retry policies are not applicable for the streaming API.
 
 The prefix `spring.ai.anthropic` is used as the property prefix that lets you connect to Anthropic.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -92,12 +97,12 @@ the output tokens limit is increased from `4096` to `8192` tokens (for claude-3-
 
 The prefix `spring.ai.anthropic.chat` is the property prefix that lets you configure the chat model implementation for Anthropic.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
 | spring.ai.anthropic.chat.enabled | Enable Anthropic chat model.  | true
-| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-3-5-sonnet-20240620`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307` and the legacy `claude-2.1`, `claude-2.0` and `claude-instant-1.2` models. | `claude-3-opus-20240229`
+| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307` and the legacy `claude-2.1`, `claude-2.0` and `claude-instant-1.2` models. | `claude-3-opus-20240229`
 | spring.ai.anthropic.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.anthropic.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | 500
 | spring.ai.anthropic.chat.options.stop-sequence | Custom text sequences that will cause the model to stop generating. Our models will normally stop when they have naturally completed their turn, which will result in a response stop_reason of "end_turn". If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter. If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence. | -
@@ -125,8 +130,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AnthropicChatOptions.builder()
-            .withModel("claude-2.1")
-            .withTemperature(0.4)
+            .model("claude-2.1")
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -141,10 +146,12 @@ Read more about xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic 
 
 == Multimodal
 
-Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, pdf, images, data formats. 
 
+=== Images
 Currently, Anthropic Claude 3 supports the `base64` source type for `images`, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.
 Check the link:https://docs.anthropic.com/claude/docs/vision[Vision guide] for more information.
+Anthropic Claude 3.5 Sonnet also supports the `pdf` source type for `application/pdf` files.
 
 Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
 This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
@@ -156,9 +163,9 @@ Below is a simple code example extracted from https://github.com/spring-projects
 byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByteArray();
 
 var userMessage = new UserMessage("Explain what do you see on this picture?",
-        List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+        List.of(new Media(MimeTypeUtils.IMAGE_PNG, this.imageData)));
 
-ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage)));
 
 logger.info(response.getResult().getOutput().getContent());
 ----
@@ -171,14 +178,23 @@ along with the text message "Explain what do you see on this picture?", and gene
 
 ----
 The image shows a close-up view of a wire fruit basket containing several pieces of fruit.
-The basket appears to be made of thin metal wires formed into a round shape with an elevated handle.
+...
+----
 
-Inside the basket, there are a few yellow bananas and a couple of red apples or possibly tomatoes.
-The vibrant colors of the fruit contrast nicely against the metallic tones of the wire basket.
+=== PDF
 
-The shallow depth of field in the photograph puts the focus squarely on the fruit in the foreground, while the basket handle extending upwards is slightly blurred, creating a pleasing bokeh effect in the background.
+Starting with Sonnet 3.5 https://docs.anthropic.com/en/docs/build-with-claude/pdf-support[PDF support (beta)] is provided.
+Use the `application/pdf` media type to attach a PDF file to the message:
 
-The composition and lighting give the image a clean, minimalist aesthetic that highlights the natural beauty and freshness of the fruit displayed in this elegant wire basket.
+[source,java]
+----
+var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
+
+var userMessage = new UserMessage(
+        "You are a very professional document summarization specialist. Please summarize the given document.",
+        List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+
+var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 ----
 
 == Sample Controller
@@ -190,7 +206,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.anthropic.api-key=YOUR_API_KEY
-spring.ai.anthropic.chat.options.model=claude-3-5-sonnet-20240620
+spring.ai.anthropic.chat.options.model=claude-3-5-sonnet-latest
 spring.ai.anthropic.chat.options.temperature=0.7
 spring.ai.anthropic.chat.options.max-tokens=450
 ----
@@ -214,13 +230,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -256,18 +272,18 @@ Next, create a `AnthropicChatModel` and use it for text generations:
 ----
 var anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
 
-var chatModel = new AnthropicChatModel(anthropicApi,
+var chatModel = new AnthropicChatModel(this.anthropicApi,
         AnthropicChatOptions.builder()
-            .withModel("claude-3-opus-20240229")
-            .withTemperature(0.4)
-            .withMaxTokens(200)
+            .model("claude-3-opus-20240229")
+            .temperature(0.4)
+            .maxTokens(200)
         .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -295,14 +311,14 @@ AnthropicMessage chatCompletionMessage = new AnthropicMessage(
         List.of(new ContentBlock("Tell me a Joke?")), Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletionResponse> response = anthropicApi
+ResponseEntity<ChatCompletionResponse> response = this.anthropicApi
     .chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-            List.of(chatCompletionMessage), null, 100, 0.8, false));
+            List.of(this.chatCompletionMessage), null, 100, 0.8, false));
 
 // Streaming request
-Flux<StreamResponse> response = anthropicApi
+Flux<StreamResponse> response = this.anthropicApi
     .chatCompletionStream(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-            List.of(chatCompletionMessage), null, 100, 0.8, true));
+            List.of(this.chatCompletionMessage), null, 100, 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/api/AnthropicApi.java[AnthropicApi.java]'s JavaDoc for further information.

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.postgresml;
 
 import java.time.Duration;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -53,12 +55,10 @@ public class PostgresMlAutoConfigurationIT {
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
 			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.8.1").asCompatibleSubstituteFor("postgres"))
 		.withCommand("sleep", "infinity")
-		.withLabel("org.springframework.boot.service-connection", "postgres")
 		.withUsername("postgresml")
 		.withPassword("postgresml")
 		.withDatabaseName("postgresml")
-		.waitingFor(new LogMessageWaitStrategy().withRegEx(".*Starting dashboard.*\\s")
-			.withStartupTimeout(Duration.of(60, ChronoUnit.SECONDS)));
+		.waitingFor(Wait.forLogMessage(".*Starting dashboard.*\\s", 1));
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -66,7 +66,7 @@ public class PostgresMlAutoConfigurationIT {
 	@Test
 	void embedding() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withBean(JdbcTemplate.class, () -> jdbcTemplate)
+			.withBean(JdbcTemplate.class, () -> this.jdbcTemplate)
 			.withConfiguration(AutoConfigurations.of(PostgresMlAutoConfiguration.class));
 		contextRunner.run(context -> {
 			PostgresMlEmbeddingModel embeddingModel = context.getBean(PostgresMlEmbeddingModel.class);
@@ -85,7 +85,7 @@ public class PostgresMlAutoConfigurationIT {
 
 	@Test
 	void embeddingActivation() {
-		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> jdbcTemplate)
+		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> this.jdbcTemplate)
 			.withConfiguration(AutoConfigurations.of(PostgresMlAutoConfiguration.class))
 			.withPropertyValues("spring.ai.postgresml.embedding.enabled=false")
 			.run(context -> {
@@ -93,7 +93,7 @@ public class PostgresMlAutoConfigurationIT {
 				assertThat(context.getBeansOfType(PostgresMlEmbeddingModel.class)).isEmpty();
 			});
 
-		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> jdbcTemplate)
+		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> this.jdbcTemplate)
 			.withConfiguration(AutoConfigurations.of(PostgresMlAutoConfiguration.class))
 			.withPropertyValues("spring.ai.postgresml.embedding.enabled=true")
 			.run(context -> {
@@ -101,7 +101,7 @@ public class PostgresMlAutoConfigurationIT {
 				assertThat(context.getBeansOfType(PostgresMlEmbeddingModel.class)).isNotEmpty();
 			});
 
-		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> jdbcTemplate)
+		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> this.jdbcTemplate)
 			.withConfiguration(AutoConfigurations.of(PostgresMlAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(PostgresMlEmbeddingProperties.class)).isNotEmpty();

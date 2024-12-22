@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,11 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Optional;
+
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
@@ -25,11 +30,17 @@ import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.OpenSearchVectorStore;
+import org.springframework.ai.vectorstore.opensearch.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -39,17 +50,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClas
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import io.micrometer.observation.ObservationRegistry;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.http.SdkHttpClient;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
-import software.amazon.awssdk.regions.Region;
-
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.util.StringUtils;
 
 @AutoConfiguration
 @ConditionalOnClass({ OpenSearchVectorStore.class, EmbeddingModel.class, OpenSearchClient.class })
@@ -76,10 +77,16 @@ public class OpenSearchVectorStoreAutoConfiguration {
 			BatchingStrategy batchingStrategy) {
 		var indexName = Optional.ofNullable(properties.getIndexName()).orElse(OpenSearchVectorStore.DEFAULT_INDEX_NAME);
 		var mappingJson = Optional.ofNullable(properties.getMappingJson())
-			.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536);
-		return new OpenSearchVectorStore(indexName, openSearchClient, embeddingModel, mappingJson,
-				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+			.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION);
+
+		return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
+			.index(indexName)
+			.mappingJson(mappingJson)
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -124,28 +131,35 @@ public class OpenSearchVectorStoreAutoConfiguration {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnClass({ Region.class, ApacheHttpClient.class })
+	@ConditionalOnClass({ AwsCredentialsProvider.class, Region.class, ApacheHttpClient.class })
 	static class AwsOpenSearchConfiguration {
 
 		@Bean
+		@ConditionalOnMissingBean(AwsOpenSearchConnectionDetails.class)
+		PropertiesAwsOpenSearchConnectionDetails awsOpenSearchConnectionDetails(
+				OpenSearchVectorStoreProperties properties) {
+			return new PropertiesAwsOpenSearchConnectionDetails(properties);
+		}
+
+		@Bean
 		@ConditionalOnMissingBean
-		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties, AwsSdk2TransportOptions options) {
-			OpenSearchVectorStoreProperties.Aws aws = properties.getAws();
-			Region region = Region.of(aws.getRegion());
+		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties,
+				AwsOpenSearchConnectionDetails connectionDetails, AwsSdk2TransportOptions options) {
+			Region region = Region.of(connectionDetails.getRegion());
 
 			SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-			OpenSearchTransport transport = new AwsSdk2Transport(httpClient, aws.getHost(), aws.getServiceName(),
-					region, options);
+			OpenSearchTransport transport = new AwsSdk2Transport(httpClient,
+					connectionDetails.getHost(properties.getAws().getDomainName()),
+					properties.getAws().getServiceName(), region, options);
 			return new OpenSearchClient(transport);
 		}
 
 		@Bean
 		@ConditionalOnMissingBean
-		AwsSdk2TransportOptions options(OpenSearchVectorStoreProperties properties) {
-			OpenSearchVectorStoreProperties.Aws aws = properties.getAws();
+		AwsSdk2TransportOptions options(AwsOpenSearchConnectionDetails connectionDetails) {
 			return AwsSdk2TransportOptions.builder()
-				.setCredentials(StaticCredentialsProvider
-					.create(AwsBasicCredentials.create(aws.getAccessKey(), aws.getSecretKey())))
+				.setCredentials(StaticCredentialsProvider.create(
+						AwsBasicCredentials.create(connectionDetails.getAccessKey(), connectionDetails.getSecretKey())))
 				.build();
 		}
 
@@ -172,6 +186,39 @@ public class OpenSearchVectorStoreAutoConfiguration {
 		@Override
 		public String getPassword() {
 			return this.properties.getPassword();
+		}
+
+	}
+
+	static class PropertiesAwsOpenSearchConnectionDetails implements AwsOpenSearchConnectionDetails {
+
+		private final OpenSearchVectorStoreProperties.Aws aws;
+
+		PropertiesAwsOpenSearchConnectionDetails(OpenSearchVectorStoreProperties properties) {
+			this.aws = properties.getAws();
+		}
+
+		@Override
+		public String getRegion() {
+			return this.aws.getRegion();
+		}
+
+		@Override
+		public String getAccessKey() {
+			return this.aws.getAccessKey();
+		}
+
+		@Override
+		public String getSecretKey() {
+			return this.aws.getSecretKey();
+		}
+
+		@Override
+		public String getHost(String domainName) {
+			if (StringUtils.hasText(domainName)) {
+				return "%s.%s".formatted(this.aws.getDomainName(), this.aws.getHost());
+			}
+			return this.aws.getHost();
 		}
 
 	}

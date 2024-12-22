@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,28 @@
 
 package org.springframework.ai.vertexai.gemini.function;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.cloud.vertexai.Transport;
+import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.AdvisedRequest;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.RequestAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ResponseAdvisor;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,10 +47,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
-
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
@@ -59,41 +59,11 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 	private final static Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionIT.class);
 
+	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
+			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
+
 	@Autowired
 	ChatClient chatClient;
-
-	record TransactionStatusResponse(String id, String status) {
-	}
-
-	private static class LoggingAdvisor implements RequestAdvisor, ResponseAdvisor {
-
-		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
-
-		@Override
-		public String getName() {
-			return this.getClass().getSimpleName();
-		}
-
-		@Override
-		public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
-			logger.info("System text: \n" + request.systemText());
-			logger.info("System params: " + request.systemParams());
-			logger.info("User text: \n" + request.userText());
-			logger.info("User params:" + request.userParams());
-			logger.info("Function names: " + request.functionNames());
-
-			logger.info("Options: " + request.chatOptions().toString());
-
-			return request;
-		}
-
-		@Override
-		public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-			logger.info("Response: " + response);
-			return response;
-		}
-
-	}
 
 	@Test
 	public void paymentStatuses() {
@@ -136,8 +106,52 @@ public class VertexAiGeminiPaymentTransactionIT {
 		// Quota rate
 		try {
 			Thread.sleep(1000);
-		} catch (InterruptedException e) {
 		}
+		catch (InterruptedException e) {
+		}
+	}
+
+	record TransactionStatusResponse(String id, String status) {
+
+	}
+
+	private static class LoggingAdvisor implements CallAroundAdvisor {
+
+		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
+
+		@Override
+		public String getName() {
+			return this.getClass().getSimpleName();
+		}
+
+		@Override
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
+		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+			var response = chain.nextAroundCall(before(advisedRequest));
+			observeAfter(response);
+			return response;
+		}
+
+		private AdvisedRequest before(AdvisedRequest request) {
+			logger.info("System text: \n" + request.systemText());
+			logger.info("System params: " + request.systemParams());
+			logger.info("User text: \n" + request.userText());
+			logger.info("User params:" + request.userParams());
+			logger.info("Function names: " + request.functionNames());
+
+			logger.info("Options: " + request.chatOptions().toString());
+
+			return request;
+		}
+
+		private void observeAfter(AdvisedResponse advisedResponse) {
+			logger.info("Response: " + advisedResponse.response());
+		}
+
 	}
 
 	record Transaction(String id) {
@@ -151,9 +165,6 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 	record Statuses(List<Status> statuses) {
 	}
-
-	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
-			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
 
 	@SpringBootConfiguration
 	public static class TestConfiguration {
@@ -197,23 +208,23 @@ public class VertexAiGeminiPaymentTransactionIT {
 		@Bean
 		public VertexAiGeminiChatModel vertexAiChatModel(VertexAI vertexAi, ApplicationContext context) {
 
-			FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
+			FunctionCallbackResolver functionCallbackResolver = springAiFunctionManager(context);
 
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-							.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-							.withTemperature(0.1)
+							.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+							.temperature(0.1)
 							.build(),
-					functionCallbackContext);
+					functionCallbackResolver);
 		}
 
 		/**
-		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance
+		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance
 		 * must
 		 * different from the other JSON schema types.
 		 */
-		private FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-			FunctionCallbackContext manager = new FunctionCallbackContext();
+		private FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+			DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 			manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
 			manager.setApplicationContext(context);
 			return manager;

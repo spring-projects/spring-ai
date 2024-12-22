@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.metadata;
 
 import java.util.Map;
@@ -20,6 +21,7 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
@@ -29,6 +31,7 @@ import org.springframework.ai.model.ResponseMetadata;
  * @author John Blum
  * @author Thomas Vitale
  * @author Mark Pollack
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
@@ -36,7 +39,8 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 	private final static Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
 
 	private String id = ""; // Set to blank to preserve backward compat with previous
-							// interface default methods
+
+	// interface default methods
 
 	private String model = "";
 
@@ -45,6 +49,10 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 	private Usage usage = new EmptyUsage();
 
 	private PromptMetadata promptMetadata = PromptMetadata.empty();
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	/**
 	 * A unique identifier for the chat completion operation.
@@ -88,73 +96,14 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 		return this.promptMetadata;
 	}
 
-	public static class Builder {
-
-		private final ChatResponseMetadata chatResponseMetadata;
-
-		public Builder() {
-			this.chatResponseMetadata = new ChatResponseMetadata();
-		}
-
-		public Builder withMetadata(Map<String, Object> mapToCopy) {
-			this.chatResponseMetadata.map.putAll(mapToCopy);
-			return this;
-		}
-
-		public Builder withKeyValue(String key, Object value) {
-			if (key == null) {
-				throw new IllegalArgumentException("Key must not be null");
-			}
-			if (value != null) {
-				this.chatResponseMetadata.map.put(key, value);
-			}
-			else {
-				logger.debug("Ignore null value for key [{}]", key);
-			}
-			return this;
-		}
-
-		public Builder withId(String id) {
-			this.chatResponseMetadata.id = id;
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			this.chatResponseMetadata.model = model;
-			return this;
-		}
-
-		public Builder withRateLimit(RateLimit rateLimit) {
-			this.chatResponseMetadata.rateLimit = rateLimit;
-			return this;
-		}
-
-		public Builder withUsage(Usage usage) {
-			this.chatResponseMetadata.usage = usage;
-			return this;
-		}
-
-		public Builder withPromptMetadata(PromptMetadata promptMetadata) {
-			this.chatResponseMetadata.promptMetadata = promptMetadata;
-			return this;
-		}
-
-		public ChatResponseMetadata build() {
-			return this.chatResponseMetadata;
-		}
-
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ChatResponseMetadata that))
+		}
+		if (!(o instanceof ChatResponseMetadata that)) {
 			return false;
+		}
 		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.rateLimit, that.rateLimit) && Objects.equals(this.usage, that.usage)
 				&& Objects.equals(this.promptMetadata, that.promptMetadata);
@@ -168,6 +117,119 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 	@Override
 	public String toString() {
 		return AI_METADATA_STRING.formatted(getId(), getUsage(), getRateLimit());
+	}
+
+	public static class Builder {
+
+		private final ChatResponseMetadata chatResponseMetadata;
+
+		public Builder() {
+			this.chatResponseMetadata = new ChatResponseMetadata();
+		}
+
+		public Builder metadata(Map<String, Object> mapToCopy) {
+			this.chatResponseMetadata.map.putAll(mapToCopy);
+			return this;
+		}
+
+		public Builder keyValue(String key, Object value) {
+			if (key == null) {
+				throw new IllegalArgumentException("Key must not be null");
+			}
+			if (value != null) {
+				this.chatResponseMetadata.map.put(key, value);
+			}
+			else {
+				logger.debug("Ignore null value for key [{}]", key);
+			}
+			return this;
+		}
+
+		public Builder id(String id) {
+			this.chatResponseMetadata.id = id;
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.chatResponseMetadata.model = model;
+			return this;
+		}
+
+		public Builder rateLimit(RateLimit rateLimit) {
+			this.chatResponseMetadata.rateLimit = rateLimit;
+			return this;
+		}
+
+		public Builder usage(Usage usage) {
+			this.chatResponseMetadata.usage = usage;
+			return this;
+		}
+
+		public Builder promptMetadata(PromptMetadata promptMetadata) {
+			this.chatResponseMetadata.promptMetadata = promptMetadata;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #metadata(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder wihtMetadata(Map<String, Object> mapToCopy) {
+			return metadata(mapToCopy);
+		}
+
+		/**
+		 * @deprecated use {@link #keyValue(String, Object)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withKeyValue(String key, Object value) {
+			return keyValue(key, value);
+		}
+
+		/**
+		 * @deprecated use {@link #id(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withId(String id) {
+			return id(id);
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			return model(model);
+		}
+
+		/**
+		 * @deprecated use {@link #rateLimit(RateLimit)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withRateLimit(RateLimit rateLimit) {
+			return rateLimit(rateLimit);
+		}
+
+		/**
+		 * @deprecated use {@link #usage(Usage)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUsage(Usage usage) {
+			return usage(usage);
+		}
+
+		/**
+		 * @deprecated use {@link #promptMetadata(PromptMetadata)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withPromptMetadata(PromptMetadata promptMetadata) {
+			return promptMetadata(promptMetadata);
+		}
+
+		public ChatResponseMetadata build() {
+			return this.chatResponseMetadata;
+		}
+
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.azure.openai;
 
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
@@ -25,6 +27,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
@@ -56,73 +59,6 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public static class Builder {
-
-		private final AzureOpenAiEmbeddingOptions options = new AzureOpenAiEmbeddingOptions();
-
-		public Builder from(AzureOpenAiEmbeddingOptions fromOptions) {
-			this.options.setUser(fromOptions.getUser());
-			this.options.setDeploymentName(fromOptions.getDeploymentName());
-			this.options.setInputType(fromOptions.getInputType());
-			this.options.setDimensions(fromOptions.getDimensions());
-
-			return this;
-		}
-
-		public Builder merge(EmbeddingOptions from) {
-			if (from != null && from instanceof AzureOpenAiEmbeddingOptions castFrom) {
-
-				if (castFrom.getUser() != null) {
-					this.options.setUser(castFrom.getUser());
-				}
-				if (castFrom.getDeploymentName() != null) {
-					this.options.setDeploymentName(castFrom.getDeploymentName());
-				}
-				if (castFrom.getInputType() != null) {
-					this.options.setInputType(castFrom.getInputType());
-				}
-				if (castFrom.getDimensions() != null) {
-					this.options.setDimensions(castFrom.getDimensions());
-				}
-			}
-			return this;
-		}
-
-		public Builder from(com.azure.ai.openai.models.EmbeddingsOptions azureOptions) {
-			this.options.setUser(azureOptions.getUser());
-			this.options.setDeploymentName(azureOptions.getModel());
-			this.options.setInputType(azureOptions.getInputType());
-			this.options.setDimensions(azureOptions.getDimensions());
-
-			return this;
-		}
-
-		public Builder withUser(String user) {
-			this.options.setUser(user);
-			return this;
-		}
-
-		public Builder withDeploymentName(String model) {
-			this.options.setDeploymentName(model);
-			return this;
-		}
-
-		public Builder withInputType(String inputType) {
-			this.options.inputType = inputType;
-			return this;
-		}
-
-		public Builder withDimensions(Integer dimensions) {
-			this.options.dimensions = dimensions;
-			return this;
-		}
-
-		public AzureOpenAiEmbeddingOptions build() {
-			return this.options;
-		}
-
 	}
 
 	@Override
@@ -178,6 +114,109 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 		azureOptions.setDimensions(this.getDimensions());
 
 		return azureOptions;
+	}
+
+	public static class Builder {
+
+		private final AzureOpenAiEmbeddingOptions options = new AzureOpenAiEmbeddingOptions();
+
+		public Builder from(AzureOpenAiEmbeddingOptions fromOptions) {
+			this.options.setUser(fromOptions.getUser());
+			this.options.setDeploymentName(fromOptions.getDeploymentName());
+			this.options.setInputType(fromOptions.getInputType());
+			this.options.setDimensions(fromOptions.getDimensions());
+
+			return this;
+		}
+
+		public Builder merge(EmbeddingOptions from) {
+			if (from != null && from instanceof AzureOpenAiEmbeddingOptions castFrom) {
+
+				if (castFrom.getUser() != null) {
+					this.options.setUser(castFrom.getUser());
+				}
+				if (castFrom.getDeploymentName() != null) {
+					this.options.setDeploymentName(castFrom.getDeploymentName());
+				}
+				if (castFrom.getInputType() != null) {
+					this.options.setInputType(castFrom.getInputType());
+				}
+				if (castFrom.getDimensions() != null) {
+					this.options.setDimensions(castFrom.getDimensions());
+				}
+			}
+			return this;
+		}
+
+		public Builder from(com.azure.ai.openai.models.EmbeddingsOptions azureOptions) {
+			this.options.setUser(azureOptions.getUser());
+			this.options.setDeploymentName(azureOptions.getModel());
+			this.options.setInputType(azureOptions.getInputType());
+			this.options.setDimensions(azureOptions.getDimensions());
+
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public Builder deploymentName(String model) {
+			this.options.setDeploymentName(model);
+			return this;
+		}
+
+		public Builder inputType(String inputType) {
+			this.options.inputType = inputType;
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUser(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #deploymentName(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withDeploymentName(String model) {
+			this.options.setDeploymentName(model);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #inputType(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withInputType(String inputType) {
+			this.options.inputType = inputType;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #dimensions(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withDimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
+			return this;
+		}
+
+		public AzureOpenAiEmbeddingOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

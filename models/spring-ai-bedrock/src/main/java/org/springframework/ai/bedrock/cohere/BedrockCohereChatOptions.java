@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
@@ -28,8 +29,11 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChat
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
+ * Options for the Bedrock Cohere chat API.
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -40,104 +44,71 @@ public class BedrockCohereChatOptions implements ChatOptions {
 	 * (optional) Use a lower value to decrease randomness in the response. Defaults to
 	 * 0.7.
 	 */
-	@JsonProperty("temperature") Double temperature;
+	@JsonProperty("temperature")
+	Double temperature;
 	/**
 	 * (optional) The maximum cumulative probability of tokens to consider when sampling.
 	 * The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers
 	 * the smallest set of tokens whose probability sum is at least topP.
 	 */
-	@JsonProperty("p") Double topP;
+	@JsonProperty("p")
+	Double topP;
 	/**
 	 * (optional) Specify the number of token choices the generative uses to generate the
 	 * next token.
 	 */
-	@JsonProperty("k") Integer topK;
+	@JsonProperty("k")
+	Integer topK;
 	/**
 	 * (optional) Specify the maximum number of tokens to use in the generated response.
 	 */
-	@JsonProperty("max_tokens") Integer maxTokens;
+	@JsonProperty("max_tokens")
+	Integer maxTokens;
 	/**
 	 * (optional) Configure up to four sequences that the generative recognizes. After a
 	 * stop sequence, the generative stops generating further tokens. The returned text
 	 * doesn't contain the stop sequence.
 	 */
-	@JsonProperty("stop_sequences") List<String> stopSequences;
+	@JsonProperty("stop_sequences")
+	List<String> stopSequences;
 	/**
 	 * (optional) Specify how and if the token likelihoods are returned with the response.
 	 */
-	@JsonProperty("return_likelihoods") ReturnLikelihoods returnLikelihoods;
+	@JsonProperty("return_likelihoods")
+	ReturnLikelihoods returnLikelihoods;
 	/**
 	 * (optional) The maximum number of generations that the generative should return.
 	 */
-	@JsonProperty("num_generations") Integer numGenerations;
+	@JsonProperty("num_generations")
+	Integer numGenerations;
 	/**
 	 * Prevents the model from generating unwanted tokens or incentivize the model to include desired tokens.
 	 */
-	@JsonProperty("logit_bias") LogitBias logitBias;
+	@JsonProperty("logit_bias")
+	LogitBias logitBias;
 	/**
 	 * (optional) Specifies how the API handles inputs longer than the maximum token
 	 * length.
 	 */
-	@JsonProperty("truncate") Truncate truncate;
+	@JsonProperty("truncate")
+	Truncate truncate;
 	// @formatter:on
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private final BedrockCohereChatOptions options = new BedrockCohereChatOptions();
-
-		public Builder withTemperature(Double temperature) {
-			this.options.setTemperature(temperature);
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.setTopP(topP);
-			return this;
-		}
-
-		public Builder withTopK(Integer topK) {
-			this.options.setTopK(topK);
-			return this;
-		}
-
-		public Builder withMaxTokens(Integer maxTokens) {
-			this.options.setMaxTokens(maxTokens);
-			return this;
-		}
-
-		public Builder withStopSequences(List<String> stopSequences) {
-			this.options.setStopSequences(stopSequences);
-			return this;
-		}
-
-		public Builder withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
-			this.options.setReturnLikelihoods(returnLikelihoods);
-			return this;
-		}
-
-		public Builder withNumGenerations(Integer numGenerations) {
-			this.options.setNumGenerations(numGenerations);
-			return this;
-		}
-
-		public Builder withLogitBias(LogitBias logitBias) {
-			this.options.setLogitBias(logitBias);
-			return this;
-		}
-
-		public Builder withTruncate(Truncate truncate) {
-			this.options.setTruncate(truncate);
-			return this;
-		}
-
-		public BedrockCohereChatOptions build() {
-			return this.options;
-		}
-
+	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {
+		return builder().temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.topK(fromOptions.getTopK())
+			.maxTokens(fromOptions.getMaxTokens())
+			.stopSequences(fromOptions.getStopSequences())
+			.returnLikelihoods(fromOptions.getReturnLikelihoods())
+			.numGenerations(fromOptions.getNumGenerations())
+			.logitBias(fromOptions.getLogitBias())
+			.truncate(fromOptions.getTruncate())
+			.build();
 	}
 
 	@Override
@@ -240,17 +211,140 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		return fromOptions(this);
 	}
 
-	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTopK(fromOptions.getTopK())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withReturnLikelihoods(fromOptions.getReturnLikelihoods())
-			.withNumGenerations(fromOptions.getNumGenerations())
-			.withLogitBias(fromOptions.getLogitBias())
-			.withTruncate(fromOptions.getTruncate())
-			.build();
+	public static class Builder {
+
+		private final BedrockCohereChatOptions options = new BedrockCohereChatOptions();
+
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder topK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder returnLikelihoods(ReturnLikelihoods returnLikelihoods) {
+			this.options.setReturnLikelihoods(returnLikelihoods);
+			return this;
+		}
+
+		public Builder numGenerations(Integer numGenerations) {
+			this.options.setNumGenerations(numGenerations);
+			return this;
+		}
+
+		public Builder logitBias(LogitBias logitBias) {
+			this.options.setLogitBias(logitBias);
+			return this;
+		}
+
+		public Builder truncate(Truncate truncate) {
+			this.options.setTruncate(truncate);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTemperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMaxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withStopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #returnLikelihoods(ReturnLikelihoods)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
+			this.options.setReturnLikelihoods(returnLikelihoods);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #numGenerations(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withNumGenerations(Integer numGenerations) {
+			this.options.setNumGenerations(numGenerations);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #logitBias(LogitBias)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withLogitBias(LogitBias logitBias) {
+			this.options.setLogitBias(logitBias);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #truncate(Truncate)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTruncate(Truncate truncate) {
+			this.options.setTruncate(truncate);
+			return this;
+		}
+
+		public BedrockCohereChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

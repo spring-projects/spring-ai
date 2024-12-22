@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package org.springframework.ai.moderation;
 
-import org.springframework.ai.model.ModelResponse;
-
 import java.util.List;
 import java.util.Objects;
+
+import org.springframework.ai.model.ModelResponse;
 
 /**
  * Represents a response from a moderation process, encapsulating the moderation metadata
@@ -48,38 +48,40 @@ public class ModerationResponse implements ModelResponse<Generation> {
 
 	@Override
 	public Generation getResult() {
-		return generations;
+		return this.generations;
 	}
 
 	@Override
 	public List<Generation> getResults() {
-		return List.of(generations);
+		return List.of(this.generations);
 	}
 
 	@Override
 	public ModerationResponseMetadata getMetadata() {
-		return moderationResponseMetadata;
+		return this.moderationResponseMetadata;
 	}
 
 	@Override
 	public String toString() {
-		return "ModerationResponse{" + "moderationResponseMetadata=" + moderationResponseMetadata + ", generations="
-				+ generations + '}';
+		return "ModerationResponse{" + "moderationResponseMetadata=" + this.moderationResponseMetadata
+				+ ", generations=" + this.generations + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ModerationResponse that))
+		}
+		if (!(o instanceof ModerationResponse that)) {
 			return false;
-		return Objects.equals(moderationResponseMetadata, that.moderationResponseMetadata)
-				&& Objects.equals(generations, that.generations);
+		}
+		return Objects.equals(this.moderationResponseMetadata, that.moderationResponseMetadata)
+				&& Objects.equals(this.generations, that.generations);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(moderationResponseMetadata, generations);
+		return Objects.hash(this.moderationResponseMetadata, this.generations);
 	}
 
 }

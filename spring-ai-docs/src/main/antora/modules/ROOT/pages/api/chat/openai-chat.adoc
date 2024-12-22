@@ -24,8 +24,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the OpenAI Chat Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -34,14 +38,15 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -51,7 +56,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI chat model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -68,7 +73,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -85,7 +90,7 @@ Usage from these API requests will count as usage for the specified organization
 
 The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat model implementation for OpenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -99,8 +104,14 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.openai.chat.options.logitBias | Modify the likelihood of specified tokens appearing in the completion. | -
-| spring.ai.openai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.openai.chat.options.maxTokens | (Deprecated in favour of `maxCompletionTokens`) The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. | -
 | spring.ai.openai.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as 1 to minimize costs. | 1
+| spring.ai.openai.chat.options.output-modalities | Output types that you would like the model to generate for this request. Most models are capable of generating text, which is the default.
+The `gpt-4o-audio-preview` model can also be used to generate audio. To request that this model generate both text and audio responses,
+you can use: `text`, `audio`. Not supported for streaming. | -
+| spring.ai.openai.chat.options.output-audio | Audio parameters for the audio generation. Required when audio output is requested with `output-modalities`: `audio`.
+Requires the `gpt-4o-audio-preview` model and is is not supported for streaming completions. | -
 | spring.ai.openai.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
 | spring.ai.openai.chat.options.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
 The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] which guarantees the model will match your supplied JSON schema. The JSON_SCHEMA type requires setting the `responseFormat.schema` property as well. | -
@@ -141,8 +152,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OpenAiChatOptions.builder()
-            .withModel("gpt-4-o")
-            .withTemperature(0.4)
+            .model("gpt-4-o")
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -158,11 +169,15 @@ Read more about xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Functi
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
-OpenAI models that offer multimodal support include `gpt-4`, `gpt-4o`, and `gpt-4o-mini`.
+OpenAI supports text, vision, and audio input modalities.
+
+=== Vision
+
+OpenAI models that offer vision multimodal support include `gpt-4`, `gpt-4o`, and `gpt-4o-mini`.
 Refer to the link:https://platform.openai.com/docs/guides/vision[Vision] guide for more information.
 
 The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[User Message API] can incorporate a list of base64-encoded images or image urls with the message.
-Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 
 Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L293[OpenAiChatModelIT.java], illustrating the fusion of user text with an image using the `gpt-4o` model.
@@ -172,10 +187,10 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 var imageResource = new ClassPathResource("/multimodal.test.png");
 
 var userMessage = new UserMessage("Explain what do you see on this picture?",
-        new Media(MimeTypeUtils.IMAGE_PNG, imageResource));
+        new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
-        OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
+        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
 TIP: GPT_4_VISION_PREVIEW will continue to be available only to existing users of this model starting June 17, 2024. If you are not an existing user, please use the GPT_4_O or GPT_4_TURBO models. More details https://platform.openai.com/docs/deprecations/2024-06-06-gpt-4-32k-and-vision-preview-models[here]
@@ -186,10 +201,10 @@ or the image URL equivalent using the `gpt-4o` model:
 ----
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG,
-                "https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"));
+                "https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"));
 
-ChatResponse response = chatModel.call(new Prompt(userMessage,
-        OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+ChatResponse response = chatModel.call(new Prompt(this.userMessage,
+        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
 TIP: You can pass multiple images as well.
@@ -208,6 +223,62 @@ indicated by the brown spots on their peels. The bowl has a metal ring at the to
 for carrying. The bowl is placed on a flat surface with a neutral-colored background that provides a clear
 view of the fruit inside.
 ----
+
+=== Audio
+
+OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
+Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
+
+The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[User Message API] can incorporate a list of base64-encoded audio files with the message.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
+This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
+Currently, OpenAI support only the following media types: `audio/mp3` and `audio/wav`.
+
+Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L442[OpenAiChatModelIT.java], illustrating the fusion of user text with an audio file using the `gpt-4o-audio-preview` model.
+
+[source,java]
+----
+var audioResource = new ClassPathResource("speech1.mp3");
+
+var userMessage = new UserMessage("What is this recording about?",
+        List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW).build()));
+----
+
+TIP: You can pass multiple audio files as well.
+
+=== Output Audio
+
+OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
+Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
+
+The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[Assystant Message API] can contain a list of base64-encoded audio files with the message.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
+This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
+Currently, OpenAI support only the following audio types: `audio/mp3` and `audio/wav`.
+
+Below is a code example, illustrating the response of user text along with an audio byte array, using the `gpt-4o-audio-preview` model:
+
+[source,java]
+----
+var userMessage = new UserMessage("Tell me joke about Spring Framework");
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+        OpenAiChatOptions.builder()
+            .model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+            .outputModalities(List.of("text", "audio"))
+            .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+            .build()));
+
+String text = response.getResult().getOutput().getContent(); // audio transcript
+
+byte[] waveAudio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray(); // audio data
+----
+
+You have to specify an `audio` modality in the `OpenAiChatOptions` to generate audio output. 
+The `AudioParameters` class provides the voice and audio format for the audio output.
 
 == Structured Outputs
 
@@ -251,11 +322,11 @@ String jsonSchema = """
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OpenAiChatOptions.builder()
-            .withModel(ChatModel.GPT_4_O_MINI)
-            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+            .model(ChatModel.GPT_4_O_MINI)
+            .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
             .build());
 
-ChatResponse response = this.openAiChatModel.call(prompt);
+ChatResponse response = this.openAiChatModel.call(this.prompt);
 ----
 
 NOTE: Adhere to the OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/supported-schemas[subset of the JSON Schema language] format.
@@ -264,6 +335,11 @@ NOTE: Adhere to the OpenAI link:https://platform.openai.com/docs/guides/structur
 
 You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
 
+--
+[tabs]
+======
+Java::
++
 [source,java]
 ----
 record MathReasoning(
@@ -282,21 +358,54 @@ record MathReasoning(
 
 var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 
-var jsonSchema = outputConverter.getJsonSchema();
+var jsonSchema = this.outputConverter.getJsonSchema();
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OpenAiChatOptions.builder()
-            .withModel(ChatModel.GPT_4_O_MINI)
-            .withResponseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+            .model(ChatModel.GPT_4_O_MINI)
+            .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
             .build());
 
-ChatResponse response = this.openAiChatModel.call(prompt);
-String content = response.getResult().getOutput().getContent();
+ChatResponse response = this.openAiChatModel.call(this.prompt);
+String content = this.response.getResult().getOutput().getContent();
 
-MathReasoning mathReasoning = outputConverter.convert(content);
+MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 ----
+Kotlin::
++
+[source,kotlin]
+----
+data class MathReasoning(
+	@get:JsonProperty(required = true, value = "steps") val steps: Steps,
+	@get:JsonProperty(required = true, value = "final_answer") val finalAnswer: String) {
 
-NOTE: Ensure you use the `@JsonProperty(required = true,...)` annotation. 
+	data class Steps(@get:JsonProperty(required = true, value = "items") val items: Array<Items>) {
+
+		data class Items(
+			@get:JsonProperty(required = true, value = "explanation") val explanation: String,
+			@get:JsonProperty(required = true, value = "output") val output: String)
+	}
+}
+
+val outputConverter = BeanOutputConverter(MathReasoning::class.java)
+
+val jsonSchema = outputConverter.jsonSchema;
+
+val prompt = Prompt("how can I solve 8x + 7 = -23",
+	OpenAiChatOptions.builder()
+		.model(ChatModel.GPT_4_O_MINI)
+		.responseFormat(ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+		.build())
+
+val response = openAiChatModel.call(prompt)
+val content = response.getResult().getOutput().getContent()
+
+val mathReasoning = outputConverter.convert(content)
+----
+======
+--
+
+NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation (`@get:JsonProperty(required = true,...)` with Kotlin in order to generate the annotation on the related getters, see link:https://kotlinlang.org/docs/annotations.html#annotation-use-site-targets[related documentation]).
 This is crucial for generating a schema that accurately marks fields as `required`. 
 Although this is optional for JSON Schema, OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/all-fields-must-be-required[mandates] it for the structured response to function correctly.
 
@@ -347,13 +456,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map<String,String> generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -389,17 +498,17 @@ Next, create an `OpenAiChatModel` and use it for text generations:
 ----
 var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 var openAiChatOptions = OpenAiChatOptions.builder()
-            .withModel("gpt-3.5-turbo")
-            .withTemperature(0.4)
-            .withMaxTokens(200)
+            .model("gpt-3.5-turbo")
+            .temperature(0.4)
+            .maxTokens(200)
             .build();
-var chatModel = new OpenAiChatModel(openAiApi, openAiChatOptions);
+var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatModel.stream(
+Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -425,12 +534,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = openAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, false));
+ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = openAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, true));
+Flux<ChatCompletionChunk> streamResponse = this.openAiApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi.java]'s JavaDoc for further information.

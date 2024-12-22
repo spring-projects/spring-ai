@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vertexai.embedding.text;
 
-import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.util.StringUtils;
+package org.springframework.ai.vertexai.embedding.text;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.util.StringUtils;
+
 /**
+ * Options for the Vertex AI Text Embedding service.
+ *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -31,52 +35,13 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL_NAME = VertexAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName();
 
-	public enum TaskType {
-
-		/**
-		 * Specifies the given text is a document in a search/retrieval setting.
-		 */
-		RETRIEVAL_QUERY,
-
-		/**
-		 * Specifies the given text is a query in a search/retrieval setting.
-		 */
-		RETRIEVAL_DOCUMENT,
-
-		/**
-		 * Specifies the given text will be used for semantic textual similarity (STS).
-		 */
-		SEMANTIC_SIMILARITY,
-
-		/**
-		 * Specifies that the embeddings will be used for classification.
-		 */
-		CLASSIFICATION,
-
-		/**
-		 * Specifies that the embeddings will be used for clustering.
-		 */
-		CLUSTERING,
-
-		/**
-		 * Specifies that the query embedding is used for answering questions. Use
-		 * RETRIEVAL_DOCUMENT for the document side.
-		 */
-		QUESTION_ANSWERING,
-
-		/**
-		 * Specifies that the query embedding is used for fact verification.
-		 */
-		FACT_VERIFICATION
-
-	}
-
-	// @formatter:off
 	/**
-	 * The embedding model name to use. Supported models are:
-	 * text-embedding-004, text-multilingual-embedding-002 and multimodalembedding@001.
+	 * The embedding model name to use. Supported models are: text-embedding-004,
+	 * text-multilingual-embedding-002 and multimodalembedding@001.
 	 */
 	private @JsonProperty("model") String model;
+
+	// @formatter:off
 
 	/**
 	 * The intended downstream application to help the model produce better quality embeddings.
@@ -96,79 +61,18 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private @JsonProperty("title") String title;
 
-
 	/**
 	 * When set to true, input text will be truncated. When set to false, an error is returned
 	 * if the input text is longer than the maximum length supported by the model. Defaults to true.
 	 */
 	private @JsonProperty("autoTruncate") Boolean autoTruncate;
 
-
-	// @formatter:on
-
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
 
-		protected VertexAiTextEmbeddingOptions options;
-
-		public Builder() {
-			this.options = new VertexAiTextEmbeddingOptions();
-		}
-
-		public Builder from(VertexAiTextEmbeddingOptions fromOptions) {
-			if (fromOptions.getDimensions() != null) {
-				this.options.setDimensions(fromOptions.getDimensions());
-			}
-			if (StringUtils.hasText(fromOptions.getModel())) {
-				this.options.setModel(fromOptions.getModel());
-			}
-			if (fromOptions.getTaskType() != null) {
-				this.options.setTaskType(fromOptions.getTaskType());
-			}
-			if (StringUtils.hasText(fromOptions.getTitle())) {
-				this.options.setTitle(fromOptions.getTitle());
-			}
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		public Builder withModel(VertexAiTextEmbeddingModelName model) {
-			this.options.setModel(model.getName());
-			return this;
-		}
-
-		public Builder withTaskType(TaskType taskType) {
-			this.options.setTaskType(taskType);
-			return this;
-		}
-
-		public Builder withDimensions(Integer dimensions) {
-			this.options.dimensions = dimensions;
-			return this;
-		}
-
-		public Builder withTitle(String user) {
-			this.options.setTitle(user);
-			return this;
-		}
-
-		public Builder withAutoTruncate(Boolean autoTruncate) {
-			this.options.setAutoTruncate(autoTruncate);
-			return this;
-		}
-
-		public VertexAiTextEmbeddingOptions build() {
-			return this.options;
-		}
-
-	}
+	// @formatter:on
 
 	public VertexAiTextEmbeddingOptions initializeDefaults() {
 
@@ -223,6 +127,160 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	public void setAutoTruncate(Boolean autoTruncate) {
 		this.autoTruncate = autoTruncate;
+	}
+
+	public enum TaskType {
+
+		/**
+		 * Specifies the given text is a document in a search/retrieval setting.
+		 */
+		RETRIEVAL_QUERY,
+
+		/**
+		 * Specifies the given text is a query in a search/retrieval setting.
+		 */
+		RETRIEVAL_DOCUMENT,
+
+		/**
+		 * Specifies the given text will be used for semantic textual similarity (STS).
+		 */
+		SEMANTIC_SIMILARITY,
+
+		/**
+		 * Specifies that the embeddings will be used for classification.
+		 */
+		CLASSIFICATION,
+
+		/**
+		 * Specifies that the embeddings will be used for clustering.
+		 */
+		CLUSTERING,
+
+		/**
+		 * Specifies that the query embedding is used for answering questions. Use
+		 * RETRIEVAL_DOCUMENT for the document side.
+		 */
+		QUESTION_ANSWERING,
+
+		/**
+		 * Specifies that the query embedding is used for fact verification.
+		 */
+		FACT_VERIFICATION
+
+	}
+
+	public static class Builder {
+
+		protected VertexAiTextEmbeddingOptions options;
+
+		public Builder() {
+			this.options = new VertexAiTextEmbeddingOptions();
+		}
+
+		public Builder from(VertexAiTextEmbeddingOptions fromOptions) {
+			if (fromOptions.getDimensions() != null) {
+				this.options.setDimensions(fromOptions.getDimensions());
+			}
+			if (StringUtils.hasText(fromOptions.getModel())) {
+				this.options.setModel(fromOptions.getModel());
+			}
+			if (fromOptions.getTaskType() != null) {
+				this.options.setTaskType(fromOptions.getTaskType());
+			}
+			if (StringUtils.hasText(fromOptions.getTitle())) {
+				this.options.setTitle(fromOptions.getTitle());
+			}
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder model(VertexAiTextEmbeddingModelName model) {
+			this.options.setModel(model.getName());
+			return this;
+		}
+
+		public Builder taskType(TaskType taskType) {
+			this.options.setTaskType(taskType);
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
+			return this;
+		}
+
+		public Builder title(String user) {
+			this.options.setTitle(user);
+			return this;
+		}
+
+		public Builder autoTruncate(Boolean autoTruncate) {
+			this.options.setAutoTruncate(autoTruncate);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(VertexAiTextEmbeddingModelName)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(VertexAiTextEmbeddingModelName model) {
+			this.options.setModel(model.getName());
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #taskType(TaskType)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTaskType(TaskType taskType) {
+			this.options.setTaskType(taskType);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #dimensions(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withDimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #title(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTitle(String user) {
+			this.options.setTitle(user);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #autoTruncate(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withAutoTruncate(Boolean autoTruncate) {
+			this.options.setAutoTruncate(autoTruncate);
+			return this;
+		}
+
+		public VertexAiTextEmbeddingOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

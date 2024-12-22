@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.azure;
 
 import java.text.ParseException;
@@ -79,30 +80,19 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 	}
 
 	private String getOperationSymbol(Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " and ";
-			case OR:
-				return " or ";
-			case EQ:
-				return " eq ";
-			case NE:
-				return " ne ";
-			case LT:
-				return " lt ";
-			case LTE:
-				return " le ";
-			case GT:
-				return " gt ";
-			case GTE:
-				return " ge ";
-			case IN:
-				return " search.in";
-			case NIN:
-				return " not search.in";
-			default:
-				throw new RuntimeException("Not supported expression type: " + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> " and ";
+			case OR -> " or ";
+			case EQ -> " eq ";
+			case NE -> " ne ";
+			case LT -> " lt ";
+			case LTE -> " le ";
+			case GT -> " gt ";
+			case GTE -> " ge ";
+			case IN -> " search.in";
+			case NIN -> " not search.in";
+			default -> throw new RuntimeException("Not supported expression type: " + exp.type());
+		};
 	}
 
 	@Override

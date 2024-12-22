@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader.pdf.layout;
 
 import java.awt.geom.Rectangle2D;
@@ -70,8 +71,8 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 * java coordinates (y == 0 is top), not PDF coordinates (y == 0 is bottom).
 	 */
 	public void addRegion(String regionName, Rectangle2D rect) {
-		regions.add(regionName);
-		regionArea.put(regionName, rect);
+		this.regions.add(regionName);
+		this.regionArea.put(regionName, rect);
 	}
 
 	/**
@@ -80,8 +81,8 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 * @param regionName The name of the region to delete.
 	 */
 	public void removeRegion(String regionName) {
-		regions.remove(regionName);
-		regionArea.remove(regionName);
+		this.regions.remove(regionName);
+		this.regionArea.remove(regionName);
 	}
 
 	/**
@@ -89,7 +90,7 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 * @return A list of java.lang.String objects to identify the region names.
 	 */
 	public List<String> getRegions() {
-		return regions;
+		return this.regions;
 	}
 
 	/**
@@ -98,7 +99,7 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 * @return The text that was identified in that region.
 	 */
 	public String getTextForRegion(String regionName) {
-		StringWriter text = regionText.get(regionName);
+		StringWriter text = this.regionText.get(regionName);
 		return text.toString();
 	}
 
@@ -108,14 +109,14 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 * @throws IOException If there is an error while extracting text.
 	 */
 	public void extractRegions(PDPage page) throws IOException {
-		for (String regionName : regions) {
+		for (String regionName : this.regions) {
 			setStartPage(getCurrentPageNo());
 			setEndPage(getCurrentPageNo());
 			// reset the stored text for the region so this class can be reused.
 			ArrayList<List<TextPosition>> regionCharactersByArticle = new ArrayList<List<TextPosition>>();
 			regionCharactersByArticle.add(new ArrayList<TextPosition>());
-			regionCharacterList.put(regionName, regionCharactersByArticle);
-			regionText.put(regionName, new StringWriter());
+			this.regionCharacterList.put(regionName, regionCharactersByArticle);
+			this.regionText.put(regionName, new StringWriter());
 		}
 
 		if (page.hasContents()) {
@@ -128,10 +129,10 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 */
 	@Override
 	protected void processTextPosition(TextPosition text) {
-		for (Map.Entry<String, Rectangle2D> regionAreaEntry : regionArea.entrySet()) {
+		for (Map.Entry<String, Rectangle2D> regionAreaEntry : this.regionArea.entrySet()) {
 			Rectangle2D rect = regionAreaEntry.getValue();
 			if (rect.contains(text.getX(), text.getY())) {
-				charactersByArticle = regionCharacterList.get(regionAreaEntry.getKey());
+				this.charactersByArticle = this.regionCharacterList.get(regionAreaEntry.getKey());
 				super.processTextPosition(text);
 			}
 		}
@@ -143,9 +144,9 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 */
 	@Override
 	protected void writePage() throws IOException {
-		for (String region : regionArea.keySet()) {
-			charactersByArticle = regionCharacterList.get(region);
-			output = regionText.get(region);
+		for (String region : this.regionArea.keySet()) {
+			this.charactersByArticle = this.regionCharacterList.get(region);
+			this.output = this.regionText.get(region);
 			super.writePage();
 		}
 	}

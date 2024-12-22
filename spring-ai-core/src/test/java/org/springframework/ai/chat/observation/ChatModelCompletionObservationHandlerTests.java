@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.observation;
+
+import java.util.List;
 
 import io.micrometer.tracing.handler.TracingObservationHandler;
 import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
@@ -22,16 +25,15 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiObservationEventNames;
 import org.springframework.ai.observation.tracing.TracingHelper;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +49,7 @@ class ChatModelCompletionObservationHandlerTests {
 		var observationContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt("supercalifragilisticexpialidocious"))
 			.provider("mary-poppins")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("spoonful-of-sugar").build())
+			.requestOptions(ChatOptions.builder().model("spoonful-of-sugar").build())
 			.build();
 		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.transformers;
 
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import ai.onnxruntime.OrtSession;
+import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -27,6 +31,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Transformers Embedding Model.
+ *
  * @author Christian Tzolov
  */
 @AutoConfiguration
@@ -38,9 +44,12 @@ public class TransformersEmbeddingModelAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = TransformersEmbeddingModelProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public TransformersEmbeddingModel embeddingModel(TransformersEmbeddingModelProperties properties) {
+	public TransformersEmbeddingModel embeddingModel(TransformersEmbeddingModelProperties properties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel(properties.getMetadataMode());
+		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel(properties.getMetadataMode(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		embeddingModel.setDisableCaching(!properties.getCache().isEnabled());
 		embeddingModel.setResourceCacheDirectory(properties.getCache().getDirectory());
@@ -53,6 +62,8 @@ public class TransformersEmbeddingModelAutoConfiguration {
 		embeddingModel.setGpuDeviceId(properties.getOnnx().getGpuDeviceId());
 
 		embeddingModel.setModelOutputName(properties.getOnnx().getModelOutputName());
+
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
 		return embeddingModel;
 	}

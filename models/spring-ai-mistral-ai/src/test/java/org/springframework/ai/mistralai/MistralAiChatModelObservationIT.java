@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mistralai;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -21,12 +25,14 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +41,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
@@ -48,6 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * Integration tests for observation instrumentation in {@link MistralAiChatModel}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -61,23 +64,23 @@ public class MistralAiChatModelObservationIT {
 
 	@BeforeEach
 	void beforeEach() {
-		observationRegistry.clear();
+		this.observationRegistry.clear();
 	}
 
 	@Test
 	void observationForChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-			.withMaxTokens(2048)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.maxTokens(2048)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
-		ChatResponse chatResponse = chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -88,16 +91,16 @@ public class MistralAiChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-			.withMaxTokens(2048)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.maxTokens(2048)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
-		Flux<ChatResponse> chatResponseFlux = chatModel.stream(prompt);
+		Flux<ChatResponse> chatResponseFlux = this.chatModel.stream(prompt);
 
 		List<ChatResponse> responses = chatResponseFlux.collectList().block();
 		assertThat(responses).isNotEmpty();
@@ -105,7 +108,7 @@ public class MistralAiChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -118,7 +121,7 @@ public class MistralAiChatModelObservationIT {
 	}
 
 	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(observationRegistry)
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
@@ -128,19 +131,29 @@ public class MistralAiChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.MISTRAL_AI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
-					KeyValue.NONE_VALUE)
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
+					StringUtils.hasText(responseMetadata.getModel()) ? responseMetadata.getModel()
+							: KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
-					KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE)
+			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_TOP_K.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(),
-					StringUtils.hasText(responseMetadata.getId()) ? responseMetadata.getId() : KeyValue.NONE_VALUE)
+			.matches(contextView -> {
+				var keyValue = contextView.getHighCardinalityKeyValues()
+					.stream()
+					.filter(tag -> tag.getKey().equals(HighCardinalityKeyNames.RESPONSE_ID.asString()))
+					.findFirst();
+				if (StringUtils.hasText(responseMetadata.getId())) {
+					return keyValue.isPresent() && keyValue.get().getValue().equals(responseMetadata.getId());
+				}
+				else {
+					return keyValue.isEmpty();
+				}
+			})
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
@@ -169,7 +182,8 @@ public class MistralAiChatModelObservationIT {
 		public MistralAiChatModel openAiChatModel(MistralAiApi mistralAiApi,
 				TestObservationRegistry observationRegistry) {
 			return new MistralAiChatModel(mistralAiApi, MistralAiChatOptions.builder().build(),
-					new FunctionCallbackContext(), List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
 
 	}

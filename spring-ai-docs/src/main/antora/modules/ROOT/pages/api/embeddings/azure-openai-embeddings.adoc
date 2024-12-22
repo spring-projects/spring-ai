@@ -85,7 +85,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.azure.openai` is the property prefix to configure the connection to Azure OpenAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -99,7 +99,7 @@ With this configuraiton the `spring.ai.azure.openai.embedding.options.deployment
 
 The prefix `spring.ai.azure.openai.embedding` is the property prefix that configures the `EmbeddingModel` implementation for Azure OpenAI
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -126,7 +126,7 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         AzureOpenAiEmbeddingOptions.builder()
-        .withModel("Different-Embedding-Model-Deployment-Name")
+        .model("Different-Embedding-Model-Deployment-Name")
         .build()));
 ----
 
@@ -197,13 +197,13 @@ var openAIClient = OpenAIClientBuilder()
 		.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
 		.buildClient();
 
-var embeddingModel = new AzureOpenAiEmbeddingModel(openAIClient)
+var embeddingModel = new AzureOpenAiEmbeddingModel(this.openAIClient)
     .withDefaultOptions(AzureOpenAiEmbeddingOptions.builder()
-        .withModel("text-embedding-ada-002")
-        .withUser("user-6")
+        .model("text-embedding-ada-002")
+        .user("user-6")
         .build());
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

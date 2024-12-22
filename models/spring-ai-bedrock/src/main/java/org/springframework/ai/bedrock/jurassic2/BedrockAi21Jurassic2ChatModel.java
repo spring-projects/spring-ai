@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,11 @@ package org.springframework.ai.bedrock.jurassic2;
 import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -33,7 +34,10 @@ import org.springframework.util.Assert;
  *
  * @author Ahmed Yousri
  * @since 1.0.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
 	private final Ai21Jurassic2ChatBedrockApi chatApi;
@@ -49,12 +53,11 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 	}
 
 	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi) {
-		this(chatApi,
-				BedrockAi21Jurassic2ChatOptions.builder()
-					.withTemperature(0.8)
-					.withTopP(0.9)
-					.withMaxTokens(100)
-					.build());
+		this(chatApi, BedrockAi21Jurassic2ChatOptions.builder().temperature(0.8).topP(0.9).maxTokens(100).build());
+	}
+
+	public static Builder builder(Ai21Jurassic2ChatBedrockApi chatApi) {
+		return new Builder(chatApi);
 	}
 
 	@Override
@@ -64,8 +67,8 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
 		return new ChatResponse(response.completions()
 			.stream()
-			.map(completion -> new Generation(completion.data().text())
-				.withGenerationMetadata(ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
+			.map(completion -> new Generation(new AssistantMessage(completion.data().text()),
+					ChatGenerationMetadata.builder().finishReason(completion.finishReason().reason()).build()))
 			.toList());
 	}
 
@@ -88,8 +91,9 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 		return request;
 	}
 
-	public static Builder builder(Ai21Jurassic2ChatBedrockApi chatApi) {
-		return new Builder(chatApi);
+	@Override
+	public ChatOptions getDefaultOptions() {
+		return BedrockAi21Jurassic2ChatOptions.fromOptions(this.defaultOptions);
 	}
 
 	public static class Builder {
@@ -108,15 +112,10 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 		}
 
 		public BedrockAi21Jurassic2ChatModel build() {
-			return new BedrockAi21Jurassic2ChatModel(chatApi,
-					options != null ? options : BedrockAi21Jurassic2ChatOptions.builder().build());
+			return new BedrockAi21Jurassic2ChatModel(this.chatApi,
+					this.options != null ? this.options : BedrockAi21Jurassic2ChatOptions.builder().build());
 		}
 
-	}
-
-	@Override
-	public ChatOptions getDefaultOptions() {
-		return BedrockAi21Jurassic2ChatOptions.fromOptions(this.defaultOptions);
 	}
 
 }

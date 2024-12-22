@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.azure.openai.image;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -6,6 +22,8 @@ import com.azure.core.credential.AzureKeyCredential;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
+
 import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
 import org.springframework.ai.azure.openai.AzureOpenAiImageOptions;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageGenerationMetadata;
@@ -22,9 +40,12 @@ import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * NOTE: use deployment ID dall-e-3
+ */
 @SpringBootTest(classes = AzureOpenAiImageModelIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_ENDPOINT", matches = ".+") })
 public class AzureOpenAiImageModelIT {
 
 	@Autowired
@@ -32,14 +53,14 @@ public class AzureOpenAiImageModelIT {
 
 	@Test
 	void imageAsUrlTest() {
-		var options = ImageOptionsBuilder.builder().withHeight(1024).withWidth(1024).build();
+		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
 
 		var instructions = """
 				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
 
 		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
 
-		ImageResponse imageResponse = imageModel.call(imagePrompt);
+		ImageResponse imageResponse = this.imageModel.call(imagePrompt);
 
 		assertThat(imageResponse.getResults()).hasSize(1);
 
@@ -66,15 +87,21 @@ public class AzureOpenAiImageModelIT {
 
 		@Bean
 		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+			String apiKey = System.getenv("AZURE_OPENAI_IMAGE_API_KEY");
+			String endpoint = System.getenv("AZURE_OPENAI_IMAGE_ENDPOINT");
+
+			// System.out.println("API Key: " + apiKey);
+			// System.out.println("Endpoint: " + endpoint);
+
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(apiKey))
+				.endpoint(endpoint)
 				.buildClient();
 		}
 
 		@Bean
 		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiImageModel(openAIClient,
-					AzureOpenAiImageOptions.builder().withDeploymentName("Dalle3").build());
+					AzureOpenAiImageOptions.builder().deploymentName("dall-e-3").build());
 
 		}
 

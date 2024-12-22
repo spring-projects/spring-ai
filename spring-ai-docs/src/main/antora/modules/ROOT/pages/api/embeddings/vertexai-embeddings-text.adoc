@@ -54,7 +54,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that lets you connect to VertexAI Embedding API.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -66,7 +66,7 @@ The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that l
 
 The prefix `spring.ai.vertex.ai.embedding.text` is the property prefix that lets you configure the embedding model implementation for VertexAI Text Embedding.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -144,19 +144,40 @@ Next, create a `VertexAiTextEmbeddingModel` and use it for text generations:
 
 [source,java]
 ----
-VertexAiEmbeddigConnectionDetails connectionDetails = 
-    VertexAiEmbeddigConnectionDetails.builder()
-        .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
-        .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+VertexAiEmbeddingConnectionDetails connectionDetails =
+    VertexAiEmbeddingConnectionDetails.builder()
+        .projectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .location(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
         .build();
 
 VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
-    .withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
+    .model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
     .build();
 
-var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, options);
+var embeddingModel = new VertexAiTextEmbeddingModel(this.connectionDetails, this.options);
 
-EmbeddingResponse embeddingResponse = embeddingModel
+EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
+=== Load credentials from a Google Service Account
+
+To programmatically load the GoogleCredentials from a Service Account json file, you can use the following:
+
+[source,java]
+----
+GoogleCredentials credentials = GoogleCredentials.fromStream(<INPUT_STREAM_TO_CREDENTIALS_JSON>)
+        .createScoped("https://www.googleapis.com/auth/cloud-platform");
+credentials.refreshIfExpired();
+
+VertexAiEmbeddingConnectionDetails connectionDetails =
+    VertexAiEmbeddingConnectionDetails.builder()
+        .projectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .location(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+        .apiEndpoint(endpoint)
+        .predictionServiceSettings(
+            PredictionServiceSettings.newBuilder()
+                .setEndpoint(endpoint)
+                .setCredentialsProvider(FixedCredentialsProvider.create(credentials))
+                .build());
+----

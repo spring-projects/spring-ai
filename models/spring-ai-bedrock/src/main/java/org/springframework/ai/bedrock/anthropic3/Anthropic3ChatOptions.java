@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.anthropic3;
+
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 
-import java.util.List;
-
 /**
+ * Options for the Anthropic 3 chat API.
+ *
  * @author Ben Middleton
  * @author Thomas Vitale
  * @since 1.0.0
@@ -70,134 +74,305 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	private @JsonProperty("anthropic_version") String anthropicVersion;
 	// @formatter:on
 
+	public Anthropic3ChatOptions() {
+	}
+
+	/**
+	 * Create a new {@link Anthropic3ChatOptions}.
+	 * @return a new {@link Anthropic3ChatOptions}
+	 */
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
-
-		private final Anthropic3ChatOptions options = new Anthropic3ChatOptions();
-
-		public Builder withTemperature(Double temperature) {
-			this.options.setTemperature(temperature);
-			return this;
-		}
-
-		public Builder withMaxTokens(Integer maxTokens) {
-			this.options.setMaxTokens(maxTokens);
-			return this;
-		}
-
-		public Builder withTopK(Integer topK) {
-			this.options.setTopK(topK);
-			return this;
-		}
-
-		public Builder withTopP(Double topP) {
-			this.options.setTopP(topP);
-			return this;
-		}
-
-		public Builder withStopSequences(List<String> stopSequences) {
-			this.options.setStopSequences(stopSequences);
-			return this;
-		}
-
-		public Builder withAnthropicVersion(String anthropicVersion) {
-			this.options.setAnthropicVersion(anthropicVersion);
-			return this;
-		}
-
-		public Anthropic3ChatOptions build() {
-			return this.options;
-		}
-
+	/**
+	 * Create a new {@link Anthropic3ChatOptions} from the provided
+	 * {@link Anthropic3ChatOptions}.
+	 * @param fromOptions the options to copy
+	 * @return a new {@link Anthropic3ChatOptions}
+	 */
+	public static Anthropic3ChatOptions fromOptions(Anthropic3ChatOptions fromOptions) {
+		return builder().temperature(fromOptions.getTemperature())
+			.maxTokens(fromOptions.getMaxTokens())
+			.topK(fromOptions.getTopK())
+			.topP(fromOptions.getTopP())
+			.stopSequences(fromOptions.getStopSequences())
+			.anthropicVersion(fromOptions.getAnthropicVersion())
+			.build();
 	}
 
+	/**
+	 * Get the temperature.
+	 * @return the temperature
+	 */
 	@Override
 	public Double getTemperature() {
 		return this.temperature;
 	}
 
+	/**
+	 * Set the temperature.
+	 * @param temperature the temperature
+	 */
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
+	/**
+	 * Get the maximum number of tokens.
+	 * @return the maximum number of tokens
+	 */
 	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
+	/**
+	 * Set the maximum number of tokens.
+	 * @param maxTokens the maximum number of tokens
+	 */
 	public void setMaxTokens(Integer maxTokens) {
 		this.maxTokens = maxTokens;
 	}
 
+	/**
+	 * Get the top k.
+	 * @return the top k
+	 */
 	@Override
 	public Integer getTopK() {
 		return this.topK;
 	}
 
+	/**
+	 * Set the top k.
+	 * @param topK the top k
+	 */
 	public void setTopK(Integer topK) {
 		this.topK = topK;
 	}
 
+	/**
+	 * Get the top p.
+	 * @return the top p
+	 */
 	@Override
 	public Double getTopP() {
 		return this.topP;
 	}
 
+	/**
+	 * Set the top p.
+	 * @param topP the top p
+	 */
 	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
+	/**
+	 * Get the stop sequences.
+	 * @return the stop sequences
+	 */
 	@Override
 	public List<String> getStopSequences() {
 		return this.stopSequences;
 	}
 
+	/**
+	 * Set the stop sequences.
+	 * @param stopSequences the stop sequences
+	 */
 	public void setStopSequences(List<String> stopSequences) {
 		this.stopSequences = stopSequences;
 	}
 
+	/**
+	 * Get the version of the generative to use.
+	 * @return the version of the generative to use
+	 */
 	public String getAnthropicVersion() {
 		return this.anthropicVersion;
 	}
 
+	/**
+	 * Set the version of the generative to use.
+	 * @param anthropicVersion the version of the generative to use
+	 */
 	public void setAnthropicVersion(String anthropicVersion) {
 		this.anthropicVersion = anthropicVersion;
 	}
 
+	/**
+	 * Get the model.
+	 * @return the model
+	 */
 	@Override
 	@JsonIgnore
 	public String getModel() {
 		return null;
 	}
 
+	/**
+	 * Get the frequency penalty.
+	 * @return the frequency penalty
+	 */
 	@Override
 	@JsonIgnore
 	public Double getFrequencyPenalty() {
 		return null;
 	}
 
+	/**
+	 * Get the presence penalty.
+	 * @return the presence penalty
+	 */
 	@Override
 	@JsonIgnore
 	public Double getPresencePenalty() {
 		return null;
 	}
 
+	/**
+	 * Get the embedding dimensions.
+	 * @return the embedding dimensions
+	 */
 	@Override
 	public Anthropic3ChatOptions copy() {
 		return fromOptions(this);
 	}
 
-	public static Anthropic3ChatOptions fromOptions(Anthropic3ChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withTopK(fromOptions.getTopK())
-			.withTopP(fromOptions.getTopP())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withAnthropicVersion(fromOptions.getAnthropicVersion())
-			.build();
+	/**
+	 * Builder for {@link Anthropic3ChatOptions}.
+	 */
+	public static final class Builder {
+
+		private final Anthropic3ChatOptions options = new Anthropic3ChatOptions();
+
+		private Builder() {
+		}
+
+		/**
+		 * Set the temperature.
+		 * @param temperature the temperature
+		 * @return this {@link Builder} instance
+		 */
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		/**
+		 * Set the maximum number of tokens.
+		 * @param maxTokens the maximum number of tokens
+		 * @return this {@link Builder} instance
+		 */
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		/**
+		 * Set the top k.
+		 * @param topK the top k
+		 * @return this {@link Builder} instance
+		 */
+		public Builder topK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		/**
+		 * Set the top p.
+		 * @param topP the top p
+		 * @return this {@link Builder} instance
+		 */
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		/**
+		 * Set the stop sequences.
+		 * @param stopSequences the stop sequences
+		 * @return this {@link Builder} instance
+		 */
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		/**
+		 * Set the version of the generative to use.
+		 * @param anthropicVersion the version of the generative to use
+		 * @return this {@link Builder} instance
+		 */
+		public Builder anthropicVersion(String anthropicVersion) {
+			this.options.setAnthropicVersion(anthropicVersion);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTemperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMaxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withStopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #anthropicVersion(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withAnthropicVersion(String anthropicVersion) {
+			this.options.setAnthropicVersion(anthropicVersion);
+			return this;
+		}
+
+		/**
+		 * Build the {@link Anthropic3ChatOptions}.
+		 * @return the {@link Anthropic3ChatOptions}
+		 */
+		public Anthropic3ChatOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

@@ -13,7 +13,8 @@ Exporting an environment variable is one way to set that configuration property:
 
 [source,shell]
 ----
-export SPRING_AI_QIANFAN_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_QIANFAN_API_KEY=<INSERT API KEY HERE>
+export SPRING_AI_QIANFAN_SECRET_KEY=<INSERT SECRET KEY HERE>
 ----
 
 === Add Repositories and BOM
@@ -55,7 +56,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the QianFan Chat client.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -72,7 +73,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.qianfan` is used as the property prefix that lets you connect to QianFan.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -85,7 +86,7 @@ The prefix `spring.ai.qianfan` is used as the property prefix that lets you conn
 
 The prefix `spring.ai.qianfan.chat` is the property prefix that lets you configure the chat client implementation for QianFan.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -102,7 +103,7 @@ The prefix `spring.ai.qianfan.chat` is the property prefix that lets you configu
 | spring.ai.qianfan.chat.options.stop | The model will stop generating characters specified by stop, and currently only supports a single stop word in the format of ["stop_word1"] | -
 |====
 
-NOTE: You can override the common `spring.ai.qianfan.base-url`, `spring.ai.qianfan.chat.api-key` and `spring.ai.qianfan.chat.secret-key` for the `ChatClient` implementations.
+NOTE: You can override the common `spring.ai.qianfan.base-url`, `spring.ai.qianfan.api-key` and `spring.ai.qianfan.secret-key` for the `ChatClient` implementations.
 The `spring.ai.qianfan.chat.base-url`, `spring.ai.qianfan.chat.api-key` and `spring.ai.qianfan.chat.secret-key` properties if set take precedence over the common properties.
 This is useful if you want to use different QianFan accounts for different models and different model endpoints.
 
@@ -123,8 +124,8 @@ ChatResponse response = chatClient.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         QianFanChatOptions.builder()
-            .withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-            .withTemperature(0.5)
+            .model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -164,13 +165,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", this.chatClient.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return this.chatClient.stream(prompt);
     }
 }
 ----
@@ -206,17 +207,17 @@ Next, create a `QianFanChatModel` and use it for text generations:
 ----
 var qianFanApi = new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
 
-var chatClient = new QianFanChatModel(qianFanApi, QianFanChatOptions.builder()
-                .withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+var chatClient = new QianFanChatModel(this.qianFanApi, QianFanChatOptions.builder()
+                .model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = this.chatClient.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> streamResponse = chatClient.stream(
+Flux<ChatResponse> streamResponse = this.chatClient.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -240,12 +241,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = qianFanApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, false));
+ResponseEntity<ChatCompletion> response = this.qianFanApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), this.systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = qianFanApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, true));
+Flux<ChatCompletionChunk> streamResponse = this.qianFanApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), this.systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-qianfan/src/main/java/org/springframework/ai/qianfan/api/QianFanApi.java[QianFanApi.java]'s JavaDoc for further information.

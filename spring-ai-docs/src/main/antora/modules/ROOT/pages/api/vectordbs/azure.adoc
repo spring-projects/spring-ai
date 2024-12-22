@@ -46,8 +46,10 @@ Add these dependencies to your project:
 
 === 1. Select an Embeddings interface implementation. You can choose between:
 
-* OpenAI Embedding:
-
+[tabs]
+======
+OpenAI Embedding::
++
 [source,xml]
 ----
 <dependency>
@@ -56,8 +58,8 @@ Add these dependencies to your project:
 </dependency>
 ----
 
-* Or Azure AI Embedding:
-
+Azure AI Embedding::
++
 [source,xml]
 ----
 <dependency>
@@ -66,8 +68,8 @@ Add these dependencies to your project:
 </dependency>
 ----
 
-* Or Local Sentence Transformers Embedding:
-
+Local Sentence Transformers Embedding::
++
 [source,xml]
 ----
 <dependency>
@@ -75,6 +77,7 @@ Add these dependencies to your project:
  <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
 </dependency>
 ----
+======
 
 === 2. Azure (AI Search) Vector Store
 
@@ -92,12 +95,14 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 You can use the following properties in your Spring Boot configuration to customize the Azure vector store.
 
+[stripes=even]
 |===
 |Property|Default value
 
 |`spring.ai.vectorstore.azure.url`|
 |`spring.ai.vectorstore.azure.api-key`|
-|`spring.ai.vectorstore.azure.initialze-schema`|false
+|`spring.ai.vectorstore.azure.useKeylessAuth`|false
+|`spring.ai.vectorstore.azure.initialize-schema`|false
 |`spring.ai.vectorstore.azure.index-name`|spring_ai_azure_vector_store
 |`spring.ai.vectorstore.azure.default-top-k`|4
 |`spring.ai.vectorstore.azure.default-similarity-threshold`|0.0
@@ -126,12 +131,17 @@ To create a vector store, you can use the following code by injecting the `Searc
 ----
 @Bean
 public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
-  return new AzureVectorStore(searchIndexClient, embeddingModel,
+
+  return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+    .initializeSchema(true)
     // Define the metadata fields to be used
     // in the similarity search filters.
-    List.of(MetadataField.text("country"),
-            MetadataField.int64("year"),
-            MetadataField.bool("active")));
+    .filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
+            MetadataField.date("activationDate")))
+    .defaultTopK(5)
+    .defaultSimilarityThreshold(0.7)
+    .indexName("spring-ai-document-index")
+    .build();
 }
 ----
 
@@ -164,9 +174,9 @@ And finally, retrieve documents similar to a query:
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-    SearchRequest
+    SearchRequest.builder()
       .query("Spring")
-      .withTopK(5));
+      .topK(5).build());
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
@@ -180,11 +190,11 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-   SearchRequest
+   SearchRequest.builder()
       .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+      .topK(TOP_K)
+      .similarityThreshold(SIMILARITY_THRESHOLD)
+      .filterExpression("country in ['UK', 'NL'] && year >= 2020").build());
 ----
 
 or programmatically using the expression DSL:
@@ -194,13 +204,13 @@ or programmatically using the expression DSL:
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(
-    SearchRequest
+    SearchRequest.builder()
       .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression(b.and(
+      .topK(TOP_K)
+      .similarityThreshold(SIMILARITY_THRESHOLD)
+      .filterExpression(b.and(
          b.in("country", "UK", "NL"),
-         b.gte("year", 2020)).build()));
+         b.gte("year", 2020)).build()).build());
 ----
 
 The portable filter expressions get automatically converted into the proprietary Azure Search link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[OData filters]. For example, the following portable filter expression:

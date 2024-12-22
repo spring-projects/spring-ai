@@ -1,17 +1,44 @@
-package org.springframework.ai.reader.markdown;
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import org.commonmark.node.*;
-import org.commonmark.parser.Parser;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentReader;
-import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
-import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.core.io.Resource;
+package org.springframework.ai.reader.markdown;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.commonmark.node.AbstractVisitor;
+import org.commonmark.node.BlockQuote;
+import org.commonmark.node.Code;
+import org.commonmark.node.FencedCodeBlock;
+import org.commonmark.node.HardLineBreak;
+import org.commonmark.node.Heading;
+import org.commonmark.node.ListItem;
+import org.commonmark.node.Node;
+import org.commonmark.node.SoftLineBreak;
+import org.commonmark.node.Text;
+import org.commonmark.node.ThematicBreak;
+import org.commonmark.parser.Parser;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentReader;
+import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.Resource;
 
 /**
  * Reads the given Markdown resource and groups headers, paragraphs, or text divided by
@@ -38,14 +65,27 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 */
 	private final Parser parser;
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 */
 	public MarkdownDocumentReader(String markdownResource) {
 		this(new DefaultResourceLoader().getResource(markdownResource), MarkdownDocumentReaderConfig.defaultConfig());
 	}
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 * @param config the configuration to use
+	 */
 	public MarkdownDocumentReader(String markdownResource, MarkdownDocumentReaderConfig config) {
 		this(new DefaultResourceLoader().getResource(markdownResource), config);
 	}
 
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the resource to read
+	 */
 	public MarkdownDocumentReader(Resource markdownResource, MarkdownDocumentReaderConfig config) {
 		this.markdownResource = markdownResource;
 		this.config = config;
@@ -58,10 +98,10 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 */
 	@Override
 	public List<Document> get() {
-		try (var input = markdownResource.getInputStream()) {
-			Node node = parser.parseReader(new InputStreamReader(input));
+		try (var input = this.markdownResource.getInputStream()) {
+			Node node = this.parser.parseReader(new InputStreamReader(input));
 
-			DocumentVisitor documentVisitor = new DocumentVisitor(config);
+			DocumentVisitor documentVisitor = new DocumentVisitor(this.config);
 			node.accept(documentVisitor);
 
 			return documentVisitor.getDocuments();
@@ -84,13 +124,16 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		private Document.Builder currentDocumentBuilder;
 
-		public DocumentVisitor(MarkdownDocumentReaderConfig config) {
+		DocumentVisitor(MarkdownDocumentReaderConfig config) {
 			this.config = config;
 		}
 
+		/**
+		 * Visits the document node and initializes the current document builder.
+		 */
 		@Override
 		public void visit(org.commonmark.node.Document document) {
-			currentDocumentBuilder = Document.builder();
+			this.currentDocumentBuilder = Document.builder();
 			super.visit(document);
 		}
 
@@ -102,7 +145,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		@Override
 		public void visit(ThematicBreak thematicBreak) {
-			if (config.horizontalRuleCreateDocument) {
+			if (this.config.horizontalRuleCreateDocument) {
 				buildAndFlush();
 			}
 			super.visit(thematicBreak);
@@ -128,32 +171,32 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		@Override
 		public void visit(BlockQuote blockQuote) {
-			if (!config.includeBlockquote) {
+			if (!this.config.includeBlockquote) {
 				buildAndFlush();
 			}
 
 			translateLineBreakToSpace();
-			currentDocumentBuilder.withMetadata("category", "blockquote");
+			this.currentDocumentBuilder.metadata("category", "blockquote");
 			super.visit(blockQuote);
 		}
 
 		@Override
 		public void visit(Code code) {
-			currentParagraphs.add(code.getLiteral());
-			currentDocumentBuilder.withMetadata("category", "code_inline");
+			this.currentParagraphs.add(code.getLiteral());
+			this.currentDocumentBuilder.metadata("category", "code_inline");
 			super.visit(code);
 		}
 
 		@Override
 		public void visit(FencedCodeBlock fencedCodeBlock) {
-			if (!config.includeCodeBlock) {
+			if (!this.config.includeCodeBlock) {
 				buildAndFlush();
 			}
 
 			translateLineBreakToSpace();
-			currentParagraphs.add(fencedCodeBlock.getLiteral());
-			currentDocumentBuilder.withMetadata("category", "code_block");
-			currentDocumentBuilder.withMetadata("lang", fencedCodeBlock.getInfo());
+			this.currentParagraphs.add(fencedCodeBlock.getLiteral());
+			this.currentDocumentBuilder.metadata("category", "code_block");
+			this.currentDocumentBuilder.metadata("lang", fencedCodeBlock.getInfo());
 
 			buildAndFlush();
 
@@ -163,11 +206,11 @@ public class MarkdownDocumentReader implements DocumentReader {
 		@Override
 		public void visit(Text text) {
 			if (text.getParent() instanceof Heading heading) {
-				currentDocumentBuilder.withMetadata("category", "header_%d".formatted(heading.getLevel()))
-					.withMetadata("title", text.getLiteral());
+				this.currentDocumentBuilder.metadata("category", "header_%d".formatted(heading.getLevel()))
+					.metadata("title", text.getLiteral());
 			}
 			else {
-				currentParagraphs.add(text.getLiteral());
+				this.currentParagraphs.add(text.getLiteral());
 			}
 
 			super.visit(text);
@@ -176,29 +219,29 @@ public class MarkdownDocumentReader implements DocumentReader {
 		public List<Document> getDocuments() {
 			buildAndFlush();
 
-			return documents;
+			return this.documents;
 		}
 
 		private void buildAndFlush() {
-			if (!currentParagraphs.isEmpty()) {
-				String content = String.join("", currentParagraphs);
+			if (!this.currentParagraphs.isEmpty()) {
+				String content = String.join("", this.currentParagraphs);
 
-				Document.Builder builder = currentDocumentBuilder.withContent(content);
+				Document.Builder builder = this.currentDocumentBuilder.text(content);
 
-				config.additionalMetadata.forEach(builder::withMetadata);
+				this.config.additionalMetadata.forEach(builder::metadata);
 
 				Document document = builder.build();
 
-				documents.add(document);
+				this.documents.add(document);
 
-				currentParagraphs.clear();
+				this.currentParagraphs.clear();
 			}
-			currentDocumentBuilder = Document.builder();
+			this.currentDocumentBuilder = Document.builder();
 		}
 
 		private void translateLineBreakToSpace() {
-			if (!currentParagraphs.isEmpty()) {
-				currentParagraphs.add(" ");
+			if (!this.currentParagraphs.isEmpty()) {
+				this.currentParagraphs.add(" ");
 			}
 		}
 

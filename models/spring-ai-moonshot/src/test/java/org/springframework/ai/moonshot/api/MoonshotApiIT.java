@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.moonshot.api;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletion;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionChunk;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionMessage;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionMessage.Role;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest;
 import org.springframework.http.ResponseEntity;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,7 +42,7 @@ public class MoonshotApiIT {
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		ResponseEntity<ChatCompletion> response = moonshotApi.chatCompletionEntity(new ChatCompletionRequest(
+		ResponseEntity<ChatCompletion> response = this.moonshotApi.chatCompletionEntity(new ChatCompletionRequest(
 				List.of(chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
@@ -57,7 +59,7 @@ public class MoonshotApiIT {
 				You should reply to the user's request with your name and also in the style of a pirate.
 					""", Role.SYSTEM);
 
-		ResponseEntity<ChatCompletion> response = moonshotApi.chatCompletionEntity(new ChatCompletionRequest(
+		ResponseEntity<ChatCompletion> response = this.moonshotApi.chatCompletionEntity(new ChatCompletionRequest(
 				List.of(systemMessage, userMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
@@ -67,7 +69,7 @@ public class MoonshotApiIT {
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		Flux<ChatCompletionChunk> response = moonshotApi.chatCompletionStream(new ChatCompletionRequest(
+		Flux<ChatCompletionChunk> response = this.moonshotApi.chatCompletionStream(new ChatCompletionRequest(
 				List.of(chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.8, true));
 
 		assertThat(response).isNotNull();

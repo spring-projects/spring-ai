@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.observation.conventions;
 
 /**
@@ -56,6 +57,13 @@ public enum VectorStoreObservationAttributes {
 	 */
 	DB_SYSTEM("db.system"),
 
+	// DB Search
+
+	/**
+	 * The metric used in similarity search.
+	 */
+	DB_SEARCH_SIMILARITY_METRIC("db.search.similarity_metric"),
+
 	// DB Vector
 
 	/**
@@ -67,11 +75,6 @@ public enum VectorStoreObservationAttributes {
 	 * The name field as of the vector (e.g. a field name).
 	 */
 	DB_VECTOR_FIELD_NAME("db.vector.field_name"),
-
-	/**
-	 * The model used for the embedding.
-	 */
-	DB_VECTOR_MODEL("db.vector.model"),
 
 	/**
 	 * The content of the search query being executed.
@@ -98,12 +101,7 @@ public enum VectorStoreObservationAttributes {
 	/**
 	 * The top-k most similar vectors returned by a query.
 	 */
-	DB_VECTOR_QUERY_TOP_K("db.vector.query.top_k"),
-
-	/**
-	 * The metric used in similarity search.
-	 */
-	DB_VECTOR_SIMILARITY_METRIC("db.vector.similarity_metric");
+	DB_VECTOR_QUERY_TOP_K("db.vector.query.top_k");
 
 	private final String value;
 
@@ -111,8 +109,12 @@ public enum VectorStoreObservationAttributes {
 		this.value = value;
 	}
 
+	/**
+	 * Return the string value of the attribute.
+	 * @return the string value of the attribute
+	 */
 	public String value() {
-		return value;
+		return this.value;
 	}
 
 // @formatter:on

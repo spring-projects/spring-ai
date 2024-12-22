@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mistralai.api;
 
 import java.util.ArrayList;
@@ -62,7 +63,9 @@ public class MistralAiStreamFunctionCallingHelper {
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 
-		return new ChatCompletionChunk(id, object, created, model, List.of(choice));
+		MistralAiApi.Usage usage = (current.usage() != null ? current.usage() : previous.usage());
+
+		return new ChatCompletionChunk(id, object, created, model, List.of(choice), usage);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
@@ -105,7 +108,7 @@ public class MistralAiStreamFunctionCallingHelper {
 
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
 		String content = (current.content() != null ? current.content()
-				: "" + ((previous.content() != null) ? previous.content() : ""));
+				: (previous.content() != null) ? previous.content() : "");
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (current.name() != null ? current.name() : previous.name());

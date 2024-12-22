@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
 
 import java.io.File;
@@ -32,23 +33,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
-import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.core.io.Resource;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.core.io.Resource;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -64,35 +66,62 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Dingmeng Xue
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
+ * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
 
-	protected Map<String, Document> store = new ConcurrentHashMap<>();
+	private final ObjectMapper objectMapper;
 
-	protected EmbeddingModel embeddingModel;
+	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
 
+	/**
+	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public SimpleVectorStore(EmbeddingModel embeddingModel) {
 		this(embeddingModel, ObservationRegistry.NOOP, null);
 	}
 
+	/**
+	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public SimpleVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention) {
+		this(builder(embeddingModel).observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention));
+	}
 
-		super(observationRegistry, customObservationConvention);
+	protected SimpleVectorStore(SimpleVectorStoreBuilder builder) {
+		super(builder);
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+	}
 
-		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
-		this.embeddingModel = embeddingModel;
+	/**
+	 * Creates an instance of SimpleVectorStore builder.
+	 * @return the SimpleVectorStore builder.
+	 */
+	public static SimpleVectorStoreBuilder builder(EmbeddingModel embeddingModel) {
+		return new SimpleVectorStoreBuilder(embeddingModel);
 	}
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		Objects.requireNonNull(documents, "Documents list cannot be null");
+		if (documents.isEmpty()) {
+			throw new IllegalArgumentException("Documents list cannot be empty");
+		}
+
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
-			document.setEmbedding(embedding);
-			this.store.put(document.getId(), document);
+			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
+					document.getContent(), document.getMetadata(), embedding);
+			this.store.put(document.getId(), storeContent);
 		}
 	}
 
@@ -114,12 +143,11 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
-			.map(entry -> new Similarity(entry.getId(),
-					EmbeddingMath.cosineSimilarity(userQueryEmbedding, entry.getEmbedding())))
-			.filter(s -> s.score >= request.getSimilarityThreshold())
-			.sorted(Comparator.<Similarity>comparingDouble(s -> s.score).reversed())
+			.map(content -> content
+				.toDocument(EmbeddingMath.cosineSimilarity(userQueryEmbedding, content.getEmbedding())))
+			.filter(document -> document.getScore() >= request.getSimilarityThreshold())
+			.sorted(Comparator.comparing(Document::getScore).reversed())
 			.limit(request.getTopK())
-			.map(s -> this.store.get(s.key))
 			.toList();
 	}
 
@@ -170,12 +198,11 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	 * @param file the file to load the vector store content
 	 */
 	public void load(File file) {
-		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
+		TypeReference<HashMap<String, SimpleVectorStoreContent>> typeRef = new TypeReference<>() {
+
 		};
-		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			Map<String, Document> deserializedMap = objectMapper.readValue(file, typeRef);
-			this.store = deserializedMap;
+			this.store = this.objectMapper.readValue(file, typeRef);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -187,12 +214,11 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	 * @param resource the resource to load the vector store content
 	 */
 	public void load(Resource resource) {
-		TypeReference<HashMap<String, Document>> typeRef = new TypeReference<>() {
+		TypeReference<HashMap<String, SimpleVectorStoreContent>> typeRef = new TypeReference<>() {
+
 		};
-		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			Map<String, Document> deserializedMap = objectMapper.readValue(resource.getInputStream(), typeRef);
-			this.store = deserializedMap;
+			this.store = this.objectMapper.readValue(resource.getInputStream(), typeRef);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -200,8 +226,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	private String getVectorDbAsJson() {
-		ObjectMapper objectMapper = new ObjectMapper();
-		ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
+		ObjectWriter objectWriter = this.objectMapper.writerWithDefaultPrettyPrinter();
 		String json;
 		try {
 			json = objectWriter.writeValueAsString(this.store);
@@ -216,20 +241,16 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		return this.embeddingModel.embed(query);
 	}
 
-	public static class Similarity {
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		private String key;
-
-		private double score;
-
-		public Similarity(String key, double score) {
-			this.key = key;
-			this.score = score;
-		}
-
+		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
+			.dimensions(this.embeddingModel.dimensions())
+			.collectionName("in-memory-map")
+			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
-	public class EmbeddingMath {
+	public static final class EmbeddingMath {
 
 		private EmbeddingMath() {
 			throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
@@ -273,13 +294,17 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	}
 
-	@Override
-	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+	public static final class SimpleVectorStoreBuilder extends AbstractVectorStoreBuilder<SimpleVectorStoreBuilder> {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName("in-memory-map")
-			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+		private SimpleVectorStoreBuilder(EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+		}
+
+		@Override
+		public SimpleVectorStore build() {
+			return new SimpleVectorStore(this);
+		}
+
 	}
 
 }

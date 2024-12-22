@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ public class ModerationMessage {
 	}
 
 	public String getText() {
-		return text;
+		return this.text;
 	}
 
 	public void setText(String text) {
@@ -44,22 +44,24 @@ public class ModerationMessage {
 
 	@Override
 	public String toString() {
-		return "ModerationMessage{" + "text='" + text + '\'' + '}';
+		return "ModerationMessage{" + "text='" + this.text + '\'' + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ModerationMessage))
+		}
+		if (!(o instanceof ModerationMessage)) {
 			return false;
+		}
 		ModerationMessage that = (ModerationMessage) o;
-		return Objects.equals(text, that.text);
+		return Objects.equals(this.text, that.text);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(text);
+		return Objects.hash(this.text);
 	}
 
 }

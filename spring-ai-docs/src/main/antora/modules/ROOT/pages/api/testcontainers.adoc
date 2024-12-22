@@ -31,11 +31,18 @@ The following service connection factories are provided in the `spring-ai-spring
 [cols="|,|"]
 |====
 | Connection Details	 | Matched on
+
+| `AwsOpenSearchConnectionDetails`
+| Containers of type `LocalStackContainer`
+
 | `ChromaConnectionDetails`
 | Containers of type `ChromaDBContainer`
 
 | `MilvusServiceClientConnectionDetails`
 | Containers of type `MilvusContainer`
+
+| `MongoConnectionDetails`
+| Containers of type `MongoDBAtlasLocalContainer`
 
 | `OllamaConnectionDetails`
 | Containers of type `OllamaContainer`

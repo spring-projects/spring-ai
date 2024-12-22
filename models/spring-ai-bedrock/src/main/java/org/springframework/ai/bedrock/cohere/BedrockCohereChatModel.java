@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
@@ -24,21 +25,27 @@ import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
+ * A {@link ChatModel} implementation that uses the Cohere Chat API.
+ *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 
 	private final CohereChatBedrockApi chatApi;
@@ -60,9 +67,10 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
-		List<Generation> generations = response.generations().stream().map(g -> {
-			return new Generation(g.text());
-		}).toList();
+		List<Generation> generations = response.generations()
+			.stream()
+			.map(g -> new Generation(new AssistantMessage(g.text())))
+			.toList();
 
 		return new ChatResponse(generations);
 	}
@@ -73,10 +81,10 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 			if (g.isFinished()) {
 				String finishReason = g.finishReason().name();
 				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
-				return new ChatResponse(List
-					.of(new Generation("").withGenerationMetadata(ChatGenerationMetadata.from(finishReason, usage))));
+				return new ChatResponse(List.of(new Generation(new AssistantMessage(""),
+						ChatGenerationMetadata.builder().finishReason(finishReason).metadata("usage", usage).build())));
 			}
-			return new ChatResponse(List.of(new Generation(g.text())));
+			return new ChatResponse(List.of(new Generation(new AssistantMessage(g.text()))));
 		});
 	}
 
@@ -87,16 +95,16 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		var request = CohereChatRequest.builder(promptValue)
-			.withTemperature(this.defaultOptions.getTemperature())
-			.withTopP(this.defaultOptions.getTopP())
-			.withTopK(this.defaultOptions.getTopK())
-			.withMaxTokens(this.defaultOptions.getMaxTokens())
-			.withStopSequences(this.defaultOptions.getStopSequences())
-			.withReturnLikelihoods(this.defaultOptions.getReturnLikelihoods())
-			.withStream(stream)
-			.withNumGenerations(this.defaultOptions.getNumGenerations())
-			.withLogitBias(this.defaultOptions.getLogitBias())
-			.withTruncate(this.defaultOptions.getTruncate())
+			.temperature(this.defaultOptions.getTemperature())
+			.topP(this.defaultOptions.getTopP())
+			.topK(this.defaultOptions.getTopK())
+			.maxTokens(this.defaultOptions.getMaxTokens())
+			.stopSequences(this.defaultOptions.getStopSequences())
+			.returnLikelihoods(this.defaultOptions.getReturnLikelihoods())
+			.stream(stream)
+			.numGenerations(this.defaultOptions.getNumGenerations())
+			.logitBias(this.defaultOptions.getLogitBias())
+			.truncate(this.defaultOptions.getTruncate())
 			.build();
 
 		if (prompt.getOptions() != null) {

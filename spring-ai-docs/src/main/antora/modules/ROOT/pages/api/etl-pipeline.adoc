@@ -8,7 +8,7 @@ The RAG use case is text to augment the capabilities of generative models by ret
 
 == API Overview
 
-The ETL pipelines creates, transforms and stores `Document` instances. 
+The ETL pipelines creates, transforms and stores `Document` instances.
 
 image::spring-ai-document1-api.jpg[Spring AI Message API, width=400, align="center"]
 
@@ -20,7 +20,7 @@ There are three main components of the ETL pipeline,
 * `DocumentTransformer` that implements `Function<List<Document>, List<Document>>`
 * `DocumentWriter` that implements `Consumer<List<Document>>`
 
-The `Document` class content is created from PDFs, text files and other document types throught the help of `DocumentReader`.
+The `Document` class content is created from PDFs, text files and other document types with the help of `DocumentReader`.
 
 To construct a simple ETL pipeline, you can chain together an instance of each type.
 
@@ -118,12 +118,12 @@ class MyJsonReader {
 
 	private final Resource resource;
 
-    MyAiAppComponent(@Value("classpath:bikes.json") Resource resource) {
+    MyJsonReader(@Value("classpath:bikes.json") Resource resource) {
         this.resource = resource;
     }
 
 	List<Document> loadJsonAsDocuments() {
-        JsonReader jsonReader = new JsonReader(resource, "description", "content");
+        JsonReader jsonReader = new JsonReader(this.resource, "description", "content");
         return jsonReader.get();
 	}
 }
@@ -153,6 +153,44 @@ The `JsonReader` processes JSON content as follows:
 ** If no keys are specified, it uses the entire JSON object as content.
 ** It generates metadata using the provided `JsonMetadataGenerator` (or an empty one if not provided).
 ** It creates a `Document` object with the extracted content and metadata.
+
+
+==== Using JSON Pointers
+
+The `JsonReader` now supports retrieving specific parts of a JSON document using JSON Pointers. This feature allows you to easily extract nested data from complex JSON structures.
+
+===== The `get(String pointer)` method
+
+[source,java]
+----
+public List<Document> get(String pointer)
+----
+
+This method allows you to use a JSON Pointer to retrieve a specific part of the JSON document.
+
+====== Parameters
+
+* `pointer`: A JSON Pointer string (as defined in RFC 6901) to locate the desired element within the JSON structure.
+
+====== Return Value
+
+* Returns a `List<Document>` containing the documents parsed from the JSON element located by the pointer.
+
+====== Behavior
+
+* The method uses the provided JSON Pointer to navigate to a specific location in the JSON structure.
+* If the pointer is valid and points to an existing element:
+** For a JSON object: it returns a list with a single Document.
+** For a JSON array: it returns a list of Documents, one for each element in the array.
+* If the pointer is invalid or points to a non-existent element, it throws an `IllegalArgumentException`.
+
+====== Example
+
+[source,java]
+----
+JsonReader jsonReader = new JsonReader(resource, "description");
+List<Document> documents = this.jsonReader.get("/store/books/0");
+----
 
 ==== Example JSON Structure
 
@@ -197,8 +235,9 @@ class MyTextReader {
     MyTextReader(@Value("classpath:text-source.txt") Resource resource) {
         this.resource = resource;
     }
+
 	List<Document> loadText() {
-		TextReader textReader = new TextReader(resource);
+		TextReader textReader = new TextReader(this.resource);
 		textReader.getCustomMetadata().put("filename", "text-source.txt");
 
 		return textReader.read();
@@ -243,7 +282,7 @@ The `TextReader` processes text content as follows:
 [source,java]
 ----
 List<Document> documents = textReader.get();
-List<Document> splitDocuments = new TokenTextSplitter().apply(documents);
+List<Document> splitDocuments = new TokenTextSplitter().apply(this.documents);
 ----
 
 * The reader uses Spring's `Resource` abstraction, allowing it to read from various sources (classpath, file system, URL, etc.).
@@ -275,7 +314,7 @@ class MyMarkdownReader {
             .withAdditionalMetadata("filename", "code.md")
             .build();
 
-        MarkdownDocumentReader reader = new MarkdownDocumentReader(resource, config);
+        MarkdownDocumentReader reader = new MarkdownDocumentReader(this.resource, config);
         return reader.get();
     }
 }
@@ -409,7 +448,7 @@ dependencies {
 @Component
 public class MyPagePdfDocumentReader {
 
-	List<Document> getDocsFromPdfwithCatalog() {
+	List<Document> getDocsFromPdfWithCatalog() {
 
         ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
                 PdfDocumentReaderConfig.builder()
@@ -420,7 +459,7 @@ public class MyPagePdfDocumentReader {
                     .withPagesPerDocument(1)
                     .build());
 
-	return pdfReader.read();
+	    return pdfReader.read();
     }
 }
 ----
@@ -463,7 +502,7 @@ class MyTikaDocumentReader {
     }
 
     List<Document> loadText() {
-        TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(resource);
+        TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(this.resource);
         return tikaDocumentReader.read();
     }
 }
@@ -476,7 +515,7 @@ The `TextSplitter` an abstract base class that helps divides documents to fit th
 
 
 === TokenTextSplitter
-The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text into chunks based on token count, using the `CL100K_BASE  encoding.
+The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text into chunks based on token count, using the CL100K_BASE encoding.
 
 ==== Usage
 
@@ -538,7 +577,7 @@ Document doc2 = new Document("Another document with content that will be split b
         Map.of("source", "example2.txt"));
 
 TokenTextSplitter splitter = new TokenTextSplitter();
-List<Document> splitDocuments = splitter.apply(List.of(doc1, doc2));
+List<Document> splitDocuments = this.splitter.apply(List.of(this.doc1, this.doc2));
 
 for (Document doc : splitDocuments) {
     System.out.println("Chunk: " + doc.getContent());
@@ -554,6 +593,7 @@ for (Document doc : splitDocuments) {
 * Metadata from the original documents is preserved and copied to all chunks derived from that document.
 * The content formatter (if set) from the original document is also copied to the derived chunks if `copyContentFormatter` is set to `true` (default behavior).
 * This splitter is particularly useful for preparing text for large language models that have token limits, ensuring that each chunk is within the model's processing capacity.
+
 === ContentFormatTransformer
 Ensures uniform content formats across all documents.
 
@@ -574,7 +614,7 @@ class MyKeywordEnricher {
     }
 
     List<Document> enrichDocuments(List<Document> documents) {
-        KeywordMetadataEnricher enricher = new KeywordMetadataEnricher(chatModel, 5);
+        KeywordMetadataEnricher enricher = new KeywordMetadataEnricher(this.chatModel, 5);
         return enricher.apply(documents);
     }
 }
@@ -617,10 +657,10 @@ KeywordMetadataEnricher enricher = new KeywordMetadataEnricher(chatModel, 5);
 
 Document doc = new Document("This is a document about artificial intelligence and its applications in modern technology.");
 
-List<Document> enrichedDocs = enricher.apply(List.of(doc));
+List<Document> enrichedDocs = enricher.apply(List.of(this.doc));
 
-Document enrichedDoc = enrichedDocs.get(0);
-String keywords = (String) enrichedDoc.getMetadata().get("excerpt_keywords");
+Document enrichedDoc = this.enrichedDocs.get(0);
+String keywords = (String) this.enrichedDoc.getMetadata().get("excerpt_keywords");
 System.out.println("Extracted keywords: " + keywords);
 ----
 
@@ -659,7 +699,7 @@ class MySummaryEnricher {
     }
 
     List<Document> enrichDocuments(List<Document> documents) {
-        return enricher.apply(documents);
+        return this.enricher.apply(documents);
     }
 }
 ----
@@ -719,7 +759,7 @@ SummaryMetadataEnricher enricher = new SummaryMetadataEnricher(chatModel,
 Document doc1 = new Document("Content of document 1");
 Document doc2 = new Document("Content of document 2");
 
-List<Document> enrichedDocs = enricher.apply(List.of(doc1, doc2));
+List<Document> enrichedDocs = enricher.apply(List.of(this.doc1, this.doc2));
 
 // Check the metadata of the enriched documents
 for (Document doc : enrichedDocs) {

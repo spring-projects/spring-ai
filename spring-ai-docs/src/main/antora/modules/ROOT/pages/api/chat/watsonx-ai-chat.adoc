@@ -40,7 +40,7 @@ dependencies {
 
 The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you connect to watsonx.ai.
 
-[cols="4,3,3"]
+[cols="4,3,3", stripes=even]
 |====
 | Property | Description | Default
 
@@ -55,7 +55,7 @@ The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you c
 
 The prefix `spring.ai.watsonx.ai.chat` is the property prefix that lets you configure the chat model implementation for Watsonx.AI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -87,7 +87,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         WatsonxAiChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -112,14 +112,15 @@ public class MyClass {
 
     public String generate(String userInput) {
 
-        WatsonxAiOptions options = WatsonxAiOptions.create()
-            .withModel(MODEL)
-            .withDecodingMethod("sample")
-            .withRandomSeed(1);
+        WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
+            .model(MODEL)
+            .decodingMethod("sample")
+            .randomSeed(1)
+            .build();
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 
-        var results = chatModel.call(prompt);
+        var results = this.chatModel.call(prompt);
 
         var generatedText = results.getResult().getOutput().getContent();
 
@@ -128,14 +129,15 @@ public class MyClass {
 
     public String generateStream(String userInput) {
 
-        WatsonxAiOptions options = WatsonxAiOptions.create()
-            .withModel(MODEL)
-            .withDecodingMethod("greedy")
-            .withRandomSeed(2);
+        WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
+            .model(MODEL)
+            .decodingMethod("greedy")
+            .randomSeed(2)
+            .build();
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 
-        var results = chatModel.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
+        var results = this.chatModel.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
 
         var generatedText = results.stream()
             .map(generation -> generation.getResult().getOutput().getContent())

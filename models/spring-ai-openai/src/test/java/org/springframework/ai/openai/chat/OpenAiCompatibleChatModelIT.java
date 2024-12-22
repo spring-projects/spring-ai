@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.chat;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -30,11 +37,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,8 +49,8 @@ public class OpenAiCompatibleChatModelIT {
 			new UserMessage("Tell me about 3 most famous ones."));
 
 	static OpenAiChatOptions forModelName(String modelName) {
-		return OpenAiChatOptions.builder().withModel(modelName).build();
-	};
+		return OpenAiChatOptions.builder().model(modelName).build();
+	}
 
 	static Stream<ChatModel> openAiCompatibleApis() {
 		Stream.Builder<ChatModel> builder = Stream.builder();
@@ -72,17 +74,17 @@ public class OpenAiCompatibleChatModelIT {
 	@ParameterizedTest
 	@MethodSource("openAiCompatibleApis")
 	void chatCompletion(ChatModel chatModel) {
-		Prompt prompt = new Prompt(conversation);
+		Prompt prompt = new Prompt(this.conversation);
 		ChatResponse response = chatModel.call(prompt);
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@ParameterizedTest
 	@MethodSource("openAiCompatibleApis")
 	void streamCompletion(StreamingChatModel streamingChatModel) {
-		Prompt prompt = new Prompt(conversation);
+		Prompt prompt = new Prompt(this.conversation);
 		Flux<ChatResponse> flux = streamingChatModel.stream(prompt);
 
 		List<ChatResponse> responses = flux.collectList().block();
@@ -92,7 +94,7 @@ public class OpenAiCompatibleChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");

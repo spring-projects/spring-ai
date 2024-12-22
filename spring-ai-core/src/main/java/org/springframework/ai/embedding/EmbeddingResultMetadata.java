@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.embedding;
 
 import org.springframework.ai.model.ResultMetadata;
@@ -21,20 +22,17 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 /**
+ * Metadata associated with the embedding result.
+ *
  * @author Christian Tzolov
+ * @author Jihoon Kim
  */
 public class EmbeddingResultMetadata implements ResultMetadata {
 
 	public static EmbeddingResultMetadata EMPTY = new EmbeddingResultMetadata();
 
-	public enum ModalityType {
-
-		TEXT, IMAGE, AUDIO, VIDEO;
-
-	}
-
 	/**
-	 * The {@link MimeType} of the source data used to generate the embedding.
+	 * The {@link ModalityType} of the source data used to generate the embedding.
 	 */
 	private final ModalityType modalityType;
 
@@ -75,11 +73,17 @@ public class EmbeddingResultMetadata implements ResultMetadata {
 		return this.documentData;
 	}
 
+	public enum ModalityType {
+
+		TEXT, IMAGE, AUDIO, VIDEO
+
+	}
+
 	public static class ModalityUtils {
 
 		private static MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
-		private static MimeType IMAGE_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
+		private static MimeType IMAGE_MIME_TYPE = MimeTypeUtils.parseMimeType("image/*");
 
 		private static MimeType VIDEO_MIME_TYPE = MimeTypeUtils.parseMimeType("video/*");
 

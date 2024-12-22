@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,35 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.watsonx.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 
 import org.springframework.ai.watsonx.WatsonxAiChatOptions;
 
-import java.util.List;
-import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Pablo Sanchidrian Herrera
  * @author John Jairo Moreno Rojas
+ * @author Alexandros Pappas
  */
 public class WatsonxAiChatOptionTest {
 
 	@Test
 	public void testOptions() {
 		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
-			.withDecodingMethod("sample")
-			.withTemperature(1.2)
-			.withTopK(20)
-			.withTopP(0.5)
-			.withMaxNewTokens(100)
-			.withMinNewTokens(20)
-			.withStopSequences(List.of("\n\n\n"))
-			.withRepetitionPenalty(1.1)
-			.withRandomSeed(4)
+			.decodingMethod("sample")
+			.temperature(1.2)
+			.topK(20)
+			.topP(0.5)
+			.maxNewTokens(100)
+			.minNewTokens(20)
+			.stopSequences(List.of("\n\n\n"))
+			.repetitionPenalty(1.1)
+			.randomSeed(4)
 			.build();
 
 		var optionsMap = options.toMap();
@@ -60,17 +62,17 @@ public class WatsonxAiChatOptionTest {
 	@Test
 	public void testOptionsWithAdditionalParamsOneByOne() {
 		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
-			.withDecodingMethod("sample")
-			.withTemperature(1.2)
-			.withTopK(20)
-			.withTopP(0.5)
-			.withMaxNewTokens(100)
-			.withMinNewTokens(20)
-			.withStopSequences(List.of("\n\n\n"))
-			.withRepetitionPenalty(1.1)
-			.withRandomSeed(4)
-			.withAdditionalProperty("HAP", true)
-			.withAdditionalProperty("typicalP", 0.5f)
+			.decodingMethod("sample")
+			.temperature(1.2)
+			.topK(20)
+			.topP(0.5)
+			.maxNewTokens(100)
+			.minNewTokens(20)
+			.stopSequences(List.of("\n\n\n"))
+			.repetitionPenalty(1.1)
+			.randomSeed(4)
+			.additionalProperty("HAP", true)
+			.additionalProperty("typicalP", 0.5f)
 			.build();
 
 		var optionsMap = options.toMap();
@@ -91,16 +93,16 @@ public class WatsonxAiChatOptionTest {
 	@Test
 	public void testOptionsWithAdditionalParamsMap() {
 		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
-			.withDecodingMethod("sample")
-			.withTemperature(1.2)
-			.withTopK(20)
-			.withTopP(0.5)
-			.withMaxNewTokens(100)
-			.withMinNewTokens(20)
-			.withStopSequences(List.of("\n\n\n"))
-			.withRepetitionPenalty(1.1)
-			.withRandomSeed(4)
-			.withAdditionalProperties(Map.of("HAP", true, "typicalP", 0.5f, "test_value", "test"))
+			.decodingMethod("sample")
+			.temperature(1.2)
+			.topK(20)
+			.topP(0.5)
+			.maxNewTokens(100)
+			.minNewTokens(20)
+			.stopSequences(List.of("\n\n\n"))
+			.repetitionPenalty(1.1)
+			.randomSeed(4)
+			.additionalProperties(Map.of("HAP", true, "typicalP", 0.5f, "test_value", "test"))
 			.build();
 
 		var optionsMap = options.toMap();
@@ -121,7 +123,7 @@ public class WatsonxAiChatOptionTest {
 
 	@Test
 	public void testFilterOut() {
-		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder().withModel("google/flan-ul2").build();
+		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder().model("google/flan-ul2").build();
 		var mappedOptions = WatsonxAiChatOptions.filterNonSupportedFields(options.toMap());
 		assertThat(mappedOptions).doesNotContainEntry("model", "google/flan-ul2");
 	}

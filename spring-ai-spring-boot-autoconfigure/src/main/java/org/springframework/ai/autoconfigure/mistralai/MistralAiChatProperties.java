@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.autoconfigure.mistralai;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions;
@@ -21,9 +22,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
+ * Configuration properties for Mistral AI chat.
+ *
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 @ConfigurationProperties(MistralAiChatProperties.CONFIG_PREFIX)
@@ -39,10 +43,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	private static final Boolean IS_ENABLED = false;
 
-	public MistralAiChatProperties() {
-		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
-	}
-
 	/**
 	 * Enable OpenAI chat model.
 	 */
@@ -50,11 +50,15 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	@NestedConfigurationProperty
 	private MistralAiChatOptions options = MistralAiChatOptions.builder()
-		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE)
-		.withSafePrompt(!IS_ENABLED)
-		.withTopP(DEFAULT_TOP_P)
+		.model(DEFAULT_CHAT_MODEL)
+		.temperature(DEFAULT_TEMPERATURE)
+		.safePrompt(!IS_ENABLED)
+		.topP(DEFAULT_TOP_P)
 		.build();
+
+	public MistralAiChatProperties() {
+		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
+	}
 
 	public MistralAiChatOptions getOptions() {
 		return this.options;

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,6 +33,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Qdrant Vector Store.
+ *
  * @author Anush Shetty
  * @author Eddú Meléndez
  * @author Christian Tzolov
@@ -75,9 +77,13 @@ public class QdrantVectorStoreAutoConfiguration {
 			QdrantClient qdrantClient, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-		return new QdrantVectorStore(qdrantClient, properties.getCollectionName(), embeddingModel,
-				properties.isInitializeSchema(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+		return QdrantVectorStore.builder(qdrantClient, embeddingModel)
+			.collectionName(properties.getCollectionName())
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 	static class PropertiesQdrantConnectionDetails implements QdrantConnectionDetails {

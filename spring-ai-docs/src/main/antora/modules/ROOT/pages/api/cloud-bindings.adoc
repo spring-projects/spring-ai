@@ -12,7 +12,6 @@ Configuration for `api-key`, `uri`, `username`, `password`, etc. can be specifie
 
 To enable cloud binding support, include the following dependency in the application.
 
-
 [source,xml]
 ----
 <dependency>
@@ -41,6 +40,9 @@ The following are the components for which the cloud binding support is currentl
 | Service Type	 | Binding Type | Source Properties | Target Properties
 | `Chroma Vecor Store`
 | `chroma` | `uri`, `username`, `passwor` | `spring.ai.vectorstore.chroma.client.host`, `spring.ai.vectorstore.chroma.client.port`, `spring.ai.vectorstore.chroma.client.username`, `spring.ai.vectorstore.chroma.client.host.password`
+
+| `Mistral AI`
+| `mistralai` | `api-key`, `uri` | `spring.ai.mistralai.api-key`, `spring.ai.mistralai.base-url`
 
 | `Ollama`
 | `ollama` | `uri` | `spring.ai.ollama.base-url`

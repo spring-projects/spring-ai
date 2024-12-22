@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,9 +35,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
@@ -46,6 +48,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.util.Assert;
@@ -61,16 +64,21 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class ModelOptionsUtils {
 
-	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+	public static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-		.registerModule(new JavaTimeModule());
+		.addModules(JacksonUtils.instantiateAvailableModules())
+		.build();
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
 	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
 
 	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
+
+	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
+
+	};
 
 	/**
 	 * Converts the given JSON string to a Map of String and Object.
@@ -85,9 +93,6 @@ public abstract class ModelOptionsUtils {
 			throw new RuntimeException(e);
 		}
 	}
-
-	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
-	};
 
 	/**
 	 * Converts the given JSON string to an Object of the given type.
@@ -113,6 +118,20 @@ public abstract class ModelOptionsUtils {
 	public static String toJsonString(Object object) {
 		try {
 			return OBJECT_MAPPER.writeValueAsString(object);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Converts the given object to a JSON string.
+	 * @param object the object to convert to a JSON string.
+	 * @return the JSON string.
+	 */
+	public static String toJsonStringPrettyPrinter(Object object) {
+		try {
+			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -191,6 +210,7 @@ public abstract class ModelOptionsUtils {
 		try {
 			String json = OBJECT_MAPPER.writeValueAsString(source);
 			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
+
 			})
 				.entrySet()
 				.stream()
@@ -329,10 +349,12 @@ public abstract class ModelOptionsUtils {
 
 	/**
 	 * Generates JSON Schema (version 2020_12) for the given class.
-	 * @param clazz the class to generate JSON Schema for.
+	 * @param clazz the class to generate JSON Schema from.
 	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
 	 * @return the generated JSON Schema as a String.
+	 * @deprecated use {@link #getJsonSchema(Type, boolean)} instead.
 	 */
+	@Deprecated(since = "1.0 M4")
 	public static String getJsonSchema(Class<?> clazz, boolean toUpperCaseTypeValues) {
 
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
@@ -353,8 +375,47 @@ public abstract class ModelOptionsUtils {
 		}
 
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
+		// Required for OpenAPI 3.0 (at least Vertex AI version of it).
+		if (toUpperCaseTypeValues) {
+			toUpperCaseTypeValues(node);
+		}
+
+		return node.toPrettyString();
+	}
+
+	/**
+	 * Generates JSON Schema (version 2020_12) for the given class.
+	 * @param inputType the input {@link Type} to generate JSON Schema from.
+	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
+	 * @return the generated JSON Schema as a String.
+	 */
+	public static String getJsonSchema(Type inputType, boolean toUpperCaseTypeValues) {
+
+		if (SCHEMA_GENERATOR_CACHE.get() == null) {
+
+			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+			Swagger2Module swaggerModule = new Swagger2Module();
+
+			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+					OptionPreset.PLAIN_JSON)
+				.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
+				.with(Option.PLAIN_DEFINITION_KEYS)
+				.with(swaggerModule)
+				.with(jacksonModule);
+
+			SchemaGeneratorConfig config = configBuilder.build();
+			SchemaGenerator generator = new SchemaGenerator(config);
+			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
+		}
+
+		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
+
+		if ((inputType == Void.class) && !node.has("properties")) {
+			node.putObject("properties");
+		}
+
 		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
-										// version of it).
+			// version of it).
 			toUpperCaseTypeValues(node);
 		}
 

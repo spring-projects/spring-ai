@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,31 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.minimax.api;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.util.api.ApiUtils;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 // @formatter:off
 /**
@@ -57,6 +61,8 @@ public class MiniMaxApi {
 	private final RestClient restClient;
 
 	private final WebClient webClient;
+
+	private final MiniMaxStreamFunctionCallingHelper chunkMerger = new MiniMaxStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api with default base URL.
@@ -98,16 +104,114 @@ public class MiniMaxApi {
 	 */
 	public MiniMaxApi(String baseUrl, String miniMaxToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
+		Consumer<HttpHeaders> authHeaders = headers -> {
+			headers.setBearerAuth(miniMaxToken);
+			headers.setContentType(MediaType.APPLICATION_JSON);
+		};
+
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders(miniMaxToken))
+				.defaultHeaders(authHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = WebClient.builder()
 				.baseUrl(baseUrl)
-				.defaultHeaders(ApiUtils.getJsonContentHeaders(miniMaxToken))
+				.defaultHeaders(authHeaders)
 				.build();
+	}
+
+	public static  String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
+		return content.stream()
+				.filter(c -> "text".equals(c.type()))
+				.map(ChatCompletionMessage.MediaContent::text)
+				.reduce("", (a, b) -> a + b);
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+				.uri("/v1/text/chatcompletion_v2")
+				.body(chatRequest)
+				.retrieve()
+				.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 *
+	 * @param chatRequest The chat completion request. Must have the stream property set to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
+		return this.webClient.post()
+				.uri("/v1/text/chatcompletion_v2")
+				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+				.retrieve()
+				.bodyToFlux(String.class)
+				.takeUntil(SSE_DONE_PREDICATE)
+				.filter(SSE_DONE_PREDICATE.negate())
+				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+				.map(chunk -> {
+					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+						isInsideTool.set(true);
+					}
+					return chunk;
+				})
+				.windowUntil(chunk -> {
+					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+						isInsideTool.set(false);
+						return true;
+					}
+					return !isInsideTool.get();
+				})
+				.concatMapIterable(window -> {
+					Mono<ChatCompletionChunk> monoChunk = window.reduce(
+							new ChatCompletionChunk(null, null, null, null, null, null),
+							(previous, current) -> this.chunkMerger.merge(previous, current));
+					return List.of(monoChunk);
+				})
+				.flatMap(mono -> mono);
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 *
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns {@link EmbeddingList}.
+	 *
+	 */
+	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		// Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single
+		// request, pass an array of strings or array of token arrays.
+		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
+
+		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
+
+		return this.restClient.post()
+				.uri("/v1/embeddings")
+				.body(embeddingRequest)
+				.retrieve()
+				.toEntity(new ParameterizedTypeReference<>() {
+		});
 	}
 
 	/**
@@ -120,10 +224,7 @@ public class MiniMaxApi {
 		ABAB_6_5_T_Chat("abab6.5t-chat"),
 		ABAB_6_5_G_Chat("abab6.5g-chat"),
 		ABAB_5_5_Chat("abab5.5-chat"),
-		ABAB_5_5_S_Chat("abab5.5s-chat"),
-
-		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by ABAB_6_5_S_Chat
-		ABAB_6_Chat("abab6-chat");
+		ABAB_5_5_S_Chat("abab5.5s-chat");
 
 		public final String  value;
 
@@ -132,7 +233,7 @@ public class MiniMaxApi {
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
 		}
 
 		@Override
@@ -142,27 +243,141 @@ public class MiniMaxApi {
 	}
 
 	/**
-	 * Represents a tool the model may call. Currently, only functions are supported as a tool.
-	 *
-	 * @param type The type of the tool. Currently, only 'function' is supported.
-	 * @param function The function definition.
+	 * The reason the model stopped generating tokens.
 	 */
-	@JsonInclude(Include.NON_NULL)
-	public record FunctionTool(
-			@JsonProperty("type") Type type,
-			@JsonProperty("function") Function function) {
+	public enum ChatCompletionFinishReason {
+		/**
+		 * The model hit a natural stop point or a provided stop sequence.
+		 */
+		@JsonProperty("stop")
+		STOP,
+		/**
+		 * The maximum number of tokens specified in the request was reached.
+		 */
+		@JsonProperty("length")
+		LENGTH,
+		/**
+		 * The content was omitted due to a flag from our content filters.
+		 */
+		@JsonProperty("content_filter")
+		CONTENT_FILTER,
+		/**
+		 * The model called a tool.
+		 */
+		@JsonProperty("tool_calls")
+		TOOL_CALLS,
+		/**
+		 * Only for compatibility with Mistral AI API.
+		 */
+		@JsonProperty("tool_call")
+		TOOL_CALL
+	}
+
+	/**
+	 * MiniMax Embeddings Models:
+	 * <a href="https://www.minimaxi.com/document/guides/Embeddings">Embeddings</a>.
+	 */
+	public enum EmbeddingModel {
+
+		/**
+		 * DIMENSION: 1536
+		 */
+		Embo_01("embo-01");
+
+		public final String  value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+	}
+
+	/**
+	 * MiniMax Embeddings Types
+	 */
+	public enum EmbeddingType {
+
+		/**
+		 * DB, used to generate vectors and store them in the library (as retrieved text)
+		 */
+		DB("db"),
+
+		/**
+		 * Query, used to generate vectors for queries (when used as retrieval text)
+		 */
+		Query("query");
+
+		@JsonValue
+		public final String value;
+
+		EmbeddingType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+	}
+
+	/**
+	 * Represents a tool the model may call. Currently, only functions are supported as a tool.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public static class FunctionTool {
+
+		/**
+		 *  The type of the tool. Currently, only 'function' is supported.
+		 */
+		private Type type = Type.FUNCTION;
+
+		/**
+		 * The function definition.
+		 */
+		private Function function;
+
+		public FunctionTool() {
+
+		}
+
+		/**
+		 * Create a tool of type 'function' and the given function definition.
+		 * @param type the tool type
+		 * @param function function definition
+		 */
+		public FunctionTool(
+				@JsonProperty("type") Type type,
+				@JsonProperty("function") Function function) {
+			this.type = type;
+			this.function = function;
+		}
 
 		/**
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
-		@ConstructorBinding
 		public FunctionTool(Function function) {
 			this(Type.FUNCTION, function);
 		}
 
-		public static FunctionTool webSearchFunctionTool() {
-			return new FunctionTool(Type.WEB_SEARCH, null);
+		@JsonProperty("type")
+		public Type getType() {
+			return this.type;
+		}
+
+		@JsonProperty("function")
+		public Function getFunction() {
+			return this.function;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		public void setFunction(Function function) {
+			this.function = function;
 		}
 
 		/**
@@ -172,40 +387,111 @@ public class MiniMaxApi {
 			/**
 			 * Function tool type.
 			 */
-			@JsonProperty("function") FUNCTION,
-			@JsonProperty("web_search") WEB_SEARCH
+			@JsonProperty("function")
+			FUNCTION,
+
+			@JsonProperty("web_search")
+			WEB_SEARCH
 		}
+
+		public static FunctionTool webSearchFunctionTool() {
+			return new FunctionTool(FunctionTool.Type.WEB_SEARCH, null);
+		}
+
 
 		/**
 		 * Function definition.
-		 *
-		 * @param description A description of what the function does, used by the model to choose when and how to call
-		 * the function.
-		 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes,
-		 * with a maximum length of 64.
-		 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
-		 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
 		 */
-		public record Function(
-				@JsonProperty("description") String description,
-				@JsonProperty("name") String name,
-				@JsonProperty("parameters") String parameters) {
+		public static class Function {
+
+			@JsonProperty("description")
+			private String description;
+
+			@JsonProperty("name")
+			private String name;
+
+			@JsonProperty("parameters")
+			private Map<String, Object> parameters;
+
+			@JsonIgnore
+			private String jsonSchema;
+
+			private Function() {
+
+			}
+
+			/**
+			 * Create tool function definition.
+			 *
+			 * @param description A description of what the function does, used by the model to choose when and how to call
+			 * the function.
+			 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes,
+			 * with a maximum length of 64.
+			 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
+			 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
+			 */
+			public Function(
+					String description,
+					String name,
+					Map<String, Object> parameters) {
+				this.description = description;
+				this.name = name;
+				this.parameters = parameters;
+			}
 
 			/**
 			 * Create tool function definition.
 			 *
 			 * @param description tool function description.
 			 * @param name tool function name.
-			 * @param parameters tool function schema.
+			 * @param jsonSchema tool function schema as json.
 			 */
-			@ConstructorBinding
-			public Function(String description, String name, Map<String, Object> parameters) {
-				this(description, name, ModelOptionsUtils.toJsonString(parameters));
+			public Function(String description, String name, String jsonSchema) {
+				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
+
+			@JsonProperty("description")
+			public String getDescription() {
+				return this.description;
+			}
+
+			@JsonProperty("name")
+			public String getName() {
+				return this.name;
+			}
+
+			@JsonProperty("parameters")
+			public Map<String, Object> getParameters() {
+				return this.parameters;
+			}
+
+			public void setDescription(String description) {
+				this.description = description;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public void setParameters(Map<String, Object> parameters) {
+				this.parameters = parameters;
+			}
+
+			public String getJsonSchema() {
+				return this.jsonSchema;
+			}
+
+			public void setJsonSchema(String jsonSchema) {
+				this.jsonSchema = jsonSchema;
+				if (jsonSchema != null) {
+					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
+				}
+			}
+
 		}
 	}
 
-        /**
+	/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -245,7 +531,7 @@ public class MiniMaxApi {
 	 * functions are present. Use the {@link ToolChoiceBuilder} to create the tool choice value.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest (
+	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("frequency_penalty") Double frequencyPenalty,
@@ -271,7 +557,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, false, temperature, null,null,
+					null, null, null, false, temperature, null, null,
 					null, null);
 		}
 
@@ -286,7 +572,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, stream, temperature, null,null,
+					null, null, null, stream, temperature, null, null,
 					null, null);
 		}
 
@@ -302,11 +588,11 @@ public class MiniMaxApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null,
-					null, null, null, false, 0.8, null,null,
+					null, null, null, false, 0.8, null, null,
 					tools, toolChoice);
 		}
 
-				/**
+		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
 		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
 		 *
@@ -316,7 +602,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null,  null, null, null,
-					null, null, null, stream, null, null,null,
+					null, null, null, stream, null, null, null,
 					null, null);
 		}
 
@@ -374,6 +660,15 @@ public class MiniMaxApi {
 			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
 
 		/**
+		 * Create a chat completion message with the given content and role. All other fields are null.
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 */
+		public ChatCompletionMessage(Object content, Role role) {
+			this(content, role, null, null, null);
+		}
+
+		/**
 		 * Get message content as String.
 		 */
 		public String content() {
@@ -387,34 +682,29 @@ public class MiniMaxApi {
 		}
 
 		/**
-		 * Create a chat completion message with the given content and role. All other fields are null.
-		 * @param content The contents of the message.
-		 * @param role The role of the author of this message.
-		 */
-		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
-		}
-
-		/**
 		 * The role of the author of this message.
 		 */
 		public enum Role {
 			/**
 			 * System message.
 			 */
-			@JsonProperty("system") SYSTEM,
+			@JsonProperty("system")
+			SYSTEM,
 			/**
 			 * User message.
 			 */
-			@JsonProperty("user") USER,
+			@JsonProperty("user")
+			USER,
 			/**
 			 * Assistant message.
 			 */
-			@JsonProperty("assistant") ASSISTANT,
+			@JsonProperty("assistant")
+			ASSISTANT,
 			/**
 			 * Tool message.
 			 */
-			@JsonProperty("tool") TOOL
+			@JsonProperty("tool")
+			TOOL
 		}
 
 		/**
@@ -433,22 +723,6 @@ public class MiniMaxApi {
 			@JsonProperty("image_url") ImageUrl imageUrl) {
 
 			/**
-			 * @param url Either a URL of the image or the base64 encoded image data.
-			 * The base64 encoded image data must have a special prefix in the following format:
-			 * "data:{mimetype};base64,{base64-encoded-image-data}".
-			 * @param detail Specifies the detail level of the image.
-			 */
-			@JsonInclude(Include.NON_NULL)
-			public record ImageUrl(
-				@JsonProperty("url") String url,
-				@JsonProperty("detail") String detail) {
-
-				public ImageUrl(String url) {
-					this(url, null);
-				}
-			}
-
-			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
@@ -462,6 +736,23 @@ public class MiniMaxApi {
 			 */
 			public MediaContent(ImageUrl imageUrl) {
 				this("image_url", null, imageUrl);
+			}
+
+			/**
+			 * The image content of the message.
+			 * @param url Either a URL of the image or the base64 encoded image data.
+			 * The base64 encoded image data must have a special prefix in the following format:
+			 * "data:{mimetype};base64,{base64-encoded-image-data}".
+			 * @param detail Specifies the detail level of the image.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record ImageUrl(
+				@JsonProperty("url") String url,
+				@JsonProperty("detail") String detail) {
+
+				public ImageUrl(String url) {
+					this(url, null);
+				}
 			}
 		}
 		/**
@@ -492,43 +783,6 @@ public class MiniMaxApi {
 		}
 	}
 
-	public static  String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
-		return content.stream()
-				.filter(c -> "text".equals(c.type()))
-				.map(ChatCompletionMessage.MediaContent::text)
-				.reduce("", (a, b) -> a + b);
-	}
-
-	/**
-	 * The reason the model stopped generating tokens.
-	 */
-	public enum ChatCompletionFinishReason {
-		/**
-		 * The model hit a natural stop point or a provided stop sequence.
-		 */
-		@JsonProperty("stop") STOP,
-		/**
-		 * The maximum number of tokens specified in the request was reached.
-		 */
-		@JsonProperty("length") LENGTH,
-		/**
-		 * The content was omitted due to a flag from our content filters.
-		 */
-		@JsonProperty("content_filter") CONTENT_FILTER,
-		/**
-		 * The model called a tool.
-		 */
-		@JsonProperty("tool_calls") TOOL_CALLS,
-		/**
-		 * (deprecated) The model called a function.
-		 */
-		@JsonProperty("function_call") FUNCTION_CALL,
-		/**
-		 * Only for compatibility with Mistral AI API.
-		 */
-		@JsonProperty("tool_call") TOOL_CALL
-	}
-
 	/**
 	 * Represents a chat completion response returned by model, based on the provided input.
 	 *
@@ -540,6 +794,7 @@ public class MiniMaxApi {
 	 * used in conjunction with the seed request parameter to understand when backend changes have been made that might
 	 * impact determinism.
 	 * @param object The object type, which is always chat.completion.
+	 * @param baseResponse Base response with status code and message.
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
@@ -560,6 +815,7 @@ public class MiniMaxApi {
 		 * @param finishReason The reason the model stopped generating tokens.
 		 * @param index The index of the choice in the list of choices.
 		 * @param message A chat completion message generated by the model.
+		 * @param messages A list of chat completion messages generated by the model.
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
@@ -571,11 +827,10 @@ public class MiniMaxApi {
 				@JsonProperty("logprobs") LogProbs logprobs) {
 		}
 
-
 		public record BaseResponse(
 				@JsonProperty("status_code") Long statusCode,
 				@JsonProperty("status_msg") String message
-		){}
+		) { }
 	}
 
 	/**
@@ -681,122 +936,11 @@ public class MiniMaxApi {
 	}
 
 	/**
-	 * Creates a model response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post()
-				.uri("/v1/text/chatcompletion_v2")
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(ChatCompletion.class);
-	}
-
-	private final MiniMaxStreamFunctionCallingHelper chunkMerger = new MiniMaxStreamFunctionCallingHelper();
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request. Must have the stream property set to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		return this.webClient.post()
-				.uri("/v1/text/chatcompletion_v2")
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(String.class)
-				.takeUntil(SSE_DONE_PREDICATE)
-				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-				.map(chunk -> {
-					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-						isInsideTool.set(true);
-					}
-					return chunk;
-				})
-				.windowUntil(chunk -> {
-					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-						isInsideTool.set(false);
-						return true;
-					}
-					return !isInsideTool.get();
-				})
-				.concatMapIterable(window -> {
-					Mono<ChatCompletionChunk> monoChunk = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
-							(previous, current) -> this.chunkMerger.merge(previous, current));
-					return List.of(monoChunk);
-				})
-				.flatMap(mono -> mono);
-	}
-
-	/**
-	 * MiniMax Embeddings Models:
-	 * <a href="https://www.minimaxi.com/document/guides/Embeddings">Embeddings</a>.
-	 */
-	public enum EmbeddingModel {
-
-		/**
-		 * DIMENSION: 1536
-		 */
-		Embo_01("embo-01");
-
-		public final String  value;
-
-		EmbeddingModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
-	 * MiniMax Embeddings Types
-	 */
-	public enum EmbeddingType {
-
-		/**
-		 * DB, used to generate vectors and store them in the library (as retrieved text)
-		 */
-		DB("db"),
-
-		/**
-		 * Query, used to generate vectors for queries (when used as retrieval text)
-		 */
-		Query("query");
-
-		@JsonValue
-		public final String value;
-
-		EmbeddingType(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
 	 * Creates an embedding vector representing the input text.
 	 *
 	 * @param texts Input text to embed, encoded as a string or array of tokens.
 	 * @param model ID of the model to use.
+	 * @param type Embedding type.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest(
@@ -879,31 +1023,6 @@ public class MiniMaxApi {
 			@JsonProperty("vectors") List<float[]> vectors,
 			@JsonProperty("model") String model,
 			@JsonProperty("total_tokens") Integer totalTokens) {
-	}
-
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 *
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns {@link EmbeddingList}.
-	 *
-	 */
-	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		// Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single
-		// request, pass an array of strings or array of token arrays.
-		Assert.notNull(embeddingRequest.texts(), "The input can not be null.");
-
-		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts()), "The input list can not be empty.");
-
-		return this.restClient.post()
-				.uri("/v1/embeddings")
-				.body(embeddingRequest)
-				.retrieve()
-				.toEntity(new ParameterizedTypeReference<>() {
-		});
 	}
 
 }

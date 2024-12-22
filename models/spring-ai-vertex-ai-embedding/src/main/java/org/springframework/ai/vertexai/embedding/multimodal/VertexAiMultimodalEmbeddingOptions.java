@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vertexai.embedding.multimodal;
 
-import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.util.StringUtils;
+package org.springframework.ai.vertexai.embedding.multimodal;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.util.StringUtils;
 
 /**
  * Class representing the options for Vertex AI Multimodal Embedding.
@@ -57,6 +58,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * </p>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -84,13 +86,12 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private @JsonProperty("videoStartOffsetSec") Integer videoStartOffsetSec;
 
-	
 	/**
 	 * The end offset of the video segment in seconds. If not specified, it's calculated with min(video length, startOffSec + 120).
 	 * If both startOffSec and endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120, endOffsetSec).
 	 */
 	private @JsonProperty("videoEndOffsetSec") Integer videoEndOffsetSec;
-	
+
 	/**
 	 * The interval of the video the embedding will be generated. The minimum value for interval_sec is 4.
 	 * If the interval is less than 4, an InvalidArgumentError is returned. There are no limitations on the maximum value
@@ -103,69 +104,6 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	// @formatter:on
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public static class Builder {
-
-		protected VertexAiMultimodalEmbeddingOptions options;
-
-		public Builder() {
-			this.options = new VertexAiMultimodalEmbeddingOptions();
-		}
-
-		public Builder from(VertexAiMultimodalEmbeddingOptions fromOptions) {
-			if (fromOptions.getDimensions() != null) {
-				this.options.setDimensions(fromOptions.getDimensions());
-			}
-			if (StringUtils.hasText(fromOptions.getModel())) {
-				this.options.setModel(fromOptions.getModel());
-			}
-			if (fromOptions.getVideoStartOffsetSec() != null) {
-				this.options.setVideoStartOffsetSec(fromOptions.getVideoStartOffsetSec());
-			}
-			if (fromOptions.getVideoEndOffsetSec() != null) {
-				this.options.setVideoEndOffsetSec(fromOptions.getVideoEndOffsetSec());
-			}
-			if (fromOptions.getVideoIntervalSec() != null) {
-				this.options.setVideoIntervalSec(fromOptions.getVideoIntervalSec());
-			}
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		public Builder withModel(VertexAiMultimodalEmbeddingModelName model) {
-			this.options.setModel(model.getName());
-			return this;
-		}
-
-		public Builder withDimensions(Integer dimensions) {
-			this.options.setDimensions(dimensions);
-			return this;
-		}
-
-		public Builder withVideoStartOffsetSec(Integer videoStartOffsetSec) {
-			this.options.setVideoStartOffsetSec(videoStartOffsetSec);
-			return this;
-		}
-
-		public Builder withVideoEndOffsetSec(Integer videoEndOffsetSec) {
-			this.options.setVideoEndOffsetSec(videoEndOffsetSec);
-			return this;
-		}
-
-		public Builder withVideoIntervalSec(Integer videoIntervalSec) {
-			this.options.setVideoIntervalSec(videoIntervalSec);
-			return this;
-		}
-
-		public VertexAiMultimodalEmbeddingOptions build() {
-			return this.options;
-		}
-
 	}
 
 	@Override
@@ -208,6 +146,123 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 
 	public void setVideoIntervalSec(Integer videoIntervalSec) {
 		this.videoIntervalSec = videoIntervalSec;
+	}
+
+	public static class Builder {
+
+		protected VertexAiMultimodalEmbeddingOptions options;
+
+		public Builder() {
+			this.options = new VertexAiMultimodalEmbeddingOptions();
+		}
+
+		public Builder from(VertexAiMultimodalEmbeddingOptions fromOptions) {
+			if (fromOptions.getDimensions() != null) {
+				this.options.setDimensions(fromOptions.getDimensions());
+			}
+			if (StringUtils.hasText(fromOptions.getModel())) {
+				this.options.setModel(fromOptions.getModel());
+			}
+			if (fromOptions.getVideoStartOffsetSec() != null) {
+				this.options.setVideoStartOffsetSec(fromOptions.getVideoStartOffsetSec());
+			}
+			if (fromOptions.getVideoEndOffsetSec() != null) {
+				this.options.setVideoEndOffsetSec(fromOptions.getVideoEndOffsetSec());
+			}
+			if (fromOptions.getVideoIntervalSec() != null) {
+				this.options.setVideoIntervalSec(fromOptions.getVideoIntervalSec());
+			}
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder model(VertexAiMultimodalEmbeddingModelName model) {
+			this.options.setModel(model.getName());
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.setDimensions(dimensions);
+			return this;
+		}
+
+		public Builder videoStartOffsetSec(Integer videoStartOffsetSec) {
+			this.options.setVideoStartOffsetSec(videoStartOffsetSec);
+			return this;
+		}
+
+		public Builder videoEndOffsetSec(Integer videoEndOffsetSec) {
+			this.options.setVideoEndOffsetSec(videoEndOffsetSec);
+			return this;
+		}
+
+		public Builder videoIntervalSec(Integer videoIntervalSec) {
+			this.options.setVideoIntervalSec(videoIntervalSec);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(VertexAiMultimodalEmbeddingModelName)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(VertexAiMultimodalEmbeddingModelName model) {
+			this.options.setModel(model.getName());
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #dimensions(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withDimensions(Integer dimensions) {
+			this.options.setDimensions(dimensions);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #videoStartOffsetSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withVideoStartOffsetSec(Integer videoStartOffsetSec) {
+			this.options.setVideoStartOffsetSec(videoStartOffsetSec);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #videoEndOffsetSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withVideoEndOffsetSec(Integer videoEndOffsetSec) {
+			this.options.setVideoEndOffsetSec(videoEndOffsetSec);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #videoIntervalSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withVideoIntervalSec(Integer videoIntervalSec) {
+			this.options.setVideoIntervalSec(videoIntervalSec);
+			return this;
+		}
+
+		public VertexAiMultimodalEmbeddingOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

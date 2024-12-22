@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.reader;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -30,6 +33,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
 /**
+ * A {@link DocumentReader} that reads text from a {@link Resource}.
+ *
  * @author Craig Walls
  * @author Christian Tzolov
  */
@@ -44,12 +49,12 @@ public class TextReader implements DocumentReader {
 	 */
 	private final Resource resource;
 
+	private final Map<String, Object> customMetadata = new HashMap<>();
+
 	/**
-	 * @return Character set to be used when loading data from the
+	 * Character set to be used when loading data from the
 	 */
 	private Charset charset = StandardCharsets.UTF_8;
-
-	private Map<String, Object> customMetadata = new HashMap<>();
 
 	public TextReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
@@ -60,13 +65,13 @@ public class TextReader implements DocumentReader {
 		this.resource = resource;
 	}
 
+	public Charset getCharset() {
+		return this.charset;
+	}
+
 	public void setCharset(Charset charset) {
 		Objects.requireNonNull(charset, "The charset must not be null");
 		this.charset = charset;
-	}
-
-	public Charset getCharset() {
-		return this.charset;
 	}
 
 	/**
@@ -86,6 +91,7 @@ public class TextReader implements DocumentReader {
 			// Inject source information as a metadata.
 			this.customMetadata.put(CHARSET_METADATA, this.charset.name());
 			this.customMetadata.put(SOURCE_METADATA, this.resource.getFilename());
+			this.customMetadata.put(SOURCE_METADATA, getResourceIdentifier(this.resource));
 
 			return List.of(new Document(document, this.customMetadata));
 
@@ -93,6 +99,39 @@ public class TextReader implements DocumentReader {
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	protected String getResourceIdentifier(Resource resource) {
+		// Try to get the filename first
+		String filename = resource.getFilename();
+		if (filename != null && !filename.isEmpty()) {
+			return filename;
+		}
+
+		// Try to get the URI
+		try {
+			URI uri = resource.getURI();
+			if (uri != null) {
+				return uri.toString();
+			}
+		}
+		catch (IOException ignored) {
+			// If getURI() throws an exception, we'll try the next method
+		}
+
+		// Try to get the URL
+		try {
+			URL url = resource.getURL();
+			if (url != null) {
+				return url.toString();
+			}
+		}
+		catch (IOException ignored) {
+			// If getURL() throws an exception, we'll fall back to getDescription()
+		}
+
+		// If all else fails, use the description
+		return resource.getDescription();
 	}
 
 }

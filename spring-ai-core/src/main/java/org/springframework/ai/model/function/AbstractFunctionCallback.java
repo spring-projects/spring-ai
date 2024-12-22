@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.function;
 
+import java.lang.reflect.Type;
+import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.util.Assert;
 
 /**
@@ -37,13 +42,13 @@ import org.springframework.util.Assert;
  * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
  */
-abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, FunctionCallback {
+abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
 
 	private final String name;
 
 	private final String description;
 
-	private final Class<I> inputType;
+	private final Type inputType;
 
 	private final String inputTypeSchema;
 
@@ -66,7 +71,7 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 	 * @param objectMapper Used to convert the function's input and output types to and
 	 * from JSON.
 	 */
-	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Class<I> inputType,
+	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Type inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
@@ -98,18 +103,23 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 	}
 
 	@Override
-	public String call(String functionArguments) {
-
-		// Convert the tool calls JSON arguments into a Java function request object.
-		I request = fromJson(functionArguments, inputType);
-
-		// extend conversation with function response.
-		return this.andThen(this.responseConverter).apply(request);
+	public String call(String functionInput, ToolContext toolContext) {
+		I request = fromJson(functionInput, this.inputType);
+		O response = this.apply(request, toolContext);
+		return this.responseConverter.apply(response);
 	}
 
-	private <T> T fromJson(String json, Class<T> targetClass) {
+	@Override
+	public String call(String functionArguments) {
+		// Convert the tool calls JSON arguments into a Java function request object.
+		I request = fromJson(functionArguments, this.inputType);
+		// extend conversation with function response.
+		return this.andThen(this.responseConverter).apply(request, null);
+	}
+
+	private <T> T fromJson(String json, Type targetType) {
 		try {
-			return this.objectMapper.readValue(json, targetClass);
+			return this.objectMapper.readValue(json, this.objectMapper.constructType(targetType));
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -118,42 +128,23 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((description == null) ? 0 : description.hashCode());
-		result = prime * result + ((inputType == null) ? 0 : inputType.hashCode());
-		return result;
+		return Objects.hash(this.name, this.description, this.inputType);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
+		}
+
 		AbstractFunctionCallback other = (AbstractFunctionCallback) obj;
-		if (name == null) {
-			if (other.name != null)
-				return false;
-		}
-		else if (!name.equals(other.name))
-			return false;
-		if (description == null) {
-			if (other.description != null)
-				return false;
-		}
-		else if (!description.equals(other.description))
-			return false;
-		if (inputType == null) {
-			if (other.inputType != null)
-				return false;
-		}
-		else if (!inputType.equals(other.inputType))
-			return false;
-		return true;
+
+		return Objects.equals(this.name, other.name) && Objects.equals(this.description, other.description)
+				&& Objects.equals(this.inputType, other.inputType);
+
 	}
 
 }

@@ -54,7 +54,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the ZhiPu AI chat model.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -71,7 +71,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The prefix `spring.ai.zhiPu` is used as the property prefix that lets you connect to ZhiPuAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -83,7 +83,7 @@ The prefix `spring.ai.zhiPu` is used as the property prefix that lets you connec
 
 The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configure the chat model implementation for ZhiPuAI.
 
-[cols="3,5,1"]
+[cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
@@ -122,8 +122,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         ZhiPuAiChatOptions.builder()
-            .withModel(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
-            .withTemperature(0.5)
+            .model(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -162,13 +162,13 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatModel.call(message));
+        return Map.of("generation", this.chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatModel.stream(prompt);
+        return this.chatModel.stream(prompt);
     }
 }
 ----
@@ -204,17 +204,17 @@ Next, create a `ZhiPuAiChatModel` and use it for text generations:
 ----
 var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
-var chatModel = new ZhiPuAiChatModel(zhiPuAiApi, ZhiPuAiChatOptions.builder()
-                .withModel(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+var chatModel = new ZhiPuAiChatModel(this.zhiPuAiApi, ZhiPuAiChatOptions.builder()
+                .model(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
-ChatResponse response = chatModel.call(
+ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> streamResponse = chatModel.stream(
+Flux<ChatResponse> streamResponse = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -236,12 +236,12 @@ ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = zhiPuAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, false));
+ResponseEntity<ChatCompletion> response = this.zhiPuAiApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, false));
 
 // Streaming request
-Flux<ChatCompletionChunk> streamResponse = zhiPuAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, true));
+Flux<ChatCompletionChunk> streamResponse = this.zhiPuAiApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/api/ZhiPuAiApi.java[ZhiPuAiApi.java]'s JavaDoc for further information.

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.anthropic;
 
 import java.util.ArrayList;
@@ -28,11 +29,15 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicCacheType;
@@ -44,26 +49,31 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.UsageUtils;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * The {@link ChatModel} implementation for the Anthropic service.
@@ -73,13 +83,10 @@ import reactor.core.publisher.Mono;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Claudio Silva Junior
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
-
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
-
-	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	public static final String DEFAULT_MODEL_NAME = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue();
 
@@ -87,20 +94,24 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	public static final Double DEFAULT_TEMPERATURE = 0.8;
 
-	/**
-	 * The lower-level API for the Anthropic service.
-	 */
-	public final AnthropicApi anthropicApi;
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
 
-	/**
-	 * The default options used for the chat completion requests.
-	 */
-	private final AnthropicChatOptions defaultOptions;
+	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	/**
 	 * The retry template used to retry the OpenAI API calls.
 	 */
 	public final RetryTemplate retryTemplate;
+
+	/**
+	 * The lower-level API for the Anthropic service.
+	 */
+	private final AnthropicApi anthropicApi;
+
+	/**
+	 * The default options used for the chat completion requests.
+	 */
+	private final AnthropicChatOptions defaultOptions;
 
 	/**
 	 * Observation registry used for instrumentation.
@@ -119,9 +130,9 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	public AnthropicChatModel(AnthropicApi anthropicApi) {
 		this(anthropicApi,
 				AnthropicChatOptions.builder()
-					.withModel(DEFAULT_MODEL_NAME)
-					.withMaxTokens(DEFAULT_MAX_TOKENS)
-					.withTemperature(DEFAULT_TEMPERATURE)
+					.model(DEFAULT_MODEL_NAME)
+					.maxTokens(DEFAULT_MAX_TOKENS)
+					.temperature(DEFAULT_TEMPERATURE)
 					.build());
 	}
 
@@ -150,13 +161,13 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * @param anthropicApi the lower-level API for the Anthropic service.
 	 * @param defaultOptions the default options used for the chat completion requests.
 	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackContext the function callback context used to store the
-	 * state of the function calls.
+	 * @param functionCallbackResolver the function callback resolver used to resolve the
+	 * function by its name.
 	 */
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext) {
+			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver) {
 
-		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackContext, List.of());
+		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackResolver, List.of());
 	}
 
 	/**
@@ -164,15 +175,15 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * @param anthropicApi the lower-level API for the Anthropic service.
 	 * @param defaultOptions the default options used for the chat completion requests.
 	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackContext the function callback context used to store the
-	 * state of the function calls.
+	 * @param functionCallbackResolver the function callback resolver used to resolve the
+	 * function by its name.
 	 * @param toolFunctionCallbacks the tool function callbacks used to handle the tool
 	 * calls.
 	 */
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver,
 			List<FunctionCallback> toolFunctionCallbacks) {
-		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackContext, toolFunctionCallbacks,
+		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackResolver, toolFunctionCallbacks,
 				ObservationRegistry.NOOP);
 	}
 
@@ -181,16 +192,16 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 * @param anthropicApi the lower-level API for the Anthropic service.
 	 * @param defaultOptions the default options used for the chat completion requests.
 	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackContext the function callback context used to store the
-	 * state of the function calls.
+	 * @param functionCallbackResolver the function callback resolver used to resolve the
+	 * function by its name.
 	 * @param toolFunctionCallbacks the tool function callbacks used to handle the tool
 	 * calls.
 	 */
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver,
 			List<FunctionCallback> toolFunctionCallbacks, ObservationRegistry observationRegistry) {
 
-		super(functionCallbackContext, defaultOptions, toolFunctionCallbacks);
+		super(functionCallbackResolver, defaultOptions, toolFunctionCallbacks);
 
 		Assert.notNull(anthropicApi, "AnthropicApi must not be null");
 		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
@@ -205,6 +216,10 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return this.internalCall(prompt, null);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -221,8 +236,14 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate
 					.execute(ctx -> this.anthropicApi.chatCompletionEntity(request));
 
-				ChatResponse chatResponse = toChatResponse(completionEntity.getBody());
+				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
+				AnthropicApi.Usage usage = completionResponse.usage();
 
+				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(completionResponse.usage())
+						: new EmptyUsage();
+				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+
+				ChatResponse chatResponse = toChatResponse(completionEntity.getBody(), accumulatedUsage);
 				observationContext.setResponse(chatResponse);
 
 				return chatResponse;
@@ -231,7 +252,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
 				&& this.isToolCall(response, Set.of("tool_use"))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
 		}
 
 		return response;
@@ -239,6 +260,10 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return this.internalStream(prompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -258,19 +283,20 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
-				ChatResponse chatResponse = toChatResponse(chatCompletionResponse);
+				AnthropicApi.Usage usage = chatCompletionResponse.usage();
+				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(chatCompletionResponse.usage()) : new EmptyUsage();
+				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
 				if (!isProxyToolCalls(prompt, this.defaultOptions) && this.isToolCall(chatResponse, Set.of("tool_use"))) {
 					var toolCallConversation = handleToolCalls(prompt, chatResponse);
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
 				}
 
 				return Mono.just(chatResponse);
 			})
 			.doOnError(observation::error)
-			.doFinally(s -> {
-				observation.stop();
-			})
+			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
@@ -278,7 +304,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		});
 	}
 
-	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion) {
+	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion, Usage usage) {
 
 		if (chatCompletion == null) {
 			logger.warn("Null chat completion returned");
@@ -288,17 +314,15 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		List<Generation> generations = chatCompletion.content()
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.map(content -> {
-				return new Generation(new AssistantMessage(content.text(), Map.of()),
-						ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
-			})
+			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
+					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
 			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
-					ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
+					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			allGenerations.add(generation);
 		}
 
@@ -322,23 +346,26 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 			Generation toolCallGeneration = new Generation(assistantMessage,
-					ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
+					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			allGenerations.add(toolCallGeneration);
 		}
 
-		return new ChatResponse(allGenerations, this.from(chatCompletion));
+		return new ChatResponse(allGenerations, this.from(chatCompletion, usage));
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
+		return from(result, AnthropicUsage.from(result.usage()));
+	}
+
+	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result, Usage usage) {
 		Assert.notNull(result, "Anthropic ChatCompletionResult must not be null");
-		AnthropicUsage usage = AnthropicUsage.from(result.usage());
 		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withModel(result.model())
-			.withUsage(usage)
-			.withKeyValue("stop-reason", result.stopReason())
-			.withKeyValue("stop-sequence", result.stopSequence())
-			.withKeyValue("type", result.type())
+			.id(result.id())
+			.model(result.model())
+			.usage(usage)
+			.keyValue("stop-reason", result.stopReason())
+			.keyValue("stop-sequence", result.stopSequence())
+			.keyValue("type", result.type())
 			.build();
 	}
 
@@ -353,6 +380,18 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
 		}
 
+	}
+
+	private Type getContentBlockTypeByMedia(Media media) {
+		String mimeType = media.getMimeType().toString();
+		if (mimeType.startsWith("image")) {
+			return Type.IMAGE;
+		}
+		else if (mimeType.contains("pdf")) {
+			return Type.DOCUMENT;
+		}
+		throw new IllegalArgumentException("Unsupported media type: " + mimeType
+				+ ". Supported types are: images (image/*) and PDF documents (application/pdf)");
 	}
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
@@ -376,11 +415,12 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 					}
 					if (message instanceof UserMessage userMessage) {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-							List<ContentBlock> mediaContent = userMessage.getMedia()
-								.stream()
-								.map(media -> new ContentBlock(media.getMimeType().toString(),
-										this.fromMediaData(media.getData())))
-								.toList();
+							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
+								Type contentBlockType = getContentBlockTypeByMedia(media);
+								var source = new Source(media.getMimeType().toString(),
+										this.fromMediaData(media.getData()));
+								return new ContentBlock(contentBlockType, source);
+							}).toList();
 							contents.addAll(mediaContent);
 						}
 					}
@@ -389,8 +429,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				else if (message.getMessageType() == MessageType.ASSISTANT) {
 					AssistantMessage assistantMessage = (AssistantMessage) message;
 					List<ContentBlock> contentBlocks = new ArrayList<>();
-					if (StringUtils.hasText(message.getContent())) {
-						contentBlocks.add(new ContentBlock(message.getContent()));
+					if (StringUtils.hasText(message.getText())) {
+						contentBlocks.add(new ContentBlock(message.getText()));
 					}
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
@@ -417,15 +457,22 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		String systemPrompt = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(m -> m.getContent())
+			.map(m -> m.getText())
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		ChatCompletionRequest request = new ChatCompletionRequest(this.defaultOptions.getModel(), userMessages,
 				systemPrompt, this.defaultOptions.getMaxTokens(), this.defaultOptions.getTemperature(), stream);
 
 		if (prompt.getOptions() != null) {
-			AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-					ChatOptions.class, AnthropicChatOptions.class);
+			AnthropicChatOptions updatedRuntimeOptions;
+			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions,
+						FunctionCallingOptions.class, AnthropicChatOptions.class);
+			}
+			else {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						AnthropicChatOptions.class);
+			}
 
 			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
@@ -458,13 +505,13 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	private ChatOptions buildRequestOptions(AnthropicApi.ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withMaxTokens(request.maxTokens())
-			.withStopSequences(request.stopSequences())
-			.withTemperature(request.temperature())
-			.withTopK(request.topK())
-			.withTopP(request.topP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.maxTokens(request.maxTokens())
+			.stopSequences(request.stopSequences())
+			.temperature(request.temperature())
+			.topK(request.topK())
+			.topP(request.topP())
 			.build();
 	}
 

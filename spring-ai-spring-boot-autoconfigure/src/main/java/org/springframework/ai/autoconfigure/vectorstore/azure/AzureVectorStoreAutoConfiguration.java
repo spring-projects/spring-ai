@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,14 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.azure;
 
+import java.util.List;
+
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.ClientOptions;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.search.documents.indexes.SearchIndexClient;
 import com.azure.search.documents.indexes.SearchIndexClientBuilder;
-
 import io.micrometer.observation.ObservationRegistry;
-
-import java.util.List;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -39,6 +39,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
+ * {@link AutoConfiguration Auto-configuration} for Azure Vector Store.
+ *
  * @author Christian Tzolov
  * @author Soby Chacko
  */
@@ -55,10 +57,18 @@ public class AzureVectorStoreAutoConfiguration {
 	public SearchIndexClient searchIndexClient(AzureVectorStoreProperties properties) {
 		ClientOptions clientOptions = new ClientOptions();
 		clientOptions.setApplicationId(APPLICATION_ID);
-		return new SearchIndexClientBuilder().endpoint(properties.getUrl())
-			.credential(new AzureKeyCredential(properties.getApiKey()))
-			.clientOptions(clientOptions)
-			.buildClient();
+		if (properties.isUseKeylessAuth()) {
+			return new SearchIndexClientBuilder().endpoint(properties.getUrl())
+				.credential(new DefaultAzureCredentialBuilder().build())
+				.clientOptions(clientOptions)
+				.buildClient();
+		}
+		else {
+			return new SearchIndexClientBuilder().endpoint(properties.getUrl())
+				.credential(new AzureKeyCredential(properties.getApiKey()))
+				.clientOptions(clientOptions)
+				.buildClient();
+		}
 	}
 
 	@Bean
@@ -74,21 +84,23 @@ public class AzureVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		var vectorStore = new AzureVectorStore(searchIndexClient, embeddingModel, properties.isInitializeSchema(),
-				List.of(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
-
-		vectorStore.setIndexName(properties.getIndexName());
+		var builder = AzureVectorStore.builder(searchIndexClient, embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.filterMetadataFields(List.of())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.indexName(properties.getIndexName());
 
 		if (properties.getDefaultTopK() >= 0) {
-			vectorStore.setDefaultTopK(properties.getDefaultTopK());
+			builder.defaultTopK(properties.getDefaultTopK());
 		}
 
 		if (properties.getDefaultSimilarityThreshold() >= 0.0) {
-			vectorStore.setDefaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
+			builder.defaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
 		}
 
-		return vectorStore;
+		return builder.build();
 	}
 
 }
