@@ -56,81 +56,25 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * A ObservationVectorStore implementation that uses Typesense as the underlying storage.
+ * A vector store implementation that uses Typesense as the backend. This implementation
+ * supports storing and searching document embeddings using Typesense's vector search
+ * capabilities.
  *
  * <p>
- * The store uses Typesense's vector search functionality to persist and query vector
- * embeddings along with their associated document content and metadata. The
- * implementation leverages Typesense's efficient similarity search capabilities for k-NN
- * operations.
- * </p>
- *
- * <p>
- * Features:
- * </p>
- * <ul>
- * <li>Automatic schema initialization with configurable collection creation</li>
- * <li>Support for cosine similarity search</li>
- * <li>Metadata filtering using Typesense's filter expressions</li>
- * <li>Configurable similarity thresholds for search results</li>
- * <li>Batch processing support with configurable strategies</li>
- * <li>Observation and metrics support through Micrometer</li>
- * </ul>
- *
- * <p>
- * Basic usage example:
- * </p>
- * <pre>{@code
- * TypesenseVectorStore vectorStore = TypesenseVectorStore.builder()
- *     .client(client)
- *     .embeddingModel(embeddingModel)
- *     .initializeSchema(true)
- *     .build();
- *
- * // Add documents
- * vectorStore.add(List.of(
- *     new Document("content1", Map.of("key1", "value1")),
- *     new Document("content2", Map.of("key2", "value2"))
- * ));
- *
- * // Search with filters
- * List<Document> results = vectorStore.similaritySearch(
- *     SearchRequest.query("search text")
- *         .withTopK(5)
- *         .withSimilarityThreshold(0.7)
- *         .withFilterExpression("metadata.key1 == 'value1'")
- * );
- * }</pre>
- *
- * <p>
- * Advanced configuration example:
- * </p>
- * <pre>{@code
- * TypesenseVectorStore vectorStore = TypesenseVectorStore.builder()
- *     .client(client)
- *     .embeddingModel(embeddingModel)
- *     .collectionName("custom_vectors")
+ * Example usage: <pre>{@code
+ * TypesenseVectorStore vectorStore = TypesenseVectorStore.builder(client, embeddingModel)
+ *     .collectionName("my_collection")
  *     .embeddingDimension(1536)
  *     .initializeSchema(true)
- *     .batchingStrategy(new TokenCountBatchingStrategy())
- *     .observationRegistry(observationRegistry)
  *     .build();
  * }</pre>
  *
- * <p>
- * Requirements:
- * </p>
- * <ul>
- * <li>Typesense server running and accessible</li>
- * <li>Collection schema with id (string), content (string), metadata (object), and
- * embedding (float array) fields</li>
- * </ul>
- *
- * @author Pablo Sanchidrian Herrera
- * @author Soby Chacko
+ * @author Dhanush Anumula
  * @author Christian Tzolov
- * @author Thomas Vitale
- * @since 1.0.0
+ * @author Eddú Meléndez
+ * @author Mark Pollack
+ * @see org.springframework.ai.vectorstore.VectorStore
+ * @see org.springframework.ai.embedding.EmbeddingModel
  */
 public class TypesenseVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 

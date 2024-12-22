@@ -138,6 +138,9 @@ public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingMod
     // in the similarity search filters.
     .filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
             MetadataField.date("activationDate")))
+    .defaultTopK(5)
+    .defaultSimilarityThreshold(0.7)
+    .indexName("spring-ai-document-index")
     .build();
 }
 ----

@@ -184,7 +184,14 @@ To configure the `OracleVectorStore` in your application, you can use the follow
 ----
 @Bean
 public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-	return new OracleVectorStore(jdbcTemplate, embeddingModel, true);
+    return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
+        .tableName("my_vectors")
+        .indexType(OracleVectorStoreIndexType.IVF)
+        .distanceType(OracleVectorStoreDistanceType.COSINE)
+        .dimensions(1536)
+        .searchAccuracy(95)
+        .initializeSchema(true)
+        .build();
 }
 ----
 
@@ -199,5 +206,3 @@ You can then connect to the database using:
 ----
 sql mlops/mlops@localhost/freepdb1
 ----
-
-

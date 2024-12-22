@@ -148,84 +148,51 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().qu
 
 The following code demonstrates how to set up the `CosmosDBVectorStore` without relying on auto-configuration:
 
-```java
-package com.example.demo;
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(ObservationRegistry observationRegistry) {
+    // Create the Cosmos DB client
+    CosmosAsyncClient cosmosClient = new CosmosClientBuilder()
+            .endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
+            .key(System.getenv("COSMOSDB_AI_KEY"))
+            .userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
+            .gatewayMode()
+            .buildAsyncClient();
 
-import com.azure.cosmos.CosmosAsyncClient;
-import com.azure.cosmos.CosmosClientBuilder;
-import io.micrometer.observation.ObservationRegistry;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.cosmosdb.CosmosDBVectorStore;
-import org.springframework.ai.vectorstore.CosmosDBVectorStoreConfig;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-@SpringBootApplication
-public class DemoApplication implements CommandLineRunner {
-
-    @Lazy
-    @Autowired
-    private VectorStore vectorStore;
-
-    @Lazy
-    @Autowired
-    private EmbeddingModel embeddingModel;
-
-    public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
-    }
-
-    @Override
-    public void run(String... args) throws Exception {
-        Document document1 = new Document(UUID.randomUUID().toString(), "Sample content1", Map.of("key1", "value1"));
-        Document document2 = new Document(UUID.randomUUID().toString(), "Sample content2", Map.of("key2", "value2"));
-		this.vectorStore.add(List.of(document1, document2));
-
-        List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
-        log.info("Search results: {}", results);
-    }
-
-    @Bean
-    public ObservationRegistry observationRegistry() {
-        return ObservationRegistry.create();
-    }
-
-    @Bean
-    public VectorStore vectorStore(ObservationRegistry observationRegistry) {
-
-        CosmosAsyncClient cosmosClient = new CosmosClientBuilder()
-                .endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
-                .userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
-                .key(System.getenv("COSMOSDB_AI_KEY"))
-                .gatewayMode()
-                .buildAsyncClient();
-
-		return CosmosDBVectorStore.builder(cosmosClient, this.embeddingModel)
-				.databaseName("test-database")
-				.containerName("test-container")
-				.metadataFields(List.of("country", "year", "city"))
-				.vectorStoreThroughput(1000)
-                .observationRegistry(observationRegistry)
-				.build();
-    }
-
-    @Bean
-    public EmbeddingModel embeddingModel() {
-        return new TransformersEmbeddingModel();
-    }
+    // Create and configure the vector store
+    return CosmosDBVectorStore.builder(cosmosClient, embeddingModel)
+            .databaseName("test-database")
+            .containerName("test-container")
+            // Configure metadata fields for filtering
+            .metadataFields(List.of("country", "year", "city"))
+            // Set the partition key path (optional)
+            .partitionKeyPath("/id")
+            // Configure performance settings
+            .vectorStoreThroughput(1000)
+            .vectorDimensions(1536)  // Match your embedding model's dimensions
+            // Add custom batching strategy (optional)
+            .batchingStrategy(new TokenCountBatchingStrategy())
+            // Add observation registry for metrics
+            .observationRegistry(observationRegistry)
+            .build();
 }
-```
+
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new TransformersEmbeddingModel();
+}
+----
+
+This configuration shows all the available builder options:
+
+* `databaseName`: The name of your Cosmos DB database
+* `containerName`: The name of your container within the database
+* `partitionKeyPath`: The path for the partition key (e.g., "/id")
+* `metadataFields`: List of metadata fields that will be used for filtering
+* `vectorStoreThroughput`: The throughput (RU/s) for the vector store container
+* `vectorDimensions`: The number of dimensions for your vectors (should match your embedding model)
+* `batchingStrategy`: Strategy for batching document operations (optional)
 
 == Manual Dependency Setup
 

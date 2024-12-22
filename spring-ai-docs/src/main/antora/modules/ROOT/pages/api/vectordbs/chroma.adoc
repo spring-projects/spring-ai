@@ -232,9 +232,9 @@ Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to y
 @Bean
 public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
  return ChromaVectorStore.builder(chromaApi, embeddingModel)
-				.collectionName("TestCollection")
-				.initializeSchema(true)
-				.build();
+    .collectionName("TestCollection")
+    .initializeSchema(true)
+    .build();
 }
 ----
 
@@ -272,4 +272,3 @@ docker run -it --rm --name chroma -p 8000:8000 ghcr.io/chroma-core/chroma:0.5.20
 ```
 
 Starts a chroma store at <http://localhost:8000/api/v1>
-
