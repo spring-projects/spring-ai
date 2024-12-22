@@ -1395,7 +1395,293 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 			return format(format);
 		}
 
-		// ... [add all other deprecated with* methods] ...
+		/**
+		 * @deprecated use {@link #keepAlive(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withKeepAlive(String keepAlive) {
+			return keepAlive(keepAlive);
+		}
+
+		/**
+		 * @deprecated use {@link #truncate(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTruncate(Boolean truncate) {
+			return truncate(truncate);
+		}
+
+		/**
+		 * @deprecated use {@link #useNUMA(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUseNUMA(Boolean useNUMA) {
+			return useNUMA(useNUMA);
+		}
+
+		/**
+		 * @deprecated use {@link #numCtx(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withNumCtx(Integer numCtx) {
+			return numCtx(numCtx);
+		}
+
+		/**
+		 * @deprecated use {@link #numBatch(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withNumBatch(Integer numBatch) {
+			return numBatch(numBatch);
+		}
+
+		/**
+		 * @deprecated use {@link #numGPU(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withNumGPU(Integer numGPU) {
+			return numGPU(numGPU);
+		}
+
+		/**
+		 * @deprecated use {@link #mainGPU(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMainGPU(Integer mainGPU) {
+			return mainGPU(mainGPU);
+		}
+
+		/**
+		 * @deprecated use {@link #lowVRAM(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withLowVRAM(Boolean lowVRAM) {
+			return lowVRAM(lowVRAM);
+		}
+
+		/**
+		 * @deprecated use {@link #f16KV(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withF16KV(Boolean f16KV) {
+			return f16KV(f16KV);
+		}
+
+		/**
+		 * @deprecated use {@link #logitsAll(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withLogitsAll(Boolean logitsAll) {
+			return logitsAll(logitsAll);
+		}
+
+		/**
+		 * @deprecated use {@link #vocabOnly(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withVocabOnly(Boolean vocabOnly) {
+			return vocabOnly(vocabOnly);
+		}
+
+		/**
+		 * @deprecated use {@link #useMMap(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUseMMap(Boolean useMMap) {
+			return useMMap(useMMap);
+		}
+
+		/**
+		 * @deprecated use {@link #useMLock(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUseMLock(Boolean useMLock) {
+			return useMLock(useMLock);
+		}
+
+		/**
+		 * @deprecated use {@link #numThread(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withNumThread(Integer numThread) {
+			return numThread(numThread);
+		}
+
+		/**
+		 * @deprecated use {@link #numKeep(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withNumKeep(Integer numKeep) {
+			return numKeep(numKeep);
+		}
+
+		/**
+		 * @deprecated use {@link #seed(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withSeed(Integer seed) {
+			return seed(seed);
+		}
+
+		/**
+		 * @deprecated use {@link #numPredict(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withNumPredict(Integer numPredict) {
+			return numPredict(numPredict);
+		}
+
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopK(Integer topK) {
+			return topK(topK);
+		}
+
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopP(Double topP) {
+			return topP(topP);
+		}
+
+		/**
+		 * @deprecated use {@link #tfsZ(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTfsZ(Float tfsZ) {
+			return tfsZ(tfsZ);
+		}
+
+		/**
+		 * @deprecated use {@link #typicalP(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTypicalP(Float typicalP) {
+			return typicalP(typicalP);
+		}
+
+		/**
+		 * @deprecated use {@link #repeatLastN(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withRepeatLastN(Integer repeatLastN) {
+			return repeatLastN(repeatLastN);
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTemperature(Double temperature) {
+			return temperature(temperature);
+		}
+
+		/**
+		 * @deprecated use {@link #repeatPenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withRepeatPenalty(Double repeatPenalty) {
+			return repeatPenalty(repeatPenalty);
+		}
+
+		/**
+		 * @deprecated use {@link #presencePenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withPresencePenalty(Double presencePenalty) {
+			return presencePenalty(presencePenalty);
+		}
+
+		/**
+		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+			return frequencyPenalty(frequencyPenalty);
+		}
+
+		/**
+		 * @deprecated use {@link #mirostat(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMirostat(Integer mirostat) {
+			return mirostat(mirostat);
+		}
+
+		/**
+		 * @deprecated use {@link #mirostatTau(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMirostatTau(Float mirostatTau) {
+			return mirostatTau(mirostatTau);
+		}
+
+		/**
+		 * @deprecated use {@link #mirostatEta(Float)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMirostatEta(Float mirostatEta) {
+			return mirostatEta(mirostatEta);
+		}
+
+		/**
+		 * @deprecated use {@link #penalizeNewline(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withPenalizeNewline(Boolean penalizeNewline) {
+			return penalizeNewline(penalizeNewline);
+		}
+
+		/**
+		 * @deprecated use {@link #stop(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withStop(List<String> stop) {
+			return stop(stop);
+		}
+
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			return functionCallbacks(functionCallbacks);
+		}
+
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctions(Set<String> functions) {
+			return functions(functions);
+		}
+
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunction(String functionName) {
+			return function(functionName);
+		}
+
+		/**
+		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			return proxyToolCalls(proxyToolCalls);
+		}
+
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			return toolContext(toolContext);
+		}
 
 		public OllamaOptions build() {
 			return this.options;
