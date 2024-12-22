@@ -189,9 +189,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 	@Test
 	void textImageAndVideoEmbedding() {
 
-		var textDocument = Document.builder()
-			.text("Hello World")
-			.build();
+		var textDocument = Document.builder().text("Hello World").build();
 
 		var imageDocument = Document.builder()
 			.media(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
@@ -201,7 +199,8 @@ class VertexAiMultimodalEmbeddingModelIT {
 			.media(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
 			.build();
 
-		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(textDocument, imageDocument, videoDocument));
+		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(
+				List.of(textDocument, imageDocument, videoDocument));
 
 		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(3);
