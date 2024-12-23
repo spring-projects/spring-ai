@@ -595,6 +595,13 @@
 									<goal>jar</goal>
 								</goals>
 							</execution>
+							<execution>
+								<id>generate-aggregate-javadocs</id>
+								<phase>package</phase>
+								<goals>
+									<goal>aggregate</goal>
+								</goals>
+							</execution>
 						</executions>
 					</plugin>
 				</plugins>
