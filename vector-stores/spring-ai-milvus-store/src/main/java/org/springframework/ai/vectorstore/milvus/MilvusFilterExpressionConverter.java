@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.milvus.vectorstore;
+package org.springframework.ai.vectorstore.milvus;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;

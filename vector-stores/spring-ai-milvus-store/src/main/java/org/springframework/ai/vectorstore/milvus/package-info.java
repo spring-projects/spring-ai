@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.milvus.vectorstore;
-
-import org.testcontainers.utility.DockerImageName;
-
 /**
- * @author Thomas Vitale
+ * Provides the API for embedding observations.
  */
-public final class MilvusImage {
+@NonNullApi
+@NonNullFields
+package org.springframework.ai.vectorstore.milvus;
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("milvusdb/milvus:v2.4.9");
-
-	private MilvusImage() {
-
-	}
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;
