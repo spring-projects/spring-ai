@@ -27,10 +27,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,17 +43,30 @@ public class AnthropicApiIT {
 
 	@Test
 	void chatWithPromptCache() {
-		AnthropicApi anthropicApiBeta = new AnthropicApi(AnthropicApi.DEFAULT_BASE_URL,
-				System.getenv("ANTHROPIC_API_KEY"), AnthropicApi.DEFAULT_ANTHROPIC_VERSION, RestClient.builder(),
-				WebClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER, AnthropicApi.BETA_PROMPT_CACHING);
+		String userMessageText = "It could be either a contraction of the full title Quenta Silmarillion (\"Tale of the Silmarils\") or also a plain Genitive which "
+				+ "(as in Ancient Greek) signifies reference. This genitive is translated in English with \"about\" or \"of\" "
+				+ "constructions; the titles of the chapters in The Silmarillion are examples of this genitive in poetic English "
+				+ "(Of the Sindar, Of Men, Of the Darkening of Valinor etc), where \"of\" means \"about\" or \"concerning\". "
+				+ "In the same way, Silmarillion can be taken to mean \"Of/About the Silmarils\"";
+
 		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
-				List.of(new ContentBlock("Tell me a Joke?", AnthropicCacheType.EPHEMERAL.cacheControl())), Role.USER);
+				List.of(new ContentBlock(userMessageText.repeat(20), AnthropicCacheType.EPHEMERAL.cacheControl())),
+				Role.USER);
 
-		ResponseEntity<ChatCompletionResponse> response = anthropicApiBeta
-			.chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue(),
-					List.of(chatCompletionMessage), null, 100, 0.8, false));
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
+				AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue(), List.of(chatCompletionMessage), null, 100, 0.8,
+				false);
+		AnthropicApi.Usage createdCacheToken = anthropicApi.chatCompletionEntity(chatCompletionRequest)
+			.getBody()
+			.usage();
 
-		assertThat(response).isNotNull();
+		assertThat(createdCacheToken.cacheCreationInputTokens()).isGreaterThan(0);
+		assertThat(createdCacheToken.cacheReadInputTokens()).isEqualTo(0);
+
+		AnthropicApi.Usage readCacheToken = anthropicApi.chatCompletionEntity(chatCompletionRequest).getBody().usage();
+
+		assertThat(readCacheToken.cacheCreationInputTokens()).isEqualTo(0);
+		assertThat(readCacheToken.cacheReadInputTokens()).isGreaterThan(0);
 	}
 
 	@Test

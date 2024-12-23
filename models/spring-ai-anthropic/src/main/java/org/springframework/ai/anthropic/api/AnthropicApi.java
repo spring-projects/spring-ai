@@ -76,8 +76,6 @@ public class AnthropicApi {
 
 	private static final String HEADER_ANTHROPIC_BETA = "anthropic-beta";
 
-	public static final String BETA_PROMPT_CACHING = "prompt-caching-2024-07-31";
-
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
@@ -905,7 +903,9 @@ public class AnthropicApi {
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens) {
+		@JsonProperty("output_tokens") Integer outputTokens,
+		@JsonProperty("cache_creation_input_tokens") Integer cacheCreationInputTokens,
+		@JsonProperty("cache_read_input_tokens") Integer cacheReadInputTokens) {
 		// @formatter:off
 	}
 
