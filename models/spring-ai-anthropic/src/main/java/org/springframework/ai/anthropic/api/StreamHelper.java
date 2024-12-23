@@ -174,7 +174,9 @@ public class StreamHelper {
 
 			if (messageDeltaEvent.usage() != null) {
 				var totalUsage = new Usage(contentBlockReference.get().usage.inputTokens(),
-						messageDeltaEvent.usage().outputTokens());
+						messageDeltaEvent.usage().outputTokens(),
+						contentBlockReference.get().usage.cacheCreationInputTokens(),
+						contentBlockReference.get().usage.cacheReadInputTokens());
 				contentBlockReference.get().withUsage(totalUsage);
 			}
 		}
