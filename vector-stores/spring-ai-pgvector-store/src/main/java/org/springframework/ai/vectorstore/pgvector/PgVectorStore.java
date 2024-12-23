@@ -85,9 +85,7 @@ import org.springframework.util.StringUtils;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * PgVectorStore vectorStore = PgVectorStore.builder()
- *     .jdbcTemplate(jdbcTemplate)
- *     .embeddingModel(embeddingModel)
+ * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .dimensions(1536) // Optional: defaults to model dimensions or 1536
  *     .distanceType(PgDistanceType.COSINE_DISTANCE)
  *     .indexType(PgIndexType.HNSW)
@@ -112,9 +110,7 @@ import org.springframework.util.StringUtils;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * PgVectorStore vectorStore = PgVectorStore.builder()
- *     .jdbcTemplate(jdbcTemplate)
- *     .embeddingModel(embeddingModel)
+ * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .schemaName("custom_schema")
  *     .vectorTableName("custom_vectors")
  *     .distanceType(PgDistanceType.NEGATIVE_INNER_PRODUCT)

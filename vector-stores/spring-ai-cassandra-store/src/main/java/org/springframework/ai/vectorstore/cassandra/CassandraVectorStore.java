@@ -104,9 +104,8 @@ import org.springframework.util.Assert;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * CassandraVectorStore vectorStore = CassandraVectorStore.builder()
+ * CassandraVectorStore vectorStore = CassandraVectorStore.builder(embeddingModel)
  *     .session(cqlSession)
- *     .embeddingModel(embeddingModel)
  *     .keyspace("my_keyspace")
  *     .table("my_vectors")
  *     .build();
@@ -130,9 +129,8 @@ import org.springframework.util.Assert;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * CassandraVectorStore vectorStore = CassandraVectorStore.builder()
+ * CassandraVectorStore vectorStore = CassandraVectorStore.builder(embeddingModel)
  *     .session(cqlSession)
- *     .embeddingModel(embeddingModel)
  *     .keyspace("my_keyspace")
  *     .table("my_vectors")
  *     .partitionKeys(List.of(new SchemaColumn("id", DataTypes.TEXT)))

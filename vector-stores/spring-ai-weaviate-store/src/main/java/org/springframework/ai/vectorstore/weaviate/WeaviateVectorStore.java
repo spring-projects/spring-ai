@@ -76,9 +76,7 @@ import org.springframework.util.StringUtils;
  * </p>
  * <pre>{@code
  * // Create the vector store with builder
- * WeaviateVectorStore vectorStore = WeaviateVectorStore.builder()
- *     .weaviateClient(weaviateClient)            // Required: Configure Weaviate client
- *     .embeddingModel(embeddingModel)            // Required: Configure embedding model
+ * WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
  *     .objectClass("CustomClass")                // Optional: Custom class name (default: SpringAiWeaviate)
  *     .consistencyLevel(ConsistentLevel.QUORUM)  // Optional: Set consistency level (default: ONE)
  *     .filterMetadataFields(List.of(             // Optional: Configure filterable metadata fields

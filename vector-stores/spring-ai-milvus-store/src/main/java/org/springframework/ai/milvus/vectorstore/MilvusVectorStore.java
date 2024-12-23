@@ -92,16 +92,12 @@ import org.springframework.util.StringUtils;
  * <p>
  * Example usage: <pre>{@code
  * // Create a basic Milvus vector store
- * MilvusVectorStore vectorStore = MilvusVectorStore.builder()
- *     .milvusClient(milvusClient)
- *     .embeddingModel(embeddingModel)
+ * MilvusVectorStore vectorStore = MilvusVectorStore.builder(milvusServiceClient, embeddingModel)
  *     .initializeSchema(true)
  *     .build();
  *
  * // Create a customized Milvus vector store
- * MilvusVectorStore customVectorStore = MilvusVectorStore.builder()
- *     .milvusClient(milvusClient)
- *     .embeddingModel(embeddingModel)
+ * MilvusVectorStore customVectorStore = MilvusVectorStore.builder(milvusServiceClient, embeddingModel)
  *     .databaseName("my_database")
  *     .collectionName("my_collection")
  *     .metricType(MetricType.COSINE)
@@ -267,8 +263,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	 * recommended way to instantiate a MilvusBuilder.
 	 * @return a new MilvusBuilder instance
 	 */
-	public static Builder builder(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
-		return new Builder(milvusClient, embeddingModel);
+	public static Builder builder(MilvusServiceClient milvusServiceClient, EmbeddingModel embeddingModel) {
+		return new Builder(milvusServiceClient, embeddingModel);
 	}
 
 	@Override
