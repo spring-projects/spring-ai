@@ -121,10 +121,46 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	/**
 	 * Creates a new builder instance for configuring a PineconeVectorStore.
 	 * @return A new PineconeBuilder instance
+	 * @deprecated use {@link #builder(EmbeddingModel)} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public static Builder builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
 			String indexName) {
 		return new Builder(embeddingModel, apiKey, projectId, environment, indexName);
+	}
+
+	/**
+	 * Creates a new builder for constructing a PineconeVectorStore instance. This builder
+	 * implements a type-safe step pattern that guides users through the required
+	 * configuration fields in a specific order, followed by optional configurations.
+	 *
+	 * Required fields must be provided in this sequence:
+	 * <ol>
+	 * <li>embeddingModel (provided to this method)</li>
+	 * <li>apiKey</li>
+	 * <li>projectId</li>
+	 * <li>environment</li>
+	 * <li>indexName</li>
+	 * </ol>
+	 *
+	 * After all required fields are set, optional configurations can be added using the
+	 * fluent builder pattern.
+	 *
+	 * Example usage: <pre>{@code
+	 * PineconeVectorStore store = PineconeVectorStore.builder(embeddingModel)
+	 *     .apiKey("your-api-key")
+	 *     .projectId("your-project")
+	 *     .environment("your-env")
+	 *     .indexName("your-index")
+	 *     .namespace("optional")  // optional configuration
+	 *     .build();
+	 * }</pre>
+	 * @param embeddingModel the embedding model to use for vector transformations
+	 * @return the first step of the builder requiring API key configuration
+	 * @throws IllegalArgumentException if embeddingModel is null
+	 */
+	public static Builder.BuilderWithApiKey builder(EmbeddingModel embeddingModel) {
+		return Builder.StepBuilder.start(embeddingModel);
 	}
 
 	/**
@@ -339,18 +375,41 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	}
 
 	/**
-	 * Builder class for creating PineconeVectorStore instances.
+	 * Builder class for creating {@link PineconeVectorStore} instances. This implements a
+	 * type-safe step builder pattern to ensure all required fields are provided in a
+	 * specific order before optional configuration.
+	 *
+	 * The required fields must be provided in this sequence: 1. embeddingModel (via
+	 * builder method) 2. apiKey 3. projectId 4. environment 5. indexName
+	 *
+	 * After all required fields are set, optional configurations can be provided using
+	 * the fluent builder pattern.
+	 *
+	 * Example usage: <pre>{@code
+	 * PineconeVectorStore store = PineconeVectorStore.builder(embeddingModel)
+	 *     .apiKey("your-api-key")
+	 *     .projectId("your-project")
+	 *     .environment("your-env")
+	 *     .indexName("your-index")
+	 *     .namespace("optional")  // optional configuration
+	 *     .build();
+	 * }</pre>
 	 */
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
+		/** Required field for Pinecone API authentication */
 		private final String apiKey;
 
+		/** Required field identifying the Pinecone project */
 		private final String projectId;
 
+		/** Required field specifying the Pinecone environment (e.g. "gcp-starter") */
 		private final String environment;
 
+		/** Required field specifying the Pinecone index name */
 		private final String indexName;
 
+		// Optional fields with default values
 		private String namespace = "";
 
 		private String contentFieldName = CONTENT_FIELD_NAME;
@@ -362,16 +421,125 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		private Builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
 				String indexName) {
 			super(embeddingModel);
-
-			Assert.hasText(apiKey, "ApiKey must not be null or empty");
-			Assert.hasText(projectId, "ProjectId must not be null or empty");
-			Assert.hasText(environment, "Environment must not be null or empty");
-			Assert.hasText(indexName, "IndexName must not be null or empty");
-
 			this.apiKey = apiKey;
 			this.projectId = projectId;
 			this.environment = environment;
 			this.indexName = indexName;
+		}
+
+		/**
+		 * First step interface requiring API key configuration.
+		 */
+		public interface BuilderWithApiKey {
+
+			/**
+			 * Sets the Pinecone API key and moves to project ID configuration.
+			 * @param apiKey The Pinecone API key
+			 * @return The next builder step for project ID
+			 * @throws IllegalArgumentException if apiKey is null or empty
+			 */
+			BuilderWithProjectId apiKey(String apiKey);
+
+		}
+
+		/**
+		 * Second step interface requiring project ID configuration.
+		 */
+		public interface BuilderWithProjectId {
+
+			/**
+			 * Sets the project ID and moves to environment configuration.
+			 * @param projectId The Pinecone project ID
+			 * @return The next builder step for environment
+			 * @throws IllegalArgumentException if projectId is null or empty
+			 */
+			BuilderWithEnvironment projectId(String projectId);
+
+		}
+
+		/**
+		 * Third step interface requiring environment configuration.
+		 */
+		public interface BuilderWithEnvironment {
+
+			/**
+			 * Sets the environment and moves to index name configuration.
+			 * @param environment The Pinecone environment
+			 * @return The next builder step for index name
+			 * @throws IllegalArgumentException if environment is null or empty
+			 */
+			BuilderWithIndexName environment(String environment);
+
+		}
+
+		/**
+		 * Final step interface requiring index name configuration.
+		 */
+		public interface BuilderWithIndexName {
+
+			/**
+			 * Sets the index name and returns the builder for optional configuration.
+			 * @param indexName The Pinecone index name
+			 * @return The builder for optional configurations
+			 * @throws IllegalArgumentException if indexName is null or empty
+			 */
+			Builder indexName(String indexName);
+
+		}
+
+		/**
+		 * Internal implementation of the step builder pattern using records for
+		 * immutability. Each step maintains the state from previous steps and implements
+		 * the corresponding interface to ensure type safety and proper sequencing of the
+		 * build steps.
+		 */
+		public static class StepBuilder {
+
+			private record ApiKeyStep(EmbeddingModel embeddingModel) implements BuilderWithApiKey {
+				@Override
+				public BuilderWithProjectId apiKey(String apiKey) {
+					Assert.hasText(apiKey, "ApiKey must not be null or empty");
+					return new ProjectIdStep(embeddingModel, apiKey);
+				}
+			}
+
+			private record ProjectIdStep(EmbeddingModel embeddingModel, String apiKey) implements BuilderWithProjectId {
+				@Override
+				public BuilderWithEnvironment projectId(String projectId) {
+					Assert.hasText(projectId, "ProjectId must not be null or empty");
+					return new EnvironmentStep(embeddingModel, apiKey, projectId);
+				}
+			}
+
+			private record EnvironmentStep(EmbeddingModel embeddingModel, String apiKey,
+					String projectId) implements BuilderWithEnvironment {
+				@Override
+				public BuilderWithIndexName environment(String environment) {
+					Assert.hasText(environment, "Environment must not be null or empty");
+					return new IndexNameStep(embeddingModel, apiKey, projectId, environment);
+				}
+			}
+
+			private record IndexNameStep(EmbeddingModel embeddingModel, String apiKey, String projectId,
+					String environment) implements BuilderWithIndexName {
+				@Override
+				public Builder indexName(String indexName) {
+					Assert.hasText(indexName, "IndexName must not be null or empty");
+					return new Builder(embeddingModel, apiKey, projectId, environment, indexName);
+				}
+			}
+
+			/**
+			 * Initiates the step builder sequence with the embedding model.
+			 * @param embeddingModel The embedding model to use
+			 * @return The first step for API key configuration
+			 * @throws IllegalArgumentException if embeddingModel is null
+			 */
+			static BuilderWithApiKey start(EmbeddingModel embeddingModel) {
+				Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+				return new ApiKeyStep(embeddingModel);
+			}
+
 		}
 
 		/**
