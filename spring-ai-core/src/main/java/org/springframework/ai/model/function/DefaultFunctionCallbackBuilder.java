@@ -144,9 +144,9 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
 					: (request, context) -> this.function.apply(request);
 
-			return new FunctionInvokingFunctionCallback(this.name, this.getDescriptionExt(), this.getInputTypeSchema(),
-					this.inputType, (Function<I, String>) this.getResponseConverter(), this.getObjectMapper(),
-					finalBiFunction);
+			return new FunctionInvokingFunctionCallback<>(this.name, this.getDescriptionExt(),
+					this.getInputTypeSchema(), this.inputType, (Function<O, String>) this.getResponseConverter(),
+					this.getObjectMapper(), finalBiFunction);
 		}
 
 		private String getDescriptionExt() {
