@@ -39,7 +39,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 
 	companion object {
 
-		private val MODEL_NAME = OllamaModel.LLAMA3_2.getName();
+		private val MODEL_NAME = "qwen2.5:3b";
 
 		@JvmStatic
 		@BeforeAll
@@ -72,7 +72,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 			val response = chatModel
 					.call(Prompt(listOf(userMessage), OllamaOptions.builder().function("weatherInfo").build()))
 
-			logger.info("Response: " + response)
+			logger.info("Response: $response")
 
 			assertThat(response.getResult().output.text).contains("30", "10", "15")
 		}
@@ -93,10 +93,11 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 				.build()
 
 			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
+			val output = response.getResult().output.text
 
-			logger.info("Response: " + response.getResult().getOutput().getText());
+			logger.info("Response: $output");
 
-			assertThat(response.getResult().output.text).contains("30", "10", "15");
+			assertThat(output).contains("30", "10", "15");
 		}
 	}
 
