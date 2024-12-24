@@ -17,18 +17,25 @@
 package org.springframework.ai.anthropic;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.AppenderBase;
+import ch.qos.logback.core.read.ListAppender;
+import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.boot.test.system.OutputCaptureRule;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -336,10 +343,17 @@ class AnthropicChatModelIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
+		var mockService = new MockWeatherService();
+
+		MemoryAppender appender = new MemoryAppender();
+		appender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
+		MockWeatherService.log.addAppender(appender);
+		appender.start();
+
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
 			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+				.function("getCurrentWeather", mockService)
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
@@ -352,9 +366,12 @@ class AnthropicChatModelIT {
 
 		logger.info("Response: {}", chatResponse);
 		Usage usage = chatResponse.getMetadata().getUsage();
+		appender.stop();
 
 		assertThat(usage).isNotNull();
+		assertThat(appender.getLoggedEvents().size()).isEqualTo(3);
 		assertThat(usage.getTotalTokens()).isLessThan(4000).isGreaterThan(1800);
+
 	}
 
 	@Test
@@ -413,6 +430,41 @@ class AnthropicChatModelIT {
 		@Bean
 		public AnthropicChatModel openAiChatModel(AnthropicApi api) {
 			return new AnthropicChatModel(api);
+		}
+
+	}
+
+	public static class MemoryAppender extends ListAppender<ILoggingEvent> {
+
+		public void reset() {
+			this.list.clear();
+		}
+
+		public boolean contains(String string, Level level) {
+			return this.list.stream()
+				.anyMatch(event -> event.toString().contains(string) && event.getLevel().equals(level));
+		}
+
+		public int countEventsForLogger(String loggerName) {
+			return (int) this.list.stream().filter(event -> event.getLoggerName().contains(loggerName)).count();
+		}
+
+		public List<ILoggingEvent> search(String string) {
+			return this.list.stream().filter(event -> event.toString().contains(string)).collect(Collectors.toList());
+		}
+
+		public List<ILoggingEvent> search(String string, Level level) {
+			return this.list.stream()
+				.filter(event -> event.toString().contains(string) && event.getLevel().equals(level))
+				.collect(Collectors.toList());
+		}
+
+		public int getSize() {
+			return this.list.size();
+		}
+
+		public List<ILoggingEvent> getLoggedEvents() {
+			return Collections.unmodifiableList(this.list);
 		}
 
 	}

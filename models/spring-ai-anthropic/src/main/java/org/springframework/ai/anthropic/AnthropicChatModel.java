@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
@@ -280,6 +281,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(request);
 
 			// @formatter:off
+			AtomicReference<String> toolCallId = new AtomicReference<>("");
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
 				AnthropicApi.Usage usage = chatCompletionResponse.usage();
 				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(chatCompletionResponse.usage()) : new EmptyUsage();
@@ -287,8 +289,13 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
 				if (!isProxyToolCalls(prompt, this.defaultOptions) && this.isToolCall(chatResponse, Set.of("tool_use"))) {
-					var toolCallConversation = handleToolCalls(prompt, chatResponse);
-					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
+					var toolCallConversation = prompt.getInstructions();
+					if (toolCallId.get().equalsIgnoreCase(chatResponse.getMetadata().getId())) {
+						toolCallConversation = handleToolCalls(prompt, chatResponse);
+						return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), chatResponse);
+					} else {
+						toolCallId.set(chatResponse.getMetadata().getId());
+					}
 				}
 
 				return Mono.just(chatResponse);
@@ -493,7 +500,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		}).toList();
 	}
 
-	private ChatOptions buildRequestOptions(AnthropicApi.ChatCompletionRequest request) {
+	private ChatOptions buildRequestOptions(ChatCompletionRequest request) {
 		return ChatOptions.builder()
 			.model(request.model())
 			.maxTokens(request.maxTokens())
