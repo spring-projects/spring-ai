@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.milvus.vectorstore;
+package org.springframework.ai.vectorstore.milvus;
 
 import java.util.List;
 

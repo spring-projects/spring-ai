@@ -101,8 +101,7 @@ import org.springframework.util.Assert;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient)
- *     .embeddingModel(embeddingModel)
+ * QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient, embeddingModel)
  *     .collectionName("custom-collection")
  *     .initializeSchema(true)
  *     .batchingStrategy(new TokenCountBatchingStrategy())

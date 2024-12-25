@@ -33,6 +33,7 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -73,8 +74,7 @@ import org.springframework.util.StringUtils;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate)
- *     .embeddingModel(embeddingModel)
+ * MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .initializeSchema(true)
  *     .build();
  *
@@ -97,8 +97,7 @@ import org.springframework.util.StringUtils;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate)
- *     .embeddingModel(embeddingModel)
+ * MariaDBVectorStore vectorStore = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .schemaName("mydb")
  *     .distanceType(MariaDBDistanceType.COSINE)
  *     .dimensions(1536)
@@ -295,7 +294,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		this.vectorTableName = builder.vectorTableName.isEmpty() ? DEFAULT_TABLE_NAME
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.vectorTableName.trim(), false);
 
-		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName, vectorTableName.isEmpty());
+		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
+				builder.vectorTableName.isEmpty());
 
 		this.schemaName = builder.schemaName == null ? null
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.schemaName, false);

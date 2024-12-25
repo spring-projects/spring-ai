@@ -376,14 +376,14 @@ Kotlin::
 [source,kotlin]
 ----
 data class MathReasoning(
-	@get:JsonProperty(required = true, value = "steps") val steps: Steps,
-	@get:JsonProperty(required = true, value = "final_answer") val finalAnswer: String) {
+	val steps: Steps,
+	@get:JsonProperty(value = "final_answer") val finalAnswer: String) {
 
-	data class Steps(@get:JsonProperty(required = true, value = "items") val items: Array<Items>) {
+	data class Steps(val items: Array<Items>) {
 
 		data class Items(
-			@get:JsonProperty(required = true, value = "explanation") val explanation: String,
-			@get:JsonProperty(required = true, value = "output") val output: String)
+			val explanation: String,
+			val output: String)
 	}
 }
 
@@ -405,9 +405,7 @@ val mathReasoning = outputConverter.convert(content)
 ======
 --
 
-NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation (`@get:JsonProperty(required = true,...)` with Kotlin in order to generate the annotation on the related getters, see link:https://kotlinlang.org/docs/annotations.html#annotation-use-site-targets[related documentation]).
-This is crucial for generating a schema that accurately marks fields as `required`. 
-Although this is optional for JSON Schema, OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/all-fields-must-be-required[mandates] it for the structured response to function correctly.
+NOTE: Although this is optional for JSON Schema, OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/all-fields-must-be-required#all-fields-must-be-required[mandates] required fields for the structured response to function correctly. Kotlin reflection is used to infer which property are required or not based on the nullability of types and default values of parameters, so for most use case `@get:JsonProperty(required = true)` is not needed. `@get:JsonProperty(value = "custom_name")` can be useful to customize the property name. Make sure to generate the annotation on the related getters with this `@get:` syntax, see link:https://kotlinlang.org/docs/annotations.html#annotation-use-site-targets[related documentation].
 
 ==== Configuring via Application Properties
 

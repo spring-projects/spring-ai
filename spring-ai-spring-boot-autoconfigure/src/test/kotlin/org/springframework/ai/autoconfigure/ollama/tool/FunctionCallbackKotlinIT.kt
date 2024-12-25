@@ -28,7 +28,6 @@ import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.ai.model.function.FunctionCallback
 import org.springframework.ai.model.function.FunctionCallingOptions
 import org.springframework.ai.ollama.OllamaChatModel
-import org.springframework.ai.ollama.api.OllamaModel
 import org.springframework.ai.ollama.api.OllamaOptions
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -39,7 +38,7 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 
 	companion object {
 
-		private val MODEL_NAME = OllamaModel.LLAMA3_2.getName();
+		private val MODEL_NAME = "qwen2.5:3b";
 
 		@JvmStatic
 		@BeforeAll
@@ -72,7 +71,7 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 			val response = chatModel
 					.call(Prompt(listOf(userMessage), OllamaOptions.builder().function("WeatherInfo").build()))
 
-			logger.info("Response: " + response)
+			logger.info("Response: $response")
 
 			assertThat(response.getResult().output.text).contains("30", "10", "15")
 		}
@@ -93,10 +92,10 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 				.build()
 
 			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
+			val output = response.getResult().output.text
+			logger.info("Response: $output");
 
-			logger.info("Response: " + response.getResult().getOutput().getText());
-
-			assertThat(response.getResult().output.text).contains("30", "10", "15");
+			assertThat(output).contains("30", "10", "15");
 		}
 	}
 

@@ -72,9 +72,7 @@ import org.springframework.util.StringUtils;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * Neo4jVectorStore vectorStore = Neo4jVectorStore.builder()
- *     .driver(driver)
- *     .embeddingModel(embeddingModel)
+ * Neo4jVectorStore vectorStore = Neo4jVectorStore.builder(driver, embeddingModel)
  *     .initializeSchema(true)
  *     .build();
  *
@@ -97,9 +95,7 @@ import org.springframework.util.StringUtils;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * Neo4jVectorStore vectorStore = Neo4jVectorStore.builder()
- *     .driver(driver)
- *     .embeddingModel(embeddingModel)
+ * Neo4jVectorStore vectorStore = Neo4jVectorStore.builder(driver, embeddingModel)
  *     .databaseName("neo4j")
  *     .distanceType(Neo4jDistanceType.COSINE)
  *     .dimensions(1536)

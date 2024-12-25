@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.milvus.vectorstore;
+package org.springframework.ai.vectorstore.milvus;
 
 import io.milvus.client.MilvusServiceClient;
 import org.assertj.core.api.ThrowableAssert;

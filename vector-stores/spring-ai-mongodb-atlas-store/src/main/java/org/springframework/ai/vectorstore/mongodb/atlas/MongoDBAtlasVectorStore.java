@@ -72,9 +72,7 @@ import org.springframework.util.Assert;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * MongoDBAtlasVectorStore vectorStore = MongoDBAtlasVectorStore.builder()
- *     .mongoTemplate(mongoTemplate)
- *     .embeddingModel(embeddingModel)
+ * MongoDBAtlasVectorStore vectorStore = MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
  *     .collectionName("vector_store")
  *     .initializeSchema(true)
  *     .build();
@@ -98,9 +96,7 @@ import org.springframework.util.Assert;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * MongoDBAtlasVectorStore vectorStore = MongoDBAtlasVectorStore.builder()
- *     .mongoTemplate(mongoTemplate)
- *     .embeddingModel(embeddingModel)
+ * MongoDBAtlasVectorStore vectorStore = MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
  *     .collectionName("custom_vectors")
  *     .vectorIndexName("custom_vector_index")
  *     .pathName("custom_embedding")

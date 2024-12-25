@@ -102,9 +102,7 @@ import org.springframework.util.StringUtils;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * RedisVectorStore vectorStore = RedisVectorStore.builder()
- *     .jedis(jedisPooled)
- *     .embeddingModel(embeddingModel)
+ * RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
  *     .indexName("custom-index")     // Optional: defaults to "spring-ai-index"
  *     .prefix("custom-prefix")       // Optional: defaults to "embedding:"
  *     .vectorAlgorithm(Algorithm.HNSW)

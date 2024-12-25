@@ -82,9 +82,7 @@ import org.springframework.util.Assert;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder()
- *     .openSearchClient(openSearchClient)
- *     .embeddingModel(embeddingModel)
+ * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
  *     .initializeSchema(true)
  *     .build();
  *
@@ -107,9 +105,7 @@ import org.springframework.util.Assert;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder()
- *     .openSearchClient(openSearchClient)
- *     .embeddingModel(embeddingModel)
+ * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
  *     .index("custom-index")
  *     .mappingJson(customMapping)
  *     .similarityFunction("l2")

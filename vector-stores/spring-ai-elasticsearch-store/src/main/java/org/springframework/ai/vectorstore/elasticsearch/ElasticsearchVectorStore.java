@@ -83,9 +83,7 @@ import org.springframework.util.Assert;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder()
- *     .restClient(restClient)
- *     .embeddingModel(embeddingModel)
+ * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder(restClient, embeddingModel)
  *     .initializeSchema(true)
  *     .build();
  *
@@ -113,9 +111,7 @@ import org.springframework.util.Assert;
  * options.setSimilarity(SimilarityFunction.dot_product);
  * options.setDimensions(1536);
  *
- * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder()
- *     .restClient(restClient)
- *     .embeddingModel(embeddingModel)
+ * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder(restClient, embeddingModel)
  *     .options(options)
  *     .initializeSchema(true)
  *     .batchingStrategy(new TokenCountBatchingStrategy())
