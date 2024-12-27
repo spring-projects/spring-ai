@@ -91,4 +91,20 @@ class ConcatenationDocumentJoinerTests {
 		assertThat(result).extracting(Document::getText).containsOnlyOnce("Content 2");
 	}
 
+	@Test
+	void whenSeveralQueryExistsInMapThenDocumentsAreJoinedInDescendingScoreOrder() {
+		DocumentJoiner documentJoiner = new ConcatenationDocumentJoiner();
+		var documentsForQuery = new HashMap<Query, List<List<Document>>>();
+		documentsForQuery.put(new Query("query1"),
+				List.of(List.of(Document.builder().id("1").text("Content 1").score(0.9).build(), Document.builder().id("4").text("Content 4").score(0.6).build()),
+						List.of(Document.builder().id("2").text("Content 2").score(0.8).build())));
+		documentsForQuery.put(new Query("query2"),
+				List.of(List.of(Document.builder().id("3").text("Content 3").score(0.7).build())));
+
+		List<Document> result = documentJoiner.join(documentsForQuery);
+
+		assertThat(result).hasSize(4);
+		assertThat(result).extracting(Document::getId).containsExactly("1", "2", "3", "4");
+		assertThat(result).extracting(Document::getScore).containsExactly(0.9, 0.8, 0.7, 0.6);
+	}
 }
