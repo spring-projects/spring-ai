@@ -219,6 +219,7 @@ public class MiniMaxApi {
 	 * <a href="https://www.minimaxi.com/document/algorithm-concept">MiniMax Model</a>.
 	 */
 	public enum ChatModel implements ChatModelDescription {
+		ABAB_7_Chat_Preview("abab7-chat-preview"),
 		ABAB_6_5_Chat("abab6.5-chat"),
 		ABAB_6_5_S_Chat("abab6.5s-chat"),
 		ABAB_6_5_T_Chat("abab6.5t-chat"),
