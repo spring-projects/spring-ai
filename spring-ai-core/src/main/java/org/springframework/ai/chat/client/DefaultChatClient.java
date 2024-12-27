@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -48,11 +49,13 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConte
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
 import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -493,11 +496,11 @@ public class DefaultChatClient implements ChatClient {
 
 		@Nullable
 		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
-			if (chatResponse == null || chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null
-					|| chatResponse.getResult().getOutput().getText() == null) {
-				return null;
-			}
-			return chatResponse.getResult().getOutput().getText();
+			return Optional.ofNullable(chatResponse)
+				.map(ChatResponse::getResult)
+				.map(Generation::getOutput)
+				.map(AbstractMessage::getText)
+				.orElse(null);
 		}
 
 		@Override
