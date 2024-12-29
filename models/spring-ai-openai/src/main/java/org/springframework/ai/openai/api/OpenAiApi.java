@@ -341,11 +341,20 @@ public class OpenAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		/**
-		 * Points to the most recent snapshot of the o1 model:o1-preview-2024-09-12
+		 * Points to the most recent snapshot of the o1 model:o1-2024-12-17
+		 */
+		O1("o1"),
+		/**
+		 * Latest o1 model snapshot
+		 */
+		O1_2024_12_17("o1-2024-12-17"),
+		/**
+		 * Points to the most recent snapshot of the o1 preview
+		 * model:o1-preview-2024-09-12
 		 */
 		O1_PREVIEW("o1-preview"),
 		/**
-		 * Latest o1 model snapshot
+		 * Latest o1 preview model snapshot
 		 */
 		O1_PREVIEW_2024_09_12("o1-preview-2024-09-12"),
 		/**
