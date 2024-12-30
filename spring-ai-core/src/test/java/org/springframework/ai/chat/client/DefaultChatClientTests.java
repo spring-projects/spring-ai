@@ -1198,14 +1198,14 @@ class DefaultChatClientTests {
 		ChatModel chatModel = mock(ChatModel.class);
 		DefaultChatClient.DefaultChatClientRequestSpec spec = new DefaultChatClient.DefaultChatClientRequestSpec(
 				chatModel, null, Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
-				Map.of(), ObservationRegistry.NOOP, null, Map.of());
+				null, Map.of(), ObservationRegistry.NOOP, null, Map.of());
 		assertThat(spec).isNotNull();
 	}
 
 	@Test
 	void whenChatModelIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), null,
-				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
+				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), null, Map.of(),
 				ObservationRegistry.NOOP, null, Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
@@ -1214,7 +1214,7 @@ class DefaultChatClientTests {
 	@Test
 	void whenObservationRegistryIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mock(ChatModel.class), null,
-				Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), null,
+				Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), null, Map.of(), null,
 				null, Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");

@@ -36,14 +36,14 @@ class AdvisedRequestTests {
 
 	@Test
 	void buildAdvisedRequest() {
-		AdvisedRequest request = new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		AdvisedRequest request = new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of());
 		assertThat(request).isNotNull();
 	}
 
 	@Test
 	void whenChatModelIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(null, "user", null, null, List.of(), List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(null, "user", null, null, null, List.of(), List.of(), List.of(),
 				List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
@@ -51,7 +51,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenUserTextIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), null, null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), null, null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage(
@@ -60,7 +60,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenUserTextIsEmptyThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage(
@@ -69,7 +69,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenMediaIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, null, List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("media cannot be null");
@@ -77,7 +77,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenFunctionNamesIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), null,
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), null,
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("functionNames cannot be null");
@@ -85,7 +85,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenFunctionCallbacksIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				null, List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("functionCallbacks cannot be null");
@@ -93,7 +93,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenMessagesIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), null, Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("messages cannot be null");
@@ -101,7 +101,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenUserParamsIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), null, Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("userParams cannot be null");
@@ -109,7 +109,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenSystemParamsIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), null, List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("systemParams cannot be null");
@@ -117,7 +117,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenAdvisorsIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), null, Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("advisors cannot be null");
@@ -125,7 +125,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenAdvisorParamsIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), null, Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("advisorParams cannot be null");
@@ -133,7 +133,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenAdviseContextIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), null, Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("adviseContext cannot be null");
@@ -141,7 +141,7 @@ class AdvisedRequestTests {
 
 	@Test
 	void whenToolContextIsNullThenThrows() {
-		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
+		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, null, List.of(), List.of(),
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolContext cannot be null");

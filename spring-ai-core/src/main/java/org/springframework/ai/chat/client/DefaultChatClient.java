@@ -126,7 +126,7 @@ public class DefaultChatClient implements ChatClient {
 			}
 		}
 
-		return new AdvisedRequest(inputRequest.chatModel, userText, inputRequest.systemText, inputRequest.chatOptions,
+		return new AdvisedRequest(inputRequest.chatModel, userText, inputRequest.systemText, inputRequest.advisorText, inputRequest.chatOptions,
 				media, inputRequest.functionNames, inputRequest.functionCallbacks, messages, inputRequest.userParams,
 				inputRequest.systemParams, inputRequest.advisors, inputRequest.advisorParams, advisorContext,
 				inputRequest.toolContext);
@@ -138,7 +138,7 @@ public class DefaultChatClient implements ChatClient {
 		return new DefaultChatClientRequestSpec(advisedRequest.chatModel(), advisedRequest.userText(),
 				advisedRequest.userParams(), advisedRequest.systemText(), advisedRequest.systemParams(),
 				advisedRequest.functionCallbacks(), advisedRequest.messages(), advisedRequest.functionNames(),
-				advisedRequest.media(), advisedRequest.chatOptions(), advisedRequest.advisors(),
+				advisedRequest.media(), advisedRequest.chatOptions(), advisedRequest.advisors(), advisedRequest.advisorText(),
 				advisedRequest.advisorParams(), observationRegistry, customObservationConvention,
 				advisedRequest.toolContext());
 	}
@@ -606,19 +606,22 @@ public class DefaultChatClient implements ChatClient {
 		private String systemText;
 
 		@Nullable
+		private String advisorText;
+
+		@Nullable
 		private ChatOptions chatOptions;
 
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
-					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
+					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorText, ccr.advisorParams,
 					ccr.observationRegistry, ccr.customObservationConvention, ccr.toolContext);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, @Nullable String systemText, Map<String, Object> systemParams,
 				List<FunctionCallback> functionCallbacks, List<Message> messages, List<String> functionNames,
-				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
+				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors, @Nullable String advisorText,
 				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention customObservationConvention,
 				Map<String, Object> toolContext) {
@@ -649,6 +652,7 @@ public class DefaultChatClient implements ChatClient {
 			this.messages.addAll(messages);
 			this.media.addAll(media);
 			this.advisors.addAll(advisors);
+			this.advisorText = advisorText;
 			this.advisorParams.putAll(advisorParams);
 			this.observationRegistry = observationRegistry;
 			this.customObservationConvention = customObservationConvention != null ? customObservationConvention
@@ -776,6 +780,10 @@ public class DefaultChatClient implements ChatClient {
 
 			if (StringUtils.hasText(this.systemText)) {
 				builder.defaultSystem(s -> s.text(this.systemText).params(this.systemParams));
+			}
+
+			if (StringUtils.hasText(this.advisorText)) {
+				builder.defaultSystem(s -> s.text(this.advisorText).params(this.advisorParams));
 			}
 
 			if (this.chatOptions != null) {

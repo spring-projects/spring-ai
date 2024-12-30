@@ -114,7 +114,7 @@ class DefaultChatClientObservationConventionTests {
 	@BeforeEach
 	public void beforeEach() {
 		this.request = new DefaultChatClientRequestSpec(this.chatModel, "", Map.of(), "", Map.of(), List.of(),
-				List.of(), List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of());
+				List.of(), List.of(), List.of(), null, List.of(), null, Map.of(), ObservationRegistry.NOOP, null, Map.of());
 	}
 
 	@Test
@@ -161,7 +161,7 @@ class DefaultChatClientObservationConventionTests {
 		var request = new DefaultChatClientRequestSpec(this.chatModel, "", Map.of(), "", Map.of(),
 				List.of(dummyFunction("functionCallback1"), dummyFunction("functionCallback2")), List.of(),
 				List.of("function1", "function2"), List.of(), null,
-				List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")), Map.of("advParam1", "advisorParam1Value"),
+				List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")), "", Map.of("advParam1", "advisorParam1Value"),
 				ObservationRegistry.NOOP, null, Map.of());
 
 		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
