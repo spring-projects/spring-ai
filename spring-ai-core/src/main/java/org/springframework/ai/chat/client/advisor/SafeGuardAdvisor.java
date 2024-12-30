@@ -74,9 +74,10 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 
 	@Override
 	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+		String renderedUserText = advisedRequest.renderUserText();
 
 		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {
+				&& this.sensitiveWords.stream().anyMatch(renderedUserText::contains)) {
 
 			return createFailureResponse(advisedRequest);
 		}
@@ -86,9 +87,10 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 
 	@Override
 	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+		String renderedUserText = advisedRequest.renderUserText();
 
 		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> advisedRequest.userText().contains(w))) {
+				&& this.sensitiveWords.stream().anyMatch(renderedUserText::contains)) {
 			return Flux.just(createFailureResponse(advisedRequest));
 		}
 

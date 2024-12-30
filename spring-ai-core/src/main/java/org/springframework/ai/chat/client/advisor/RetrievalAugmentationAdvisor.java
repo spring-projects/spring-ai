@@ -103,7 +103,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		Map<String, Object> context = new HashMap<>(request.adviseContext());
 
 		// 0. Create a query from the user text and parameters.
-		Query originalQuery = new Query(new PromptTemplate(request.userText(), request.userParams()).render());
+		Query originalQuery = new Query(request.renderUserText());
 
 		// 1. Transform original user query based on a chain of query transformers.
 		Query transformedQuery = originalQuery;
@@ -129,10 +129,10 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		context.put(DOCUMENT_CONTEXT, documents);
 
 		// 5. Augment user query with the document contextual data.
-		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
+		Query augmentedQuery = this.queryAugmenter.augment(new Query(request.userText()), documents);
 
 		// 6. Update advised request with augmented prompt.
-		return AdvisedRequest.from(request).userText(augmentedQuery.text()).adviseContext(context).build();
+		return AdvisedRequest.from(request).advisorText(augmentedQuery.text()).adviseContext(context).build();
 	}
 
 	/**

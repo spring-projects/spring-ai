@@ -123,4 +123,66 @@ class RetrievalAugmentationAdvisorTests {
 				""");
 	}
 
+	@Test
+	void whenUserTextWithBracesThenDoesNotThrow() {
+		// Chat Model
+		var chatModel = mock(ChatModel.class);
+		var promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture())).willReturn(ChatResponse.builder()
+			.withGenerations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))
+			.build());
+
+		// Document Retriever
+		var documentContext = List.of(Document.builder().id("1").text("doc1").build(),
+				Document.builder().id("2").text("doc2").build());
+		var documentRetriever = mock(DocumentRetriever.class);
+		var queryCaptor = ArgumentCaptor.forClass(Query.class);
+		given(documentRetriever.retrieve(queryCaptor.capture())).willReturn(documentContext);
+
+		// Advisor
+		var advisor = RetrievalAugmentationAdvisor.builder().documentRetriever(documentRetriever).build();
+
+		// Chat Client
+		var chatClient = ChatClient.builder(chatModel)
+			.defaultAdvisors(advisor)
+			.defaultSystem("You are a wizard!")
+			.build();
+
+		// Call
+		String userText = "{ \"name\" : \"Chuck\" }";
+		var chatResponse = chatClient.prompt()
+			.user(userText)
+			.call()
+			.chatResponse();
+
+		// Verify
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("Felix Felicis");
+		assertThat(chatResponse.getMetadata().<List<Document>>get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT))
+			.containsAll(documentContext);
+
+		var query = queryCaptor.getValue();
+		assertThat(query.text())
+			.isEqualTo(userText);
+
+		var prompt = promptCaptor.getValue();
+		assertThat(prompt.getContents()).contains("""
+				Context information is below.
+
+				---------------------
+				""");
+		assertThat(prompt.getContents()).contains("""
+				---------------------
+
+				Given the context information and no prior knowledge, answer the query.
+
+				Follow these rules:
+
+				1. If the answer is not in the context, just say that you don't know.
+				2. Avoid statements like "Based on the context..." or "The provided information...".
+
+				Query: { \"name\" : \"Chuck\" }
+
+				Answer:
+				""");
+	}
 }

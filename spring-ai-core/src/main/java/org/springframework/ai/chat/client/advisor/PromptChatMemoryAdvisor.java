@@ -127,7 +127,8 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			.build();
 
 		// 4. Add the new user input to the conversation memory.
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		String renderedUserText = request.renderUserText();
+		UserMessage userMessage = new UserMessage(renderedUserText, request.media());
 		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
 
 		return advisedRequest;

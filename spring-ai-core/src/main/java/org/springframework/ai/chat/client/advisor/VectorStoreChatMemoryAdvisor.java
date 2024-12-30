@@ -137,9 +137,10 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		else {
 			advisedSystemText = this.systemTextAdvise;
 		}
+		String renderedUserText = request.renderUserText();
 
 		var searchRequest = SearchRequest.builder()
-			.query(request.userText())
+			.query(renderedUserText)
 			.topK(this.doGetChatMemoryRetrieveSize(request.adviseContext()))
 			.filterExpression(
 					DOCUMENT_METADATA_CONVERSATION_ID + "=='" + this.doGetConversationId(request.adviseContext()) + "'")
@@ -159,7 +160,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.systemParams(advisedSystemParams)
 			.build();
 
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		UserMessage userMessage = new UserMessage(renderedUserText, request.media());
 		this.getChatMemoryStore()
 			.write(toDocuments(List.of(userMessage), this.doGetConversationId(request.adviseContext())));
 

@@ -233,4 +233,31 @@ public class QuestionAnswerAdvisorTests {
 		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
 	}
 
+	@Test
+	public void qaAdvisorTakesUserTextWithBracesIntoAccountForSimilaritySearch() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
+					ChatResponseMetadata.builder().build()));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+			.willReturn(List.of(new Document("doc1"), new Document("doc2")));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
+
+		String userText = "{ \"name\" : \"Chuck\" }";
+
+		// @formatter:off
+		chatClient.prompt()
+			.user(userText)
+			.advisors(qaAdvisor)
+			.call()
+			.chatResponse();
+		//formatter:on
+
+		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getText();
+		assertThat(userPrompt).contains(userText);
+		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(userText);
+	}
+
 }
