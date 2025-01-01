@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -76,7 +74,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().withFunction("WeatherInfo").build()));
+				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
 
 			logger.info("Response: " + response);
 
@@ -94,7 +92,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().withFunction("WeatherInfo").build()));
+				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()
@@ -120,9 +118,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.withFunction("WeatherInfo")
-				.build();
+			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder().function("WeatherInfo").build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 

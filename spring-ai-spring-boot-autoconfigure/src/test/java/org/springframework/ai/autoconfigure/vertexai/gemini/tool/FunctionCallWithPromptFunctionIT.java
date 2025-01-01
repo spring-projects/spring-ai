@@ -68,7 +68,7 @@ public class FunctionCallWithPromptFunctionIT {
 						""");
 
 				var promptOptions = VertexAiGeminiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.functionCallbacks(List.of(FunctionCallback.builder()
 						.function("CurrentWeatherService", new MockWeatherService())
 						.schemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
 						.description("Get the weather in location")

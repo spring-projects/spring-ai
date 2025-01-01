@@ -67,6 +67,15 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 			this.options = new MiniMaxEmbeddingOptions();
 		}
 
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;

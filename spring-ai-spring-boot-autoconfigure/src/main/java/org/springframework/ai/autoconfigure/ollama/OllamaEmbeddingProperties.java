@@ -43,7 +43,7 @@ public class OllamaEmbeddingProperties {
 	 * generative's defaults.
 	 */
 	@NestedConfigurationProperty
-	private OllamaOptions options = OllamaOptions.create().withModel(OllamaModel.MXBAI_EMBED_LARGE.id());
+	private OllamaOptions options = OllamaOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE.id()).build();
 
 	public String getModel() {
 		return this.options.getModel();

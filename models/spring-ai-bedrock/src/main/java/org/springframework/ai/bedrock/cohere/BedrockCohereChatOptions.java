@@ -33,6 +33,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -98,15 +99,15 @@ public class BedrockCohereChatOptions implements ChatOptions {
 	}
 
 	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTopK(fromOptions.getTopK())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withReturnLikelihoods(fromOptions.getReturnLikelihoods())
-			.withNumGenerations(fromOptions.getNumGenerations())
-			.withLogitBias(fromOptions.getLogitBias())
-			.withTruncate(fromOptions.getTruncate())
+		return builder().temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.topK(fromOptions.getTopK())
+			.maxTokens(fromOptions.getMaxTokens())
+			.stopSequences(fromOptions.getStopSequences())
+			.returnLikelihoods(fromOptions.getReturnLikelihoods())
+			.numGenerations(fromOptions.getNumGenerations())
+			.logitBias(fromOptions.getLogitBias())
+			.truncate(fromOptions.getTruncate())
 			.build();
 	}
 
@@ -214,46 +215,127 @@ public class BedrockCohereChatOptions implements ChatOptions {
 
 		private final BedrockCohereChatOptions options = new BedrockCohereChatOptions();
 
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder topK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder returnLikelihoods(ReturnLikelihoods returnLikelihoods) {
+			this.options.setReturnLikelihoods(returnLikelihoods);
+			return this;
+		}
+
+		public Builder numGenerations(Integer numGenerations) {
+			this.options.setNumGenerations(numGenerations);
+			return this;
+		}
+
+		public Builder logitBias(LogitBias logitBias) {
+			this.options.setLogitBias(logitBias);
+			return this;
+		}
+
+		public Builder truncate(Truncate truncate) {
+			this.options.setTruncate(truncate);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopK(Integer topK) {
 			this.options.setTopK(topK);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxTokens(Integer maxTokens) {
 			this.options.setMaxTokens(maxTokens);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #returnLikelihoods(ReturnLikelihoods)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
 			this.options.setReturnLikelihoods(returnLikelihoods);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #numGenerations(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withNumGenerations(Integer numGenerations) {
 			this.options.setNumGenerations(numGenerations);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #logitBias(LogitBias)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLogitBias(LogitBias logitBias) {
 			this.options.setLogitBias(logitBias);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #truncate(Truncate)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTruncate(Truncate truncate) {
 			this.options.setTruncate(truncate);
 			return this;

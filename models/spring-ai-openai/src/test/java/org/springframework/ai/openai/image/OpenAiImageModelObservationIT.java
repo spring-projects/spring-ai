@@ -57,11 +57,11 @@ public class OpenAiImageModelObservationIT {
 	@Test
 	void observationForImageOperation() {
 		var options = OpenAiImageOptions.builder()
-			.withModel(OpenAiImageApi.ImageModel.DALL_E_3.getValue())
-			.withHeight(1024)
-			.withWidth(1024)
-			.withResponseFormat("url")
-			.withStyle("natural")
+			.model(OpenAiImageApi.ImageModel.DALL_E_3.getValue())
+			.height(1024)
+			.width(1024)
+			.responseFormat("url")
+			.style("natural")
 			.build();
 
 		var instructions = "Here comes the sun";

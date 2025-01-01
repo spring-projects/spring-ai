@@ -47,6 +47,7 @@ import static org.mockito.Mockito.mock;
 /**
  * @author Pablo Sanchidrian Herrera
  * @author John Jairo Moreno Rojas
+ * @author Alexandros Pappas
  */
 public class WatsonxAiChatModelTest {
 
@@ -66,9 +67,7 @@ public class WatsonxAiChatModelTest {
 
 		String msg = "Test message";
 
-		WatsonxAiChatOptions modelOptions = WatsonxAiChatOptions.builder()
-			.withModel("meta-llama/llama-2-70b-chat")
-			.build();
+		WatsonxAiChatOptions modelOptions = WatsonxAiChatOptions.builder().model("meta-llama/llama-2-70b-chat").build();
 		Prompt prompt = new Prompt(msg, modelOptions);
 
 		WatsonxAiChatRequest request = this.chatModel.request(prompt);
@@ -91,16 +90,16 @@ public class WatsonxAiChatModelTest {
 		String msg = "Test message";
 
 		WatsonxAiChatOptions modelOptions = WatsonxAiChatOptions.builder()
-			.withModel("meta-llama/llama-2-70b-chat")
-			.withDecodingMethod("sample")
-			.withTemperature(0.1)
-			.withTopP(0.2)
-			.withTopK(10)
-			.withMaxNewTokens(30)
-			.withMinNewTokens(10)
-			.withRepetitionPenalty(1.4)
-			.withStopSequences(List.of("\n\n\n"))
-			.withRandomSeed(4)
+			.model("meta-llama/llama-2-70b-chat")
+			.decodingMethod("sample")
+			.temperature(0.1)
+			.topP(0.2)
+			.topK(10)
+			.maxNewTokens(30)
+			.minNewTokens(10)
+			.repetitionPenalty(1.4)
+			.stopSequences(List.of("\n\n\n"))
+			.randomSeed(4)
 			.build();
 
 		Prompt prompt = new Prompt(msg, modelOptions);
@@ -125,16 +124,16 @@ public class WatsonxAiChatModelTest {
 		String msg = "Test message";
 
 		WatsonxAiChatOptions modelOptions = WatsonxAiChatOptions.builder()
-			.withModel("meta-llama/llama-2-70b-chat")
-			.withDecodingMethod("sample")
-			.withTemperature(0.1)
-			.withTopP(0.2)
-			.withTopK(10)
-			.withMaxNewTokens(30)
-			.withMinNewTokens(10)
-			.withRepetitionPenalty(1.4)
-			.withStopSequences(List.of("\n\n\n"))
-			.withRandomSeed(4)
+			.model("meta-llama/llama-2-70b-chat")
+			.decodingMethod("sample")
+			.temperature(0.1)
+			.topP(0.2)
+			.topK(10)
+			.maxNewTokens(30)
+			.minNewTokens(10)
+			.repetitionPenalty(1.4)
+			.stopSequences(List.of("\n\n\n"))
+			.randomSeed(4)
 			.build();
 
 		Prompt prompt = new Prompt(msg, modelOptions);
@@ -160,9 +159,9 @@ public class WatsonxAiChatModelTest {
 		WatsonxAiChatModel chatModel = new WatsonxAiChatModel(mockChatApi);
 
 		Prompt prompt = new Prompt(List.of(new SystemMessage("Your prompt here")),
-				WatsonxAiChatOptions.builder().withModel("google/flan-ul2").build());
+				WatsonxAiChatOptions.builder().model("google/flan-ul2").build());
 
-		WatsonxAiChatOptions parameters = WatsonxAiChatOptions.builder().withModel("google/flan-ul2").build();
+		WatsonxAiChatOptions parameters = WatsonxAiChatOptions.builder().model("google/flan-ul2").build();
 
 		WatsonxAiChatResults fakeResults = new WatsonxAiChatResults("LLM response", 4, 3, "max_tokens");
 
@@ -193,9 +192,9 @@ public class WatsonxAiChatModelTest {
 		WatsonxAiChatModel chatModel = new WatsonxAiChatModel(mockChatApi);
 
 		Prompt prompt = new Prompt(List.of(new SystemMessage("Your prompt here")),
-				WatsonxAiChatOptions.builder().withModel("google/flan-ul2").build());
+				WatsonxAiChatOptions.builder().model("google/flan-ul2").build());
 
-		WatsonxAiChatOptions parameters = WatsonxAiChatOptions.builder().withModel("google/flan-ul2").build();
+		WatsonxAiChatOptions parameters = WatsonxAiChatOptions.builder().model("google/flan-ul2").build();
 
 		WatsonxAiChatResults fakeResultsFirst = new WatsonxAiChatResults("LLM resp", 0, 0, "max_tokens");
 		WatsonxAiChatResults fakeResultsSecond = new WatsonxAiChatResults("onse", 4, 3, "not_finished");

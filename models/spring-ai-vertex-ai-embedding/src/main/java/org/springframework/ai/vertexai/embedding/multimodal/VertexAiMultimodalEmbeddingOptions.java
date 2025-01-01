@@ -58,6 +58,7 @@ import org.springframework.util.StringUtils;
  * </p>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -174,31 +175,85 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder model(VertexAiMultimodalEmbeddingModelName model) {
+			this.options.setModel(model.getName());
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.setDimensions(dimensions);
+			return this;
+		}
+
+		public Builder videoStartOffsetSec(Integer videoStartOffsetSec) {
+			this.options.setVideoStartOffsetSec(videoStartOffsetSec);
+			return this;
+		}
+
+		public Builder videoEndOffsetSec(Integer videoEndOffsetSec) {
+			this.options.setVideoEndOffsetSec(videoEndOffsetSec);
+			return this;
+		}
+
+		public Builder videoIntervalSec(Integer videoIntervalSec) {
+			this.options.setVideoIntervalSec(videoIntervalSec);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(VertexAiMultimodalEmbeddingModelName)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(VertexAiMultimodalEmbeddingModelName model) {
 			this.options.setModel(model.getName());
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #dimensions(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDimensions(Integer dimensions) {
 			this.options.setDimensions(dimensions);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #videoStartOffsetSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withVideoStartOffsetSec(Integer videoStartOffsetSec) {
 			this.options.setVideoStartOffsetSec(videoStartOffsetSec);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #videoEndOffsetSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withVideoEndOffsetSec(Integer videoEndOffsetSec) {
 			this.options.setVideoEndOffsetSec(videoEndOffsetSec);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #videoIntervalSec(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withVideoIntervalSec(Integer videoIntervalSec) {
 			this.options.setVideoIntervalSec(videoIntervalSec);
 			return this;

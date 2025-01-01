@@ -229,8 +229,8 @@ class ZhiPuAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = ZhiPuAiChatOptions.builder()
-			.withModel(ZhiPuAiApi.ChatModel.GLM_4.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(ZhiPuAiApi.ChatModel.GLM_4.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -255,8 +255,8 @@ class ZhiPuAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = ZhiPuAiChatOptions.builder()
-			.withModel(ZhiPuAiApi.ChatModel.GLM_4.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(ZhiPuAiApi.ChatModel.GLM_4.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -289,7 +289,7 @@ class ZhiPuAiChatModelIT {
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
@@ -307,7 +307,7 @@ class ZhiPuAiChatModelIT {
 					.build()));
 
 		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
@@ -324,7 +324,7 @@ class ZhiPuAiChatModelIT {
 					.build()));
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ZhiPuAiChatOptions.builder().withModel(ZhiPuAiApi.ChatModel.GLM_4V.getValue()).build()));
+				ZhiPuAiChatOptions.builder().model(ZhiPuAiApi.ChatModel.GLM_4V.getValue()).build()));
 
 		String content = Objects.requireNonNull(response.collectList().block())
 			.stream()

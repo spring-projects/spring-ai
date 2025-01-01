@@ -73,9 +73,9 @@ public class VertexAiGeminiRetryTests {
 
 		this.chatModel = new TestVertexAiGeminiChatModel(this.vertexAI,
 				VertexAiGeminiChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+					.temperature(0.7)
+					.topP(1.0)
+					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
 					.build(),
 				null, Collections.emptyList(), this.retryTemplate);
 

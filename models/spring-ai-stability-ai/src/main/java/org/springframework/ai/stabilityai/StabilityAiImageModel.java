@@ -55,20 +55,20 @@ public class StabilityAiImageModel implements ImageModel {
 	private static StabilityAiApi.GenerateImageRequest getGenerateImageRequest(ImagePrompt stabilityAiImagePrompt,
 			StabilityAiImageOptions optionsToUse) {
 		return new StabilityAiApi.GenerateImageRequest.Builder()
-			.withTextPrompts(stabilityAiImagePrompt.getInstructions()
+			.textPrompts(stabilityAiImagePrompt.getInstructions()
 				.stream()
 				.map(message -> new StabilityAiApi.GenerateImageRequest.TextPrompts(message.getText(),
 						message.getWeight()))
 				.collect(Collectors.toList()))
-			.withHeight(optionsToUse.getHeight())
-			.withWidth(optionsToUse.getWidth())
-			.withCfgScale(optionsToUse.getCfgScale())
-			.withClipGuidancePreset(optionsToUse.getClipGuidancePreset())
-			.withSampler(optionsToUse.getSampler())
-			.withSamples(optionsToUse.getN())
-			.withSeed(optionsToUse.getSeed())
-			.withSteps(optionsToUse.getSteps())
-			.withStylePreset(optionsToUse.getStylePreset())
+			.height(optionsToUse.getHeight())
+			.width(optionsToUse.getWidth())
+			.cfgScale(optionsToUse.getCfgScale())
+			.clipGuidancePreset(optionsToUse.getClipGuidancePreset())
+			.sampler(optionsToUse.getSampler())
+			.samples(optionsToUse.getN())
+			.seed(optionsToUse.getSeed())
+			.steps(optionsToUse.getSteps())
+			.stylePreset(optionsToUse.getStylePreset())
 			.build();
 	}
 
@@ -124,32 +124,31 @@ public class StabilityAiImageModel implements ImageModel {
 		}
 		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder()
 			// Handle portable image options
-			.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
-			.withN(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
-			.withResponseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
+			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
+			.N(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
+			.responseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
 					defaultOptions.getResponseFormat()))
-			.withWidth(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
-			.withHeight(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
-			.withStylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
+			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
+			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
+			.stylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
 			// Always set the stability-specific defaults
-			.withCfgScale(defaultOptions.getCfgScale())
-			.withClipGuidancePreset(defaultOptions.getClipGuidancePreset())
-			.withSampler(defaultOptions.getSampler())
-			.withSeed(defaultOptions.getSeed())
-			.withSteps(defaultOptions.getSteps())
-			.withStylePreset(defaultOptions.getStylePreset());
+			.cfgScale(defaultOptions.getCfgScale())
+			.clipGuidancePreset(defaultOptions.getClipGuidancePreset())
+			.sampler(defaultOptions.getSampler())
+			.seed(defaultOptions.getSeed())
+			.steps(defaultOptions.getSteps())
+			.stylePreset(defaultOptions.getStylePreset());
 		if (runtimeOptions instanceof StabilityAiImageOptions) {
 			StabilityAiImageOptions stabilityOptions = (StabilityAiImageOptions) runtimeOptions;
 			// Handle Stability AI specific image options
 			builder
-				.withCfgScale(
-						ModelOptionsUtils.mergeOption(stabilityOptions.getCfgScale(), defaultOptions.getCfgScale()))
-				.withClipGuidancePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getClipGuidancePreset(),
+				.cfgScale(ModelOptionsUtils.mergeOption(stabilityOptions.getCfgScale(), defaultOptions.getCfgScale()))
+				.clipGuidancePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getClipGuidancePreset(),
 						defaultOptions.getClipGuidancePreset()))
-				.withSampler(ModelOptionsUtils.mergeOption(stabilityOptions.getSampler(), defaultOptions.getSampler()))
-				.withSeed(ModelOptionsUtils.mergeOption(stabilityOptions.getSeed(), defaultOptions.getSeed()))
-				.withSteps(ModelOptionsUtils.mergeOption(stabilityOptions.getSteps(), defaultOptions.getSteps()))
-				.withStylePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getStylePreset(),
+				.sampler(ModelOptionsUtils.mergeOption(stabilityOptions.getSampler(), defaultOptions.getSampler()))
+				.seed(ModelOptionsUtils.mergeOption(stabilityOptions.getSeed(), defaultOptions.getSeed()))
+				.steps(ModelOptionsUtils.mergeOption(stabilityOptions.getSteps(), defaultOptions.getSteps()))
+				.stylePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getStylePreset(),
 						defaultOptions.getStylePreset()));
 		}
 

@@ -62,8 +62,8 @@ class MoonshotChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MoonshotChatOptions.builder()
-			.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -86,7 +86,7 @@ class MoonshotChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MoonshotChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.build()))

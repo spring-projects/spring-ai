@@ -83,7 +83,8 @@ public class MilvusVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -100,7 +101,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).hasSize(0);
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.MILVUS,
@@ -134,7 +135,8 @@ public class MilvusVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -151,7 +153,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).hasSize(0);
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.MILVUS,

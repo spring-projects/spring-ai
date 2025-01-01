@@ -21,7 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,10 +44,10 @@ public class PostgresMlEmbeddingOptionsTests {
 	@Test
 	public void newOptions() {
 		PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
-			.withTransformer("intfloat/e5-small")
-			.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
-			.withMetadataMode(org.springframework.ai.document.MetadataMode.ALL)
-			.withKwargs(Map.of("device", "cpu"))
+			.transformer("intfloat/e5-small")
+			.vectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
+			.metadataMode(org.springframework.ai.document.MetadataMode.ALL)
+			.kwargs(Map.of("device", "cpu"))
 			.build();
 
 		assertThat(options.getTransformer()).isEqualTo("intfloat/e5-small");
@@ -62,7 +62,7 @@ public class PostgresMlEmbeddingOptionsTests {
 		var jdbcTemplate = Mockito.mock(JdbcTemplate.class);
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(jdbcTemplate);
 
-		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptions.EMPTY);
+		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptionsBuilder.builder().build());
 
 		// Default options
 		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);
@@ -72,8 +72,8 @@ public class PostgresMlEmbeddingOptionsTests {
 
 		// Partial override
 		options = embeddingModel.mergeOptions(PostgresMlEmbeddingOptions.builder()
-			.withTransformer("intfloat/e5-small")
-			.withKwargs(Map.of("device", "cpu"))
+			.transformer("intfloat/e5-small")
+			.kwargs(Map.of("device", "cpu"))
 			.build());
 
 		assertThat(options.getTransformer()).isEqualTo("intfloat/e5-small");
@@ -83,10 +83,10 @@ public class PostgresMlEmbeddingOptionsTests {
 
 		// Complete override
 		options = embeddingModel.mergeOptions(PostgresMlEmbeddingOptions.builder()
-			.withTransformer("intfloat/e5-small")
-			.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
-			.withMetadataMode(org.springframework.ai.document.MetadataMode.ALL)
-			.withKwargs(Map.of("device", "cpu"))
+			.transformer("intfloat/e5-small")
+			.vectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
+			.metadataMode(org.springframework.ai.document.MetadataMode.ALL)
+			.kwargs(Map.of("device", "cpu"))
 			.build());
 
 		assertThat(options.getTransformer()).isEqualTo("intfloat/e5-small");

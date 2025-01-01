@@ -18,8 +18,8 @@ package org.springframework.ai.autoconfigure.chat.memory.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 
-import org.springframework.ai.chat.memory.CassandraChatMemory;
-import org.springframework.ai.chat.memory.CassandraChatMemoryConfig;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemory;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

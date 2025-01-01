@@ -17,7 +17,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
-import org.springframework.ai.vectorstore.TypesenseVectorStore;
+import org.springframework.ai.vectorstore.typesense.TypesenseVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

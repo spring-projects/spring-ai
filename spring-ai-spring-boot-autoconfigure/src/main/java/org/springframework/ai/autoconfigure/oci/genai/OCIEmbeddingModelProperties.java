@@ -43,10 +43,10 @@ public class OCIEmbeddingModelProperties {
 
 	public OCIEmbeddingOptions getEmbeddingOptions() {
 		return OCIEmbeddingOptions.builder()
-			.withCompartment(this.compartment)
-			.withModel(this.model)
-			.withServingMode(this.servingMode.getMode())
-			.withTruncate(this.truncate)
+			.compartment(this.compartment)
+			.model(this.model)
+			.servingMode(this.servingMode.getMode())
+			.truncate(this.truncate)
 			.build();
 	}
 

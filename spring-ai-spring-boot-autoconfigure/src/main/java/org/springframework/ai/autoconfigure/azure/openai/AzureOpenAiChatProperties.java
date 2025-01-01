@@ -36,8 +36,8 @@ public class AzureOpenAiChatProperties {
 
 	@NestedConfigurationProperty
 	private AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
-		.withDeploymentName(DEFAULT_DEPLOYMENT_NAME)
-		.withTemperature(DEFAULT_TEMPERATURE)
+		.deploymentName(DEFAULT_DEPLOYMENT_NAME)
+		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public AzureOpenAiChatOptions getOptions() {

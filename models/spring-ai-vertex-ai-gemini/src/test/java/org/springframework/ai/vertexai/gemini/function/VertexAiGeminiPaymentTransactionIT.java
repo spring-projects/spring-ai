@@ -212,8 +212,8 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-							.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-							.withTemperature(0.1)
+							.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+							.temperature(0.1)
 							.build(),
 					functionCallbackResolver);
 		}

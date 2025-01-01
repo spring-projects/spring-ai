@@ -221,7 +221,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -239,7 +239,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, resource))
 				.call()
 				.content();
@@ -271,7 +271,7 @@ class AzureOpenAiChatModelIT {
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
 			return new AzureOpenAiChatModel(openAIClientBuilder,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build());
+					AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build());
 
 		}
 

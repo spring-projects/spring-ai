@@ -122,11 +122,11 @@ public class ZhiPuAiImageModel implements ImageModel {
 		ZhiPuAiImageOptions.Builder zhiPuAiImageOptionsBuilder = ZhiPuAiImageOptions.builder();
 		if (runtimeImageOptions != null) {
 			if (runtimeImageOptions.getModel() != null) {
-				zhiPuAiImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
+				zhiPuAiImageOptionsBuilder.model(runtimeImageOptions.getModel());
 			}
 			if (runtimeImageOptions instanceof ZhiPuAiImageOptions runtimeZhiPuAiImageOptions) {
 				if (runtimeZhiPuAiImageOptions.getUser() != null) {
-					zhiPuAiImageOptionsBuilder.withUser(runtimeZhiPuAiImageOptions.getUser());
+					zhiPuAiImageOptionsBuilder.user(runtimeZhiPuAiImageOptions.getUser());
 				}
 			}
 		}

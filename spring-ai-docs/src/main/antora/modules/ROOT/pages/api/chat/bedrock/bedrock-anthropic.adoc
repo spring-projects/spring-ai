@@ -124,7 +124,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AnthropicChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -217,11 +217,11 @@ AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
 
 BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(this.anthropicApi,
     AnthropicChatOptions.builder()
-        .withTemperature(0.6)
-        .withTopK(10)
-        .withTopP(0.8)
-        .withMaxTokensToSample(100)
-        .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+        .temperature(0.6)
+        .topK(10)
+        .topP(0.8)
+        .maxTokensToSample(100)
+        .anthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
         .build());
 
 ChatResponse response = this.chatModel.call(
@@ -251,9 +251,9 @@ AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-  .withTemperature(0.8)
-  .withMaxTokensToSample(300)
-  .withTopK(10)
+  .temperature(0.8)
+  .maxTokensToSample(300)
+  .topK(10)
   .build();
 
 // Sync request

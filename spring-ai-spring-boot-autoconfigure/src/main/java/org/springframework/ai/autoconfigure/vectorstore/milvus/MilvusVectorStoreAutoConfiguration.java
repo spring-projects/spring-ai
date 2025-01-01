@@ -21,14 +21,11 @@ import java.util.concurrent.TimeUnit;
 import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
-import io.milvus.param.IndexType;
-import io.milvus.param.MetricType;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.milvus.vectorstore.MilvusVectorStore;
-import org.springframework.ai.milvus.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -71,9 +68,7 @@ public class MilvusVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		return MilvusVectorStore.builder()
-			.milvusClient(milvusClient)
-			.embeddingModel(embeddingModel)
+		return MilvusVectorStore.builder(milvusClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.batchingStrategy(batchingStrategy)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

@@ -65,18 +65,20 @@ class ChromaWithTokenContainerConnectionDetailsFactoryIT {
 
 		this.vectorStore.add(List.of(bgDocument, nlDocument));
 
-		var request = SearchRequest.query("The World").withTopK(5);
+		var request = SearchRequest.builder().query("The World").topK(5).build();
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 		assertThat(results).hasSize(2);
 
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+		results = this.vectorStore.similaritySearch(
+				SearchRequest.from(request).similarityThresholdAll().filterExpression("country == 'Bulgaria'").build());
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+		results = this.vectorStore.similaritySearch(SearchRequest.from(request)
+			.similarityThresholdAll()
+			.filterExpression("country == 'Netherlands'")
+			.build());
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

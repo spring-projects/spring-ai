@@ -78,12 +78,15 @@ class DefaultVectorStoreObservationConventionTests {
 	void shouldHaveOptionalKeyValues() {
 		VectorStoreObservationContext observationContext = VectorStoreObservationContext
 			.builder("my-database", VectorStoreObservationContext.Operation.QUERY)
-			.withCollectionName("COLLECTION_NAME")
-			.withDimensions(696)
-			.withFieldName("FIELD_NAME")
-			.withNamespace("NAMESPACE")
-			.withSimilarityMetric("SIMILARITY_METRIC")
-			.withQueryRequest(SearchRequest.query("VDB QUERY").withFilterExpression("country == 'UK' && year >= 2020"))
+			.collectionName("COLLECTION_NAME")
+			.dimensions(696)
+			.fieldName("FIELD_NAME")
+			.namespace("NAMESPACE")
+			.similarityMetric("SIMILARITY_METRIC")
+			.queryRequest(SearchRequest.builder()
+				.query("VDB QUERY")
+				.filterExpression("country == 'UK' && year >= 2020")
+				.build())
 			.build();
 
 		List<Document> queryResponseDocs = List.of(new Document("doc1"), new Document("doc2"));

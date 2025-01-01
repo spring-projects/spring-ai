@@ -27,6 +27,7 @@ import java.util.List;
  * @param timeout the timeout for managing models
  * @param maxRetries the maximum number of retries
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<String> additionalModels,
@@ -50,21 +51,57 @@ public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<S
 
 		private Integer maxRetries = 0;
 
+		public Builder pullModelStrategy(PullModelStrategy pullModelStrategy) {
+			this.pullModelStrategy = pullModelStrategy;
+			return this;
+		}
+
+		public Builder additionalModels(List<String> additionalModels) {
+			this.additionalModels = additionalModels;
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.timeout = timeout;
+			return this;
+		}
+
+		public Builder maxRetries(Integer maxRetries) {
+			this.maxRetries = maxRetries;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #pullModelStrategy(PullModelStrategy)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPullModelStrategy(PullModelStrategy pullModelStrategy) {
 			this.pullModelStrategy = pullModelStrategy;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #additionalModels(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withAdditionalModels(List<String> additionalModels) {
 			this.additionalModels = additionalModels;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #timeout(Duration)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTimeout(Duration timeout) {
 			this.timeout = timeout;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxRetries(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxRetries(Integer maxRetries) {
 			this.maxRetries = maxRetries;
 			return this;

@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -89,17 +90,17 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 	}
 
 	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
-		return builder().withModel(fromOptions.getModel())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withMetadata(fromOptions.getMetadata())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTopK(fromOptions.getTopK())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
+		return builder().model(fromOptions.getModel())
+			.maxTokens(fromOptions.getMaxTokens())
+			.metadata(fromOptions.getMetadata())
+			.stopSequences(fromOptions.getStopSequences())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.topK(fromOptions.getTopK())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -227,69 +228,69 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 
 		private final AnthropicChatOptions options = new AnthropicChatOptions();
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withModel(AnthropicApi.ChatModel model) {
+		public Builder model(AnthropicApi.ChatModel model) {
 			this.options.model = model.getValue();
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withMetadata(ChatCompletionRequest.Metadata metadata) {
+		public Builder metadata(ChatCompletionRequest.Metadata metadata) {
 			this.options.metadata = metadata;
 			return this;
 		}
 
-		public Builder withStopSequences(List<String> stopSequences) {
+		public Builder stopSequences(List<String> stopSequences) {
 			this.options.stopSequences = stopSequences;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder withTopK(Integer topK) {
+		public Builder topK(Integer topK) {
 			this.options.topK = topK;
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
+		public Builder functions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
+		public Builder function(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}
@@ -297,6 +298,110 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 				this.options.toolContext.putAll(toolContext);
 			}
 			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(String model) {
+			return model(model);
+		}
+
+		/**
+		 * @deprecated use {@link #model(AnthropicApi.ChatModel)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withModel(AnthropicApi.ChatModel model) {
+			return model(model);
+		}
+
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMaxTokens(Integer maxTokens) {
+			return maxTokens(maxTokens);
+		}
+
+		/**
+		 * @deprecated use {@link #metadata(ChatCompletionRequest.Metadata)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMetadata(ChatCompletionRequest.Metadata metadata) {
+			return metadata(metadata);
+		}
+
+		/**
+		 * @deprecated use {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withStopSequences(List<String> stopSequences) {
+			return stopSequences(stopSequences);
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTemperature(Double temperature) {
+			return temperature(temperature);
+		}
+
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopP(Double topP) {
+			return topP(topP);
+		}
+
+		/**
+		 * @deprecated use {@link #topK(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withTopK(Integer topK) {
+			return topK(topK);
+		}
+
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			return functionCallbacks(functionCallbacks);
+		}
+
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctions(Set<String> functionNames) {
+			return functions(functionNames);
+		}
+
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunction(String functionName) {
+			return function(functionName);
+		}
+
+		/**
+		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+			return proxyToolCalls(proxyToolCalls);
+		}
+
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withToolContext(Map<String, Object> toolContext) {
+			return toolContext(toolContext);
 		}
 
 		public AnthropicChatOptions build() {

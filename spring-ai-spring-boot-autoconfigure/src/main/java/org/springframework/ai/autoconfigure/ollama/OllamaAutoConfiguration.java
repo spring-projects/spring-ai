@@ -87,12 +87,12 @@ public class OllamaAutoConfiguration {
 				: PullModelStrategy.NEVER;
 
 		var chatModel = OllamaChatModel.builder()
-			.withOllamaApi(ollamaApi)
-			.withDefaultOptions(properties.getOptions())
+			.ollamaApi(ollamaApi)
+			.defaultOptions(properties.getOptions())
 			.functionCallbackResolver(functionCallbackResolver)
-			.withToolFunctionCallbacks(toolFunctionCallbacks)
-			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withModelManagementOptions(
+			.toolFunctionCallbacks(toolFunctionCallbacks)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.modelManagementOptions(
 					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),
 							initProperties.getTimeout(), initProperties.getMaxRetries()))
 			.build();
@@ -113,10 +113,10 @@ public class OllamaAutoConfiguration {
 				? initProperties.getPullModelStrategy() : PullModelStrategy.NEVER;
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
-			.withOllamaApi(ollamaApi)
-			.withDefaultOptions(properties.getOptions())
-			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withModelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
+			.ollamaApi(ollamaApi)
+			.defaultOptions(properties.getOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.modelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
 					initProperties.getEmbedding().getAdditionalModels(), initProperties.getTimeout(),
 					initProperties.getMaxRetries()))
 			.build();

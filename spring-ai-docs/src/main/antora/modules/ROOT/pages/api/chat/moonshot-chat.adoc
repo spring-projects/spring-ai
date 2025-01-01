@@ -120,8 +120,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MoonshotChatOptions.builder()
-            .withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-            .withTemperature(0.5)
+            .model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -203,9 +203,9 @@ Next, create a `MoonshotChatModel` and use it for text generations:
 var moonshotApi = new MoonshotApi(System.getenv("MOONSHOT_API_KEY"));
 
 var chatModel = new MoonshotChatModel(this.moonshotApi, MoonshotChatOptions.builder()
-                .withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+                .model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
 ChatResponse response = this.chatModel.call(

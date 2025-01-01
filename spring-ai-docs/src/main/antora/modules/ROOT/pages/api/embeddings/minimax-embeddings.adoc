@@ -116,7 +116,7 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         MiniMaxEmbeddingOptions.builder()
-            .withModel("Different-Embedding-Model-Deployment-Name")
+            .model("Different-Embedding-Model-Deployment-Name")
         .build()));
 ----
 
@@ -183,10 +183,8 @@ Next, create an `MiniMaxEmbeddingModel` instance and use it to compute the simil
 ----
 var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
-var embeddingModel = new MiniMaxEmbeddingModel(this.miniMaxApi)
-    .withDefaultOptions(MiniMaxChatOptions.build()
-        .withModel("embo-01")
-        .build());
+var embeddingModel = new MiniMaxEmbeddingModel(minimaxApi, MetadataMode.EMBED,
+MiniMaxEmbeddingOptions.builder().model("embo-01").build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));

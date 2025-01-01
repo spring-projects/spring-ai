@@ -100,8 +100,8 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 			inputType = bedrockTitanEmbeddingOptions.getInputType();
 		}
 
-		return (inputType == InputType.IMAGE) ? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
-				: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
+		return (inputType == InputType.IMAGE) ? new TitanEmbeddingRequest.Builder().inputImage(inputContent).build()
+				: new TitanEmbeddingRequest.Builder().inputText(inputContent).build();
 	}
 
 	@Override

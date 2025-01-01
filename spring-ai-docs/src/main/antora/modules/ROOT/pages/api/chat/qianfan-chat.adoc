@@ -124,8 +124,8 @@ ChatResponse response = chatClient.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         QianFanChatOptions.builder()
-            .withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-            .withTemperature(0.5)
+            .model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -208,9 +208,9 @@ Next, create a `QianFanChatModel` and use it for text generations:
 var qianFanApi = new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
 
 var chatClient = new QianFanChatModel(this.qianFanApi, QianFanChatOptions.builder()
-                .withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+                .model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
 ChatResponse response = this.chatClient.call(

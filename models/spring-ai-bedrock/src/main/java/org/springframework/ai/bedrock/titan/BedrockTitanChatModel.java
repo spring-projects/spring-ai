@@ -43,7 +43,10 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
 	private final TitanChatBedrockApi chatApi;
@@ -119,16 +122,16 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
 	private TitanChatRequest.Builder update(TitanChatRequest.Builder builder, BedrockTitanChatOptions options) {
 		if (options.getTemperature() != null) {
-			builder.withTemperature(options.getTemperature());
+			builder.temperature(options.getTemperature());
 		}
 		if (options.getTopP() != null) {
-			builder.withTopP(options.getTopP());
+			builder.topP(options.getTopP());
 		}
 		if (options.getMaxTokenCount() != null) {
-			builder.withMaxTokenCount(options.getMaxTokenCount());
+			builder.maxTokenCount(options.getMaxTokenCount());
 		}
 		if (options.getStopSequences() != null) {
-			builder.withStopSequences(options.getStopSequences());
+			builder.stopSequences(options.getStopSequences());
 		}
 		return builder;
 	}

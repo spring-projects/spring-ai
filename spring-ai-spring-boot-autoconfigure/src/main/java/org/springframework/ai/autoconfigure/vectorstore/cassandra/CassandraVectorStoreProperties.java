@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -37,19 +37,19 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStoreProperties.class);
 
-	private String keyspace = CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME;
+	private String keyspace = CassandraVectorStore.DEFAULT_KEYSPACE_NAME;
 
-	private String table = CassandraVectorStoreConfig.DEFAULT_TABLE_NAME;
+	private String table = CassandraVectorStore.DEFAULT_TABLE_NAME;
 
 	private String indexName = null;
 
-	private String contentColumnName = CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME;
+	private String contentColumnName = CassandraVectorStore.DEFAULT_CONTENT_COLUMN_NAME;
 
-	private String embeddingColumnName = CassandraVectorStoreConfig.DEFAULT_EMBEDDING_COLUMN_NAME;
+	private String embeddingColumnName = CassandraVectorStore.DEFAULT_EMBEDDING_COLUMN_NAME;
 
 	private boolean returnEmbeddings = false;
 
-	private int fixedThreadPoolExecutorSize = CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY;
+	private int fixedThreadPoolExecutorSize = CassandraVectorStore.DEFAULT_ADD_CONCURRENCY;
 
 	public String getKeyspace() {
 		return this.keyspace;

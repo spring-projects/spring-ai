@@ -26,6 +26,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * OpenAI Embedding Options.
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -96,21 +97,57 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 			this.options = new OpenAiEmbeddingOptions();
 		}
 
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder encodingFormat(String encodingFormat) {
+			this.options.setEncodingFormat(encodingFormat);
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #encodingFormat(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withEncodingFormat(String encodingFormat) {
 			this.options.setEncodingFormat(encodingFormat);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #dimensions(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDimensions(Integer dimensions) {
 			this.options.dimensions = dimensions;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withUser(String user) {
 			this.options.setUser(user);
 			return this;

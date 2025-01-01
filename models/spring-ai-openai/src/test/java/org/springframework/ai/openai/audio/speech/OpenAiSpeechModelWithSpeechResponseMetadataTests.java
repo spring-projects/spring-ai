@@ -70,10 +70,10 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 		prepareMock();
 
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-			.withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
-			.withSpeed(SPEED)
-			.withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-			.withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+			.speed(SPEED)
+			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
 			.build();
 
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",

@@ -61,8 +61,8 @@ public class OpenAiFunctionCallbackIT {
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatModel.call(
-					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
+			ChatResponse response = chatModel
+				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -80,8 +80,8 @@ public class OpenAiFunctionCallbackIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'WeatherInfo'");
 
-			Flux<ChatResponse> response = chatModel.stream(
-					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
+			Flux<ChatResponse> response = chatModel
+				.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()

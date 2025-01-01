@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
@@ -47,7 +48,7 @@ public class MoonshotChatCompletionRequestTest {
 
 	@Test
 	void chatCompletionRequestWithOptionsTest() {
-		var options = MoonshotChatOptions.builder().withTemperature(0.5).withTopP(0.8).build();
+		var options = MoonshotChatOptions.builder().temperature(0.5).topP(0.8).build();
 		var request = this.chatModel.createRequest(new Prompt("test content", options), true);
 
 		assertThat(request.messages().size()).isEqualTo(1);

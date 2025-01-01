@@ -184,7 +184,7 @@ public class BedrockNovaChatClientIT {
 				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.withRegion(Region.US_EAST_1)
 				.withTimeout(Duration.ofSeconds(120))
-				.withDefaultOptions(FunctionCallingOptions.builder().withModel(modelId).build())
+				.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
 				.build();
 		}
 

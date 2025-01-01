@@ -66,11 +66,11 @@ public class VertexAiChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
-			.withTemperature(0.7)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withMaxOutputTokens(2048)
-			.withTopP(1.0)
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
+			.temperature(0.7)
+			.stopSequences(List.of("this-is-the-end"))
+			.maxOutputTokens(2048)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -88,11 +88,11 @@ public class VertexAiChatModelObservationIT {
 	void observationForStreamingOperation() {
 
 		var options = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
-			.withTemperature(0.7)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withMaxOutputTokens(2048)
-			.withTopP(1.0)
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
+			.temperature(0.7)
+			.stopSequences(List.of("this-is-the-end"))
+			.maxOutputTokens(2048)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -178,9 +178,7 @@ public class VertexAiChatModelObservationIT {
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi,
 				TestObservationRegistry observationRegistry) {
 			return new VertexAiGeminiChatModel(vertexAi,
-					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
-						.build(),
+					VertexAiGeminiChatOptions.builder().model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO).build(),
 					null, List.of(), RetryTemplate.defaultInstance(), observationRegistry);
 		}
 

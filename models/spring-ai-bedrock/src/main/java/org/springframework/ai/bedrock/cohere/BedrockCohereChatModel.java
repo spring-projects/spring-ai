@@ -42,7 +42,10 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 
 	private final CohereChatBedrockApi chatApi;
@@ -92,16 +95,16 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		var request = CohereChatRequest.builder(promptValue)
-			.withTemperature(this.defaultOptions.getTemperature())
-			.withTopP(this.defaultOptions.getTopP())
-			.withTopK(this.defaultOptions.getTopK())
-			.withMaxTokens(this.defaultOptions.getMaxTokens())
-			.withStopSequences(this.defaultOptions.getStopSequences())
-			.withReturnLikelihoods(this.defaultOptions.getReturnLikelihoods())
-			.withStream(stream)
-			.withNumGenerations(this.defaultOptions.getNumGenerations())
-			.withLogitBias(this.defaultOptions.getLogitBias())
-			.withTruncate(this.defaultOptions.getTruncate())
+			.temperature(this.defaultOptions.getTemperature())
+			.topP(this.defaultOptions.getTopP())
+			.topK(this.defaultOptions.getTopK())
+			.maxTokens(this.defaultOptions.getMaxTokens())
+			.stopSequences(this.defaultOptions.getStopSequences())
+			.returnLikelihoods(this.defaultOptions.getReturnLikelihoods())
+			.stream(stream)
+			.numGenerations(this.defaultOptions.getNumGenerations())
+			.logitBias(this.defaultOptions.getLogitBias())
+			.truncate(this.defaultOptions.getTruncate())
 			.build();
 
 		if (prompt.getOptions() != null) {

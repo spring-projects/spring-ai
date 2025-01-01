@@ -43,6 +43,7 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
  * </ul>
  *
  * @author Geng Rong
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -142,11 +143,29 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 			this.options = new ZhiPuAiImageOptions();
 		}
 
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withUser(String user) {
 			this.options.setUser(user);
 			return this;

@@ -106,10 +106,10 @@ For example to override the ZhiPuAI specific options such as quality and the num
 ImageResponse response = zhiPuAiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
         ZhiPuAiImageOptions.builder()
-                .withQuality("hd")
-                .withN(4)
-                .withHeight(1024)
-                .withWidth(1024).build())
+                .quality("hd")
+                .N(4)
+                .height(1024)
+                .width(1024).build())
 
 );
 ----

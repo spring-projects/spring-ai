@@ -88,7 +88,7 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OCIEmbeddingOptions.builder()
-            .withModel("my-other-embedding-model")
+            .model("my-other-embedding-model")
             .build()
 ));
 ----
@@ -164,9 +164,9 @@ var aiClient = GenerativeAiInferenceClient.builder()
     .region(Region.valueOf(this.REGION))
     .build(this.authProvider);
 var options = OCIEmbeddingOptions.builder()
-    .withModel(this.EMBEDDING_MODEL)
-    .withCompartment(this.COMPARTMENT_ID)
-    .withServingMode("on-demand")
+    .model(this.EMBEDDING_MODEL)
+    .compartment(this.COMPARTMENT_ID)
+    .servingMode("on-demand")
     .build();
 var embeddingModel = new OCIEmbeddingModel(this.aiClient, this.options);
 List<Double> embedding = this.embeddingModel.embed(new Document("How many provinces are in Canada?"));

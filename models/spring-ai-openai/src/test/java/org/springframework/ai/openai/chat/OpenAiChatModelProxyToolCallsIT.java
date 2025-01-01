@@ -123,7 +123,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -197,7 +197,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -281,7 +281,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -315,7 +315,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -361,7 +361,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, List<FunctionCallback> toolFunctionCallbacks) {
 			// enable the proxy tool calls option.
-			var options = OpenAiChatOptions.builder().withModel(DEFAULT_MODEL).withProxyToolCalls(true).build();
+			var options = OpenAiChatOptions.builder().model(DEFAULT_MODEL).proxyToolCalls(true).build();
 
 			return new OpenAiChatModel(openAiApi, options, null, toolFunctionCallbacks,
 					RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);

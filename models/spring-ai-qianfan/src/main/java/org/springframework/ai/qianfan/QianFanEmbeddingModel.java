@@ -90,7 +90,7 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public QianFanEmbeddingModel(QianFanApi qianFanApi, MetadataMode metadataMode) {
 		this(qianFanApi, metadataMode,
-				QianFanEmbeddingOptions.builder().withModel(QianFanApi.DEFAULT_EMBEDDING_MODEL).build());
+				QianFanEmbeddingOptions.builder().model(QianFanApi.DEFAULT_EMBEDDING_MODEL).build());
 	}
 
 	/**
@@ -206,8 +206,8 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return QianFanEmbeddingOptions.builder()
-			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
+			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.user(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
 			.build();
 	}
 

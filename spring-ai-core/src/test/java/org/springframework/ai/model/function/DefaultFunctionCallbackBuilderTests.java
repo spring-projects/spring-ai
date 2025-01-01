@@ -233,7 +233,7 @@ class DefaultFunctionCallbackBuilderTests {
 
 	@Test
 	void whenMethodArgumentTypesIsNullThenThrow() {
-		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName", null))
+		assertThatThrownBy(() -> FunctionCallback.builder().method("methodName", (Class<?>[]) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Argument types must not be null");
 	}

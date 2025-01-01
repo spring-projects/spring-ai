@@ -41,6 +41,7 @@ import org.springframework.util.StringUtils;
  * single AssistantMessage. Job is performed in parallel to the chat response processing.
  *
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class MessageAggregator {
@@ -59,8 +60,8 @@ public class MessageAggregator {
 		}), aggregatedChatResponse -> {
 
 			AdvisedResponse aggregatedAdvisedResponse = AdvisedResponse.builder()
-				.withResponse(aggregatedChatResponse)
-				.withAdviseContext(adviseContext.get())
+				.response(aggregatedChatResponse)
+				.adviseContext(adviseContext.get())
 				.build();
 
 			aggregationHandler.accept(aggregatedAdvisedResponse);
@@ -146,11 +147,11 @@ public class MessageAggregator {
 					metadataUsageTotalTokensRef.get());
 
 			var chatResponseMetadata = ChatResponseMetadata.builder()
-				.withId(metadataIdRef.get())
-				.withModel(metadataModelRef.get())
-				.withRateLimit(metadataRateLimitRef.get())
-				.withUsage(usage)
-				.withPromptMetadata(metadataPromptMetadataRef.get())
+				.id(metadataIdRef.get())
+				.model(metadataModelRef.get())
+				.rateLimit(metadataRateLimitRef.get())
+				.usage(usage)
+				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(

@@ -49,6 +49,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -68,9 +69,9 @@ public class MoonshotRetryTests {
 
 		this.chatModel = new MoonshotChatModel(this.moonshotApi,
 				MoonshotChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_32K.getValue())
+					.temperature(0.7)
+					.topP(1.0)
+					.model(MoonshotApi.ChatModel.MOONSHOT_V1_32K.getValue())
 					.build(),
 				null, retryTemplate);
 	}

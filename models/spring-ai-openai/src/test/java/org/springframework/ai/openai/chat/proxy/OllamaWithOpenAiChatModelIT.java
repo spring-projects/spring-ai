@@ -135,7 +135,7 @@ class OllamaWithOpenAiChatModelIT {
 	@Test
 	@Disabled("Not supported by the current Ollama API")
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
+		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 
@@ -268,11 +268,11 @@ class OllamaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withModel(modelName)
+			.model(modelName)
 			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
 			// (which defaults to "auto") Ollama defaults to "nono"
-			.withToolChoice("auto")
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.toolChoice("auto")
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -296,11 +296,11 @@ class OllamaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withModel(modelName)
+			.model(modelName)
 			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
 			// (which defaults to "auto") Ollama defaults to "nono"
-			.withToolChoice("auto")
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.toolChoice("auto")
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -332,7 +332,7 @@ class OllamaWithOpenAiChatModelIT {
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
@@ -351,7 +351,7 @@ class OllamaWithOpenAiChatModelIT {
 					.build()));
 
 		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
@@ -370,7 +370,7 @@ class OllamaWithOpenAiChatModelIT {
 					.build()));
 
 		Flux<ChatResponse> response = this.chatModel
-			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		String content = response.collectList()
 			.block()
@@ -390,7 +390,7 @@ class OllamaWithOpenAiChatModelIT {
 	void validateCallResponseMetadata(String model) {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(model).build())
+				.options(OpenAiChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -418,7 +418,7 @@ class OllamaWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().withModel(DEFAULT_OLLAMA_MODEL).build());
+			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().model(DEFAULT_OLLAMA_MODEL).build());
 		}
 
 	}

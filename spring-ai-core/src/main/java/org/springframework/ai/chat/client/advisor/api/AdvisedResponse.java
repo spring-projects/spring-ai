@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -32,6 +33,7 @@ import org.springframework.util.Assert;
  * @param adviseContext the context to advise the response
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Object> adviseContext) {
@@ -62,7 +64,7 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 	 */
 	public static Builder from(AdvisedResponse advisedResponse) {
 		Assert.notNull(advisedResponse, "advisedResponse cannot be null");
-		return new Builder().withResponse(advisedResponse.response).withAdviseContext(advisedResponse.adviseContext);
+		return new Builder().response(advisedResponse.response).adviseContext(advisedResponse.adviseContext);
 	}
 
 	/**
@@ -94,7 +96,7 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 		 * @param response the chat response
 		 * @return the builder
 		 */
-		public Builder withResponse(@Nullable ChatResponse response) {
+		public Builder response(@Nullable ChatResponse response) {
 			this.response = response;
 			return this;
 		}
@@ -104,6 +106,24 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 		 * @param adviseContext the context to advise the response
 		 * @return the builder
 		 */
+		public Builder adviseContext(Map<String, Object> adviseContext) {
+			this.adviseContext = adviseContext;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #response(ChatResponse)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withResponse(@Nullable ChatResponse response) {
+			this.response = response;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #adviseContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withAdviseContext(Map<String, Object> adviseContext) {
 			this.adviseContext = adviseContext;
 			return this;

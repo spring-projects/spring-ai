@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Ricken Bazolo
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
@@ -51,7 +52,7 @@ public class MistralAiChatCompletionRequestTest {
 	@Test
 	void chatCompletionRequestWithOptionsTest() {
 
-		var options = MistralAiChatOptions.builder().withTemperature(0.5).withTopP(0.8).build();
+		var options = MistralAiChatOptions.builder().temperature(0.5).topP(0.8).build();
 
 		var request = this.chatModel.createRequest(new Prompt("test content", options), true);
 

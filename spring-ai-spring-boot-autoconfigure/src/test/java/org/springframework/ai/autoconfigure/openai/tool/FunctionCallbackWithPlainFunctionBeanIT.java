@@ -41,7 +41,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
@@ -81,7 +80,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("turnLivingRoomLightOn").build()));
+					OpenAiChatOptions.builder().function("turnLivingRoomLightOn").build()));
 
 			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(1);
@@ -99,7 +98,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("turnLivingRoomLightOnSupplier").build()));
+					OpenAiChatOptions.builder().function("turnLivingRoomLightOnSupplier").build()));
 
 			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(1);
@@ -117,7 +116,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withFunction("turnLight").build()));
+				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("turnLight").build()));
 
 			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(2);
@@ -136,7 +135,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("turnLightConsumer").build()));
+					OpenAiChatOptions.builder().function("turnLightConsumer").build()));
 
 			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(2);
@@ -156,8 +155,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"Please schedule a train from San Francisco to Los Angeles on 2023-12-25");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.withFunction("trainReservation")
+			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.function("trainReservation")
 				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
@@ -187,8 +186,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder()
-						.withFunction("weatherFunctionWithContext")
-						.withToolContext(Map.of("sessionId", "123"))
+						.function("weatherFunctionWithContext")
+						.toolContext(Map.of("sessionId", "123"))
 						.build()));
 
 			logger.info("Response: {}", response);
@@ -219,8 +218,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder()
-						.withFunction("weatherFunctionWithClassBiFunction")
-						.withToolContext(Map.of("sessionId", "123"))
+						.function("weatherFunctionWithClassBiFunction")
+						.toolContext(Map.of("sessionId", "123"))
 						.build()));
 
 			logger.info("Response: {}", response);
@@ -240,8 +239,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+			ChatResponse response = chatModel.call(
+					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("weatherFunction").build()));
 
 			logger.info("Response: {}", response);
 
@@ -249,7 +248,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			// Test weatherFunctionTwo
 			response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+					OpenAiChatOptions.builder().function("weatherFunctionTwo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -267,8 +266,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.withFunction("weatherFunction")
+			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.function("weatherFunction")
 				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
@@ -289,8 +288,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+			Flux<ChatResponse> response = chatModel.stream(
+					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("weatherFunction").build()));
 
 			String content = response.collectList()
 				.block()
@@ -306,7 +305,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			// Test weatherFunctionTwo
 			response = chatModel.stream(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+					OpenAiChatOptions.builder().function("weatherFunctionTwo").build()));
 
 			content = response.collectList()
 				.block()

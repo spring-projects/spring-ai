@@ -50,16 +50,16 @@ public class OllamaApiIT extends BaseOllamaIT {
 	@Test
 	public void chat() {
 		var request = ChatRequest.builder(MODEL)
-			.withStream(false)
-			.withMessages(List.of(
+			.stream(false)
+			.messages(List.of(
 					Message.builder(Role.SYSTEM)
-						.withContent("You are geography teacher. You are talking to a student.")
+						.content("You are geography teacher. You are talking to a student.")
 						.build(),
 					Message.builder(Role.USER)
-						.withContent("What is the capital of Bulgaria and what is the size? "
+						.content("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.withOptions(OllamaOptions.create().withTemperature(0.9))
+			.options(OllamaOptions.builder().temperature(0.9).build())
 			.build();
 
 		ChatResponse response = getOllamaApi().chat(request);
@@ -76,11 +76,11 @@ public class OllamaApiIT extends BaseOllamaIT {
 	@Test
 	public void streamingChat() {
 		var request = ChatRequest.builder(MODEL)
-			.withStream(true)
-			.withMessages(List.of(Message.builder(Role.USER)
-				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
+			.stream(true)
+			.messages(List.of(Message.builder(Role.USER)
+				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
+			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
 			.build();
 
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);

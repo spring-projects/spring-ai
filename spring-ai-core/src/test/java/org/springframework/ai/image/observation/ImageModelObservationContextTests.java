@@ -36,7 +36,7 @@ class ImageModelObservationContextTests {
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
 			.provider("superprovider")
-			.requestOptions(ImageOptionsBuilder.builder().withModel("supersun").build())
+			.requestOptions(ImageOptionsBuilder.builder().model("supersun").build())
 			.build();
 
 		assertThat(observationContext).isNotNull();

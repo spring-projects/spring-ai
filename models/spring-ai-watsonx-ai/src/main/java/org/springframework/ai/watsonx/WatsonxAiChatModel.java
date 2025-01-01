@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Pablo Sanchidrian Herrera
  * @author John Jario Moreno Rojas
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
@@ -60,14 +61,14 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 	public WatsonxAiChatModel(WatsonxAiApi watsonxAiApi) {
 		this(watsonxAiApi,
 				WatsonxAiChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withTopK(50)
-					.withDecodingMethod("greedy")
-					.withMaxNewTokens(20)
-					.withMinNewTokens(0)
-					.withRepetitionPenalty(1.0)
-					.withStopSequences(List.of())
+					.temperature(0.7)
+					.topP(1.0)
+					.topK(50)
+					.decodingMethod("greedy")
+					.maxNewTokens(20)
+					.minNewTokens(0)
+					.repetitionPenalty(1.0)
+					.stopSequences(List.of())
 					.build());
 	}
 

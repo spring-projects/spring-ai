@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class VectorStoreObservationContext extends Observation.Context {
@@ -184,36 +185,99 @@ public class VectorStoreObservationContext extends Observation.Context {
 			this.context = new VectorStoreObservationContext(databaseSystem, operationName);
 		}
 
+		public Builder collectionName(String collectionName) {
+			this.context.setCollectionName(collectionName);
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.context.setDimensions(dimensions);
+			return this;
+		}
+
+		public Builder fieldName(@Nullable String fieldName) {
+			this.context.setFieldName(fieldName);
+			return this;
+		}
+
+		public Builder namespace(String namespace) {
+			this.context.setNamespace(namespace);
+			return this;
+		}
+
+		public Builder queryRequest(SearchRequest request) {
+			this.context.setQueryRequest(request);
+			return this;
+		}
+
+		public Builder queryResponse(List<Document> documents) {
+			this.context.setQueryResponse(documents);
+			return this;
+		}
+
+		public Builder similarityMetric(String similarityMetric) {
+			this.context.setSimilarityMetric(similarityMetric);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #collectionName(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withCollectionName(String collectionName) {
 			this.context.setCollectionName(collectionName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #dimensions(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDimensions(Integer dimensions) {
 			this.context.setDimensions(dimensions);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #fieldName(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFieldName(@Nullable String fieldName) {
 			this.context.setFieldName(fieldName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #namespace(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withNamespace(String namespace) {
 			this.context.setNamespace(namespace);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #queryRequest(SearchRequest)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withQueryRequest(SearchRequest request) {
 			this.context.setQueryRequest(request);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #queryResponse(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withQueryResponse(List<Document> documents) {
 			this.context.setQueryResponse(documents);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #similarityMetric(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSimilarityMetric(String similarityMetric) {
 			this.context.setSimilarityMetric(similarityMetric);
 			return this;

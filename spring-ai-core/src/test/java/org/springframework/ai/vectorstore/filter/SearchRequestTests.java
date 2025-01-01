@@ -26,31 +26,34 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 public class SearchRequestTests {
 
 	@Test
 	public void createDefaults() {
-		var emptyRequest = SearchRequest.defaults();
+		var emptyRequest = SearchRequest.builder().build();
 		assertThat(emptyRequest.getQuery()).isEqualTo("");
 		checkDefaults(emptyRequest);
 	}
 
 	@Test
 	public void createQuery() {
-		var emptyRequest = SearchRequest.query("New Query");
+		var emptyRequest = SearchRequest.builder().query("New Query").build();
 		assertThat(emptyRequest.getQuery()).isEqualTo("New Query");
 		checkDefaults(emptyRequest);
 	}
 
 	@Test
 	public void createFrom() {
-		var originalRequest = SearchRequest.query("New Query")
-			.withTopK(696)
-			.withSimilarityThreshold(0.678)
-			.withFilterExpression("country == 'NL'");
+		var originalRequest = SearchRequest.builder()
+			.query("New Query")
+			.topK(696)
+			.similarityThreshold(0.678)
+			.filterExpression("country == 'NL'")
+			.build();
 
-		var newRequest = SearchRequest.from(originalRequest);
+		var newRequest = SearchRequest.from(originalRequest).build();
 
 		assertThat(newRequest).isNotSameAs(originalRequest);
 		assertThat(newRequest.getQuery()).isEqualTo(originalRequest.getQuery());
@@ -60,71 +63,76 @@ public class SearchRequestTests {
 	}
 
 	@Test
-	public void withQuery() {
-		var emptyRequest = SearchRequest.defaults();
+	public void queryString() {
+		var emptyRequest = SearchRequest.builder().build();
 		assertThat(emptyRequest.getQuery()).isEqualTo("");
 
-		emptyRequest.withQuery("New Query");
-		assertThat(emptyRequest.getQuery()).isEqualTo("New Query");
+		var emptyRequest1 = SearchRequest.from(emptyRequest).query("New Query").build();
+		assertThat(emptyRequest1.getQuery()).isEqualTo("New Query");
 	}
 
 	@Test
-	public void withSimilarityThreshold() {
-		var request = SearchRequest.query("Test").withSimilarityThreshold(0.678);
+	public void similarityThreshold() {
+		var request = SearchRequest.builder().query("Test").similarityThreshold(0.678).build();
 		assertThat(request.getSimilarityThreshold()).isEqualTo(0.678);
 
-		request.withSimilarityThreshold(0.9);
-		assertThat(request.getSimilarityThreshold()).isEqualTo(0.9);
+		var request1 = SearchRequest.from(request).similarityThreshold(0.9).build();
+		assertThat(request1.getSimilarityThreshold()).isEqualTo(0.9);
 
-		assertThatThrownBy(() -> request.withSimilarityThreshold(-1)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> SearchRequest.from(request).similarityThreshold(-1))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Similarity threshold must be in [0,1] range.");
 
-		assertThatThrownBy(() -> request.withSimilarityThreshold(1.1)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> SearchRequest.from(request).similarityThreshold(1.1))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Similarity threshold must be in [0,1] range.");
 
 	}
 
 	@Test
-	public void withTopK() {
-		var request = SearchRequest.query("Test").withTopK(66);
+	public void topK() {
+		var request = SearchRequest.builder().query("Test").topK(66).build();
 		assertThat(request.getTopK()).isEqualTo(66);
 
-		request.withTopK(89);
-		assertThat(request.getTopK()).isEqualTo(89);
+		var request1 = SearchRequest.from(request).topK(89).build();
+		assertThat(request1.getTopK()).isEqualTo(89);
 
-		assertThatThrownBy(() -> request.withTopK(-1)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> SearchRequest.from(request).topK(-1)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("TopK should be positive.");
 
 	}
 
 	@Test
-	public void withFilterExpression() {
+	public void filterExpression() {
 
-		var request = SearchRequest.query("Test").withFilterExpression("country == 'BG' && year >= 2022");
+		var request = SearchRequest.builder().query("Test").filterExpression("country == 'BG' && year >= 2022").build();
 		assertThat(request.getFilterExpression()).isEqualTo(new Filter.Expression(Filter.ExpressionType.AND,
 				new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("country"), new Filter.Value("BG")),
 				new Filter.Expression(Filter.ExpressionType.GTE, new Filter.Key("year"), new Filter.Value(2022))));
 		assertThat(request.hasFilterExpression()).isTrue();
 
-		request.withFilterExpression("active == true");
-		assertThat(request.getFilterExpression()).isEqualTo(
+		var request1 = SearchRequest.from(request).filterExpression("active == true").build();
+		assertThat(request1.getFilterExpression()).isEqualTo(
 				new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("active"), new Filter.Value(true)));
-		assertThat(request.hasFilterExpression()).isTrue();
+		assertThat(request1.hasFilterExpression()).isTrue();
 
-		request.withFilterExpression(new FilterExpressionBuilder().eq("country", "NL").build());
-		assertThat(request.getFilterExpression()).isEqualTo(
+		var request2 = SearchRequest.from(request)
+			.filterExpression(new FilterExpressionBuilder().eq("country", "NL").build())
+			.build();
+
+		assertThat(request2.getFilterExpression()).isEqualTo(
 				new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("country"), new Filter.Value("NL")));
-		assertThat(request.hasFilterExpression()).isTrue();
+		assertThat(request2.hasFilterExpression()).isTrue();
 
-		request.withFilterExpression((String) null);
-		assertThat(request.getFilterExpression()).isNull();
-		assertThat(request.hasFilterExpression()).isFalse();
+		var request3 = SearchRequest.from(request).filterExpression((String) null).build();
+		assertThat(request3.getFilterExpression()).isNull();
+		assertThat(request3.hasFilterExpression()).isFalse();
 
-		request.withFilterExpression((Filter.Expression) null);
-		assertThat(request.getFilterExpression()).isNull();
-		assertThat(request.hasFilterExpression()).isFalse();
+		var request4 = SearchRequest.from(request).filterExpression((Filter.Expression) null).build();
+		assertThat(request4.getFilterExpression()).isNull();
+		assertThat(request4.hasFilterExpression()).isFalse();
 
-		assertThatThrownBy(() -> request.withFilterExpression("FooBar"))
+		assertThatThrownBy(() -> SearchRequest.from(request).filterExpression("FooBar"))
 			.isInstanceOf(FilterExpressionParseException.class)
 			.hasMessageContaining("Error: no viable alternative at input 'FooBar'");
 

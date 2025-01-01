@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockLlamaChatOptions implements ChatOptions {
@@ -56,9 +57,9 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 	}
 
 	public static BedrockLlamaChatOptions fromOptions(BedrockLlamaChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withMaxGenLen(fromOptions.getMaxGenLen())
+		return builder().temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.maxGenLen(fromOptions.getMaxGenLen())
 			.build();
 	}
 
@@ -138,16 +139,43 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 
 		private BedrockLlamaChatOptions options = new BedrockLlamaChatOptions();
 
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder maxGenLen(Integer maxGenLen) {
+			this.options.setMaxGenLen(maxGenLen);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxGenLen(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxGenLen(Integer maxGenLen) {
 			this.options.setMaxGenLen(maxGenLen);
 			return this;

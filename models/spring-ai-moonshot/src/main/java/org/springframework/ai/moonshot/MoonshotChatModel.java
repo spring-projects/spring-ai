@@ -74,6 +74,7 @@ import org.springframework.util.CollectionUtils;
  * MoonshotChatModel is a {@link ChatModel} implementation that uses the Moonshot
  *
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 public class MoonshotChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
@@ -109,7 +110,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	 * Moonshot Chat API.
 	 */
 	public MoonshotChatModel(MoonshotApi moonshotApi) {
-		this(moonshotApi, MoonshotChatOptions.builder().withModel(MoonshotApi.DEFAULT_CHAT_MODEL).build());
+		this(moonshotApi, MoonshotChatOptions.builder().model(MoonshotApi.DEFAULT_CHAT_MODEL).build());
 	}
 
 	/**
@@ -317,10 +318,10 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "Moonshot ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? MoonshotUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? MoonshotUsage.from(result.usage()) : new EmptyUsage())
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
 	}
 
@@ -411,7 +412,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					MoonshotChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					MoonshotChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 

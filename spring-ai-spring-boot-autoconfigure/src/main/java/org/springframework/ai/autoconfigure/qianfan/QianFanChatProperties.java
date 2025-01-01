@@ -42,8 +42,8 @@ public class QianFanChatProperties extends QianFanParentProperties {
 
 	@NestedConfigurationProperty
 	private QianFanChatOptions options = QianFanChatOptions.builder()
-		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE)
+		.model(DEFAULT_CHAT_MODEL)
+		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public QianFanChatOptions getOptions() {

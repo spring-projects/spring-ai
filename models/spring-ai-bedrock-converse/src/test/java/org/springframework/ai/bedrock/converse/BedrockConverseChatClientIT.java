@@ -372,7 +372,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(FunctionCallingOptions.builder().withModel(modelName).build())
+				.options(FunctionCallingOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -394,7 +394,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(FunctionCallingOptions.builder().withModel(modelName).build())
+		.options(FunctionCallingOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();

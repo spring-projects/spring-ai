@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * Configuration properties for Moonshot chat client.
  *
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 @ConfigurationProperties(MoonshotChatProperties.CONFIG_PREFIX)
 public class MoonshotChatProperties extends MoonshotParentProperties {
@@ -42,8 +43,8 @@ public class MoonshotChatProperties extends MoonshotParentProperties {
 
 	@NestedConfigurationProperty
 	private MoonshotChatOptions options = MoonshotChatOptions.builder()
-		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE)
+		.model(DEFAULT_CHAT_MODEL)
+		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public MoonshotChatOptions getOptions() {

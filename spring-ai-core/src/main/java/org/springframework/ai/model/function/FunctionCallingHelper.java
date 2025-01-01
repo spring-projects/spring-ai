@@ -34,7 +34,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -45,7 +44,7 @@ import org.springframework.util.CollectionUtils;
 public class FunctionCallingHelper extends AbstractToolCallSupport {
 
 	public FunctionCallingHelper() {
-		this(null, PortableFunctionCallingOptions.builder().build(), List.of());
+		this(null, FunctionCallingOptions.builder().build(), List.of());
 	}
 
 	public FunctionCallingHelper(FunctionCallbackResolver functionCallbackResolver,

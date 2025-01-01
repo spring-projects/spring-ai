@@ -100,11 +100,9 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	@Deprecated(since = "1.0.0-M5", forRemoval = true)
 	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
 			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
+			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 
-		this(builder().chromaApi(chromaApi)
-			.embeddingModel(embeddingModel)
-			.collectionName(collectionName)
+		this(builder(chromaApi, embeddingModel).collectionName(collectionName)
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
@@ -112,12 +110,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	/**
-	 * @param builder {@link Builder} for chroma vector store
+	 * @param builder {@link VectorStore.Builder} for chroma vector store
 	 */
-	protected ChromaVectorStore(ChromaBuilder builder) {
+	protected ChromaVectorStore(Builder builder) {
 		super(builder);
-
-		Assert.notNull(builder.chromaApi, "ChromaApi must not be null");
 
 		this.chromaApi = builder.chromaApi;
 		this.collectionName = builder.collectionName;
@@ -136,6 +132,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		}
 	}
 
+	public static Builder builder(ChromaApi chromaApi, EmbeddingModel embeddingModel) {
+		return new Builder(chromaApi, embeddingModel);
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		if (!this.initialized) {
@@ -150,13 +150,11 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 							+ " doesn't exist and won't be created as the initializeSchema is set to false.");
 				}
 			}
-			this.collectionId = collection.id();
+			if (collection != null) {
+				this.collectionId = collection.id();
+			}
 			this.initialized = true;
 		}
-	}
-
-	public static ChromaBuilder builder() {
-		return new ChromaBuilder();
 	}
 
 	@Override
@@ -177,7 +175,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		for (Document document : documents) {
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
-			contents.add(document.getContent());
+			contents.add(document.getText());
 			embeddings.add(documentEmbeddings.get(documents.indexOf(document)));
 		}
 
@@ -272,13 +270,13 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName(this.collectionName + ":" + this.collectionId);
+			.dimensions(this.embeddingModel.dimensions())
+			.collectionName(this.collectionName + ":" + this.collectionId);
 	}
 
-	public static class ChromaBuilder extends AbstractVectorStoreBuilder<ChromaBuilder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		private ChromaApi chromaApi;
+		private final ChromaApi chromaApi;
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
@@ -290,10 +288,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeImmediately = false;
 
-		public ChromaBuilder chromaApi(ChromaApi chromaApi) {
+		private Builder(ChromaApi chromaApi, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
 			Assert.notNull(chromaApi, "ChromaApi must not be null");
 			this.chromaApi = chromaApi;
-			return this;
 		}
 
 		/**
@@ -302,7 +300,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if collectionName is null or empty
 		 */
-		public ChromaBuilder collectionName(String collectionName) {
+		public Builder collectionName(String collectionName) {
 			Assert.hasText(collectionName, "collectionName must not be null or empty");
 			this.collectionName = collectionName;
 			return this;
@@ -313,7 +311,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public ChromaBuilder initializeSchema(boolean initializeSchema) {
+		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
 		}
@@ -324,7 +322,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
-		public ChromaBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
@@ -336,7 +334,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if converter is null
 		 */
-		public ChromaBuilder filterExpressionConverter(FilterExpressionConverter converter) {
+		public Builder filterExpressionConverter(FilterExpressionConverter converter) {
 			Assert.notNull(converter, "filterExpressionConverter must not be null");
 			this.filterExpressionConverter = converter;
 			return this;
@@ -347,7 +345,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @param initialize true to initialize immediately, false otherwise
 		 * @return the builder instance
 		 */
-		public ChromaBuilder initializeImmediately(boolean initialize) {
+		public Builder initializeImmediately(boolean initialize) {
 			this.initializeImmediately = initialize;
 			return this;
 		}
@@ -358,7 +356,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 * @throws IllegalStateException if the builder is in an invalid state
 		 */
 		public ChromaVectorStore build() {
-			validate();
 			return new ChromaVectorStore(this);
 		}
 

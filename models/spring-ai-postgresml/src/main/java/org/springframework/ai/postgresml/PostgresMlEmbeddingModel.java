@@ -151,7 +151,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		PostgresMlEmbeddingOptions options = (this.defaultOptions != null) ? this.defaultOptions
 				: PostgresMlEmbeddingOptions.builder().build();
 
-		if (requestOptions != null && !EmbeddingOptions.EMPTY.equals(requestOptions)) {
+		if (requestOptions != null) {
 			options = ModelOptionsUtils.merge(requestOptions, options, PostgresMlEmbeddingOptions.class);
 		}
 

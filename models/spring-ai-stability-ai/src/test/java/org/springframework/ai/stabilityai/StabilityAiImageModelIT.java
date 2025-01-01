@@ -56,7 +56,7 @@ public class StabilityAiImageModelIT {
 	void imageAsBase64Test() throws IOException {
 
 		StabilityAiImageOptions imageOptions = StabilityAiImageOptions.builder()
-			.withStylePreset(StyleEnum.PHOTOGRAPHIC)
+			.stylePreset(StyleEnum.PHOTOGRAPHIC)
 			.build();
 
 		var instructions = """

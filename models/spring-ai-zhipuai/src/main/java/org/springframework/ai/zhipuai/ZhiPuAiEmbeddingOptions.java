@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -67,6 +68,15 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 			this.options = new ZhiPuAiEmbeddingOptions();
 		}
 
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;

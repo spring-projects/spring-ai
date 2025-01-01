@@ -22,6 +22,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
 import org.springframework.ai.watsonx.api.WatsonxAiEmbeddingRequest;
@@ -73,7 +74,7 @@ public class WatsonxAiEmbeddingModelTest {
 	void createRequestWithNoOptions() {
 		List<String> inputs = List.of("test");
 		WatsonxAiEmbeddingRequest request = this.embeddingModel.watsonxAiEmbeddingRequest(inputs,
-				EmbeddingOptions.EMPTY);
+				EmbeddingOptionsBuilder.builder().build());
 
 		assertThat(request.getModel()).isEqualTo(WatsonxAiEmbeddingOptions.DEFAULT_MODEL);
 		assertThat(request.getInputs().size()).isEqualTo(inputs.size());

@@ -30,6 +30,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class VertexAiEmbeddingConnectionDetails {
@@ -125,26 +126,72 @@ public class VertexAiEmbeddingConnectionDetails {
 		 */
 		private PredictionServiceSettings predictionServiceSettings;
 
+		public Builder apiEndpoint(String endpoint) {
+			this.endpoint = endpoint;
+			return this;
+		}
+
+		public Builder projectId(String projectId) {
+			this.projectId = projectId;
+			return this;
+		}
+
+		public Builder location(String location) {
+			this.location = location;
+			return this;
+		}
+
+		public Builder publisher(String publisher) {
+			this.publisher = publisher;
+			return this;
+		}
+
+		public Builder predictionServiceSettings(PredictionServiceSettings predictionServiceSettings) {
+			this.predictionServiceSettings = predictionServiceSettings;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #apiEndpoint(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withApiEndpoint(String endpoint) {
 			this.endpoint = endpoint;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #projectId(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withProjectId(String projectId) {
 			this.projectId = projectId;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #location(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLocation(String location) {
 			this.location = location;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #publisher(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPublisher(String publisher) {
 			this.publisher = publisher;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #predictionServiceSettings(PredictionServiceSettings)}
+		 * instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPredictionServiceSettings(PredictionServiceSettings predictionServiceSettings) {
 			this.predictionServiceSettings = predictionServiceSettings;
 			return this;

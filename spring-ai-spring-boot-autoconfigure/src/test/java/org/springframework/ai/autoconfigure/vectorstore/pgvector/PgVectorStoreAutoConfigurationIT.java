@@ -33,7 +33,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
-import org.springframework.ai.vectorstore.PgVectorStore;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -115,7 +115,7 @@ public class PgVectorStoreAutoConfigurationIT {
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression?").withTopK(1));
+				.similaritySearch(SearchRequest.builder().query("What is Great Depression?").topK(1).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -132,7 +132,7 @@ public class PgVectorStoreAutoConfigurationIT {
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.PG_VECTOR,
 					VectorStoreObservationContext.Operation.DELETE);
 
-			results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+			results = vectorStore.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 			assertThat(results).hasSize(0);
 			observationRegistry.clear();
 		});

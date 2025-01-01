@@ -75,7 +75,8 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 		this.vectorStore.add(documents);
 		Thread.sleep(5000); // Await a second for the document to be indexed
 
-		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+		List<Document> results = this.vectorStore
+			.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
@@ -87,7 +88,8 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 		// Remove all documents from the store
 		this.vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
 
-		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
+		List<Document> results2 = this.vectorStore
+			.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
 		assertThat(results2).isEmpty();
 	}
 

@@ -43,7 +43,7 @@ public class StabilityAiAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			ImageModel imageModel = context.getBean(ImageModel.class);
 			StabilityAiImageOptions imageOptions = StabilityAiImageOptions.builder()
-				.withStylePreset(StyleEnum.PHOTOGRAPHIC)
+				.stylePreset(StyleEnum.PHOTOGRAPHIC)
 				.build();
 
 			var instructions = """

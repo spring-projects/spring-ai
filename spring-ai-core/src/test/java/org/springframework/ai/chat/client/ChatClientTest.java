@@ -40,10 +40,9 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.function.DefaultFunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.MimeTypeUtils;
 
@@ -199,7 +198,7 @@ public class ChatClientTest {
 	@Test
 	void mutateDefaults() {
 
-		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
+		FunctionCallingOptions options = new DefaultFunctionCallingOptions();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -331,7 +330,7 @@ public class ChatClientTest {
 	@Test
 	void mutatePrompt() {
 
-		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
+		FunctionCallingOptions options = new DefaultFunctionCallingOptions();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
 
 		given(this.chatModel.call(this.promptCaptor.capture()))

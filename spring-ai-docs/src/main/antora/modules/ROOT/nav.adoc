@@ -96,6 +96,7 @@
 ** xref:api/vectordbs/typesense.adoc[]
 ** xref:api/vectordbs/weaviate.adoc[]
 
+* xref:api/retrieval-augmented-generation.adoc[]
 * xref:observability/index.adoc[]
 * xref:api/prompt.adoc[]
 * xref:api/structured-output-converter.adoc[Structured Output]

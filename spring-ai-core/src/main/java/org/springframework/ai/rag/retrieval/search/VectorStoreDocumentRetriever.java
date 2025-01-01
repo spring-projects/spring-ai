@@ -75,10 +75,12 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 	@Override
 	public List<Document> retrieve(Query query) {
 		Assert.notNull(query, "query cannot be null");
-		var searchRequest = SearchRequest.query(query.text())
-			.withFilterExpression(this.filterExpression.get())
-			.withSimilarityThreshold(this.similarityThreshold)
-			.withTopK(this.topK);
+		var searchRequest = SearchRequest.builder()
+			.query(query.text())
+			.filterExpression(this.filterExpression.get())
+			.similarityThreshold(this.similarityThreshold)
+			.topK(this.topK)
+			.build();
 		return this.vectorStore.similaritySearch(searchRequest);
 	}
 

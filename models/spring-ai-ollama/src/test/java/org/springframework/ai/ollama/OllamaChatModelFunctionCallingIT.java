@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +61,8 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OllamaOptions.builder()
-			.withModel(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(MODEL)
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
@@ -86,8 +85,8 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OllamaOptions.builder()
-			.withModel(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(MODEL)
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
@@ -121,8 +120,8 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
-				.withOllamaApi(ollamaApi)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9))
+				.ollamaApi(ollamaApi)
+				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
 				.build();
 		}
 

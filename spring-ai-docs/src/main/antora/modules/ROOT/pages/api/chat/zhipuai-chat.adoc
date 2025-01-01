@@ -122,8 +122,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         ZhiPuAiChatOptions.builder()
-            .withModel(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
-            .withTemperature(0.5)
+            .model(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -205,9 +205,9 @@ Next, create a `ZhiPuAiChatModel` and use it for text generations:
 var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
 var chatModel = new ZhiPuAiChatModel(this.zhiPuAiApi, ZhiPuAiChatOptions.builder()
-                .withModel(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+                .model(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
 ChatResponse response = this.chatModel.call(

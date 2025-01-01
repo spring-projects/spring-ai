@@ -50,10 +50,10 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	@NestedConfigurationProperty
 	private OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
-		.withModel(DEFAULT_SPEECH_MODEL)
-		.withResponseFormat(DEFAULT_RESPONSE_FORMAT)
-		.withVoice(VOICE)
-		.withSpeed(SPEED)
+		.model(DEFAULT_SPEECH_MODEL)
+		.responseFormat(DEFAULT_RESPONSE_FORMAT)
+		.voice(VOICE)
+		.speed(SPEED)
 		.build();
 
 	public OpenAiAudioSpeechOptions getOptions() {

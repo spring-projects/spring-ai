@@ -18,9 +18,9 @@ package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
 import java.util.Map;
 
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.ConsistentLevel;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.MetadataField;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -41,7 +41,7 @@ public class WeaviateVectorStoreProperties {
 
 	private String objectClass = "SpringAiWeaviate";
 
-	private ConsistentLevel consistencyLevel = WeaviateVectorStoreConfig.ConsistentLevel.ONE;
+	private ConsistentLevel consistencyLevel = WeaviateVectorStore.ConsistentLevel.ONE;
 
 	/**
 	 * spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>

@@ -39,9 +39,9 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	@NestedConfigurationProperty
 	private OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
-		.withModel(DEFAULT_TRANSCRIPTION_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
-		.withResponseFormat(DEFAULT_RESPONSE_FORMAT)
+		.model(DEFAULT_TRANSCRIPTION_MODEL)
+		.temperature(DEFAULT_TEMPERATURE.floatValue())
+		.responseFormat(DEFAULT_RESPONSE_FORMAT)
 		.build();
 
 	public OpenAiAudioTranscriptionOptions getOptions() {

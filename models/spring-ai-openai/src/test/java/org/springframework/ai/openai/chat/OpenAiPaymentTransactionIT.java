@@ -223,10 +223,7 @@ public class OpenAiPaymentTransactionIT {
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackResolver functionCallbackResolver) {
 			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder()
-						.withModel(ChatModel.GPT_4_O_MINI.getName())
-						.withTemperature(0.1)
-						.build(),
+					OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build(),
 					functionCallbackResolver, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 		}
 

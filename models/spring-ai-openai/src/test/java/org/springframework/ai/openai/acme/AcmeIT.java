@@ -82,7 +82,7 @@ public class AcmeIT extends AbstractIT {
 		// Step 2 - Create embeddings and save to vector store
 
 		logger.info("Creating Embeddings...");
-		VectorStore vectorStore = new SimpleVectorStore(this.embeddingModel);
+		VectorStore vectorStore = SimpleVectorStore.builder(this.embeddingModel).build();
 
 		vectorStore.accept(textSplitter.apply(jsonReader.get()));
 

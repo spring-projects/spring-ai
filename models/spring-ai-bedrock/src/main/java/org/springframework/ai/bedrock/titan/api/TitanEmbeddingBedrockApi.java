@@ -143,15 +143,34 @@ public class TitanEmbeddingBedrockApi extends
 			private String inputText;
 			private String inputImage;
 
+			public Builder inputText(String inputText) {
+				this.inputText = inputText;
+				return this;
+			}
+
+			public Builder inputImage(String inputImage) {
+				this.inputImage = inputImage;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #inputText( String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withInputText(String inputText) {
 				this.inputText = inputText;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #inputImage( String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withInputImage(String inputImage) {
 				this.inputImage = inputImage;
 				return this;
 			}
+
 
 			public TitanEmbeddingRequest build() {
 				Assert.isTrue(this.inputText != null || this.inputImage != null,

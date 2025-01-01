@@ -61,8 +61,8 @@ public class VertexAiTextEmbeddingModelObservationIT {
 	void observationForEmbeddingOperation() {
 
 		var options = VertexAiTextEmbeddingOptions.builder()
-			.withModel(VertexAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName())
-			.withDimensions(768)
+			.model(VertexAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName())
+			.dimensions(768)
 			.build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
@@ -104,8 +104,8 @@ public class VertexAiTextEmbeddingModelObservationIT {
 		@Bean
 		public VertexAiEmbeddingConnectionDetails connectionDetails() {
 			return VertexAiEmbeddingConnectionDetails.builder()
-				.withProjectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
-				.withLocation(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
+				.projectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
+				.location(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 				.build();
 		}
 
@@ -114,7 +114,7 @@ public class VertexAiTextEmbeddingModelObservationIT {
 				ObservationRegistry observationRegistry) {
 
 			VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
-				.withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
+				.model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
 				.build();
 
 			return new VertexAiTextEmbeddingModel(connectionDetails, options, RetryUtils.DEFAULT_RETRY_TEMPLATE,

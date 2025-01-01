@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".*")
 public class MoonshotFunctionCallbackIT {
@@ -67,8 +68,8 @@ public class MoonshotFunctionCallbackIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					MoonshotChatOptions.builder().withFunction("WeatherInfo").build()));
+			ChatResponse response = chatModel
+				.call(new Prompt(List.of(userMessage), MoonshotChatOptions.builder().function("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -86,8 +87,8 @@ public class MoonshotFunctionCallbackIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
-					MoonshotChatOptions.builder().withFunction("WeatherInfo").build()));
+			Flux<ChatResponse> response = chatModel.stream(
+					new Prompt(List.of(userMessage), MoonshotChatOptions.builder().function("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()

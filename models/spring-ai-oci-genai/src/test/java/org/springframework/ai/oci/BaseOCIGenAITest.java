@@ -54,10 +54,7 @@ public class BaseOCIGenAITest {
 	}
 
 	public static OCICohereChatOptions.Builder options() {
-		return OCICohereChatOptions.builder()
-			.withModel(CHAT_MODEL_ID)
-			.withCompartment(COMPARTMENT_ID)
-			.withServingMode("on-demand");
+		return OCICohereChatOptions.builder().model(CHAT_MODEL_ID).compartment(COMPARTMENT_ID).servingMode("on-demand");
 	}
 
 }

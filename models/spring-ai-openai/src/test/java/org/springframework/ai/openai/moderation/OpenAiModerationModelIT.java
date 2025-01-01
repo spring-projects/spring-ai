@@ -43,7 +43,7 @@ public class OpenAiModerationModelIT extends AbstractIT {
 
 	@Test
 	void moderationAsUrlTestPositive() {
-		var options = ModerationOptionsBuilder.builder().withModel("text-moderation-stable").build();
+		var options = ModerationOptionsBuilder.builder().model("text-moderation-stable").build();
 
 		var instructions = """
 				I want to kill them.!".""";
@@ -97,7 +97,7 @@ public class OpenAiModerationModelIT extends AbstractIT {
 
 	@Test
 	void moderationAsUrlTestNegative() {
-		var options = ModerationOptionsBuilder.builder().withModel("text-moderation-stable").build();
+		var options = ModerationOptionsBuilder.builder().model("text-moderation-stable").build();
 
 		var instructions = """
 				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";

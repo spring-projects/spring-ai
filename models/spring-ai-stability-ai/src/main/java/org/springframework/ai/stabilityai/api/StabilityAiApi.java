@@ -137,51 +137,141 @@ public class StabilityAiApi {
 
 			}
 
+			public Builder textPrompts(List<TextPrompts> textPrompts) {
+				this.textPrompts = textPrompts;
+				return this;
+			}
+
+			public Builder height(Integer height) {
+				this.height = height;
+				return this;
+			}
+
+			public Builder width(Integer width) {
+				this.width = width;
+				return this;
+			}
+
+			public Builder cfgScale(Float cfgScale) {
+				this.cfgScale = cfgScale;
+				return this;
+			}
+
+			public Builder clipGuidancePreset(String clipGuidancePreset) {
+				this.clipGuidancePreset = clipGuidancePreset;
+				return this;
+			}
+
+			public Builder sampler(String sampler) {
+				this.sampler = sampler;
+				return this;
+			}
+
+			public Builder samples(Integer samples) {
+				this.samples = samples;
+				return this;
+			}
+
+			public Builder seed(Long seed) {
+				this.seed = seed;
+				return this;
+			}
+
+			public Builder steps(Integer steps) {
+				this.steps = steps;
+				return this;
+			}
+
+			public Builder stylePreset(String stylePreset) {
+				this.stylePreset = stylePreset;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #textPrompts(List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTextPrompts(List<TextPrompts> textPrompts) {
 				this.textPrompts = textPrompts;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #height(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withHeight(Integer height) {
 				this.height = height;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #width(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withWidth(Integer width) {
 				this.width = width;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #cfgScale(Float)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withCfgScale(Float cfgScale) {
 				this.cfgScale = cfgScale;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #clipGuidancePreset(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withClipGuidancePreset(String clipGuidancePreset) {
 				this.clipGuidancePreset = clipGuidancePreset;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #sampler(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSampler(String sampler) {
 				this.sampler = sampler;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #samples(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSamples(Integer samples) {
 				this.samples = samples;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #seed(Long)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSeed(Long seed) {
 				this.seed = seed;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #steps(Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withSteps(Integer steps) {
 				this.steps = steps;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #stylePreset(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withStylePreset(String stylePreset) {
 				this.stylePreset = stylePreset;
 				return this;

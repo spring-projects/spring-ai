@@ -41,12 +41,12 @@ public class BedrockAnthropic3CreateRequestTests {
 
 		var client = new BedrockAnthropic3ChatModel(this.anthropicChatApi,
 				Anthropic3ChatOptions.builder()
-					.withTemperature(66.6)
-					.withTopK(66)
-					.withTopP(0.66)
-					.withMaxTokens(666)
-					.withAnthropicVersion("X.Y.Z")
-					.withStopSequences(List.of("stop1", "stop2"))
+					.temperature(66.6)
+					.topK(66)
+					.topP(0.66)
+					.maxTokens(666)
+					.anthropicVersion("X.Y.Z")
+					.stopSequences(List.of("stop1", "stop2"))
 					.build());
 
 		var request = client.createRequest(new Prompt("Test message content"));
@@ -61,11 +61,11 @@ public class BedrockAnthropic3CreateRequestTests {
 
 		request = client.createRequest(new Prompt("Test message content",
 				Anthropic3ChatOptions.builder()
-					.withTemperature(99.9)
-					.withTopP(0.99)
-					.withMaxTokens(999)
-					.withAnthropicVersion("zzz")
-					.withStopSequences(List.of("stop3", "stop4"))
+					.temperature(99.9)
+					.topP(0.99)
+					.maxTokens(999)
+					.anthropicVersion("zzz")
+					.stopSequences(List.of("stop3", "stop4"))
 					.build()
 
 		));

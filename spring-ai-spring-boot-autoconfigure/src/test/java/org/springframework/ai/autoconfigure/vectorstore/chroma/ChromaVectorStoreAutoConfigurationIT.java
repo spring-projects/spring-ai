@@ -83,20 +83,24 @@ public class ChromaVectorStoreAutoConfigurationIT {
 					observationRegistry, VectorStoreProvider.CHROMA, VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
-			var request = SearchRequest.query("The World").withTopK(5);
+			var request = SearchRequest.builder().query("The World").topK(5).build();
 
 			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(2);
 			observationRegistry.clear();
 
-			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("country == 'Bulgaria'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 			observationRegistry.clear();
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("country == 'Netherlands'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

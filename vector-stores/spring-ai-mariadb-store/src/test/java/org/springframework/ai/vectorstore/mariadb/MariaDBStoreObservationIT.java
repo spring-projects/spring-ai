@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
@@ -36,12 +35,10 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -134,7 +131,7 @@ public class MariaDBStoreObservationIT {
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+				.similaritySearch(SearchRequest.builder().query("What is Great Depression").topK(1).build());
 
 			assertThat(results).isNotEmpty();
 
@@ -177,10 +174,11 @@ public class MariaDBStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			return new MariaDBVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(schemaName)
-				.withDistanceType(MariaDBVectorStore.MariaDBDistanceType.COSINE)
-				.withObservationRegistry(observationRegistry)
-				.withInitializeSchema(true)
+			return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
+				.schemaName(schemaName)
+				.distanceType(MariaDBVectorStore.MariaDBDistanceType.COSINE)
+				.observationRegistry(observationRegistry)
+				.initializeSchema(true)
 				.build();
 		}
 

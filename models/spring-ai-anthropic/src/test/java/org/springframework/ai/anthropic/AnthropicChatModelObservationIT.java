@@ -48,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for observation instrumentation in {@link AnthropicChatModel}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @SpringBootTest(classes = AnthropicChatModelObservationIT.Config.class,
 		properties = "spring.ai.retry.on-http-codes=429")
@@ -68,12 +69,12 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
-			.withMaxTokens(2048)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopK(1)
-			.withTopP(1.0)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.maxTokens(2048)
+			.stopSequences(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topK(1)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -90,12 +91,12 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
-			.withMaxTokens(2048)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopK(1)
-			.withTopP(1.0)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.maxTokens(2048)
+			.stopSequences(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topK(1)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

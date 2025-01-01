@@ -155,7 +155,7 @@ MiniMaxChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage),
-		MiniMaxChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
+		MiniMaxChatOptions.builder().function("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -185,7 +185,7 @@ MiniMaxChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = MiniMaxChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+	.functionCallbacks(List.of(FunctionCallback.builder()
 		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature

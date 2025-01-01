@@ -47,10 +47,10 @@ public class BedrockAnthropic3ChatProperties {
 
 	@NestedConfigurationProperty
 	private Anthropic3ChatOptions options = Anthropic3ChatOptions.builder()
-		.withTemperature(0.7)
-		.withMaxTokens(300)
-		.withTopK(10)
-		.withAnthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+		.temperature(0.7)
+		.maxTokens(300)
+		.topK(10)
+		.anthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 		// .withStopSequences(List.of("\n\nHuman:"))
 		.build();
 

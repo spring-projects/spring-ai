@@ -54,7 +54,7 @@ public class OpenAiChatModeAdditionalHttpHeadersIT {
 		// Use the additional headers to override the Api Key.
 		// Mind that you have to prefix the Api Key with the "Bearer " prefix.
 		OpenAiChatOptions options = OpenAiChatOptions.builder()
-			.withHttpHeaders(Map.of("Authorization", "Bearer " + System.getenv("OPENAI_API_KEY")))
+			.httpHeaders(Map.of("Authorization", "Bearer " + System.getenv("OPENAI_API_KEY")))
 			.build();
 
 		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke", options));

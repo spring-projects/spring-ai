@@ -45,7 +45,6 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Nullable
 	private final VectorStoreObservationConvention customObservationConvention;
 
-	@Nullable
 	protected final EmbeddingModel embeddingModel;
 
 	/**
@@ -59,8 +58,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 		this(null, observationRegistry, customObservationConvention);
 	}
 
-	private AbstractObservationVectorStore(@Nullable EmbeddingModel embeddingModel,
-			ObservationRegistry observationRegistry,
+	private AbstractObservationVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
 			@Nullable VectorStoreObservationConvention customObservationConvention) {
 		this.embeddingModel = embeddingModel;
 		this.observationRegistry = observationRegistry;
@@ -94,6 +92,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	@Nullable
 	public Optional<Boolean> delete(List<String> deleteDocIds) {
 
 		VectorStoreObservationContext observationContext = this
@@ -107,11 +106,12 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	@Nullable
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		VectorStoreObservationContext searchObservationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
-			.withQueryRequest(request)
+			.queryRequest(request)
 			.build();
 
 		return VectorStoreObservationDocumentation.AI_VECTOR_STORE

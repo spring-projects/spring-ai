@@ -268,7 +268,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			 * @param temperature the temperature
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withTemperature(Double temperature) {
+			public Builder temperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
@@ -278,7 +278,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			 * @param topP the topP
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withTopP(Double topP) {
+			public Builder topP(Double topP) {
 				this.topP = topP;
 				return this;
 			}
@@ -288,7 +288,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			 * @param maxTokens the maxTokens
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withMaxTokens(Integer maxTokens) {
+			public Builder maxTokens(Integer maxTokens) {
 				this.maxTokens = maxTokens;
 				return this;
 			}
@@ -298,7 +298,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			 * @param stopSequences the stopSequences
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withStopSequences(List<String> stopSequences) {
+			public Builder stopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}
@@ -308,7 +308,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			 * @param countPenalty the countPenalty
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withCountPenalty(IntegerScalePenalty countPenalty) {
+			public Builder countPenalty(IntegerScalePenalty countPenalty) {
 				this.countPenalty = countPenalty;
 				return this;
 			}
@@ -318,7 +318,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			 * @param presencePenalty the presencePenalty
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withPresencePenalty(FloatScalePenalty presencePenalty) {
+			public Builder presencePenalty(FloatScalePenalty presencePenalty) {
 				this.presencePenalty = presencePenalty;
 				return this;
 			}
@@ -328,6 +328,69 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			 * @param frequencyPenalty the frequencyPenalty
 			 * @return this {@link Builder} instance
 			 */
+			public Builder frequencyPenalty(IntegerScalePenalty frequencyPenalty) {
+				this.frequencyPenalty = frequencyPenalty;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #temperature( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
+			public Builder withTemperature(Double temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #topP( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
+			public Builder withTopP(Double topP) {
+				this.topP = topP;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #maxTokens( Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
+			public Builder withMaxTokens(Integer maxTokens) {
+				this.maxTokens = maxTokens;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #stopSequences( List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
+			public Builder withStopSequences(List<String> stopSequences) {
+				this.stopSequences = stopSequences;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #countPenalty( IntegerScalePenalty)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
+			public Builder withCountPenalty(IntegerScalePenalty countPenalty) {
+				this.countPenalty = countPenalty;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #presencePenalty( FloatScalePenalty)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
+			public Builder withPresencePenalty(FloatScalePenalty presencePenalty) {
+				this.presencePenalty = presencePenalty;
+				return this;
+			}
+
+			/**
+			 * @deprecated Use {@link #frequencyPenalty( IntegerScalePenalty)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withFrequencyPenalty(IntegerScalePenalty frequencyPenalty) {
 				this.frequencyPenalty = frequencyPenalty;
 				return this;

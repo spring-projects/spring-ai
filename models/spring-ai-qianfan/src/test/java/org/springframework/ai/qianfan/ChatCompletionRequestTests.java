@@ -32,7 +32,7 @@ public class ChatCompletionRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = new QianFanChatModel(new QianFanApi("TEST", "TEST"),
-				QianFanChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6).build());
+				QianFanChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
 
 		var request = client.createRequest(new Prompt("Test message content"), false);
 
@@ -43,7 +43,7 @@ public class ChatCompletionRequestTests {
 		assertThat(request.temperature()).isEqualTo(66.6);
 
 		request = client.createRequest(new Prompt("Test message content",
-				QianFanChatOptions.builder().withModel("PROMPT_MODEL").withTemperature(99.9).build()), true);
+				QianFanChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).build()), true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();

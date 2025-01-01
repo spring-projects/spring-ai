@@ -87,7 +87,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         WatsonxAiChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -112,10 +112,11 @@ public class MyClass {
 
     public String generate(String userInput) {
 
-        WatsonxAiOptions options = WatsonxAiOptions.create()
-            .withModel(MODEL)
-            .withDecodingMethod("sample")
-            .withRandomSeed(1);
+        WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
+            .model(MODEL)
+            .decodingMethod("sample")
+            .randomSeed(1)
+            .build();
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 
@@ -128,10 +129,11 @@ public class MyClass {
 
     public String generateStream(String userInput) {
 
-        WatsonxAiOptions options = WatsonxAiOptions.create()
-            .withModel(MODEL)
-            .withDecodingMethod("greedy")
-            .withRandomSeed(2);
+        WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
+            .model(MODEL)
+            .decodingMethod("greedy")
+            .randomSeed(2)
+            .build();
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 

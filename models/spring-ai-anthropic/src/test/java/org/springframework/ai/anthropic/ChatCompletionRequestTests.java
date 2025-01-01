@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  */
 public class ChatCompletionRequestTests {
 
@@ -32,7 +33,7 @@ public class ChatCompletionRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = new AnthropicChatModel(new AnthropicApi("TEST"),
-				AnthropicChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6).build());
+				AnthropicChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
 
 		var request = client.createRequest(new Prompt("Test message content"), false);
 
@@ -43,7 +44,7 @@ public class ChatCompletionRequestTests {
 		assertThat(request.temperature()).isEqualTo(66.6);
 
 		request = client.createRequest(new Prompt("Test message content",
-				AnthropicChatOptions.builder().withModel("PROMPT_MODEL").withTemperature(99.9).build()), true);
+				AnthropicChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).build()), true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();

@@ -168,8 +168,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AzureOpenAiChatOptions.builder()
-            .withDeploymentName("gpt-4o")
-            .withTemperature(0.4)
+            .deploymentName("gpt-4o")
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -198,7 +198,7 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 ----
 URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 String response = ChatClient.create(chatModel).prompt()
-        .options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+        .options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
         .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, this.url))
         .call()
         .content();
@@ -229,7 +229,7 @@ Resource resource = new ClassPathResource("multimodality/multimodal.test.png");
 
 String response = ChatClient.create(chatModel).prompt()
     .options(AzureOpenAiChatOptions.builder()
-    .withDeploymentName("gpt-4o").build())
+    .deploymentName("gpt-4o").build())
     .user(u -> u.text("Explain what do you see on this picture?")
     .media(MimeTypeUtils.IMAGE_PNG, this.resource))
     .call()
@@ -317,9 +317,9 @@ var openAIClient = new OpenAIClientBuilder()
   .buildClient();
 
 var openAIChatOptions = AzureOpenAiChatOptions.builder()
-  .withDeploymentName("gpt-4o")
-  .withTemperature(0.4)
-  .withMaxTokens(200)
+  .deploymentName("gpt-4o")
+  .temperature(0.4)
+  .maxTokens(200)
   .build();
 
 var chatModel = new AzureOpenAiChatModel(this.openAIClient, this.openAIChatOptions);

@@ -40,7 +40,10 @@ import org.springframework.ai.model.ModelOptionsUtils;
  *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final AnthropicChatBedrockApi anthropicChatApi;
@@ -50,10 +53,10 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi) {
 		this(chatApi,
 				AnthropicChatOptions.builder()
-					.withTemperature(0.8)
-					.withMaxTokensToSample(500)
-					.withTopK(10)
-					.withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+					.temperature(0.8)
+					.maxTokensToSample(500)
+					.topK(10)
+					.anthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
 					.build());
 	}
 

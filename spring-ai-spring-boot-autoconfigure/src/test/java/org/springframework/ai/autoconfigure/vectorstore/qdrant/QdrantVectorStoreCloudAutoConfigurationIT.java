@@ -121,7 +121,7 @@ public class QdrantVectorStoreCloudAutoConfigurationIT {
 			vectorStore.add(this.documents);
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression?").withTopK(1));
+				.similaritySearch(SearchRequest.builder().query("What is Great Depression?").topK(1).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -130,7 +130,7 @@ public class QdrantVectorStoreCloudAutoConfigurationIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
-			results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+			results = vectorStore.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 			assertThat(results).hasSize(0);
 		});
 	}

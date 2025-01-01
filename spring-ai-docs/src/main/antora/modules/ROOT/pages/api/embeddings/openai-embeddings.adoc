@@ -128,7 +128,7 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OpenAiEmbeddingOptions.builder()
-            .withModel("Different-Embedding-Model-Deployment-Name")
+            .model("Different-Embedding-Model-Deployment-Name")
         .build()));
 ----
 
@@ -199,8 +199,8 @@ var embeddingModel = new OpenAiEmbeddingModel(
 		this.openAiApi,
         MetadataMode.EMBED,
         OpenAiEmbeddingOptions.builder()
-                .withModel("text-embedding-ada-002")
-                .withUser("user-6")
+                .model("text-embedding-ada-002")
+                .user("user-6")
                 .build(),
         RetryUtils.DEFAULT_RETRY_TEMPLATE);
 

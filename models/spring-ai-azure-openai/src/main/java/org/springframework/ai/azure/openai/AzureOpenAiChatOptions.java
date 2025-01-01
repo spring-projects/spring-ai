@@ -41,6 +41,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiChatOptions implements FunctionCallingOptions {
@@ -205,25 +206,25 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
-		return builder().withDeploymentName(fromOptions.getDeploymentName())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty() : null)
-			.withLogitBias(fromOptions.getLogitBias())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withN(fromOptions.getN())
-			.withPresencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withUser(fromOptions.getUser())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withSeed(fromOptions.getSeed())
-			.withLogprobs(fromOptions.isLogprobs())
-			.withTopLogprobs(fromOptions.getTopLogProbs())
-			.withEnhancements(fromOptions.getEnhancements())
-			.withToolContext(fromOptions.getToolContext())
-			.withStreamOptions(fromOptions.getStreamOptions())
+		return builder().deploymentName(fromOptions.getDeploymentName())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty() : null)
+			.logitBias(fromOptions.getLogitBias())
+			.maxTokens(fromOptions.getMaxTokens())
+			.N(fromOptions.getN())
+			.presencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
+			.stop(fromOptions.getStop())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.user(fromOptions.getUser())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.responseFormat(fromOptions.getResponseFormat())
+			.seed(fromOptions.getSeed())
+			.logprobs(fromOptions.isLogprobs())
+			.topLogprobs(fromOptions.getTopLogProbs())
+			.enhancements(fromOptions.getEnhancements())
+			.toolContext(fromOptions.getToolContext())
+			.streamOptions(fromOptions.getStreamOptions())
 			.build();
 	}
 
@@ -442,103 +443,296 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			this.options = options;
 		}
 
+		public Builder deploymentName(String deploymentName) {
+			this.options.deploymentName = deploymentName;
+			return this;
+		}
+
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder logitBias(Map<String, Integer> logitBias) {
+			this.options.logitBias = logitBias;
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder N(Integer n) {
+			this.options.n = n;
+			return this;
+		}
+
+		public Builder presencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder stop(List<String> stop) {
+			this.options.stop = stop;
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.user = user;
+			return this;
+		}
+
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder functions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder function(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder responseFormat(AzureOpenAiResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
+			this.options.proxyToolCalls = proxyToolCalls;
+			return this;
+		}
+
+		public Builder seed(Long seed) {
+			this.options.seed = seed;
+			return this;
+		}
+
+		public Builder logprobs(Boolean logprobs) {
+			this.options.logprobs = logprobs;
+			return this;
+		}
+
+		public Builder topLogprobs(Integer topLogprobs) {
+			this.options.topLogProbs = topLogprobs;
+			return this;
+		}
+
+		public Builder enhancements(AzureChatEnhancementConfiguration enhancements) {
+			this.options.enhancements = enhancements;
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		public Builder streamOptions(ChatCompletionStreamOptions streamOptions) {
+			this.options.streamOptions = streamOptions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #deploymentName(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withDeploymentName(String deploymentName) {
 			this.options.deploymentName = deploymentName;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFrequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #logitBias(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLogitBias(Map<String, Integer> logitBias) {
 			this.options.logitBias = logitBias;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #maxTokens(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withMaxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #N(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withN(Integer n) {
 			this.options.n = n;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #presencePenalty(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withPresencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #stop(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withUser(String user) {
 			this.options.user = user;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #functions(Set)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunctions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #function(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseFormat(AzureOpenAiResponseFormat)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withResponseFormat(AzureOpenAiResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #seed(Long)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withSeed(Long seed) {
 			this.options.seed = seed;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #logprobs(Boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withLogprobs(Boolean logprobs) {
 			this.options.logprobs = logprobs;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #topLogprobs(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withTopLogprobs(Integer topLogprobs) {
 			this.options.topLogProbs = topLogprobs;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #enhancements(AzureChatEnhancementConfiguration)} )}
+		 * instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withEnhancements(AzureChatEnhancementConfiguration enhancements) {
 			this.options.enhancements = enhancements;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
@@ -549,6 +743,10 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #streamOptions(ChatCompletionStreamOptions)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withStreamOptions(ChatCompletionStreamOptions streamOptions) {
 			this.options.streamOptions = streamOptions;
 			return this;

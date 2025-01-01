@@ -42,7 +42,7 @@ public class QianFanImageProperties extends QianFanParentProperties {
 	 * Options for QianFan Image API.
 	 */
 	@NestedConfigurationProperty
-	private QianFanImageOptions options = QianFanImageOptions.builder().withModel(DEFAULT_IMAGE_MODEL).build();
+	private QianFanImageOptions options = QianFanImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build();
 
 	public QianFanImageOptions getOptions() {
 		return this.options;

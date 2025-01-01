@@ -35,7 +35,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -70,8 +69,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					MiniMaxChatOptions.builder().withFunction("weatherFunction").build()));
+			ChatResponse response = chatModel.call(
+					new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().function("weatherFunction").build()));
 
 			logger.info("Response: {}", response);
 
@@ -79,7 +78,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			// Test weatherFunctionTwo
 			response = chatModel.call(new Prompt(List.of(userMessage),
-					MiniMaxChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+					MiniMaxChatOptions.builder().function("weatherFunctionTwo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -98,8 +97,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.withFunction("weatherFunction")
+			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.function("weatherFunction")
 				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
@@ -119,8 +118,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
-					MiniMaxChatOptions.builder().withFunction("weatherFunction").build()));
+			Flux<ChatResponse> response = chatModel.stream(
+					new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().function("weatherFunction").build()));
 
 			String content = response.collectList()
 				.block()
@@ -138,7 +137,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			// Test weatherFunctionTwo
 			response = chatModel.stream(new Prompt(List.of(userMessage),
-					MiniMaxChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+					MiniMaxChatOptions.builder().function("weatherFunctionTwo").build()));
 
 			content = response.collectList()
 				.block()

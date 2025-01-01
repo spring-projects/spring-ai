@@ -83,8 +83,8 @@ class OpenAiChatModelFunctionCallingIT {
 	@Test
 	void functionCallTest() {
 		functionCallTest(OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -119,13 +119,13 @@ class OpenAiChatModelFunctionCallingIT {
 		};
 
 		functionCallTest(OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", biFunction)
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.withToolContext(Map.of("sessionId", "123"))
+			.toolContext(Map.of("sessionId", "123"))
 			.build());
 	}
 
@@ -146,7 +146,7 @@ class OpenAiChatModelFunctionCallingIT {
 	void streamFunctionCallTest() {
 
 		streamFunctionCallTest(OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of((FunctionCallback.builder()
+			.functionCallbacks(List.of((FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -182,12 +182,12 @@ class OpenAiChatModelFunctionCallingIT {
 		};
 
 		OpenAiChatOptions promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of((FunctionCallback.builder()
+			.functionCallbacks(List.of((FunctionCallback.builder()
 				.function("getCurrentWeather", biFunction)
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build())))
-			.withToolContext(Map.of("sessionId", "123"))
+			.toolContext(Map.of("sessionId", "123"))
 			.build();
 
 		streamFunctionCallTest(promptOptions);

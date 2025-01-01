@@ -56,14 +56,14 @@ public class SimplePersistentVectorStoreIT {
 		JsonReader jsonReader = new JsonReader(this.bikesJsonResource, new ProductMetadataGenerator(), "price", "name",
 				"shortDescription", "description", "tags");
 		List<Document> documents = jsonReader.get();
-		SimpleVectorStore vectorStore = new SimpleVectorStore(this.embeddingModel);
+		SimpleVectorStore vectorStore = SimpleVectorStore.builder(this.embeddingModel).build();
 		vectorStore.add(documents);
 
 		File tempFile = new File(this.workingDir.toFile(), "temp.txt");
 		vectorStore.save(tempFile);
 		assertThat(tempFile).isNotEmpty();
 		assertThat(tempFile).content().contains("Velo 99 XR1 AXS");
-		SimpleVectorStore vectorStore2 = new SimpleVectorStore(this.embeddingModel);
+		SimpleVectorStore vectorStore2 = SimpleVectorStore.builder(this.embeddingModel).build();
 
 		vectorStore2.load(tempFile);
 		List<Document> similaritySearch = vectorStore2.similaritySearch("Velo 99 XR1 AXS");

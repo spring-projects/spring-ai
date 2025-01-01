@@ -50,6 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * Integration tests for observation instrumentation in {@link MistralAiChatModel}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -69,11 +70,11 @@ public class MistralAiChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-			.withMaxTokens(2048)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.maxTokens(2048)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -90,11 +91,11 @@ public class MistralAiChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-			.withMaxTokens(2048)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.maxTokens(2048)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

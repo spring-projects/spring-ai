@@ -43,6 +43,7 @@ import org.springframework.ai.model.ChatModelDescription;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 // @formatter:off
@@ -211,21 +212,57 @@ public class TitanChatBedrockApi extends
 				this.inputText = inputText;
 			}
 
+			public Builder temperature(Double temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			public Builder topP(Double topP) {
+				this.topP = topP;
+				return this;
+			}
+
+			public Builder maxTokenCount(Integer maxTokenCount) {
+				this.maxTokenCount = maxTokenCount;
+				return this;
+			}
+
+			public Builder stopSequences(List<String> stopSequences) {
+				this.stopSequences = stopSequences;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #temperature( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTemperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #topP( Double)} ( Double)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withTopP(Double topP) {
 				this.topP = topP;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #maxTokenCount( Integer)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withMaxTokenCount(Integer maxTokenCount) {
 				this.maxTokenCount = maxTokenCount;
 				return this;
 			}
 
+			/**
+			 * @deprecated use {@link #stopSequences( List)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M5")
 			public Builder withStopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;

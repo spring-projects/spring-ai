@@ -118,10 +118,10 @@ For example to override the OpenAI specific options such as quality and the numb
 ImageResponse response = azureOpenaiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
         OpenAiImageOptions.builder()
-                .withQuality("hd")
-                .withN(4)
-                .withHeight(1024)
-                .withWidth(1024).build())
+                .quality("hd")
+                .N(4)
+                .height(1024)
+                .width(1024).build())
 
 );
 ----

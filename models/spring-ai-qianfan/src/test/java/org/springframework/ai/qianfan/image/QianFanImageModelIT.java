@@ -45,7 +45,7 @@ public class QianFanImageModelIT {
 
 	@Test
 	void imageTest() {
-		var options = ImageOptionsBuilder.builder().withHeight(1024).withWidth(1024).build();
+		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
 
 		var instructions = """
 				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";

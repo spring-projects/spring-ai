@@ -57,7 +57,7 @@ class SimpleVectorStoreTests {
 		when(this.mockEmbeddingModel.dimensions()).thenReturn(3);
 		when(this.mockEmbeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 		when(this.mockEmbeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-		this.vectorStore = new SimpleVectorStore(this.mockEmbeddingModel);
+		this.vectorStore = new SimpleVectorStore(SimpleVectorStore.builder(this.mockEmbeddingModel));
 	}
 
 	@Test
@@ -125,7 +125,7 @@ class SimpleVectorStoreTests {
 
 		this.vectorStore.add(List.of(doc));
 
-		SearchRequest request = SearchRequest.query("query").withSimilarityThreshold(0.99f).withTopK(5);
+		SearchRequest request = SearchRequest.builder().query("query").similarityThreshold(0.99f).topK(5).build();
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 		assertThat(results).isEmpty();
@@ -144,7 +144,7 @@ class SimpleVectorStoreTests {
 		File saveFile = this.tempDir.resolve("vector-store.json").toFile();
 		this.vectorStore.save(saveFile);
 
-		SimpleVectorStore loadedStore = new SimpleVectorStore(this.mockEmbeddingModel);
+		SimpleVectorStore loadedStore = SimpleVectorStore.builder(this.mockEmbeddingModel).build();
 		loadedStore.load(saveFile);
 
 		List<Document> results = loadedStore.similaritySearch("test content");
@@ -191,7 +191,7 @@ class SimpleVectorStoreTests {
 			thread.join();
 		}
 
-		SearchRequest request = SearchRequest.query("test").withTopK(numThreads);
+		SearchRequest request = SearchRequest.builder().query("test").topK(numThreads).build();
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 
@@ -213,14 +213,15 @@ class SimpleVectorStoreTests {
 
 	@Test
 	void shouldRejectInvalidSimilarityThreshold() {
-		assertThatThrownBy(() -> SearchRequest.query("test").withSimilarityThreshold(2.0f))
+		assertThatThrownBy(() -> SearchRequest.builder().query("test").similarityThreshold(2.0f).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Similarity threshold must be in [0,1] range.");
 	}
 
 	@Test
 	void shouldRejectNegativeTopK() {
-		assertThatThrownBy(() -> SearchRequest.query("test").withTopK(-1)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> SearchRequest.builder().query("test").topK(-1).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("TopK should be positive.");
 	}
 

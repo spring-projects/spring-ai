@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -79,20 +78,35 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
 
-	protected EmbeddingModel embeddingModel;
-
+	/**
+	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public SimpleVectorStore(EmbeddingModel embeddingModel) {
 		this(embeddingModel, ObservationRegistry.NOOP, null);
 	}
 
+	/**
+	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M5")
 	public SimpleVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
 			VectorStoreObservationConvention customObservationConvention) {
+		this(builder(embeddingModel).observationRegistry(observationRegistry)
+			.customObservationConvention(customObservationConvention));
+	}
 
-		super(observationRegistry, customObservationConvention);
-
-		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
-		this.embeddingModel = embeddingModel;
+	protected SimpleVectorStore(SimpleVectorStoreBuilder builder) {
+		super(builder);
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+	}
+
+	/**
+	 * Creates an instance of SimpleVectorStore builder.
+	 * @return the SimpleVectorStore builder.
+	 */
+	public static SimpleVectorStoreBuilder builder(EmbeddingModel embeddingModel) {
+		return new SimpleVectorStoreBuilder(embeddingModel);
 	}
 
 	@Override
@@ -231,9 +245,9 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE.value(), operationName)
-			.withDimensions(this.embeddingModel.dimensions())
-			.withCollectionName("in-memory-map")
-			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+			.dimensions(this.embeddingModel.dimensions())
+			.collectionName("in-memory-map")
+			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 	public static final class EmbeddingMath {
@@ -276,6 +290,19 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 		public static float norm(float[] vector) {
 			return dotProduct(vector, vector);
+		}
+
+	}
+
+	public static final class SimpleVectorStoreBuilder extends AbstractVectorStoreBuilder<SimpleVectorStoreBuilder> {
+
+		private SimpleVectorStoreBuilder(EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+		}
+
+		@Override
+		public SimpleVectorStore build() {
+			return new SimpleVectorStore(this);
 		}
 
 	}

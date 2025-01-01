@@ -120,7 +120,7 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingClient.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         QianFanEmbeddingOptions.builder()
-            .withModel("Different-Embedding-Model-Deployment-Name")
+            .model("Different-Embedding-Model-Deployment-Name")
         .build()));
 ----
 
@@ -188,10 +188,9 @@ Next, create an `QianFanEmbeddingModel` instance and use it to compute the simil
 ----
 var qianFanApi = new QianFanApi(System.getenv("MINIMAX_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
 
-var embeddingClient = new QianFanEmbeddingModel(qianFanApi)
-    .withDefaultOptions(QianFanChatOptions.build()
-        .withModel("bge_large_en")
-        .build());
+var embeddingClient = new QianFanEmbeddingModel(api, MetadataMode.EMBED, QianFanEmbeddingOptions.builder()
+						.model("bge_large_en")
+						.build());
 
 EmbeddingResponse embeddingResponse = this.embeddingClient
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));

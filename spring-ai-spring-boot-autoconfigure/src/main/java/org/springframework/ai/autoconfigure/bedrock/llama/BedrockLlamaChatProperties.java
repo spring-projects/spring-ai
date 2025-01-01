@@ -43,10 +43,7 @@ public class BedrockLlamaChatProperties {
 	private String model = LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id();
 
 	@NestedConfigurationProperty
-	private BedrockLlamaChatOptions options = BedrockLlamaChatOptions.builder()
-		.withTemperature(0.7)
-		.withMaxGenLen(300)
-		.build();
+	private BedrockLlamaChatOptions options = BedrockLlamaChatOptions.builder().temperature(0.7).maxGenLen(300).build();
 
 	public boolean isEnabled() {
 		return this.enabled;

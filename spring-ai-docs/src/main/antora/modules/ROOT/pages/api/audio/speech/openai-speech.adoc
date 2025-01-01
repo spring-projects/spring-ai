@@ -89,10 +89,10 @@ For example:
 [source,java]
 ----
 OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-    .withModel("tts-1")
-    .withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
-    .withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-    .withSpeed(1.0f)
+    .model("tts-1")
+    .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+    .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .speed(1.0f)
     .build();
 
 SpeechPrompt speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", this.speechOptions);
@@ -131,9 +131,9 @@ var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
 var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(this.openAiAudioApi);
 
 var speechOptions = OpenAiAudioSpeechOptions.builder()
-    .withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-    .withSpeed(1.0f)
-    .withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
+    .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .speed(1.0f)
+    .model(OpenAiAudioApi.TtsModel.TTS_1.value)
     .build();
 
 var speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", this.speechOptions);

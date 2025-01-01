@@ -16,11 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -31,6 +28,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,10 +53,10 @@ class RetrievalAugmentationAdvisorTests {
 	}
 
 	@Test
-	void whenQueryRouterIsNullThenThrow() {
-		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder().queryRouter(null).build())
+	void whenDocumentRetrieverIsNullThenThrow() {
+		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder().documentRetriever(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("queryRouter cannot be null");
+			.hasMessageContaining("documentRetriever cannot be null");
 	}
 
 	@Test

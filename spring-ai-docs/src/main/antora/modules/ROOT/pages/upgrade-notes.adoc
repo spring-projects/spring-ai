@@ -1,7 +1,14 @@
 [[upgrade-notes]]
 = Upgrading Notes
 
-== Upgrading to 1.0.0.RC1
+
+== Upgrading to 1.0.0.M5
+
+* Vector Builders have been refactored for consistency.
+* Current VectorStore implementation constructors have been deprecated, use the builder pattern.
+* VectorStore implementation packages have been moved into unique package names, avoiding conflicts across artifact.  For example `org.springframework.ai.vectorstore` to `org.springframework.ai.pgvector.vectorstore`.
+
+== Upgrading to 1.0.0.RC3
 
 * The type of the portable chat options (`frequencyPenalty`, `presencePenalty`, `temperature`, `topP`) has been changed from `Float` to `Double`.
 

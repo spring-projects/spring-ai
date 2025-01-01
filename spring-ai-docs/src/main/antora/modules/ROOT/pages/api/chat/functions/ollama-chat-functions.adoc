@@ -155,7 +155,7 @@ OllamaChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		OllamaOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
+		OllamaOptions.builder().function("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -184,7 +184,7 @@ OllamaChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OllamaOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+	.functionCallbacks(List.of(FunctionCallback.builder()
 		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance        
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature

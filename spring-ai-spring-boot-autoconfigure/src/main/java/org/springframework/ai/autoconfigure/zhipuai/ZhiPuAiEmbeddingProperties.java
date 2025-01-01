@@ -42,9 +42,7 @@ public class ZhiPuAiEmbeddingProperties extends ZhiPuAiParentProperties {
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
-	private ZhiPuAiEmbeddingOptions options = ZhiPuAiEmbeddingOptions.builder()
-		.withModel(DEFAULT_EMBEDDING_MODEL)
-		.build();
+	private ZhiPuAiEmbeddingOptions options = ZhiPuAiEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build();
 
 	public ZhiPuAiEmbeddingOptions getOptions() {
 		return this.options;

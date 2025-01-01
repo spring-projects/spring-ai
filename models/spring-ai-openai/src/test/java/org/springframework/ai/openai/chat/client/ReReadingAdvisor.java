@@ -67,8 +67,8 @@ public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 		advisedUserParams.put("re2_input_query", advisedRequest.userText());
 
 		return AdvisedRequest.from(advisedRequest)
-			.withUserText(this.re2AdviseTemplate)
-			.withUserParams(advisedUserParams)
+			.userText(this.re2AdviseTemplate)
+			.userParams(advisedUserParams)
 			.build();
 	}
 

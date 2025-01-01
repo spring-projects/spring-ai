@@ -46,7 +46,7 @@ class DefaultImageModelObservationConventionTests {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
 			.provider("superprovider")
-			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ImageOptionsBuilder.builder().model("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("image mistral");
 	}
@@ -66,7 +66,7 @@ class DefaultImageModelObservationConventionTests {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
 			.provider("superprovider")
-			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ImageOptionsBuilder.builder().model("mistral").build())
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
@@ -77,7 +77,7 @@ class DefaultImageModelObservationConventionTests {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
 			.provider("superprovider")
-			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ImageOptionsBuilder.builder().model("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(AiObservationAttributes.AI_OPERATION_TYPE.value(), "image"),
@@ -91,12 +91,12 @@ class DefaultImageModelObservationConventionTests {
 			.imagePrompt(generateImagePrompt())
 			.provider("superprovider")
 			.requestOptions(ImageOptionsBuilder.builder()
-				.withModel("mistral")
-				.withN(1)
-				.withHeight(1080)
-				.withWidth(1920)
-				.withStyle("sketch")
-				.withResponseFormat("base64")
+				.model("mistral")
+				.N(1)
+				.height(1080)
+				.width(1920)
+				.style("sketch")
+				.responseFormat("base64")
 				.build())
 			.build();
 

@@ -43,12 +43,12 @@ public class BedrockCohereEmbeddingProperties {
 	 * Bedrock Cohere Embedding generative name. Defaults to
 	 * 'cohere.embed-multilingual-v3'.
 	 */
-	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id();
+	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id();
 
 	@NestedConfigurationProperty
 	private BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
-		.withInputType(InputType.SEARCH_DOCUMENT)
-		.withTruncate(CohereEmbeddingRequest.Truncate.NONE)
+		.inputType(InputType.SEARCH_DOCUMENT)
+		.truncate(CohereEmbeddingRequest.Truncate.NONE)
 		.build();
 
 	public boolean isEnabled() {

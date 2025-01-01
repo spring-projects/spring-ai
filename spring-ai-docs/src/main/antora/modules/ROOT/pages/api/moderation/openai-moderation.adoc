@@ -78,7 +78,7 @@ For example:
 [source,java]
 ----
 OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
-    .withModel("text-moderation-latest")
+    .model("text-moderation-latest")
     .build();
 
 ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);
@@ -161,7 +161,7 @@ OpenAiModerationApi openAiModerationApi = new OpenAiModerationApi(System.getenv(
 OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(this.openAiModerationApi);
 
 OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
-    .withModel("text-moderation-latest")
+    .model("text-moderation-latest")
     .build();
 
 ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);

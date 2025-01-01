@@ -32,7 +32,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.WeaviateVectorStore;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -68,13 +68,13 @@ class WeaviateContainerConnectionDetailsFactoryIT {
 		assertThat(this.properties.getFilterField()).hasSize(4);
 
 		assertThat(this.properties.getFilterField().get("country"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.TEXT);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.TEXT);
 		assertThat(this.properties.getFilterField().get("year"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.NUMBER);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.NUMBER);
 		assertThat(this.properties.getFilterField().get("active"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.BOOLEAN);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.BOOLEAN);
 		assertThat(this.properties.getFilterField().get("price"))
-			.isEqualTo(WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField.Type.NUMBER);
+			.isEqualTo(WeaviateVectorStore.MetadataField.Type.NUMBER);
 
 		var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 				Map.of("country", "Bulgaria", "price", 3.14, "active", true, "year", 2020));
@@ -83,32 +83,38 @@ class WeaviateContainerConnectionDetailsFactoryIT {
 
 		this.vectorStore.add(List.of(bgDocument, nlDocument));
 
-		var request = SearchRequest.query("The World").withTopK(5);
+		var request = SearchRequest.builder().query("The World").topK(5).build();
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 		assertThat(results).hasSize(2);
 
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+		results = this.vectorStore.similaritySearch(
+				SearchRequest.from(request).similarityThresholdAll().filterExpression("country == 'Bulgaria'").build());
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+		results = this.vectorStore.similaritySearch(SearchRequest.from(request)
+			.similarityThresholdAll()
+			.filterExpression("country == 'Netherlands'")
+			.build());
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-		results = this.vectorStore.similaritySearch(
-				request.withSimilarityThresholdAll().withFilterExpression("price > 1.57 && active == true"));
+		results = this.vectorStore.similaritySearch(SearchRequest.from(request)
+			.similarityThresholdAll()
+			.filterExpression("price > 1.57 && active == true")
+			.build());
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("year in [2020, 2023]"));
+		results = this.vectorStore.similaritySearch(
+				SearchRequest.from(request).similarityThresholdAll().filterExpression("year in [2020, 2023]").build());
 		assertThat(results).hasSize(2);
 
-		results = this.vectorStore
-			.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("year > 2020 && year <= 2023"));
+		results = this.vectorStore.similaritySearch(SearchRequest.from(request)
+			.similarityThresholdAll()
+			.filterExpression("year > 2020 && year <= 2023")
+			.build());
 		assertThat(results).hasSize(1);
 		assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

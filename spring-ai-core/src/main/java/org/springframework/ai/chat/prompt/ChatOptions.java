@@ -87,7 +87,7 @@ public interface ChatOptions extends ModelOptions {
 	 * Returns a copy of this {@link ChatOptions}.
 	 * @return a copy of this {@link ChatOptions}
 	 */
-	ChatOptions copy();
+	<T extends ChatOptions> T copy();
 
 	/**
 	 * Creates a new {@link ChatOptions.Builder} to create the default

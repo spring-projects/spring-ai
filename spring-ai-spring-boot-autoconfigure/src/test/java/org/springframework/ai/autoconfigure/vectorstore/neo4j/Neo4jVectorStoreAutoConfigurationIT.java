@@ -89,7 +89,8 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -108,7 +109,7 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).isEmpty();
 			});
 	}

@@ -76,6 +76,7 @@ import org.springframework.util.CollectionUtils;
  * backed by {@link MiniMaxApi}.
  *
  * @author Geng Rong
+ * @author Alexandros Pappas
  * @see ChatModel
  * @see StreamingChatModel
  * @see MiniMaxApi
@@ -119,8 +120,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @throws IllegalArgumentException if MiniMaxApi is null
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi) {
-		this(miniMaxApi,
-				MiniMaxChatOptions.builder().withModel(MiniMaxApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(miniMaxApi, MiniMaxChatOptions.builder().model(MiniMaxApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -387,11 +387,11 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? MiniMaxUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
-			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? MiniMaxUsage.from(result.usage()) : new EmptyUsage())
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
 	}
 
@@ -501,7 +501,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					MiniMaxChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					MiniMaxChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 

@@ -17,6 +17,7 @@
 package org.springframework.ai.converter;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -54,6 +55,7 @@ import org.springframework.lang.NonNull;
  * @author Josh Long
  * @author Sebastien Deleuze
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
@@ -218,6 +220,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public String getJsonSchema() {
 		return this.jsonSchema;
+	}
+
+	public Map<String, Object> getJsonSchemaMap() {
+		try {
+			return this.objectMapper.readValue(this.jsonSchema, Map.class);
+		}
+		catch (JsonProcessingException ex) {
+			logger.error("Could not parse the JSON Schema to a Map object", ex);
+			throw new IllegalStateException(ex);
+		}
 	}
 
 }

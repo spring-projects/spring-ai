@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * @author Jihoon Kim
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -51,9 +52,9 @@ public class OllamaChatModelTests {
 	public void buildOllamaChatModel() {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
-					.withOllamaApi(this.ollamaApi)
-					.withDefaultOptions(OllamaOptions.create().withModel(OllamaModel.LLAMA2))
-					.withModelManagementOptions(null)
+					.ollamaApi(this.ollamaApi)
+					.defaultOptions(OllamaOptions.builder().model(OllamaModel.LLAMA2).build())
+					.modelManagementOptions(null)
 					.build());
 		assertEquals("modelManagementOptions must not be null", exception.getMessage());
 	}
@@ -99,9 +100,9 @@ public class OllamaChatModelTests {
 		ChatResponse previousChatResponse = ChatResponse.builder()
 			.generations(List.of())
 			.metadata(ChatResponseMetadata.builder()
-				.withUsage(new DefaultUsage(66L, 99L))
-				.withKeyValue("eval-duration", Duration.ofSeconds(2))
-				.withKeyValue("prompt-eval-duration", Duration.ofSeconds(2))
+				.usage(new DefaultUsage(66L, 99L))
+				.keyValue("eval-duration", Duration.ofSeconds(2))
+				.keyValue("prompt-eval-duration", Duration.ofSeconds(2))
 				.build())
 			.build();
 

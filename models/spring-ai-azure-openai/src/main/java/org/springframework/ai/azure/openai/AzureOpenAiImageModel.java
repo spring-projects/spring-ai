@@ -67,7 +67,7 @@ public class AzureOpenAiImageModel implements ImageModel {
 	private final ObjectMapper objectMapper;
 
 	public AzureOpenAiImageModel(OpenAIClient openAIClient) {
-		this(openAIClient, AzureOpenAiImageOptions.builder().withDeploymentName(DEFAULT_DEPLOYMENT_NAME).build());
+		this(openAIClient, AzureOpenAiImageOptions.builder().deploymentName(DEFAULT_DEPLOYMENT_NAME).build());
 	}
 
 	public AzureOpenAiImageModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiImageOptions options) {

@@ -90,7 +90,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public MiniMaxEmbeddingModel(MiniMaxApi miniMaxApi, MetadataMode metadataMode) {
 		this(miniMaxApi, metadataMode,
-				MiniMaxEmbeddingOptions.builder().withModel(MiniMaxApi.DEFAULT_EMBEDDING_MODEL).build(),
+				MiniMaxEmbeddingOptions.builder().model(MiniMaxApi.DEFAULT_EMBEDDING_MODEL).build(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
 	}
 
@@ -196,13 +196,13 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
 		var optionBuilder = MiniMaxEmbeddingOptions.builder();
 		if (runtimeOptionsForProvider != null && runtimeOptionsForProvider.getModel() != null) {
-			optionBuilder.withModel(runtimeOptionsForProvider.getModel());
+			optionBuilder.model(runtimeOptionsForProvider.getModel());
 		}
 		else if (defaultOptions.getModel() != null) {
-			optionBuilder.withModel(defaultOptions.getModel());
+			optionBuilder.model(defaultOptions.getModel());
 		}
 		else {
-			optionBuilder.withModel(MiniMaxApi.DEFAULT_EMBEDDING_MODEL);
+			optionBuilder.model(MiniMaxApi.DEFAULT_EMBEDDING_MODEL);
 		}
 		return optionBuilder.build();
 	}

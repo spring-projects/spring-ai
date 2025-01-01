@@ -121,8 +121,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MiniMaxChatOptions.builder()
-            .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
-            .withTemperature(0.5)
+            .model(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -204,9 +204,9 @@ Next, create a `MiniMaxChatModel` and use it for text generations:
 var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
 var chatModel = new MiniMaxChatModel(this.miniMaxApi, MiniMaxChatOptions.builder()
-                .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
-                .withTemperature(0.4)
-                .withMaxTokens(200)
+                .model(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
                 .build());
 
 ChatResponse response = this.chatModel.call(
@@ -264,8 +264,8 @@ List<Message> messages = new ArrayList<>(List.of(this.userMessage));
 List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
 
 MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-    .withModel(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
-    .withTools(this.functionTool)
+    .model(MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
+    .tools(this.functionTool)
     .build();
 
 

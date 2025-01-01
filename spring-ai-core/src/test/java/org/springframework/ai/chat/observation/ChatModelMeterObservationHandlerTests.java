@@ -44,6 +44,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * Unit tests for {@link ChatModelMeterObservationHandler}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 class ChatModelMeterObservationHandlerTests {
 
@@ -68,7 +69,7 @@ class ChatModelMeterObservationHandlerTests {
 			.start();
 
 		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("test"))),
-				ChatResponseMetadata.builder().withModel("mistral-42").withUsage(new TestUsage()).build()));
+				ChatResponseMetadata.builder().model("mistral-42").usage(new TestUsage()).build()));
 
 		observation.stop();
 

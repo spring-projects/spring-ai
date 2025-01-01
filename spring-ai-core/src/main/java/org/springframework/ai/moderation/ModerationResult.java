@@ -100,16 +100,43 @@ public final class ModerationResult {
 
 		private CategoryScores categoryScores;
 
+		public Builder flagged(boolean flagged) {
+			this.flagged = flagged;
+			return this;
+		}
+
+		public Builder categories(Categories categories) {
+			this.categories = categories;
+			return this;
+		}
+
+		public Builder categoryScores(CategoryScores categoryScores) {
+			this.categoryScores = categoryScores;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #flagged(boolean)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withFlagged(boolean flagged) {
 			this.flagged = flagged;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #categories(Categories)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withCategories(Categories categories) {
 			this.categories = categories;
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #categoryScores(CategoryScores)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withCategoryScores(CategoryScores categoryScores) {
 			this.categoryScores = categoryScores;
 			return this;

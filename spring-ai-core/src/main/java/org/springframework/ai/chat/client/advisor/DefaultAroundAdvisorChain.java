@@ -86,11 +86,11 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 		var advisor = this.callAroundAdvisors.pop();
 
 		var observationContext = AdvisorObservationContext.builder()
-			.withAdvisorName(advisor.getName())
-			.withAdvisorType(AdvisorObservationContext.Type.AROUND)
-			.withAdvisedRequest(advisedRequest)
-			.withAdvisorRequestContext(advisedRequest.adviseContext())
-			.withOrder(advisor.getOrder())
+			.advisorName(advisor.getName())
+			.advisorType(AdvisorObservationContext.Type.AROUND)
+			.advisedRequest(advisedRequest)
+			.advisorRequestContext(advisedRequest.adviseContext())
+			.order(advisor.getOrder())
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
@@ -108,11 +108,11 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 			var advisor = this.streamAroundAdvisors.pop();
 
 			AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
-				.withAdvisorName(advisor.getName())
-				.withAdvisorType(AdvisorObservationContext.Type.AROUND)
-				.withAdvisedRequest(advisedRequest)
-				.withAdvisorRequestContext(advisedRequest.adviseContext())
-				.withOrder(advisor.getOrder())
+				.advisorName(advisor.getName())
+				.advisorType(AdvisorObservationContext.Type.AROUND)
+				.advisedRequest(advisedRequest)
+				.advisorRequestContext(advisedRequest.adviseContext())
+				.order(advisor.getOrder())
 				.build();
 
 			var observation = AdvisorObservationDocumentation.AI_ADVISOR.observation(null,

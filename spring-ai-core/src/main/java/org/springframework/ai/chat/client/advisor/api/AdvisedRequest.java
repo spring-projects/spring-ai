@@ -59,6 +59,7 @@ import org.springframework.util.StringUtils;
  * @param toolContext the tool context
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public record AdvisedRequest(
@@ -141,7 +142,7 @@ public record AdvisedRequest(
 	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
 		Assert.notNull(contextTransform, "contextTransform cannot be null");
 		return from(this)
-			.withAdviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
+			.adviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
 			.build();
 	}
 
@@ -228,7 +229,7 @@ public record AdvisedRequest(
 		 * @param chatModel the chat model
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withChatModel(ChatModel chatModel) {
+		public Builder chatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;
 			return this;
 		}
@@ -238,7 +239,7 @@ public record AdvisedRequest(
 		 * @param userText the user text
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withUserText(String userText) {
+		public Builder userText(String userText) {
 			this.userText = userText;
 			return this;
 		}
@@ -248,7 +249,7 @@ public record AdvisedRequest(
 		 * @param systemText the system text
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withSystemText(String systemText) {
+		public Builder systemText(String systemText) {
 			this.systemText = systemText;
 			return this;
 		}
@@ -258,7 +259,7 @@ public record AdvisedRequest(
 		 * @param chatOptions the chat options
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withChatOptions(ChatOptions chatOptions) {
+		public Builder chatOptions(ChatOptions chatOptions) {
 			this.chatOptions = chatOptions;
 			return this;
 		}
@@ -268,7 +269,7 @@ public record AdvisedRequest(
 		 * @param media the media
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withMedia(List<Media> media) {
+		public Builder media(List<Media> media) {
 			this.media = media;
 			return this;
 		}
@@ -278,7 +279,7 @@ public record AdvisedRequest(
 		 * @param functionNames the function names
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withFunctionNames(List<String> functionNames) {
+		public Builder functionNames(List<String> functionNames) {
 			this.functionNames = functionNames;
 			return this;
 		}
@@ -288,7 +289,7 @@ public record AdvisedRequest(
 		 * @param functionCallbacks the function callbacks
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.functionCallbacks = functionCallbacks;
 			return this;
 		}
@@ -298,7 +299,7 @@ public record AdvisedRequest(
 		 * @param messages the messages
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withMessages(List<Message> messages) {
+		public Builder messages(List<Message> messages) {
 			this.messages = messages;
 			return this;
 		}
@@ -308,7 +309,7 @@ public record AdvisedRequest(
 		 * @param userParams the user params
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withUserParams(Map<String, Object> userParams) {
+		public Builder userParams(Map<String, Object> userParams) {
 			this.userParams = userParams;
 			return this;
 		}
@@ -318,7 +319,7 @@ public record AdvisedRequest(
 		 * @param systemParams the system params
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withSystemParams(Map<String, Object> systemParams) {
+		public Builder systemParams(Map<String, Object> systemParams) {
 			this.systemParams = systemParams;
 			return this;
 		}
@@ -328,7 +329,7 @@ public record AdvisedRequest(
 		 * @param advisors the advisors
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withAdvisors(List<Advisor> advisors) {
+		public Builder advisors(List<Advisor> advisors) {
 			this.advisors = advisors;
 			return this;
 		}
@@ -338,7 +339,7 @@ public record AdvisedRequest(
 		 * @param advisorParams the advisor params
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withAdvisorParams(Map<String, Object> advisorParams) {
+		public Builder advisorParams(Map<String, Object> advisorParams) {
 			this.advisorParams = advisorParams;
 			return this;
 		}
@@ -348,7 +349,7 @@ public record AdvisedRequest(
 		 * @param adviseContext the advise context
 		 * @return this {@link Builder} instance
 		 */
-		public Builder withAdviseContext(Map<String, Object> adviseContext) {
+		public Builder adviseContext(Map<String, Object> adviseContext) {
 			this.adviseContext = adviseContext;
 			return this;
 		}
@@ -358,6 +359,132 @@ public record AdvisedRequest(
 		 * @param toolContext the tool context
 		 * @return this {@link Builder} instance
 		 */
+		public Builder toolContext(Map<String, Object> toolContext) {
+			this.toolContext = toolContext;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #chatModel(ChatModel)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withChatModel(ChatModel chatModel) {
+			this.chatModel = chatModel;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #userText(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUserText(String userText) {
+			this.userText = userText;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #systemText(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withSystemText(String systemText) {
+			this.systemText = systemText;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #chatOptions(ChatOptions)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withChatOptions(ChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #media(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMedia(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #functionNames(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctionNames(List<String> functionNames) {
+			this.functionNames = functionNames;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #functionCallbacks(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #messages(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withMessages(List<Message> messages) {
+			this.messages = messages;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #userParams(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withUserParams(Map<String, Object> userParams) {
+			this.userParams = userParams;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #systemParams(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withSystemParams(Map<String, Object> systemParams) {
+			this.systemParams = systemParams;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #advisors(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withAdvisors(List<Advisor> advisors) {
+			this.advisors = advisors;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #advisorParams(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withAdvisorParams(Map<String, Object> advisorParams) {
+			this.advisorParams = advisorParams;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #adviseContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
+		public Builder withAdviseContext(Map<String, Object> adviseContext) {
+			this.adviseContext = adviseContext;
+			return this;
+		}
+
+		/**
+		 * @deprecated use {@link #toolContext(Map)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M5")
 		public Builder withToolContext(Map<String, Object> toolContext) {
 			this.toolContext = toolContext;
 			return this;
