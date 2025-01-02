@@ -68,6 +68,7 @@ public record AdvisedRequest(
 		String userText,
 		@Nullable
 		String systemText,
+		String advisorText,
 		@Nullable
 		ChatOptions chatOptions,
 		List<Media> media,
@@ -82,8 +83,10 @@ public record AdvisedRequest(
 		Map<String, Object> toolContext
 // @formatter:on
 ) {
-
-	public AdvisedRequest {
+	public AdvisedRequest(ChatModel chatModel, String userText, @Nullable
+	String systemText, @Nullable
+						  String advisorText, @Nullable
+						  ChatOptions chatOptions, List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages, Map<String, Object> userParams, Map<String, Object> systemParams, List<Advisor> advisors, Map<String, Object> advisorParams, Map<String, Object> adviseContext, Map<String, Object> toolContext) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.isTrue(StringUtils.hasText(userText) || !CollectionUtils.isEmpty(messages),
 				"userText cannot be null or empty unless messages are provided and contain Tool Response message.");
@@ -112,6 +115,28 @@ public record AdvisedRequest(
 		Assert.notNull(toolContext, "toolContext cannot be null");
 		Assert.noNullElements(toolContext.keySet(), "toolContext keys cannot contain null elements");
 		Assert.noNullElements(toolContext.values(), "toolContext values cannot contain null elements");
+
+		if (!CollectionUtils.isEmpty(userParams)) {
+			this.userText = userText;
+			this.userParams = userParams;
+		} else {
+			this.userParams = Map.of("userText", userText);
+			this.userText = "{userText}";
+		}
+
+		this.chatModel = chatModel;
+		this.systemText = systemText;
+		this.advisorText = (advisorText != null) ? advisorText : "";
+		this.chatOptions = chatOptions;
+		this.media = media;
+		this.functionNames = functionNames;
+		this.functionCallbacks = functionCallbacks;
+		this.messages = messages;
+		this.systemParams = systemParams;
+		this.advisors = advisors;
+		this.advisorParams = advisorParams;
+		this.adviseContext = adviseContext;
+		this.toolContext = toolContext;
 	}
 
 	public static Builder builder() {
@@ -125,6 +150,7 @@ public record AdvisedRequest(
 		builder.chatModel = from.chatModel;
 		builder.userText = from.userText;
 		builder.systemText = from.systemText;
+		builder.advisorText = from.advisorText;
 		builder.chatOptions = from.chatOptions;
 		builder.media = from.media;
 		builder.functionNames = from.functionNames;
@@ -146,6 +172,11 @@ public record AdvisedRequest(
 			.build();
 	}
 
+	public String renderUserText() {
+		return !CollectionUtils.isEmpty(this.userParams()) ? new PromptTemplate(this.userText(), this.userParams()).render()
+				: this.userText();
+	}
+
 	public Prompt toPrompt() {
 		var messages = new ArrayList<>(this.messages());
 
@@ -157,21 +188,27 @@ public record AdvisedRequest(
 			messages.add(new SystemMessage(processedSystemText));
 		}
 
+		String processedAdvisorText = this.advisorText();
+		if (StringUtils.hasText(this.advisorText())) {
+			Map<String, Object> advisorParams = new HashMap<>(this.advisorParams());
+			if (!CollectionUtils.isEmpty(this.userParams())) {
+				advisorParams.putAll(this.userParams());
+			}
+
+			if (!CollectionUtils.isEmpty(advisorParams)) {
+				processedAdvisorText = new PromptTemplate(processedAdvisorText, advisorParams).render();
+			}
+		} else {
+			processedAdvisorText = renderUserText();
+		}
+
 		String formatParam = (String) this.adviseContext().get("formatParam");
 
-		var processedUserText = StringUtils.hasText(formatParam)
-				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
-
-		if (StringUtils.hasText(processedUserText)) {
-			Map<String, Object> userParams = new HashMap<>(this.userParams());
-			if (StringUtils.hasText(formatParam)) {
-				userParams.put("spring_ai_soc_format", formatParam);
-			}
-			if (!CollectionUtils.isEmpty(userParams)) {
-				processedUserText = new PromptTemplate(processedUserText, userParams).render();
-			}
-			messages.add(new UserMessage(processedUserText, this.media()));
+		if (StringUtils.hasText(formatParam)) {
+			processedAdvisorText += System.lineSeparator() + formatParam;
 		}
+
+		messages.add(new UserMessage(processedAdvisorText, this.media()));
 
 		if (this.chatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
 			if (!this.functionNames().isEmpty()) {
@@ -198,6 +235,8 @@ public record AdvisedRequest(
 		private String userText;
 
 		private String systemText;
+
+		private String advisorText;
 
 		private ChatOptions chatOptions;
 
@@ -251,6 +290,16 @@ public record AdvisedRequest(
 		 */
 		public Builder systemText(String systemText) {
 			this.systemText = systemText;
+			return this;
+		}
+
+		/**
+		 * Set the advisor text.
+		 * @param advisorText the advisor text
+		 * @return this {@link Builder} instance
+		 */
+		public Builder advisorText(String advisorText) {
+			this.advisorText = advisorText;
 			return this;
 		}
 
@@ -495,7 +544,7 @@ public record AdvisedRequest(
 		 * @return a new {@link AdvisedRequest} instance
 		 */
 		public AdvisedRequest build() {
-			return new AdvisedRequest(this.chatModel, this.userText, this.systemText, this.chatOptions, this.media,
+			return new AdvisedRequest(this.chatModel, this.userText, this.systemText, this.advisorText, this.chatOptions, this.media,
 					this.functionNames, this.functionCallbacks, this.messages, this.userParams, this.systemParams,
 					this.advisors, this.advisorParams, this.adviseContext, this.toolContext);
 		}

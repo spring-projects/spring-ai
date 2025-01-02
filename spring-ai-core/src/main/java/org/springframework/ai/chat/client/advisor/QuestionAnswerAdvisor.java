@@ -216,7 +216,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
 
 		// 2. Search for similar documents in the vector store.
-		String query = new PromptTemplate(request.userText(), request.userParams()).render();
+		String query = request.renderUserText();
 		var searchRequestToUse = SearchRequest.from(this.searchRequest)
 			.query(query)
 			.filterExpression(doGetFilterExpression(context))
@@ -236,7 +236,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		advisedUserParams.put("question_answer_context", documentContext);
 
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
-			.userText(advisedUserText)
+			.advisorText(advisedUserText)
 			.userParams(advisedUserParams)
 			.adviseContext(context)
 			.build();
