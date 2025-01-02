@@ -18,20 +18,24 @@ package org.springframework.ai.anthropic.api.tool;
 
 import java.util.function.Function;
 
+import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Christian Tzolov
  */
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 
+	public static final Logger log = (Logger) LoggerFactory.getLogger(MockWeatherService.class.getName());
+
 	@Override
 	public Response apply(Request request) {
-
+		log.info("Weather Request: {}", request.toString());
 		double temperature = 0;
 		if (request.location().contains("Paris")) {
 			temperature = 15;
