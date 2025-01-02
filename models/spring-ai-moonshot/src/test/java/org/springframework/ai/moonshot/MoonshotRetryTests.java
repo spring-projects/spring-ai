@@ -80,7 +80,7 @@ public class MoonshotRetryTests {
 	public void moonshotChatTransientError() {
 
 		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.ASSISTANT),
-				ChatCompletionFinishReason.STOP);
+				ChatCompletionFinishReason.STOP, null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", "chat.completion", 789L, "model",
 				List.of(choice), new MoonshotApi.Usage(10, 10, 10));
 
