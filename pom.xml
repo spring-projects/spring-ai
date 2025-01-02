@@ -190,7 +190,7 @@
 		<qdrant.version>1.9.1</qdrant.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.35.0</jsonschema.version>
-		<swagger-annotations.version>2.2.20</swagger-annotations.version>
+		<swagger-annotations.version>2.2.25</swagger-annotations.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
 		<!-- Protobuf -->
