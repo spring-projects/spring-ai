@@ -16,12 +16,10 @@
 
 package org.springframework.ai.testcontainers.service.connection.typesense;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -39,6 +37,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.testcontainers.typesense.TypesenseContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,11 +50,7 @@ class TypesenseContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	private static final GenericContainer<?> typesense = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
-		.withExposedPorts(8108)
-		.withCommand("--data-dir", "/tmp", "--enable-cors")
-		.withEnv("TYPESENSE_API_KEY", "secret")
-		.withStartupTimeout(Duration.ofSeconds(100));
+	private static final TypesenseContainer typesense = new TypesenseContainer(TypesenseImage.DEFAULT_IMAGE);
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
