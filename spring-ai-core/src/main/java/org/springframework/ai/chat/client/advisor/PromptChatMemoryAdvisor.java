@@ -157,15 +157,6 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #systemTextAdvise(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withSystemTextAdvise(String systemTextAdvise) {
-			this.systemTextAdvise = systemTextAdvise;
-			return this;
-		}
-
 		public PromptChatMemoryAdvisor build() {
 			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
 					this.systemTextAdvise, this.order);

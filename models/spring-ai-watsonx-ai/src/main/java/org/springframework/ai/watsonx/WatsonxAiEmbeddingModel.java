@@ -72,7 +72,7 @@ public class WatsonxAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getContent());
+		return embed(document.getText());
 	}
 
 	@Override

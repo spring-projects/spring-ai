@@ -47,17 +47,6 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 
 	protected final EmbeddingModel embeddingModel;
 
-	/**
-	 * Create a new {@link AbstractObservationVectorStore} instance.
-	 * @param observationRegistry the observation registry to use
-	 * @param customObservationConvention the custom observation convention to use
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AbstractObservationVectorStore(ObservationRegistry observationRegistry,
-			@Nullable VectorStoreObservationConvention customObservationConvention) {
-		this(null, observationRegistry, customObservationConvention);
-	}
-
 	private AbstractObservationVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
 			@Nullable VectorStoreObservationConvention customObservationConvention) {
 		this.embeddingModel = embeddingModel;
