@@ -34,12 +34,13 @@ import org.springframework.util.Assert;
  * @param <I> the input type
  * @param <O> the output type
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public final class FunctionInvokingFunctionCallback<I, O> extends AbstractFunctionCallback<I, O> {
 
 	private final BiFunction<I, ToolContext, O> biFunction;
 
-	FunctionInvokingFunctionCallback(String name, String description, String inputTypeSchema, Type inputType,
+	public FunctionInvokingFunctionCallback(String name, String description, String inputTypeSchema, Type inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
 		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
