@@ -50,15 +50,6 @@ public class Generation implements ModelResult<Moderation> {
 		return this;
 	}
 
-	/**
-	 * @deprecated use {@link #generationMetadata(ModerationGenerationMetadata)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public Generation withGenerationMetadata(@Nullable ModerationGenerationMetadata moderationGenerationMetadata) {
-		this.moderationGenerationMetadata = moderationGenerationMetadata;
-		return this;
-	}
-
 	@Override
 	public Moderation getOutput() {
 		return this.moderation;

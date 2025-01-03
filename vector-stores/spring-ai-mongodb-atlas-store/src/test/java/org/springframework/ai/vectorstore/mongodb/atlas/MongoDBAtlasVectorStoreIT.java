@@ -103,7 +103,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
+			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
@@ -134,7 +134,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta1", "meta1");
 
 			Document sameIdDocument = new Document(document.getId(),
@@ -148,7 +148,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 		});
 	}
@@ -247,7 +247,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-			assertThat(resultDoc.getContent()).contains(
+			assertThat(resultDoc.getText()).contains(
 					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);

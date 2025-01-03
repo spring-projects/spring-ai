@@ -92,7 +92,7 @@ class Neo4jVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
+			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
@@ -221,7 +221,7 @@ class Neo4jVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -236,7 +236,7 @@ class Neo4jVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -267,7 +267,7 @@ class Neo4jVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
+			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());

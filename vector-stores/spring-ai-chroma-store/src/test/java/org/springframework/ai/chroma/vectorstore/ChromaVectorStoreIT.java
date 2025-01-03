@@ -82,7 +82,7 @@ public class ChromaVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
+			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
@@ -114,7 +114,7 @@ public class ChromaVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The sky is blue because of Rayleigh scattering.");
+			assertThat(resultDoc.getText()).isEqualTo("The sky is blue because of Rayleigh scattering.");
 
 			// Remove all documents from the store
 			assertThat(vectorStore.delete(List.of(document.getId()))).isEqualTo(Optional.of(Boolean.TRUE));
@@ -188,7 +188,7 @@ public class ChromaVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -203,7 +203,7 @@ public class ChromaVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -237,7 +237,7 @@ public class ChromaVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
+			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());

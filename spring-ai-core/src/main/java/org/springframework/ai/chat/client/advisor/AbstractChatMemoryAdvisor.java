@@ -275,42 +275,6 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		}
 
 		/**
-		 * @deprecated use {@link #conversationId( String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public AbstractBuilder withConversationId(String conversationId) {
-			this.conversationId = conversationId;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #chatMemoryRetrieveSize(int)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public AbstractBuilder withChatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
-			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #protectFromBlocking(boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public AbstractBuilder withProtectFromBlocking(boolean protectFromBlocking) {
-			this.protectFromBlocking = protectFromBlocking;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #order(int)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public AbstractBuilder withOrder(int order) {
-			this.order = order;
-			return this;
-		}
-
-		/**
 		 * Build the advisor.
 		 * @return the advisor
 		 */

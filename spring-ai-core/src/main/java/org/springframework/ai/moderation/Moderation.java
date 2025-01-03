@@ -106,33 +106,6 @@ public final class Moderation {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #id(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withId(String id) {
-			this.id = id;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			this.model = model;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #results(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withResults(List<ModerationResult> results) {
-			this.moderationResultList = results;
-			return this;
-		}
-
 		public Moderation build() {
 			return new Moderation(this);
 		}

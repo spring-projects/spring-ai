@@ -43,7 +43,7 @@ public class TikaDocumentReaderTests {
 
 		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_SOURCE);
 		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)).isEqualTo(resourceName);
-		assertThat(doc.getContent()).contains(contentSnipped);
+		assertThat(doc.getText()).contains(contentSnipped);
 	}
 
 }

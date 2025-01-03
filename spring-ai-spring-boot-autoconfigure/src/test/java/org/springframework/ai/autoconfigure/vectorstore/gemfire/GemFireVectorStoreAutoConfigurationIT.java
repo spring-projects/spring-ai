@@ -167,7 +167,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-			assertThat(resultDoc.getContent()).contains(
+			assertThat(resultDoc.getText()).contains(
 					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");

@@ -141,10 +141,10 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		}
 
 		// optional text parameter
-		if (StringUtils.hasText(document.getContent())) {
-			instanceBuilder.text(document.getContent());
+		if (StringUtils.hasText(document.getText())) {
+			instanceBuilder.text(document.getText());
 			documentMetadata.put(ModalityType.TEXT,
-					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getContent()));
+					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getText()));
 		}
 
 		Media media = document.getMedia();
@@ -153,7 +153,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				instanceBuilder.text(media.getData().toString());
 				documentMetadata.put(ModalityType.TEXT,
 						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-				if (StringUtils.hasText(document.getContent())) {
+				if (StringUtils.hasText(document.getText())) {
 					logger.warn("Media type String overrides the Document text content!");
 				}
 			}

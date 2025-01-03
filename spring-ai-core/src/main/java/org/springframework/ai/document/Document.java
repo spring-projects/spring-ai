@@ -179,14 +179,6 @@ public class Document {
 	}
 
 	/**
-	 * @deprecated Use getText() instead as it more accurately reflects the content type
-	 */
-	@Deprecated
-	public String getContent() {
-		return this.getText();
-	}
-
-	/**
 	 * Returns the document's text content, if any.
 	 * @return the text content if {@link #isText()} is true, null otherwise
 	 * @see #isText()

@@ -123,7 +123,7 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");

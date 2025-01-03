@@ -46,7 +46,7 @@ public class JsonReaderTests {
 		List<Document> documents = jsonReader.get();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
-			assertThat(document.getContent()).isNotEmpty();
+			assertThat(document.getText()).isNotEmpty();
 		}
 	}
 
@@ -57,7 +57,7 @@ public class JsonReaderTests {
 		List<Document> documents = jsonReader.get();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
-			assertThat(document.getContent()).isNotEmpty();
+			assertThat(document.getText()).isNotEmpty();
 		}
 	}
 
@@ -68,8 +68,8 @@ public class JsonReaderTests {
 		List<Document> documents = jsonReader.get("/0/sessions");
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
-			assertThat(document.getContent()).isNotEmpty();
-			assertThat(document.getContent()).contains("Session");
+			assertThat(document.getText()).isNotEmpty();
+			assertThat(document.getText()).contains("Session");
 		}
 	}
 
@@ -80,7 +80,7 @@ public class JsonReaderTests {
 		List<Document> documents = jsonReader.get("/store");
 		assertThat(documents).isNotEmpty();
 		assertThat(documents.size()).isEqualTo(1);
-		assertThat(documents.get(0).getContent()).contains("name: Bike Shop");
+		assertThat(documents.get(0).getText()).contains("name: Bike Shop");
 	}
 
 }

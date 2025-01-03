@@ -309,44 +309,6 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #searchRequest(SearchRequest)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withSearchRequest(SearchRequest searchRequest) {
-			Assert.notNull(searchRequest, "The searchRequest must not be null!");
-			this.searchRequest = searchRequest;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #userTextAdvise(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUserTextAdvise(String userTextAdvise) {
-			Assert.hasText(userTextAdvise, "The userTextAdvise must not be empty!");
-			this.userTextAdvise = userTextAdvise;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #protectFromBlocking(boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withProtectFromBlocking(boolean protectFromBlocking) {
-			this.protectFromBlocking = protectFromBlocking;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #order(int)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOrder(int order) {
-			this.order = order;
-			return this;
-		}
-
 		public QuestionAnswerAdvisor build() {
 			return new QuestionAnswerAdvisor(this.vectorStore, this.searchRequest, this.userTextAdvise,
 					this.protectFromBlocking, this.order);

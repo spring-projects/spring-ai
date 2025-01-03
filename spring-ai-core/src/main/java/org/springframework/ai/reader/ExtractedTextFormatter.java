@@ -99,18 +99,6 @@ public final class ExtractedTextFormatter {
 	 * Removes the specified number of lines from the bottom part of the text.
 	 * @param pageText Text to remove lines from.
 	 * @param numberOfLines Number of lines to remove.
-	 * @return Returns the text striped from last lines.
-	 * @deprecated use {@link #deleteTopTextLines(String, int, String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public static String deleteBottomTextLines(String pageText, int numberOfLines) {
-		return deleteBottomTextLines(pageText, numberOfLines, System.lineSeparator());
-	}
-
-	/**
-	 * Removes the specified number of lines from the bottom part of the text.
-	 * @param pageText Text to remove lines from.
-	 * @param numberOfLines Number of lines to remove.
 	 * @param lineSeparator The line separator to use when identifying lines in the text.
 	 * @return Returns the text striped from last lines.
 	 */
@@ -128,33 +116,6 @@ public final class ExtractedTextFormatter {
 			lineCount++;
 		}
 		return pageText.substring(0, truncateIndex);
-	}
-
-	/**
-	 * Removes a specified number of lines from the top part of the given text.
-	 *
-	 * <p>
-	 * This method takes a text and trims it by removing a certain number of lines from
-	 * the top. If the provided text is null or contains only whitespace, it will be
-	 * returned as is. If the number of lines to remove exceeds the actual number of lines
-	 * in the text, the result will be an empty string.
-	 * </p>
-	 *
-	 * <p>
-	 * The method identifies lines based on the system's line separator, making it
-	 * compatible with different platforms.
-	 * </p>
-	 * @param pageText The text from which the top lines need to be removed. If this is
-	 * null, empty, or consists only of whitespace, it will be returned unchanged.
-	 * @param numberOfLines The number of lines to remove from the top of the text. If
-	 * this exceeds the actual number of lines in the text, an empty string will be
-	 * returned.
-	 * @return The text with the specified number of lines removed from the top.
-	 * @deprecated use {@link #deleteTopTextLines(String, int, String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public static String deleteTopTextLines(String pageText, int numberOfLines) {
-		return deleteTopTextLines(pageText, numberOfLines, System.lineSeparator());
 	}
 
 	/**

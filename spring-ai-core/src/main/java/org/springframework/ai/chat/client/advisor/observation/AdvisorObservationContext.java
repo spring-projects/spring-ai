@@ -277,60 +277,6 @@ public class AdvisorObservationContext extends Observation.Context {
 		}
 
 		/**
-		 * @deprecated use {@link #advisorName(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdvisorName(String advisorName) {
-			this.advisorName = advisorName;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #advisorType(Type)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdvisorType(Type advisorType) {
-			this.advisorType = advisorType;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #advisedRequest(AdvisedRequest)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdvisedRequest(AdvisedRequest advisedRequest) {
-			this.advisorRequest = advisedRequest;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #advisorRequestContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdvisorRequestContext(Map<String, Object> advisorRequestContext) {
-			this.advisorRequestContext = advisorRequestContext;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #advisorResponseContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
-			this.advisorResponseContext = advisorResponseContext;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #order(int)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOrder(int order) {
-			this.order = order;
-			return this;
-		}
-
-		/**
 		 * Build the {@link AdvisorObservationContext}.
 		 * @return the {@link AdvisorObservationContext}
 		 */

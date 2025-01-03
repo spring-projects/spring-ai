@@ -113,7 +113,7 @@ public final class DefaultContentFormatter implements ContentFormatter {
 			.collect(Collectors.joining(this.metadataSeparator));
 
 		return this.textTemplate.replace(TEMPLATE_METADATA_STRING_PLACEHOLDER, metadataText)
-			.replace(TEMPLATE_CONTENT_PLACEHOLDER, document.getContent());
+			.replace(TEMPLATE_CONTENT_PLACEHOLDER, document.getText());
 	}
 
 	/**

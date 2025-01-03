@@ -65,7 +65,7 @@ public abstract class TextSplitter implements DocumentTransformer {
 		List<ContentFormatter> formatters = new ArrayList<>();
 
 		for (Document doc : documents) {
-			texts.add(doc.getContent());
+			texts.add(doc.getText());
 			metadataList.add(doc.getMetadata());
 			formatters.add(doc.getContentFormatter());
 		}

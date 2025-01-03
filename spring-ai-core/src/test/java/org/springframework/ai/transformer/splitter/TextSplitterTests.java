@@ -73,13 +73,13 @@ public class TextSplitterTests {
 		assertThat(chunks).hasSize(4);
 
 		// Doc1 chunks:
-		assertThat(chunks.get(0).getContent()).isEqualTo("In the end, writing arises when man");
-		assertThat(chunks.get(1).getContent()).isEqualTo(" realizes that memory is not enough.");
+		assertThat(chunks.get(0).getText()).isEqualTo("In the end, writing arises when man");
+		assertThat(chunks.get(1).getText()).isEqualTo(" realizes that memory is not enough.");
 
 		// Doc2 chunks:
-		assertThat(chunks.get(2).getContent())
+		assertThat(chunks.get(2).getText())
 			.isEqualTo("The most oppressive thing about the labyrinth is that you are constantly being forced to ");
-		assertThat(chunks.get(3).getContent())
+		assertThat(chunks.get(3).getText())
 			.isEqualTo("choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.");
 
 		// Verify that the same, merged metadata is copied to all chunks.
@@ -233,8 +233,8 @@ public class TextSplitterTests {
 		assertThat(chunks).hasSize(2);
 
 		// Doc chunks:
-		assertThat(chunks.get(0).getContent()).isEqualTo("In the end, writing arises when man");
-		assertThat(chunks.get(1).getContent()).isEqualTo(" realizes that memory is not enough.");
+		assertThat(chunks.get(0).getText()).isEqualTo("In the end, writing arises when man");
+		assertThat(chunks.get(1).getText()).isEqualTo(" realizes that memory is not enough.");
 
 		// Verify that the same, merged metadata is copied to all chunks.
 		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());

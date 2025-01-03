@@ -93,7 +93,7 @@ public class DocumentBuilderTests {
 		Document.Builder result = this.builder.text("Test content");
 
 		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getContent()).isEqualTo("Test content");
+		assertThat(result.build().getText()).isEqualTo("Test content");
 	}
 
 	@Test
@@ -152,7 +152,7 @@ public class DocumentBuilderTests {
 		Document document = this.builder.text("text").text("Test content").build();
 
 		assertThat(document.getId()).isNotNull().isNotEmpty();
-		assertThat(document.getContent()).isEqualTo("Test content");
+		assertThat(document.getText()).isEqualTo("Test content");
 	}
 
 	@Test

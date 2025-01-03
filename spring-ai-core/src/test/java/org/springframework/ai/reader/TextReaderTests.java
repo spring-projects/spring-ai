@@ -52,7 +52,7 @@ public class TextReaderTests {
 			assertThat(document.getMetadata().get("customKey")).isEqualTo("Value");
 			assertThat(document.getMetadata().get(TextReader.SOURCE_METADATA)).isEqualTo("text_source.txt");
 			assertThat(document.getMetadata().get(TextReader.CHARSET_METADATA)).isEqualTo("UTF-8");
-			assertThat(document.getContent()).isNotEmpty();
+			assertThat(document.getText()).isNotEmpty();
 		}
 	}
 
@@ -76,7 +76,7 @@ public class TextReaderTests {
 		assertThat(defaultDocument.getMetadata().get(TextReader.SOURCE_METADATA))
 			.isEqualTo("Byte array resource [resource loaded from byte array]");
 
-		assertThat(defaultDocument.getContent()).isEqualTo("Test content");
+		assertThat(defaultDocument.getText()).isEqualTo("Test content");
 
 		// Test with custom description constructor
 		String customDescription = "Custom byte array resource";
@@ -98,7 +98,7 @@ public class TextReaderTests {
 		assertThat(customDocument.getMetadata().get(TextReader.SOURCE_METADATA))
 			.isEqualTo("Byte array resource [Custom byte array resource]");
 
-		assertThat(customDocument.getContent()).isEqualTo("Another test content");
+		assertThat(customDocument.getText()).isEqualTo("Another test content");
 	}
 
 }

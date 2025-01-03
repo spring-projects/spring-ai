@@ -227,7 +227,7 @@ class CassandraRichSchemaVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
 
-				assertThat(resultDoc.getContent()).contains("Neptunes gravity makes its atmosphere");
+				assertThat(resultDoc.getText()).contains("Neptunes gravity makes its atmosphere");
 
 				assertThat(resultDoc.getMetadata()).hasSize(3);
 
@@ -490,7 +490,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getContent()).contains(URANUS_ORBIT_QUERY);
+				assertThat(resultDoc.getText()).contains(URANUS_ORBIT_QUERY);
 				assertThat(resultDoc.getMetadata()).containsKey("revision");
 
 				String newContent = "The World is Big and Salvation Lurks Around the Corner";
@@ -523,7 +523,7 @@ class CassandraRichSchemaVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isNotEqualTo(sameIdDocument.getId());
-				assertThat(resultDoc.getContent()).doesNotContain(newContent);
+				assertThat(resultDoc.getText()).doesNotContain(newContent);
 
 				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 			}
@@ -555,7 +555,7 @@ class CassandraRichSchemaVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
 
-				assertThat(resultDoc.getContent()).contains(URANUS_ORBIT_QUERY);
+				assertThat(resultDoc.getText()).contains(URANUS_ORBIT_QUERY);
 
 				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);

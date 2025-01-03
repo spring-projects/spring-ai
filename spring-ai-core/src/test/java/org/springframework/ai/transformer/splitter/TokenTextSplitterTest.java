@@ -55,10 +55,10 @@ public class TokenTextSplitterTest {
 		assertThat(chunks.size()).isEqualTo(2);
 
 		// Doc 1
-		assertThat(chunks.get(0).getContent())
+		assertThat(chunks.get(0).getText())
 			.isEqualTo("In the end, writing arises when man realizes that memory is not enough.");
 		// Doc 2
-		assertThat(chunks.get(1).getContent()).isEqualTo(
+		assertThat(chunks.get(1).getText()).isEqualTo(
 				"The most oppressive thing about the labyrinth is that you are constantly being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.");
 
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
@@ -95,14 +95,14 @@ public class TokenTextSplitterTest {
 		assertThat(chunks.size()).isEqualTo(6);
 
 		// Doc 1
-		assertThat(chunks.get(0).getContent()).isEqualTo("In the end, writing arises when man realizes that");
-		assertThat(chunks.get(1).getContent()).isEqualTo("memory is not enough.");
+		assertThat(chunks.get(0).getText()).isEqualTo("In the end, writing arises when man realizes that");
+		assertThat(chunks.get(1).getText()).isEqualTo("memory is not enough.");
 
 		// Doc 2
-		assertThat(chunks.get(2).getContent()).isEqualTo("The most oppressive thing about the labyrinth is that you");
-		assertThat(chunks.get(3).getContent()).isEqualTo("are constantly being forced to choose.");
-		assertThat(chunks.get(4).getContent()).isEqualTo("It isn’t the lack of an exit, but");
-		assertThat(chunks.get(5).getContent()).isEqualTo("the abundance of exits that is so disorienting");
+		assertThat(chunks.get(2).getText()).isEqualTo("The most oppressive thing about the labyrinth is that you");
+		assertThat(chunks.get(3).getText()).isEqualTo("are constantly being forced to choose.");
+		assertThat(chunks.get(4).getText()).isEqualTo("It isn’t the lack of an exit, but");
+		assertThat(chunks.get(5).getText()).isEqualTo("the abundance of exits that is so disorienting");
 
 		// Verify that the same, merged metadata is copied to all chunks.
 		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());
