@@ -142,51 +142,6 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #transformer(String)} )} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTransformer(String transformer) {
-			this.options.setTransformer(transformer);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #vectorType(VectorType)} )} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withVectorType(VectorType vectorType) {
-			this.options.setVectorType(vectorType);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #kwargs(String)} )} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withKwargs(String kwargs) {
-			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #kwargs(Map)} )} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withKwargs(Map<String, Object> kwargs) {
-			this.options.setKwargs(kwargs);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #metadataMode(MetadataMode)} )} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMetadataMode(MetadataMode metadataMode) {
-			this.options.setMetadataMode(metadataMode);
-			return this;
-		}
-
 		public PostgresMlEmbeddingOptions build() {
 			return this.options;
 		}
