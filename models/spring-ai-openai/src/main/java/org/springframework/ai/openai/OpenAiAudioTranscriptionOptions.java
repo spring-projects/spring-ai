@@ -212,60 +212,6 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model( String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			this.options.model = model;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #language( String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withLanguage(String language) {
-			this.options.language = language;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #prompt( String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPrompt(String prompt) {
-			this.options.prompt = prompt;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #responseFormat( TranscriptResponseFormat)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #temperature( Float)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTemperature(Float temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #granularityType( GranularityType)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withGranularityType(GranularityType granularityType) {
-			this.options.granularityType = granularityType;
-			return this;
-		}
-
 		public OpenAiAudioTranscriptionOptions build() {
 			return this.options;
 		}

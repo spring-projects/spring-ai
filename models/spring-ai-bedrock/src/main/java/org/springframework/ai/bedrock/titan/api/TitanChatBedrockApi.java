@@ -232,42 +232,6 @@ public class TitanChatBedrockApi extends
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #temperature( Double)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withTemperature(Double temperature) {
-				this.temperature = temperature;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #topP( Double)} ( Double)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withTopP(Double topP) {
-				this.topP = topP;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #maxTokenCount( Integer)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withMaxTokenCount(Integer maxTokenCount) {
-				this.maxTokenCount = maxTokenCount;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #stopSequences( List)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withStopSequences(List<String> stopSequences) {
-				this.stopSequences = stopSequences;
-				return this;
-			}
-
 			public TitanChatRequest build() {
 
 				if (this.temperature == null && this.topP == null && this.maxTokenCount == null

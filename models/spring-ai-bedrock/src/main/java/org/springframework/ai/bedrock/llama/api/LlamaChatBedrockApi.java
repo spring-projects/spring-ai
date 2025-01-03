@@ -251,33 +251,6 @@ public class LlamaChatBedrockApi extends
 					return this;
 				}
 
-				/**
-				 * @deprecated use {@link #temperature( Double)} instead.
-				 */
-				@Deprecated(forRemoval = true, since = "1.0.0-M5")
-				public Builder withTemperature(Double temperature) {
-					this.temperature = temperature;
-					return this;
-				}
-
-				/**
-				 * @deprecated use {@link #topP( Double)} instead.
-				 */
-				@Deprecated(forRemoval = true, since = "1.0.0-M5")
-				public Builder withTopP(Double topP) {
-					this.topP = topP;
-					return this;
-				}
-
-				/**
-				 * @deprecated use {@link #maxGenLen( Integer)} instead.
-				 */
-				@Deprecated(forRemoval = true, since = "1.0.0-M5")
-				public Builder withMaxGenLen(Integer maxGenLen) {
-					this.maxGenLen = maxGenLen;
-					return this;
-				}
-
 				public LlamaChatRequest build() {
 					return new LlamaChatRequest(
 							this.prompt,

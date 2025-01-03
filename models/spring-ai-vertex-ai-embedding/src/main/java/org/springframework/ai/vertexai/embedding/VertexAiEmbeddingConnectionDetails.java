@@ -151,52 +151,6 @@ public class VertexAiEmbeddingConnectionDetails {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #apiEndpoint(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withApiEndpoint(String endpoint) {
-			this.endpoint = endpoint;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #projectId(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withProjectId(String projectId) {
-			this.projectId = projectId;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #location(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withLocation(String location) {
-			this.location = location;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #publisher(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPublisher(String publisher) {
-			this.publisher = publisher;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #predictionServiceSettings(PredictionServiceSettings)}
-		 * instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPredictionServiceSettings(PredictionServiceSettings predictionServiceSettings) {
-			this.predictionServiceSettings = predictionServiceSettings;
-			return this;
-		}
-
 		public VertexAiEmbeddingConnectionDetails build() {
 			if (!StringUtils.hasText(this.endpoint)) {
 				if (!StringUtils.hasText(this.location)) {

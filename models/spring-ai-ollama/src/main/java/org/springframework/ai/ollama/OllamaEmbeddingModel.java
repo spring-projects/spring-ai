@@ -247,43 +247,6 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #ollamaApi(OllamaApi)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
-			this.ollamaApi = ollamaApi;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #defaultOptions(OllamaOptions)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #observationRegistry(ObservationRegistry)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
-			this.observationRegistry = observationRegistry;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #modelManagementOptions(ModelManagementOptions)}
-		 * instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
-			this.modelManagementOptions = modelManagementOptions;
-			return this;
-		}
-
 		public OllamaEmbeddingModel build() {
 			return new OllamaEmbeddingModel(this.ollamaApi, this.defaultOptions, this.observationRegistry,
 					this.modelManagementOptions);

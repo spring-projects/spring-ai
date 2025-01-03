@@ -154,33 +154,6 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #temperature(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTemperature(Double temperature) {
-			this.options.setTemperature(temperature);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #topP(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopP(Double topP) {
-			this.options.setTopP(topP);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #maxGenLen(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMaxGenLen(Integer maxGenLen) {
-			this.options.setMaxGenLen(maxGenLen);
-			return this;
-		}
-
 		public BedrockLlamaChatOptions build() {
 			return this.options;
 		}
