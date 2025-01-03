@@ -46,6 +46,7 @@ import org.springframework.context.annotation.Scope;
  * @author Mark Pollack
  * @author Josh Long
  * @author Arjen Poutsma
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -67,6 +68,7 @@ public class ChatClientAutoConfiguration {
 
 	@Bean
 	@Scope("prototype")
+	@ConditionalOnMissingBean
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatClientObservationConvention> observationConvention) {
