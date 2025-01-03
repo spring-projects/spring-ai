@@ -117,7 +117,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(String.valueOf(resultDoc.getId())).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
@@ -158,7 +158,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(String.valueOf(resultDoc.getId())).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
@@ -202,7 +202,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				Document resultDoc = results.get(0);
 				// Verify that the auto ID is used
 				assertThat(String.valueOf(resultDoc.getId())).isNotEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 

@@ -111,24 +111,6 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 		}
 
 		/**
-		 * @deprecated use {@link #response(ChatResponse)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withResponse(@Nullable ChatResponse response) {
-			this.response = response;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #adviseContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdviseContext(Map<String, Object> adviseContext) {
-			this.adviseContext = adviseContext;
-			return this;
-		}
-
-		/**
 		 * Build the {@link AdvisedResponse}.
 		 * @return the advised response
 		 */
