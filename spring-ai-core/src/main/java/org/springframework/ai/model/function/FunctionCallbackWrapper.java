@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
  * @param <O> the output type
  * @author Christian Tzolov
  * @author Sebastien Deleuze
- * @deprecated in favor of {@link FunctionCallbackWrapper.Builder}
+ * @deprecated in favor of {@link FunctionCallback.Builder}
  */
 @Deprecated
 public final class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
