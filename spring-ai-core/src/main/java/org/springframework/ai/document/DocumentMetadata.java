@@ -16,11 +16,9 @@
 
 package org.springframework.ai.document;
 
-import org.springframework.ai.vectorstore.VectorStore;
-
 /**
  * Common set of metadata keys used in {@link Document}s by {@link DocumentReader}s and
- * {@link VectorStore}s.
+ * {@link org.springframework.ai.vectorstore.VectorStore}s.
  *
  * @author Thomas Vitale
  * @since 1.0.0

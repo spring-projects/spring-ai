@@ -48,6 +48,12 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vector-store</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.azure</groupId>
 			<artifactId>azure-search-documents</artifactId>
 			<version>${azure-search.version}</version>

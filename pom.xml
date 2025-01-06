@@ -41,6 +41,12 @@
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-cloud-bindings</module>
 
+		<!-- Advisors -->
+		<module>advisors/advisor-memory</module>
+		<module>advisors/advisor-vector-store</module>
+		<module>advisors/advisor-rag</module>
+		
+
 		<module>document-readers/markdown-reader</module>
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
@@ -668,6 +674,7 @@
 								<exclude>org.springframework.ai.watsonx/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.zhipuai/**/*IT.java</exclude>
 
+																
 								<!-- Vector Stores -->
 								<exclude>org.springframework.ai.vectorstore**/CosmosDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.azure/**IT.java</exclude>
