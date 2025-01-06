@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -234,30 +234,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	private final BatchingStrategy batchingStrategy;
 
 	private final FilterExpressionConverter filterExpressionConverter;
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
-			boolean initializeSchema) {
-		this(config, embeddingModel, jedis, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
-			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(jedis, embeddingModel).indexName(config.indexName)
-			.prefix(config.prefix)
-			.contentFieldName(config.contentFieldName)
-			.embeddingFieldName(config.embeddingFieldName)
-			.vectorAlgorithm(config.vectorAlgorithm)
-			.metadataFields(config.metadataFields)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	protected RedisVectorStore(Builder builder) {
 		super(builder);
@@ -616,143 +592,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		@Override
 		public RedisVectorStore build() {
 			return new RedisVectorStore(this);
-		}
-
-	}
-
-	/**
-	 * Configuration for the Redis vector store.
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public static final class RedisVectorStoreConfig {
-
-		private final String indexName;
-
-		private final String prefix;
-
-		private final String contentFieldName;
-
-		private final String embeddingFieldName;
-
-		private final Algorithm vectorAlgorithm;
-
-		private final List<MetadataField> metadataFields;
-
-		private RedisVectorStoreConfig() {
-			this(builder());
-		}
-
-		private RedisVectorStoreConfig(Builder builder) {
-			this.indexName = builder.indexName;
-			this.prefix = builder.prefix;
-			this.contentFieldName = builder.contentFieldName;
-			this.embeddingFieldName = builder.embeddingFieldName;
-			this.vectorAlgorithm = builder.vectorAlgorithm;
-			this.metadataFields = builder.metadataFields;
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public static Builder builder() {
-			return new Builder();
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public static RedisVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public static final class Builder {
-
-			private String indexName = DEFAULT_INDEX_NAME;
-
-			private String prefix = DEFAULT_PREFIX;
-
-			private String contentFieldName = DEFAULT_CONTENT_FIELD_NAME;
-
-			private String embeddingFieldName = DEFAULT_EMBEDDING_FIELD_NAME;
-
-			private Algorithm vectorAlgorithm = DEFAULT_VECTOR_ALGORITHM;
-
-			private List<MetadataField> metadataFields = new ArrayList<>();
-
-			private Builder() {
-			}
-
-			/**
-			 * Configures the Redis index name to use.
-			 * @param name the index name to use
-			 * @return this builder
-			 */
-			public Builder withIndexName(String name) {
-				this.indexName = name;
-				return this;
-			}
-
-			/**
-			 * Configures the Redis key prefix to use (default: "embedding:").
-			 * @param prefix the prefix to use
-			 * @return this builder
-			 */
-			public Builder withPrefix(String prefix) {
-				this.prefix = prefix;
-				return this;
-			}
-
-			/**
-			 * Configures the Redis content field name to use.
-			 * @param name the content field name to use
-			 * @return this builder
-			 */
-			public Builder withContentFieldName(String name) {
-				this.contentFieldName = name;
-				return this;
-			}
-
-			/**
-			 * Configures the Redis embedding field name to use.
-			 * @param name the embedding field name to use
-			 * @return this builder
-			 */
-			public Builder withEmbeddingFieldName(String name) {
-				this.embeddingFieldName = name;
-				return this;
-			}
-
-			/**
-			 * Configures the Redis vector algorithm to use.
-			 * @param algorithm the vector algorithm to use
-			 * @return this builder
-			 */
-			public Builder withVectorAlgorithm(Algorithm algorithm) {
-				this.vectorAlgorithm = algorithm;
-				return this;
-			}
-
-			public Builder withMetadataFields(MetadataField... fields) {
-				return withMetadataFields(Arrays.asList(fields));
-			}
-
-			public Builder withMetadataFields(List<MetadataField> fields) {
-				this.metadataFields = fields;
-				return this;
-			}
-
-			/**
-			 * {@return the immutable configuration}
-			 */
-			public RedisVectorStoreConfig build() {
-
-				return new RedisVectorStoreConfig(this);
-			}
-
 		}
 
 	}
