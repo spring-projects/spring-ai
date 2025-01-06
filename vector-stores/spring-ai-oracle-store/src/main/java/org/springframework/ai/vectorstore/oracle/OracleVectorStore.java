@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,97 +145,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	private final OracleJsonFactory osonFactory = new OracleJsonFactory();
 
 	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-	/**
-	 * Creates a new OracleVectorStore with default configuration.
-	 * @param jdbcTemplate the JDBC template to use
-	 * @param embeddingModel the embedding model to use
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
-				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, false, false, false);
-	}
-
-	/**
-	 * Creates a new OracleVectorStore with schema initialization option.
-	 * @param jdbcTemplate the JDBC template to use
-	 * @param embeddingModel the embedding model to use
-	 * @param initializeSchema whether to initialize the schema
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(jdbcTemplate, embeddingModel, DEFAULT_TABLE_NAME, DEFAULT_INDEX_TYPE, DEFAULT_DISTANCE_TYPE,
-				DEFAULT_DIMENSIONS, DEFAULT_SEARCH_ACCURACY, initializeSchema, false, false);
-	}
-
-	/**
-	 * Creates a new OracleVectorStore with full configuration options.
-	 * @param jdbcTemplate the JDBC template to use
-	 * @param embeddingModel the embedding model to use
-	 * @param tableName the table name for vector storage
-	 * @param indexType the type of vector index
-	 * @param distanceType the distance type for similarity calculations
-	 * @param dimensions the number of vector dimensions
-	 * @param searchAccuracy the search accuracy parameter
-	 * @param initializeSchema whether to initialize the schema
-	 * @param removeExistingVectorStoreTable whether to remove existing vector store table
-	 * @param forcedNormalization whether to force vector normalization
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
-			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
-			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
-			boolean forcedNormalization) {
-		this(jdbcTemplate, embeddingModel, tableName, indexType, distanceType, dimensions, searchAccuracy,
-				initializeSchema, removeExistingVectorStoreTable, forcedNormalization, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new OracleVectorStore with full configuration including observation
-	 * options.
-	 * @param jdbcTemplate the JDBC template to use
-	 * @param embeddingModel the embedding model to use
-	 * @param tableName the table name for vector storage
-	 * @param indexType the type of vector index
-	 * @param distanceType the distance type for similarity calculations
-	 * @param dimensions the number of vector dimensions
-	 * @param searchAccuracy the search accuracy parameter
-	 * @param initializeSchema whether to initialize the schema
-	 * @param removeExistingVectorStoreTable whether to remove existing vector store table
-	 * @param forcedNormalization whether to force vector normalization
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @param batchingStrategy the batching strategy
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(JdbcTemplate, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
-			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
-			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
-			boolean forcedNormalization, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(jdbcTemplate, embeddingModel).tableName(tableName)
-			.indexType(indexType)
-			.distanceType(distanceType)
-			.dimensions(dimensions)
-			.searchAccuracy(searchAccuracy)
-			.initializeSchema(initializeSchema)
-			.removeExistingVectorStoreTable(removeExistingVectorStoreTable)
-			.forcedNormalization(forcedNormalization)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to

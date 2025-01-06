@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,30 +165,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ElasticsearchVectorStore(RestClient restClient, EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel, initializeSchema);
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
-			EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(options, restClient, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
-			EmbeddingModel embeddingModel, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(restClient, embeddingModel).options(options)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	protected ElasticsearchVectorStore(Builder builder) {
 		super(builder);

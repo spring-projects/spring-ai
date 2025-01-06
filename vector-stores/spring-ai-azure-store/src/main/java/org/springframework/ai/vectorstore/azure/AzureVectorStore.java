@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,59 +133,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	private String indexName;
 
 	/**
-	 * Creates a new AzureVectorStore with basic configuration.
-	 * @param searchIndexClient the Azure search index client
-	 * @param embeddingModel the embedding model to use
-	 * @param initializeSchema whether to initialize schema
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(searchIndexClient, embeddingModel, initializeSchema, List.of());
-	}
-
-	/**
-	 * Creates a new AzureVectorStore with metadata fields configuration.
-	 * @param searchIndexClient the Azure search index client
-	 * @param embeddingModel the embedding model to use
-	 * @param initializeSchema whether to initialize schema
-	 * @param filterMetadataFields list of metadata fields for filtering
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema, List<MetadataField> filterMetadataFields) {
-		this(searchIndexClient, embeddingModel, initializeSchema, filterMetadataFields, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new AzureVectorStore with full configuration.
-	 * @param searchIndexClient the Azure search index client
-	 * @param embeddingModel the embedding model to use
-	 * @param initializeSchema whether to initialize schema
-	 * @param filterMetadataFields list of metadata fields for filtering
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema, List<MetadataField> filterMetadataFields, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(searchIndexClient, embeddingModel).initializeSchema(initializeSchema)
-			.filterMetadataFields(filterMetadataFields)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
-
-	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
 	 * create new AzureVectorStore instances.
 	 * @param builder the configured builder instance
@@ -208,44 +155,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	public static Builder builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 		return new Builder(searchIndexClient, embeddingModel);
-	}
-
-	/**
-	 * Change the Index Name.
-	 * @param indexName The Azure VectorStore index name to use.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link Builder#indexName(String)} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public void setIndexName(String indexName) {
-		Assert.hasText(indexName, "The index name can not be empty.");
-		this.indexName = indexName;
-	}
-
-	/**
-	 * Sets the a default maximum number of similar documents returned.
-	 * @param topK The default maximum number of similar documents returned.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link Builder#indexName(String)} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public void setDefaultTopK(int topK) {
-		Assert.isTrue(topK >= 0, "The topK should be positive value.");
-		this.defaultTopK = topK;
-	}
-
-	/**
-	 * Sets the a default similarity threshold for returned documents.
-	 * @param similarityThreshold The a default similarity threshold for returned
-	 * documents.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link Builder#indexName(String)} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public void setDefaultSimilarityThreshold(Double similarityThreshold) {
-		Assert.isTrue(similarityThreshold >= 0.0 && similarityThreshold <= 1.0,
-				"The similarity threshold must be in range [0.0:1.00].");
-		this.defaultSimilarityThreshold = similarityThreshold;
 	}
 
 	@Override

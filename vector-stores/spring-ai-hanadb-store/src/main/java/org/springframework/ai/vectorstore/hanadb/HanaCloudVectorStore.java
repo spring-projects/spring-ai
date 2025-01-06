@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,41 +88,6 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	private final int topK;
 
 	private final ObjectMapper objectMapper;
-
-	/**
-	 * Creates a new HanaCloudVectorStore with basic configuration.
-	 * @param repository the HANA vector repository
-	 * @param embeddingModel the embedding model to use
-	 * @param config the vector store configuration
-	 * @deprecated Since 1.0.0-M5, use
-	 * {@link #builder(HanaVectorRepository, EmbeddingModel)} ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public HanaCloudVectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
-			EmbeddingModel embeddingModel, HanaCloudVectorStoreConfig config) {
-		this(repository, embeddingModel, config, ObservationRegistry.NOOP, null);
-	}
-
-	/**
-	 * Creates a new HanaCloudVectorStore with observation configuration.
-	 * @param repository the HANA vector repository
-	 * @param embeddingModel the embedding model to use
-	 * @param config the vector store configuration
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @deprecated Since 1.0.0-M5, use
-	 * {@link #builder(HanaVectorRepository, EmbeddingModel)} ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public HanaCloudVectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
-			EmbeddingModel embeddingModel, HanaCloudVectorStoreConfig config, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
-
-		this(builder(repository, embeddingModel).tableName(config.getTableName())
-			.topK(config.getTopK())
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention));
-	}
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,31 +227,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Similarity similarity;
 
-	// TODO: Remove this flag as the document no longer holds embeddings.
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	private final boolean returnEmbeddings;
-
-	/**
-	 * @deprecated since 1.0.0-M5, use {@link #builder(EmbeddingModel)} ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
-		this(conf, embeddingModel, ObservationRegistry.NOOP, null, new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * @deprecated since 1.0.0-M5, use {@link #builder(EmbeddingModel)} ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel,
-			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
-			BatchingStrategy batchingStrategy) {
-		this(builder(embeddingModel).session(conf.session)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
-
 	protected CassandraVectorStore(Builder builder) {
 		super(builder);
 
@@ -281,8 +256,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		this.filterExpressionConverter = builder.filterExpressionConverter != null ? builder.filterExpressionConverter
 				: new CassandraFilterExpressionConverter(cassandraMetadata.getColumns().values());
-
-		this.returnEmbeddings = builder.returnEmbeddings;
 	}
 
 	public static Builder builder(EmbeddingModel embeddingModel) {
@@ -470,9 +443,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		StringBuilder extraSelectFields = new StringBuilder();
 		for (var m : this.schema.metadataColumns()) {
 			extraSelectFields.append(',').append(m.name());
-		}
-		if (this.returnEmbeddings) {
-			extraSelectFields.append(',').append(this.schema.embedding());
 		}
 
 		// java-driver-query-builder doesn't support orderByAnnOf yet
