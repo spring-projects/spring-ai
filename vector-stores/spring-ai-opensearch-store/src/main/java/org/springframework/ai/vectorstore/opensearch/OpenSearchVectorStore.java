@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,78 +169,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	private final BatchingStrategy batchingStrategy;
 
 	private String similarityFunction;
-
-	/**
-	 * Creates a new OpenSearchVectorStore with default mapping and collection name.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION, initializeSchema);
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with custom mapping.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson,
-			boolean initializeSchema) {
-		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson, initializeSchema);
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with custom index name and mapping.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param index The name of the index
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson, boolean initializeSchema) {
-		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with all configuration options.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param index The name of the index
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @param observationRegistry The observation registry for metrics
-	 * @param customObservationConvention Custom observation convention
-	 * @param batchingStrategy The strategy for batching operations
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(openSearchClient, embeddingModel).index(index)
-			.mappingJson(mappingJson)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Creates a new OpenSearchVectorStore using the builder pattern.

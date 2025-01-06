@@ -24,7 +24,6 @@ import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.cosmosdb.CosmosDBVectorStore;
-import org.springframework.ai.vectorstore.cosmosdb.CosmosDBVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -32,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import java.util.List;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for CosmosDB Vector Store.
@@ -71,14 +71,14 @@ public class CosmosDBVectorStoreAutoConfiguration {
 			CosmosDBVectorStoreProperties properties, CosmosAsyncClient cosmosAsyncClient,
 			EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
 
-		CosmosDBVectorStoreConfig config = new CosmosDBVectorStoreConfig();
-		config.setDatabaseName(properties.getDatabaseName());
-		config.setContainerName(properties.getContainerName());
-		config.setMetadataFields(properties.getMetadataFields());
-		config.setVectorStoreThroughput(properties.getVectorStoreThroughput());
-		config.setVectorDimensions(properties.getVectorDimensions());
-		return new CosmosDBVectorStore(observationRegistry, customObservationConvention.getIfAvailable(),
-				cosmosAsyncClient, config, embeddingModel, batchingStrategy);
+		return CosmosDBVectorStore.builder(cosmosAsyncClient, embeddingModel)
+			.databaseName(properties.getDatabaseName())
+			.containerName(properties.getContainerName())
+			.metadataFields(List.of(properties.getMetadataFields()))
+			.vectorStoreThroughput(properties.getVectorStoreThroughput())
+			.vectorDimensions(properties.getVectorDimensions())
+			.build();
+
 	}
 
 }

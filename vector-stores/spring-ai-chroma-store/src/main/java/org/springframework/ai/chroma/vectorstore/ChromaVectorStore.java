@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,30 +84,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	private final ObjectMapper objectMapper;
 
 	private boolean initialized = false;
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, boolean initializeSchema) {
-		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME, initializeSchema);
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
-			boolean initializeSchema) {
-		this(embeddingModel, chromaApi, collectionName, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
-			boolean initializeSchema, ObservationRegistry observationRegistry,
-			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(chromaApi, embeddingModel).collectionName(collectionName)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
@@ -239,32 +215,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * @deprecated not used currently anywhere
-	 */
-	@Deprecated(forRemoval = true)
-	public String getCollectionName() {
-		return this.collectionName;
-	}
-
-	/**
-	 * @deprecated only used in tests
-	 */
-	@Deprecated(forRemoval = true)
-	@Nullable
-	public String getCollectionId() {
-		return this.collectionId;
-	}
-
-	/**
-	 * @deprecated in favor the builder method
-	 */
-	@Deprecated(forRemoval = true)
-	public void setFilterExpressionConverter(FilterExpressionConverter filterExpressionConverter) {
-		Assert.notNull(filterExpressionConverter, "FilterExpressionConverter should not be null.");
-		this.filterExpressionConverter = filterExpressionConverter;
 	}
 
 	@Override

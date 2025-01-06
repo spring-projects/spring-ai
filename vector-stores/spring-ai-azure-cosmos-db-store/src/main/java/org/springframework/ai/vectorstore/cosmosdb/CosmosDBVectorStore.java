@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,50 +101,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	private final BatchingStrategy batchingStrategy;
 
 	private CosmosAsyncContainer container;
-
-	/**
-	 * Creates a new CosmosDBVectorStore with basic configuration.
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @param cosmosClient the Cosmos DB client
-	 * @param properties the configuration properties
-	 * @param embeddingModel the embedding model
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(CosmosAsyncClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
-			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel) {
-		this(observationRegistry, customObservationConvention, cosmosClient, properties, embeddingModel,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new CosmosDBVectorStore with full configuration.
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @param cosmosClient the Cosmos DB client
-	 * @param properties the configuration properties
-	 * @param embeddingModel the embedding model
-	 * @param batchingStrategy the batching strategy
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(CosmosAsyncClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
-			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
-		this(builder(cosmosClient, embeddingModel).containerName(properties.getContainerName())
-			.databaseName(properties.getDatabaseName())
-			.partitionKeyPath(properties.getPartitionKeyPath())
-			.vectorStoreThroughput(properties.getVectorStoreThroughput())
-			.vectorDimensions(properties.getVectorDimensions())
-			.metadataFields(properties.getMetadataFieldsList())
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
