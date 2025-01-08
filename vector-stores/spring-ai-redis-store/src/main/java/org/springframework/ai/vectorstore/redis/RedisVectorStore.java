@@ -228,8 +228,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private final List<MetadataField> metadataFields;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final FilterExpressionConverter filterExpressionConverter;
 
 	protected RedisVectorStore(Builder builder) {
@@ -245,7 +243,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		this.vectorAlgorithm = builder.vectorAlgorithm;
 		this.metadataFields = builder.metadataFields;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.metadataFields);
 	}
 
@@ -475,8 +472,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private Builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(jedis, "JedisPooled must not be null");
@@ -571,18 +566,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

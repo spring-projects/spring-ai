@@ -175,8 +175,6 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	protected Neo4jVectorStore(Builder builder) {
 		super(builder);
 
@@ -193,7 +191,6 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		this.idProperty = SchemaNames.sanitize(builder.idProperty).orElseThrow();
 		this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	@Override
@@ -391,8 +388,6 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private Builder(Driver driver, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(driver, "Neo4j driver must not be null");
@@ -513,18 +508,6 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

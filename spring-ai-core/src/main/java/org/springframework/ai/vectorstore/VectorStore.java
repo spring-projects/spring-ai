@@ -23,6 +23,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.lang.Nullable;
@@ -107,6 +108,13 @@ public interface VectorStore extends DocumentWriter {
 		 * @return the builder instance for method chaining
 		 */
 		T customObservationConvention(VectorStoreObservationConvention convention);
+
+		/**
+		 * Sets the batching strategy.
+		 * @param batchingStrategy the strategy to use
+		 * @return the builder instance for method chaining
+		 */
+		T batchingStrategy(BatchingStrategy batchingStrategy);
 
 		/**
 		 * Builds and returns a new VectorStore instance with the configured settings.

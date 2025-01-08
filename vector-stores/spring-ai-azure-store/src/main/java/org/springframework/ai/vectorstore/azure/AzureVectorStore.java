@@ -47,10 +47,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -108,8 +106,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
 	 * search query filter expressions. The {@link Document#getMetadata()} can contain
@@ -144,7 +140,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		this.searchIndexClient = builder.searchIndexClient;
 		this.initializeSchema = builder.initializeSchema;
 		this.filterMetadataFields = builder.filterMetadataFields;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.defaultTopK = builder.defaultTopK;
 		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
 		this.indexName = builder.indexName;
@@ -387,8 +382,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		private List<MetadataField> filterMetadataFields = List.of();
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private int defaultTopK = DEFAULT_TOP_K;
 
 		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
@@ -418,17 +411,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder filterMetadataFields(List<MetadataField> filterMetadataFields) {
 			this.filterMetadataFields = filterMetadataFields != null ? filterMetadataFields : List.of();
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

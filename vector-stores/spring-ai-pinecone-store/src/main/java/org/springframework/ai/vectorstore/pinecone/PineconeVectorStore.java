@@ -82,8 +82,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private final ObjectMapper objectMapper;
 
-	private final BatchingStrategy batchingStrategy;
-
 	/**
 	 * Creates a new PineconeVectorStore using the builder pattern.
 	 * @param builder The configured builder instance
@@ -110,7 +108,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		this.pineconeConnection = new PineconeClient(clientConfig).connect(connectionConfig);
 		this.objectMapper = new ObjectMapper();
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	/**
@@ -317,8 +314,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		private Duration serverSideTimeout = Duration.ofSeconds(20);
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private Builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
 				String indexName) {
 			super(embeddingModel);
@@ -373,18 +368,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 */
 		public Builder serverSideTimeout(@Nullable Duration serverSideTimeout) {
 			this.serverSideTimeout = serverSideTimeout != null ? serverSideTimeout : Duration.ofSeconds(20);
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy The batching strategy to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

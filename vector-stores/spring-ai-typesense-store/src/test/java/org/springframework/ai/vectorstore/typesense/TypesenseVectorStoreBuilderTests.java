@@ -109,7 +109,7 @@ class TypesenseVectorStoreBuilderTests {
 		assertThatThrownBy(
 				() -> TypesenseVectorStore.builder(this.client, this.embeddingModel).batchingStrategy(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("batchingStrategy must not be null");
+			.hasMessage("BatchingStrategy must not be null");
 	}
 
 }

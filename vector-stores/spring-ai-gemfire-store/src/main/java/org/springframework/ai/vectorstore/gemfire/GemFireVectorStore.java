@@ -103,8 +103,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final ObjectMapper objectMapper;
 
 	private final String indexName;
@@ -134,7 +132,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		this.buckets = builder.buckets;
 		this.vectorSimilarityFunction = builder.vectorSimilarityFunction;
 		this.fields = builder.fields;
-		this.batchingStrategy = builder.batchingStrategy;
 
 		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
 			.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
@@ -584,8 +581,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private Builder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 		}
@@ -705,18 +700,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

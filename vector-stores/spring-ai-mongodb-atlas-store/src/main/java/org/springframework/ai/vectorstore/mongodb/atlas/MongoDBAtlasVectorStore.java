@@ -161,8 +161,6 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	protected MongoDBAtlasVectorStore(Builder builder) {
 		super(builder);
 
@@ -176,7 +174,6 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		this.metadataFieldsToFilter = builder.metadataFieldsToFilter;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	@Override
@@ -337,8 +334,6 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private MongoDBAtlasFilterExpressionConverter filterExpressionConverter = new MongoDBAtlasFilterExpressionConverter();
 
 		/**
@@ -418,18 +413,6 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy for vector operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 
