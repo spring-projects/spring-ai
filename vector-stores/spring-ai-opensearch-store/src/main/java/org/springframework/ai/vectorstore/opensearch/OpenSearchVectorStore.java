@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -52,7 +51,6 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -370,7 +368,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	/**
 	 * Builder class for creating OpenSearchVectorStore instances.
 	 */
-	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final OpenSearchClient openSearchClient;
 
@@ -389,7 +387,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		/**
 		 * Sets the OpenSearch client.
 		 * @param openSearchClient The OpenSearch client to use
-		 * @return The builder instance
 		 * @throws IllegalArgumentException if openSearchClient is null
 		 */
 		private Builder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {

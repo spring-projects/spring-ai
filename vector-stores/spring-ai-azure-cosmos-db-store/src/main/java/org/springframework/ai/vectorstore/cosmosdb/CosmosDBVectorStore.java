@@ -51,7 +51,6 @@ import com.azure.cosmos.util.CosmosPagedFlux;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +67,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -124,8 +122,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.metadataFieldsList = builder.metadataFieldsList;
 		this.batchingStrategy = builder.batchingStrategy;
 
-		cosmosClient.createDatabaseIfNotExists(databaseName).block();
-		initializeContainer(containerName, databaseName, vectorStoreThroughput, vectorDimensions, partitionKeyPath);
+		this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
+				this.partitionKeyPath);
 	}
 
 	public static Builder builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
@@ -136,10 +135,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			long vectorDimensions, String partitionKeyPath) {
 
 		// Set defaults if not provided
-		if (vectorStoreThroughput == 0) {
+		if (this.vectorStoreThroughput == 0) {
 			vectorStoreThroughput = 400;
 		}
-		if (partitionKeyPath == null) {
+		if (this.partitionKeyPath == null) {
 			partitionKeyPath = "/id";
 		}
 
@@ -153,17 +152,17 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			subPartitionKeyDefinition.setKind(PartitionKind.MULTI_HASH);
 		}
 		else {
-			subPartitionKeyDefinition.setPaths(Collections.singletonList(partitionKeyPath));
+			subPartitionKeyDefinition.setPaths(Collections.singletonList(this.partitionKeyPath));
 			subPartitionKeyDefinition.setKind(PartitionKind.HASH);
 		}
-		CosmosContainerProperties collectionDefinition = new CosmosContainerProperties(containerName,
+		CosmosContainerProperties collectionDefinition = new CosmosContainerProperties(this.containerName,
 				subPartitionKeyDefinition);
 		// Set vector embedding policy
 		CosmosVectorEmbeddingPolicy embeddingPolicy = new CosmosVectorEmbeddingPolicy();
 		CosmosVectorEmbedding embedding = new CosmosVectorEmbedding();
 		embedding.setPath("/embedding");
 		embedding.setDataType(CosmosVectorDataType.FLOAT32);
-		embedding.setDimensions(vectorDimensions);
+		embedding.setDimensions(this.vectorDimensions);
 		embedding.setDistanceFunction(CosmosVectorDistanceFunction.COSINE);
 		embeddingPolicy.setCosmosVectorEmbeddings(Collections.singletonList(embedding));
 		collectionDefinition.setVectorEmbeddingPolicy(embeddingPolicy);
@@ -182,10 +181,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		indexingPolicy.setVectorIndexes(List.of(cosmosVectorIndexSpec));
 		collectionDefinition.setIndexingPolicy(indexingPolicy);
 
-		ThroughputProperties throughputProperties = ThroughputProperties.createManualThroughput(vectorStoreThroughput);
-		CosmosAsyncDatabase cosmosAsyncDatabase = this.cosmosClient.getDatabase(databaseName);
+		ThroughputProperties throughputProperties = ThroughputProperties
+			.createManualThroughput(this.vectorStoreThroughput);
+		CosmosAsyncDatabase cosmosAsyncDatabase = this.cosmosClient.getDatabase(this.databaseName);
 		cosmosAsyncDatabase.createContainerIfNotExists(collectionDefinition, throughputProperties).block();
-		this.container = cosmosAsyncDatabase.getContainer(containerName);
+		this.container = cosmosAsyncDatabase.getContainer(this.containerName);
 	}
 
 	@Override
@@ -385,7 +385,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	 *
 	 * @since 1.0.0
 	 */
-	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final CosmosAsyncClient cosmosClient;
 
@@ -419,7 +419,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if containerName is null or empty
 		 */
 		public Builder containerName(String containerName) {
-			Assert.hasText(containerName, "Container name must not be empty");
+			Assert.hasText(this.containerName, "Container name must not be empty");
 			this.containerName = containerName;
 			return this;
 		}
@@ -431,7 +431,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if databaseName is null or empty
 		 */
 		public Builder databaseName(String databaseName) {
-			Assert.hasText(databaseName, "Database name must not be empty");
+			Assert.hasText(this.databaseName, "Database name must not be empty");
 			this.databaseName = databaseName;
 			return this;
 		}
@@ -443,7 +443,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if partitionKeyPath is null or empty
 		 */
 		public Builder partitionKeyPath(String partitionKeyPath) {
-			Assert.hasText(partitionKeyPath, "Partition key path must not be empty");
+			Assert.hasText(this.partitionKeyPath, "Partition key path must not be empty");
 			this.partitionKeyPath = partitionKeyPath;
 			return this;
 		}
@@ -455,7 +455,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if vectorStoreThroughput is not positive
 		 */
 		public Builder vectorStoreThroughput(int vectorStoreThroughput) {
-			Assert.isTrue(vectorStoreThroughput > 0, "Vector store throughput must be positive");
+			Assert.isTrue(this.vectorStoreThroughput > 0, "Vector store throughput must be positive");
 			this.vectorStoreThroughput = vectorStoreThroughput;
 			return this;
 		}
@@ -467,7 +467,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if vectorDimensions is not positive
 		 */
 		public Builder vectorDimensions(long vectorDimensions) {
-			Assert.isTrue(vectorDimensions > 0, "Vector dimensions must be positive");
+			Assert.isTrue(this.vectorDimensions > 0, "Vector dimensions must be positive");
 			this.vectorDimensions = vectorDimensions;
 			return this;
 		}
@@ -478,7 +478,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 */
 		public Builder metadataFields(List<String> metadataFieldsList) {
-			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
+			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(this.metadataFieldsList)
 					: new ArrayList<>();
 			return this;
 		}
@@ -490,7 +490,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if batchingStrategy is null
 		 */
 		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+			Assert.notNull(this.batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
 			return this;
 		}

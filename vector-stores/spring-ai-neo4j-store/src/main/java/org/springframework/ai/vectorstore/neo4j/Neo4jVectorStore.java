@@ -20,9 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
@@ -41,7 +39,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -372,7 +369,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		return new Builder(driver, embeddingModel);
 	}
 
-	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final Driver driver;
 
