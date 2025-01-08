@@ -203,8 +203,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final PgVectorSchemaValidator schemaValidator;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final int maxDocumentBatchSize;
 
 	/**
@@ -235,7 +233,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.createIndexMethod = builder.indexType;
 		this.initializeSchema = builder.initializeSchema;
 		this.schemaValidator = new PgVectorSchemaValidator(this.jdbcTemplate);
-		this.batchingStrategy = builder.batchingStrategy;
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
 	}
 
@@ -599,8 +596,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private boolean initializeSchema;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
 		private PgVectorStoreBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
@@ -646,11 +641,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStoreBuilder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		public PgVectorStoreBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

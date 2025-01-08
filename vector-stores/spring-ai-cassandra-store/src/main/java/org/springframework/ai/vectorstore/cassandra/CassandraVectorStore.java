@@ -215,8 +215,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private final boolean closeSessionOnClose;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final ConcurrentMap<Set<String>, PreparedStatement> addStmts = new ConcurrentHashMap<>();
 
 	private final PreparedStatement deleteStmt;
@@ -237,7 +235,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
 		this.executor = Executors.newFixedThreadPool(builder.fixedThreadPoolExecutorSize);
 		this.closeSessionOnClose = builder.closeSessionOnClose;
-		this.batchingStrategy = builder.batchingStrategy;
 
 		ensureSchemaExists(embeddingModel.dimensions());
 		prepareAddStatement(Set.of());
@@ -775,8 +772,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		private int fixedThreadPoolExecutorSize = DEFAULT_ADD_CONCURRENCY;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private FilterExpressionConverter filterExpressionConverter;
 
 		private DocumentIdTranslator documentIdTranslator = (String id) -> List.of(id);
@@ -912,18 +907,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		 */
 		public Builder disallowSchemaChanges(boolean disallowSchemaChanges) {
 			this.disallowSchemaChanges = disallowSchemaChanges;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

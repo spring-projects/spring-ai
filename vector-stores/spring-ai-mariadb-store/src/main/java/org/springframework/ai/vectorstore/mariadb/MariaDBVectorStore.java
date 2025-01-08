@@ -193,8 +193,6 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final MariaDBSchemaValidator schemaValidator;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final int maxDocumentBatchSize;
 
 	/**
@@ -227,7 +225,6 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		this.removeExistingVectorStoreTable = builder.removeExistingVectorStoreTable;
 		this.initializeSchema = builder.initializeSchema;
 		this.schemaValidator = new MariaDBSchemaValidator(this.jdbcTemplate);
-		this.batchingStrategy = builder.batchingStrategy;
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
 
 		this.contentFieldName = MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.contentFieldName, false);
@@ -513,8 +510,6 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
 		/**
@@ -599,18 +594,6 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		 */
 		public MariaDBBuilder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Configures the strategy for batching operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public MariaDBBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

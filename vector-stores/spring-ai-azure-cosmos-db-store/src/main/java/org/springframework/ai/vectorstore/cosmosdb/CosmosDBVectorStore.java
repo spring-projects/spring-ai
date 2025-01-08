@@ -60,7 +60,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -96,8 +95,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	private final List<String> metadataFieldsList;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private CosmosAsyncContainer container;
 
 	/**
@@ -120,7 +117,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.vectorStoreThroughput = builder.vectorStoreThroughput;
 		this.vectorDimensions = builder.vectorDimensions;
 		this.metadataFieldsList = builder.metadataFieldsList;
-		this.batchingStrategy = builder.batchingStrategy;
 
 		this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
 		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
@@ -403,8 +399,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		private long vectorDimensions = 1536;
 
 		private List<String> metadataFieldsList = new ArrayList<>();
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		private Builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);

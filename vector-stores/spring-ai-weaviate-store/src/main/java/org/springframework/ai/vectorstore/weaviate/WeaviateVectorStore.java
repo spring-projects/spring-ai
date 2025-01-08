@@ -113,8 +113,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	private final String weaviateObjectClass;
 
-	private final BatchingStrategy batchingStrategy;
-
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
 	 * search query filter expressions. The {@link Document#getMetadata()} can contain
@@ -161,7 +159,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		this.consistencyLevel = builder.consistencyLevel;
 		this.weaviateObjectClass = builder.weaviateObjectClass;
 		this.filterMetadataFields = builder.filterMetadataFields;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
 				this.filterMetadataFields.stream().map(MetadataField::name).toList());
 		this.weaviateSimilaritySearchFields = buildWeaviateSimilaritySearchFields();
@@ -497,8 +494,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		private final WeaviateClient weaviateClient;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		/**
 		 * Constructs a new WeaviateBuilder instance.
 		 * @param weaviateClient The Weaviate client instance used for database
@@ -545,18 +540,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		public Builder filterMetadataFields(List<MetadataField> filterMetadataFields) {
 			Assert.notNull(filterMetadataFields, "filterMetadataFields must not be null");
 			this.filterMetadataFields = filterMetadataFields;
-			return this;
-		}
-
-		/**
-		 * Configures the batching strategy.
-		 * @param batchingStrategy the strategy for batching operations
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

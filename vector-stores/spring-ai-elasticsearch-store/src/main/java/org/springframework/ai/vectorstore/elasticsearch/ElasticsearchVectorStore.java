@@ -162,8 +162,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	protected ElasticsearchVectorStore(Builder builder) {
 		super(builder);
 
@@ -172,7 +170,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		this.initializeSchema = builder.initializeSchema;
 		this.options = builder.options;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
-		this.batchingStrategy = builder.batchingStrategy;
 
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(builder.restClient,
@@ -369,8 +366,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private FilterExpressionConverter filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
 
 		/**
@@ -403,18 +398,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy for vector operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

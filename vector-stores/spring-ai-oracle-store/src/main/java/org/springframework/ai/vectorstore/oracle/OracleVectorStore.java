@@ -138,8 +138,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	private final int searchAccuracy;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final OracleJsonFactory osonFactory = new OracleJsonFactory();
 
 	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -163,7 +161,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		this.initializeSchema = builder.initializeSchema;
 		this.removeExistingVectorStoreTable = builder.removeExistingVectorStoreTable;
 		this.forcedNormalization = builder.forcedNormalization;
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	public static Builder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
@@ -674,8 +671,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean forcedNormalization = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		/**
 		 * Sets the JdbcTemplate to be used for database operations.
 		 * @param jdbcTemplate the JdbcTemplate instance
@@ -781,18 +776,6 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder forcedNormalization(boolean forcedNormalization) {
 			this.forcedNormalization = forcedNormalization;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy for vector operations.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

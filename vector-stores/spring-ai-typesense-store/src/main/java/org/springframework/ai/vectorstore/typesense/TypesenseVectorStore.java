@@ -102,8 +102,6 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final String collectionName;
 
 	private final int embeddingDimension;
@@ -125,7 +123,6 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		this.client = builder.client;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.collectionName = builder.collectionName;
 		this.embeddingDimension = builder.embeddingDimension;
 	}
@@ -363,8 +360,6 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		/**
 		 * Constructs a new TypesenseBuilder instance.
 		 * @param client The Typesense client instance used for database operations. Must
@@ -409,18 +404,6 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Configures the strategy for batching operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

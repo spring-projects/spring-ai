@@ -174,8 +174,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final String databaseName;
 
 	private final String collectionName;
@@ -207,7 +205,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		Assert.notNull(builder.milvusClient, "milvusClient must not be null");
 
 		this.milvusClient = builder.milvusClient;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.initializeSchema = builder.initializeSchema;
 		this.databaseName = builder.databaseName;
 		this.collectionName = builder.collectionName;
@@ -564,8 +561,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		/**
 		 * @param milvusClient the Milvus service client to use for database operations
 		 * @throws IllegalArgumentException if milvusClient is null
@@ -710,18 +705,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Configures the strategy for batching operations.
-		 * @param batchingStrategy the batching strategy to use for grouping operations
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 
