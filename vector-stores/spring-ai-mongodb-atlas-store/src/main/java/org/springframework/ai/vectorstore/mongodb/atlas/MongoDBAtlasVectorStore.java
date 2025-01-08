@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.mongodb.MongoCommandException;
-import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -37,7 +36,6 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -323,7 +321,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		return new Builder(mongoTemplate, embeddingModel);
 	}
 
-	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final MongoTemplate mongoTemplate;
 

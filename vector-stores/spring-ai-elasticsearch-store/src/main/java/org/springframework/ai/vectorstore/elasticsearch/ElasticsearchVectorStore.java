@@ -34,7 +34,6 @@ import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.observation.ObservationRegistry;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,6 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -345,6 +343,14 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	/**
+	 * Creates a new builder instance for ElasticsearchVectorStore.
+	 * @return a new ElasticsearchBuilder instance
+	 */
+	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
+		return new Builder(restClient, embeddingModel);
+	}
+
+	/**
 	 * The representation of {@link Document} along with its embedding.
 	 *
 	 * @param id The id of the document
@@ -353,14 +359,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 * @param embedding The vectors representing the content of the document
 	 */
 	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
-	}
-
-	/**
-	 * Creates a new builder instance for ElasticsearchVectorStore.
-	 * @return a new ElasticsearchBuilder instance
-	 */
-	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
-		return new Builder(restClient, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
