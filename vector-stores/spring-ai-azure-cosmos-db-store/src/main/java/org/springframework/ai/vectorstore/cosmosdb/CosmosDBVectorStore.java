@@ -51,24 +51,20 @@ import com.azure.cosmos.util.CosmosPagedFlux;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -98,8 +94,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	private final List<String> metadataFieldsList;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private CosmosAsyncContainer container;
 
 	/**
@@ -122,7 +116,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.vectorStoreThroughput = builder.vectorStoreThroughput;
 		this.vectorDimensions = builder.vectorDimensions;
 		this.metadataFieldsList = builder.metadataFieldsList;
-		this.batchingStrategy = builder.batchingStrategy;
 
 		cosmosClient.createDatabaseIfNotExists(databaseName).block();
 		initializeContainer(containerName, databaseName, vectorStoreThroughput, vectorDimensions, partitionKeyPath);
@@ -404,8 +397,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		private List<String> metadataFieldsList = new ArrayList<>();
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private Builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(cosmosClient, "CosmosClient must not be null");
@@ -480,18 +471,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		public Builder metadataFields(List<String> metadataFieldsList) {
 			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
 					: new ArrayList<>();
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

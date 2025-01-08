@@ -140,8 +140,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	/**
 	 * Constructs a new QdrantVectorStore.
 	 * @param qdrantClient A {@link QdrantClient} instance for interfacing with Qdrant.
@@ -195,7 +193,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		this.qdrantClient = builder.qdrantClient;
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	/**
@@ -376,8 +373,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		/**
 		 * Creates a new builder instance with the required QdrantClient and
 		 * EmbeddingModel.
@@ -410,18 +405,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Configures the strategy for batching operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 
