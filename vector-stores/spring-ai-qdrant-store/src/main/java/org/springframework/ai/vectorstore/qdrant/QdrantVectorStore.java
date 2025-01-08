@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import io.micrometer.observation.ObservationRegistry;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
@@ -141,43 +140,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private final boolean initializeSchema;
 
 	private final BatchingStrategy batchingStrategy;
-
-	/**
-	 * Constructs a new QdrantVectorStore.
-	 * @param qdrantClient A {@link QdrantClient} instance for interfacing with Qdrant.
-	 * @param collectionName The name of the collection to use in Qdrant.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param initializeSchema A boolean indicating whether to initialize the schema.
-	 * @deprecated Use {@link #builder(QdrantClient, EmbeddingModel)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(qdrantClient, collectionName, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Constructs a new QdrantVectorStore.
-	 * @param qdrantClient A {@link QdrantClient} instance for interfacing with Qdrant.
-	 * @param collectionName The name of the collection to use in Qdrant.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param initializeSchema A boolean indicating whether to initialize the schema.
-	 * @param observationRegistry The observation registry to use.
-	 * @param customObservationConvention The custom search observation convention to use.
-	 * @deprecated Use {@link #builder(QdrantClient, EmbeddingModel)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
-			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(qdrantClient, embeddingModel).collectionName(collectionName)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Protected constructor for creating a QdrantVectorStore instance using the builder
