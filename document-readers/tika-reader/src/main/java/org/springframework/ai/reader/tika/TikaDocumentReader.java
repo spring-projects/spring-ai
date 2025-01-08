@@ -29,7 +29,7 @@ import org.xml.sax.ContentHandler;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
-import org.springframework.ai.reader.ExtractedTextFormatter;
+import org.springframework.ai.document.reader.ExtractedTextFormatter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StringUtils;

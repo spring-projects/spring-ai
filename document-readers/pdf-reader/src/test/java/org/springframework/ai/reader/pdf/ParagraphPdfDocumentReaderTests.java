@@ -18,7 +18,7 @@ package org.springframework.ai.reader.pdf;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.reader.ExtractedTextFormatter;
+import org.springframework.ai.document.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

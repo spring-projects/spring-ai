@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.reader.ExtractedTextFormatter;
+import org.springframework.ai.document.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;

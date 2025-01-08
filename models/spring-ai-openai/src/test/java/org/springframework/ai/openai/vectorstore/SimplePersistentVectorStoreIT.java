@@ -28,8 +28,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.reader.JsonMetadataGenerator;
-import org.springframework.ai.reader.JsonReader;
+import org.springframework.ai.document.reader.JsonMetadataGenerator;
+import org.springframework.ai.document.reader.JsonReader;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

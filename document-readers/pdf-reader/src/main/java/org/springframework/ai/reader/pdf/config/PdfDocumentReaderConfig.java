@@ -16,7 +16,7 @@
 
 package org.springframework.ai.reader.pdf.config;
 
-import org.springframework.ai.reader.ExtractedTextFormatter;
+import org.springframework.ai.document.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.pdf.ParagraphPdfDocumentReader;
 import org.springframework.util.Assert;

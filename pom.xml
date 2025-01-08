@@ -32,6 +32,8 @@
 	<modules>
 		<module>spring-ai-docs</module>
 		<module>spring-ai-bom</module>
+		<module>spring-ai-commons</module>
+		<module>spring-ai-document-ingestion</module>
 		<module>spring-ai-core</module>
 		<module>spring-ai-vector-store</module>
 		<module>spring-ai-test</module>
@@ -50,6 +52,7 @@
 		<module>document-readers/markdown-reader</module>
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
+		<module>document-transformers/chat-document-transformer</module>
 
 		<module>vector-stores/spring-ai-azure-cosmos-db-store</module>
 		<module>vector-stores/spring-ai-azure-store</module>

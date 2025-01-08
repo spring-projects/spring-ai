@@ -50,6 +50,13 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-chat-document-transformer</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-retry</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
@@ -82,6 +89,11 @@
 
 		<!-- test dependencies -->
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-document-ingestion</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vector-store</artifactId>
