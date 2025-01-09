@@ -381,7 +381,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	 *
 	 * @since 1.0.0
 	 */
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final CosmosAsyncClient cosmosClient;
 

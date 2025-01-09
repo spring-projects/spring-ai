@@ -365,7 +365,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	/**
 	 * Builder class for creating OpenSearchVectorStore instances.
 	 */
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final OpenSearchClient openSearchClient;
 

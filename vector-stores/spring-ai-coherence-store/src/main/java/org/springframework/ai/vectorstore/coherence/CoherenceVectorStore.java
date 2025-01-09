@@ -283,7 +283,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 *
 	 * @since 1.0.0
 	 */
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final Session session;
 
