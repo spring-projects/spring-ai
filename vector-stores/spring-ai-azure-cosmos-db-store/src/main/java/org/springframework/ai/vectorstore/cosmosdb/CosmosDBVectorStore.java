@@ -477,18 +477,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			return this;
 		}
 
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(this.batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
-			return this;
-		}
-
 		@Override
 		public CosmosDBVectorStore build() {
 			return new CosmosDBVectorStore(this);
