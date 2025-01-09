@@ -224,11 +224,13 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		return ZhiPuAiEmbeddingOptions.builder()
 			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
+					defaultOptions.getDimensions()))
 			.build();
 	}
 
 	private ZhiPuAiApi.EmbeddingRequest<String> createEmbeddingRequest(String text, EmbeddingOptions requestOptions) {
-		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel());
+		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel(), requestOptions.getDimensions());
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
