@@ -261,13 +261,8 @@ public class AnthropicApi {
 		/**
 		 * The CLAUDE_2_0
 		 */
-		CLAUDE_2("claude-2.0"),
+		CLAUDE_2("claude-2.0");
 
-		/**
-		 * The CLAUDE_INSTANT_1_2
-		 */
-		@Deprecated
-		CLAUDE_INSTANT_1_2("claude-instant-1.2");
 		// @formatter:on
 
 		private final String value;

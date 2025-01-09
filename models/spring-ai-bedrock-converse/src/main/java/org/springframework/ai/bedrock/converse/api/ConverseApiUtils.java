@@ -68,8 +68,8 @@ import org.springframework.util.StringUtils;
 public final class ConverseApiUtils {
 
 	public static final ChatResponse EMPTY_CHAT_RESPONSE = ChatResponse.builder()
-		.withGenerations(List.of())
-		.withMetadata("empty", true)
+		.generations(List.of())
+		.metadata("empty", true)
 		.build();
 
 	private ConverseApiUtils() {

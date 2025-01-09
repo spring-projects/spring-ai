@@ -53,14 +53,12 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -833,57 +831,6 @@ public class DefaultChatClient implements ChatClient {
 		public <T extends ChatOptions> ChatClientRequestSpec options(T options) {
 			Assert.notNull(options, "options cannot be null");
 			this.chatOptions = options;
-			return this;
-		}
-
-		@Override
-		public <I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.Function<I, O> function) {
-			Assert.hasText(name, "name cannot be null or empty");
-			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(function, "function cannot be null");
-
-			var fcw = FunctionCallbackWrapper.builder(function)
-				.withDescription(description)
-				.withName(name)
-				.withResponseConverter(Object::toString)
-				.build();
-			this.functionCallbacks.add(fcw);
-			return this;
-		}
-
-		@Override
-		public <I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
-
-			Assert.hasText(name, "name cannot be null or empty");
-			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(biFunction, "biFunction cannot be null");
-
-			var fcw = FunctionCallbackWrapper.builder(biFunction)
-				.withDescription(description)
-				.withName(name)
-				.withResponseConverter(Object::toString)
-				.build();
-			this.functionCallbacks.add(fcw);
-			return this;
-		}
-
-		@Override
-		public <I, O> ChatClientRequestSpec function(String name, String description, @Nullable Class<I> inputType,
-				java.util.function.Function<I, O> function) {
-
-			Assert.hasText(name, "name cannot be null or empty");
-			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(function, "function cannot be null");
-
-			var fcw = FunctionCallback.builder()
-				.function(name, function)
-				.description(description)
-				.responseConverter(Object::toString)
-				.inputType(inputType)
-				.build();
-			this.functionCallbacks.add(fcw);
 			return this;
 		}
 
