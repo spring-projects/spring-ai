@@ -559,7 +559,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	 *
 	 * @since 1.0.0
 	 */
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String host = GemFireVectorStore.DEFAULT_HOST;
 

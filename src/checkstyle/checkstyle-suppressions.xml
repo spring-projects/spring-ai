@@ -40,8 +40,14 @@
 
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>
 	<suppress files="CassandraVectorStore.java" checks="FinalClass"/>
+	<suppress files="CoherenceVectorStore.java" checks="FinalClass"/>
+	<suppress files="CosmosDBVectorStore.java" checks="FinalClass"/>
+	<suppress files="GemFireVectorStore.java" checks="FinalClass"/>
 	<suppress files="MilvusVectorStore.java" checks="FinalClass"/>
 	<suppress files="HanaCloudVectorStore.java" checks="FinalClass"/>
+	<suppress files="MongoDBAtlasVectorStore.java" checks="FinalClass"/>
+	<suppress files="Neo4jVectorStore.java" checks="FinalClass"/>
+	<suppress files="OpenSearchVectorStore.java" checks="FinalClass"/>
 	<suppress files="PineconeVectorStore.java" checks="FinalClass"/>
 	<suppress files="TypesenseVectorStore.java" checks="FinalClass"/>
 	<suppress files="WeaviateVectorStore.java" checks="FinalClass"/>

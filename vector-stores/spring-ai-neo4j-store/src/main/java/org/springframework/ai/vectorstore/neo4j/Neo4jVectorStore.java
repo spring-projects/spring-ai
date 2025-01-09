@@ -366,7 +366,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		return new Builder(driver, embeddingModel);
 	}
 
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final Driver driver;
 

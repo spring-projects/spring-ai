@@ -318,7 +318,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		return new Builder(mongoTemplate, embeddingModel);
 	}
 
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final MongoTemplate mongoTemplate;
 
