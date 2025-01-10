@@ -220,9 +220,10 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return ZhiPuAiEmbeddingOptions.builder()
-				.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-				.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),defaultOptions.getDimensions()))
-				.build();
+			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
+					defaultOptions.getDimensions()))
+			.build();
 	}
 
 	private ZhiPuAiApi.EmbeddingRequest<String> createEmbeddingRequest(String text, EmbeddingOptions requestOptions) {
