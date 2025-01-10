@@ -412,6 +412,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Chat Memory -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-chat-memory-jdbc</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- test dependencies -->
 
 		<dependency>
