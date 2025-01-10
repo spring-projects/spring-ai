@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -52,7 +51,6 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -166,81 +164,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private String similarityFunction;
-
-	/**
-	 * Creates a new OpenSearchVectorStore with default mapping and collection name.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION, initializeSchema);
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with custom mapping.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson,
-			boolean initializeSchema) {
-		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson, initializeSchema);
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with custom index name and mapping.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param index The name of the index
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson, boolean initializeSchema) {
-		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with all configuration options.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param index The name of the index
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @param observationRegistry The observation registry for metrics
-	 * @param customObservationConvention Custom observation convention
-	 * @param batchingStrategy The strategy for batching operations
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(openSearchClient, embeddingModel).index(index)
-			.mappingJson(mappingJson)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Creates a new OpenSearchVectorStore using the builder pattern.
@@ -259,7 +183,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		// https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
 		this.similarityFunction = builder.similarityFunction;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	/**
@@ -452,8 +375,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private FilterExpressionConverter filterExpressionConverter = new OpenSearchAiSearchFilterExpressionConverter();
 
 		private String similarityFunction = COSINE_SIMILARITY_FUNCTION;
@@ -461,7 +382,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		/**
 		 * Sets the OpenSearch client.
 		 * @param openSearchClient The OpenSearch client to use
-		 * @return The builder instance
 		 * @throws IllegalArgumentException if openSearchClient is null
 		 */
 		private Builder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
@@ -501,18 +421,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy The batching strategy to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

@@ -146,9 +146,9 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	private @NotNull EmbeddingModel embeddingNModelShouldAlwaysReturnFakedEmbed() {
 		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
 
-		Mockito.doAnswer(invocationOnMock -> {
-			return List.of(this.embed, this.embed);
-		}).when(embeddingModel).embed(ArgumentMatchers.any(), any(), any());
+		Mockito.doAnswer(invocationOnMock -> List.of(this.embed, this.embed))
+			.when(embeddingModel)
+			.embed(ArgumentMatchers.any(), any(), any());
 		given(embeddingModel.embed(any(String.class))).willReturn(this.embed);
 		return embeddingModel;
 	}

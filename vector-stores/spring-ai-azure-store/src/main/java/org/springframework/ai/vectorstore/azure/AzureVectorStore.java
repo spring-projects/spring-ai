@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,16 +42,13 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
-import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -60,7 +57,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -110,8 +106,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
 	 * search query filter expressions. The {@link Document#getMetadata()} can contain
@@ -133,59 +127,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	private String indexName;
 
 	/**
-	 * Creates a new AzureVectorStore with basic configuration.
-	 * @param searchIndexClient the Azure search index client
-	 * @param embeddingModel the embedding model to use
-	 * @param initializeSchema whether to initialize schema
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(searchIndexClient, embeddingModel, initializeSchema, List.of());
-	}
-
-	/**
-	 * Creates a new AzureVectorStore with metadata fields configuration.
-	 * @param searchIndexClient the Azure search index client
-	 * @param embeddingModel the embedding model to use
-	 * @param initializeSchema whether to initialize schema
-	 * @param filterMetadataFields list of metadata fields for filtering
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema, List<MetadataField> filterMetadataFields) {
-		this(searchIndexClient, embeddingModel, initializeSchema, filterMetadataFields, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new AzureVectorStore with full configuration.
-	 * @param searchIndexClient the Azure search index client
-	 * @param embeddingModel the embedding model to use
-	 * @param initializeSchema whether to initialize schema
-	 * @param filterMetadataFields list of metadata fields for filtering
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema, List<MetadataField> filterMetadataFields, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(searchIndexClient, embeddingModel).initializeSchema(initializeSchema)
-			.filterMetadataFields(filterMetadataFields)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
-
-	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
 	 * create new AzureVectorStore instances.
 	 * @param builder the configured builder instance
@@ -199,53 +140,14 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		this.searchIndexClient = builder.searchIndexClient;
 		this.initializeSchema = builder.initializeSchema;
 		this.filterMetadataFields = builder.filterMetadataFields;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.defaultTopK = builder.defaultTopK;
 		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
 		this.indexName = builder.indexName;
-		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
+		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(this.filterMetadataFields);
 	}
 
 	public static Builder builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 		return new Builder(searchIndexClient, embeddingModel);
-	}
-
-	/**
-	 * Change the Index Name.
-	 * @param indexName The Azure VectorStore index name to use.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link Builder#indexName(String)} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public void setIndexName(String indexName) {
-		Assert.hasText(indexName, "The index name can not be empty.");
-		this.indexName = indexName;
-	}
-
-	/**
-	 * Sets the a default maximum number of similar documents returned.
-	 * @param topK The default maximum number of similar documents returned.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link Builder#indexName(String)} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public void setDefaultTopK(int topK) {
-		Assert.isTrue(topK >= 0, "The topK should be positive value.");
-		this.defaultTopK = topK;
-	}
-
-	/**
-	 * Sets the a default similarity threshold for returned documents.
-	 * @param similarityThreshold The a default similarity threshold for returned
-	 * documents.
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(SearchIndexClient, EmbeddingModel)}
-	 * ()} with {@link Builder#indexName(String)} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public void setDefaultSimilarityThreshold(Double similarityThreshold) {
-		Assert.isTrue(similarityThreshold >= 0.0 && similarityThreshold <= 1.0,
-				"The similarity threshold must be in range [0.0:1.00].");
-		this.defaultSimilarityThreshold = similarityThreshold;
 	}
 
 	@Override
@@ -480,8 +382,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		private List<MetadataField> filterMetadataFields = List.of();
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private int defaultTopK = DEFAULT_TOP_K;
 
 		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
@@ -511,17 +411,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder filterMetadataFields(List<MetadataField> filterMetadataFields) {
 			this.filterMetadataFields = filterMetadataFields != null ? filterMetadataFields : List.of();
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

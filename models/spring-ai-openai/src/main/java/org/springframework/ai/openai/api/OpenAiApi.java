@@ -960,7 +960,7 @@ public class OpenAiApi {
 				@JsonProperty("mp3") MP3,
 				/** FLAC format */
 				@JsonProperty("flac") FLAC,
-				/** OPUS format */	
+				/** OPUS format */
 				@JsonProperty("opus") OPUS,
 				/** PCM16 format */
 				@JsonProperty("pcm16") PCM16,

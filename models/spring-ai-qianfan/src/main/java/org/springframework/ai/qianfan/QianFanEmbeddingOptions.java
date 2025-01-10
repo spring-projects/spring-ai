@@ -92,24 +92,6 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #user(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUser(String user) {
-			this.options.setUser(user);
-			return this;
-		}
-
 		public QianFanEmbeddingOptions build() {
 			return this.options;
 		}

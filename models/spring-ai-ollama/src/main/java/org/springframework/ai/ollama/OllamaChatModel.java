@@ -484,16 +484,6 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			return this;
 		}
 
-		/**
-		 * @deprecated use the {@link #functionCallbackResolver(FunctionCallbackResolver)}
-		 * instead
-		 */
-		@Deprecated
-		public Builder withFunctionCallbackContext(FunctionCallbackResolver functionCallbackContext) {
-			this.functionCallbackResolver = functionCallbackContext;
-			return this;
-		}
-
 		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
 			this.functionCallbackResolver = functionCallbackResolver;
 			return this;
@@ -510,52 +500,6 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 
 		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
-			this.modelManagementOptions = modelManagementOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #ollamaApi(OllamaApi)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
-			this.ollamaApi = ollamaApi;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #defaultOptions(OllamaOptions)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #toolFunctionCallbacks(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withToolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
-			this.toolFunctionCallbacks = toolFunctionCallbacks;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #observationRegistry(ObservationRegistry)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
-			this.observationRegistry = observationRegistry;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #modelManagementOptions(ModelManagementOptions)}
-		 * instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
 			this.modelManagementOptions = modelManagementOptions;
 			return this;
 		}

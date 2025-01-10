@@ -127,7 +127,7 @@ public class FactCheckingEvaluator implements Evaluator {
 
 		String evaluationResponse = this.chatClientBuilder.build()
 			.prompt()
-			.user(userSpec -> userSpec.text(evaluationPrompt).param("document", context).param("claim", response))
+			.user(userSpec -> userSpec.text(this.evaluationPrompt).param("document", context).param("claim", response))
 			.call()
 			.content();
 

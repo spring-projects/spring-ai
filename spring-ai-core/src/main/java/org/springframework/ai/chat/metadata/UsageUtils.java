@@ -23,7 +23,11 @@ import org.springframework.ai.chat.model.ChatResponse;
  *
  * @author Ilayaperumal Gopinathan
  */
-public class UsageUtils {
+public final class UsageUtils {
+
+	private UsageUtils() {
+		throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+	}
 
 	/**
 	 * Accumulate usage tokens from the previous chat response to the current usage

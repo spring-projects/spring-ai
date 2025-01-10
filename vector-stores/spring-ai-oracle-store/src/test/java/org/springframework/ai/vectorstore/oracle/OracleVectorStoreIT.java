@@ -32,13 +32,13 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.MountableFile;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -255,7 +255,7 @@ public class OracleVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 
-				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 
 				Document sameIdDocument = new Document(document.getId(),
@@ -268,7 +268,7 @@ public class OracleVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
@@ -328,9 +328,9 @@ public class OracleVectorStoreIT {
 			return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
 				.tableName(OracleVectorStore.DEFAULT_TABLE_NAME)
 				.indexType(OracleVectorStore.OracleVectorStoreIndexType.IVF)
-				.distanceType(distanceType)
+				.distanceType(this.distanceType)
 				.dimensions(384)
-				.searchAccuracy(searchAccuracy)
+				.searchAccuracy(this.searchAccuracy)
 				.initializeSchema(true)
 				.removeExistingVectorStoreTable(true)
 				.forcedNormalization(true)

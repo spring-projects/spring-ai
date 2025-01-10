@@ -38,7 +38,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,6 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.core.io.Resource;
 
 /**
@@ -78,24 +76,6 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
 
-	/**
-	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SimpleVectorStore(EmbeddingModel embeddingModel) {
-		this(embeddingModel, ObservationRegistry.NOOP, null);
-	}
-
-	/**
-	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SimpleVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
-		this(builder(embeddingModel).observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention));
-	}
-
 	protected SimpleVectorStore(SimpleVectorStoreBuilder builder) {
 		super(builder);
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
@@ -119,8 +99,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
-			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
-					document.getContent(), document.getMetadata(), embedding);
+			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(), document.getText(),
+					document.getMetadata(), embedding);
 			this.store.put(document.getId(), storeContent);
 		}
 	}
