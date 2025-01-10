@@ -140,7 +140,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	 * documents.
 	 */
 	private Map.Entry<Query, List<Document>> getDocumentsForQuery(Query query) {
-		List<Document> documents = documentRetriever.retrieve(query);
+		List<Document> documents = this.documentRetriever.retrieve(query);
 		return Map.entry(query, documents);
 	}
 

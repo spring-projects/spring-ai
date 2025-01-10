@@ -117,7 +117,7 @@ public class OllamaModelManager {
 						logger.info("Pulling the '{}' model - Status: {}", modelName, progressResponses.get(progressResponses.size() - 1).status());
 					}
 				})
-				.takeUntil(progressResponses -> 
+				.takeUntil(progressResponses ->
 					progressResponses.get(0) != null && "success".equals(progressResponses.get(0).status()))
 				.timeout(this.options.timeout())
 				.retryWhen(Retry.backoff(this.options.maxRetries(), Duration.ofSeconds(5)))

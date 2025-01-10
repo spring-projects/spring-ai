@@ -16,16 +16,18 @@
 
 package org.springframework.ai.vectorstore.mariadb;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -37,9 +39,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Diego Dupin
@@ -91,8 +92,9 @@ public class MariaDBStoreCustomNamesIT {
 			boolean fieldsExists = jdbcTemplate
 				.queryForObject("SELECT EXISTS (SELECT * FROM information_schema.columns WHERE table_schema= ? AND"
 						+ " table_name = ? AND column_name = ?)", Boolean.class, schemaName, tableName, field);
-			if (!fieldsExists)
+			if (!fieldsExists) {
 				return false;
+			}
 		}
 		return true;
 	}

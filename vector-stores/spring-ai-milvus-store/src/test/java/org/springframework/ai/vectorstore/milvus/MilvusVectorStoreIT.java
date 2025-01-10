@@ -30,12 +30,12 @@ import io.milvus.param.MetricType;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.milvus.MilvusContainer;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -106,7 +106,7 @@ public class MilvusVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
@@ -211,7 +211,7 @@ public class MilvusVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 				assertThat(resultDoc.getMetadata()).containsKey("meta1");
 				assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -226,7 +226,7 @@ public class MilvusVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKey("meta2");
 				assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -266,7 +266,7 @@ public class MilvusVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);

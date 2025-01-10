@@ -29,23 +29,23 @@ import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
@@ -103,7 +103,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
+			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
@@ -134,7 +134,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta1", "meta1");
 
 			Document sameIdDocument = new Document(document.getId(),
@@ -148,7 +148,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 		});
 	}
@@ -247,7 +247,7 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-			assertThat(resultDoc.getContent()).contains(
+			assertThat(resultDoc.getText()).contains(
 					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);

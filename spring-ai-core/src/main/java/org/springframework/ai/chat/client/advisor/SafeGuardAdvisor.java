@@ -132,33 +132,6 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #sensitiveWords(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withSensitiveWords(List<String> sensitiveWords) {
-			this.sensitiveWords = sensitiveWords;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #failureResponse(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFailureResponse(String failureResponse) {
-			this.failureResponse = failureResponse;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #order(int)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOrder(int order) {
-			this.order = order;
-			return this;
-		}
-
 		public SafeGuardAdvisor build() {
 			return new SafeGuardAdvisor(this.sensitiveWords, this.failureResponse, this.order);
 		}

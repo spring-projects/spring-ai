@@ -161,7 +161,7 @@ public class Media {
 	 * Creates a new Media builder.
 	 * @return a new Media builder instance
 	 */
-	public static Builder builder() {
+	public static final Builder builder() {
 		return new Builder();
 	}
 
@@ -228,7 +228,7 @@ public class Media {
 	/**
 	 * Builder class for Media.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String id;
 

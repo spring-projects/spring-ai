@@ -45,7 +45,7 @@ public final class BedrockConverseChatModelMain2 {
 		String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 
 		// var prompt = new Prompt("Tell me a joke?",
-		// ChatOptionsBuilder.builder().withModel(modelId).build());
+		// ChatOptions.builder().model(modelId).build();
 		var prompt = new Prompt(
 				// "What's the weather like in San Francisco, Tokyo, and Paris? Return the
 				// temperature in Celsius.",

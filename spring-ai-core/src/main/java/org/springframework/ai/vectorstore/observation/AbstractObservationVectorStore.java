@@ -22,6 +22,7 @@ import java.util.Optional;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -47,22 +48,14 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 
 	protected final EmbeddingModel embeddingModel;
 
-	/**
-	 * Create a new {@link AbstractObservationVectorStore} instance.
-	 * @param observationRegistry the observation registry to use
-	 * @param customObservationConvention the custom observation convention to use
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public AbstractObservationVectorStore(ObservationRegistry observationRegistry,
-			@Nullable VectorStoreObservationConvention customObservationConvention) {
-		this(null, observationRegistry, customObservationConvention);
-	}
+	protected final BatchingStrategy batchingStrategy;
 
 	private AbstractObservationVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
-			@Nullable VectorStoreObservationConvention customObservationConvention) {
+			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 		this.embeddingModel = embeddingModel;
 		this.observationRegistry = observationRegistry;
 		this.customObservationConvention = customObservationConvention;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	/**
@@ -71,7 +64,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * @param builder the builder containing configuration settings
 	 */
 	public AbstractObservationVectorStore(AbstractVectorStoreBuilder<?> builder) {
-		this(builder.getEmbeddingModel(), builder.getObservationRegistry(), builder.getCustomObservationConvention());
+		this(builder.getEmbeddingModel(), builder.getObservationRegistry(), builder.getCustomObservationConvention(),
+				builder.getBatchingStrategy());
 	}
 
 	/**

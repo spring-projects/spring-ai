@@ -95,7 +95,7 @@ public class SimpleVectorStoreIT {
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(document.getId());
-		assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+		assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 		assertThat(resultDoc.getMetadata()).containsKey("meta1");
 		assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -112,7 +112,7 @@ public class SimpleVectorStoreIT {
 		assertThat(results).hasSize(1);
 		resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(document.getId());
-		assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+		assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 		assertThat(resultDoc.getMetadata()).containsKey("meta2");
 		assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 

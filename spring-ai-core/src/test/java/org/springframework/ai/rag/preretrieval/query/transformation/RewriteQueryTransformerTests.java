@@ -17,6 +17,7 @@
 package org.springframework.ai.rag.preretrieval.query.transformation;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 

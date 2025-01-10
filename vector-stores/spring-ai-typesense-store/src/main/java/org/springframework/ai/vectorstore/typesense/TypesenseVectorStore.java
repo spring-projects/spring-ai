@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,8 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.DocumentMetadata;
 import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
 import org.typesense.model.CollectionResponse;
@@ -39,6 +37,7 @@ import org.typesense.model.MultiSearchResult;
 import org.typesense.model.MultiSearchSearchesParameter;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -50,7 +49,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -102,50 +100,11 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Client client;
 
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	private final TypesenseVectorStoreConfig config;
-
 	private final boolean initializeSchema;
-
-	private final BatchingStrategy batchingStrategy;
 
 	private final String collectionName;
 
 	private final int embeddingDimension;
-
-	/**
-	 * @deprecated Use {@link #builder(Client, EmbeddingModel)} ()} instead
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel) {
-		this(client, embeddingModel, TypesenseVectorStoreConfig.defaultConfig(), false);
-	}
-
-	/**
-	 * @deprecated Use {@link #builder(Client, EmbeddingModel)} ()} instead
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
-			boolean initializeSchema) {
-		this(client, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * @deprecated Use {@link #builder(Client, EmbeddingModel)} ()} instead
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config,
-			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(client, embeddingModel).collectionName(config.collectionName)
-			.embeddingDimension(config.embeddingDimension)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Protected constructor for creating a TypesenseVectorStore instance using the
@@ -164,10 +123,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		this.client = builder.client;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.collectionName = builder.collectionName;
 		this.embeddingDimension = builder.embeddingDimension;
-		this.config = null;
 	}
 
 	/**
@@ -393,7 +350,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
@@ -402,8 +359,6 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		private final Client client;
 
 		private boolean initializeSchema = false;
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		/**
 		 * Constructs a new TypesenseBuilder instance.
@@ -452,103 +407,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			return this;
 		}
 
-		/**
-		 * Configures the strategy for batching operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
-			return this;
-		}
-
 		@Override
 		public TypesenseVectorStore build() {
 			return new TypesenseVectorStore(this);
-		}
-
-	}
-
-	/**
-	 * @deprecated Use {@link TypesenseVectorStore#builder(Client, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public static class TypesenseVectorStoreConfig {
-
-		private final String collectionName;
-
-		private final int embeddingDimension;
-
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public TypesenseVectorStoreConfig(String collectionName, int embeddingDimension) {
-			this.collectionName = collectionName;
-			this.embeddingDimension = embeddingDimension;
-		}
-
-		private TypesenseVectorStoreConfig(Builder builder) {
-			this.collectionName = builder.collectionName;
-			this.embeddingDimension = builder.embeddingDimension;
-		}
-
-		/**
-		 * {@return the default config}
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public static TypesenseVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public static Builder builder() {
-
-			return new Builder();
-		}
-
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public static class Builder {
-
-			private String collectionName;
-
-			private int embeddingDimension;
-
-			/**
-			 * Set the collection name.
-			 * @param collectionName The collection name.
-			 * @return The builder.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withCollectionName(String collectionName) {
-				this.collectionName = collectionName;
-				return this;
-			}
-
-			/**
-			 * Set the embedding dimension.
-			 * @param embeddingDimension The embedding dimension.
-			 * @return The builder.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withEmbeddingDimension(int embeddingDimension) {
-				this.embeddingDimension = embeddingDimension;
-				return this;
-			}
-
-			/**
-			 * Build the configuration.
-			 * @return The configuration.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public TypesenseVectorStoreConfig build() {
-				return new TypesenseVectorStoreConfig(this);
-			}
-
 		}
 
 	}

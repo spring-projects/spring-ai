@@ -17,7 +17,6 @@
 package org.springframework.ai.chat.prompt;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -43,12 +42,12 @@ public class ChatOptionsBuilderTests {
 
 	@BeforeEach
 	void setUp() {
-		builder = ChatOptions.builder();
+		this.builder = ChatOptions.builder();
 	}
 
 	@Test
 	void shouldBuildWithAllOptions() {
-		ChatOptions options = builder.model("gpt-4")
+		ChatOptions options = this.builder.model("gpt-4")
 			.maxTokens(100)
 			.temperature(0.7)
 			.topP(1.0)
@@ -66,7 +65,7 @@ public class ChatOptionsBuilderTests {
 
 	@Test
 	void shouldBuildWithMinimalOptions() {
-		ChatOptions options = builder.model("gpt-4").build();
+		ChatOptions options = this.builder.model("gpt-4").build();
 
 		assertThat(options.getModel()).isEqualTo("gpt-4");
 		assertThat(options.getMaxTokens()).isNull();
@@ -78,7 +77,7 @@ public class ChatOptionsBuilderTests {
 
 	@Test
 	void shouldCopyOptions() {
-		ChatOptions original = builder.model("gpt-4")
+		ChatOptions original = this.builder.model("gpt-4")
 			.maxTokens(100)
 			.temperature(0.7)
 			.topP(1.0)
@@ -129,8 +128,8 @@ public class ChatOptionsBuilderTests {
 	@Test
 	void shouldAllowBuilderReuse() {
 		// When
-		ChatOptions options1 = builder.model("model1").temperature(0.7).build();
-		ChatOptions options2 = builder.model("model2").build();
+		ChatOptions options1 = this.builder.model("model1").temperature(0.7).build();
+		ChatOptions options2 = this.builder.model("model2").build();
 
 		// Then
 		assertThat(options1.getModel()).isEqualTo("model1");
@@ -142,16 +141,16 @@ public class ChatOptionsBuilderTests {
 	@Test
 	void shouldReturnSameBuilderInstanceOnEachMethod() {
 		// When
-		ChatOptions.Builder returnedBuilder = builder.model("test");
+		ChatOptions.Builder returnedBuilder = this.builder.model("test");
 
 		// Then
-		assertThat(returnedBuilder).isSameAs(builder);
+		assertThat(returnedBuilder).isSameAs(this.builder);
 	}
 
 	@Test
 	void shouldHaveExpectedDefaultValues() {
 		// When
-		ChatOptions options = builder.build();
+		ChatOptions options = this.builder.build();
 
 		// Then
 		assertThat(options.getModel()).isNull();
@@ -168,7 +167,7 @@ public class ChatOptionsBuilderTests {
 	void shouldBeImmutableAfterBuild() {
 		// Given
 		List<String> stopSequences = new ArrayList<>(List.of("stop1", "stop2"));
-		ChatOptions options = builder.stopSequences(stopSequences).build();
+		ChatOptions options = this.builder.stopSequences(stopSequences).build();
 
 		// Then
 		assertThatThrownBy(() -> options.getStopSequences().add("stop3"))
