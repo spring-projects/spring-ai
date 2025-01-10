@@ -27,6 +27,7 @@ import java.util.List;
  * @param timeout the timeout for managing models
  * @param maxRetries the maximum number of retries
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<String> additionalModels,
@@ -50,22 +51,22 @@ public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<S
 
 		private Integer maxRetries = 0;
 
-		public Builder withPullModelStrategy(PullModelStrategy pullModelStrategy) {
+		public Builder pullModelStrategy(PullModelStrategy pullModelStrategy) {
 			this.pullModelStrategy = pullModelStrategy;
 			return this;
 		}
 
-		public Builder withAdditionalModels(List<String> additionalModels) {
+		public Builder additionalModels(List<String> additionalModels) {
 			this.additionalModels = additionalModels;
 			return this;
 		}
 
-		public Builder withTimeout(Duration timeout) {
+		public Builder timeout(Duration timeout) {
 			this.timeout = timeout;
 			return this;
 		}
 
-		public Builder withMaxRetries(Integer maxRetries) {
+		public Builder maxRetries(Integer maxRetries) {
 			this.maxRetries = maxRetries;
 			return this;
 		}

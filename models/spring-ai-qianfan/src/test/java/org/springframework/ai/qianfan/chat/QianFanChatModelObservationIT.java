@@ -71,19 +71,19 @@ public class QianFanChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = QianFanChatOptions.builder()
-			.withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-			.withFrequencyPenalty(0.0)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+			.frequencyPenalty(0.0)
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -94,13 +94,13 @@ public class QianFanChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = QianFanChatOptions.builder()
-			.withModel(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
-			.withFrequencyPenalty(0.0)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+			.frequencyPenalty(0.0)
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -112,7 +112,7 @@ public class QianFanChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 

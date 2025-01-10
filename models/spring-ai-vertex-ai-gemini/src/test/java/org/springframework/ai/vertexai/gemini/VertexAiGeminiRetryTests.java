@@ -73,9 +73,9 @@ public class VertexAiGeminiRetryTests {
 
 		this.chatModel = new TestVertexAiGeminiChatModel(this.vertexAI,
 				VertexAiGeminiChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+					.temperature(0.7)
+					.topP(1.0)
+					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
 					.build(),
 				null, Collections.emptyList(), this.retryTemplate);
 
@@ -101,7 +101,7 @@ public class VertexAiGeminiRetryTests {
 
 		// Assertions
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent()).isEqualTo("Response");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

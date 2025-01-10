@@ -70,17 +70,17 @@ public class ZhiPuAiChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = ZhiPuAiChatOptions.builder()
-			.withModel(ZhiPuAiApi.ChatModel.GLM_4_Air.getValue())
-			.withMaxTokens(2048)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(ZhiPuAiApi.ChatModel.GLM_4_Air.getValue())
+			.maxTokens(2048)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -91,11 +91,11 @@ public class ZhiPuAiChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = ZhiPuAiChatOptions.builder()
-			.withModel(ZhiPuAiApi.ChatModel.GLM_4_Air.getValue())
-			.withMaxTokens(2048)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(ZhiPuAiApi.ChatModel.GLM_4_Air.getValue())
+			.maxTokens(2048)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -108,7 +108,7 @@ public class ZhiPuAiChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 

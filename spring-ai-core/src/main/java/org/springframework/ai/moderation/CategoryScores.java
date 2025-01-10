@@ -24,6 +24,7 @@ import java.util.Objects;
  * content in each respective category.
  *
  * @author Ahmed Yousri
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public final class CategoryScores {
@@ -173,57 +174,57 @@ public final class CategoryScores {
 
 		private double violence;
 
-		public Builder withSexual(double sexual) {
+		public Builder sexual(double sexual) {
 			this.sexual = sexual;
 			return this;
 		}
 
-		public Builder withHate(double hate) {
+		public Builder hate(double hate) {
 			this.hate = hate;
 			return this;
 		}
 
-		public Builder withHarassment(double harassment) {
+		public Builder harassment(double harassment) {
 			this.harassment = harassment;
 			return this;
 		}
 
-		public Builder withSelfHarm(double selfHarm) {
+		public Builder selfHarm(double selfHarm) {
 			this.selfHarm = selfHarm;
 			return this;
 		}
 
-		public Builder withSexualMinors(double sexualMinors) {
+		public Builder sexualMinors(double sexualMinors) {
 			this.sexualMinors = sexualMinors;
 			return this;
 		}
 
-		public Builder withHateThreatening(double hateThreatening) {
+		public Builder hateThreatening(double hateThreatening) {
 			this.hateThreatening = hateThreatening;
 			return this;
 		}
 
-		public Builder withViolenceGraphic(double violenceGraphic) {
+		public Builder violenceGraphic(double violenceGraphic) {
 			this.violenceGraphic = violenceGraphic;
 			return this;
 		}
 
-		public Builder withSelfHarmIntent(double selfHarmIntent) {
+		public Builder selfHarmIntent(double selfHarmIntent) {
 			this.selfHarmIntent = selfHarmIntent;
 			return this;
 		}
 
-		public Builder withSelfHarmInstructions(double selfHarmInstructions) {
+		public Builder selfHarmInstructions(double selfHarmInstructions) {
 			this.selfHarmInstructions = selfHarmInstructions;
 			return this;
 		}
 
-		public Builder withHarassmentThreatening(double harassmentThreatening) {
+		public Builder harassmentThreatening(double harassmentThreatening) {
 			this.harassmentThreatening = harassmentThreatening;
 			return this;
 		}
 
-		public Builder withViolence(double violence) {
+		public Builder violence(double violence) {
 			this.violence = violence;
 			return this;
 		}

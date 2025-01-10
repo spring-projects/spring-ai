@@ -90,7 +90,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public ZhiPuAiEmbeddingModel(ZhiPuAiApi zhiPuAiApi, MetadataMode metadataMode) {
 		this(zhiPuAiApi, metadataMode,
-				ZhiPuAiEmbeddingOptions.builder().withModel(ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+				ZhiPuAiEmbeddingOptions.builder().model(ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
@@ -221,8 +221,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		return ZhiPuAiEmbeddingOptions.builder()
 			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-			.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
-					defaultOptions.getDimensions()))
+			.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),defaultOptions.getDimensions()))
 			.build();
 	}
 

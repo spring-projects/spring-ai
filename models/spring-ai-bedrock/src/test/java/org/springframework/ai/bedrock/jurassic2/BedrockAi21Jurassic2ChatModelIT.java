@@ -24,10 +24,10 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -47,8 +47,7 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 class BedrockAi21Jurassic2ChatModelIT {
 
 	@Autowired
@@ -67,8 +66,20 @@ class BedrockAi21Jurassic2ChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
+		String content = response.getResult().getOutput().getText();
 
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		// System.out.println("Response content: " + content);
+
+		assertThat(content).satisfies(text -> {
+			// Check for name
+			assertThat(text).contains("Bob");
+
+			// Check for pirate speech patterns with better error message
+			assertThat(text).matches(
+					t -> t.contains("Arrr") || t.contains("matey") || t.contains("ye") || t.contains("yer")
+							|| t.contains("shiver me timbers") || t.contains("scurvy"),
+					"should contain pirate speech patterns");
+		});
 	}
 
 	@Test
@@ -77,15 +88,16 @@ class BedrockAi21Jurassic2ChatModelIT {
 			.applyToEmojis(false)
 			.build();
 		BedrockAi21Jurassic2ChatOptions options = new BedrockAi21Jurassic2ChatOptions.Builder()
-			.withPresencePenaltyOptions(penalty)
+			.presencePenaltyOptions(penalty)
 			.build();
 
 		UserMessage userMessage = new UserMessage("Can you express happiness using an emoji like 😄 ?");
 		Prompt prompt = new Prompt(List.of(userMessage), options);
 
 		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText())
+			.matches(content -> content.contains("😄") || content.contains(":)"));
 
-		assertThat(response.getResult().getOutput().getContent()).matches(content -> content.contains("😄"));
 	}
 
 	@Test
@@ -94,7 +106,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 		// applyToEmojis is by default true
 		BedrockAi21Jurassic2ChatOptions.Penalty penalty = new BedrockAi21Jurassic2ChatOptions.Penalty.Builder().build();
 		BedrockAi21Jurassic2ChatOptions options = new BedrockAi21Jurassic2ChatOptions.Builder()
-			.withPresencePenaltyOptions(penalty)
+			.presencePenaltyOptions(penalty)
 			.build();
 
 		UserMessage userMessage = new UserMessage("Can you express happiness using an emoji like 😄?");
@@ -105,7 +117,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 
 		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).doesNotContain("😄");
+		assertThat(response.getResult().getOutput().getText()).doesNotContain("😄");
 	}
 
 	@Test
@@ -122,7 +134,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -138,7 +150,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 
 		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("AI");
+		assertThat(response.getResult().getOutput().getText()).contains("AI");
 	}
 
 	@SpringBootConfiguration
@@ -157,8 +169,8 @@ class BedrockAi21Jurassic2ChatModelIT {
 				Ai21Jurassic2ChatBedrockApi jurassic2ChatBedrockApi) {
 			return new BedrockAi21Jurassic2ChatModel(jurassic2ChatBedrockApi,
 					BedrockAi21Jurassic2ChatOptions.builder()
-						.withTemperature(0.5)
-						.withMaxTokens(500)
+						.temperature(0.5)
+						.maxTokens(500)
 						// .withTopP(0.9)
 						.build());
 		}

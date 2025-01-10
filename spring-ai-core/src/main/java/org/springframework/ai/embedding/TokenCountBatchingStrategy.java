@@ -17,7 +17,7 @@
 package org.springframework.ai.embedding;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -139,7 +139,9 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 		List<List<Document>> batches = new ArrayList<>();
 		int currentSize = 0;
 		List<Document> currentBatch = new ArrayList<>();
-		Map<Document, Integer> documentTokens = new HashMap<>();
+		// Make sure the documentTokens' entry order is preserved by making it a
+		// LinkedHashMap.
+		Map<Document, Integer> documentTokens = new LinkedHashMap<>();
 
 		for (Document document : documents) {
 			int tokenCount = this.tokenCountEstimator

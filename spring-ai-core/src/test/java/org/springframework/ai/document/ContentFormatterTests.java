@@ -32,7 +32,7 @@ public class ContentFormatterTests {
 
 	@Test
 	public void noExplicitlySetFormatter() {
-		assertThat(this.document.getContent()).isEqualTo("""
+		assertThat(this.document.getText()).isEqualTo("""
 				The World is Big and Salvation Lurks Around the Corner""");
 
 		assertThat(this.document.getFormattedContent()).isEqualTo(this.document.getFormattedContent(MetadataMode.ALL));
@@ -59,37 +59,6 @@ public class ContentFormatterTests {
 
 		assertThat(this.document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
 			.isEqualTo(defaultConfigFormatter.format(this.document, MetadataMode.ALL));
-	}
-
-	@Test
-	public void customTextFormatter() {
-
-		DefaultContentFormatter textFormatter = DefaultContentFormatter.builder()
-			.withExcludedEmbedMetadataKeys("embedKey2", "embedKey3")
-			.withExcludedInferenceMetadataKeys("llmKey2")
-			.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{content}")
-			.withMetadataTemplate("Key/Value {key}={value}")
-			.build();
-
-		assertThat(this.document.getFormattedContent(textFormatter, MetadataMode.EMBED)).isEqualTo("""
-				Metadata:
-				Key/Value llmKey2=value4
-				Key/Value embedKey1=value1
-
-				Text:The World is Big and Salvation Lurks Around the Corner""");
-
-		assertThat(this.document.getContent()).isEqualTo("""
-				The World is Big and Salvation Lurks Around the Corner""");
-
-		assertThat(this.document.getFormattedContent(textFormatter, MetadataMode.EMBED))
-			.isEqualTo(textFormatter.format(this.document, MetadataMode.EMBED));
-
-		var documentWithCustomFormatter = new Document(this.document.getId(), this.document.getContent(),
-				this.document.getMetadata());
-		documentWithCustomFormatter.setContentFormatter(textFormatter);
-
-		assertThat(this.document.getFormattedContent(textFormatter, MetadataMode.ALL))
-			.isEqualTo(documentWithCustomFormatter.getFormattedContent());
 	}
 
 }

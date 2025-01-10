@@ -127,8 +127,8 @@ public class MessageTypeContentTests {
 			.willReturn(Mockito.mock(ResponseEntity.class));
 
 		URL mediaUrl = new URL("http://test");
-		this.chatModel.call(new Prompt(
-				List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))));
+		this.chatModel.call(new Prompt(List.of(new UserMessage("test message",
+				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))));
 
 		validateComplexContent(this.pomptCaptor.getValue());
 	}
@@ -140,9 +140,8 @@ public class MessageTypeContentTests {
 			.willReturn(this.fluxResponse);
 
 		URL mediaUrl = new URL("http://test");
-		this.chatModel
-			.stream(new Prompt(
-					List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))))
+		this.chatModel.stream(new Prompt(List.of(new UserMessage("test message",
+				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))))
 			.subscribe();
 
 		validateComplexContent(this.pomptCaptor.getValue());

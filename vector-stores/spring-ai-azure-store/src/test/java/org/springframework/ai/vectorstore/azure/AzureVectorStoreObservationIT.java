@@ -130,7 +130,7 @@ public class AzureVectorStoreObservationIT {
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+				.similaritySearch(SearchRequest.builder().query("What is Great Depression").topK(1).build());
 
 			assertThat(results).isNotEmpty();
 
@@ -183,10 +183,14 @@ public class AzureVectorStoreObservationIT {
 		@Bean
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
-			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
-					MetadataField.date("activationDate"));
-			return new AzureVectorStore(searchIndexClient, embeddingModel, true, filterableMetaFields,
-					observationRegistry, null, new TokenCountBatchingStrategy());
+			return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+				.initializeSchema(true)
+				.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
+						MetadataField.date("activationDate")))
+				.observationRegistry(observationRegistry)
+				.customObservationConvention(null)
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.build();
 		}
 
 		@Bean

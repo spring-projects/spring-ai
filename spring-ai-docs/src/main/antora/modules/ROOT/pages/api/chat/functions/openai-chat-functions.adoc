@@ -150,7 +150,7 @@ OpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		OpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
+		OpenAiChatOptions.builder().function("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -179,7 +179,7 @@ OpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+	.functionCallbacks(List.of(FunctionCallback.builder()
         .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
         .inputType(MockWeatherService.Request.class) // (3) function input type
@@ -229,13 +229,13 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
     };
 
 OpenAiChatOptions options = OpenAiChatOptions.builder()
-    .withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-    .withFunctionCallbacks(List.of(FunctionCallback.builder()
+    .model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+    .functionCallbacks(List.of(FunctionCallback.builder()
         .function("getCurrentWeather", this.weatherFunction)
         .description("Get the weather in location")
         .inputType(MockWeatherService.Request.class)
         .build()))
-    .withToolContext(Map.of("sessionId", "123", "userId", "user456"))
+    .toolContext(Map.of("sessionId", "123", "userId", "user456"))
     .build();
 ----
 

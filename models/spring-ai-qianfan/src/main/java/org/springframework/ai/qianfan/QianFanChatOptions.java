@@ -32,6 +32,7 @@ import org.springframework.ai.qianfan.api.QianFanApi;
  * frequency penalty, max tokens, etc.
  *
  * @author Geng Rong
+ * @author Ilayaperumal Gopinathan
  * @since 1.0
  * @see ChatOptions
  */
@@ -87,14 +88,14 @@ public class QianFanChatOptions implements ChatOptions {
 
 	public static QianFanChatOptions fromOptions(QianFanChatOptions fromOptions) {
 		return QianFanChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
+			.model(fromOptions.getModel())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.maxTokens(fromOptions.getMaxTokens())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.responseFormat(fromOptions.getResponseFormat())
+			.stop(fromOptions.getStop())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
 			.build();
 	}
 
@@ -296,42 +297,42 @@ public class QianFanChatOptions implements ChatOptions {
 			this.options = options;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withPresencePenalty(Double presencePenalty) {
+		public Builder presencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
-		public Builder withResponseFormat(QianFanApi.ChatCompletionRequest.ResponseFormat responseFormat) {
+		public Builder responseFormat(QianFanApi.ChatCompletionRequest.ResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}

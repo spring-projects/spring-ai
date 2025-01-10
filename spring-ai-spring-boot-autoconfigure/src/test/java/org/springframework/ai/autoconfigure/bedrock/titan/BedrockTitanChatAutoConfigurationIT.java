@@ -72,7 +72,7 @@ public class BedrockTitanChatAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			BedrockTitanChatModel chatModel = context.getBean(BedrockTitanChatModel.class);
 			ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage, this.systemMessage)));
-			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+			assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 		});
 	}
 
@@ -91,7 +91,7 @@ public class BedrockTitanChatAutoConfigurationIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");

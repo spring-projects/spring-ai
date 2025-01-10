@@ -30,6 +30,7 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.Gra
  * @author Michael Lavelle
  * @author Christian Tzolov
  * @author Piotr Olaszewski
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.1
  */
 @JsonInclude(Include.NON_NULL)
@@ -181,32 +182,32 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 			this.options = options;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withLanguage(String language) {
+		public Builder language(String language) {
 			this.options.language = language;
 			return this;
 		}
 
-		public Builder withPrompt(String prompt) {
+		public Builder prompt(String prompt) {
 			this.options.prompt = prompt;
 			return this;
 		}
 
-		public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
+		public Builder responseFormat(TranscriptResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder temperature(Float temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withGranularityType(GranularityType granularityType) {
+		public Builder granularityType(GranularityType granularityType) {
 			this.options.granularityType = granularityType;
 			return this;
 		}

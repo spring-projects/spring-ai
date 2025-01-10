@@ -64,7 +64,7 @@ public class PaymentStatusPromptIT {
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
 				var promptOptions = MistralAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.functionCallbacks(List.of(FunctionCallback.builder()
 						.function("retrievePaymentStatus",
 								(Transaction transaction) -> new Status(DATA.get(transaction).status()))
 						.description("Get payment status of a transaction")
@@ -76,8 +76,8 @@ public class PaymentStatusPromptIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("T1001");
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("paid");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
 			});
 	}
 

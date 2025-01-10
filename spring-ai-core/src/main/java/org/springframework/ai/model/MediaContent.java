@@ -16,13 +16,13 @@
 
 package org.springframework.ai.model;
 
-import java.util.Collection;
+import java.util.List;
 
 public interface MediaContent extends Content {
 
 	/**
 	 * Get the media associated with the content.
 	 */
-	Collection<Media> getMedia();
+	List<Media> getMedia();
 
 }

@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 public class CohereChatBedrockApi extends
@@ -268,52 +269,52 @@ public class CohereChatBedrockApi extends
 				this.prompt = prompt;
 			}
 
-			public Builder withTemperature(Double temperature) {
+			public Builder temperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
-			public Builder withTopP(Double topP) {
+			public Builder topP(Double topP) {
 				this.topP = topP;
 				return this;
 			}
 
-			public Builder withTopK(Integer topK) {
+			public Builder topK(Integer topK) {
 				this.topK = topK;
 				return this;
 			}
 
-			public Builder withMaxTokens(Integer maxTokens) {
+			public Builder maxTokens(Integer maxTokens) {
 				this.maxTokens = maxTokens;
 				return this;
 			}
 
-			public Builder withStopSequences(List<String> stopSequences) {
+			public Builder stopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}
 
-			public Builder withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
+			public Builder returnLikelihoods(ReturnLikelihoods returnLikelihoods) {
 				this.returnLikelihoods = returnLikelihoods;
 				return this;
 			}
 
-			public Builder withStream(boolean stream) {
+			public Builder stream(boolean stream) {
 				this.stream = stream;
 				return this;
 			}
 
-			public Builder withNumGenerations(Integer numGenerations) {
+			public Builder numGenerations(Integer numGenerations) {
 				this.numGenerations = numGenerations;
 				return this;
 			}
 
-			public Builder withLogitBias(LogitBias logitBias) {
+			public Builder logitBias(LogitBias logitBias) {
 				this.logitBias = logitBias;
 				return this;
 			}
 
-			public Builder withTruncate(Truncate truncate) {
+			public Builder truncate(Truncate truncate) {
 				this.truncate = truncate;
 				return this;
 			}

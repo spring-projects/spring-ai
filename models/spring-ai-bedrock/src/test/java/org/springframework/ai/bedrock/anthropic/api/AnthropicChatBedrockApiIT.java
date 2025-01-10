@@ -22,13 +22,13 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
@@ -38,8 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class AnthropicChatBedrockApiIT {
 
 	private final Logger logger = LoggerFactory.getLogger(AnthropicChatBedrockApiIT.class);
@@ -53,9 +52,9 @@ public class AnthropicChatBedrockApiIT {
 
 		AnthropicChatRequest request = AnthropicChatRequest
 			.builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-			.withTemperature(0.8)
-			.withMaxTokensToSample(300)
-			.withTopK(10)
+			.temperature(0.8)
+			.maxTokensToSample(300)
+			.topK(10)
 			.build();
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
@@ -76,10 +75,10 @@ public class AnthropicChatBedrockApiIT {
 
 		AnthropicChatRequest request = AnthropicChatRequest
 			.builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-			.withTemperature(0.8)
-			.withMaxTokensToSample(300)
-			.withTopK(10)
-			.withStopSequences(List.of("\n\nHuman:"))
+			.temperature(0.8)
+			.maxTokensToSample(300)
+			.topK(10)
+			.stopSequences(List.of("\n\nHuman:"))
 			.build();
 
 		Flux<AnthropicChatResponse> responseStream = this.anthropicChatApi.chatCompletionStream(request);

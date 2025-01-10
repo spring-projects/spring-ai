@@ -89,7 +89,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public OpenAiEmbeddingModel(OpenAiApi openAiApi, MetadataMode metadataMode) {
 		this(openAiApi, metadataMode,
-				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build());
+				OpenAiEmbeddingOptions.builder().model(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build());
 	}
 
 	/**
@@ -204,13 +204,13 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		return OpenAiEmbeddingOptions.builder()
 			// Handle portable embedding options
-			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-			.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
+			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
 					defaultOptions.getDimensions()))
 			// Handle OpenAI specific embedding options
-			.withEncodingFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getEncodingFormat(),
+			.encodingFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getEncodingFormat(),
 					defaultOptions.getEncodingFormat()))
-			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
+			.user(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
 			.build();
 	}
 

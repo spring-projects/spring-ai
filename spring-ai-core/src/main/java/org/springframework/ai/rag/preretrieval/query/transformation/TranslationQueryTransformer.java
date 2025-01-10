@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.util.PromptAssert;
@@ -87,20 +87,20 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 
 		logger.debug("Translating query to target language: {}", this.targetLanguage);
 
-		var translatedQuery = this.chatClient.prompt()
+		var translatedQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
 				.param("targetLanguage", this.targetLanguage)
 				.param("query", query.text()))
-			.options(ChatOptionsBuilder.builder().withTemperature(0.0).build())
+			.options(ChatOptions.builder().temperature(0.0).build())
 			.call()
 			.content();
 
-		if (!StringUtils.hasText(translatedQuery)) {
+		if (!StringUtils.hasText(translatedQueryText)) {
 			logger.warn("Query translation result is null/empty. Returning the input query unchanged.");
 			return query;
 		}
 
-		return new Query(translatedQuery);
+		return query.mutate().text(translatedQueryText).build();
 	}
 
 	public static Builder builder() {
@@ -111,6 +111,7 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 
 		private ChatClient.Builder chatClientBuilder;
 
+		@Nullable
 		private PromptTemplate promptTemplate;
 
 		private String targetLanguage;

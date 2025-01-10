@@ -47,7 +47,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -75,6 +74,7 @@ import org.springframework.util.CollectionUtils;
  * MoonshotChatModel is a {@link ChatModel} implementation that uses the Moonshot
  *
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 public class MoonshotChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
@@ -110,7 +110,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	 * Moonshot Chat API.
 	 */
 	public MoonshotChatModel(MoonshotApi moonshotApi) {
-		this(moonshotApi, MoonshotChatOptions.builder().withModel(MoonshotApi.DEFAULT_CHAT_MODEL).build());
+		this(moonshotApi, MoonshotChatOptions.builder().model(MoonshotApi.DEFAULT_CHAT_MODEL).build());
 	}
 
 	/**
@@ -318,10 +318,10 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "Moonshot ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? MoonshotUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? MoonshotUsage.from(result.usage()) : new EmptyUsage())
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
 	}
 
@@ -349,7 +349,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				return List.of(new ChatCompletionMessage(content,
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
@@ -362,7 +362,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
@@ -412,7 +412,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					MoonshotChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					MoonshotChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 
@@ -420,14 +420,14 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 	}
 
 	private ChatOptions buildRequestOptions(MoonshotApi.ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withFrequencyPenalty(request.frequencyPenalty())
-			.withMaxTokens(request.maxTokens())
-			.withPresencePenalty(request.presencePenalty())
-			.withStopSequences(request.stop())
-			.withTemperature(request.temperature())
-			.withTopP(request.topP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.frequencyPenalty(request.frequencyPenalty())
+			.maxTokens(request.maxTokens())
+			.presencePenalty(request.presencePenalty())
+			.stopSequences(request.stop())
+			.temperature(request.temperature())
+			.topP(request.topP())
 			.build();
 	}
 

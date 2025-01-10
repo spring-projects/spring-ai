@@ -49,7 +49,7 @@ public class FunctionCallWithPromptFunctionIT {
 	void functionCallTest() {
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
@@ -58,7 +58,7 @@ public class FunctionCallWithPromptFunctionIT {
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Return the temperature in Celsius.");
 
 				var promptOptions = AnthropicChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.functionCallbacks(List.of(FunctionCallback.builder()
 						.function("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 						.inputType(MockWeatherService.Request.class)
@@ -69,7 +69,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
 	}
 

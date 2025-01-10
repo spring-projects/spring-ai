@@ -90,7 +90,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -118,7 +118,7 @@ class GroqWithOpenAiChatModelIT {
 	@Test
 	@Disabled("Not supported by the current Groq API")
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
+		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 
@@ -150,7 +150,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 
 	}
@@ -169,7 +169,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -188,7 +188,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.getActor()).isNotEmpty();
 	}
 
@@ -206,7 +206,7 @@ class GroqWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -232,7 +232,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -249,7 +249,7 @@ class GroqWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -260,7 +260,7 @@ class GroqWithOpenAiChatModelIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -272,7 +272,7 @@ class GroqWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -287,7 +287,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -305,11 +305,11 @@ class GroqWithOpenAiChatModelIT {
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@Disabled("Groq does not support multi modality API")
@@ -318,15 +318,17 @@ class GroqWithOpenAiChatModelIT {
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
 		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
 	}
 
 	@Disabled("Groq does not support multi modality API")
@@ -334,8 +336,10 @@ class GroqWithOpenAiChatModelIT {
 	void streamingMultiModalityImageUrl() throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(List.of(userMessage)));
 
@@ -345,7 +349,7 @@ class GroqWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
@@ -357,7 +361,7 @@ class GroqWithOpenAiChatModelIT {
 	void validateCallResponseMetadata(String model) {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(model).build())
+				.options(OpenAiChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -385,7 +389,7 @@ class GroqWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().withModel(DEFAULT_GROQ_MODEL).build());
+			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().model(DEFAULT_GROQ_MODEL).build());
 		}
 
 	}

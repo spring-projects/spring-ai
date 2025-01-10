@@ -68,7 +68,7 @@ public class AzureOpenAiChatClientIT {
 		// @formatter:on
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -94,7 +94,7 @@ public class AzureOpenAiChatClientIT {
 
 		String generationTextFromStream = chatResponses
 				.stream()
-				.map(cr -> cr.getResult().getOutput().getContent())
+				.map(cr -> cr.getResult().getOutput().getText())
 				.collect(Collectors.joining());
 		// @formatter:on
 
@@ -162,7 +162,7 @@ public class AzureOpenAiChatClientIT {
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
 			return new AzureOpenAiChatModel(openAIClientBuilder,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build());
+					AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build());
 
 		}
 

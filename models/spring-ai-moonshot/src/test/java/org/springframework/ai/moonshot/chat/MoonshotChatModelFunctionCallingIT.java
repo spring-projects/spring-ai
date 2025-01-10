@@ -62,8 +62,8 @@ class MoonshotChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MoonshotChatOptions.builder()
-			.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -74,7 +74,7 @@ class MoonshotChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -86,7 +86,7 @@ class MoonshotChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MoonshotChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.build()))
@@ -100,7 +100,7 @@ class MoonshotChatModelFunctionCallingIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);

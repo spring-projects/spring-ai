@@ -28,6 +28,7 @@ import org.springframework.ai.image.ImageOptions;
  * QianFan Image API options. QianFanImageOptions.java
  *
  * @author Geng Rong
+ * @author Ilayaperumal Gopinathan
  * @since 1.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -196,32 +197,32 @@ public final class QianFanImageOptions implements ImageOptions {
 			this.options = new QianFanImageOptions();
 		}
 
-		public Builder withN(Integer n) {
+		public Builder N(Integer n) {
 			this.options.setN(n);
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withWidth(Integer width) {
+		public Builder width(Integer width) {
 			this.options.setWidth(width);
 			return this;
 		}
 
-		public Builder withHeight(Integer height) {
+		public Builder height(Integer height) {
 			this.options.setHeight(height);
 			return this;
 		}
 
-		public Builder withStyle(String style) {
+		public Builder style(String style) {
 			this.options.setStyle(style);
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.setUser(user);
 			return this;
 		}

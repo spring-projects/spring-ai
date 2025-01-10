@@ -156,8 +156,8 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.builder()
-            .withModel("Different-Embedding-Model-Deployment-Name"))
-            .withtTuncates(false)
+            .model("Different-Embedding-Model-Deployment-Name"))
+            .truncates(false)
             .build());
 ----
 
@@ -303,14 +303,14 @@ var ollamaApi = new OllamaApi();
 
 var embeddingModel = new OllamaEmbeddingModel(this.ollamaApi,
         OllamaOptions.builder()
-			.withModel(OllamaModel.MISTRAL.id())
+			.model(OllamaModel.MISTRAL.id())
             .build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.builder()
-            .withModel("chroma/all-minilm-l6-v2-f32"))
-            .withTruncate(false)
+            .model("chroma/all-minilm-l6-v2-f32"))
+            .truncate(false)
             .build());
 ----
 

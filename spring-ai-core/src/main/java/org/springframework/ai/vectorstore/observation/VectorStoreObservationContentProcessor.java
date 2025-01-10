@@ -36,7 +36,7 @@ public final class VectorStoreObservationContentProcessor {
 			return List.of();
 		}
 
-		return context.getQueryResponse().stream().map(Document::getContent).toList();
+		return context.getQueryResponse().stream().map(Document::getText).toList();
 	}
 
 }

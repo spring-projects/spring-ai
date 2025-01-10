@@ -27,6 +27,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
@@ -156,22 +157,22 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.setUser(user);
 			return this;
 		}
 
-		public Builder withDeploymentName(String model) {
+		public Builder deploymentName(String model) {
 			this.options.setDeploymentName(model);
 			return this;
 		}
 
-		public Builder withInputType(String inputType) {
+		public Builder inputType(String inputType) {
 			this.options.inputType = inputType;
 			return this;
 		}
 
-		public Builder withDimensions(Integer dimensions) {
+		public Builder dimensions(Integer dimensions) {
 			this.options.dimensions = dimensions;
 			return this;
 		}

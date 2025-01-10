@@ -37,6 +37,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -49,7 +50,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -96,7 +97,7 @@ class AnthropicChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				AnthropicChatOptions.builder().withModel(modelName).build());
+				AnthropicChatOptions.builder().model(modelName).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isGreaterThan(0);
@@ -105,7 +106,7 @@ class AnthropicChatModelIT {
 			.isEqualTo(response.getMetadata().getUsage().getPromptTokens()
 					+ response.getMetadata().getUsage().getGenerationTokens());
 		Generation generation = response.getResults().get(0);
-		assertThat(generation.getOutput().getContent()).contains("Blackbeard");
+		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
 		logger.info(response.toString());
 	}
@@ -117,21 +118,21 @@ class AnthropicChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				AnthropicChatOptions.builder().withModel("claude-3-sonnet-20240229").build());
+				AnthropicChatOptions.builder().model("claude-3-sonnet-20240229").build());
 
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), response.getResult().getOutput(),
 				new UserMessage("Repeat the last assistant message.")));
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = AnthropicChatOptions.builder().withTemperature(0.0).build();
+		var promptOptions = AnthropicChatOptions.builder().temperature(0.0).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
@@ -162,7 +163,7 @@ class AnthropicChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = listOutputConverter.convert(generation.getOutput().getContent());
+		List<String> list = listOutputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 	}
 
@@ -180,7 +181,7 @@ class AnthropicChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -199,7 +200,7 @@ class AnthropicChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -225,7 +226,7 @@ class AnthropicChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
@@ -244,8 +245,8 @@ class AnthropicChatModelIT {
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("banan", "apple", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).contains("banan", "apple", "basket");
 	}
 
 	@Test
@@ -258,11 +259,9 @@ class AnthropicChatModelIT {
 				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage),
-				PortableFunctionCallingOptions.builder()
-					.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
-					.build()));
+				FunctionCallingOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName()).build()));
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Spring AI", "portable API");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
 
 	@Test
@@ -274,8 +273,8 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -288,7 +287,12 @@ class AnthropicChatModelIT {
 		logger.info("Response: {}", response);
 
 		Generation generation = response.getResult();
-		assertThat(generation.getOutput().getContent()).contains("30", "10", "15");
+		assertThat(generation).isNotNull();
+		assertThat(generation.getOutput()).isNotNull();
+		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(1800);
 	}
 
 	@Test
@@ -302,8 +306,8 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -317,7 +321,7 @@ class AnthropicChatModelIT {
 			.block()
 			.stream()
 			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", content);
@@ -325,11 +329,40 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void streamFunctionCallUsageTest() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
+
+		ChatResponse chatResponse = responseFlux.last().block();
+
+		logger.info("Response: {}", chatResponse);
+		Usage usage = chatResponse.getMetadata().getUsage();
+
+		assertThat(usage).isNotNull();
+		assertThat(usage.getTotalTokens()).isLessThan(4000).isGreaterThan(1800);
+	}
+
+	@Test
 	void validateCallResponseMetadata() {
 		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().withModel(model).build())
+				.options(AnthropicChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -344,7 +377,7 @@ class AnthropicChatModelIT {
 		String model = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().withModel(model).build())
+				.options(AnthropicChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.stream()
 				.chatResponse()

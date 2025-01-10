@@ -30,7 +30,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiObservationMetricAttributes;
 import org.springframework.ai.observation.conventions.AiObservationMetricNames;
@@ -44,6 +44,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * Unit tests for {@link ChatModelMeterObservationHandler}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 class ChatModelMeterObservationHandlerTests {
 
@@ -68,7 +69,7 @@ class ChatModelMeterObservationHandlerTests {
 			.start();
 
 		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("test"))),
-				ChatResponseMetadata.builder().withModel("mistral-42").withUsage(new TestUsage()).build()));
+				ChatResponseMetadata.builder().model("mistral-42").usage(new TestUsage()).build()));
 
 		observation.stop();
 
@@ -94,7 +95,7 @@ class ChatModelMeterObservationHandlerTests {
 		return ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 	}
 

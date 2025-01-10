@@ -22,6 +22,9 @@ import java.util.Optional;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.lang.Nullable;
@@ -31,6 +34,7 @@ import org.springframework.lang.Nullable;
  * capabilities.
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public abstract class AbstractObservationVectorStore implements VectorStore {
@@ -42,15 +46,26 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Nullable
 	private final VectorStoreObservationConvention customObservationConvention;
 
-	/**
-	 * Create a new {@link AbstractObservationVectorStore} instance.
-	 * @param observationRegistry the observation registry to use
-	 * @param customObservationConvention the custom observation convention to use
-	 */
-	public AbstractObservationVectorStore(ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+	protected final EmbeddingModel embeddingModel;
+
+	protected final BatchingStrategy batchingStrategy;
+
+	private AbstractObservationVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
+			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
+		this.embeddingModel = embeddingModel;
 		this.observationRegistry = observationRegistry;
 		this.customObservationConvention = customObservationConvention;
+		this.batchingStrategy = batchingStrategy;
+	}
+
+	/**
+	 * Creates a new AbstractObservationVectorStore instance with the specified builder
+	 * settings. Initializes observation-related components and the embedding model.
+	 * @param builder the builder containing configuration settings
+	 */
+	public AbstractObservationVectorStore(AbstractVectorStoreBuilder<?> builder) {
+		this(builder.getEmbeddingModel(), builder.getObservationRegistry(), builder.getCustomObservationConvention(),
+				builder.getBatchingStrategy());
 	}
 
 	/**
@@ -71,6 +86,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	@Nullable
 	public Optional<Boolean> delete(List<String> deleteDocIds) {
 
 		VectorStoreObservationContext observationContext = this
@@ -84,11 +100,12 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	@Nullable
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		VectorStoreObservationContext searchObservationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
-			.withQueryRequest(request)
+			.queryRequest(request)
 			.build();
 
 		return VectorStoreObservationDocumentation.AI_VECTOR_STORE

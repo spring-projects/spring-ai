@@ -50,7 +50,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -84,6 +83,7 @@ import org.springframework.util.MimeType;
  * @see ChatModel
  * @see StreamingChatModel
  * @see ZhiPuAiApi
+ * @author Alexandros Pappas
  * @since 1.0.0 M1
  */
 public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
@@ -124,8 +124,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @throws IllegalArgumentException if zhiPuAiApi is null
 	 */
 	public ZhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi) {
-		this(zhiPuAiApi,
-				ZhiPuAiChatOptions.builder().withModel(ZhiPuAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(zhiPuAiApi, ZhiPuAiChatOptions.builder().model(ZhiPuAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -326,11 +325,11 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "ZhiPuAI ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? ZhiPuAiUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
-			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? ZhiPuAiUsage.from(result.usage()) : new EmptyUsage())
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
 	}
 
@@ -359,11 +358,10 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<MediaContent> contentList = new ArrayList<>(
-								List.of(new MediaContent(message.getContent())));
+						List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(message.getText())));
 
 						contentList.addAll(userMessage.getMedia()
 							.stream()
@@ -387,7 +385,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
@@ -436,7 +434,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					ZhiPuAiChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					ZhiPuAiChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 
@@ -460,12 +458,12 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	}
 
 	private ChatOptions buildRequestOptions(ZhiPuAiApi.ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withMaxTokens(request.maxTokens())
-			.withStopSequences(request.stop())
-			.withTemperature(request.temperature())
-			.withTopP(request.topP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.maxTokens(request.maxTokens())
+			.stopSequences(request.stop())
+			.temperature(request.temperature())
+			.topP(request.topP())
 			.build();
 	}
 

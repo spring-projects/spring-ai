@@ -119,12 +119,12 @@ Next, create a `VertexAiMultimodalEmbeddingModel` and use it for embeddings gene
 ----
 VertexAiEmbeddingConnectionDetails connectionDetails = 
     VertexAiEmbeddingConnectionDetails.builder()
-        .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
-        .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+        .projectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .location(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
         .build();
 
 VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
-    .withModel(VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME)
+    .model(VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME)
     .build();
 
 var embeddingModel = new VertexAiMultimodalEmbeddingModel(this.connectionDetails, this.options);

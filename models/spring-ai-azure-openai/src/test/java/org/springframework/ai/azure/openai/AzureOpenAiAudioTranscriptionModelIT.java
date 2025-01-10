@@ -54,8 +54,8 @@ class AzureOpenAiAudioTranscriptionModelIT {
 	@Test
 	void transcriptionTest() {
 		AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
-			.withResponseFormat(AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.TEXT)
-			.withTemperature(0f)
+			.responseFormat(AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.TEXT)
+			.temperature(0f)
 			.build();
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(this.audioFile,
 				transcriptionOptions);
@@ -69,10 +69,10 @@ class AzureOpenAiAudioTranscriptionModelIT {
 		AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat responseFormat = AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.VTT;
 
 		AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
-			.withLanguage("en")
-			.withPrompt("Ask not this, but ask that")
-			.withTemperature(0f)
-			.withResponseFormat(responseFormat)
+			.language("en")
+			.prompt("Ask not this, but ask that")
+			.temperature(0f)
+			.responseFormat(responseFormat)
 			.build();
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(this.audioFile,
 				transcriptionOptions);
@@ -101,7 +101,7 @@ class AzureOpenAiAudioTranscriptionModelIT {
 		@Bean
 		public AzureOpenAiAudioTranscriptionModel azureOpenAiChatModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiAudioTranscriptionModel(openAIClient,
-					AzureOpenAiAudioTranscriptionOptions.builder().withDeploymentName("whisper").build());
+					AzureOpenAiAudioTranscriptionOptions.builder().deploymentName("whisper").build());
 		}
 
 	}

@@ -18,10 +18,12 @@ package org.springframework.ai.bedrock.converse;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,10 +53,13 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
+import software.amazon.awssdk.services.bedrockruntime.model.DocumentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
@@ -64,7 +69,11 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolResultBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolResultContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
 
+import org.springframework.ai.bedrock.converse.api.BedrockMediaFormat;
 import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.bedrock.converse.api.URLValidator;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -84,14 +93,13 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.DefaultFunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -120,6 +128,8 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Alexandros Pappas
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class BedrockProxyChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -209,13 +219,13 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	}
 
 	private ChatOptions buildRequestOptions(ConverseRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.modelId())
-			.withMaxTokens(request.inferenceConfig().maxTokens())
-			.withStopSequences(request.inferenceConfig().stopSequences())
-			.withTemperature(request.inferenceConfig().temperature() != null
+		return ChatOptions.builder()
+			.model(request.modelId())
+			.maxTokens(request.inferenceConfig().maxTokens())
+			.stopSequences(request.inferenceConfig().stopSequences())
+			.temperature(request.inferenceConfig().temperature() != null
 					? request.inferenceConfig().temperature().doubleValue() : null)
-			.withTopP(request.inferenceConfig().topP() != null ? request.inferenceConfig().topP().doubleValue() : null)
+			.topP(request.inferenceConfig().topP() != null ? request.inferenceConfig().topP().doubleValue() : null)
 			.build();
 	}
 
@@ -249,17 +259,13 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 					List<ContentBlock> contents = new ArrayList<>();
 					if (message instanceof UserMessage) {
 						var userMessage = (UserMessage) message;
-						contents.add(ContentBlock.fromText(userMessage.getContent()));
+						contents.add(ContentBlock.fromText(userMessage.getText()));
 
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
-								ContentBlock cb = ContentBlock.fromImage(ImageBlock.builder()
-									.format(media.getMimeType().getSubtype())
-									.source(ImageSource
-										.fromBytes(SdkBytes.fromByteArray(getContentMediaData(media.getData()))))
-									.build());
-								return cb;
-							}).toList();
+							List<ContentBlock> mediaContent = userMessage.getMedia()
+								.stream()
+								.map(this::mapMediaToContentBlock)
+								.toList();
 							contents.addAll(mediaContent);
 						}
 					}
@@ -268,8 +274,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 				else if (message.getMessageType() == MessageType.ASSISTANT) {
 					AssistantMessage assistantMessage = (AssistantMessage) message;
 					List<ContentBlock> contentBlocks = new ArrayList<>();
-					if (StringUtils.hasText(message.getContent())) {
-						contentBlocks.add(ContentBlock.fromText(message.getContent()));
+					if (StringUtils.hasText(message.getText())) {
+						contentBlocks.add(ContentBlock.fromText(message.getText()));
 					}
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
@@ -309,7 +315,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		List<SystemContentBlock> systemMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(sysMessage -> SystemContentBlock.builder().text(sysMessage.getContent()).build())
+			.map(sysMessage -> SystemContentBlock.builder().text(sysMessage.getText()).build())
 			.toList();
 
 		FunctionCallingOptions updatedRuntimeOptions = (FunctionCallingOptions) this.defaultOptions.copy();
@@ -317,12 +323,12 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof FunctionCallingOptions) {
 				var functionCallingOptions = (FunctionCallingOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions)
+				updatedRuntimeOptions = ((DefaultFunctionCallingOptions) updatedRuntimeOptions)
 					.merge(functionCallingOptions);
 			}
 			else if (prompt.getOptions() instanceof ChatOptions) {
 				var chatOptions = (ChatOptions) prompt.getOptions();
-				updatedRuntimeOptions = ((PortableFunctionCallingOptions) updatedRuntimeOptions).merge(chatOptions);
+				updatedRuntimeOptions = ((DefaultFunctionCallingOptions) updatedRuntimeOptions).merge(chatOptions);
 			}
 		}
 
@@ -341,6 +347,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 					? updatedRuntimeOptions.getTemperature().floatValue() : null)
 			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
 			.build();
+
 		Document additionalModelRequestFields = ConverseApiUtils
 			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
 
@@ -352,6 +359,91 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
 			.build();
+	}
+
+	private ContentBlock mapMediaToContentBlock(Media media) {
+
+		var mimeType = media.getMimeType();
+
+		if (BedrockMediaFormat.isSupportedVideoFormat(mimeType)) { // Video
+			VideoFormat videoFormat = BedrockMediaFormat.getVideoFormat(mimeType);
+			VideoSource videoSource = null;
+			if (media.getData() instanceof byte[] bytes) {
+				videoSource = VideoSource.builder().bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
+			}
+			else if (media.getData() instanceof String uriText) {
+				// if (URLValidator.isValidURLBasic(uriText)) {
+				videoSource = VideoSource.builder().s3Location(S3Location.builder().uri(uriText).build()).build();
+				// }
+			}
+			else if (media.getData() instanceof URL url) {
+				try {
+					videoSource = VideoSource.builder()
+						.s3Location(S3Location.builder().uri(url.toURI().toString()).build())
+						.build();
+				}
+				catch (URISyntaxException e) {
+					throw new IllegalArgumentException(e);
+				}
+			}
+			else {
+				throw new IllegalArgumentException("Invalid video content type: " + media.getData().getClass());
+			}
+
+			return ContentBlock.fromVideo(VideoBlock.builder().source(videoSource).format(videoFormat).build());
+		}
+		else if (BedrockMediaFormat.isSupportedImageFormat(mimeType)) { // Image
+			ImageSource.Builder sourceBuilder = ImageSource.builder();
+			if (media.getData() instanceof byte[] bytes) {
+				sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
+			}
+			else if (media.getData() instanceof String text) {
+
+				if (URLValidator.isValidURLBasic(text)) {
+					try {
+						URL url = new URL(text);
+						URLConnection connection = url.openConnection();
+						try (InputStream is = connection.getInputStream()) {
+							sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(StreamUtils.copyToByteArray(is))).build();
+						}
+					}
+					catch (IOException e) {
+						throw new RuntimeException("Failed to read media data from URL: " + text, e);
+					}
+				}
+				else {
+					sourceBuilder.bytes(SdkBytes.fromByteArray(Base64.getDecoder().decode(text)));
+				}
+			}
+			else if (media.getData() instanceof URL url) {
+
+				try (InputStream is = url.openConnection().getInputStream()) {
+					byte[] imageBytes = StreamUtils.copyToByteArray(is);
+					sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(imageBytes)).build();
+				}
+				catch (IOException e) {
+					throw new IllegalArgumentException("Failed to read media data from URL: " + url, e);
+				}
+			}
+			else {
+				throw new IllegalArgumentException("Invalid Image content type: " + media.getData().getClass());
+			}
+
+			return ContentBlock.fromImage(ImageBlock.builder()
+				.source(sourceBuilder.build())
+				.format(BedrockMediaFormat.getImageFormat(mimeType))
+				.build());
+		}
+		else if (BedrockMediaFormat.isSupportedDocumentFormat(mimeType)) { // Document
+
+			return ContentBlock.fromDocument(DocumentBlock.builder()
+				.name(media.getName())
+				.format(BedrockMediaFormat.getDocumentFormat(mimeType))
+				.source(DocumentSource.builder().bytes(SdkBytes.fromByteArray(media.getDataAsByteArray())).build())
+				.build());
+		}
+
+		throw new IllegalArgumentException("Unsupported media format: " + mimeType);
 	}
 
 	private List<Tool> getFunctionTools(Set<String> functionNames) {
@@ -474,8 +566,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		ConverseMetrics metrics = response.metrics();
 
 		var chatResponseMetaData = ChatResponseMetadata.builder()
-			.withId(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
-			.withUsage(usage)
+			.id(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
+			.usage(usage)
 			.build();
 
 		return new ChatResponse(allGenerations, chatResponseMetaData);
@@ -515,6 +607,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 			ConverseStreamRequest converseStreamRequest = ConverseStreamRequest.builder()
 				.modelId(converseRequest.modelId())
+				.inferenceConfig(converseRequest.inferenceConfig())
 				.messages(converseRequest.messages())
 				.system(converseRequest.system())
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
@@ -606,7 +699,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 		private Duration timeout = Duration.ofMinutes(10);
 
-		private FunctionCallingOptions defaultOptions = new FunctionCallingOptionsBuilder().build();
+		private FunctionCallingOptions defaultOptions = new DefaultFunctionCallingOptions();
 
 		private FunctionCallbackResolver functionCallbackResolver;
 

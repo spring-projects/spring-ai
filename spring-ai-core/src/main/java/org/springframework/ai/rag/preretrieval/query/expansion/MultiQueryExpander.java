@@ -120,7 +120,10 @@ public final class MultiQueryExpander implements QueryExpander {
 			return List.of(query);
 		}
 
-		var queries = queryVariants.stream().filter(StringUtils::hasText).map(Query::new).collect(Collectors.toList());
+		var queries = queryVariants.stream()
+			.filter(StringUtils::hasText)
+			.map(queryText -> query.mutate().text(queryText).build())
+			.collect(Collectors.toList());
 
 		if (this.includeOriginal) {
 			logger.debug("Including the original query in the result");

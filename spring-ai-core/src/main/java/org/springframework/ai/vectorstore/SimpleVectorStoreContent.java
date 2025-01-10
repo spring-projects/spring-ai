@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -41,7 +42,7 @@ public final class SimpleVectorStoreContent implements Content {
 
 	private final String id;
 
-	private final String content;
+	private final String text;
 
 	private final Map<String, Object> metadata;
 
@@ -50,55 +51,55 @@ public final class SimpleVectorStoreContent implements Content {
 	/**
 	 * Creates a new instance with the given content, empty metadata, and embedding
 	 * vector.
-	 * @param content the content text, must not be null
+	 * @param text the content text, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 */
 	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-	public SimpleVectorStoreContent(@JsonProperty("content") String content,
+	public SimpleVectorStoreContent(@JsonProperty("text") @JsonAlias({ "content" }) String text,
 			@JsonProperty("embedding") float[] embedding) {
-		this(content, new HashMap<>(), embedding);
+		this(text, new HashMap<>(), embedding);
 	}
 
 	/**
 	 * Creates a new instance with the given content, metadata, and embedding vector.
-	 * @param content the content text, must not be null
+	 * @param text the content text, must not be null
 	 * @param metadata the metadata map, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 */
-	public SimpleVectorStoreContent(String content, Map<String, Object> metadata, float[] embedding) {
-		this(content, metadata, new RandomIdGenerator(), embedding);
+	public SimpleVectorStoreContent(String text, Map<String, Object> metadata, float[] embedding) {
+		this(text, metadata, new RandomIdGenerator(), embedding);
 	}
 
 	/**
 	 * Creates a new instance with the given content, metadata, custom ID generator, and
 	 * embedding vector.
-	 * @param content the content text, must not be null
+	 * @param text the content text, must not be null
 	 * @param metadata the metadata map, must not be null
 	 * @param idGenerator the ID generator to use, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 */
-	public SimpleVectorStoreContent(String content, Map<String, Object> metadata, IdGenerator idGenerator,
+	public SimpleVectorStoreContent(String text, Map<String, Object> metadata, IdGenerator idGenerator,
 			float[] embedding) {
-		this(idGenerator.generateId(content, metadata), content, metadata, embedding);
+		this(idGenerator.generateId(text, metadata), text, metadata, embedding);
 	}
 
 	/**
 	 * Creates a new instance with all fields specified.
 	 * @param id the unique identifier, must not be empty
-	 * @param content the content text, must not be null
+	 * @param text the content text, must not be null
 	 * @param metadata the metadata map, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 * @throws IllegalArgumentException if any parameter is null or if id is empty
 	 */
-	public SimpleVectorStoreContent(String id, String content, Map<String, Object> metadata, float[] embedding) {
+	public SimpleVectorStoreContent(String id, String text, Map<String, Object> metadata, float[] embedding) {
 		Assert.hasText(id, "id must not be null or empty");
-		Assert.notNull(content, "content must not be null");
+		Assert.notNull(text, "content must not be null");
 		Assert.notNull(metadata, "metadata must not be null");
 		Assert.notNull(embedding, "embedding must not be null");
 		Assert.isTrue(embedding.length > 0, "embedding vector must not be empty");
 
 		this.id = id;
-		this.content = content;
+		this.text = text;
 		this.metadata = Collections.unmodifiableMap(new HashMap<>(metadata));
 		this.embedding = Arrays.copyOf(embedding, embedding.length);
 	}
@@ -112,7 +113,7 @@ public final class SimpleVectorStoreContent implements Content {
 	public SimpleVectorStoreContent withEmbedding(float[] embedding) {
 		Assert.notNull(embedding, "embedding must not be null");
 		Assert.isTrue(embedding.length > 0, "embedding vector must not be empty");
-		return new SimpleVectorStoreContent(this.id, this.content, this.metadata, embedding);
+		return new SimpleVectorStoreContent(this.id, this.text, this.metadata, embedding);
 	}
 
 	public String getId() {
@@ -120,8 +121,13 @@ public final class SimpleVectorStoreContent implements Content {
 	}
 
 	@Override
+	public String getText() {
+		return this.text;
+	}
+
+	@Override
 	public String getContent() {
-		return this.content;
+		return this.text;
 	}
 
 	@Override
@@ -140,7 +146,7 @@ public final class SimpleVectorStoreContent implements Content {
 	public Document toDocument(Double score) {
 		var metadata = new HashMap<>(this.metadata);
 		metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - score);
-		return Document.builder().id(this.id).content(this.content).metadata(metadata).score(score).build();
+		return Document.builder().id(this.id).text(this.text).metadata(metadata).score(score).build();
 	}
 
 	@Override
@@ -152,14 +158,14 @@ public final class SimpleVectorStoreContent implements Content {
 			return false;
 		}
 		SimpleVectorStoreContent that = (SimpleVectorStoreContent) o;
-		return Objects.equals(this.id, that.id) && Objects.equals(this.content, that.content)
+		return Objects.equals(this.id, that.id) && Objects.equals(this.text, that.text)
 				&& Objects.equals(this.metadata, that.metadata) && Arrays.equals(this.embedding, that.embedding);
 	}
 
 	@Override
 	public int hashCode() {
 		int result = Objects.hashCode(this.id);
-		result = 31 * result + Objects.hashCode(this.content);
+		result = 31 * result + Objects.hashCode(this.text);
 		result = 31 * result + Objects.hashCode(this.metadata);
 		result = 31 * result + Arrays.hashCode(this.embedding);
 		return result;
@@ -167,8 +173,8 @@ public final class SimpleVectorStoreContent implements Content {
 
 	@Override
 	public String toString() {
-		return "SimpleVectorStoreContent{" + "id='" + this.id + '\'' + ", content='" + this.content + '\''
-				+ ", metadata=" + this.metadata + ", embedding=" + Arrays.toString(this.embedding) + '}';
+		return "SimpleVectorStoreContent{" + "id='" + this.id + '\'' + ", content='" + this.text + '\'' + ", metadata="
+				+ this.metadata + ", embedding=" + Arrays.toString(this.embedding) + '}';
 	}
 
 }

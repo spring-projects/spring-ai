@@ -60,7 +60,7 @@ public class MiniMaxEmbeddingModelObservationIT {
 
 	@Test
 	void observationForEmbeddingOperation() {
-		var options = MiniMaxEmbeddingOptions.builder().withModel(MiniMaxApi.EmbeddingModel.Embo_01.getValue()).build();
+		var options = MiniMaxEmbeddingOptions.builder().model(MiniMaxApi.EmbeddingModel.Embo_01.getValue()).build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
 

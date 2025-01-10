@@ -48,10 +48,10 @@ public class BedrockAnthropicChatProperties {
 
 	@NestedConfigurationProperty
 	private AnthropicChatOptions options = AnthropicChatOptions.builder()
-		.withTemperature(0.7)
-		.withMaxTokensToSample(300)
-		.withTopK(10)
-		.withStopSequences(List.of("\n\nHuman:"))
+		.temperature(0.7)
+		.maxTokensToSample(300)
+		.topK(10)
+		.stopSequences(List.of("\n\nHuman:"))
 		.build();
 
 	public boolean isEnabled() {

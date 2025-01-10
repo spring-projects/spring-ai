@@ -28,32 +28,32 @@ public final class ImageOptionsBuilder {
 		return new ImageOptionsBuilder();
 	}
 
-	public ImageOptionsBuilder withN(Integer n) {
+	public ImageOptionsBuilder N(Integer n) {
 		this.options.setN(n);
 		return this;
 	}
 
-	public ImageOptionsBuilder withModel(String model) {
+	public ImageOptionsBuilder model(String model) {
 		this.options.setModel(model);
 		return this;
 	}
 
-	public ImageOptionsBuilder withResponseFormat(String responseFormat) {
+	public ImageOptionsBuilder responseFormat(String responseFormat) {
 		this.options.setResponseFormat(responseFormat);
 		return this;
 	}
 
-	public ImageOptionsBuilder withWidth(Integer width) {
+	public ImageOptionsBuilder width(Integer width) {
 		this.options.setWidth(width);
 		return this;
 	}
 
-	public ImageOptionsBuilder withHeight(Integer height) {
+	public ImageOptionsBuilder height(Integer height) {
 		this.options.setHeight(height);
 		return this;
 	}
 
-	public ImageOptionsBuilder withStyle(String style) {
+	public ImageOptionsBuilder style(String style) {
 		this.options.setStyle(style);
 		return this;
 	}

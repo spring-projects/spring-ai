@@ -48,7 +48,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
@@ -77,6 +76,7 @@ import org.springframework.util.CollectionUtils;
  * backed by {@link MiniMaxApi}.
  *
  * @author Geng Rong
+ * @author Alexandros Pappas
  * @see ChatModel
  * @see StreamingChatModel
  * @see MiniMaxApi
@@ -120,8 +120,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @throws IllegalArgumentException if MiniMaxApi is null
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi) {
-		this(miniMaxApi,
-				MiniMaxChatOptions.builder().withModel(MiniMaxApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(miniMaxApi, MiniMaxChatOptions.builder().model(MiniMaxApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -374,25 +373,25 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 	}
 
 	private ChatOptions buildRequestOptions(ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withFrequencyPenalty(request.frequencyPenalty())
-			.withMaxTokens(request.maxTokens())
-			.withPresencePenalty(request.presencePenalty())
-			.withStopSequences(request.stop())
-			.withTemperature(request.temperature())
-			.withTopP(request.topP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.frequencyPenalty(request.frequencyPenalty())
+			.maxTokens(request.maxTokens())
+			.presencePenalty(request.presencePenalty())
+			.stopSequences(request.stop())
+			.temperature(request.temperature())
+			.topP(request.topP())
 			.build();
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? MiniMaxUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
-			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? MiniMaxUsage.from(result.usage()) : new EmptyUsage())
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
 	}
 
@@ -439,7 +438,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				return List.of(new ChatCompletionMessage(content,
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
@@ -452,7 +451,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
@@ -502,7 +501,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					MiniMaxChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					MiniMaxChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 

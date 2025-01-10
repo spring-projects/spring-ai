@@ -51,17 +51,17 @@ public class SimpleVectorStoreIT {
 	List<Document> documents = List.of(
 			Document.builder()
 				.id("471a8c78-549a-4b2c-bce5-ef3ae6579be3")
-				.content(getText("classpath:/test/data/spring.ai.txt"))
+				.text(getText("classpath:/test/data/spring.ai.txt"))
 				.metadata(Map.of("meta1", "meta1"))
 				.build(),
 			Document.builder()
 				.id("bc51d7f7-627b-4ba6-adf4-f0bcd1998f8f")
-				.content(getText("classpath:/test/data/time.shelter.txt"))
+				.text(getText("classpath:/test/data/time.shelter.txt"))
 				.metadata(Map.of())
 				.build(),
 			Document.builder()
 				.id("d0237682-1150-44ff-b4d2-1be9b1731ee5")
-				.content(getText("classpath:/test/data/great.depression.txt"))
+				.text(getText("classpath:/test/data/great.depression.txt"))
 				.metadata(Map.of("meta2", "meta2"))
 				.build());
 
@@ -84,35 +84,35 @@ public class SimpleVectorStoreIT {
 	public void searchWithThreshold() {
 		Document document = Document.builder()
 			.id(UUID.randomUUID().toString())
-			.content("Spring AI rocks!!")
+			.text("Spring AI rocks!!")
 			.metadata("meta1", "meta1")
 			.build();
 
 		vectorStore.add(List.of(document));
 
-		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+		List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(document.getId());
-		assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+		assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 		assertThat(resultDoc.getMetadata()).containsKey("meta1");
 		assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
 		Document sameIdDocument = Document.builder()
 			.id(document.getId())
-			.content("The World is Big and Salvation Lurks Around the Corner")
+			.text("The World is Big and Salvation Lurks Around the Corner")
 			.metadata("meta2", "meta2")
 			.build();
 
 		vectorStore.add(List.of(sameIdDocument));
 
-		results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+		results = vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(document.getId());
-		assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+		assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 		assertThat(resultDoc.getMetadata()).containsKey("meta2");
 		assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 

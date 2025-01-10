@@ -28,6 +28,7 @@ import org.springframework.ai.image.ImageOptions;
  *
  * @author Benoit Moussaud
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -263,48 +264,48 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 			this.options = new AzureOpenAiImageOptions();
 		}
 
-		public Builder withN(Integer n) {
+		public Builder N(Integer n) {
 			this.options.setN(n);
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withDeploymentName(String deploymentName) {
+		public Builder deploymentName(String deploymentName) {
 			this.options.setDeploymentName(deploymentName);
 			return this;
 		}
 
-		public Builder withResponseFormat(String responseFormat) {
+		public Builder responseFormat(String responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
-		public Builder withWidth(Integer width) {
+		public Builder width(Integer width) {
 			this.options.setWidth(width);
 			return this;
 		}
 
-		public Builder withHeight(Integer height) {
+		public Builder height(Integer height) {
 			this.options.setHeight(height);
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.setUser(user);
+			return this;
+		}
+
+		public Builder style(String style) {
+			this.options.setStyle(style);
 			return this;
 		}
 
 		public AzureOpenAiImageOptions build() {
 			return this.options;
-		}
-
-		public Builder withStyle(String style) {
-			this.options.setStyle(style);
-			return this;
 		}
 
 	}

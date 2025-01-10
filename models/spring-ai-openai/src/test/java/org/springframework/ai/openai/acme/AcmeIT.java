@@ -82,7 +82,7 @@ public class AcmeIT extends AbstractIT {
 		// Step 2 - Create embeddings and save to vector store
 
 		logger.info("Creating Embeddings...");
-		VectorStore vectorStore = new SimpleVectorStore(this.embeddingModel);
+		VectorStore vectorStore = SimpleVectorStore.builder(this.embeddingModel).build();
 
 		vectorStore.accept(textSplitter.apply(jsonReader.get()));
 
@@ -117,7 +117,7 @@ public class AcmeIT extends AbstractIT {
 	private Message getSystemMessage(List<Document> similarDocuments) {
 
 		String documents = similarDocuments.stream()
-			.map(entry -> entry.getContent())
+			.map(entry -> entry.getText())
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemBikePrompt);

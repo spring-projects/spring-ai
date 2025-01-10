@@ -102,9 +102,9 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OCICohereChatOptions.builder()
-            .withModel("my-model-ocid")
-            .withCompartment("my-compartment-ocid")
-            .withTemperature(0.5)
+            .model("my-model-ocid")
+            .compartment("my-compartment-ocid")
+            .temperature(0.5)
         .build()
     ));
 ----
@@ -195,9 +195,9 @@ var genAi = GenerativeAiInferenceClient.builder()
         .build(authProvider);
 
 var chatModel = new OCICohereChatModel(genAi, OCICohereChatOptions.builder()
-        .withModel(MODEL_ID)
-        .withCompartment(COMPARTMENT_ID)
-        .withServingMode("on-demand")
+        .model(MODEL_ID)
+        .compartment(COMPARTMENT_ID)
+        .servingMode("on-demand")
         .build());
 
 ChatResponse response = chatModel.call(

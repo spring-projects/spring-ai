@@ -420,7 +420,7 @@ public class OpenAiPropertiesTests {
 				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
-						chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);
+						"" + chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);
 
 				assertThat(chatProperties.getOptions().getUser()).isEqualTo("userXYZ");
 

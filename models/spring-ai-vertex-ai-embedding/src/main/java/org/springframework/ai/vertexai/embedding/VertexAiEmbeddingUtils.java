@@ -32,6 +32,7 @@ import org.springframework.util.StringUtils;
  * Utility class for constructing parameter objects for Vertex AI embedding requests.
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public abstract class VertexAiEmbeddingUtils {
@@ -82,13 +83,13 @@ public abstract class VertexAiEmbeddingUtils {
 			return new TextParametersBuilder();
 		}
 
-		public TextParametersBuilder withOutputDimensionality(Integer outputDimensionality) {
+		public TextParametersBuilder outputDimensionality(Integer outputDimensionality) {
 			Assert.notNull(outputDimensionality, "Output dimensionality must not be null");
 			this.outputDimensionality = outputDimensionality;
 			return this;
 		}
 
-		public TextParametersBuilder withAutoTruncate(Boolean autoTruncate) {
+		public TextParametersBuilder autoTruncate(Boolean autoTruncate) {
 			Assert.notNull(autoTruncate, "Auto truncate must not be null");
 			this.autoTruncate = autoTruncate;
 			return this;
@@ -123,13 +124,13 @@ public abstract class VertexAiEmbeddingUtils {
 			return builder;
 		}
 
-		public TextInstanceBuilder withTaskType(String taskType) {
+		public TextInstanceBuilder taskType(String taskType) {
 			Assert.hasText(taskType, "Task type must not be empty");
 			this.taskType = taskType;
 			return this;
 		}
 
-		public TextInstanceBuilder withTitle(String title) {
+		public TextInstanceBuilder title(String title) {
 			Assert.hasText(title, "Title must not be empty");
 			this.title = title;
 			return this;
@@ -179,26 +180,26 @@ public abstract class VertexAiEmbeddingUtils {
 			return new MultimodalInstanceBuilder();
 		}
 
-		public MultimodalInstanceBuilder withText(String text) {
+		public MultimodalInstanceBuilder text(String text) {
 			Assert.hasText(text, "Text must not be empty");
 			this.text = text;
 			return this;
 		}
 
-		public MultimodalInstanceBuilder withDimension(Integer dimension) {
+		public MultimodalInstanceBuilder dimension(Integer dimension) {
 			Assert.isTrue(dimension == 128 || dimension == 256 || dimension == 512 || dimension == 1408,
 					"Invalid dimension value: " + dimension + ". Accepted values: 128, 256, 512, or 1408.");
 			this.dimension = dimension;
 			return this;
 		}
 
-		public MultimodalInstanceBuilder withImage(Struct image) {
+		public MultimodalInstanceBuilder image(Struct image) {
 			Assert.notNull(image, "Image must not be null");
 			this.image = image;
 			return this;
 		}
 
-		public MultimodalInstanceBuilder withVideo(Struct video) {
+		public MultimodalInstanceBuilder video(Struct video) {
 			Assert.notNull(video, "Video must not be null");
 			this.video = video;
 			return this;
@@ -255,26 +256,26 @@ public abstract class VertexAiEmbeddingUtils {
 			return builder;
 		}
 
-		public ImageBuilder withImageData(Object imageData) {
+		public ImageBuilder imageData(Object imageData) {
 			Assert.notNull(imageData, "Image data must not be null");
 			if (imageData instanceof byte[] bytes) {
-				return withImageBytes(bytes);
+				return imageBytes(bytes);
 			}
 			else if (imageData instanceof String uri) {
-				return withGcsUri(uri);
+				return gcsUri(uri);
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported image data type: " + imageData.getClass());
 			}
 		}
 
-		public ImageBuilder withImageBytes(byte[] imageBytes) {
+		public ImageBuilder imageBytes(byte[] imageBytes) {
 			Assert.notNull(imageBytes, "Image bytes must not be null");
 			this.imageBytes = imageBytes;
 			return this;
 		}
 
-		public ImageBuilder withGcsUri(String gcsUri) {
+		public ImageBuilder gcsUri(String gcsUri) {
 			Assert.hasText(gcsUri, "GCS URI must not be empty");
 			this.gcsUri = gcsUri;
 			return this;
@@ -351,39 +352,39 @@ public abstract class VertexAiEmbeddingUtils {
 			return builder;
 		}
 
-		public VideoBuilder withVideoData(Object imageData) {
+		public VideoBuilder videoData(Object imageData) {
 			Assert.notNull(imageData, "Video data must not be null");
 			if (imageData instanceof byte[] imageBytes) {
-				return withVideoBytes(imageBytes);
+				return videoBytes(imageBytes);
 			}
 			else if (imageData instanceof String uri) {
-				return withGcsUri(uri);
+				return gcsUri(uri);
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported image data type: " + imageData.getClass());
 			}
 		}
 
-		public VideoBuilder withVideoBytes(byte[] imageBytes) {
+		public VideoBuilder videoBytes(byte[] imageBytes) {
 			Assert.notNull(imageBytes, "Video bytes must not be null");
 			this.videoBytes = imageBytes;
 			return this;
 		}
 
-		public VideoBuilder withGcsUri(String gcsUri) {
+		public VideoBuilder gcsUri(String gcsUri) {
 			Assert.hasText(gcsUri, "GCS URI must not be empty");
 			this.gcsUri = gcsUri;
 			return this;
 		}
 
-		public VideoBuilder withStartOffsetSec(Integer startOffsetSec) {
+		public VideoBuilder startOffsetSec(Integer startOffsetSec) {
 			if (startOffsetSec != null) {
 				this.startOffsetSec = startOffsetSec;
 			}
 			return this;
 		}
 
-		public VideoBuilder withEndOffsetSec(Integer endOffsetSec) {
+		public VideoBuilder endOffsetSec(Integer endOffsetSec) {
 			if (endOffsetSec != null) {
 				this.endOffsetSec = endOffsetSec;
 			}
@@ -391,7 +392,7 @@ public abstract class VertexAiEmbeddingUtils {
 
 		}
 
-		public VideoBuilder withIntervalSec(Integer intervalSec) {
+		public VideoBuilder intervalSec(Integer intervalSec) {
 			if (intervalSec != null) {
 				this.intervalSec = intervalSec;
 			}

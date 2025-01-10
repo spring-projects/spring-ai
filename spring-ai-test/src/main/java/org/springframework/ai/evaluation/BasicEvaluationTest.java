@@ -69,12 +69,12 @@ public class BasicEvaluationTest {
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = this.openAiChatModel.call(prompt).getResult().getOutput().getContent();
+		String yesOrNo = this.openAiChatModel.call(prompt).getResult().getOutput().getText();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(this.qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = this.openAiChatModel.call(prompt).getResult().getOutput().getContent();
+			String reasonForFailure = this.openAiChatModel.call(prompt).getResult().getOutput().getText();
 			fail(reasonForFailure);
 		}
 		else {

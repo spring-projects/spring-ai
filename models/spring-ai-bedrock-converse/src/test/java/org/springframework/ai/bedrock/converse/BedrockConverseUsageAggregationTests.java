@@ -41,7 +41,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.isA;
@@ -83,7 +82,7 @@ public class BedrockConverseUsageAggregationTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent()).isSameAs("Response Content Block");
+		assertThat(result.getResult().getOutput().getText()).isSameAs("Response Content Block");
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(16);
 		assertThat(result.getMetadata().getUsage().getGenerationTokens()).isEqualTo(14);
@@ -145,10 +144,10 @@ public class BedrockConverseUsageAggregationTests {
 			.build();
 
 		var result = this.chatModel.call(new Prompt("What is the weather in Paris?",
-				PortableFunctionCallingOptions.builder().withFunctionCallbacks(functionCallback).build()));
+				FunctionCallingOptions.builder().functionCallbacks(functionCallback).build()));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent())
+		assertThat(result.getResult().getOutput().getText())
 			.isSameAs(converseResponseFinal.output().message().content().get(0).text());
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(445 + 540);

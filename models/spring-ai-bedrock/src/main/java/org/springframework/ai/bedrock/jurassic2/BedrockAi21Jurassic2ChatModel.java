@@ -34,7 +34,10 @@ import org.springframework.util.Assert;
  *
  * @author Ahmed Yousri
  * @since 1.0.0
+ * @deprecated in favor of the
+ * {@link org.springframework.ai.bedrock.converse.BedrockProxyChatModel}.
  */
+@Deprecated
 public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
 	private final Ai21Jurassic2ChatBedrockApi chatApi;
@@ -50,12 +53,7 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 	}
 
 	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi) {
-		this(chatApi,
-				BedrockAi21Jurassic2ChatOptions.builder()
-					.withTemperature(0.8)
-					.withTopP(0.9)
-					.withMaxTokens(100)
-					.build());
+		this(chatApi, BedrockAi21Jurassic2ChatOptions.builder().temperature(0.8).topP(0.9).maxTokens(100).build());
 	}
 
 	public static Builder builder(Ai21Jurassic2ChatBedrockApi chatApi) {

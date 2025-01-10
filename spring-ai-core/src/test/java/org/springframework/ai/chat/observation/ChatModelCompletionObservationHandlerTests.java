@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiObservationEventNames;
@@ -49,7 +49,7 @@ class ChatModelCompletionObservationHandlerTests {
 		var observationContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt("supercalifragilisticexpialidocious"))
 			.provider("mary-poppins")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("spoonful-of-sugar").build())
+			.requestOptions(ChatOptions.builder().model("spoonful-of-sugar").build())
 			.build();
 		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));

@@ -84,7 +84,7 @@ class AnthropicChatClientIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -294,7 +294,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().withModel(modelName).build())
+				.options(AnthropicChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -318,7 +318,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				.options(AnthropicChatOptions.builder().withModel(modelName).build())
+				.options(AnthropicChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -334,7 +334,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET)
+				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))

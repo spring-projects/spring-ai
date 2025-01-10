@@ -38,7 +38,7 @@ import org.springframework.ai.rag.preretrieval.query.transformation.TranslationQ
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
-import org.springframework.ai.vectorstore.PgVectorStore;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -96,7 +96,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		assertThat(chatResponse).isNotNull();
 
-		String response = chatResponse.getResult().getOutput().getContent();
+		String response = chatResponse.getResult().getOutput().getText();
 		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
@@ -126,7 +126,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		assertThat(chatResponse).isNotNull();
 
-		String response = chatResponse.getResult().getOutput().getContent();
+		String response = chatResponse.getResult().getOutput().getText();
 		System.out.println(response);
 		assertThat(response.toLowerCase()).containsAnyOf("highlands", "højland");
 
@@ -154,7 +154,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		assertThat(chatResponse).isNotNull();
 
-		String response = chatResponse.getResult().getOutput().getContent();
+		String response = chatResponse.getResult().getOutput().getText();
 		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
@@ -164,7 +164,7 @@ class RetrievalAugmentationAdvisorIT {
 	private void evaluateRelevancy(String question, ChatResponse chatResponse) {
 		EvaluationRequest evaluationRequest = new EvaluationRequest(question,
 				chatResponse.getMetadata().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT),
-				chatResponse.getResult().getOutput().getContent());
+				chatResponse.getResult().getOutput().getText());
 		RelevancyEvaluator evaluator = new RelevancyEvaluator(ChatClient.builder(this.openAiChatModel));
 		EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 		assertThat(evaluationResponse.isPass()).isTrue();

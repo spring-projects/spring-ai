@@ -258,7 +258,7 @@ public class Anthropic3ChatBedrockApi extends
 			 * @param system A system prompt
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withSystem(String system) {
+			public Builder system(String system) {
 				this.system = system;
 				return this;
 			}
@@ -268,7 +268,7 @@ public class Anthropic3ChatBedrockApi extends
 			 * @param temperature The temperature
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withTemperature(Double temperature) {
+			public Builder temperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
@@ -278,7 +278,7 @@ public class Anthropic3ChatBedrockApi extends
 			 * @param maxTokens The max tokens
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withMaxTokens(Integer maxTokens) {
+			public Builder maxTokens(Integer maxTokens) {
 				this.maxTokens = maxTokens;
 				return this;
 			}
@@ -288,7 +288,7 @@ public class Anthropic3ChatBedrockApi extends
 			 * @param topK The top k
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withTopK(Integer topK) {
+			public Builder topK(Integer topK) {
 				this.topK = topK;
 				return this;
 			}
@@ -298,7 +298,7 @@ public class Anthropic3ChatBedrockApi extends
 			 * @param tpoP The top p
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withTopP(Double tpoP) {
+			public Builder topP(Double tpoP) {
 				this.topP = tpoP;
 				return this;
 			}
@@ -308,7 +308,7 @@ public class Anthropic3ChatBedrockApi extends
 			 * @param stopSequences The stop sequences
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withStopSequences(List<String> stopSequences) {
+			public Builder stopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}
@@ -318,7 +318,7 @@ public class Anthropic3ChatBedrockApi extends
 			 * @param anthropicVersion The anthropic version
 			 * @return this {@link Builder} instance
 			 */
-			public Builder withAnthropicVersion(String anthropicVersion) {
+			public Builder anthropicVersion(String anthropicVersion) {
 				this.anthropicVersion = anthropicVersion;
 				return this;
 			}

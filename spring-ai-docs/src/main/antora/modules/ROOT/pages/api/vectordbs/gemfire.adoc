@@ -83,10 +83,13 @@ Here is a sample that creates an instance of the `GemfireVectorStore` instead of
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(EmbeddingModel embeddingModel) {
-    return new GemFireVectorStore(new GemFireVectorStoreConfig()
-                                    .setIndexName("my-vector-index")
-                                    .setPort(7071), embeddingClient);
+public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel) {
+    return GemFireVectorStore.builder(embeddingModel)
+        .host("localhost")
+        .port(7071)
+        .indexName("my-vector-index")
+        .initializeSchema(true)
+        .build();
 }
 ----
 
@@ -122,7 +125,7 @@ vectorStore.add(documents);
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-   SearchRequest.query("Spring").withTopK(5));
+   SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 You should retrieve the document containing the text "Spring AI rocks!!".
@@ -131,7 +134,7 @@ You can also limit the number of results using a similarity threshold:
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-   SearchRequest.query("Spring").withTopK(5)
-      .withSimilarityThreshold(0.5d));
+   SearchRequest.builder().query("Spring").topK(5)
+      .similarityThreshold(0.5d).build());
 ----
 

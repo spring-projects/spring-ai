@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -76,15 +74,14 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().withFunction("WeatherInfo").build()));
+				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
 
 			logger.info("Response: " + response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamFunctionCallTest() {
 		this.contextRunner.run(context -> {
@@ -95,7 +92,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().withFunction("WeatherInfo").build()));
+				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()
@@ -103,7 +100,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: " + content);
 
@@ -121,15 +118,13 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.withFunction("WeatherInfo")
-				.build();
+			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder().function("WeatherInfo").build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: " + response.getResult().getOutput().getContent());
+			logger.info("Response: " + response.getResult().getOutput().getText());
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 

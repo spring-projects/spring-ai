@@ -130,8 +130,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AnthropicChatOptions.builder()
-            .withModel("claude-2.1")
-            .withTemperature(0.4)
+            .model("claude-2.1")
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -274,9 +274,9 @@ var anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
 
 var chatModel = new AnthropicChatModel(this.anthropicApi,
         AnthropicChatOptions.builder()
-            .withModel("claude-3-opus-20240229")
-            .withTemperature(0.4)
-            .withMaxTokens(200)
+            .model("claude-3-opus-20240229")
+            .temperature(0.4)
+            .maxTokens(200)
         .build());
 
 ChatResponse response = this.chatModel.call(

@@ -41,6 +41,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -69,27 +70,39 @@ class VertexAiGeminiChatModelIT {
 	void roleTest() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
 	void testMessageHistory() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Dummy"), prompt.getInstructions().get(1),
 				response.getResult().getOutput(), new UserMessage("Repeat the last assistant message.")));
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
 	void googleSearchTool() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().withGoogleSearchRetrieval(true).build());
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
+	void testSafetySettings() {
+		List<VertexAiGeminiSafetySetting> safetySettings = List.of(new VertexAiGeminiSafetySetting.Builder()
+			.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+			.build());
+		Prompt prompt = new Prompt("What are common digital attack vectors?",
+				VertexAiGeminiChatOptions.builder().safetySettings(safetySettings).build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
 
 	@NotNull
@@ -119,7 +132,7 @@ class VertexAiGeminiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = converter.convert(generation.getOutput().getContent());
+		List<String> list = converter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 	}
 
@@ -137,7 +150,7 @@ class VertexAiGeminiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -157,7 +170,7 @@ class VertexAiGeminiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -173,7 +186,7 @@ class VertexAiGeminiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		// logger.info("" + actorsFilms);
@@ -201,7 +214,7 @@ class VertexAiGeminiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -224,7 +237,7 @@ class VertexAiGeminiChatModelIT {
 		// I see a bunch of bananas in a golden basket. The bananas are ripe and yellow.
 		// There are also some red apples in the basket. The basket is sitting on a table.
 		// The background is a blurred light blue color.'
-		assertThat(response.getResult().getOutput().getContent()).satisfies(content -> {
+		assertThat(response.getResult().getOutput().getText()).satisfies(content -> {
 			long count = Stream.of("bananas", "apple", "basket").filter(content::contains).count();
 			assertThat(count).isGreaterThanOrEqualTo(2);
 		});
@@ -258,7 +271,7 @@ class VertexAiGeminiChatModelIT {
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Spring AI", "portable API");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
@@ -282,7 +295,7 @@ class VertexAiGeminiChatModelIT {
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
+						.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
 						.build());
 		}
 

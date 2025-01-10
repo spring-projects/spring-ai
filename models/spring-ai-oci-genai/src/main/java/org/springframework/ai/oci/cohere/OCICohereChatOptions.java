@@ -25,9 +25,10 @@ import com.oracle.bmc.generativeaiinference.model.CohereTool;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
- * The configuration information for OCI chat requests
+ * The configuration information for OCI chat requests.
  *
  * @author Anders Swanson
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OCICohereChatOptions implements ChatOptions {
@@ -115,19 +116,19 @@ public class OCICohereChatOptions implements ChatOptions {
 	private List<CohereTool> tools;
 
 	public static OCICohereChatOptions fromOptions(OCICohereChatOptions fromOptions) {
-		return builder().withModel(fromOptions.model)
-			.withMaxTokens(fromOptions.maxTokens)
-			.withCompartment(fromOptions.compartment)
-			.withServingMode(fromOptions.servingMode)
-			.withPreambleOverride(fromOptions.preambleOverride)
-			.withTemperature(fromOptions.temperature)
-			.withTopP(fromOptions.topP)
-			.withTopK(fromOptions.topK)
-			.withStop(fromOptions.stop)
-			.withFrequencyPenalty(fromOptions.frequencyPenalty)
-			.withPresencePenalty(fromOptions.presencePenalty)
-			.withDocuments(fromOptions.documents)
-			.withTools(fromOptions.tools)
+		return builder().model(fromOptions.model)
+			.maxTokens(fromOptions.maxTokens)
+			.compartment(fromOptions.compartment)
+			.servingMode(fromOptions.servingMode)
+			.preambleOverride(fromOptions.preambleOverride)
+			.temperature(fromOptions.temperature)
+			.topP(fromOptions.topP)
+			.topK(fromOptions.topK)
+			.stop(fromOptions.stop)
+			.frequencyPenalty(fromOptions.frequencyPenalty)
+			.presencePenalty(fromOptions.presencePenalty)
+			.documents(fromOptions.documents)
+			.tools(fromOptions.tools)
 			.build();
 	}
 
@@ -272,67 +273,67 @@ public class OCICohereChatOptions implements ChatOptions {
 			this.chatOptions = chatOptions;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.chatOptions.model = model;
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.chatOptions.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withCompartment(String compartment) {
+		public Builder compartment(String compartment) {
 			this.chatOptions.compartment = compartment;
 			return this;
 		}
 
-		public Builder withServingMode(String servingMode) {
+		public Builder servingMode(String servingMode) {
 			this.chatOptions.servingMode = servingMode;
 			return this;
 		}
 
-		public Builder withPreambleOverride(String preambleOverride) {
+		public Builder preambleOverride(String preambleOverride) {
 			this.chatOptions.preambleOverride = preambleOverride;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.chatOptions.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.chatOptions.topP = topP;
 			return this;
 		}
 
-		public Builder withTopK(Integer topK) {
+		public Builder topK(Integer topK) {
 			this.chatOptions.topK = topK;
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.chatOptions.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
-		public Builder withPresencePenalty(Double presencePenalty) {
+		public Builder presencePenalty(Double presencePenalty) {
 			this.chatOptions.presencePenalty = presencePenalty;
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.chatOptions.stop = stop;
 			return this;
 		}
 
-		public Builder withDocuments(List<Object> documents) {
+		public Builder documents(List<Object> documents) {
 			this.chatOptions.documents = documents;
 			return this;
 		}
 
-		public Builder withTools(List<CohereTool> tools) {
+		public Builder tools(List<CohereTool> tools) {
 			this.chatOptions.tools = tools;
 			return this;
 		}

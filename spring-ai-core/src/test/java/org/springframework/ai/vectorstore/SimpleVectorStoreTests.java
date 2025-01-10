@@ -57,27 +57,27 @@ class SimpleVectorStoreTests {
 		when(this.mockEmbeddingModel.dimensions()).thenReturn(3);
 		when(this.mockEmbeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 		when(this.mockEmbeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-		this.vectorStore = new SimpleVectorStore(this.mockEmbeddingModel);
+		this.vectorStore = new SimpleVectorStore(SimpleVectorStore.builder(this.mockEmbeddingModel));
 	}
 
 	@Test
 	void shouldAddAndRetrieveDocument() {
-		Document doc = Document.builder().id("1").content("test content").metadata(Map.of("key", "value")).build();
+		Document doc = Document.builder().id("1").text("test content").metadata(Map.of("key", "value")).build();
 
 		this.vectorStore.add(List.of(doc));
 
 		List<Document> results = this.vectorStore.similaritySearch("test content");
 		assertThat(results).hasSize(1).first().satisfies(result -> {
 			assertThat(result.getId()).isEqualTo("1");
-			assertThat(result.getContent()).isEqualTo("test content");
+			assertThat(result.getText()).isEqualTo("test content");
 			assertThat(result.getMetadata()).containsEntry("key", "value");
 		});
 	}
 
 	@Test
 	void shouldAddMultipleDocuments() {
-		List<Document> docs = Arrays.asList(Document.builder().id("1").content("first").build(),
-				Document.builder().id("2").content("second").build());
+		List<Document> docs = Arrays.asList(Document.builder().id("1").text("first").build(),
+				Document.builder().id("2").text("second").build());
 
 		this.vectorStore.add(docs);
 
@@ -100,7 +100,7 @@ class SimpleVectorStoreTests {
 
 	@Test
 	void shouldDeleteDocuments() {
-		Document doc = Document.builder().id("1").content("test content").build();
+		Document doc = Document.builder().id("1").text("test content").build();
 
 		this.vectorStore.add(List.of(doc));
 		assertThat(this.vectorStore.similaritySearch("test")).hasSize(1);
@@ -121,11 +121,11 @@ class SimpleVectorStoreTests {
 		// Configure mock to return different embeddings for different queries
 		when(this.mockEmbeddingModel.embed("query")).thenReturn(new float[] { 0.9f, 0.9f, 0.9f });
 
-		Document doc = Document.builder().id("1").content("test content").build();
+		Document doc = Document.builder().id("1").text("test content").build();
 
 		this.vectorStore.add(List.of(doc));
 
-		SearchRequest request = SearchRequest.query("query").withSimilarityThreshold(0.99f).withTopK(5);
+		SearchRequest request = SearchRequest.builder().query("query").similarityThreshold(0.99f).topK(5).build();
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 		assertThat(results).isEmpty();
@@ -135,7 +135,7 @@ class SimpleVectorStoreTests {
 	void shouldSaveAndLoadVectorStore() throws IOException {
 		Document doc = Document.builder()
 			.id("1")
-			.content("test content")
+			.text("test content")
 			.metadata(new HashMap<>(Map.of("key", "value")))
 			.build();
 
@@ -144,13 +144,13 @@ class SimpleVectorStoreTests {
 		File saveFile = this.tempDir.resolve("vector-store.json").toFile();
 		this.vectorStore.save(saveFile);
 
-		SimpleVectorStore loadedStore = new SimpleVectorStore(this.mockEmbeddingModel);
+		SimpleVectorStore loadedStore = SimpleVectorStore.builder(this.mockEmbeddingModel).build();
 		loadedStore.load(saveFile);
 
 		List<Document> results = loadedStore.similaritySearch("test content");
 		assertThat(results).hasSize(1).first().satisfies(result -> {
 			assertThat(result.getId()).isEqualTo("1");
-			assertThat(result.getContent()).isEqualTo("test content");
+			assertThat(result.getText()).isEqualTo("test content");
 			assertThat(result.getMetadata()).containsEntry("key", "value");
 		});
 	}
@@ -181,7 +181,7 @@ class SimpleVectorStoreTests {
 		for (int i = 0; i < numThreads; i++) {
 			final String id = String.valueOf(i);
 			threads[i] = new Thread(() -> {
-				Document doc = Document.builder().id(id).content("content " + id).build();
+				Document doc = Document.builder().id(id).text("content " + id).build();
 				this.vectorStore.add(List.of(doc));
 			});
 			threads[i].start();
@@ -191,7 +191,7 @@ class SimpleVectorStoreTests {
 			thread.join();
 		}
 
-		SearchRequest request = SearchRequest.query("test").withTopK(numThreads);
+		SearchRequest request = SearchRequest.builder().query("test").topK(numThreads).build();
 
 		List<Document> results = this.vectorStore.similaritySearch(request);
 
@@ -208,19 +208,20 @@ class SimpleVectorStoreTests {
 		assertThat(resultIds).containsExactlyInAnyOrderElementsOf(expectedIds);
 
 		// Verify content integrity
-		results.forEach(doc -> assertThat(doc.getContent()).isEqualTo("content " + doc.getId()));
+		results.forEach(doc -> assertThat(doc.getText()).isEqualTo("content " + doc.getId()));
 	}
 
 	@Test
 	void shouldRejectInvalidSimilarityThreshold() {
-		assertThatThrownBy(() -> SearchRequest.query("test").withSimilarityThreshold(2.0f))
+		assertThatThrownBy(() -> SearchRequest.builder().query("test").similarityThreshold(2.0f).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Similarity threshold must be in [0,1] range.");
 	}
 
 	@Test
 	void shouldRejectNegativeTopK() {
-		assertThatThrownBy(() -> SearchRequest.query("test").withTopK(-1)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> SearchRequest.builder().query("test").topK(-1).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("TopK should be positive.");
 	}
 

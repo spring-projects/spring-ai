@@ -30,6 +30,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class VertexAiEmbeddingConnectionDetails {
@@ -125,27 +126,27 @@ public class VertexAiEmbeddingConnectionDetails {
 		 */
 		private PredictionServiceSettings predictionServiceSettings;
 
-		public Builder withApiEndpoint(String endpoint) {
+		public Builder apiEndpoint(String endpoint) {
 			this.endpoint = endpoint;
 			return this;
 		}
 
-		public Builder withProjectId(String projectId) {
+		public Builder projectId(String projectId) {
 			this.projectId = projectId;
 			return this;
 		}
 
-		public Builder withLocation(String location) {
+		public Builder location(String location) {
 			this.location = location;
 			return this;
 		}
 
-		public Builder withPublisher(String publisher) {
+		public Builder publisher(String publisher) {
 			this.publisher = publisher;
 			return this;
 		}
 
-		public Builder withPredictionServiceSettings(PredictionServiceSettings predictionServiceSettings) {
+		public Builder predictionServiceSettings(PredictionServiceSettings predictionServiceSettings) {
 			this.predictionServiceSettings = predictionServiceSettings;
 			return this;
 		}

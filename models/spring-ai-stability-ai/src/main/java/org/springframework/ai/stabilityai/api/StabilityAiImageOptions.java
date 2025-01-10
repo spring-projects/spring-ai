@@ -434,67 +434,67 @@ public class StabilityAiImageOptions implements ImageOptions {
 			this.options = new StabilityAiImageOptions();
 		}
 
-		public Builder withN(Integer n) {
+		public Builder N(Integer n) {
 			this.options.setN(n);
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withWidth(Integer width) {
+		public Builder width(Integer width) {
 			this.options.setWidth(width);
 			return this;
 		}
 
-		public Builder withHeight(Integer height) {
+		public Builder height(Integer height) {
 			this.options.setHeight(height);
 			return this;
 		}
 
-		public Builder withResponseFormat(String responseFormat) {
+		public Builder responseFormat(String responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
-		public Builder withCfgScale(Float cfgScale) {
+		public Builder cfgScale(Float cfgScale) {
 			this.options.setCfgScale(cfgScale);
 			return this;
 		}
 
-		public Builder withClipGuidancePreset(String clipGuidancePreset) {
+		public Builder clipGuidancePreset(String clipGuidancePreset) {
 			this.options.setClipGuidancePreset(clipGuidancePreset);
 			return this;
 		}
 
-		public Builder withSampler(String sampler) {
+		public Builder sampler(String sampler) {
 			this.options.setSampler(sampler);
 			return this;
 		}
 
-		public Builder withSeed(Long seed) {
+		public Builder seed(Long seed) {
 			this.options.setSeed(seed);
 			return this;
 		}
 
-		public Builder withSteps(Integer steps) {
+		public Builder steps(Integer steps) {
 			this.options.setSteps(steps);
 			return this;
 		}
 
-		public Builder withSamples(Integer samples) {
+		public Builder samples(Integer samples) {
 			this.options.setN(samples);
 			return this;
 		}
 
-		public Builder withStylePreset(String stylePreset) {
+		public Builder stylePreset(String stylePreset) {
 			this.options.setStylePreset(stylePreset);
 			return this;
 		}
 
-		public Builder withStylePreset(StyleEnum styleEnum) {
+		public Builder stylePreset(StyleEnum styleEnum) {
 			this.options.setStylePreset(styleEnum.toString());
 			return this;
 		}

@@ -101,7 +101,7 @@ public class OracleVectorStoreAutoConfigurationIT {
 			observationRegistry.clear();
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("What is Great Depression?").withTopK(1));
+				.similaritySearch(SearchRequest.builder().query("What is Great Depression?").topK(1).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -119,7 +119,7 @@ public class OracleVectorStoreAutoConfigurationIT {
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
 
-			results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+			results = vectorStore.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 			assertThat(results).hasSize(0);
 		});
 	}

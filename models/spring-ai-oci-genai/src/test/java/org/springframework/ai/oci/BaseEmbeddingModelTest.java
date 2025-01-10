@@ -28,9 +28,9 @@ public class BaseEmbeddingModelTest extends BaseOCIGenAITest {
 	 */
 	public static OCIEmbeddingModel getEmbeddingModel() {
 		OCIEmbeddingOptions options = OCIEmbeddingOptions.builder()
-			.withModel(EMBEDDING_MODEL_V2)
-			.withCompartment(COMPARTMENT_ID)
-			.withServingMode("on-demand")
+			.model(EMBEDDING_MODEL_V2)
+			.compartment(COMPARTMENT_ID)
+			.servingMode("on-demand")
 			.build();
 		return new OCIEmbeddingModel(getGenerativeAIClient(), options);
 	}

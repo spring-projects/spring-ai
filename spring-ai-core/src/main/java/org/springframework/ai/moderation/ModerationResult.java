@@ -100,17 +100,17 @@ public final class ModerationResult {
 
 		private CategoryScores categoryScores;
 
-		public Builder withFlagged(boolean flagged) {
+		public Builder flagged(boolean flagged) {
 			this.flagged = flagged;
 			return this;
 		}
 
-		public Builder withCategories(Categories categories) {
+		public Builder categories(Categories categories) {
 			this.categories = categories;
 			return this;
 		}
 
-		public Builder withCategoryScores(CategoryScores categoryScores) {
+		public Builder categoryScores(CategoryScores categoryScores) {
 			this.categoryScores = categoryScores;
 			return this;
 		}

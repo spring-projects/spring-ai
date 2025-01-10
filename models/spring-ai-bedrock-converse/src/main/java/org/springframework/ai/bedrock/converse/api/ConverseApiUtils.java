@@ -62,6 +62,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Wei Jiang
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public final class ConverseApiUtils {
@@ -144,7 +145,7 @@ public final class ConverseApiUtils {
 						ChatGenerationMetadata.builder().finishReason("tool_use").build());
 
 				var chatResponseMetaData = ChatResponseMetadata.builder()
-					.withUsage(new DefaultUsage(promptTokens, generationTokens, totalTokens))
+					.usage(new DefaultUsage(promptTokens, generationTokens, totalTokens))
 					.build();
 
 				return new Aggregation(
@@ -210,7 +211,7 @@ public final class ConverseApiUtils {
 						metadataEvent.usage().outputTokens().longValue(),
 						metadataEvent.usage().totalTokens().longValue());
 
-				var chatResponseMetaData = ChatResponseMetadata.builder().withUsage(usage).build();
+				var chatResponseMetaData = ChatResponseMetadata.builder().usage(usage).build();
 
 				return new Aggregation(newMeta, new ChatResponse(List.of(), chatResponseMetaData));
 			}
@@ -235,10 +236,10 @@ public final class ConverseApiUtils {
 					Long totalTokens = perviousChatResponse.getMetadata().getUsage().getTotalTokens();
 
 					if (chatResponse.getMetadata() != null) {
-						metadataBuilder.withId(chatResponse.getMetadata().getId());
-						metadataBuilder.withModel(chatResponse.getMetadata().getModel());
-						metadataBuilder.withRateLimit(chatResponse.getMetadata().getRateLimit());
-						metadataBuilder.withPromptMetadata(chatResponse.getMetadata().getPromptMetadata());
+						metadataBuilder.id(chatResponse.getMetadata().getId());
+						metadataBuilder.model(chatResponse.getMetadata().getModel());
+						metadataBuilder.rateLimit(chatResponse.getMetadata().getRateLimit());
+						metadataBuilder.promptMetadata(chatResponse.getMetadata().getPromptMetadata());
 
 						if (chatResponse.getMetadata().getUsage() != null) {
 							promptTokens = promptTokens + chatResponse.getMetadata().getUsage().getPromptTokens();
@@ -248,7 +249,7 @@ public final class ConverseApiUtils {
 						}
 					}
 
-					metadataBuilder.withUsage(new DefaultUsage(promptTokens, generationTokens, totalTokens));
+					metadataBuilder.usage(new DefaultUsage(promptTokens, generationTokens, totalTokens));
 
 					return new ChatResponse(chatResponse.getResults(), metadataBuilder.build());
 				}

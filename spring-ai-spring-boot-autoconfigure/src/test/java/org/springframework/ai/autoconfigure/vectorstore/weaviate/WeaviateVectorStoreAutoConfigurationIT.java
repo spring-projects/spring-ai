@@ -32,7 +32,7 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.MetadataField;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -94,35 +94,45 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 					VectorStoreObservationContext.Operation.ADD);
 			observationRegistry.clear();
 
-			var request = SearchRequest.query("The World").withTopK(5);
+			var request = SearchRequest.builder().query("The World").topK(5).build();
 
 			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(2);
 
-			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("country == 'Bulgaria'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.WEAVIATE,
 					VectorStoreObservationContext.Operation.QUERY);
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("country == 'Netherlands'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("price > 1.57 && active == true"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("price > 1.57 && active == true")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("year in [2020, 2023]"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("year in [2020, 2023]")
+				.build());
 			assertThat(results).hasSize(2);
 
-			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("year > 2020 && year <= 2023"));
+			results = vectorStore.similaritySearch(SearchRequest.from(request)
+				.similarityThresholdAll()
+				.filterExpression("year > 2020 && year <= 2023")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

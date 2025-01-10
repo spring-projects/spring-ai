@@ -65,11 +65,11 @@ public class FunctionCallWithFunctionWrapperIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("WeatherInfo").build()));
+						VertexAiGeminiChatOptions.builder().function("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
 	}
 

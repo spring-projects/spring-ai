@@ -26,8 +26,6 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.mariadb.MariaDBSchemaValidator;
-import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -70,8 +68,8 @@ public class MariaDBStoreTests {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var mariadbVectorStore = new MariaDBVectorStore.Builder(jdbcTemplate, embeddingModel)
-			.withMaxDocumentBatchSize(1000)
+		var mariadbVectorStore = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
+			.maxDocumentBatchSize(1000)
 			.build();
 
 		// Testing with 9989 documents

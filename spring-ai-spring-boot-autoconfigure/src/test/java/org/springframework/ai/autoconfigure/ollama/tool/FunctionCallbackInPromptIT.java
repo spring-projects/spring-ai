@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +70,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.functionCallbacks(List.of(FunctionCallback.builder()
 					.function("CurrentWeatherService", new MockWeatherService())
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
@@ -83,11 +82,10 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
 	@Test
 	void streamingFunctionCallTest() {
 		this.contextRunner.run(context -> {
@@ -98,7 +96,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			var promptOptions = OllamaOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				.functionCallbacks(List.of(FunctionCallback.builder()
 					.function("CurrentWeatherService", new MockWeatherService())
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
@@ -114,7 +112,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 

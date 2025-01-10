@@ -62,6 +62,7 @@ import org.springframework.util.StringUtils;
  * {@link ChatModel} implementation that uses the OCI GenAI Chat API.
  *
  * @author Anders Swanson
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class OCICohereChatModel implements ChatModel {
@@ -138,8 +139,8 @@ public class OCICohereChatModel implements ChatModel {
 		validateChatOptions(options);
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.withModel(options.getModel())
-			.withKeyValue("compartment", options.getCompartment())
+			.model(options.getModel())
+			.keyValue("compartment", options.getCompartment())
 			.build();
 		return new ChatResponse(getGenerations(prompt, options), metadata);
 
@@ -203,9 +204,9 @@ public class OCICohereChatModel implements ChatModel {
 		for (int i = 1; i < messages.size(); i++) {
 			Message message = messages.get(i);
 			switch (message.getMessageType()) {
-				case USER -> chatHistory.add(CohereUserMessage.builder().message(message.getContent()).build());
-				case ASSISTANT -> chatHistory.add(CohereChatBotMessage.builder().message(message.getContent()).build());
-				case SYSTEM -> chatHistory.add(CohereSystemMessage.builder().message(message.getContent()).build());
+				case USER -> chatHistory.add(CohereUserMessage.builder().message(message.getText()).build());
+				case ASSISTANT -> chatHistory.add(CohereChatBotMessage.builder().message(message.getText()).build());
+				case SYSTEM -> chatHistory.add(CohereSystemMessage.builder().message(message.getText()).build());
 				case TOOL -> {
 					if (message instanceof ToolResponseMessage tm) {
 						chatHistory.add(toToolMessage(tm));
@@ -237,7 +238,7 @@ public class OCICohereChatModel implements ChatModel {
 			.documents(options.getDocuments())
 			.tools(options.getTools())
 			.chatHistory(chatHistory)
-			.message(message.getContent())
+			.message(message.getText())
 			.build();
 		ServingMode servingMode = ServingModeHelper.get(options.getServingMode(), options.getModel());
 		ChatDetails chatDetails = ChatDetails.builder()

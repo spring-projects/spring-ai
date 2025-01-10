@@ -41,7 +41,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.qianfan.api.QianFanApi;
@@ -65,6 +64,7 @@ import org.springframework.util.Assert;
  * @see ChatModel
  * @see StreamingChatModel
  * @see QianFanApi
+ * @author Alexandros Pappas
  * @since 1.0
  */
 public class QianFanChatModel implements ChatModel, StreamingChatModel {
@@ -105,8 +105,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	 * @throws IllegalArgumentException if QianFanApi is null
 	 */
 	public QianFanChatModel(QianFanApi qianFanApi) {
-		this(qianFanApi,
-				QianFanChatOptions.builder().withModel(QianFanApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(qianFanApi, QianFanChatOptions.builder().model(QianFanApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -246,7 +245,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	public ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		var chatCompletionMessages = prompt.getInstructions()
 			.stream()
-			.map(m -> new ChatCompletionMessage(m.getContent(),
+			.map(m -> new ChatCompletionMessage(m.getText(),
 					ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
 			.toList();
 		var systemMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == Role.SYSTEM).toList();
@@ -278,24 +277,24 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	private ChatOptions buildRequestOptions(QianFanApi.ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withFrequencyPenalty(request.frequencyPenalty())
-			.withMaxTokens(request.maxTokens())
-			.withPresencePenalty(request.presencePenalty())
-			.withStopSequences(request.stop())
-			.withTemperature(request.temperature())
-			.withTopP(request.topP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.frequencyPenalty(request.frequencyPenalty())
+			.maxTokens(request.maxTokens())
+			.presencePenalty(request.presencePenalty())
+			.stopSequences(request.stop())
+			.temperature(request.temperature())
+			.topP(request.topP())
 			.build();
 	}
 
 	private ChatResponseMetadata from(QianFanApi.ChatCompletion result, String model) {
 		Assert.notNull(result, "QianFan ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? QianFanUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(model)
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? QianFanUsage.from(result.usage()) : new EmptyUsage())
+			.model(model)
+			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
 	}
 

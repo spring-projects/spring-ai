@@ -42,6 +42,8 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -53,7 +55,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -99,6 +100,8 @@ import org.springframework.util.StringUtils;
  * @author Mariusz Bernacki
  * @author luocongqiu
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -141,8 +144,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @throws IllegalArgumentException if openAiApi is null
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi) {
-		this(openAiApi,
-				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(openAiApi, OpenAiChatOptions.builder().model(OpenAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -215,6 +217,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return this.internalCall(prompt, null);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
@@ -259,8 +265,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 				// Non function calling.
 				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
-
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
+				// Current usage
+				OpenAiApi.Usage usage = completionEntity.getBody().usage();
+				Usage currentChatResponseUsage = usage != null ? OpenAiUsage.from(usage) : new EmptyUsage();
+				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				ChatResponse chatResponse = new ChatResponse(generations,
+						from(completionEntity.getBody(), rateLimit, accumulatedUsage));
 
 				observationContext.setResponse(chatResponse);
 
@@ -274,7 +284,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
 		}
 
 		return response;
@@ -282,6 +292,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return internalStream(prompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -337,15 +351,43 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 							return buildGeneration(choice, metadata, request);
 						}).toList();
 						// @formatter:on
-
-						return new ChatResponse(generations, from(chatCompletion2, null));
+						OpenAiApi.Usage usage = chatCompletion2.usage();
+						Usage currentChatResponseUsage = usage != null ? OpenAiUsage.from(usage) : new EmptyUsage();
+						Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage,
+								previousChatResponse);
+						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
 						return new ChatResponse(List.of());
 					}
-
-				}));
+					// When in stream mode and enabled to include the usage, the OpenAI
+					// Chat completion response would have the usage set only in its
+					// final response. Hence, the following overlapping buffer is
+					// created to store both the current and the subsequent response
+					// to accumulate the usage from the subsequent response.
+				}))
+				.buffer(2, 1)
+				.map(bufferList -> {
+					ChatResponse firstResponse = bufferList.get(0);
+					if (request.streamOptions() != null && request.streamOptions().includeUsage()) {
+						if (bufferList.size() == 2) {
+							ChatResponse secondResponse = bufferList.get(1);
+							if (secondResponse != null && secondResponse.getMetadata() != null) {
+								// This is the usage from the final Chat response for a
+								// given Chat request.
+								Usage usage = secondResponse.getMetadata().getUsage();
+								if (!UsageUtils.isEmpty(usage)) {
+									// Store the usage from the final response to the
+									// penultimate response for accumulation.
+									return new ChatResponse(firstResponse.getResults(),
+											from(firstResponse.getMetadata(), usage));
+								}
+							}
+						}
+					}
+					return firstResponse;
+				});
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
@@ -355,7 +397,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), response);
 				}
 				else {
 					return Flux.just(response);
@@ -400,7 +442,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			String mimeType = String.format("audio/%s", request.audioParameters().format().name().toLowerCase());
 			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
 			Resource resource = new ByteArrayResource(audioData);
-			media.add(new Media(MimeTypeUtils.parseMimeType(mimeType), resource, audioOutput.id()));
+			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
+			media.add(Media.builder()
+				.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+				.data(resource)
+				.id(audioOutput.id())
+				.build());
 			if (!StringUtils.hasText(textContent)) {
 				textContent = audioOutput.transcript();
 			}
@@ -412,16 +459,28 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 
-	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit) {
+	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit, Usage usage) {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
 		var builder = ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? OpenAiUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
-			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
+			.id(result.id() != null ? result.id() : "")
+			.usage(usage)
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
 		if (rateLimit != null) {
-			builder.withRateLimit(rateLimit);
+			builder.rateLimit(rateLimit);
+		}
+		return builder.build();
+	}
+
+	private ChatResponseMetadata from(ChatResponseMetadata chatResponseMetadata, Usage usage) {
+		Assert.notNull(chatResponseMetadata, "OpenAI ChatResponseMetadata must not be null");
+		var builder = ChatResponseMetadata.builder()
+			.id(chatResponseMetadata.getId() != null ? chatResponseMetadata.getId() : "")
+			.usage(usage)
+			.model(chatResponseMetadata.getModel() != null ? chatResponseMetadata.getModel() : "");
+		if (chatResponseMetadata.getRateLimit() != null) {
+			builder.rateLimit(chatResponseMetadata.getRateLimit());
 		}
 		return builder.build();
 	}
@@ -449,11 +508,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<MediaContent> contentList = new ArrayList<>(
-								List.of(new MediaContent(message.getContent())));
+						List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(message.getText())));
 
 						contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
 
@@ -480,7 +538,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
 
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
@@ -530,14 +588,13 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					OpenAiChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
-
 		// Remove `streamOptions` from the request if it is not a streaming request
 		if (request.streamOptions() != null && !stream) {
 			logger.warn("Removing streamOptions from the request as it is not a streaming request!");
-			request = request.withStreamOptions(null);
+			request = request.streamOptions(null);
 		}
 
 		return request;
@@ -591,14 +648,14 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	}
 
 	private ChatOptions buildRequestOptions(OpenAiApi.ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withFrequencyPenalty(request.frequencyPenalty())
-			.withMaxTokens(request.maxTokens())
-			.withPresencePenalty(request.presencePenalty())
-			.withStopSequences(request.stop())
-			.withTemperature(request.temperature())
-			.withTopP(request.topP())
+		return ChatOptions.builder()
+			.model(request.model())
+			.frequencyPenalty(request.frequencyPenalty())
+			.maxTokens(request.maxTokens())
+			.presencePenalty(request.presencePenalty())
+			.stopSequences(request.stop())
+			.temperature(request.temperature())
+			.topP(request.topP())
 			.build();
 	}
 

@@ -37,7 +37,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
@@ -51,7 +50,6 @@ import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBui
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.MultimodalInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.VideoBuilder;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
@@ -102,7 +100,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		// merge the runtime and default vertex ai options.
 		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
+		if (request.getOptions() != null) {
 			var defaultOptionsCopy = VertexAiMultimodalEmbeddingOptions.builder().from(this.defaultOptions).build();
 			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
 					VertexAiMultimodalEmbeddingOptions.class);
@@ -139,53 +137,50 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		// optional dimensions parameter
 		if (mergedOptions.getDimensions() != null) {
-			instanceBuilder.withDimension(mergedOptions.getDimensions());
+			instanceBuilder.dimension(mergedOptions.getDimensions());
 		}
 
 		// optional text parameter
-		if (StringUtils.hasText(document.getContent())) {
-			instanceBuilder.withText(document.getContent());
+		if (StringUtils.hasText(document.getText())) {
+			instanceBuilder.text(document.getText());
 			documentMetadata.put(ModalityType.TEXT,
-					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getContent()));
+					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getText()));
 		}
 
-		if (!CollectionUtils.isEmpty(document.getMedia())) {
-
-			for (Media media : document.getMedia()) {
-				if (media.getMimeType().isCompatibleWith(TEXT_MIME_TYPE)) {
-					instanceBuilder.withText(media.getData().toString());
-					documentMetadata.put(ModalityType.TEXT,
-							new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-					if (StringUtils.hasText(document.getContent())) {
-						logger.warn("Media type String overrides the Document text content!");
-					}
+		Media media = document.getMedia();
+		if (media != null) {
+			if (media.getMimeType().isCompatibleWith(TEXT_MIME_TYPE)) {
+				instanceBuilder.text(media.getData().toString());
+				documentMetadata.put(ModalityType.TEXT,
+						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
+				if (StringUtils.hasText(document.getText())) {
+					logger.warn("Media type String overrides the Document text content!");
 				}
-				else if (media.getMimeType().isCompatibleWith(IMAGE_MIME_TYPE)) {
-					if (SUPPORTED_IMAGE_MIME_SUB_TYPES.contains(media.getMimeType())) {
-						instanceBuilder
-							.withImage(ImageBuilder.of(media.getMimeType()).withImageData(media.getData()).build());
-						documentMetadata.put(ModalityType.IMAGE,
-								new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
-					}
-					else {
-						logger.warn("Unsupported image mime type: {}", media.getMimeType());
-						throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
-					}
-				}
-				else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
-					instanceBuilder.withVideo(VideoBuilder.of(media.getMimeType())
-						.withVideoData(media.getData())
-						.withStartOffsetSec(mergedOptions.getVideoStartOffsetSec())
-						.withEndOffsetSec(mergedOptions.getVideoEndOffsetSec())
-						.withIntervalSec(mergedOptions.getVideoIntervalSec())
-						.build());
-					documentMetadata.put(ModalityType.VIDEO,
+			}
+			else if (media.getMimeType().isCompatibleWith(IMAGE_MIME_TYPE)) {
+				if (SUPPORTED_IMAGE_MIME_SUB_TYPES.contains(media.getMimeType())) {
+					instanceBuilder.image(ImageBuilder.of(media.getMimeType()).imageData(media.getData()).build());
+					documentMetadata.put(ModalityType.IMAGE,
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
 				else {
-					logger.warn("Unsupported media type: {}", media.getMimeType());
-					throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
+					logger.warn("Unsupported image mime type: {}", media.getMimeType());
+					throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
 				}
+			}
+			else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
+				instanceBuilder.video(VideoBuilder.of(media.getMimeType())
+					.videoData(media.getData())
+					.startOffsetSec(mergedOptions.getVideoStartOffsetSec())
+					.endOffsetSec(mergedOptions.getVideoEndOffsetSec())
+					.intervalSec(mergedOptions.getVideoIntervalSec())
+					.build());
+				documentMetadata.put(ModalityType.VIDEO,
+						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
+			}
+			else {
+				logger.warn("Unsupported media type: {}", media.getMimeType());
+				throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
 			}
 		}
 

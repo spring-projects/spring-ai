@@ -68,14 +68,14 @@ class PaymentStatusBeanIT {
 				ChatResponse response = chatModel
 					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
 							MistralAiChatOptions.builder()
-								.withFunction("retrievePaymentStatus")
-								.withFunction("retrievePaymentDate")
+								.function("retrievePaymentStatus")
+								.function("retrievePaymentDate")
 								.build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("T1001");
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("paid");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
 			});
 	}
 

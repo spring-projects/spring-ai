@@ -226,7 +226,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 			if (!this.currentParagraphs.isEmpty()) {
 				String content = String.join("", this.currentParagraphs);
 
-				Document.Builder builder = this.currentDocumentBuilder.content(content);
+				Document.Builder builder = this.currentDocumentBuilder.text(content);
 
 				this.config.additionalMetadata.forEach(builder::metadata);
 

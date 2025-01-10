@@ -1,12 +1,10 @@
-= Function Calling
+= Ollama Function Calling
 
-TIP: You need Ollama 0.2.8 or newer.
+TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
 
 TIP: You need https://ollama.com/search?c=tools[Models] pre-trained for Tools support.
 Usually, such models are tagged with a `Tools` tag.
-For example `mistral`, `firefunction-v2` or `llama3.1:70b`.
 
-NOTE: Currently, the Ollama API (0.3.8) does not support function calling in streaming mode.
 
 You can register custom Java functions with the `OllamaChatModel` and have the Ollama deployed model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
@@ -157,7 +155,7 @@ OllamaChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		OllamaOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
+		OllamaOptions.builder().function("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -186,7 +184,7 @@ OllamaChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OllamaOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder()
+	.functionCallbacks(List.of(FunctionCallback.builder()
 		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance        
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature

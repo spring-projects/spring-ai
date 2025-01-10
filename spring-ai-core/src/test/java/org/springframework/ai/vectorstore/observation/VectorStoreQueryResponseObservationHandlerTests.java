@@ -44,7 +44,7 @@ class VectorStoreQueryResponseObservationHandlerTests {
 	void whenCompletionWithTextThenSpanEvent() {
 		var observationContext = VectorStoreObservationContext
 			.builder("db", VectorStoreObservationContext.Operation.ADD)
-			.withQueryResponse(List.of(new Document("hello"), new Document("other-side")))
+			.queryResponse(List.of(new Document("hello"), new Document("other-side")))
 			.build();
 		var sdkTracer = SdkTracerProvider.builder().build().get("test");
 		var otelTracer = new OtelTracer(sdkTracer, new OtelCurrentTraceContext(), null);

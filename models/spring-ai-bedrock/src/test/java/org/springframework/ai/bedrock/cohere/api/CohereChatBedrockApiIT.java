@@ -21,11 +21,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatModel;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
@@ -39,8 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class CohereChatBedrockApiIT {
 
 	private CohereChatBedrockApi cohereChatApi = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
@@ -56,16 +55,16 @@ public class CohereChatBedrockApiIT {
 
 		var request2 = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withTemperature(0.5)
-			.withTopP(0.9)
-			.withTopK(15)
-			.withMaxTokens(40)
-			.withStopSequences(List.of("END"))
-			.withReturnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
-			.withStream(false)
-			.withNumGenerations(1)
-			.withLogitBias(null)
-			.withTruncate(Truncate.NONE)
+			.temperature(0.5)
+			.topP(0.9)
+			.topK(15)
+			.maxTokens(40)
+			.stopSequences(List.of("END"))
+			.returnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
+			.stream(false)
+			.numGenerations(1)
+			.logitBias(null)
+			.truncate(Truncate.NONE)
 			.build();
 
 		assertThat(request1).isEqualTo(request2);
@@ -77,16 +76,16 @@ public class CohereChatBedrockApiIT {
 
 		var request = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withStream(false)
-			.withTemperature(0.5)
-			.withTopP(0.8)
-			.withTopK(15)
-			.withMaxTokens(100)
-			.withStopSequences(List.of("END"))
-			.withReturnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
-			.withNumGenerations(3)
-			.withLogitBias(null)
-			.withTruncate(Truncate.NONE)
+			.stream(false)
+			.temperature(0.5)
+			.topP(0.8)
+			.topK(15)
+			.maxTokens(100)
+			.stopSequences(List.of("END"))
+			.returnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
+			.numGenerations(3)
+			.logitBias(null)
+			.truncate(Truncate.NONE)
 			.build();
 
 		CohereChatResponse response = this.cohereChatApi.chatCompletion(request);
@@ -103,16 +102,16 @@ public class CohereChatBedrockApiIT {
 
 		var request = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withStream(true)
-			.withTemperature(0.5)
-			.withTopP(0.8)
-			.withTopK(15)
-			.withMaxTokens(100)
-			.withStopSequences(List.of("END"))
-			.withReturnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
-			.withNumGenerations(3)
-			.withLogitBias(null)
-			.withTruncate(Truncate.NONE)
+			.stream(true)
+			.temperature(0.5)
+			.topP(0.8)
+			.topK(15)
+			.maxTokens(100)
+			.stopSequences(List.of("END"))
+			.returnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
+			.numGenerations(3)
+			.logitBias(null)
+			.truncate(Truncate.NONE)
 			.build();
 
 		Flux<CohereChatResponse.Generation> responseStream = this.cohereChatApi.chatCompletionStream(request);
@@ -133,7 +132,7 @@ public class CohereChatBedrockApiIT {
 	public void testStreamConfigurations() {
 		var streamRequest = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withStream(true)
+			.stream(true)
 			.build();
 
 		assertThatThrownBy(() -> this.cohereChatApi.chatCompletion(streamRequest))
@@ -142,7 +141,7 @@ public class CohereChatBedrockApiIT {
 
 		var notStreamRequest = CohereChatRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withStream(false)
+			.stream(false)
 			.build();
 
 		assertThatThrownBy(() -> this.cohereChatApi.chatCompletionStream(notStreamRequest))

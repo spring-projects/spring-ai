@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,7 @@ import org.typesense.resources.Node;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.TypesenseVectorStore;
-import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
+import org.springframework.ai.vectorstore.typesense.TypesenseVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -70,14 +69,14 @@ public class TypesenseVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
-			.withCollectionName(properties.getCollectionName())
-			.withEmbeddingDimension(properties.getEmbeddingDimension())
+		return TypesenseVectorStore.builder(typesenseClient, embeddingModel)
+			.collectionName(properties.getCollectionName())
+			.embeddingDimension(properties.getEmbeddingDimension())
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
 			.build();
-
-		return new TypesenseVectorStore(typesenseClient, embeddingModel, config, properties.isInitializeSchema(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
 	}
 
 	@Bean

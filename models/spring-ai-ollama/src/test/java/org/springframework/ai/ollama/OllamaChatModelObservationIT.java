@@ -67,20 +67,20 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	@Test
 	void observationForChatOperation() {
 		var options = OllamaOptions.builder()
-			.withModel(MODEL)
-			.withFrequencyPenalty(0.0)
-			.withNumPredict(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopK(1)
-			.withTopP(1.0)
+			.model(MODEL)
+			.frequencyPenalty(0.0)
+			.numPredict(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topK(1)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -91,14 +91,14 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = OllamaOptions.builder()
-			.withModel(MODEL)
-			.withFrequencyPenalty(0.0)
-			.withNumPredict(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopK(1)
-			.withTopP(1.0)
+			.model(MODEL)
+			.frequencyPenalty(0.0)
+			.numPredict(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topK(1)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -111,7 +111,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -169,10 +169,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaChatModel openAiChatModel(OllamaApi ollamaApi, TestObservationRegistry observationRegistry) {
-			return OllamaChatModel.builder()
-				.withOllamaApi(ollamaApi)
-				.withObservationRegistry(observationRegistry)
-				.build();
+			return OllamaChatModel.builder().ollamaApi(ollamaApi).observationRegistry(observationRegistry).build();
 		}
 
 	}

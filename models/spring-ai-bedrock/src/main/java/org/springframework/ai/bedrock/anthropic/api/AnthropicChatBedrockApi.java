@@ -39,6 +39,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 // @formatter:off
@@ -215,32 +216,32 @@ public class AnthropicChatBedrockApi extends
 				this.prompt = prompt;
 			}
 
-			public Builder withTemperature(Double temperature) {
+			public Builder temperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
-			public Builder withMaxTokensToSample(Integer maxTokensToSample) {
+			public Builder maxTokensToSample(Integer maxTokensToSample) {
 				this.maxTokensToSample = maxTokensToSample;
 				return this;
 			}
 
-			public Builder withTopK(Integer topK) {
+			public Builder topK(Integer topK) {
 				this.topK = topK;
 				return this;
 			}
 
-			public Builder withTopP(Double tpoP) {
+			public Builder topP(Double tpoP) {
 				this.topP = tpoP;
 				return this;
 			}
 
-			public Builder withStopSequences(List<String> stopSequences) {
+			public Builder stopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}
 
-			public Builder withAnthropicVersion(String anthropicVersion) {
+			public Builder anthropicVersion(String anthropicVersion) {
 				this.anthropicVersion = anthropicVersion;
 				return this;
 			}

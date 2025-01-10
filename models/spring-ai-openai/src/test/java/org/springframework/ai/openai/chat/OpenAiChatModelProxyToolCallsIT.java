@@ -123,7 +123,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -188,7 +188,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 		logger.info("Response: {}", chatResponse);
 
-		assertThat(chatResponse.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -197,7 +197,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -220,7 +220,7 @@ class OpenAiChatModelProxyToolCallsIT {
 			.collectList()
 			.block()
 			.stream()
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", response);
@@ -281,7 +281,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -306,7 +306,7 @@ class OpenAiChatModelProxyToolCallsIT {
 
 		logger.info("Response: {}", chatResponse);
 
-		assertThat(chatResponse.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -315,7 +315,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		List<Message> messages = List
 			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?"));
 
-		var promptOptions = OpenAiChatOptions.builder().withFunctionCallbacks(List.of(this.functionDefinition)).build();
+		var promptOptions = OpenAiChatOptions.builder().functionCallbacks(List.of(this.functionDefinition)).build();
 
 		var prompt = new Prompt(messages, promptOptions);
 
@@ -341,7 +341,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		String response = responses.collectList()
 			.block()
 			.stream()
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", response);
@@ -361,7 +361,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, List<FunctionCallback> toolFunctionCallbacks) {
 			// enable the proxy tool calls option.
-			var options = OpenAiChatOptions.builder().withModel(DEFAULT_MODEL).withProxyToolCalls(true).build();
+			var options = OpenAiChatOptions.builder().model(DEFAULT_MODEL).proxyToolCalls(true).build();
 
 			return new OpenAiChatModel(openAiApi, options, null, toolFunctionCallbacks,
 					RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);

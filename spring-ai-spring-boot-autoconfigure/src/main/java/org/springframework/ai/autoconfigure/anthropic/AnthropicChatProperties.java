@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * Anthropic Chat autoconfiguration properties.
  *
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 @ConfigurationProperties(AnthropicChatProperties.CONFIG_PREFIX)
@@ -44,9 +45,9 @@ public class AnthropicChatProperties {
 	 */
 	@NestedConfigurationProperty
 	private AnthropicChatOptions options = AnthropicChatOptions.builder()
-		.withModel(AnthropicChatModel.DEFAULT_MODEL_NAME)
-		.withMaxTokens(AnthropicChatModel.DEFAULT_MAX_TOKENS)
-		.withTemperature(AnthropicChatModel.DEFAULT_TEMPERATURE)
+		.model(AnthropicChatModel.DEFAULT_MODEL_NAME)
+		.maxTokens(AnthropicChatModel.DEFAULT_MAX_TOKENS)
+		.temperature(AnthropicChatModel.DEFAULT_TEMPERATURE)
 		.build();
 
 	public AnthropicChatOptions getOptions() {

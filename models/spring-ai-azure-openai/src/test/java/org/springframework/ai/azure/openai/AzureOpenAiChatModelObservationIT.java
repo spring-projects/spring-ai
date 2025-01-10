@@ -65,18 +65,18 @@ class AzureOpenAiChatModelObservationIT {
 	void observationForImperativeChatOperation() {
 
 		var options = AzureOpenAiChatOptions.builder()
-			.withFrequencyPenalty(0.0)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.frequencyPenalty(0.0)
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -88,13 +88,13 @@ class AzureOpenAiChatModelObservationIT {
 	void observationForStreamingChatOperation() {
 
 		var options = AzureOpenAiChatOptions.builder()
-			.withFrequencyPenalty(0.0)
-			.withDeploymentName("gpt-4o")
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.frequencyPenalty(0.0)
+			.deploymentName("gpt-4o")
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -106,7 +106,7 @@ class AzureOpenAiChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -195,8 +195,8 @@ class AzureOpenAiChatModelObservationIT {
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder,
 				TestObservationRegistry observationRegistry) {
 			return new AzureOpenAiChatModel(openAIClientBuilder,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build(), null,
-					List.of(), observationRegistry);
+					AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build(), null, List.of(),
+					observationRegistry);
 		}
 
 	}

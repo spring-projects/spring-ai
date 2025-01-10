@@ -68,7 +68,7 @@ public class FunctionCallWithPromptFunctionIT {
 						""");
 
 				var promptOptions = VertexAiGeminiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+					.functionCallbacks(List.of(FunctionCallback.builder()
 						.function("CurrentWeatherService", new MockWeatherService())
 						.schemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
 						.description("Get the weather in location")
@@ -80,7 +80,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				// Verify that no function call is made.
 				response = chatModel
@@ -88,7 +88,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).doesNotContain("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).doesNotContain("30", "10", "15");
 
 			});
 	}

@@ -31,6 +31,7 @@ import org.springframework.ai.model.ResponseMetadata;
  * @author John Blum
  * @author Thomas Vitale
  * @author Mark Pollack
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
@@ -126,12 +127,12 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			this.chatResponseMetadata = new ChatResponseMetadata();
 		}
 
-		public Builder withMetadata(Map<String, Object> mapToCopy) {
+		public Builder metadata(Map<String, Object> mapToCopy) {
 			this.chatResponseMetadata.map.putAll(mapToCopy);
 			return this;
 		}
 
-		public Builder withKeyValue(String key, Object value) {
+		public Builder keyValue(String key, Object value) {
 			if (key == null) {
 				throw new IllegalArgumentException("Key must not be null");
 			}
@@ -144,27 +145,27 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			return this;
 		}
 
-		public Builder withId(String id) {
+		public Builder id(String id) {
 			this.chatResponseMetadata.id = id;
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.chatResponseMetadata.model = model;
 			return this;
 		}
 
-		public Builder withRateLimit(RateLimit rateLimit) {
+		public Builder rateLimit(RateLimit rateLimit) {
 			this.chatResponseMetadata.rateLimit = rateLimit;
 			return this;
 		}
 
-		public Builder withUsage(Usage usage) {
+		public Builder usage(Usage usage) {
 			this.chatResponseMetadata.usage = usage;
 			return this;
 		}
 
-		public Builder withPromptMetadata(PromptMetadata promptMetadata) {
+		public Builder promptMetadata(PromptMetadata promptMetadata) {
 			this.chatResponseMetadata.promptMetadata = promptMetadata;
 			return this;
 		}

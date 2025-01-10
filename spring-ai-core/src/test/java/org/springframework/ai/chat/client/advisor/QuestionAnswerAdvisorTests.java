@@ -50,6 +50,7 @@ import static org.mockito.BDDMockito.given;
 /**
  * @author Christian Tzolov
  * @author Timo Salm
+ * @author Alexandros Pappas
  */
 @ExtendWith(MockitoExtension.class)
 public class QuestionAnswerAdvisorTests {
@@ -72,13 +73,7 @@ public class QuestionAnswerAdvisorTests {
 		// @formatter:off
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
-				ChatResponseMetadata.builder()
-					.withId("678")
-					.withModel("model1")
-					.withKeyValue("key6", "value6")
-					.withMetadata(Map.of("key1", "value1"))
-					.withPromptMetadata(null)
-					.withRateLimit(new RateLimit() {
+				ChatResponseMetadata.builder().id("678").model("model1").keyValue("key6", "value6").metadata(Map.of("key1", "value1")).promptMetadata(null).rateLimit(new RateLimit() {
 
 						@Override
 						public Long getRequestsLimit() {
@@ -109,8 +104,7 @@ public class QuestionAnswerAdvisorTests {
 						public Duration getTokensReset() {
 							return Duration.ofSeconds(9);
 						}
-					})
-					.withUsage(new DefaultUsage(6L, 7L))
+					}).usage(new DefaultUsage(6L, 7L))
 					.build()));
 		// @formatter:on
 
@@ -118,7 +112,7 @@ public class QuestionAnswerAdvisorTests {
 			.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
-				SearchRequest.defaults().withSimilarityThreshold(0.99d).withTopK(6));
+				SearchRequest.builder().similarityThreshold(0.99d).topK(6).build());
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
@@ -148,22 +142,22 @@ public class QuestionAnswerAdvisorTests {
 		assertThat(response.getMetadata().get("key6").toString()).isEqualTo("value6");
 		assertThat(response.getMetadata().get("key1").toString()).isEqualTo("value1");
 
-		String content = response.getResult().getOutput().getContent();
+		String content = response.getResult().getOutput().getText();
 
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 
-		System.out.println(systemMessage.getContent());
+		System.out.println(systemMessage.getText());
 
-		assertThat(systemMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 				""");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 
-		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("""
 			Please answer my question XYZ
 			Context information is below, surrounded by ---------------------
 
@@ -192,7 +186,7 @@ public class QuestionAnswerAdvisorTests {
 				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.defaults());
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
 
 		var userTextTemplate = "Please answer my question {question}";
 		// @formatter:off
@@ -204,7 +198,7 @@ public class QuestionAnswerAdvisorTests {
 		//formatter:on
 
 		var expectedQuery = "Please answer my question XYZ";
-		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getContent();
+		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getText();
 		assertThat(userPrompt).doesNotContain(userTextTemplate);
 		assertThat(userPrompt).contains(expectedQuery);
 		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
@@ -220,7 +214,7 @@ public class QuestionAnswerAdvisorTests {
 				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.defaults());
+		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
 
 		var userTextTemplate = "Please answer my question {question}";
 		var userPromptTemplate = new PromptTemplate(userTextTemplate, Map.of("question", "XYZ"));
@@ -233,7 +227,7 @@ public class QuestionAnswerAdvisorTests {
 		//formatter:on
 
 		var expectedQuery = "Please answer my question XYZ";
-		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getContent();
+		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getText();
 		assertThat(userPrompt).doesNotContain(userTextTemplate);
 		assertThat(userPrompt).contains(expectedQuery);
 		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);

@@ -33,6 +33,7 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
@@ -116,27 +117,27 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 			this.options = new PostgresMlEmbeddingOptions();
 		}
 
-		public Builder withTransformer(String transformer) {
+		public Builder transformer(String transformer) {
 			this.options.setTransformer(transformer);
 			return this;
 		}
 
-		public Builder withVectorType(VectorType vectorType) {
+		public Builder vectorType(VectorType vectorType) {
 			this.options.setVectorType(vectorType);
 			return this;
 		}
 
-		public Builder withKwargs(String kwargs) {
+		public Builder kwargs(String kwargs) {
 			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
 			return this;
 		}
 
-		public Builder withKwargs(Map<String, Object> kwargs) {
+		public Builder kwargs(Map<String, Object> kwargs) {
 			this.options.setKwargs(kwargs);
 			return this;
 		}
 
-		public Builder withMetadataMode(MetadataMode metadataMode) {
+		public Builder metadataMode(MetadataMode metadataMode) {
 			this.options.setMetadataMode(metadataMode);
 			return this;
 		}

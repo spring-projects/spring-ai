@@ -36,6 +36,7 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.GoogleSearchRetrieval;
 import com.google.cloud.vertexai.api.Part;
+import com.google.cloud.vertexai.api.SafetySetting;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
@@ -75,6 +76,7 @@ import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
@@ -93,6 +95,7 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
@@ -121,8 +124,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI) {
-		this(vertexAI,
-				VertexAiGeminiChatOptions.builder().withModel(ChatModel.GEMINI_1_5_PRO).withTemperature(0.8).build());
+		this(vertexAI, VertexAiGeminiChatOptions.builder().model(ChatModel.GEMINI_1_5_PRO).temperature(0.8).build());
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {
@@ -186,16 +188,16 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 			List<Part> parts = new ArrayList<>();
 
-			if (systemMessage.getContent() != null) {
-				parts.add(Part.newBuilder().setText(systemMessage.getContent()).build());
+			if (systemMessage.getText() != null) {
+				parts.add(Part.newBuilder().setText(systemMessage.getText()).build());
 			}
 
 			return parts;
 		}
 		else if (message instanceof UserMessage userMessage) {
 			List<Part> parts = new ArrayList<>();
-			if (userMessage.getContent() != null) {
-				parts.add(Part.newBuilder().setText(userMessage.getContent()).build());
+			if (userMessage.getText() != null) {
+				parts.add(Part.newBuilder().setText(userMessage.getText()).build());
 			}
 
 			parts.addAll(mediaToParts(userMessage.getMedia()));
@@ -204,8 +206,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		}
 		else if (message instanceof AssistantMessage assistantMessage) {
 			List<Part> parts = new ArrayList<>();
-			if (StringUtils.hasText(assistantMessage.getContent())) {
-				parts.add(Part.newBuilder().setText(assistantMessage.getContent()).build());
+			if (StringUtils.hasText(assistantMessage.getText())) {
+				parts.add(Part.newBuilder().setText(assistantMessage.getText()).build());
 			}
 			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 				parts.addAll(assistantMessage.getToolCalls()
@@ -426,7 +428,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
-		return ChatResponseMetadata.builder().withUsage(new VertexAiUsage(response.getUsageMetadata())).build();
+		return ChatResponseMetadata.builder().usage(new VertexAiUsage(response.getUsageMetadata())).build();
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {
@@ -455,7 +457,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		GenerationConfig generationConfig = this.generationConfig;
 
 		var generativeModelBuilder = new GenerativeModel.Builder().setModelName(this.defaultOptions.getModel())
-			.setVertexAi(this.vertexAI);
+			.setVertexAi(this.vertexAI)
+			.setSafetySettings(toGeminiSafetySettings(this.defaultOptions.getSafetySettings()));
 
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
@@ -499,6 +502,11 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		}
 		if (!CollectionUtils.isEmpty(tools)) {
 			generativeModelBuilder.setTools(tools);
+		}
+
+		if (prompt.getOptions() instanceof VertexAiGeminiChatOptions options
+				&& !CollectionUtils.isEmpty(options.getSafetySettings())) {
+			generativeModelBuilder.setSafetySettings(toGeminiSafetySettings(options.getSafetySettings()));
 		}
 
 		generativeModelBuilder.setGenerationConfig(generationConfig);
@@ -557,6 +565,16 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			.toList();
 
 		return contents;
+	}
+
+	private List<SafetySetting> toGeminiSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+		return safetySettings.stream()
+			.map(safetySetting -> SafetySetting.newBuilder()
+				.setCategoryValue(safetySetting.getCategory().getValue())
+				.setThresholdValue(safetySetting.getThreshold().getValue())
+				.setMethodValue(safetySetting.getMethod().getValue())
+				.build())
+			.toList();
 	}
 
 	private List<Tool> getFunctionTools(Set<String> functionNames) {

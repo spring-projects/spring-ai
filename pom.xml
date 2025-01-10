@@ -174,13 +174,14 @@
 		<!-- production dependencies -->
 		<spring-boot.version>3.3.6</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
-		<azure-open-ai-client.version>1.0.0-beta.12</azure-open-ai-client.version>
+		<azure-open-ai-client.version>1.0.0-beta.13</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
+		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.26.7</bedrockruntime.version>
-		<awssdk.version>2.26.7</awssdk.version>
+		<bedrockruntime.version>2.29.29</bedrockruntime.version>
+		<awssdk.version>2.29.29</awssdk.version>
 
 		<djl.version>0.30.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
@@ -648,7 +649,7 @@
 
 							<excludes>
 								<!-- Models -->
-								 <exclude>org.springframework.ai.anthropic/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.anthropic/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.azure.openai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.bedrock/**/*IT.java</exclude>
 								 <exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
@@ -657,8 +658,7 @@
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.moonshot/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>
-								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
+								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.qianfan/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.stabilityai/**/*IT.java</exclude>

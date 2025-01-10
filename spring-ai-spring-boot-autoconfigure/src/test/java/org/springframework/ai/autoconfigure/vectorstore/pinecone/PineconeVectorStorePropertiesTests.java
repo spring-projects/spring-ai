@@ -21,7 +21,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.vectorstore.PineconeVectorStore;
+import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

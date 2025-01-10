@@ -1,5 +1,18 @@
 = Bedrock Anthropic 3
 
+[NOTE]
+====
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all chat conversation implementations in Spring AI. 
+While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] for several key benefits:
+
+- Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
+- Model Flexibility: Seamlessly switch between different conversation models without code changes
+- Extended Functionality: Support for model-specific parameters through dedicated structures
+- Tool Support: Native integration with function calling and tool usage capabilities
+- Multimodal Capabilities: Built-in support for vision and other multimodal features
+- Future-Proof: Aligned with Amazon Bedrock's recommended best practices
+====
+
 link:https://www.anthropic.com/[Anthropic Claude] is a family of foundational AI models that can be used in a variety of applications.
 
 The Claude model has the following high level features
@@ -108,7 +121,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         Anthropic3ChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -245,11 +258,11 @@ Anthropic3ChatBedrockApi anthropicApi =  new Anthropic3ChatBedrockApi(
 
 BedrockAnthropic3ChatModel chatModel = new BedrockAnthropic3ChatModel(this.anthropicApi,
     AnthropicChatOptions.builder()
-        .withTemperature(0.6)
-        .withTopK(10)
-        .withTopP(0.8)
-        .withMaxTokensToSample(100)
-        .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+        .temperature(0.6)
+        .topK(10)
+        .topP(0.8)
+        .maxTokensToSample(100)
+        .anthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
         .build());
 
 ChatResponse response = this.chatModel.call(
@@ -275,9 +288,9 @@ Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(Anthropic3ChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-  .withTemperature(0.8)
-  .withMaxTokensToSample(300)
-  .withTopK(10)
+  .temperature(0.8)
+  .maxTokensToSample(300)
+  .topK(10)
   .build();
 
 // Sync request

@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Content;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.util.PromptAssert;
 import org.springframework.lang.Nullable;
@@ -104,7 +103,7 @@ public final class ContextualQueryAugmenter implements QueryAugmenter {
 
 		// 1. Collect content from documents.
 		String documentContext = documents.stream()
-			.map(Content::getContent)
+			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 2. Define prompt parameters.

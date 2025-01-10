@@ -221,7 +221,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * @param advisorName the advisor name
 		 * @return the builder
 		 */
-		public Builder withAdvisorName(String advisorName) {
+		public Builder advisorName(String advisorName) {
 			this.advisorName = advisorName;
 			return this;
 		}
@@ -231,7 +231,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * @param advisorType the advisor type
 		 * @return the builder
 		 */
-		public Builder withAdvisorType(Type advisorType) {
+		public Builder advisorType(Type advisorType) {
 			this.advisorType = advisorType;
 			return this;
 		}
@@ -241,7 +241,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * @param advisedRequest the advised request
 		 * @return the builder
 		 */
-		public Builder withAdvisedRequest(AdvisedRequest advisedRequest) {
+		public Builder advisedRequest(AdvisedRequest advisedRequest) {
 			this.advisorRequest = advisedRequest;
 			return this;
 		}
@@ -251,7 +251,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * @param advisorRequestContext the advisor request context
 		 * @return the builder
 		 */
-		public Builder withAdvisorRequestContext(Map<String, Object> advisorRequestContext) {
+		public Builder advisorRequestContext(Map<String, Object> advisorRequestContext) {
 			this.advisorRequestContext = advisorRequestContext;
 			return this;
 		}
@@ -261,7 +261,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * @param advisorResponseContext the advisor response context
 		 * @return the builder
 		 */
-		public Builder withAdvisorResponseContext(Map<String, Object> advisorResponseContext) {
+		public Builder advisorResponseContext(Map<String, Object> advisorResponseContext) {
 			this.advisorResponseContext = advisorResponseContext;
 			return this;
 		}
@@ -271,7 +271,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * @param order the order of the advisor in the advisor chain
 		 * @return the builder
 		 */
-		public Builder withOrder(int order) {
+		public Builder order(int order) {
 			this.order = order;
 			return this;
 		}

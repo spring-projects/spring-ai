@@ -20,10 +20,10 @@ import java.time.Duration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -34,8 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Wei Jiang
  */
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 public class BedrockLlamaCreateRequestTests {
 
 	private LlamaChatBedrockApi api = new LlamaChatBedrockApi(LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
@@ -46,7 +45,7 @@ public class BedrockLlamaCreateRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = new BedrockLlamaChatModel(this.api,
-				BedrockLlamaChatOptions.builder().withTemperature(66.6).withMaxGenLen(666).withTopP(0.66).build());
+				BedrockLlamaChatOptions.builder().temperature(66.6).maxGenLen(666).topP(0.66).build());
 
 		var request = client.createRequest(new Prompt("Test message content"));
 
@@ -56,7 +55,7 @@ public class BedrockLlamaCreateRequestTests {
 		assertThat(request.maxGenLen()).isEqualTo(666);
 
 		request = client.createRequest(new Prompt("Test message content",
-				BedrockLlamaChatOptions.builder().withTemperature(99.9).withMaxGenLen(999).withTopP(0.99).build()));
+				BedrockLlamaChatOptions.builder().temperature(99.9).maxGenLen(999).topP(0.99).build()));
 
 		assertThat(request.prompt()).isNotEmpty();
 		assertThat(request.temperature()).isEqualTo(99.9);

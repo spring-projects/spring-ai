@@ -66,7 +66,7 @@ public final class MessageToPromptConverter {
 
 		final String systemMessages = messages.stream()
 			.filter(message -> message.getMessageType() == MessageType.SYSTEM)
-			.map(Message::getContent)
+			.map(Message::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		final String userMessages = messages.stream()
@@ -83,11 +83,11 @@ public final class MessageToPromptConverter {
 	protected String messageToString(Message message) {
 		switch (message.getMessageType()) {
 			case SYSTEM:
-				return message.getContent();
+				return message.getText();
 			case USER:
-				return this.humanPrompt + " " + message.getContent();
+				return this.humanPrompt + " " + message.getText();
 			case ASSISTANT:
-				return this.assistantPrompt + " " + message.getContent();
+				return this.assistantPrompt + " " + message.getText();
 			case TOOL:
 				throw new IllegalArgumentException("Tool execution results are not supported for Bedrock models");
 		}

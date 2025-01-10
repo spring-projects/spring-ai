@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -51,8 +50,7 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = BedrockConverseTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 class BedrockConverseChatClientIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(BedrockConverseChatClientIT.class);
@@ -79,7 +77,7 @@ class BedrockConverseChatClientIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -196,7 +194,7 @@ class BedrockConverseChatClientIT {
 		String generationTextFromStream = chatResponses
 				.stream()
 				.filter(cr -> cr.getResult() != null)
-				.map(cr -> cr.getResult().getOutput().getContent())
+				.map(cr -> cr.getResult().getOutput().getText())
 				.collect(Collectors.joining());
 		// @formatter:on
 
@@ -259,7 +257,7 @@ class BedrockConverseChatClientIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -340,7 +338,7 @@ class BedrockConverseChatClientIT {
 
 		String content = chatResponses.stream()
 			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getContent())
+			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -374,7 +372,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(FunctionCallingOptions.builder().withModel(modelName).build())
+				.options(FunctionCallingOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -396,7 +394,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(FunctionCallingOptions.builder().withModel(modelName).build())
+		.options(FunctionCallingOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();
