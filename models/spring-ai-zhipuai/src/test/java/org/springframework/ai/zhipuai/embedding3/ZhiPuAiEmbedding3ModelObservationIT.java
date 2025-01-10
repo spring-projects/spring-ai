@@ -44,7 +44,8 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
 
 /**
  * Integration tests for observation instrumentation in {@link ZhiPuAiEmbeddingModel}.
- * <a href="https://bigmodel.cn/dev/api/vector/embedding-3">zhipuai vector model embedding-3 doc</a>.
+ * <a href="https://bigmodel.cn/dev/api/vector/embedding-3">zhipuai vector model
+ * embedding-3 doc</a>.
  *
  * @author Yee Pan
  */
@@ -61,8 +62,8 @@ public class ZhiPuAiEmbedding3ModelObservationIT {
 	@Test
 	void observationForEmbeddingOperation() {
 		var options = ZhiPuAiEmbeddingOptions.builder()
-				.withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
-				.build();
+			.withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
+			.build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
 
@@ -73,22 +74,22 @@ public class ZhiPuAiEmbedding3ModelObservationIT {
 		assertThat(responseMetadata).isNotNull();
 
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
-				.doesNotHaveAnyRemainingCurrentObservation()
-				.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
-				.that()
-				.hasContextualNameEqualTo("embedding " + ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-						AiOperationType.EMBEDDING.value())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.ZHIPUAI.value())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-						ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
-				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
-						String.valueOf(responseMetadata.getUsage().getPromptTokens()))
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
-						String.valueOf(responseMetadata.getUsage().getTotalTokens()))
-				.hasBeenStarted()
-				.hasBeenStopped();
+			.doesNotHaveAnyRemainingCurrentObservation()
+			.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasContextualNameEqualTo("embedding " + ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					AiOperationType.EMBEDDING.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.ZHIPUAI.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+					ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
+					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
+					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
+			.hasBeenStarted()
+			.hasBeenStopped();
 	}
 
 	@SpringBootConfiguration
@@ -106,9 +107,11 @@ public class ZhiPuAiEmbedding3ModelObservationIT {
 
 		@Bean
 		public ZhiPuAiEmbeddingModel zhiPuAiEmbeddingModel(ZhiPuAiApi zhiPuAiApi,
-														   TestObservationRegistry observationRegistry) {
+				TestObservationRegistry observationRegistry) {
 			return new ZhiPuAiEmbeddingModel(zhiPuAiApi, MetadataMode.EMBED,
-					ZhiPuAiEmbeddingOptions.builder().withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue()).build(),
+					ZhiPuAiEmbeddingOptions.builder()
+						.withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
+						.build(),
 					RetryTemplate.defaultInstance(), observationRegistry);
 		}
 

@@ -29,7 +29,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * <a href="https://bigmodel.cn/dev/api/vector/embedding-3">zhipuai vector model embedding-3 doc</a>
+ * <a href="https://bigmodel.cn/dev/api/vector/embedding-3">zhipuai vector model
+ * embedding-3 doc</a>
  *
  * @author Yee Pan
  */

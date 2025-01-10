@@ -86,7 +86,7 @@ public class ZhiPuAiApiIT {
 	@Test
 	void embeddings3() {
 		ResponseEntity<EmbeddingList<Embedding>> response = this.zhiPuAiApi
-				.embeddings(new ZhiPuAiApi.EmbeddingRequest<>("Hello world",1024));
+			.embeddings(new ZhiPuAiApi.EmbeddingRequest<>("Hello world", 1024));
 
 		assertThat(response).isNotNull();
 		assertThat(Objects.requireNonNull(response.getBody()).data()).hasSize(1);
