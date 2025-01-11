@@ -26,12 +26,9 @@ import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -46,6 +43,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * The Anthropic API client.
@@ -464,6 +466,14 @@ public class AnthropicApi {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null);
 		}
 
+		/**
+		 * @param type is the cache type supported by anthropic. <a href=
+		 * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record CacheControl(String type) {
+		}
+
 		public static ChatCompletionRequestBuilder builder() {
 			return new ChatCompletionRequestBuilder();
 		}
@@ -658,7 +668,10 @@ public class AnthropicApi {
 
 		// tool_result response only
 		@JsonProperty("tool_use_id") String toolUseId,
-		@JsonProperty("content") String content
+		@JsonProperty("content") String content,
+
+		// cache object
+		@JsonProperty("cache_control") CacheControl cacheControl
 		) {
 		// @formatter:on
 
@@ -677,7 +690,7 @@ public class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Type type, Source source) {
-			this(type, source, null, null, null, null, null, null, null);
+			this(type, source, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -685,7 +698,7 @@ public class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Source source) {
-			this(Type.IMAGE, source, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -693,7 +706,11 @@ public class AnthropicApi {
 		 * @param text The text of the content.
 		 */
 		public ContentBlock(String text) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null);
+		}
+
+		public ContentBlock(String text, CacheControl cache) {
+			this(Type.TEXT, null, text, null, null, null, null, null, null, cache);
 		}
 
 		// Tool result
@@ -704,7 +721,7 @@ public class AnthropicApi {
 		 * @param content The content of the tool result.
 		 */
 		public ContentBlock(Type type, String toolUseId, String content) {
-			this(type, null, null, null, null, null, null, toolUseId, content);
+			this(type, null, null, null, null, null, null, toolUseId, content, null);
 		}
 
 		/**
@@ -715,7 +732,7 @@ public class AnthropicApi {
 		 * @param index The index of the content block.
 		 */
 		public ContentBlock(Type type, Source source, String text, Integer index) {
-			this(type, source, text, index, null, null, null, null, null);
+			this(type, source, text, index, null, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
@@ -727,7 +744,7 @@ public class AnthropicApi {
 		 * @param input The input of the tool use.
 		 */
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
-			this(type, null, null, null, id, name, input, null, null);
+			this(type, null, null, null, id, name, input, null, null, null);
 		}
 
 		/**
@@ -886,7 +903,9 @@ public class AnthropicApi {
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens) {
+		@JsonProperty("output_tokens") Integer outputTokens,
+		@JsonProperty("cache_creation_input_tokens") Integer cacheCreationInputTokens,
+		@JsonProperty("cache_read_input_tokens") Integer cacheReadInputTokens) {
 		// @formatter:off
 	}
 
