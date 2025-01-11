@@ -53,7 +53,7 @@ public class ZhiPuAiEmbeddingModleTestConfiguration {
 	public EmbeddingModel zhiPuAiEmbeddingModel(ZhiPuAiApi api) {
 		return new ZhiPuAiEmbeddingModel(api, MetadataMode.EMBED,
 				ZhiPuAiEmbeddingOptions.builder()
-					.withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
+					.model(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
 					.withDimensions(1024)
 					.build());
 	}

@@ -61,9 +61,7 @@ public class ZhiPuAiEmbedding3ModelObservationIT {
 
 	@Test
 	void observationForEmbeddingOperation() {
-		var options = ZhiPuAiEmbeddingOptions.builder()
-			.withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
-			.build();
+		var options = ZhiPuAiEmbeddingOptions.builder().model(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue()).build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
 
@@ -109,9 +107,7 @@ public class ZhiPuAiEmbedding3ModelObservationIT {
 		public ZhiPuAiEmbeddingModel zhiPuAiEmbeddingModel(ZhiPuAiApi zhiPuAiApi,
 				TestObservationRegistry observationRegistry) {
 			return new ZhiPuAiEmbeddingModel(zhiPuAiApi, MetadataMode.EMBED,
-					ZhiPuAiEmbeddingOptions.builder()
-						.withModel(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue())
-						.build(),
+					ZhiPuAiEmbeddingOptions.builder().model(ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue()).build(),
 					RetryTemplate.defaultInstance(), observationRegistry);
 		}
 
