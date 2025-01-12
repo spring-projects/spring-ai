@@ -392,7 +392,13 @@ public class OpenAiAudioApi {
 			@JsonProperty("nova")
 			NOVA("nova"),
 			@JsonProperty("shimmer")
-			SHIMMER("shimmer");
+			SHIMMER("shimmer"),
+			@JsonProperty("sage")
+			SAGE("sage"),
+			@JsonProperty("coral")
+			CORAL("coral"),
+			@JsonProperty("ash")
+			ASH("ash");
 			// @formatter:on
 
 			public final String value;
