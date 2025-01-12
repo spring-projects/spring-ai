@@ -114,14 +114,14 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = {"alloy", "echo", "fable", "onyx", "nova", "shimmer", "sage", "coral", "ash"})
+	@ValueSource(strings = { "alloy", "echo", "fable", "onyx", "nova", "shimmer", "sage", "coral", "ash" })
 	void speechVoicesTest(String voice) {
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-				.voice(OpenAiAudioApi.SpeechRequest.Voice.valueOf(voice.toUpperCase()))
-				.speed(SPEED)
-				.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-				.model(OpenAiAudioApi.TtsModel.TTS_1.value)
-				.build();
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.valueOf(voice.toUpperCase()))
+			.speed(SPEED)
+			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
+			.build();
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
 		SpeechResponse response = this.speechModel.call(speechPrompt);
@@ -130,4 +130,5 @@ class OpenAiSpeechModelIT extends AbstractIT {
 		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(audioBytes).hasSizeGreaterThan(0);
 	}
+
 }
