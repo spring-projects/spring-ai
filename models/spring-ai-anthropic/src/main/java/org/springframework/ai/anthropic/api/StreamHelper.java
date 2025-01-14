@@ -17,7 +17,9 @@
 package org.springframework.ai.anthropic.api;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
@@ -35,7 +37,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.MessageStartEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.StreamEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.ToolUseAggregationEvent;
-import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
+import org.springframework.ai.anthropic.metadata.AnthropicUsageAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -173,9 +175,11 @@ public class StreamHelper {
 			}
 
 			if (messageDeltaEvent.usage() != null) {
-				var totalUsage = new Usage(contentBlockReference.get().usage.inputTokens(),
-						messageDeltaEvent.usage().outputTokens());
-				contentBlockReference.get().withUsage(totalUsage);
+				Map<String, Object> metadata = (contentBlockReference.get().usage != null)
+						? contentBlockReference.get().usage : new HashMap<>();
+				metadata.put(AnthropicUsageAccessor.OUTPUT_TOKENS,
+						String.valueOf(messageDeltaEvent.usage().outputTokens()));
+				contentBlockReference.get().withUsage(metadata);
 			}
 		}
 		else if (event.type().equals(EventType.MESSAGE_STOP)) {
@@ -204,7 +208,7 @@ public class StreamHelper {
 
 		private String stopSequence;
 
-		private Usage usage;
+		private Map<String, Object> usage;
 
 		public ChatCompletionResponseBuilder() {
 		}
@@ -244,7 +248,7 @@ public class StreamHelper {
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withUsage(Usage usage) {
+		public ChatCompletionResponseBuilder withUsage(Map<String, Object> usage) {
 			this.usage = usage;
 			return this;
 		}
