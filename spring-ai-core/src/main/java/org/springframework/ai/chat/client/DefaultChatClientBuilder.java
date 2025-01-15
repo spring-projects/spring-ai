@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,12 @@ import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -147,6 +149,24 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	@Override
+	public Builder defaultTools(String... toolNames) {
+		this.defaultRequest.functions(toolNames);
+		return this;
+	}
+
+	@Override
+	public Builder defaultTools(Object... toolObjects) {
+		this.defaultRequest.functions(ToolCallbacks.from(toolObjects));
+		return this;
+	}
+
+	@Override
+	public Builder defaultToolCallbacks(FunctionCallback... toolCallbacks) {
+		this.defaultRequest.functions(toolCallbacks);
+		return this;
+	}
+
 	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
 		this.defaultRequest.function(name, description, function);
 		return this;
@@ -171,6 +191,19 @@ public class DefaultChatClientBuilder implements Builder {
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
 		this.defaultRequest.toolContext(toolContext);
 		return this;
+	}
+
+	void addMessages(List<Message> messages) {
+		this.defaultRequest.messages(messages);
+	}
+
+	void addToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		this.defaultRequest.toolCallbacks(toolCallbacks.toArray(FunctionCallback[]::new));
+	}
+
+	void addToolContext(Map<String, Object> toolContext) {
+		this.defaultRequest.toolContext(toolContext);
 	}
 
 }
