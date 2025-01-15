@@ -207,12 +207,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			var statement = """
 						UNWIND $rows AS row
 						MERGE (u:%s {%2$s: row.id})
-						ON CREATE
 							SET u += row.properties
-						ON MATCH
-							SET u = {}
-							SET u.%2$s = row.id,
-								u += row.properties
 						WITH row, u
 						CALL db.create.setNodeVectorProperty(u, $embeddingProperty, row[$embeddingProperty])
 					""".formatted(this.label, this.idProperty);
