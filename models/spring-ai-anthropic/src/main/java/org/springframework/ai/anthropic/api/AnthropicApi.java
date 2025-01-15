@@ -870,7 +870,7 @@ public class AnthropicApi {
 		@JsonProperty("model") String model,
 		@JsonProperty("stop_reason") String stopReason,
 		@JsonProperty("stop_sequence") String stopSequence,
-		@JsonProperty("usage") Usage usage) {
+		@JsonProperty("usage") Map<String, Object> usage) {
 		// @formatter:on
 	}
 

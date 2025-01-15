@@ -79,4 +79,30 @@ public final class UsageUtils {
 		return false;
 	}
 
+	/**
+	 * Parse the usage metadata value object into Long.
+	 * @param value the value object.
+	 * @return the Long value.
+	 */
+	public static Long parseLong(Object value) {
+		if (value == null) {
+			return null;
+		}
+		if (value instanceof Long) {
+			return (Long) value;
+		}
+		else if (value instanceof String) {
+			return Long.parseLong((String) value);
+		}
+		else if (value instanceof Number) {
+			return ((Number) value).longValue();
+		}
+		else if (value instanceof Integer) {
+			return ((Integer) value).longValue();
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
+		}
+	}
+
 }
