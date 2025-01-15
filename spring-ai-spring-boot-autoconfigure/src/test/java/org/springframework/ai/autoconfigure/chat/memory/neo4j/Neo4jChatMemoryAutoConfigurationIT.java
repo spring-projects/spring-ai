@@ -40,9 +40,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Mick Semb Wever
- * @author Jihoon Kim
- * @since 1.0.0
+ * @author Enrico Rampazzo
  */
 @Testcontainers
 class Neo4jChatMemoryAutoConfigurationIT {
