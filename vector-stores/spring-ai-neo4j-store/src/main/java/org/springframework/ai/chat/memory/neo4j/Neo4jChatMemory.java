@@ -13,6 +13,12 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.*;
 
+/**
+ * {@link ChatMemory} implementation for Neo4j
+ *
+ * @author Enrico Rampazzo
+ */
+
 public class Neo4jChatMemory implements ChatMemory {
 
 	private final Neo4jChatMemoryConfig config;
@@ -49,7 +55,7 @@ public class Neo4jChatMemory implements ChatMemory {
 				WITH m ORDER BY m.idx DESC LIMIT $lastN
 				OPTIONAL MATCH (m)-[:HAS_METADATA]->(metadata:%s)
 				OPTIONAL MATCH (m)-[:HAS_MEDIA]->(media:%s) WITH m, metadata, media ORDER BY media.idx ASC
-				OPTIONAL MATCH (m)-[:HAS_TOOL_RESPONSE]-(tr:%s) WITH m, metadata, media, tr ORDER BY tr.idx ASC
+				OPTIONAL MATCH (m)-[:HAS_TOOL_RESPONSE]->(tr:%s) WITH m, metadata, media, tr ORDER BY tr.idx ASC
 				OPTIONAL MATCH (m)-[:HAS_TOOL_CALL]->(tc:%s)
 				WITH m, metadata, media, tr, tc ORDER BY tc.idx ASC
 				RETURN m, metadata, collect(tr) as toolResponses, collect(tc) as toolCalls, collect(media) as medias
