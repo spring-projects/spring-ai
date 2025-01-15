@@ -133,6 +133,7 @@ import org.springframework.util.StringUtils;
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	@Deprecated(forRemoval = true)
 	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
 	public static final int DEFAULT_TRANSACTION_SIZE = 10_000;
@@ -182,7 +183,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		this.driver = builder.driver;
 		this.sessionConfig = builder.sessionConfig;
-		this.embeddingDimension = builder.embeddingDimension;
+		this.embeddingDimension = builder.embeddingDimension.orElseGet(() -> builder.getEmbeddingModel().dimensions());
 		this.distanceType = builder.distanceType;
 		this.embeddingProperty = SchemaNames.sanitize(builder.embeddingProperty).orElseThrow();
 		this.label = SchemaNames.sanitize(builder.label).orElseThrow();
@@ -372,7 +373,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private SessionConfig sessionConfig = SessionConfig.defaultConfig();
 
-		private int embeddingDimension = DEFAULT_EMBEDDING_DIMENSION;
+		private Optional<Integer> embeddingDimension = Optional.empty();
 
 		private Neo4jDistanceType distanceType = Neo4jDistanceType.COSINE;
 
@@ -425,7 +426,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder embeddingDimension(int dimension) {
 			Assert.isTrue(dimension >= 1, "Dimension has to be positive");
-			this.embeddingDimension = dimension;
+			this.embeddingDimension = Optional.of(dimension);
 			return this;
 		}
 
