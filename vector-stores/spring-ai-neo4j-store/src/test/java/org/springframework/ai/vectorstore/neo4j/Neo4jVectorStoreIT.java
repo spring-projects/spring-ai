@@ -28,6 +28,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.springframework.context.annotation.Primary;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -301,14 +302,41 @@ class Neo4jVectorStoreIT {
 			.isTrue());
 	}
 
+	@Test
+	void vectorIndexDimensionsDefaultAndOverwriteWorks() {
+		this.contextRunner.run(context -> {
+			var result = context.getBean(Driver.class)
+				.executableQuery(
+						"SHOW VECTOR INDEXES yield name, options return name, options['indexConfig']['vector.dimensions'] as dimensions")
+				.execute()
+				.records()
+				.stream()
+				.map(r -> r.get("name").asString() + r.get("dimensions").asInt())
+				.toList();
+			assertThat(result).containsExactlyInAnyOrder("secondIndex123", "spring-ai-document-index1536");
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
 		@Bean
+		@Primary
 		public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
 
 			return Neo4jVectorStore.builder(driver, embeddingModel).initializeSchema(true).build();
+		}
+
+		@Bean
+		public VectorStore vectorStoreWithCustomDimension(Driver driver, EmbeddingModel embeddingModel) {
+
+			return Neo4jVectorStore.builder(driver, embeddingModel)
+				.initializeSchema(true)
+				.indexName("secondIndex")
+				.embeddingProperty("somethingElse")
+				.embeddingDimension(123)
+				.build();
 		}
 
 		@Bean
