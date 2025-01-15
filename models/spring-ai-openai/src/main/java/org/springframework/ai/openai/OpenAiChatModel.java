@@ -548,7 +548,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
 				return toolMessage.getResponses()
 					.stream()
-					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
+					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, null,
 							tr.id(), null, null, null))
 					.toList();
 			}
