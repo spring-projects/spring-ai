@@ -333,20 +333,6 @@ public class Document {
 		}
 
 		/**
-		 * Sets the text content of the document.
-		 * @param text the text content to set
-		 * @return the builder instance
-		 * @deprecated since 1.0.0-M5, use {@link #text(String)} instead as it more
-		 * accurately reflects that this Document instance will contain text rather than
-		 * generic content. This method will be removed in a future release.
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder content(@Nullable String text) {
-			this.text = text;
-			return this;
-		}
-
-		/**
 		 * Sets the media content of the document.
 		 * <p>
 		 * Either text or media content must be set before building the document, but not

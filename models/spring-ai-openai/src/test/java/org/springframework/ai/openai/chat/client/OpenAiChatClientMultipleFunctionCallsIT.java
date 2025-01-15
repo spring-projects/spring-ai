@@ -255,7 +255,11 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		String content = chatClient.prompt()
 			.user("What's the weather like in Shanghai?")
-			.function("currentTemp", "get current temp", MyFunction.Req.class, function)
+			.functions(FunctionCallback.builder()
+				.function("currentTemp", function)
+				.description("get current temp")
+				.inputType(MyFunction.Req.class)
+				.build())
 			.call()
 			.content();
 

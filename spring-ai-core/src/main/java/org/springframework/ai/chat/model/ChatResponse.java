@@ -137,15 +137,6 @@ public class ChatResponse implements ModelResponse<Generation> {
 			return this.metadata(other.chatResponseMetadata);
 		}
 
-		/**
-		 * @deprecated Use {@link #metadata(String, Object)} instead.
-		 */
-		@Deprecated
-		public Builder withMetadata(String key, Object value) {
-			this.chatResponseMetadataBuilder.keyValue(key, value);
-			return this;
-		}
-
 		public Builder metadata(String key, Object value) {
 			this.chatResponseMetadataBuilder.keyValue(key, value);
 			return this;
@@ -162,16 +153,6 @@ public class ChatResponse implements ModelResponse<Generation> {
 				this.chatResponseMetadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 			return this;
-		}
-
-		/**
-		 * @deprecated Use {@link #generations(List)} instead.
-		 */
-		@Deprecated
-		public Builder withGenerations(List<Generation> generations) {
-			this.generations = generations;
-			return this;
-
 		}
 
 		public Builder generations(List<Generation> generations) {

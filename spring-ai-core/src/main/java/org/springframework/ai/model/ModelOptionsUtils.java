@@ -350,46 +350,6 @@ public abstract class ModelOptionsUtils {
 
 	/**
 	 * Generates JSON Schema (version 2020_12) for the given class.
-	 * @param clazz the class to generate JSON Schema from.
-	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
-	 * @return the generated JSON Schema as a String.
-	 * @deprecated use {@link #getJsonSchema(Type, boolean)} instead.
-	 */
-	@Deprecated(since = "1.0 M4")
-	public static String getJsonSchema(Class<?> clazz, boolean toUpperCaseTypeValues) {
-
-		if (SCHEMA_GENERATOR_CACHE.get() == null) {
-
-			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
-			Swagger2Module swaggerModule = new Swagger2Module();
-
-			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
-					OptionPreset.PLAIN_JSON)
-				.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
-				.with(Option.PLAIN_DEFINITION_KEYS)
-				.with(swaggerModule)
-				.with(jacksonModule);
-
-			if (KotlinDetector.isKotlinReflectPresent()) {
-				configBuilder.with(new KotlinModule());
-			}
-
-			SchemaGeneratorConfig config = configBuilder.build();
-			SchemaGenerator generator = new SchemaGenerator(config);
-			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
-		}
-
-		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
-		// Required for OpenAPI 3.0 (at least Vertex AI version of it).
-		if (toUpperCaseTypeValues) {
-			toUpperCaseTypeValues(node);
-		}
-
-		return node.toPrettyString();
-	}
-
-	/**
-	 * Generates JSON Schema (version 2020_12) for the given class.
 	 * @param inputType the input {@link Type} to generate JSON Schema from.
 	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
 	 * @return the generated JSON Schema as a String.
