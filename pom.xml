@@ -40,7 +40,10 @@
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
 		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
+
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-neo4j</module>
+
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 
 		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
