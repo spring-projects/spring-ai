@@ -374,7 +374,7 @@ Refer to the xref:_retrieval_augmented_generation[Retrieval Augmented Generation
 
 The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 
-There are currently two implementations, `InMemoryChatMemory` and `CassandraChatMemory`, that provide storage for chat conversation history, in-memory and persisted with `time-to-live`, correspondingly.
+There are currently three implementations, `InMemoryChatMemory`, `CassandraChatMemory` and `Neo4jChatMemory`, that provide storage for chat conversation history, in-memory, persisted with `time-to-live` in Cassandra, and persisted without `time-to-live` in Neo4j correspondingly.
 
 To create a `CassandraChatMemory` with `time-to-live`:
 
@@ -382,6 +382,24 @@ To create a `CassandraChatMemory` with `time-to-live`:
 ----
 CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
 ----
+
+The Neo4j chat memory supports the following configuration parameters:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+| `spring.ai.chat.memory.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
+| `spring.ai.chat.memory.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
+| `spring.ai.chat.memory.neo4j.toolCallLabel` | The label for nodes that store tool calls, for example
+in Assistant Messages | `ToolCall`
+| `spring.ai.chat.memory.neo4j.metadataLabel` | The label for the node that store a message metadata | `Metadata`
+| `spring.ai.chat.memory.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
+| `spring.ai.chat.memory.neo4j.mediaLabel` | The label for the nodes that store the media associated to a message | `ToolResponse`
+
+
+|===
+
 
 The following advisor implementations use the `ChatMemory` interface to advice the prompt with conversation history which differ in the details of how the memory is added to the prompt
 
