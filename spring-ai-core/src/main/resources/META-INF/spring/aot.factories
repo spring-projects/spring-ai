@@ -1,3 +1,4 @@
 org.springframework.aot.hint.RuntimeHintsRegistrar=\
 	org.springframework.ai.aot.SpringAiCoreRuntimeHints,\
-	org.springframework.ai.aot.KnuddelsRuntimeHints
+	org.springframework.ai.aot.KnuddelsRuntimeHints,\
+    org.springframework.ai.aot.ToolRuntimeHints
