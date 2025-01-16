@@ -47,7 +47,7 @@ import org.springframework.util.CollectionUtils;
  */
 public abstract class AbstractToolCallSupport {
 
-	protected final static boolean IS_RUNTIME_CALL = true;
+	protected static final boolean IS_RUNTIME_CALL = true;
 
 	/**
 	 * The function callback register is used to resolve the function callbacks by name.

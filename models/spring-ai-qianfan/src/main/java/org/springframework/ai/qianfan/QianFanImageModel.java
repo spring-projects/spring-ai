@@ -50,7 +50,7 @@ import org.springframework.util.Assert;
  */
 public class QianFanImageModel implements ImageModel {
 
-	private final static Logger logger = LoggerFactory.getLogger(QianFanImageModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(QianFanImageModel.class);
 
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
