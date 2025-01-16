@@ -49,7 +49,8 @@ import org.springframework.ai.vectorstore.filter.Filter.Value;
  * }</pre>
  *
  *
- * This builder DSL mimics the common https://www.baeldung.com/hibernate-criteria-queries
+ * This builder DSL mimics the common
+ * <a href="https://www.baeldung.com/hibernate-criteria-queries">Criteria Queries</a>
  * syntax.
  *
  * @author Christian Tzolov
