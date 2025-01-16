@@ -77,6 +77,11 @@ public enum AiProvider {
 	MOONSHOT("moonshot"),
 
 	/**
+	 * AI system provided by Hunyuan.
+	 */
+	HUNYUAN("hunyuan"),
+
+	/**
 	 * AI system provided by Qianfan.
 	 */
 	QIANFAN("qianfan"),

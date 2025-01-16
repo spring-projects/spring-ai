@@ -106,6 +106,7 @@
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
+		<module>models/spring-ai-hunyuan</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
@@ -178,6 +179,8 @@
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
+		<xml.bind.version>2.3.0</xml.bind.version>
+
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
 		<bedrockruntime.version>2.29.29</bedrockruntime.version>
