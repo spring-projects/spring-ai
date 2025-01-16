@@ -35,6 +35,7 @@ import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionRequest;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.hunyuan.api.HunYuanApi.FunctionTool;
 import org.springframework.ai.hunyuan.api.HunYuanApi.FunctionTool.Type;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Geng Rong
  */
-@EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
 public class HunYuanApiToolFunctionCallIT {
 
 	private static final FunctionTool FUNCTION_TOOL = new FunctionTool(Type.FUNCTION, new FunctionTool.Function(
@@ -75,16 +77,7 @@ public class HunYuanApiToolFunctionCallIT {
 
 	private final MockWeatherService weatherService = new MockWeatherService();
 
-	private final HunYuanApi moonshotApi = new HunYuanApi(System.getenv("MOONSHOT_API_KEY"),System.getenv("MOONSHOT_API_KEY"));
-
-	private static <T> T fromJson(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
+	private final HunYuanApi hunyuanApi = new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY"));
 
 	@SuppressWarnings("null")
 	@Test
@@ -107,7 +100,7 @@ public class HunYuanApiToolFunctionCallIT {
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages,
 				HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), List.of(FUNCTION_TOOL), ToolChoiceBuilder.AUTO);
 
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion = this.moonshotApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion = this.hunyuanApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(chatCompletion.getBody()).isNotNull();
 		assertThat(chatCompletion.getBody().response().choices()).isNotEmpty();
@@ -123,7 +116,7 @@ public class HunYuanApiToolFunctionCallIT {
 		for (ToolCall toolCall : responseMessage.toolCalls()) {
 			var functionName = toolCall.function().name();
 			if ("getCurrentWeather".equals(functionName)) {
-				MockWeatherService.Request weatherRequest = fromJson(toolCall.function().arguments(),
+				MockWeatherService.Request weatherRequest = ModelOptionsUtils.jsonToObject(toolCall.function().arguments(),
 						MockWeatherService.Request.class);
 
 				MockWeatherService.Response weatherResponse = this.weatherService.apply(weatherRequest);
@@ -137,7 +130,7 @@ public class HunYuanApiToolFunctionCallIT {
 		var functionResponseRequest = new ChatCompletionRequest(messages,
 				HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.5);
 
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion2 = this.moonshotApi.chatCompletionEntity(functionResponseRequest);
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion2 = this.hunyuanApi.chatCompletionEntity(functionResponseRequest);
 
 		logger.info("Final response: " + chatCompletion2.getBody());
 

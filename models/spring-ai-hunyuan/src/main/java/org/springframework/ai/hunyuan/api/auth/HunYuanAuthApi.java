@@ -1,12 +1,8 @@
 package org.springframework.ai.hunyuan.api.auth;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.JSONWriter;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.hunyuan.api.HunYuanApi;
 import org.springframework.ai.hunyuan.api.HunYuanConstants;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 
@@ -58,16 +54,6 @@ public class HunYuanAuthApi {
 		return DatatypeConverter.printHexBinary(d).toLowerCase();
 	}
 
-	public String recordToJson(Object record) {
-		ObjectMapper objectMapper = new ObjectMapper();
-		try {
-			return objectMapper.writeValueAsString(record);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return "";
-		}
-	}
-
 	public MultiValueMap<String, String> getHttpHeadersConsumer(String host, String action, String service, HunYuanApi.ChatCompletionRequest payload){
 		String version = HunYuanConstants.DEFAULT_VERSION;
 		String algorithm = HunYuanConstants.DEFAULT_ALGORITHM;
@@ -87,7 +73,8 @@ public class HunYuanAuthApi {
 		String signedHeaders = "content-type;host;x-tc-action";
 
 //		String payload = "{\"Limit\": 1, \"Filters\": [{\"Values\": [\"\\u672a\\u547d\\u540d\"], \"Name\": \"instance-name\"}]}";
-		String payloadString = recordToJson(payload);
+		String payloadString = ModelOptionsUtils.toJsonString(payload);
+		System.out.println(payloadString);
 		String hashedRequestPayload = sha256Hex(payloadString);
 		String canonicalRequest = httpRequestMethod + "\n" + canonicalUri + "\n" + canonicalQueryString + "\n"
 				+ canonicalHeaders + "\n" + signedHeaders + "\n" + hashedRequestPayload;
@@ -109,7 +96,7 @@ public class HunYuanAuthApi {
 		TreeMap<String, String> headers = new TreeMap<String, String>();
 		headers.put("Authorization", authorization);
 		headers.put("Content-Type", CT_JSON);
-		headers.put("Host", host);
+//		headers.put("Host", host);
 		headers.put("X-TC-Action", action);
 		headers.put("X-TC-Timestamp", timestamp);
 		headers.put("X-TC-Version", version);

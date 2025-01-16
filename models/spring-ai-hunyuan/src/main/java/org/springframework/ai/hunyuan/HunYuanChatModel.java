@@ -168,7 +168,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 					.toList();
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		String finishReason = (choice.finishReason() != null ? choice.finishReason(): "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
 	}
@@ -208,7 +208,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id(),
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
-							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
+							"finishReason", choice.finishReason() != null ? choice.finishReason() : ""
 					);
 					// @formatter:on
 					return buildGeneration(choice, metadata);
@@ -222,7 +222,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 			});
 
 		if (!isProxyToolCalls(prompt, this.defaultOptions)
-				&& isToolCall(response, Set.of(HunYuanApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+				&& isToolCall(response, Set.of(HunYuanApi.ChatCompletionFinishReason.TOOL_CALLS.getJsonValue(),
 						HunYuanApi.ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
@@ -277,7 +277,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 							Map<String, Object> metadata = Map.of(
 								"id", chatCompletion2.id(),
 								"role", roleMap.getOrDefault(id, ""),
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
+								"finishReason", choice.finishReason() != null ? choice.finishReason() : ""
 							);
 							// @formatter:on
 							return buildGeneration(choice, metadata);
@@ -294,7 +294,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
-						Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
+						Set.of(ChatCompletionFinishReason.TOOL_CALLS.getJsonValue(), ChatCompletionFinishReason.STOP.getJsonValue()))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.
@@ -327,14 +327,14 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cc -> {
-			ChatCompletionMessage delta = cc.delta();
+			ChatCompletionMessage delta = cc.message();
 			if (delta == null) {
 				delta = new ChatCompletionMessage("", ChatCompletionMessage.Role.assistant);
 			}
 			return new ChatCompletion.Choice(cc.index(), delta, cc.finishReason(),null);
 		}).toList();
 
-		return new ChatCompletion(chunk.id(), null, chunk.created(), chunk.model(), choices, null, null, null, null, null, null);
+		return new ChatCompletion(chunk.id(), null, chunk.created(), chunk.note(), choices, null, null, null, null, null, null);
 	}
 
 	/**

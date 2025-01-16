@@ -22,13 +22,14 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.hunyuan.api.auth.HunYuanAuthApi;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
@@ -57,6 +58,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class HunYuanApi {
 
+	private static final Logger logger = LoggerFactory.getLogger(HunYuanApi.class);
+
 	public static final String DEFAULT_CHAT_MODEL = ChatModel.HUNYUAN_PRO.getValue();
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
@@ -69,7 +72,6 @@ public class HunYuanApi {
 
 	private final HunYuanStreamFunctionCallingHelper chunkMerger = new HunYuanStreamFunctionCallingHelper();
 
-	private final ObjectMapper objectMapper;
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
 	 * @param secretId Hunyuan SecretId.
@@ -103,7 +105,6 @@ public class HunYuanApi {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 		hunyuanAuthApi = new HunYuanAuthApi(secretId, secretKey);
-		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
@@ -121,7 +122,6 @@ public class HunYuanApi {
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-//		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		String service = HunYuanConstants.DEFAULT_SERVICE;
 		String host = HunYuanConstants.DEFAULT_CHAT_HOST;
 //		String region = "ap-guangzhou";
@@ -136,12 +136,8 @@ public class HunYuanApi {
 				.retrieve()
 				.toEntity(String.class);
 		// 使用 ObjectMapper 将响应体字符串转换为 ChatCompletionResponse 对象
-		ChatCompletionResponse chatCompletionResponse = null;
-		try {
-			chatCompletionResponse = objectMapper.readValue(retrieve.getBody(), ChatCompletionResponse.class);
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		logger.info("Response body: {}", retrieve.getBody());
+		ChatCompletionResponse chatCompletionResponse = ModelOptionsUtils.jsonToObject(retrieve.getBody(), ChatCompletionResponse.class);
 		return ResponseEntity.ok(chatCompletionResponse);
 	}
 
@@ -155,9 +151,16 @@ public class HunYuanApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
+		String service = HunYuanConstants.DEFAULT_SERVICE;
+		String host = HunYuanConstants.DEFAULT_CHAT_HOST;
+//		String region = "ap-guangzhou";
+		String action = HunYuanConstants.DEFAULT_CHAT_ACTION;
+		MultiValueMap<String, String> jsonContentHeaders = hunyuanAuthApi.getHttpHeadersConsumer(host, action, service, chatRequest);
 		return this.webClient.post()
-			.uri("/v1/chat/completions")
+			.uri("/")
+			.headers(headers -> {
+				headers.addAll(jsonContentHeaders);
+			})
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -165,7 +168,10 @@ public class HunYuanApi {
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.map(content ->{
+//				logger.info(content);
+				return ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class);
+			})
 			// Detect is the chunk is part of a streaming function call.
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
@@ -188,7 +194,7 @@ public class HunYuanApi {
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null),
+						new ChatCompletionChunk(null, null,null,null,null,null,null,null, null, null, null),
 						(previous, current) -> this.chunkMerger.merge(previous, current));
 				return List.of(monoChunk);
 			})
@@ -225,8 +231,16 @@ public class HunYuanApi {
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")
-		TOOL_CALL
+		TOOL_CALL;
 
+		private final String jsonValue;
+
+		ChatCompletionFinishReason() {
+			this.jsonValue = this.name().toLowerCase();
+		}
+		public String getJsonValue() {
+			return this.jsonValue;
+		}
 	}
 
 	/**
@@ -455,7 +469,7 @@ public class HunYuanApi {
 	 * @param rawContent The raw contents of the message.
 	 * @param role The role of the message's author. Could be one of the {@link Role}
 	 * types.
-	 * @param name The name of the message's author.
+	 * @param chatContent The name of the message's author.
 	 * @param toolCallId The ID of the tool call associated with the message.
 	 * @param toolCalls The list of tool calls associated with the message.
 	 */
@@ -464,7 +478,7 @@ public class HunYuanApi {
 	// @formatter:off
 		@JsonProperty("Content") Object rawContent,
 		@JsonProperty("Role") Role role,
-		@JsonProperty("Contents") List<ChatContent> name,
+		@JsonProperty("Contents") List<ChatContent> chatContents,
 		@JsonProperty("ToolCallId") String toolCallId,
 		@JsonProperty("ToolCalls") List<ToolCall> toolCalls
 	// @formatter:on
@@ -478,6 +492,10 @@ public class HunYuanApi {
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
 			this(content, role, null, null, null);
+		}
+
+		public ChatCompletionMessage(Role role,List<ChatContent> chatContent) {
+			this(null, role, chatContent, null, null);
 		}
 
 		/**
@@ -533,14 +551,20 @@ public class HunYuanApi {
 		 * @param function The function definition.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type, @JsonProperty("Index") Integer index,
-				@JsonProperty("function") ChatCompletionFunction function) {
+		public record ToolCall(@JsonProperty("Id") String id, @JsonProperty("Type") String type, @JsonProperty("Index") Integer index,
+				@JsonProperty("Function") ChatCompletionFunction function) {
 
 		}
 
 		@JsonInclude(Include.NON_NULL)
 		public record ChatContent(@JsonProperty("Type") String type, @JsonProperty("Text") String text,
 							   @JsonProperty("ImageUrl") ImageUrl imageUrl) {
+			public ChatContent(String type, String text) {
+				this(type, text, null);
+			}
+			public ChatContent(String type, ImageUrl imageUrl) {
+				this(type, null, imageUrl);
+			}
 
 		}
 		@JsonInclude(Include.NON_NULL)
@@ -704,8 +728,8 @@ public class HunYuanApi {
 		// @formatter:off
 			@JsonProperty("Index") Integer index,
 			@JsonProperty("Message") ChatCompletionMessage message,
-			@JsonProperty("FinishReason") ChatCompletionFinishReason finishReason,
-			@JsonProperty("Delta") ChatCompletionDelta chatCompletionDelta
+			@JsonProperty("FinishReason") String finishReason,
+			@JsonProperty("Delta") ChatCompletionDelta delta
 		) {
 			 // @formatter:on
 		}
@@ -713,20 +737,9 @@ public class HunYuanApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ChatCompletionDelta(
 				// @formatter:off
-				@JsonProperty("Role") String role,
+				@JsonProperty("Role") ChatCompletionMessage.Role role,
 				@JsonProperty("Content") String content,
-				@JsonProperty("ToolCalls") ChatCompletionToolCall chatCompletionToolCall
-		) {
-			// @formatter:on
-		}
-
-		@JsonInclude(Include.NON_NULL)
-		public record ChatCompletionToolCall(
-				// @formatter:off
-				@JsonProperty("Id") String role,
-				@JsonProperty("Type") String content,
-				@JsonProperty("Function") ChatCompletionMessage.ChatCompletionFunction chatCompletionToolCall,
-				@JsonProperty("Index") Integer index
+				@JsonProperty("ToolCalls") List<ChatCompletionMessage.ToolCall> toolCalls
 		) {
 			// @formatter:on
 		}
@@ -758,33 +771,17 @@ public class HunYuanApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
 	// @formatter:off
-		@JsonProperty("id") String id,
-		@JsonProperty("object") String object,
-		@JsonProperty("created") Long created,
-		@JsonProperty("model") String model,
-		@JsonProperty("choices") List<ChunkChoice> choices) {
-		 // @formatter:on
-
-		/**
-		 * Chat completion choice.
-		 *
-		 * @param index The index of the choice in the list of choices.
-		 * @param delta A chat completion delta generated by streamed model responses.
-		 * @param finishReason The reason the model stopped generating tokens.
-		 * @param usage Usage statistics for the completion request.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ChunkChoice(
-		// @formatter:off
-			@JsonProperty("index") Integer index,
-			@JsonProperty("delta") ChatCompletionMessage delta,
-			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-			@JsonProperty("usage") Usage usage
-		// @formatter:on
-		) {
-
-		}
-
+	@JsonProperty("Id") String id,
+	@JsonProperty("Error") ChatCompletion.ErrorMsg errorMsg,
+	@JsonProperty("Created") Long created,
+	@JsonProperty("Note") String note,
+	@JsonProperty("Choices") List<ChatCompletion.Choice> choices,
+	@JsonProperty("Usage") Usage usage,
+	@JsonProperty("ModerationLevel") String moderationLevel,
+	@JsonProperty("SearchInfo") ChatCompletion.SearchInfo searchInfo,
+	@JsonProperty("Replaces") List<ChatCompletion.Replace>  replaces,
+	@JsonProperty("RecommendedQuestions") List<String> recommendedQuestions,
+	@JsonProperty("RequestId") String requestId) {
 	}
 
 	/**

@@ -80,7 +80,7 @@ public class HunYuanRetryTests {
 	public void moonshotChatTransientError() {
 
 		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.assistant),
-				ChatCompletionFinishReason.STOP,null);
+				ChatCompletionFinishReason.STOP.name(),null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", null, 789L, "model",
 				List.of(choice), new HunYuanApi.Usage(10, 10, 10),null,null,null,null,null);
 		HunYuanApi.ChatCompletionResponse chatCompletionResponse = new HunYuanApi.ChatCompletionResponse(expectedChatCompletion);
@@ -108,10 +108,10 @@ public class HunYuanRetryTests {
 	@Test
 	public void moonshotChatStreamTransientError() {
 
-		var choice = new ChatCompletionChunk.ChunkChoice(0, new ChatCompletionMessage("Response", Role.assistant),
-				ChatCompletionFinishReason.STOP, null);
-		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", "chat.completion.chunk", 789L,
-				"model", List.of(choice));
+		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.assistant),
+				ChatCompletionFinishReason.STOP.name(), null);
+		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", null, 789L,
+				"", List.of(choice),null,null,null,null,null,null);
 
 		given(this.moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
