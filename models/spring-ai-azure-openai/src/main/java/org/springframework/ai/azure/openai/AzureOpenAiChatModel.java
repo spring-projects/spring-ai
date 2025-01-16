@@ -565,6 +565,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		return ChatGenerationMetadata.builder()
 			.finishReason(String.valueOf(choice.getFinishReason()))
 			.metadata("contentFilterResults", choice.getContentFilterResults())
+			.metadata("logprobs", choice.getLogprobs())
 			.build();
 	}
 
