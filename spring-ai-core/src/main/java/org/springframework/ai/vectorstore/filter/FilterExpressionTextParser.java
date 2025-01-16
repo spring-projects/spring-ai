@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.BailErrorStrategy;
@@ -46,7 +45,7 @@ import org.springframework.util.Assert;
  *
  * The vector-store agnostic, filter expression language is defined by a formal ANTLR4
  * grammar (Filters.g4). The language looks and feels like a subset of the well known SQL
- * WHERE filter expressions. For example you can use the parser like this:
+ * WHERE filter expressions. For example, you can use the parser like this:
  *
  * <pre>{@code
  *
@@ -151,7 +150,7 @@ public class FilterExpressionTextParser {
 			return filterExpression;
 		}
 		catch (ParseCancellationException e) {
-			var msg = this.errorListener.errorMessages.stream().collect(Collectors.joining());
+			var msg = String.join("", this.errorListener.errorMessages);
 			var rootCause = NestedExceptionUtils.getRootCause(e);
 			throw new FilterExpressionParseException(msg, rootCause);
 		}
