@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,6 +215,12 @@ public interface ChatClient {
 
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
+		ChatClientRequestSpec tools(String... toolNames);
+
+		ChatClientRequestSpec tools(Object... toolObjects);
+
+		ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks);
+
 		/**
 		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
 		 */
@@ -292,6 +298,12 @@ public interface ChatClient {
 		Builder defaultSystem(Resource text);
 
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
+
+		Builder defaultTools(String... toolNames);
+
+		Builder defaultTools(Object... toolObjects);
+
+		Builder defaultToolCallbacks(FunctionCallback... toolCallbacks);
 
 		/**
 		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.

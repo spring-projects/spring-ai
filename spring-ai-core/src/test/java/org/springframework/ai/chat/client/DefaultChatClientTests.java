@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.util.function.Function;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.ai.tool.ToolCallback;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -1350,6 +1351,43 @@ class DefaultChatClientTests {
 		assertThat(defaultSpec.getChatOptions()).isEqualTo(options);
 	}
 
+	@Test
+	void whenToolNamesElementIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.tools("myTool", null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolNames cannot contain null elements");
+	}
+
+	@Test
+	void whenToolNamesThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		String toolName = "myTool";
+		spec = spec.tools(toolName);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getFunctionNames()).contains(toolName);
+	}
+
+	@Test
+	void whenToolCallbacksElementIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.toolCallbacks(mock(ToolCallback.class), null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolCallbacks cannot contain null elements");
+	}
+
+	@Test
+	void whenToolCallbacksThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		spec = spec.toolCallbacks(toolCallback);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getFunctionCallbacks()).contains(toolCallback);
+	}
+
 	// FunctionCallback.builder().description("description").function(null,input->"hello").inputType(String.class).build()
 
 	@Test
@@ -1480,7 +1518,7 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions("myFunction", null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("functionBeanNames cannot contain null elements");
+			.hasMessage("toolNames cannot contain null elements");
 	}
 
 	@Test
